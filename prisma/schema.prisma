@@ -1,0 +1,581 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  REF
+  ORGA
+  ADMIN
+}
+
+enum PlayerStatus {
+  ACTIVE
+  PENDING
+  REJECTED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+  PREFER_NOT_SAY
+}
+
+// Diet is now stored as String[] on Player (values: OMNIVORE VEGETARIAN VEGAN GLUTEN_FREE)
+// Allows cumulating e.g. VEGAN + GLUTEN_FREE on the same player.
+
+enum TournamentStatus {
+  UPCOMING
+  LIVE
+  COMPLETED
+}
+
+enum SaturdayFormat {
+  ALL_DAY
+  SPLIT_POOLS
+  SWISS
+}
+
+enum SundayFormat {
+  SE
+  DE
+}
+
+enum MatchPhase {
+  POOL
+  SWISS
+  BRACKET
+}
+
+enum BracketSide {
+  W
+  L
+  G
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  FINISHED
+}
+
+enum MatchEventType {
+  START
+  PAUSE
+  GOAL
+  PENALTY
+  TIMEOUT
+  TIME_ADJUST
+  END
+}
+
+enum PoolSession {
+  MORNING
+  AFTERNOON
+}
+
+enum MatchDay {
+  SAT
+  SUN
+}
+
+enum ChatMode {
+  OPEN
+  ORG_ONLY
+  DISABLED
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SquadRole {
+  CAPTAIN
+  MEMBER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum NotificationType {
+  SQUAD_INVITE
+  SQUAD_INVITE_ACCEPTED
+  SQUAD_INVITE_DECLINED
+  SQUAD_ROLE_CHANGED
+  DIRECT_MESSAGE_REQUEST
+  DIRECT_MESSAGE_RECEIVED
+}
+
+model AccessCode {
+  id           String    @id @default(cuid())
+  role         Role
+  codeHash     String
+  operatorId   String?
+  tournamentId String?
+  revokedAt    DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  operator  Operator? @relation(fields: [operatorId], references: [id])
+  tournament Tournament? @relation(fields: [tournamentId], references: [id])
+
+  @@index([role])
+  @@index([operatorId])
+  @@index([tournamentId])
+}
+
+model Operator {
+  id            String   @id @default(cuid())
+  name          String
+  roles         Role[]
+  tournamentIds String[]
+  playerId      String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  player      Player?      @relation(fields: [playerId], references: [id])
+  accessCodes AccessCode[]
+
+  @@index([name])
+}
+
+model Tournament {
+  id                      String           @id @default(cuid())
+  name                    String
+  continentCode           String
+  region                  String?
+  country                 String
+  city                    String
+  dateStart               DateTime
+  dateEnd                 DateTime
+  format                  String
+  gameDurationMin         Int
+  maxTeams                Int
+  courtsCount             Int
+  registrationFeePerTeam  Int
+  registrationFeeCurrency String
+  contactEmail            String
+  registrationStart       DateTime?
+  registrationEnd         DateTime?
+  // Lieu principal (tout le tournoi)
+  venueName               String?
+  venueAddress            String?
+  venueMapsUrl            String?
+  // Accueil vendredi soir
+  fridayWelcomeName       String?
+  fridayWelcomeAddress    String?
+  fridayWelcomeMapsUrl    String?
+  // Terrain principal (samedi/dimanche)
+  saturdayEventName       String?
+  saturdayEventAddress    String?
+  saturdayEventMapsUrl    String?
+  // Soirée samedi
+  saturdayEveningName     String?
+  saturdayEveningAddress  String?
+  saturdayEveningMapsUrl  String?
+  otherNotes              String?
+  links                   String[]
+  bannerPath              String?
+  streamYoutubeUrl        String?
+  chatMode                ChatMode         @default(DISABLED)
+  infoTilesLayout         Json?
+  saturdayFormat          SaturdayFormat
+  sundayFormat            SundayFormat
+  status                  TournamentStatus
+  locked                  Boolean          @default(false)
+  approved                Boolean          @default(false)
+  submissionStatus        SubmissionStatus @default(PENDING)
+  rejectionReason         String?
+  // Hébergement
+  accommodationAvailable  Boolean          @default(false)
+  accommodationType       String?          // gymnase, camping, chez l'habitant…
+  accommodationCapacity   Int?
+  // Repas (JSON array of { day: 1|2|3, breakfast: bool, lunch: bool, dinner: bool })
+  meals                   Json?
+  // Kit list (ce qu'il faut apporter)
+  kitList                 String?
+  // Informations complémentaires
+  additionalInfo          String?
+  // FAQ (JSON array of { question: string, answer: string })
+  faq                     Json?
+  // Telegram group/channel link (t.me/...)
+  telegramUrl             String?
+  // Legacy meal booleans (kept for migration compatibility)
+  breakfastProvided       Boolean          @default(false)
+  lunchProvided           Boolean          @default(false)
+  dinnerProvided          Boolean          @default(false)
+  creatorId               String?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+
+  creator     Player?      @relation("CreatedTournaments", fields: [creatorId], references: [id])
+  sponsors    Sponsor[]
+  teams       Team[]
+  pools       Pool[]
+  matches     Match[]
+  accessCodes AccessCode[]
+  freeAgents     FreeAgent[]
+  messages       TournamentMessage[]
+  coOrganizers   TournamentOrganizer[]
+
+  @@index([continentCode])
+  @@index([status])
+  @@index([creatorId])
+}
+
+model Sponsor {
+  id           String  @id @default(cuid())
+  tournamentId String
+  name         String
+  logoPath     String?
+  url          String?
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+
+  @@index([tournamentId])
+}
+
+model Team {
+  id           String     @id @default(cuid())
+  tournamentId String
+  name         String
+  city         String?
+  country      String?
+  color        String?
+  seed         Int
+  selected     Boolean    @default(true)
+
+  tournament Tournament   @relation(fields: [tournamentId], references: [id])
+  players    TeamPlayer[]
+  poolTeams  PoolTeam[]
+  matchesA   Match[]        @relation("TeamA")
+  matchesB   Match[]        @relation("TeamB")
+  messages   TeamMessage[]
+
+  @@index([tournamentId])
+}
+
+model Player {
+  id        String       @id @default(cuid())
+  slug      String?      @unique
+  name      String
+  country   String
+  city      String?
+  photoPath String?
+  bio       String?
+  startYear Int?
+  hand        String?
+  gender      Gender?
+  showGender  Boolean  @default(false)
+  diets       String[]  // OMNIVORE | VEGETARIAN | VEGAN | GLUTEN_FREE (cumulative)
+  status      PlayerStatus @default(PENDING)
+  badges       String[]
+  pinnedBadges String[]  // badges shown on the card (max 5, subset of badges)
+  clubLogoPath       String?
+  emblemPosition     String?   @default("top-left")      // top-left | top-right | bottom-left | bottom-right
+  teamLogoPath       String?
+  teamLogoPosition   String?   @default("bottom-right")  // top-left | top-right | bottom-left | bottom-right
+  createdAt DateTime     @default(now())
+
+  teams              TeamPlayer[]
+  account            PlayerAccount?
+  operator           Operator?
+  createdTournaments Tournament[]    @relation("CreatedTournaments")
+  messages                TournamentMessage[]
+  teamMessages            TeamMessage[]
+  coOrganizedTournaments  TournamentOrganizer[]
+  squads                  SquadMember[]
+  sentInvitations         SquadInvitation[]     @relation("SentInvitations")
+  receivedInvitations     SquadInvitation[]     @relation("ReceivedInvitations")
+  squadMessages           SquadMessage[]
+  notifications           Notification[]
+  conversationsAsA        DirectConversation[]  @relation("ConversationPlayerA")
+  conversationsAsB        DirectConversation[]  @relation("ConversationPlayerB")
+  directMessages          DirectMessage[]
+  freeAgentRegistrations  FreeAgent[]
+}
+
+model PlayerAccount {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  playerId     String   @unique
+  createdAt    DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@index([email])
+}
+
+model TeamPlayer {
+  id                 String  @id @default(cuid())
+  teamId             String
+  playerId           String
+  isCaptain          Boolean @default(false)
+  needsAccommodation Boolean @default(false)
+
+  team   Team   @relation(fields: [teamId], references: [id])
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@unique([teamId, playerId])
+}
+
+model Pool {
+  id           String       @id @default(cuid())
+  tournamentId String
+  name         String
+  session      PoolSession?
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  teams      PoolTeam[]
+  matches    Match[]
+
+  @@index([tournamentId])
+}
+
+model PoolTeam {
+  id     String @id @default(cuid())
+  poolId String
+  teamId String
+
+  pool Pool @relation(fields: [poolId], references: [id])
+  team Team @relation(fields: [teamId], references: [id])
+
+  @@unique([poolId, teamId])
+}
+
+model Match {
+  id              String      @id @default(cuid())
+  tournamentId    String
+  phase           MatchPhase
+  poolId          String?
+  bracketSide     BracketSide?
+  roundIndex      Int
+  positionInRound Int         @default(0)
+  courtName       String
+  startAt         DateTime
+  dayIndex        MatchDay
+  status          MatchStatus @default(SCHEDULED)
+  teamAId         String?
+  teamBId         String?
+  scoreA          Int         @default(0)
+  scoreB          Int         @default(0)
+  winnerTeamId    String?
+  nextMatchWinId  String?
+  nextSlotWin     String?
+  nextMatchLoseId String?
+  nextSlotLose    String?
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  pool       Pool?      @relation(fields: [poolId], references: [id])
+  teamA      Team?      @relation("TeamA", fields: [teamAId], references: [id])
+  teamB      Team?      @relation("TeamB", fields: [teamBId], references: [id])
+  events     MatchEvent[]
+
+  @@index([tournamentId])
+  @@index([poolId])
+  @@index([status])
+}
+
+model MatchEvent {
+  id            String         @id @default(cuid())
+  matchId       String
+  type          MatchEventType
+  createdAt     DateTime       @default(now())
+  matchClockSec Int
+  payload       Json
+
+  match Match @relation(fields: [matchId], references: [id])
+
+  @@index([matchId])
+}
+
+model KnownBikePoloCountry {
+  id   String @id @default(cuid())
+  code String @unique
+  name String
+}
+
+model FreeAgent {
+  id           String   @id @default(cuid())
+  tournamentId String?
+  playerId     String?  // linked Player account (if registered while logged in)
+  name         String
+  email        String
+  city         String?
+  country      String?
+  notes        String?
+  createdAt    DateTime @default(now())
+
+  tournament Tournament? @relation(fields: [tournamentId], references: [id])
+  player     Player?     @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@index([tournamentId])
+  @@index([playerId])
+}
+
+model TeamMessage {
+  id        String   @id @default(cuid())
+  teamId    String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  team   Team   @relation(fields: [teamId], references: [id])
+  author Player @relation(fields: [authorId], references: [id])
+
+  @@index([teamId])
+  @@index([authorId])
+}
+
+model TournamentMessage {
+  id           String   @id @default(cuid())
+  tournamentId String
+  authorId     String
+  content      String
+  createdAt    DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  author     Player     @relation(fields: [authorId], references: [id])
+
+  @@index([tournamentId])
+  @@index([authorId])
+}
+
+model TournamentOrganizer {
+  id           String   @id @default(cuid())
+  tournamentId String
+  playerId     String
+  addedAt      DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  player     Player     @relation(fields: [playerId], references: [id])
+
+  @@unique([tournamentId, playerId])
+  @@index([tournamentId])
+  @@index([playerId])
+}
+
+// ── Équipes permanentes (Squads) ──────────────────────────────────────────────
+
+model Squad {
+  id          String   @id @default(cuid())
+  name        String
+  logoPath    String?
+  color       String?
+  bio         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     SquadMember[]
+  invitations SquadInvitation[]
+  messages    SquadMessage[]
+
+  @@index([name])
+}
+
+model SquadMember {
+  id        String    @id @default(cuid())
+  squadId   String
+  playerId  String
+  role      SquadRole @default(MEMBER)
+  joinedAt  DateTime  @default(now())
+
+  squad  Squad  @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([squadId, playerId])
+  @@index([squadId])
+  @@index([playerId])
+}
+
+model SquadInvitation {
+  id              String           @id @default(cuid())
+  squadId         String
+  invitedPlayerId String
+  invitedById     String
+  status          InvitationStatus @default(PENDING)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  squad         Squad  @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  invitedPlayer Player @relation("ReceivedInvitations", fields: [invitedPlayerId], references: [id], onDelete: Cascade)
+  invitedBy     Player @relation("SentInvitations", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@unique([squadId, invitedPlayerId])
+  @@index([squadId])
+  @@index([invitedPlayerId])
+}
+
+model SquadMessage {
+  id        String   @id @default(cuid())
+  squadId   String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  squad  Squad  @relation(fields: [squadId], references: [id], onDelete: Cascade)
+  author Player @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([squadId])
+  @@index([authorId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  playerId  String
+  type      NotificationType
+  payload   Json             // { squadId, squadName, invitedById, invitedByName, ... }
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, read])
+  @@index([playerId])
+}
+
+// ── Direct Messaging ──────────────────────────────────────────────────────────
+
+model DirectConversation {
+  id          String   @id @default(cuid())
+  playerAId   String
+  playerBId   String
+  // Optional context (e.g. free agent registration that triggered the contact)
+  freeAgentId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  playerA  Player         @relation("ConversationPlayerA", fields: [playerAId], references: [id], onDelete: Cascade)
+  playerB  Player         @relation("ConversationPlayerB", fields: [playerBId], references: [id], onDelete: Cascade)
+  messages DirectMessage[]
+
+  @@unique([playerAId, playerBId])
+  @@index([playerAId])
+  @@index([playerBId])
+}
+
+model DirectMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  authorId       String
+  content        String
+  read           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       Player             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([authorId])
+}

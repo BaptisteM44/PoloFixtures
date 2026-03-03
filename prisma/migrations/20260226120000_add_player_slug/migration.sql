@@ -1,0 +1,2 @@
+ALTER TABLE "Player" ADD COLUMN IF NOT EXISTS "slug" TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS "Player_slug_key" ON "Player"("slug");

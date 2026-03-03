@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(lsof -i -P)",
+      "Bash(npx next build)",
+      "Bash(node -e \":*)",
+      "Bash(npx prisma db push)"
+    ]
+  }
+}
