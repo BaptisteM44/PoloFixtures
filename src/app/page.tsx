@@ -14,12 +14,19 @@ const continents = [
 ];
 
 export default async function HomePage() {
-  const activeTournaments = await prisma.tournament.findMany({
-    where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true },
-    include: { teams: true },
-    orderBy: [{ status: "asc" }, { dateStart: "asc" }],
-    take: 8,
-  });
+  const [activeTournaments, allTournaments] = await Promise.all([
+    prisma.tournament.findMany({
+      where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true },
+      include: { teams: true },
+      orderBy: [{ status: "asc" }, { dateStart: "asc" }],
+      take: 8,
+    }),
+    prisma.tournament.findMany({
+      where: { approved: true },
+      select: { id: true, name: true, dateStart: true, dateEnd: true, status: true, city: true, country: true, format: true },
+      orderBy: { dateStart: "asc" },
+    }),
+  ]);
 
   return (
     <div className="home">
@@ -73,17 +80,15 @@ export default async function HomePage() {
         )}
       </section>
 
-      {/* ---- MINI CALENDAR ---- */}
+      {/* ---- CALENDAR ---- */}
       <section className="section">
         <div className="section-header">
           <div>
-            <h2>Calendrier</h2>
-            <p>Tournois à venir ce mois-ci</p>
+            <h2>Calendrier des tournois</h2>
           </div>
-          <Link className="ghost" href="/calendar">Voir tout →</Link>
         </div>
         <CalendarGrid
-          tournaments={activeTournaments.map((t): CalendarTournament => ({
+          tournaments={allTournaments.map((t): CalendarTournament => ({
             id: t.id,
             name: t.name,
             dateStart: t.dateStart.toISOString(),
@@ -93,7 +98,6 @@ export default async function HomePage() {
             country: t.country,
             format: t.format,
           }))}
-          mini
         />
       </section>
 
