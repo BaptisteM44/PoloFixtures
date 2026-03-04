@@ -75,6 +75,12 @@ export default async function TournamentPage({
     tournament.coOrganizers.some((co) => co.playerId === currentPlayerId);
   const isOrga = canEdit;
 
+  // Bouton arbitrage : REF (global ou lié à ce tournoi), orga, admin, co-organisateur
+  const canRef =
+    canEdit ||
+    (role === "REF" && (!session?.user?.tournamentId || session.user.tournamentId === tournament.id)) ||
+    tournament.coOrganizers.some((co) => co.playerId === currentPlayerId);
+
   const swissMatches = tournament.matches.filter((m) => m.phase === "SWISS");
   const hasSwiss = swissMatches.length > 0 || tournament.saturdayFormat === "SWISS";
 
@@ -134,12 +140,23 @@ export default async function TournamentPage({
 
   return (
     <div className="tournament-page">
-      {/* ── Barre retour dashboard (orga only) ── */}
-      {canEdit && (
-        <div style={{ marginBottom: 16 }}>
-          <Link href={`/tournament/${params.id}/edit`} style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
-            ← Dashboard organisateur
-          </Link>
+      {/* ── Barre retour dashboard + bouton arbitrage ── */}
+      {(canEdit || canRef) && (
+        <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          {canEdit && (
+            <Link href={`/tournament/${params.id}/edit`} style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
+              ← Dashboard organisateur
+            </Link>
+          )}
+          {canRef && (
+            <Link
+              href={`/tournament/${params.id}/referee`}
+              className="primary"
+              style={{ fontSize: 13, padding: "6px 16px", display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              ⚖️ Arbitrer
+            </Link>
+          )}
         </div>
       )}
 

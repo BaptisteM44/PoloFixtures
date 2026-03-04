@@ -4658,3 +4658,396 @@ details[open] .my-tournaments__section-title--summary::after {
   transform: translate(-2px, -2px);
   box-shadow: var(--shadow-lg);
 }
+
+/* ========================
+   REFEREE PAGE — Mobile-first
+   ======================== */
+
+.ref-page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 0 120px;
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Top bar */
+.ref-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--surface);
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+}
+.ref-back {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ref-tourney-name {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Match selector */
+.ref-match-selector {
+  padding: 12px 16px 4px;
+}
+.ref-select {
+  width: 100%;
+  font-size: 14px;
+  padding: 10px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-family: var(--font-body);
+}
+.ref-match-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+  padding-left: 2px;
+}
+
+/* Clock */
+.ref-clock-section {
+  text-align: center;
+  padding: 16px;
+  border-bottom: 2px solid var(--border-light);
+}
+.ref-clock {
+  font-family: var(--font-display);
+  font-size: clamp(56px, 18vw, 96px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -2px;
+  transition: color 0.4s;
+}
+.ref-overtime {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--danger);
+  margin-top: 4px;
+  animation: refBlink 1s infinite;
+}
+@keyframes refBlink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+.ref-clock-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.ref-btn-lg {
+  padding: 12px 28px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.ref-btn-sm {
+  padding: 10px 18px;
+  font-size: 14px;
+}
+
+/* Score grid — 2 colonnes */
+.ref-score-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-bottom: 2px solid var(--border-light);
+}
+.ref-team-panel {
+  padding: 16px 12px;
+  border-top: 4px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-right: 1px solid var(--border-light);
+}
+.ref-team-panel:last-child { border-right: none; }
+.ref-team--tbd { opacity: 0.4; }
+.ref-team-name {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ref-score-display {
+  font-family: var(--font-display);
+  font-size: clamp(40px, 12vw, 64px);
+  font-weight: 900;
+  line-height: 1;
+}
+.ref-score-btns {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ref-bigbtn {
+  font-size: 15px !important;
+  padding: 10px 14px !important;
+  font-weight: 700 !important;
+}
+.ref-smallbtn {
+  font-size: 13px !important;
+  padding: 10px 12px !important;
+}
+.ref-penaltybtn, .ref-timeoutbtn {
+  font-size: 12px;
+  padding: 7px 10px;
+  width: 100%;
+  text-align: center;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+}
+.ref-penaltybtn:hover { background: #fff5f5; }
+.ref-timeoutbtn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* End section */
+.ref-end-section {
+  padding: 20px 16px;
+  text-align: center;
+}
+.ref-endbtn {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+}
+
+/* Result */
+.ref-result {
+  padding: 32px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.ref-result-label {
+  font-family: var(--font-display);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+.ref-result-score {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+}
+.ref-result-num {
+  font-size: 28px;
+  font-weight: 900;
+}
+.ref-result-winner {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--teal);
+}
+.ref-nextmatch-btn {
+  margin-top: 8px;
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Sections collapsibles */
+.ref-section {
+  border-top: 2px solid var(--border-light);
+}
+.ref-section-title {
+  padding: 12px 16px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.ref-section-title::-webkit-details-marker { display: none; }
+.ref-penalties-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+.ref-sub-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.ref-penalty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-light);
+}
+.ref-penalty-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ref-penalty-val {
+  font-weight: 700;
+  min-width: 20px;
+  text-align: center;
+}
+.ref-smBtn {
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+}
+
+/* Event log */
+.ref-event-log {
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ref-event-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.ref-event-type {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  background: var(--border);
+  color: var(--bg);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+.ref-event-player { flex: 1; color: var(--text-muted); }
+.ref-event-clock { margin-left: auto; font-family: monospace; font-size: 12px; color: var(--text-muted); }
+.ref-empty { padding: 0 16px 12px; font-size: 13px; color: var(--text-muted); }
+
+/* Modals */
+.ref-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.ref-modal {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 20px 16px 32px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.ref-modal-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 2px;
+}
+.ref-modal-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  text-align: center;
+}
+.ref-modal-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ref-modal-item {
+  width: 100%;
+  padding: 13px 16px !important;
+  font-size: 15px !important;
+  text-align: left !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+.ref-modal-unknown { opacity: 0.55; font-style: italic; }
+.ref-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--teal);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+.ref-badge--red { background: var(--danger); color: #fff; }
+
+/* Timeout overlay */
+.ref-timeout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+}
+.ref-timeout-label {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.ref-timeout-clock {
+  font-family: var(--font-display);
+  font-size: 72px;
+  font-weight: 900;
+  color: var(--yellow);
+  line-height: 1;
+}

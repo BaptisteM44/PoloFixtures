@@ -7,6 +7,7 @@ import { SponsorManager } from "@/components/SponsorManager";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { TeamManager } from "@/components/TeamManager";
 import { CoOrganizerManager } from "@/components/CoOrganizerManager";
+import { RefereeManager } from "@/components/RefereeManager";
 import { hasAtLeastRole } from "@/lib/rbac";
 import Link from "next/link";
 
@@ -228,8 +229,15 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       {/* Co-organisateurs */}
       <CoOrganizerManager
         tournamentId={tournament.id}
-        coOrganizers={tournament.coOrganizers.map((co) => co.player)}
+        coOrganizers={tournament.coOrganizers.filter((co) => (co as { role?: string }).role !== "REF").map((co) => co.player)}
         canManage={isCreator || isAdmin}
+      />
+
+      {/* Arbitres assignés */}
+      <RefereeManager
+        tournamentId={tournament.id}
+        referees={tournament.coOrganizers.filter((co) => (co as { role?: string }).role === "REF").map((co) => co.player)}
+        canManage={isCreator || isAdmin || isOrgaForThis}
       />
 
       {/* Free agents list */}

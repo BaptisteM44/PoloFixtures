@@ -18,7 +18,10 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   return Response.json(organizers);
 }
 
-const addSchema = z.object({ playerId: z.string().cuid() });
+const addSchema = z.object({
+  playerId: z.string().cuid(),
+  role: z.enum(["ORGA", "REF"]).default("ORGA"),
+});
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -35,8 +38,8 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const organizer = await prisma.tournamentOrganizer.upsert({
     where: { tournamentId_playerId: { tournamentId: params.id, playerId: parsed.data.playerId } },
-    create: { tournamentId: params.id, playerId: parsed.data.playerId },
-    update: {},
+    create: { tournamentId: params.id, playerId: parsed.data.playerId, role: parsed.data.role },
+    update: { role: parsed.data.role },
     include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true } } },
   });
 

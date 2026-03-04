@@ -47,5 +47,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/admin/:path*", "/account/:path*", "/my-tournaments/:path*", "/tournament/:path*/edit", "/referee"]
+  matcher: ["/admin/:path*", "/account/:path*", "/my-tournaments/:path*", "/tournament/:path*/edit", "/referee", "/tournament/:path*/referee"]
 };

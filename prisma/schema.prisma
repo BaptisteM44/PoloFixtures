@@ -456,6 +456,8 @@ model TournamentOrganizer {
   id           String   @id @default(cuid())
   tournamentId String
   playerId     String
+  /// 'ORGA' = co-organisateur | 'REF' = arbitre assigné au tournoi
+  role         String   @default("ORGA")
   addedAt      DateTime @default(now())
 
   tournament Tournament @relation(fields: [tournamentId], references: [id])
