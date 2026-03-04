@@ -30,9 +30,9 @@ export default async function CalendarPage() {
   }));
 
   return (
-    <div className="page">
+    <>
       <h1 style={{ marginBottom: 24 }}>Calendrier des tournois</h1>
       <CalendarGrid tournaments={data} />
-    </div>
+    </>
   );
 }
