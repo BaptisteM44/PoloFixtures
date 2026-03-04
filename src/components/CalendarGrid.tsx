@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export type CalendarTournament = {
@@ -73,16 +74,19 @@ function fmtFR(d: Date) {
 
 export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = false }: Props) {
   const now = new Date();
+  const router = useRouter();
   const [month, setMonth] = useState(initialMonth ?? now.getMonth());
   const [year, setYear] = useState(initialYear ?? now.getFullYear());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
+    if (mini) { router.push(`/tournament/${id}`); return; }
     setExpandedIds((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  };
 
   const days = useMemo(() => getCalendarDays(year, month), [year, month]);
 
@@ -168,7 +172,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
                   title={`${t.name} — ${t.city}, ${t.country}`}
                   onClick={() => toggle(t.id)}
                 >
-                  {`${t.name} · ${t.city}`}
+                  {t.city}
                 </button>
               ))}
             </div>
