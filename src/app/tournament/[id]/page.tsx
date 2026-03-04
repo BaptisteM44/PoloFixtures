@@ -362,7 +362,6 @@ export default async function TournamentPage({
                 <FreeAgentList
                   agents={tournament.freeAgents}
                   canDelete={false}
-                  deleteAction={async () => ({ ok: true })}
                   title=""
                   publicView
                 />

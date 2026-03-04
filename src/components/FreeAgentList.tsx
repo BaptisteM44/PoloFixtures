@@ -16,7 +16,7 @@ type FreeAgent = {
 type Props = {
   agents: FreeAgent[];
   canDelete: boolean;
-  deleteAction: (id: string) => Promise<{ ok?: boolean }>;
+  deleteAction?: (id: string) => Promise<{ ok?: boolean }>;
   title?: string;
   publicView?: boolean;
 };
@@ -27,9 +27,10 @@ export function FreeAgentList({ agents, canDelete, deleteAction, title = "Demand
   if (agents.length === 0) return null;
 
   const handleDelete = (id: string) => {
+    if (!deleteAction) return;
     if (!confirm("Supprimer cette demande ?")) return;
     startTransition(async () => {
-      await deleteAction(id);
+      await deleteAction!(id);
     });
   };
 
