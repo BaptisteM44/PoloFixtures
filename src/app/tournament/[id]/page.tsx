@@ -299,10 +299,10 @@ export default async function TournamentPage({
                   <p style={{ marginTop: 12, fontSize: 13, paddingTop: 10, borderTop: "1px solid var(--border-light)" }}>
                     <strong>Inscriptions :</strong>{" "}
                     {tournament.registrationStart
-                      ? new Date(tournament.registrationStart).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+                      ? new Date(tournament.registrationStart).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
                       : "?"}{" "}
                     — {tournament.registrationEnd
-                      ? new Date(tournament.registrationEnd).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+                      ? new Date(tournament.registrationEnd).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
                       : "?"}
                   </p>
                 )}
@@ -441,11 +441,11 @@ export default async function TournamentPage({
                 <div style={{ textAlign: "center", padding: "24px 0" }}>
                   <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", margin: 0 }}>
                     ⏳ Inscriptions fermées
-                    {tournament.registrationEnd && ` — clôturées le ${new Date(tournament.registrationEnd).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}`}
+                    {tournament.registrationEnd && ` — clôturées le ${new Date(tournament.registrationEnd).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}`}
                   </p>
                   {tournament.registrationStart && now < new Date(tournament.registrationStart) && (
                     <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--text-muted)" }}>
-                      Ouverture le {new Date(tournament.registrationStart).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                      Ouverture le {new Date(tournament.registrationStart).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   )}
                 </div>

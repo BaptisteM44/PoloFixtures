@@ -276,11 +276,11 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </label>
           <label className="field-row">
             Début inscriptions
-            <input type="date" name="registrationStart" defaultValue={tournament.registrationStart ? new Date(tournament.registrationStart).toISOString().slice(0, 10) : ""} />
+            <input type="datetime-local" name="registrationStart" defaultValue={tournament.registrationStart ? new Date(tournament.registrationStart).toISOString().slice(0, 16) : ""} />
           </label>
           <label className="field-row">
             Fin inscriptions
-            <input type="date" name="registrationEnd" defaultValue={tournament.registrationEnd ? new Date(tournament.registrationEnd).toISOString().slice(0, 10) : ""} />
+            <input type="datetime-local" name="registrationEnd" defaultValue={tournament.registrationEnd ? new Date(tournament.registrationEnd).toISOString().slice(0, 16) : ""} />
           </label>
           <label className="field-row">
             Format
