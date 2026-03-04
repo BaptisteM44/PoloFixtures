@@ -14,7 +14,24 @@ const continents = [
 ];
 
 export default async function HomePage() {
-  const [activeTournaments, allTournaments] = await Promise.all([
+  const countryToContinent: Record<string, string> = {
+    France: "EU", Germany: "EU", "United Kingdom": "EU", Spain: "EU", Italy: "EU",
+    Netherlands: "EU", Belgium: "EU", Portugal: "EU", Switzerland: "EU", Austria: "EU",
+    Poland: "EU", Sweden: "EU", Norway: "EU", Denmark: "EU", Finland: "EU",
+    "Czech Republic": "EU", Hungary: "EU", Romania: "EU", Slovakia: "EU", Croatia: "EU",
+    Ireland: "EU", Greece: "EU", Serbia: "EU", Ukraine: "EU",
+    USA: "NA", Canada: "NA", Mexico: "NA",
+    Brazil: "SA", Argentina: "SA", Chile: "SA", Colombia: "SA", Peru: "SA",
+    Uruguay: "SA", Ecuador: "SA", Bolivia: "SA", Venezuela: "SA",
+    Japan: "AS", Singapore: "AS", "South Korea": "AS", China: "AS", India: "AS",
+    Thailand: "AS", Taiwan: "AS", Philippines: "AS", Indonesia: "AS", Vietnam: "AS",
+    Malaysia: "AS", Pakistan: "AS",
+    Australia: "OC", "New Zealand": "OC", Fiji: "OC",
+    "South Africa": "AF", Nigeria: "AF", Kenya: "AF", Morocco: "AF", Ghana: "AF",
+    Egypt: "AF", Tanzania: "AF", Senegal: "AF",
+  };
+
+  const [activeTournaments, allTournaments, countryCounts] = await Promise.all([
     prisma.tournament.findMany({
       where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true },
       include: { teams: true },
@@ -26,7 +43,18 @@ export default async function HomePage() {
       select: { id: true, name: true, dateStart: true, dateEnd: true, status: true, city: true, country: true, format: true },
       orderBy: { dateStart: "asc" },
     }),
+    prisma.player.groupBy({
+      by: ["country"],
+      where: { status: "ACTIVE" },
+      _count: { _all: true },
+    }),
   ]);
+
+  const playerCountByContinent: Record<string, number> = {};
+  for (const row of countryCounts) {
+    const cont = countryToContinent[row.country];
+    if (cont) playerCountByContinent[cont] = (playerCountByContinent[cont] ?? 0) + row._count._all;
+  }
 
   return (
     <div className="home">
@@ -113,6 +141,11 @@ export default async function HomePage() {
           {continents.map((c) => (
             <Link key={c.code} className="continent-card" href={`/continent/${c.code}`}>
               <h3>{c.name}</h3>
+              {playerCountByContinent[c.code] ? (
+                <span className="continent-stat">
+                  {playerCountByContinent[c.code]} player{playerCountByContinent[c.code] > 1 ? "s" : ""}
+                </span>
+              ) : null}
             </Link>
           ))}
         </div>
