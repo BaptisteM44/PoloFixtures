@@ -3739,55 +3739,31 @@ textarea {
    CALENDAR
    ======================== */
 
-/* Wrapper page plein écran sans scroll */
+/* Wrapper page calendrier */
 .calendar-page {
-  display: flex;
-  flex-direction: column;
-  /* 64px header + 32px .page padding-top */
-  height: calc(100dvh - 64px - 32px);
-  /* annule le padding-bottom de .page (80px) */
-  margin-bottom: -80px;
-  overflow: hidden;
+  /* rien de spécial : scroll normal */
 }
 
 /* Layout côte-à-côte : calendrier à gauche, panneau infos à droite */
 .calendar-layout {
   display: flex;
   gap: 24px;
-  align-items: stretch;
-  flex: 1;
-  min-height: 0;
+  align-items: flex-start;
 }
 
 .calendar-main {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-/* Le .calendar en mode plein écran remplit toute la hauteur */
-.calendar-main .calendar {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* La grille scrolle en interne si le mois a 6 semaines */
-.calendar-main .calendar-grid {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-  align-content: start;
 }
 
 .calendar-sidebar {
   width: 300px;
   flex-shrink: 0;
-  overflow-y: auto;
-  max-height: 100%;
+  position: sticky;
+  top: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 /* Modal bottom-sheet (mobile) — masqué sur desktop */
@@ -3800,28 +3776,13 @@ textarea {
   to   { transform: translateY(0); }
 }
 
-.calendar-sidebar-placeholder {
-  background: var(--surface);
-  border: 2px dashed var(--border);
-  border-radius: var(--radius);
-  padding: 40px 24px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 13px;
-  font-family: var(--font-body);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
+.cal-modal-card {
+  border-left: 4px solid var(--teal);
+  padding-left: 12px;
+  margin-bottom: 16px;
 }
-
-.calendar-sidebar-placeholder span {
-  font-size: 32px;
-}
-
-.calendar-sidebar-placeholder p {
-  margin: 0;
-  line-height: 1.6;
+.cal-modal-card:last-child {
+  margin-bottom: 0;
 }
 
 .calendar {

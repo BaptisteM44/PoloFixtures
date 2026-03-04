@@ -75,7 +75,14 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
   const now = new Date();
   const [month, setMonth] = useState(initialMonth ?? now.getMonth());
   const [year, setYear] = useState(initialYear ?? now.getFullYear());
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const toggle = (id: string) =>
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   const days = useMemo(() => getCalendarDays(year, month), [year, month]);
 
@@ -115,18 +122,19 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
   }, [tournamentsForDay]);
 
   const prev = () => {
-    setExpandedId(null);
+    setExpandedIds(new Set());
     if (month === 0) { setMonth(11); setYear(year - 1); } else setMonth(month - 1);
   };
   const next = () => {
-    setExpandedId(null);
+    setExpandedIds(new Set());
     if (month === 11) { setMonth(0); setYear(year + 1); } else setMonth(month + 1);
   };
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const expanded = expandedId ? tournaments.find((t) => t.id === expandedId) ?? null : null;
+  /* Tournois sélectionnés, dans l'ordre de la palette */
+  const expandedList = tournaments.filter((t) => expandedIds.has(t.id));
   const dayNames = mini ? DAY_NAMES_SHORT : DAY_NAMES;
 
   const calendarContent = (
@@ -157,10 +165,10 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
                 <button
                   key={t.id}
                   type="button"
-                  className={`calendar-event${expandedId === t.id ? " calendar-event--active" : ""}`}
+                  className={`calendar-event${expandedIds.has(t.id) ? " calendar-event--active" : ""}`}
                   style={{ background: colorMap.get(t.id) }}
                   title={`${t.name} — ${t.city}, ${t.country}`}
-                  onClick={() => setExpandedId(expandedId === t.id ? null : t.id)}
+                  onClick={() => toggle(t.id)}
                 >
                   {`${t.name} · ${t.city}`}
                 </button>
@@ -187,59 +195,61 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
   /* Mini mode: rendu simple sans sidebar */
   if (mini) return calendarContent;
 
-  /* Full mode: layout côte-à-côte + modal mobile */
-  const infoCard = expanded ? (
-    <div className="calendar-expand" style={{ borderLeftColor: colorMap.get(expanded.id) }}>
+  /* Une carte d'info réutilisable */
+  const InfoCard = ({ t }: { t: CalendarTournament }) => (
+    <div className="calendar-expand" style={{ borderLeftColor: colorMap.get(t.id) }}>
       <div className="calendar-expand__header">
-        <h4>{expanded.name}</h4>
-        <button type="button" className="ghost calendar-expand__close" onClick={() => setExpandedId(null)}>✕</button>
+        <h4>{t.name}</h4>
+        <button type="button" className="ghost calendar-expand__close" onClick={() => toggle(t.id)}>✕</button>
       </div>
-      <p className="calendar-expand__meta">📍 {expanded.city}, {expanded.country}</p>
+      <p className="calendar-expand__meta">📍 {t.city}, {t.country}</p>
       <p className="calendar-expand__meta">
-        📅 {fmtFR(new Date(expanded.dateStart))} — {fmtFR(new Date(expanded.dateEnd))}
+        📅 {fmtFR(new Date(t.dateStart))} — {fmtFR(new Date(t.dateEnd))}
       </p>
-      {expanded.format && <p className="calendar-expand__meta">🏆 Format : {expanded.format}</p>}
+      {t.format && <p className="calendar-expand__meta">🏆 Format : {t.format}</p>}
       <p className="calendar-expand__meta" style={{ textTransform: "capitalize" }}>
-        🔴 Statut : {expanded.status.toLowerCase()}
+        🔴 Statut : {t.status.toLowerCase()}
       </p>
-      <Link href={`/tournament/${expanded.id}`} className="calendar-expand__link">
+      <Link href={`/tournament/${t.id}`} className="calendar-expand__link">
         Voir le tournoi →
       </Link>
     </div>
-  ) : (
-    <div className="calendar-sidebar-placeholder">
-      <span>👆</span>
-      <p>Cliquez sur un tournoi dans le calendrier pour voir ses informations</p>
-    </div>
   );
 
+  /* Full mode: layout côte-à-côte + modal mobile */
   return (
     <>
       <div className="calendar-layout">
         <div className="calendar-main">{calendarContent}</div>
-        <div className="calendar-sidebar">{infoCard}</div>
+        <div className="calendar-sidebar">
+          {expandedList.map((t) => <InfoCard key={t.id} t={t} />)}
+        </div>
       </div>
 
       {/* Modal bottom-sheet — mobile/tablette uniquement (CSS gère l'affichage) */}
-      {expanded && (
-        <div className="cal-modal-overlay" onClick={() => setExpandedId(null)}>
+      {expandedList.length > 0 && (
+        <div className="cal-modal-overlay" onClick={() => setExpandedIds(new Set())}>
           <div className="cal-modal" onClick={(e) => e.stopPropagation()}>
             <div className="cal-modal-handle" />
-            <div className="calendar-expand__header">
-              <h4>{expanded.name}</h4>
-              <button type="button" className="ghost calendar-expand__close" onClick={() => setExpandedId(null)}>✕</button>
-            </div>
-            <p className="calendar-expand__meta">📍 {expanded.city}, {expanded.country}</p>
-            <p className="calendar-expand__meta">
-              📅 {fmtFR(new Date(expanded.dateStart))} — {fmtFR(new Date(expanded.dateEnd))}
-            </p>
-            {expanded.format && <p className="calendar-expand__meta">🏆 Format : {expanded.format}</p>}
-            <p className="calendar-expand__meta" style={{ textTransform: "capitalize" }}>
-              🔴 Statut : {expanded.status.toLowerCase()}
-            </p>
-            <Link href={`/tournament/${expanded.id}`} className="calendar-expand__link">
-              Voir le tournoi →
-            </Link>
+            {expandedList.map((t) => (
+              <div key={t.id} className="cal-modal-card" style={{ borderLeftColor: colorMap.get(t.id) }}>
+                <div className="calendar-expand__header">
+                  <h4>{t.name}</h4>
+                  <button type="button" className="ghost calendar-expand__close" onClick={() => toggle(t.id)}>✕</button>
+                </div>
+                <p className="calendar-expand__meta">📍 {t.city}, {t.country}</p>
+                <p className="calendar-expand__meta">
+                  📅 {fmtFR(new Date(t.dateStart))} — {fmtFR(new Date(t.dateEnd))}
+                </p>
+                {t.format && <p className="calendar-expand__meta">🏆 Format : {t.format}</p>}
+                <p className="calendar-expand__meta" style={{ textTransform: "capitalize" }}>
+                  🔴 Statut : {t.status.toLowerCase()}
+                </p>
+                <Link href={`/tournament/${t.id}`} className="calendar-expand__link">
+                  Voir le tournoi →
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       )}
