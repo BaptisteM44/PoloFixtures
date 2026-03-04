@@ -3739,23 +3739,65 @@ textarea {
    CALENDAR
    ======================== */
 
+/* Wrapper page plein écran sans scroll */
+.calendar-page {
+  display: flex;
+  flex-direction: column;
+  /* 64px header + 32px .page padding-top */
+  height: calc(100dvh - 64px - 32px);
+  /* annule le padding-bottom de .page (80px) */
+  margin-bottom: -80px;
+  overflow: hidden;
+}
+
 /* Layout côte-à-côte : calendrier à gauche, panneau infos à droite */
 .calendar-layout {
   display: flex;
   gap: 24px;
-  align-items: flex-start;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 .calendar-main {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Le .calendar en mode plein écran remplit toute la hauteur */
+.calendar-main .calendar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* La grille scrolle en interne si le mois a 6 semaines */
+.calendar-main .calendar-grid {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  align-content: start;
 }
 
 .calendar-sidebar {
   width: 300px;
   flex-shrink: 0;
-  position: sticky;
-  top: 100px;
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+/* Modal bottom-sheet (mobile) — masqué sur desktop */
+.cal-modal-overlay {
+  display: none;
+}
+
+@keyframes calModalUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
 
 .calendar-sidebar-placeholder {
@@ -4001,16 +4043,44 @@ textarea {
   border-radius: 3px;
 }
 
-@media (max-width: 700px) {
-  .calendar-layout {
-    flex-direction: column;
-  }
-
+/* Tablette/mobile : sidebar cachée → modal bottom-sheet */
+@media (max-width: 900px) {
   .calendar-sidebar {
-    width: 100%;
-    position: static;
+    display: none;
   }
 
+  .cal-modal-overlay {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 200;
+    align-items: flex-end;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .cal-modal {
+    width: 100%;
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    padding: 16px 24px 36px;
+    border-top: 2px solid var(--border);
+    animation: calModalUp 0.22s ease;
+    max-height: 75dvh;
+    overflow-y: auto;
+  }
+
+  .cal-modal-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 16px;
+  }
+}
+
+@media (max-width: 700px) {
   .calendar-day {
     min-height: 48px;
     padding: 3px;

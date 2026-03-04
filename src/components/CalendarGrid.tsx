@@ -187,14 +187,44 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
   /* Mini mode: rendu simple sans sidebar */
   if (mini) return calendarContent;
 
-  /* Full mode: layout côte-à-côte */
-  return (
-    <div className="calendar-layout">
-      <div className="calendar-main">{calendarContent}</div>
+  /* Full mode: layout côte-à-côte + modal mobile */
+  const infoCard = expanded ? (
+    <div className="calendar-expand" style={{ borderLeftColor: colorMap.get(expanded.id) }}>
+      <div className="calendar-expand__header">
+        <h4>{expanded.name}</h4>
+        <button type="button" className="ghost calendar-expand__close" onClick={() => setExpandedId(null)}>✕</button>
+      </div>
+      <p className="calendar-expand__meta">📍 {expanded.city}, {expanded.country}</p>
+      <p className="calendar-expand__meta">
+        📅 {fmtFR(new Date(expanded.dateStart))} — {fmtFR(new Date(expanded.dateEnd))}
+      </p>
+      {expanded.format && <p className="calendar-expand__meta">🏆 Format : {expanded.format}</p>}
+      <p className="calendar-expand__meta" style={{ textTransform: "capitalize" }}>
+        🔴 Statut : {expanded.status.toLowerCase()}
+      </p>
+      <Link href={`/tournament/${expanded.id}`} className="calendar-expand__link">
+        Voir le tournoi →
+      </Link>
+    </div>
+  ) : (
+    <div className="calendar-sidebar-placeholder">
+      <span>👆</span>
+      <p>Cliquez sur un tournoi dans le calendrier pour voir ses informations</p>
+    </div>
+  );
 
-      <div className="calendar-sidebar">
-        {expanded ? (
-          <div className="calendar-expand" style={{ borderLeftColor: colorMap.get(expanded.id) }}>
+  return (
+    <>
+      <div className="calendar-layout">
+        <div className="calendar-main">{calendarContent}</div>
+        <div className="calendar-sidebar">{infoCard}</div>
+      </div>
+
+      {/* Modal bottom-sheet — mobile/tablette uniquement (CSS gère l'affichage) */}
+      {expanded && (
+        <div className="cal-modal-overlay" onClick={() => setExpandedId(null)}>
+          <div className="cal-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="cal-modal-handle" />
             <div className="calendar-expand__header">
               <h4>{expanded.name}</h4>
               <button type="button" className="ghost calendar-expand__close" onClick={() => setExpandedId(null)}>✕</button>
@@ -211,13 +241,8 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
               Voir le tournoi →
             </Link>
           </div>
-        ) : (
-          <div className="calendar-sidebar-placeholder">
-            <span>👆</span>
-            <p>Cliquez sur un tournoi dans le calendrier pour voir ses informations</p>
-          </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
