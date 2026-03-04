@@ -16,9 +16,8 @@ type TournamentRow = {
   status: string;
   maxTeams: number;
   teamCount: number;
-  freeAgentCount: number;
-  registrationFeePerTeam: number;
-  registrationFeeCurrency: string;
+  registrationStart: string | null;
+  registrationEnd: string | null;
   bannerPath: string | null;
 };
 
@@ -287,8 +286,24 @@ export function TournamentBrowser({
                         {t.format} · {t.teamCount}/{t.maxTeams} équipes
                       </span>
                       <span className="meta">
-                        Free agents : {t.freeAgentCount} ·{" "}
-                        {t.registrationFeePerTeam} {t.registrationFeeCurrency}
+                        {(() => {
+                          const now = new Date();
+                          const fmt = (d: string) =>
+                            new Date(d).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                          if (t.registrationEnd) {
+                            const end = new Date(t.registrationEnd);
+                            if (now > end) return "🔒 Inscriptions fermées";
+                            if (t.registrationStart && now < new Date(t.registrationStart))
+                              return `🔓 Ouverture le ${fmt(t.registrationStart)}`;
+                            return `⏳ Clôture le ${fmt(t.registrationEnd)}`;
+                          }
+                          if (t.registrationStart) {
+                            const start = new Date(t.registrationStart);
+                            if (now < start) return `🔓 Ouverture le ${fmt(t.registrationStart)}`;
+                            return "🔓 Inscriptions ouvertes";
+                          }
+                          return "—";
+                        })()}
                       </span>
                     </div>
                   </div>

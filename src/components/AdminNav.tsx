@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/admin", label: "Vue d'ensemble" },
   { href: "/admin/players", label: "Joueurs" },
+  { href: "/admin/clubs", label: "Clubs" },
   { href: "/admin/countries", label: "Pays" },
   { href: "/admin/settings", label: "Codes d'accès" }
 ];

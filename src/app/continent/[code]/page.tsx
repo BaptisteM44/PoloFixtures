@@ -1,71 +1,42 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { TournamentCard } from "@/components/TournamentCard";
-import { PlayerCard } from "@/components/PlayerCard";
-import { Pagination } from "@/components/Pagination";
-
-const PLAYERS_PER_PAGE = 24;
+import { ClubCard } from "@/components/ClubCard";
 
 const continentNames: Record<string, string> = {
   NA: "North America", SA: "South America", EU: "Europe",
   AF: "Africa", AS: "Asia", OC: "Oceania",
 };
 
-// Full country names as stored in the Player model
-const continentCountries: Record<string, string[]> = {
-  EU: ["France","Germany","United Kingdom","Spain","Italy","Netherlands","Belgium","Portugal",
-       "Switzerland","Austria","Poland","Sweden","Norway","Denmark","Finland","Czech Republic",
-       "Hungary","Romania","Slovakia","Croatia","Slovenia","Estonia","Latvia","Lithuania",
-       "Bulgaria","Greece","Ireland","Luxembourg","Serbia","Ukraine","Turkey","Iceland"],
-  NA: ["USA","Canada","Mexico"],
-  SA: ["Brazil","Argentina","Chile","Colombia","Peru","Uruguay","Ecuador","Bolivia","Venezuela","Paraguay"],
-  AS: ["Japan","Singapore","South Korea","China","India","Thailand","Taiwan","Philippines",
-       "Indonesia","Vietnam","Malaysia","Pakistan","Bangladesh","Hong Kong"],
-  OC: ["Australia","New Zealand","Fiji","Papua New Guinea"],
-  AF: ["South Africa","Nigeria","Kenya","Morocco","Ghana","Egypt","Tanzania","Ethiopia",
-       "Senegal","Côte d'Ivoire","Cameroon","Madagascar","Zimbabwe","Zambia"],
-};
-
-const statusOrder: Record<string, number> = { LIVE: 0, UPCOMING: 1, COMPLETED: 2 };
-
 export default async function ContinentPage({
   params,
-  searchParams,
 }: {
   params: { code: string };
-  searchParams: { page?: string };
 }) {
   const code = params.code.toUpperCase();
-  const countriesForContinent = continentCountries[code] ?? [];
-  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
 
-  const playerWhere = {
-    status: "ACTIVE" as const,
-    ...(countriesForContinent.length > 0 ? { country: { in: countriesForContinent } } : {}),
-  };
-
-  const [tournaments, players, playerCount] = await Promise.all([
+  const [tournaments, clubs, clubCountByCountry] = await Promise.all([
     prisma.tournament.findMany({
-      where: { continentCode: code },
+      where: { continentCode: code, status: { in: ["LIVE", "UPCOMING"] } },
       include: { teams: true },
-      orderBy: { dateStart: "asc" },
+      orderBy: [{ status: "asc" }, { dateStart: "asc" }],
     }),
-    prisma.player.findMany({
-      where: playerWhere,
-      select: { id: true, slug: true, name: true, country: true, city: true, photoPath: true },
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * PLAYERS_PER_PAGE,
-      take: PLAYERS_PER_PAGE,
+    prisma.club.findMany({
+      where: { continentCode: code, approved: true },
+      include: { _count: { select: { members: { where: { status: "MEMBER" } } } } },
+      orderBy: { name: "asc" },
     }),
-    prisma.player.count({ where: playerWhere }),
+    prisma.club.groupBy({
+      by: ["country"],
+      where: { continentCode: code, approved: true },
+      _count: { _all: true },
+    }),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(playerCount / PLAYERS_PER_PAGE));
+  const countryMap: Record<string, number> = {};
+  for (const row of clubCountByCountry) countryMap[row.country] = row._count._all;
 
-  const sorted = [...tournaments].sort((a, b) => {
-    const diff = statusOrder[a.status] - statusOrder[b.status];
-    return diff !== 0 ? diff : new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime();
-  });
+  const countries = [...new Set(clubs.map((c) => c.country))].sort();
 
   return (
     <div className="continent-page">
@@ -74,53 +45,72 @@ export default async function ContinentPage({
         <Link className="ghost" href="/">← Back</Link>
       </div>
 
-      {/* Tournaments */}
+      {/* Tournaments — live & upcoming uniquement */}
       <section className="section" style={{ marginTop: 32 }}>
         <div className="section-header">
           <div>
             <h2>Tournaments</h2>
-            <p>Live and upcoming first</p>
+            <p>Événements live et à venir</p>
           </div>
           <Link className="primary" href="/tournament/new">+ New</Link>
         </div>
-        {sorted.length > 0 ? (
+        {tournaments.length > 0 ? (
           <div className="tournament-grid">
-            {sorted.map((t) => (
+            {tournaments.map((t) => (
               <TournamentCard key={t.id} tournament={t} teamCount={t.teams.length} />
             ))}
           </div>
         ) : (
-          <div className="empty-state"><p>No tournaments yet for this continent.</p></div>
+          <div className="empty-state"><p>Aucun tournoi à venir pour ce continent.</p></div>
         )}
       </section>
 
-      {/* Players */}
+      {/* Clubs par pays */}
       <section className="section">
         <div className="section-header">
           <div>
-            <h2>Players</h2>
-            <p>{playerCount} joueur{playerCount > 1 ? "s" : ""} actif{playerCount > 1 ? "s" : ""}</p>
+            <h2>Clubs</h2>
+            <p>{clubs.length} club{clubs.length > 1 ? "s" : ""} au total</p>
           </div>
+          <Link className="primary" href="/club/new">+ Ajouter un club</Link>
         </div>
-        {players.length > 0 ? (
-          <>
-            <div className="player-grid">
-              {players.map((p) => (
-                <PlayerCard
-                  key={p.id}
-                  id={p.id}
-                  slug={p.slug}
-                  name={p.name}
-                  country={p.country}
-                  city={p.city}
-                  photoPath={p.photoPath}
-                />
-              ))}
-            </div>
-            <Pagination page={page} totalPages={totalPages} basePath={`/continent/${code}`} />
-          </>
+
+        {countries.length > 0 ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+            {countries.map((country) => {
+              const countryClubs = clubs.filter((c) => c.country === country);
+              return (
+                <div key={country}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <h3 style={{ margin: 0 }}>{country}</h3>
+                    <Link href={`/continent/${code}/${encodeURIComponent(country)}`} className="ghost" style={{ fontSize: 13 }}>
+                      Voir tout ({countryMap[country] ?? 0}) →
+                    </Link>
+                  </div>
+                  <div className="club-grid">
+                    {countryClubs.slice(0, 4).map((c) => (
+                      <ClubCard
+                        key={c.id}
+                        id={c.id}
+                        name={c.name}
+                        city={c.city}
+                        country={c.country}
+                        logoPath={c.logoPath ?? undefined}
+                        memberCount={c._count.members}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
-          <div className="empty-state"><p>No active players registered yet.</p></div>
+          <div className="empty-state">
+            <p>Aucun club pour ce continent.</p>
+            <Link className="primary" href="/club/new" style={{ marginTop: 12, display: "inline-flex" }}>
+              Créer le premier club
+            </Link>
+          </div>
         )}
       </section>
     </div>

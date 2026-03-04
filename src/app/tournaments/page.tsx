@@ -4,7 +4,7 @@ import { TournamentBrowser } from "@/components/TournamentBrowser";
 export default async function TournamentsPage() {
   const tournaments = await prisma.tournament.findMany({
     where: { approved: true },
-    include: { teams: true, freeAgents: true },
+    include: { teams: true },
     orderBy: { dateStart: "asc" }
   });
 
@@ -20,9 +20,8 @@ export default async function TournamentsPage() {
     status: t.status,
     maxTeams: t.maxTeams,
     teamCount: t.teams.length,
-    freeAgentCount: t.freeAgents.length,
-    registrationFeePerTeam: t.registrationFeePerTeam,
-    registrationFeeCurrency: t.registrationFeeCurrency,
+    registrationStart: t.registrationStart?.toISOString() ?? null,
+    registrationEnd: t.registrationEnd?.toISOString() ?? null,
     bannerPath: t.bannerPath,
   }));
 

@@ -5,62 +5,21 @@ import { CalendarGrid } from "@/components/CalendarGrid";
 import type { CalendarTournament } from "@/components/CalendarGrid";
 
 const continents = [
-  { code: "NA", name: "North America", subtitle: "USA · Canada · Mexico" },
-  { code: "SA", name: "South America", subtitle: "Brazil · Argentina" },
-  { code: "EU", name: "Europe",        subtitle: "France · Germany · UK" },
-  { code: "AF", name: "Africa",        subtitle: "Rising scenes" },
-  { code: "AS", name: "Asia",          subtitle: "Japan · Singapore" },
-  { code: "OC", name: "Oceania",       subtitle: "Australia · NZ" },
+  { code: "NA", name: "North America" },
+  { code: "SA", name: "South America" },
+  { code: "EU", name: "Europe" },
+  { code: "AF", name: "Africa" },
+  { code: "AS", name: "Asia" },
+  { code: "OC", name: "Oceania" },
 ];
 
 export default async function HomePage() {
-  const [activeTournaments, countryCounts] = await Promise.all([
-    prisma.tournament.findMany({
-      where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true },
-      include: { teams: true },
-      orderBy: [{ status: "asc" }, { dateStart: "asc" }],
-      take: 8,
-    }),
-    prisma.player.groupBy({
-      by: ["country"],
-      where: { status: "ACTIVE" },
-      _count: { _all: true },
-    }),
-  ]);
-
-  // Map full country names (as stored in DB) to continent codes
-  const countryToContinent: Record<string, string> = {
-    // Europe
-    France: "EU", Germany: "EU", "United Kingdom": "EU", Spain: "EU", Italy: "EU",
-    Netherlands: "EU", Belgium: "EU", Portugal: "EU", Switzerland: "EU", Austria: "EU",
-    Poland: "EU", Sweden: "EU", Norway: "EU", Denmark: "EU", Finland: "EU",
-    "Czech Republic": "EU", Hungary: "EU", Romania: "EU", Slovakia: "EU", Croatia: "EU",
-    Ireland: "EU", Greece: "EU", Serbia: "EU", Ukraine: "EU",
-    // North America
-    USA: "NA", Canada: "NA", Mexico: "NA",
-    // South America
-    Brazil: "SA", Argentina: "SA", Chile: "SA", Colombia: "SA", Peru: "SA",
-    Uruguay: "SA", Ecuador: "SA", Bolivia: "SA", Venezuela: "SA",
-    // Asia
-    Japan: "AS", Singapore: "AS", "South Korea": "AS", China: "AS", India: "AS",
-    Thailand: "AS", Taiwan: "AS", Philippines: "AS", Indonesia: "AS", Vietnam: "AS",
-    Malaysia: "AS", Pakistan: "AS",
-    // Oceania
-    Australia: "OC", "New Zealand": "OC", Fiji: "OC",
-    // Africa
-    "South Africa": "AF", Nigeria: "AF", Kenya: "AF", Morocco: "AF", Ghana: "AF",
-    Egypt: "AF", Tanzania: "AF", Senegal: "AF",
-  };
-
-  function getContinent(c: string) {
-    return countryToContinent[c] ?? null;
-  }
-
-  const playerCountByContinent: Record<string, number> = {};
-  for (const row of countryCounts) {
-    const cont = getContinent(row.country);
-    if (cont) playerCountByContinent[cont] = (playerCountByContinent[cont] ?? 0) + row._count._all;
-  }
+  const activeTournaments = await prisma.tournament.findMany({
+    where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true },
+    include: { teams: true },
+    orderBy: [{ status: "asc" }, { dateStart: "asc" }],
+    take: 8,
+  });
 
   return (
     <div className="home">
@@ -150,12 +109,6 @@ export default async function HomePage() {
           {continents.map((c) => (
             <Link key={c.code} className="continent-card" href={`/continent/${c.code}`}>
               <h3>{c.name}</h3>
-              <p>{c.subtitle}</p>
-              {playerCountByContinent[c.code] ? (
-                <span className="continent-stat">
-                  {playerCountByContinent[c.code]} player{playerCountByContinent[c.code] > 1 ? "s" : ""}
-                </span>
-              ) : null}
             </Link>
           ))}
         </div>

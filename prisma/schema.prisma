@@ -303,6 +303,8 @@ model Player {
   conversationsAsB        DirectConversation[]  @relation("ConversationPlayerB")
   directMessages          DirectMessage[]
   freeAgentRegistrations  FreeAgent[]
+  managedClubs            Club[]       @relation("ManagedClubs")
+  clubMemberships         ClubMember[]
 }
 
 model PlayerAccount {
@@ -580,4 +582,49 @@ model DirectMessage {
 
   @@index([conversationId])
   @@index([authorId])
+}
+
+// ── Clubs ─────────────────────────────────────────────────────────────────────
+
+enum ClubMemberStatus {
+  MEMBER
+  PENDING_BY_MANAGER
+  PENDING_BY_PLAYER
+}
+
+model Club {
+  id            String   @id @default(cuid())
+  name          String
+  city          String
+  country       String
+  continentCode String
+  logoPath      String?
+  description   String?
+  website       String?
+  approved      Boolean  @default(false)
+  managerId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  manager Player       @relation("ManagedClubs", fields: [managerId], references: [id])
+  members ClubMember[]
+
+  @@index([continentCode])
+  @@index([country])
+  @@index([managerId])
+}
+
+model ClubMember {
+  id       String           @id @default(cuid())
+  clubId   String
+  playerId String
+  status   ClubMemberStatus @default(MEMBER)
+  joinedAt DateTime         @default(now())
+
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, playerId])
+  @@index([clubId])
+  @@index([playerId])
 }
