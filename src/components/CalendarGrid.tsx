@@ -122,11 +122,9 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
   }, [tournamentsForDay]);
 
   const prev = () => {
-    setExpandedIds(new Set());
     if (month === 0) { setMonth(11); setYear(year - 1); } else setMonth(month - 1);
   };
   const next = () => {
-    setExpandedIds(new Set());
     if (month === 11) { setMonth(0); setYear(year + 1); } else setMonth(month + 1);
   };
 
@@ -223,6 +221,9 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
         <div className="calendar-main">{calendarContent}</div>
         <div className="calendar-sidebar">
           {expandedList.map((t) => <InfoCard key={t.id} t={t} />)}
+          {Array.from({ length: Math.max(0, 3 - expandedList.length) }).map((_, i) => (
+            <div key={`ghost-${i}`} className="calendar-expand calendar-expand--ghost" />
+          ))}
         </div>
       </div>
 
