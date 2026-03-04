@@ -129,7 +129,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
   const expanded = expandedId ? tournaments.find((t) => t.id === expandedId) ?? null : null;
   const dayNames = mini ? DAY_NAMES_SHORT : DAY_NAMES;
 
-  return (
+  const calendarContent = (
     <div className={`calendar${mini ? " calendar--mini" : ""}`}>
       <div className="calendar-header">
         <button type="button" className="ghost calendar-nav" onClick={prev}>←</button>
@@ -170,25 +170,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
         })}
       </div>
 
-      {/* ---- Expanded info card ---- */}
-      {expanded && (
-        <div className="calendar-expand" style={{ borderLeftColor: colorMap.get(expanded.id) }}>
-          <div className="calendar-expand__header">
-            <h4>{expanded.name}</h4>
-            <button type="button" className="ghost calendar-expand__close" onClick={() => setExpandedId(null)}>✕</button>
-          </div>
-          <p className="calendar-expand__meta">📍 {expanded.city}, {expanded.country}</p>
-          <p className="calendar-expand__meta">
-            📅 {fmtFR(new Date(expanded.dateStart))} — {fmtFR(new Date(expanded.dateEnd))}
-          </p>
-          {expanded.format && <p className="calendar-expand__meta">🏆 {expanded.format}</p>}
-          <Link href={`/tournament/${expanded.id}`} className="calendar-expand__link">
-            Voir le tournoi →
-          </Link>
-        </div>
-      )}
-
-      {/* ---- Legend (full mode only) ---- */}
+      {/* Legend (full mode only) */}
       {!mini && visibleTournaments.length > 0 && (
         <div className="calendar-legend">
           {visibleTournaments.slice(0, 8).map((t) => (
@@ -199,6 +181,43 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
           ))}
         </div>
       )}
+    </div>
+  );
+
+  /* Mini mode: rendu simple sans sidebar */
+  if (mini) return calendarContent;
+
+  /* Full mode: layout côte-à-côte */
+  return (
+    <div className="calendar-layout">
+      <div className="calendar-main">{calendarContent}</div>
+
+      <div className="calendar-sidebar">
+        {expanded ? (
+          <div className="calendar-expand" style={{ borderLeftColor: colorMap.get(expanded.id) }}>
+            <div className="calendar-expand__header">
+              <h4>{expanded.name}</h4>
+              <button type="button" className="ghost calendar-expand__close" onClick={() => setExpandedId(null)}>✕</button>
+            </div>
+            <p className="calendar-expand__meta">📍 {expanded.city}, {expanded.country}</p>
+            <p className="calendar-expand__meta">
+              📅 {fmtFR(new Date(expanded.dateStart))} — {fmtFR(new Date(expanded.dateEnd))}
+            </p>
+            {expanded.format && <p className="calendar-expand__meta">🏆 Format : {expanded.format}</p>}
+            <p className="calendar-expand__meta" style={{ textTransform: "capitalize" }}>
+              🔴 Statut : {expanded.status.toLowerCase()}
+            </p>
+            <Link href={`/tournament/${expanded.id}`} className="calendar-expand__link">
+              Voir le tournoi →
+            </Link>
+          </div>
+        ) : (
+          <div className="calendar-sidebar-placeholder">
+            <span>👆</span>
+            <p>Cliquez sur un tournoi dans le calendrier pour voir ses informations</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

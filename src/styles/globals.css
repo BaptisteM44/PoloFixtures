@@ -3739,6 +3739,49 @@ textarea {
    CALENDAR
    ======================== */
 
+/* Layout côte-à-côte : calendrier à gauche, panneau infos à droite */
+.calendar-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.calendar-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.calendar-sidebar {
+  width: 300px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 100px;
+}
+
+.calendar-sidebar-placeholder {
+  background: var(--surface);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 40px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-family: var(--font-body);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.calendar-sidebar-placeholder span {
+  font-size: 32px;
+}
+
+.calendar-sidebar-placeholder p {
+  margin: 0;
+  line-height: 1.6;
+}
+
 .calendar {
   background: var(--surface);
   border: 2px solid var(--border);
@@ -3849,9 +3892,8 @@ textarea {
   opacity: 1;
 }
 
-/* ---- Expand card below calendar ---- */
+/* ---- Expand card (sidebar) ---- */
 .calendar-expand {
-  margin-top: 16px;
   padding: 20px 24px;
   background: var(--surface);
   border: 2px solid var(--border);
@@ -3960,6 +4002,15 @@ textarea {
 }
 
 @media (max-width: 700px) {
+  .calendar-layout {
+    flex-direction: column;
+  }
+
+  .calendar-sidebar {
+    width: 100%;
+    position: static;
+  }
+
   .calendar-day {
     min-height: 48px;
     padding: 3px;
