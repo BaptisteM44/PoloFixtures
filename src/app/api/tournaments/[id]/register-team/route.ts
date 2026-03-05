@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { z } from "zod";
 import { toSlug } from "@/lib/utils";
 
@@ -23,6 +25,17 @@ const registerSchema = z.object({
 });
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
+  // Auth requise pour s'inscrire
+  const session = await auth();
+  if (!session?.user?.playerId) {
+    return Response.json({ error: "Vous devez être connecté pour inscrire une équipe." }, { status: 401 });
+  }
+
+  // Rate limit : 10 inscriptions / 10 min par IP
+  if (isRateLimited(getIp(request), 10, 10 * 60 * 1000)) {
+    return Response.json({ error: "Trop de tentatives, réessayez dans quelques minutes." }, { status: 429 });
+  }
+
   const tournament = await prisma.tournament.findUnique({ where: { id: params.id } });
   if (!tournament) return Response.json({ error: "Tournoi introuvable" }, { status: 404 });
   if (!tournament.approved) return Response.json({ error: "Tournoi non encore approuvé" }, { status: 403 });

@@ -1,11 +1,17 @@
 import { prisma } from "@/lib/db";
 import { sendMail, isMailerConfigured } from "@/lib/mailer";
+import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 
 const schema = z.object({ email: z.string().email() });
 
 export async function POST(req: Request) {
+  // Rate limit : 5 demandes / 15 min par IP
+  if (isRateLimited(getIp(req), 5, 15 * 60 * 1000)) {
+    return Response.json({ ok: true }); // réponse opaque pour ne pas confirmer l'IP bloquée
+  }
+
   const body = await req.json();
   const parsed = schema.safeParse(body);
   if (!parsed.success) {

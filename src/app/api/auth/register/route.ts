@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { PlayerStatus } from "@prisma/client";
@@ -12,6 +13,11 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Rate limit : 5 créations de compte / 30 min par IP
+  if (isRateLimited(getIp(req), 5, 30 * 60 * 1000)) {
+    return Response.json({ error: "Trop de tentatives, réessayez plus tard." }, { status: 429 });
+  }
+
   const body = await req.json();
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
