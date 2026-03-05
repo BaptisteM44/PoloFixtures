@@ -10,6 +10,7 @@ type TeamRow = {
   country: string | null;
   selected: boolean;
   guaranteed: boolean;
+  waitlistPosition: number | null;
 };
 
 type Props = {
@@ -20,6 +21,7 @@ type Props = {
   drawAction: (tournamentId: string, count: number) => Promise<{ ok?: boolean; error?: string }>;
   guaranteeAction: (teamId: string, tournamentId: string, guaranteed: boolean) => Promise<{ ok?: boolean; error?: string }>;
   drawOneAction: (tournamentId: string, candidateIds: string[]) => Promise<{ ok?: boolean; winnerId?: string; error?: string }>;
+  drawOneWaitlistAction: (tournamentId: string, candidateIds: string[]) => Promise<{ ok?: boolean; winnerId?: string; waitlistPosition?: number; error?: string }>;
 };
 
 export function SelectionManager({
@@ -30,16 +32,22 @@ export function SelectionManager({
   drawAction,
   guaranteeAction,
   drawOneAction,
+  drawOneWaitlistAction,
 }: Props) {
   const [teams, setTeams] = useState(initial);
-  // drawPool = IDs des équipes cochées pour le prochain tirage unitaire
   const [drawPool, setDrawPool] = useState<Set<string>>(new Set());
+  const [wlDrawPool, setWlDrawPool] = useState<Set<string>>(new Set());
   const [lastWinnerId, setLastWinnerId] = useState<string | null>(null);
+  const [lastWlWinnerId, setLastWlWinnerId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   const guaranteed = teams.filter((t) => t.guaranteed);
-  const pool = teams.filter((t) => !t.guaranteed);
+  // Pool = pas guaranteed, pas encore en WL
+  const pool = teams.filter((t) => !t.guaranteed && t.waitlistPosition === null);
+  // WL déjà classés
+  const waitlisted = teams.filter((t) => !t.guaranteed && t.waitlistPosition !== null)
+    .sort((a, b) => (a.waitlistPosition ?? 0) - (b.waitlistPosition ?? 0));
   const slotsLeft = Math.max(0, maxTeams - guaranteed.length);
   const allFit = teams.length <= maxTeams;
 
@@ -59,6 +67,22 @@ export function SelectionManager({
 
   function clearDrawPool() {
     setDrawPool(new Set());
+  }
+
+  function toggleWlDrawPool(id: string) {
+    setWlDrawPool((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllWlPool() {
+    setWlDrawPool(new Set(pool.map((t) => t.id)));
+  }
+
+  function clearWlDrawPool() {
+    setWlDrawPool(new Set());
   }
 
   function handleGuarantee(teamId: string, current: boolean) {
@@ -100,6 +124,31 @@ export function SelectionManager({
     });
   }
 
+  /** Tirage waiting list : 1 équipe tirée au sort parmi le wlDrawPool → rang WL suivant */
+  function handleDrawOneWaitlist() {
+    setError(null);
+    setLastWlWinnerId(null);
+    const candidates = Array.from(wlDrawPool).filter((id) => pool.some((t) => t.id === id));
+    if (candidates.length === 0) return;
+
+    const winnerId = candidates[Math.floor(Math.random() * candidates.length)];
+    const nextRank = (Math.max(0, ...waitlisted.map((t) => t.waitlistPosition ?? 0))) + 1;
+    setLastWlWinnerId(winnerId);
+    setTeams((prev) =>
+      prev.map((t) => (t.id === winnerId ? { ...t, waitlistPosition: nextRank, selected: false } : t))
+    );
+    setWlDrawPool((prev) => { const n = new Set(prev); n.delete(winnerId); return n; });
+
+    startTransition(async () => {
+      const res = await drawOneWaitlistAction(tournamentId, candidates);
+      if (res.error) {
+        setError(res.error);
+        setTeams((prev) => prev.map((t) => (t.id === winnerId ? { ...t, waitlistPosition: null } : t)));
+        setLastWlWinnerId(null);
+      }
+    });
+  }
+
   /** Tirage global : remplit tous les slots restants d'un coup */
   function handleDrawAll() {
     setError(null);
@@ -129,6 +178,7 @@ export function SelectionManager({
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const drawPoolTeams = pool.filter((t) => drawPool.has(t.id));
+  const wlDrawPoolTeams = pool.filter((t) => wlDrawPool.has(t.id));
 
   return (
     <div className="selection-manager">
@@ -284,27 +334,107 @@ export function SelectionManager({
         </section>
       )}
 
-      {/* ── Liste d'attente (slots remplis) ──────────────────────────── */}
-      {slotsLeft === 0 && pool.length > 0 && (
+      {/* ── Liste d'attente : section complète (slots remplis) ───────── */}
+      {slotsLeft === 0 && (waitlisted.length > 0 || pool.length > 0) && (
         <section>
-          <p className="meta" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: 11, marginBottom: 6, color: "var(--text-muted)" }}>
-            ⏳ Liste d&apos;attente ({pool.length})
+          <p className="meta" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: 11, marginBottom: 10, color: "var(--text-muted)" }}>
+            ⏳ Liste d&apos;attente ({waitlisted.length + pool.length})
           </p>
-          <div className="selection-manager__list">
-            {[...pool].sort((a, b) => a.seed - b.seed).map((team) => (
-              <div key={team.id} className="selection-team-row" style={{ opacity: 0.55 }}>
-                <span style={{ fontWeight: 600 }}>#{team.seed} {team.name}</span>
-                {(team.city || team.country) && (
-                  <span className="meta" style={{ marginLeft: 6, fontSize: 12 }}>
-                    {team.city ? `${team.city}, ` : ""}{team.country}
+
+          {/* Équipes déjà classées dans la WL */}
+          {waitlisted.length > 0 && (
+            <div className="selection-manager__list" style={{ marginBottom: pool.length > 0 ? 12 : 0 }}>
+              {waitlisted.map((team) => (
+                <div
+                  key={team.id}
+                  className={`selection-team-row selection-team-row--waitlist${lastWlWinnerId === team.id ? " selection-team-row--winner" : ""}`}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 800, fontFamily: "var(--font-display)", color: "var(--text-muted)", minWidth: 36 }}>
+                    WL #{team.waitlistPosition}
                   </span>
-                )}
-                <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-display)", fontWeight: 700 }}>
-                  LISTE D&apos;ATTENTE
-                </span>
+                  {lastWlWinnerId === team.id && <span style={{ fontSize: 16 }}>🎉</span>}
+                  <span style={{ fontWeight: 600 }}>{team.name}</span>
+                  {(team.city || team.country) && (
+                    <span className="meta" style={{ marginLeft: 6, fontSize: 12 }}>
+                      {team.city ? `${team.city}, ` : ""}{team.country}
+                    </span>
+                  )}
+                  {lastWlWinnerId === team.id && (
+                    <span style={{ marginLeft: "auto", fontSize: 10, color: "#6366f1", fontWeight: 700, fontFamily: "var(--font-display)" }}>
+                      TIRÉ AU SORT
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Équipes restantes non encore classées → tirage WL */}
+          {pool.length > 0 && (
+            <>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                <p className="meta" style={{ fontWeight: 700, fontSize: 11, margin: 0, color: "#6366f1" }}>
+                  🎲 Tirage waiting list ({pool.length} équipes · {wlDrawPoolTeams.length} dans ce tirage)
+                </p>
+                <div style={{ display: "flex", gap: 6, marginLeft: "auto", flexWrap: "wrap", alignItems: "center" }}>
+                  <button className="ghost" onClick={selectAllWlPool} disabled={isPending || pool.length === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
+                    Tout cocher
+                  </button>
+                  <button className="ghost" onClick={clearWlDrawPool} disabled={isPending || wlDrawPool.size === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
+                    Tout décocher
+                  </button>
+                  <button
+                    className="primary"
+                    onClick={handleDrawOneWaitlist}
+                    disabled={isPending || wlDrawPoolTeams.length === 0}
+                    style={{ fontSize: 13, padding: "5px 18px", background: "#6366f1" }}
+                  >
+                    🎲 Tirer WL #{waitlisted.length + 1}{wlDrawPoolTeams.length > 0 ? ` (parmi ${wlDrawPoolTeams.length})` : ""}
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
+
+              <div className="selection-manager__list">
+                {[...pool].sort((a, b) => a.seed - b.seed).map((team) => {
+                  const inWl = wlDrawPool.has(team.id);
+                  return (
+                    <div
+                      key={team.id}
+                      className={`selection-team-row selection-team-row--waitlist-pool${inWl ? " selection-team-row--in-wl-draw" : ""}`}
+                      onClick={() => toggleWlDrawPool(team.id)}
+                      style={{ cursor: "pointer", opacity: 0.75 }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={inWl}
+                        onChange={() => toggleWlDrawPool(team.id)}
+                        disabled={isPending}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ cursor: "pointer", accentColor: "#6366f1" }}
+                      />
+                      <span style={{ fontWeight: 600 }}>#{team.seed} {team.name}</span>
+                      {(team.city || team.country) && (
+                        <span className="meta" style={{ marginLeft: 6, fontSize: 12 }}>
+                          {team.city ? `${team.city}, ` : ""}{team.country}
+                        </span>
+                      )}
+                      <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
+                        {inWl && (
+                          <span style={{ fontSize: 10, color: "#6366f1", fontFamily: "var(--font-display)", fontWeight: 700 }}>
+                            DANS LE TIRAGE
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="meta" style={{ fontSize: 11, marginTop: 6, color: "var(--text-muted)" }}>
+                Coche les équipes à inclure dans le tirage waiting list — une par une
+              </p>
+            </>
+          )}
         </section>
       )}
 

@@ -12,7 +12,7 @@ import { FreeAgentForm } from "@/components/FreeAgentForm";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { RegisterTeamForm } from "@/components/RegisterTeamForm";
 import { computeStandings } from "@/lib/standings";
-import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction } from "./edit/actions";
+import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction } from "./edit/actions";
 import { SelectionManager } from "@/components/SelectionManager";
 import { TournamentChat } from "@/components/TournamentChat";
 import { TelegramWidget } from "@/components/TelegramWidget";
@@ -133,6 +133,11 @@ export default async function TournamentPage({
   const drawOneTeam = async (tId: string, candidateIds: string[]) => {
     "use server";
     return await drawOneTeamAction(tId, candidateIds);
+  };
+
+  const drawOneWaitlist = async (tId: string, candidateIds: string[]) => {
+    "use server";
+    return await drawOneWaitlistAction(tId, candidateIds);
   };
 
   // Info tab: tiles content
@@ -491,6 +496,7 @@ export default async function TournamentPage({
                   country: t.country,
                   selected: t.selected,
                   guaranteed: t.guaranteed,
+                  waitlistPosition: t.waitlistPosition,
                 }))}
                 maxTeams={tournament.maxTeams}
                 tournamentId={tournament.id}
@@ -498,6 +504,7 @@ export default async function TournamentPage({
                 drawAction={drawTeams}
                 guaranteeAction={guaranteeTeam}
                 drawOneAction={drawOneTeam}
+                drawOneWaitlistAction={drawOneWaitlist}
               />
             </div>
           )}

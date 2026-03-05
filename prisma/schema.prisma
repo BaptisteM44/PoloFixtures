@@ -255,6 +255,7 @@ model Team {
   seed         Int
   selected     Boolean    @default(true)
   guaranteed   Boolean    @default(false)
+  waitlistPosition Int?
 
   tournament Tournament   @relation(fields: [tournamentId], references: [id])
   players    TeamPlayer[]

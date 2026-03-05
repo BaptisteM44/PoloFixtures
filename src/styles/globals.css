@@ -4226,6 +4226,22 @@ textarea {
   background: color-mix(in srgb, #f97316 8%, transparent);
 }
 
+.selection-team-row--waitlist {
+  border-color: var(--border);
+  background: color-mix(in srgb, #6366f1 7%, transparent);
+  opacity: 0.85;
+}
+
+.selection-team-row--waitlist-pool {
+  border-color: var(--border-light);
+}
+
+.selection-team-row--in-wl-draw {
+  border-color: #6366f1;
+  background: color-mix(in srgb, #6366f1 10%, transparent);
+  opacity: 1 !important;
+}
+
 .selection-team-row--winner {
   border-color: #16a34a;
   background: color-mix(in srgb, #16a34a 18%, transparent);

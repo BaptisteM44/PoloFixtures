@@ -611,6 +611,39 @@ export async function drawOneTeamAction(
   return { ok: true, winnerId: winner.id };
 }
 
+/**
+ * Tirage waiting list : tire 1 équipe au hasard parmi les candidateIds,
+ * lui assigne le prochain rang de waiting list (1, 2, 3…).
+ */
+export async function drawOneWaitlistAction(
+  tournamentId: string,
+  candidateIds: string[]
+): Promise<{ ok?: boolean; winnerId?: string; waitlistPosition?: number; error?: string }> {
+  if (candidateIds.length === 0) return { error: "Aucune équipe candidate." };
+
+  const valid = await prisma.team.findMany({
+    where: { tournamentId, id: { in: candidateIds }, guaranteed: false, waitlistPosition: null },
+    select: { id: true },
+  });
+  if (valid.length === 0) return { error: "Aucune équipe valide dans le tirage." };
+
+  // Prochain rang = max actuel + 1
+  const maxRank = await prisma.team.aggregate({
+    where: { tournamentId, waitlistPosition: { not: null } },
+    _max: { waitlistPosition: true },
+  });
+  const nextRank = (maxRank._max.waitlistPosition ?? 0) + 1;
+
+  const winner = valid[Math.floor(Math.random() * valid.length)];
+  await prisma.team.update({
+    where: { id: winner.id },
+    data: { waitlistPosition: nextRank, selected: false },
+  });
+  revalidatePath(`/tournament/${tournamentId}`);
+  revalidatePath(`/tournament/${tournamentId}/edit`);
+  return { ok: true, winnerId: winner.id, waitlistPosition: nextRank };
+}
+
 export async function addPlayerToTeamAction(
   teamId: string,
   tournamentId: string,
