@@ -50,11 +50,40 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const existingCount = await prisma.team.count({ where: { tournamentId: params.id } });
   const seed = existingCount + 1;
 
+  // Check: duplicate team name in this tournament (case-insensitive)
+  const duplicateTeam = await prisma.team.findFirst({
+    where: { tournamentId: params.id, name: { equals: teamName, mode: "insensitive" } },
+  });
+  if (duplicateTeam) {
+    return Response.json({ error: `Une équipe nommée "${teamName}" est déjà inscrite à ce tournoi.` }, { status: 400 });
+  }
+
   // Check: no duplicate playerIds in the same submission
   const existingSlots = players.filter((s) => s.type === "existing") as { type: "existing"; playerId: string }[];
   const uniqueIds = new Set(existingSlots.map((s) => s.playerId));
   if (uniqueIds.size < existingSlots.length) {
     return Response.json({ error: "Un même joueur ne peut pas apparaître deux fois dans la même équipe." }, { status: 400 });
+  }
+
+  // Check: no duplicate manual player names in the same submission
+  const manualSlots = players.filter((s) => s.type === "manual") as { type: "manual"; name: string }[];
+  const manualNames = manualSlots.map((s) => s.name.trim().toLowerCase());
+  if (new Set(manualNames).size < manualNames.length) {
+    return Response.json({ error: "Le même joueur apparaît deux fois dans le formulaire." }, { status: 400 });
+  }
+
+  // Check: manual player name already registered in this tournament (best-effort, case-insensitive)
+  for (const slot of manualSlots) {
+    const alreadyManual = await prisma.player.findFirst({
+      where: {
+        name: { equals: slot.name.trim(), mode: "insensitive" },
+        status: "PENDING",
+        teams: { some: { team: { tournamentId: params.id } } },
+      },
+    });
+    if (alreadyManual) {
+      return Response.json({ error: `Un joueur nommé "${slot.name}" est déjà inscrit dans une équipe de ce tournoi.` }, { status: 400 });
+    }
   }
 
   // Resolve players (existing or create manual)
