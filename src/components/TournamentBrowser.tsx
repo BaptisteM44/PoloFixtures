@@ -293,13 +293,20 @@ export function TournamentBrowser({
                           if (t.registrationEnd) {
                             const end = new Date(t.registrationEnd);
                             if (now > end) return "🔒 Inscriptions fermées";
-                            if (t.registrationStart && now < new Date(t.registrationStart))
-                              return `🔓 Ouverture le ${fmt(t.registrationStart)}`;
-                            return `⏳ Clôture le ${fmt(t.registrationEnd)}`;
+                            if (t.registrationStart && now < new Date(t.registrationStart)) {
+                              const daysToOpen = Math.ceil((new Date(t.registrationStart).getTime() - now.getTime()) / 86_400_000);
+                              return `🔓 Ouverture ${daysToOpen <= 1 ? "demain" : `dans ${daysToOpen}j`} (${fmt(t.registrationStart)})`;
+                            }
+                            const daysLeft = Math.ceil((end.getTime() - now.getTime()) / 86_400_000);
+                            const countdown = daysLeft <= 1 ? "🔥 Dernier jour" : daysLeft <= 7 ? `🔥 J-${daysLeft}` : `⏳ J-${daysLeft}`;
+                            return `${countdown} · Clôture le ${fmt(t.registrationEnd)}`;
                           }
                           if (t.registrationStart) {
                             const start = new Date(t.registrationStart);
-                            if (now < start) return `🔓 Ouverture le ${fmt(t.registrationStart)}`;
+                            if (now < start) {
+                              const daysToOpen = Math.ceil((start.getTime() - now.getTime()) / 86_400_000);
+                              return `🔓 Ouverture ${daysToOpen <= 1 ? "demain" : `dans ${daysToOpen}j`} (${fmt(t.registrationStart)})`;
+                            }
                             return "🔓 Inscriptions ouvertes";
                           }
                           return "—";

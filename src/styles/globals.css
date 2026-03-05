@@ -435,6 +435,42 @@ button:focus-visible,
   gap: 4px;
 }
 
+/* ── Registration badge (TournamentCard) ─────────────────────────────── */
+.reg-badge {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+}
+.reg-badge--open {
+  background: rgba(20, 184, 166, 0.12);
+  color: #0d9488;
+  border: 1px solid rgba(20, 184, 166, 0.3);
+}
+.reg-badge--urgent {
+  background: rgba(249, 115, 22, 0.12);
+  color: #ea580c;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  animation: pulse-urgent 2s ease-in-out infinite;
+}
+.reg-badge--closed {
+  background: rgba(100, 116, 139, 0.1);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.reg-badge--soon {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+@keyframes pulse-urgent {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
 .status {
   font-family: var(--font-display);
   font-size: 10px;

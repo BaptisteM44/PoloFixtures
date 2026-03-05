@@ -40,6 +40,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (!tournament) return Response.json({ error: "Tournoi introuvable" }, { status: 404 });
   if (!tournament.approved) return Response.json({ error: "Tournoi non encore approuvé" }, { status: 403 });
 
+  const now = new Date();
+  if (tournament.registrationStart && now < tournament.registrationStart) {
+    return Response.json({ error: "Les inscriptions ne sont pas encore ouvertes." }, { status: 403 });
+  }
+  if (tournament.registrationEnd && now > tournament.registrationEnd) {
+    return Response.json({ error: "Les inscriptions sont clôturées pour ce tournoi." }, { status: 403 });
+  }
+
   const json = await request.json();
   const parsed = registerSchema.safeParse(json);
   if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 });
