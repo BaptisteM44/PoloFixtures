@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
+import { notifyTeamPlayers } from "@/lib/notify";
 import { z } from "zod";
 import { toSlug } from "@/lib/utils";
 
@@ -147,6 +148,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
     include: {
       players: { include: { player: true } }
     }
+  });
+
+  // Notifier les joueurs avec compte que leur équipe est inscrite
+  await notifyTeamPlayers(team.id, "TEAM_REGISTERED", {
+    teamName,
+    tournamentName: tournament.name,
+    tournamentId: params.id,
   });
 
   return Response.json(team, { status: 201 });

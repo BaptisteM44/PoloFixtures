@@ -26,6 +26,16 @@ function notifLabel(n: Notification): { title: string; sub: string; href: string
       return { title: `Nouveau message de ${p.senderName}`, sub: p.preview ?? "", href: "/messages" };
     case "DIRECT_MESSAGE_RECEIVED":
       return { title: `${p.senderName} t'a répondu`, sub: p.preview ?? "", href: "/messages" };
+    case "TEAM_REGISTERED":
+      return { title: `Équipe inscrite : ${p.teamName}`, sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentId}?tab=inscription` };
+    case "TEAM_SELECTED":
+      return { title: `🎉 ${p.teamName} est IN !`, sub: `Tirée au sort — ${p.tournamentName}`, href: `/tournament/${p.tournamentId}?tab=inscription` };
+    case "TEAM_WAITLISTED":
+      return { title: `⏳ ${p.teamName} — Liste d'attente #${p.rank}`, sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentId}?tab=inscription` };
+    case "BADGE_UNLOCKED":
+      return { title: `Badge débloqué : ${p.badgeName}`, sub: "Consulte ton profil", href: "/account" };
+    case "TEAM_MESSAGE_RECEIVED":
+      return { title: `Nouveau message dans ${p.teamName}`, sub: p.preview ?? "", href: "/my-tournaments" };
     default:
       return { title: "Notification", sub: "", href: "/notifications" };
   }

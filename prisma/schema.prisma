@@ -114,6 +114,11 @@ enum NotificationType {
   SQUAD_ROLE_CHANGED
   DIRECT_MESSAGE_REQUEST
   DIRECT_MESSAGE_RECEIVED
+  TEAM_REGISTERED        // inscription confirmée au tournoi
+  TEAM_SELECTED          // tiré au sort → IN
+  TEAM_WAITLISTED        // tiré au sort → liste d'attente (avec rang)
+  BADGE_UNLOCKED         // badge débloqué
+  TEAM_MESSAGE_RECEIVED  // nouveau message dans le chat d'équipe
 }
 
 model AccessCode {

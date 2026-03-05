@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
 import { generatePools, generatePoolMatches, generateBracket, generateSwissRound } from "@/lib/bracket";
 import { computeStandings } from "@/lib/standings";
@@ -602,9 +603,18 @@ export async function drawOneTeamAction(
   if (valid.length === 0) return { error: "Aucune équipe valide dans le tirage." };
 
   const winner = valid[Math.floor(Math.random() * valid.length)];
+  const [winnerTeam, tournament] = await Promise.all([
+    prisma.team.findUnique({ where: { id: winner.id }, select: { name: true } }),
+    prisma.tournament.findUnique({ where: { id: tournamentId }, select: { name: true } }),
+  ]);
   await prisma.team.update({
     where: { id: winner.id },
     data: { guaranteed: true, selected: true },
+  });
+  await notifyTeamPlayers(winner.id, "TEAM_SELECTED", {
+    teamName: winnerTeam?.name ?? "",
+    tournamentName: tournament?.name ?? "",
+    tournamentId,
   });
   revalidatePath(`/tournament/${tournamentId}`);
   revalidatePath(`/tournament/${tournamentId}/edit`);
@@ -635,9 +645,19 @@ export async function drawOneWaitlistAction(
   const nextRank = (maxRank._max.waitlistPosition ?? 0) + 1;
 
   const winner = valid[Math.floor(Math.random() * valid.length)];
+  const [winnerTeam, tournament] = await Promise.all([
+    prisma.team.findUnique({ where: { id: winner.id }, select: { name: true } }),
+    prisma.tournament.findUnique({ where: { id: tournamentId }, select: { name: true } }),
+  ]);
   await prisma.team.update({
     where: { id: winner.id },
     data: { waitlistPosition: nextRank, selected: false },
+  });
+  await notifyTeamPlayers(winner.id, "TEAM_WAITLISTED", {
+    teamName: winnerTeam?.name ?? "",
+    tournamentName: tournament?.name ?? "",
+    tournamentId,
+    rank: nextRank,
   });
   revalidatePath(`/tournament/${tournamentId}`);
   revalidatePath(`/tournament/${tournamentId}/edit`);

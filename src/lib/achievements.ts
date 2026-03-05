@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { createNotification } from "@/lib/notify";
+import { BADGE_CATALOG } from "@/lib/badge-catalog";
 
 // ---------------------------------------------------------------------------
 // Per-tournament helpers (used for live display on tournament page)
@@ -282,16 +284,31 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
 export async function recomputeAllBadges(): Promise<{ updated: number; errors: number }> {
   const players = await prisma.player.findMany({
     where: { status: "ACTIVE" },
-    select: { id: true },
+    select: { id: true, badges: true, account: { select: { id: true } } },
   });
 
   let updated = 0;
   let errors = 0;
 
-  for (const { id } of players) {
+  for (const player of players) {
     try {
-      const badges = await computeCareerBadges(id);
-      await prisma.player.update({ where: { id }, data: { badges } });
+      const oldBadges = new Set<string>(player.badges);
+      const newBadges = await computeCareerBadges(player.id);
+      await prisma.player.update({ where: { id: player.id }, data: { badges: newBadges } });
+
+      // Notifier les badges nouvellement débloqués (seulement si le joueur a un compte)
+      if (player.account) {
+        for (const badge of newBadges) {
+          if (!oldBadges.has(badge)) {
+            const info = BADGE_CATALOG[badge];
+            await createNotification(player.id, "BADGE_UNLOCKED", {
+              badge,
+              badgeName: info ? `${info.emoji} ${info.name}` : badge,
+            });
+          }
+        }
+      }
+
       updated++;
     } catch {
       errors++;
