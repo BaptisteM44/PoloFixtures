@@ -4221,6 +4221,22 @@ textarea {
   background: color-mix(in srgb, #16a34a 15%, transparent);
 }
 
+.selection-team-row--in-draw {
+  border-color: #f97316;
+  background: color-mix(in srgb, #f97316 8%, transparent);
+}
+
+.selection-team-row--winner {
+  border-color: #16a34a;
+  background: color-mix(in srgb, #16a34a 18%, transparent);
+  animation: pulse-winner 0.6s ease-out;
+}
+
+@keyframes pulse-winner {
+  0%   { transform: scale(1.02); box-shadow: 0 0 0 4px color-mix(in srgb, #16a34a 25%, transparent); }
+  100% { transform: scale(1);    box-shadow: none; }
+}
+
 .selection-team-row input[type="checkbox"] {
   width: 16px;
   height: 16px;

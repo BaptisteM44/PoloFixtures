@@ -584,6 +584,33 @@ export async function drawTeamsAction(
   return { ok: true };
 }
 
+/**
+ * Tirage unitaire : tire 1 équipe au hasard parmi les candidateIds fournis
+ * et la passe guaranteed=true, selected=true.
+ */
+export async function drawOneTeamAction(
+  tournamentId: string,
+  candidateIds: string[]
+): Promise<{ ok?: boolean; winnerId?: string; error?: string }> {
+  if (candidateIds.length === 0) return { error: "Aucune équipe candidate." };
+
+  // Vérifie que ces équipes appartiennent bien au tournoi et ne sont pas déjà garanties
+  const valid = await prisma.team.findMany({
+    where: { tournamentId, id: { in: candidateIds }, guaranteed: false },
+    select: { id: true },
+  });
+  if (valid.length === 0) return { error: "Aucune équipe valide dans le tirage." };
+
+  const winner = valid[Math.floor(Math.random() * valid.length)];
+  await prisma.team.update({
+    where: { id: winner.id },
+    data: { guaranteed: true, selected: true },
+  });
+  revalidatePath(`/tournament/${tournamentId}`);
+  revalidatePath(`/tournament/${tournamentId}/edit`);
+  return { ok: true, winnerId: winner.id };
+}
+
 export async function addPlayerToTeamAction(
   teamId: string,
   tournamentId: string,
