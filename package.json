@@ -24,6 +24,7 @@
     "nanoid": "^5.0.4",
     "next": "^14.2.5",
     "next-auth": "beta",
+    "next-intl": "^4.8.3",
     "nodemailer": "^8.0.1",
     "qrcode": "^1.5.3",
     "react": "^18.2.0",

@@ -30,6 +30,12 @@
       ],
       "@/styles/*": [
         "src/styles/*"
+      ],
+      "@/i18n/*": [
+        "src/i18n/*"
+      ],
+      "@/types/*": [
+        "src/types/*"
       ]
     },
     "plugins": [

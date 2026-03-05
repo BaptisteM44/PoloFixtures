@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { publishMatchUpdate, publishNewMatches } from "@/lib/sse";
-import { generateSwissRoundAction } from "@/app/tournament/[id]/edit/actions";
+import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { z } from "zod";
 
 const schema = z.object({
