@@ -8,6 +8,7 @@ import Link from 'next/link';
 function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get('next') ?? '/';
+  const resetDone = searchParams.get('reset') === '1';
   const [mode, setMode] = useState<'player' | 'admin'>('player');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,6 +37,12 @@ function LoginForm() {
       <div style={{ width: '100%', maxWidth: 420 }}>
         <h1 style={{ marginBottom: 24 }}>Connexion</h1>
 
+        {resetDone && (
+          <div style={{ background: 'color-mix(in srgb, var(--teal) 12%, transparent)', border: '1px solid var(--teal)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 16, fontSize: 14 }}>
+            ✅ Mot de passe mis à jour ! Vous pouvez vous connecter.
+          </div>
+        )}
+
         {mode === 'player' ? (
           <form className="panel form" onSubmit={submitPlayer} style={{ display: 'grid', gap: 16 }}>
             <label className="field-row">
@@ -50,10 +57,12 @@ function LoginForm() {
             <button className="primary" type="submit" disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
               {loading ? 'Connexion…' : 'Se connecter'}
             </button>
-            <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
-              Pas encore de compte ?{' '}
-              <Link href="/register" style={{ color: 'var(--teal)', fontWeight: 700 }}>Créer un compte</Link>
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>
+              <span>Pas encore de compte ?{' '}
+                <Link href="/register" style={{ color: 'var(--teal)', fontWeight: 700 }}>Créer un compte</Link>
+              </span>
+              <Link href="/forgot-password" style={{ color: 'var(--text-muted)' }}>Mot de passe oublié ?</Link>
+            </div>
           </form>
         ) : (
           <form className="panel form" onSubmit={submitAdmin} style={{ display: 'grid', gap: 16 }}>

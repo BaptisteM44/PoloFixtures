@@ -41,6 +41,27 @@ export default function AccountPage() {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Changement de mot de passe
+  const [pwOpen, setPwOpen] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwForm.next !== pwForm.confirm) { setPwMsg({ ok: false, text: "Les mots de passe ne correspondent pas" }); return; }
+    setPwSaving(true); setPwMsg(null);
+    const res = await fetch("/api/account/password", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.next }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setPwSaving(false);
+    if (res.ok) { setPwMsg({ ok: true, text: "Mot de passe mis à jour !" }); setPwForm({ current: "", next: "", confirm: "" }); setTimeout(() => setPwOpen(false), 1500); }
+    else setPwMsg({ ok: false, text: data.error ?? "Erreur" });
+  };
+
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -472,6 +493,31 @@ export default function AccountPage() {
                 }}
               />
             </div>
+          </div>
+
+          {/* Changer le mot de passe */}
+          <div style={{ borderTop: "2px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
+            <button type="button" className="ghost" style={{ fontSize: 13, width: "100%", justifyContent: "space-between" }} onClick={() => { setPwOpen((v) => !v); setPwMsg(null); }}>
+              🔒 Changer le mot de passe {pwOpen ? "▲" : "▼"}
+            </button>
+            {pwOpen && (
+              <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
+                <label className="field-row">
+                  Mot de passe actuel
+                  <input type="password" required value={pwForm.current} onChange={(e) => setPwForm((p) => ({ ...p, current: e.target.value }))} />
+                </label>
+                <label className="field-row">
+                  Nouveau mot de passe
+                  <input type="password" required minLength={8} value={pwForm.next} onChange={(e) => setPwForm((p) => ({ ...p, next: e.target.value }))} placeholder="8 caractères minimum" />
+                </label>
+                <label className="field-row">
+                  Confirmer
+                  <input type="password" required value={pwForm.confirm} onChange={(e) => setPwForm((p) => ({ ...p, confirm: e.target.value }))} />
+                </label>
+                {pwMsg && <p style={{ fontSize: 13, color: pwMsg.ok ? "var(--teal)" : "var(--danger)", margin: 0 }}>{pwMsg.text}</p>}
+                <button type="submit" className="primary" disabled={pwSaving}>{pwSaving ? "Enregistrement…" : "Mettre à jour"}</button>
+              </form>
+            )}
           </div>
 
           {/* Player card link */}

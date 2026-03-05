@@ -2,8 +2,10 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { PlayerCard } from "@/components/PlayerCard";
+import { PokemonCard } from "@/components/PokemonCard";
 import { ClubMemberManager } from "@/components/ClubMemberManager";
+
+export const dynamic = "force-dynamic";
 
 export default async function ClubPage({
   params,
@@ -23,7 +25,13 @@ export default async function ClubPage({
       members: {
         include: {
           player: {
-            select: { id: true, name: true, slug: true, country: true, city: true, photoPath: true, badges: true },
+            select: {
+              id: true, name: true, slug: true, country: true, city: true,
+              photoPath: true, badges: true, pinnedBadges: true,
+              clubLogoPath: true, emblemPosition: true,
+              teamLogoPath: true, teamLogoPosition: true,
+              startYear: true, hand: true, gender: true, showGender: true,
+            },
           },
         },
         orderBy: { joinedAt: "asc" },
@@ -37,7 +45,9 @@ export default async function ClubPage({
   const canSee = club.approved || isManager || isAdmin;
   if (!canSee) notFound();
 
-  const activeMembers = club.members.filter((m) => m.status === "MEMBER");
+  const activeMembers = club.members
+    .filter((m) => m.status === "MEMBER")
+    .sort(() => Math.random() - 0.5);
   const membersForManager = club.members.map((m) => ({
     id: m.id,
     playerId: m.playerId,
@@ -109,18 +119,26 @@ export default async function ClubPage({
             </div>
           </div>
           {activeMembers.length > 0 ? (
-            <div className="player-grid">
+            <div className="pokemon-card-grid">
               {activeMembers.map((m) => (
-                <PlayerCard
-                  key={m.id}
-                  id={m.player.id}
-                  slug={m.player.slug}
-                  name={m.player.name}
-                  country={m.player.country}
-                  city={m.player.city}
-                  photoPath={m.player.photoPath}
-                  badges={m.player.badges}
-                />
+                <Link key={m.id} href={`/player/${m.player.slug ?? m.player.id}`} style={{ textDecoration: "none" }}>
+                  <PokemonCard
+                    name={m.player.name}
+                    country={m.player.country}
+                    city={m.player.city}
+                    photoPath={m.player.photoPath}
+                    clubLogoPath={m.player.clubLogoPath}
+                    emblemPosition={(m.player.emblemPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "top-right"}
+                    teamLogoPath={m.player.teamLogoPath}
+                    teamLogoPosition={(m.player.teamLogoPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "bottom-right"}
+                    badges={m.player.badges}
+                    pinnedBadges={m.player.pinnedBadges}
+                    startYear={m.player.startYear}
+                    hand={m.player.hand}
+                    gender={m.player.gender ?? undefined}
+                    showGender={m.player.showGender}
+                  />
+                </Link>
               ))}
             </div>
           ) : (

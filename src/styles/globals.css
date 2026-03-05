@@ -5144,6 +5144,21 @@ details[open] .my-tournaments__section-title--summary::after {
   line-height: 1;
 }
 
+/* ── Pokemon card grid (club page) ── */
+.pokemon-card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: flex-start;
+}
+.pokemon-card-grid > a {
+  display: block;
+  transition: transform 0.15s ease;
+}
+.pokemon-card-grid > a:hover {
+  transform: translateY(-4px);
+}
+
 /* ===== CLUBS ===== */
 .club-grid {
   display: grid;

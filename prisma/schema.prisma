@@ -308,11 +308,13 @@ model Player {
 }
 
 model PlayerAccount {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  playerId     String   @unique
-  createdAt    DateTime @default(now())
+  id               String    @id @default(cuid())
+  email            String    @unique
+  passwordHash     String
+  playerId         String    @unique
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
+  createdAt        DateTime  @default(now())
 
   player Player @relation(fields: [playerId], references: [id])
 
