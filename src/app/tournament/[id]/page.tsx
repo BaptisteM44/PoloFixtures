@@ -12,7 +12,7 @@ import { FreeAgentForm } from "@/components/FreeAgentForm";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { RegisterTeamForm } from "@/components/RegisterTeamForm";
 import { computeStandings } from "@/lib/standings";
-import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction } from "./edit/actions";
+import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction } from "./edit/actions";
 import { SelectionManager } from "@/components/SelectionManager";
 import { TournamentChat } from "@/components/TournamentChat";
 import { TelegramWidget } from "@/components/TelegramWidget";
@@ -123,6 +123,11 @@ export default async function TournamentPage({
   const drawTeams = async (tId: string, count: number) => {
     "use server";
     return await drawTeamsAction(tId, count);
+  };
+
+  const guaranteeTeam = async (teamId: string, tId: string, guaranteed: boolean) => {
+    "use server";
+    return await toggleTeamGuaranteedAction(teamId, tId, guaranteed);
   };
 
   // Info tab: tiles content
@@ -480,11 +485,13 @@ export default async function TournamentPage({
                   city: t.city,
                   country: t.country,
                   selected: t.selected,
+                  guaranteed: t.guaranteed,
                 }))}
                 maxTeams={tournament.maxTeams}
                 tournamentId={tournament.id}
                 toggleAction={toggleTeamSelected}
                 drawAction={drawTeams}
+                guaranteeAction={guaranteeTeam}
               />
             </div>
           )}

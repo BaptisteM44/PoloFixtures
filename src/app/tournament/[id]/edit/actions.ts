@@ -539,20 +539,45 @@ export async function toggleTeamSelectedAction(
   return { ok: true };
 }
 
+export async function toggleTeamGuaranteedAction(
+  teamId: string,
+  tournamentId: string,
+  guaranteed: boolean
+): Promise<{ ok?: boolean; error?: string }> {
+  "use server";
+  await prisma.team.update({
+    where: { id: teamId },
+    data: { guaranteed, ...(guaranteed ? { selected: true } : {}) },
+  });
+  revalidatePath(`/tournament/${tournamentId}`);
+  revalidatePath(`/tournament/${tournamentId}/edit`);
+  return { ok: true };
+}
+
 export async function drawTeamsAction(
   tournamentId: string,
   count: number
 ): Promise<{ ok?: boolean; error?: string }> {
-  const teams = await prisma.team.findMany({ where: { tournamentId }, select: { id: true } });
-  const shuffled = teams.sort(() => Math.random() - 0.5);
-  const selectedIds = new Set(shuffled.slice(0, count).map((t) => t.id));
+  const teams = await prisma.team.findMany({ where: { tournamentId }, select: { id: true, guaranteed: true } });
+
+  // Les équipes garanties sont toujours IN — elles ne participent pas au tirage
+  const guaranteed = teams.filter((t) => t.guaranteed);
+  const pool = teams.filter((t) => !t.guaranteed);
+  const slotsLeft = Math.max(0, count - guaranteed.length);
+
+  // Tirage aléatoire sur le pool
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  const drawnIds = new Set(shuffled.slice(0, slotsLeft).map((t) => t.id));
+  const guaranteedIds = new Set(guaranteed.map((t) => t.id));
+  const selectedIds = new Set([...drawnIds, ...guaranteedIds]);
+
   await prisma.team.updateMany({
     where: { tournamentId, id: { in: Array.from(selectedIds) } },
-    data: { selected: true }
+    data: { selected: true },
   });
   await prisma.team.updateMany({
     where: { tournamentId, id: { notIn: Array.from(selectedIds) } },
-    data: { selected: false }
+    data: { selected: false },
   });
   revalidatePath(`/tournament/${tournamentId}`);
   revalidatePath(`/tournament/${tournamentId}/edit`);

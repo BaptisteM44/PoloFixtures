@@ -254,6 +254,7 @@ model Team {
   color        String?
   seed         Int
   selected     Boolean    @default(true)
+  guaranteed   Boolean    @default(false)
 
   tournament Tournament   @relation(fields: [tournamentId], references: [id])
   players    TeamPlayer[]

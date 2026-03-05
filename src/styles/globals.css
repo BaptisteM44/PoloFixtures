@@ -4212,6 +4212,15 @@ textarea {
   background: color-mix(in srgb, var(--teal) 8%, transparent);
 }
 
+.selection-team-row--guaranteed {
+  border-color: #16a34a;
+  background: color-mix(in srgb, #16a34a 10%, transparent);
+}
+
+.selection-team-row--guaranteed:hover {
+  background: color-mix(in srgb, #16a34a 15%, transparent);
+}
+
 .selection-team-row input[type="checkbox"] {
   width: 16px;
   height: 16px;
