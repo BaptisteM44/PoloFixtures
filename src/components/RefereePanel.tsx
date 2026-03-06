@@ -137,6 +137,14 @@ export function RefereePanel() {
     postEvent("GOAL", { teamId, delta });
   };
 
+  const onGoldenGoal = (teamId: string) => {
+    if (!selectedMatch) return;
+    const nextA = teamId === selectedMatch.teamAId ? selectedMatch.scoreA + 1 : selectedMatch.scoreA;
+    const nextB = teamId === selectedMatch.teamBId ? selectedMatch.scoreB + 1 : selectedMatch.scoreB;
+    setSelectedMatch({ ...selectedMatch, scoreA: nextA, scoreB: nextB });
+    postEvent("GOLDEN_GOAL", { teamId });
+  };
+
   const onPenalty = (teamId: string, playerId: string, delta: number) => {
     postEvent("PENALTY", { teamId, playerId, delta });
   };
@@ -323,7 +331,16 @@ export function RefereePanel() {
 
           <div className="panel">
             <h3>Finish</h3>
-            <button className="danger" onClick={() => postEvent("END")}>End Match</button>
+            <p style={{ fontSize: 12, marginBottom: 8 }}>Golden goal (termine le match +1) :</p>
+            <div className="button-row">
+              <button onClick={() => selectedMatch.teamAId && onGoldenGoal(selectedMatch.teamAId)}>
+                ⭐ GG — {selectedMatch.teamA?.name ?? "Team A"}
+              </button>
+              <button onClick={() => selectedMatch.teamBId && onGoldenGoal(selectedMatch.teamBId)}>
+                ⭐ GG — {selectedMatch.teamB?.name ?? "Team B"}
+              </button>
+            </div>
+            <button className="danger" style={{ marginTop: 8 }} onClick={() => postEvent("END")}>End Match</button>
           </div>
         </div>
       )}

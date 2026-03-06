@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -68,6 +69,7 @@ enum MatchEventType {
   START
   PAUSE
   GOAL
+  GOLDEN_GOAL
   PENALTY
   TIMEOUT
   TIME_ADJUST
@@ -260,7 +262,9 @@ model Team {
   seed         Int
   selected     Boolean    @default(true)
   guaranteed   Boolean    @default(false)
-  waitlistPosition Int?
+  waitlistPosition   Int?
+  registrationNote   String?
+  orgaNote           String?
 
   tournament Tournament   @relation(fields: [tournamentId], references: [id])
   players    TeamPlayer[]
@@ -386,6 +390,7 @@ model Match {
   nextSlotWin     String?
   nextMatchLoseId String?
   nextSlotLose    String?
+  goldenGoal      Boolean     @default(false)
 
   tournament Tournament @relation(fields: [tournamentId], references: [id])
   pool       Pool?      @relation(fields: [poolId], references: [id])

@@ -24,6 +24,7 @@ type TournamentData = {
 type GoalModal = { teamId: string; teamName: string; delta: number } | null;
 type PenaltyModal = { teamId: string; teamName: string; players: PlayerInfo[] } | null;
 type TimeoutModal = { teamId: string; teamName: string; type: "normal" | "mechanical" } | null;
+type GoldenGoalModal = { teamId: string; teamName: string } | null;
 
 const PHASE_LABEL: Record<string, string> = { POOL: "Poule", SWISS: "Swiss", BRACKET: "Tableau" };
 const DAY_LABEL: Record<string, string> = { SAT: "Sam", SUN: "Dim" };
@@ -65,6 +66,7 @@ export function TournamentRefereePanel({
   const [goalModal, setGoalModal] = useState<GoalModal>(null);
   const [penaltyModal, setPenaltyModal] = useState<PenaltyModal>(null);
   const [timeoutModal, setTimeoutModal] = useState<TimeoutModal>(null);
+  const [goldenGoalModal, setGoldenGoalModal] = useState<GoldenGoalModal>(null);
   const [timeoutTimer, setTimeoutTimer] = useState<{ sec: number; label: string } | null>(null);
 
   const lastMatchId = useRef<string>("");
@@ -182,6 +184,22 @@ export function TournamentRefereePanel({
 
   const onEndMatch = () => postEvent("END");
 
+  const onGoldenGoalConfirmed = (teamId: string, playerId: string | null) => {
+    setGoldenGoalModal(null);
+    setMatchMap((prev) => {
+      const cur = prev.get(selectedMatchId);
+      if (!cur) return prev;
+      const next = new Map(prev);
+      next.set(selectedMatchId, {
+        ...cur,
+        scoreA: teamId === cur.teamAId ? cur.scoreA + 1 : cur.scoreA,
+        scoreB: teamId === cur.teamBId ? cur.scoreB + 1 : cur.scoreB,
+      });
+      return next;
+    });
+    postEvent("GOLDEN_GOAL", { teamId, ...(playerId ? { playerId } : {}) });
+  };
+
   // ── Computed stats ────────────────────────────────────────────────────────
   const { penaltyCounts, timeoutNormal, timeoutMech, goalsByPlayer } = useMemo(() => {
     const penalties = new Map<string, number>();
@@ -200,7 +218,7 @@ export function TournamentRefereePanel({
         if (p.timeoutType === "normal") toNormal[tid] = (toNormal[tid] ?? 0) + delta;
         else if (p.timeoutType === "mechanical") toMech[tid] = (toMech[tid] ?? 0) + delta;
       }
-      if (e.type === "GOAL" && p.playerId) {
+      if (e.type === "GOAL" || e.type === "GOLDEN_GOAL") {
         goals.set(String(p.playerId), (goals.get(String(p.playerId)) ?? 0) + (Number(p.delta) || 1));
       }
     });
@@ -269,7 +287,28 @@ export function TournamentRefereePanel({
           </div>
         </div>
       )}
-
+      {/* ── Golden Goal modal ──────────────────────────────────────── */}
+      {goldenGoalModal && (
+        <div className="ref-modal-backdrop">
+          <div className="ref-modal">
+            <p className="ref-modal-title">⭐ Buteur golden goal ?</p>
+            <p className="ref-modal-sub">{goldenGoalModal.teamName}</p>
+            <div className="ref-modal-list">
+              {(teamA?.id === goldenGoalModal.teamId ? teamA : teamB)?.players.map((pl) => (
+                <button key={pl.id} className="ghost ref-modal-item"
+                  onClick={() => onGoldenGoalConfirmed(goldenGoalModal.teamId, pl.id)}>
+                  ⭐ {pl.name}
+                </button>
+              ))}
+              <button className="ghost ref-modal-item ref-modal-unknown"
+                onClick={() => onGoldenGoalConfirmed(goldenGoalModal.teamId, null)}>
+                Sans attribution
+              </button>
+            </div>
+            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setGoldenGoalModal(null)}>Annuler</button>
+          </div>
+        </div>
+      )}
       {/* ── Penalty modal ────────────────────────────────────────────────── */}
       {penaltyModal && (
         <div className="ref-modal-backdrop">
@@ -409,6 +448,12 @@ export function TournamentRefereePanel({
                     <button className="ghost ref-penaltybtn"
                       onClick={() => setPenaltyModal({ teamId: tid, teamName: team.name, players: team.players })}>
                       🟨 Pénalité
+                    </button>
+
+                    {/* Golden Goal */}
+                    <button className="ghost ref-goldenbtn"
+                      onClick={() => setGoldenGoalModal({ teamId: tid, teamName: team.name })}>
+                      ⭐ Golden Goal
                     </button>
 
                     {/* Timeout */}

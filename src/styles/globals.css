@@ -4987,6 +4987,22 @@ details[open] .my-tournaments__section-title--summary::after {
 .ref-penaltybtn:hover { background: #fff5f5; }
 .ref-timeoutbtn:disabled { opacity: 0.35; cursor: not-allowed; }
 
+/* Golden Goal button */
+.ref-goldenbtn {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 10px;
+  width: 100%;
+  text-align: center;
+  border: 2px solid #f59e0b;
+  border-radius: var(--radius-sm);
+  background: #fffbeb;
+  color: #92400e;
+  cursor: pointer;
+  margin-top: 4px;
+}
+.ref-goldenbtn:hover { background: #fef3c7; }
+
 /* End section */
 .ref-end-section {
   padding: 20px 16px;

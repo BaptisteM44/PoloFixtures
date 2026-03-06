@@ -19,7 +19,8 @@ const playerSlotSchema = z.discriminatedUnion("type", [
 const registerSchema = z.object({
   teamName: z.string().min(2),
   city: z.string().optional().nullable(),
-  country: z.string().min(2),
+  country: z.string().optional().nullable(),
+  registrationNote: z.string().max(500).optional().nullable(),
   players: z.array(playerSlotSchema).min(1).max(3),
   captainIndex: z.number().int().min(0).optional(),
 });
@@ -46,7 +47,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const parsed = registerSchema.safeParse(json);
   if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { teamName, city, country, players, captainIndex = 0 } = parsed.data;
+  const { teamName, city, country, registrationNote, players, captainIndex = 0 } = parsed.data;
 
   const existingCount = await prisma.team.count({ where: { tournamentId: params.id } });
   const seed = existingCount + 1;
@@ -135,7 +136,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
       tournamentId: params.id,
       name: teamName,
       city: city ?? null,
-      country: country,
+      country: country ?? null,
+      registrationNote: registrationNote ?? null,
       seed,
       players: {
         create: resolvedPlayerIds.map((playerId, i) => ({

@@ -5,7 +5,7 @@ import { publishMatchUpdate } from "@/lib/sse";
 import { z } from "zod";
 
 const schema = z.object({
-  type: z.enum(["START", "PAUSE", "GOAL", "PENALTY", "TIMEOUT", "TIME_ADJUST", "END"]),
+  type: z.enum(["START", "PAUSE", "GOAL", "GOLDEN_GOAL", "PENALTY", "TIMEOUT", "TIME_ADJUST", "END"]),
   matchClockSec: z.number().min(0),
   teamId: z.string().optional().nullable(),
   playerId: z.string().optional().nullable(),
@@ -48,11 +48,20 @@ export async function POST(request: Request, { params }: { params: { id: string 
   let scoreB = match.scoreB;
   let status = match.status;
   let winnerTeamId = match.winnerTeamId;
+  let goldenGoal = match.goldenGoal;
 
   if (parsed.data.type === "GOAL" && parsed.data.teamId) {
     const delta = parsed.data.delta ?? 1;
     if (parsed.data.teamId === match.teamAId) scoreA = Math.max(0, scoreA + delta);
     if (parsed.data.teamId === match.teamBId) scoreB = Math.max(0, scoreB + delta);
+  }
+
+  // Golden goal: score +1 for the team, end the match, mark goldenGoal = true
+  if (parsed.data.type === "GOLDEN_GOAL" && parsed.data.teamId) {
+    if (parsed.data.teamId === match.teamAId) { scoreA += 1; winnerTeamId = match.teamAId; }
+    if (parsed.data.teamId === match.teamBId) { scoreB += 1; winnerTeamId = match.teamBId; }
+    status = "FINISHED";
+    goldenGoal = true;
   }
 
   if (parsed.data.type === "START") status = "LIVE";
@@ -67,10 +76,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   const updated = await prisma.match.update({
     where: { id: match.id },
-    data: { scoreA, scoreB, status, winnerTeamId }
+    data: { scoreA, scoreB, status, winnerTeamId, goldenGoal }
   });
 
-  if (parsed.data.type === "END" && winnerTeamId) {
+  const triggerAdvance = (parsed.data.type === "END" || parsed.data.type === "GOLDEN_GOAL") && winnerTeamId;
+  if (triggerAdvance) {
     if (match.nextMatchWinId && match.nextSlotWin) {
       await prisma.match.update({
         where: { id: match.nextMatchWinId },

@@ -41,10 +41,6 @@ export default function NewTournamentPage() {
     registrationFeeCurrency: "EUR",
     saturdayFormat: "ALL_DAY",
     sundayFormat: "SE",
-    accommodationAvailable: false,
-    breakfastProvided: false,
-    lunchProvided: false,
-    dinnerProvided: false,
   });
 
   const [coOrganizers, setCoOrganizers] = useState<PlayerResult[]>([]);
@@ -75,9 +71,6 @@ export default function NewTournamentPage() {
 
   const setNum = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: Number(e.target.value) }));
-
-  const setBool = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((f) => ({ ...f, [key]: e.target.checked }));
 
   const searchCoOrgs = useCallback((q: string) => {
     if (q.length < 2) { setCoOrgResults([]); setShowCoOrgResults(false); return; }
@@ -146,10 +139,10 @@ export default function NewTournamentPage() {
         {t("new_subtitle")}
       </p>
 
-      <form onSubmit={submit} style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "start" }}>
+      <form onSubmit={submit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, alignItems: "start" }}>
 
         {/* ── Section 1 : Infos de base ── */}
-        <section className="panel" style={{ flex: "0 1 420px", display: "grid", gap: 14, padding: "20px 24px" }}>
+        <section className="panel" style={{ display: "grid", gap: 14, padding: "20px 24px" }}>
           <h3 style={{ margin: "0 0 4px", fontFamily: "var(--font-display)", fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
             {t("section_basics")}
           </h3>
@@ -196,7 +189,7 @@ export default function NewTournamentPage() {
         </section>
 
         {/* ── Section 2 : Format & compétition ── */}
-        <section className="panel" style={{ flex: "0 1 420px", display: "grid", gap: 14, padding: "20px 24px" }}>
+        <section className="panel" style={{ display: "grid", gap: 14, padding: "20px 24px" }}>
           <h3 style={{ margin: "0 0 4px", fontFamily: "var(--font-display)", fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
             {t("section_format")}
           </h3>
@@ -234,18 +227,18 @@ export default function NewTournamentPage() {
         </section>
 
         {/* ── Section 3 : Inscriptions & frais ── */}
-        <section className="panel" style={{ flex: "0 1 420px", display: "grid", gap: 14, padding: "20px 24px" }}>
+        <section className="panel" style={{ gridColumn: "1 / -1", display: "grid", gap: 14, padding: "20px 24px" }}>
           <h3 style={{ margin: "0 0 4px", fontFamily: "var(--font-display)", fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
             {t("section_registration")}
           </h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <label className="field-row">
               {t("field_reg_start")}
-              <input type="date" value={form.registrationStart} onChange={set("registrationStart")} />
+              <input type="datetime-local" value={form.registrationStart} onChange={set("registrationStart")} />
             </label>
             <label className="field-row">
               {t("field_reg_end")}
-              <input type="date" value={form.registrationEnd} onChange={set("registrationEnd")}
+              <input type="datetime-local" value={form.registrationEnd} onChange={set("registrationEnd")}
                 min={form.registrationStart || undefined} />
             </label>
             <label className="field-row">
@@ -271,34 +264,8 @@ export default function NewTournamentPage() {
           </label>
         </section>
 
-        {/* ── Section 4 : Logistique ── */}
-        <section className="panel" style={{ flex: "1 1 300px", display: "grid", gap: 14, padding: "20px 24px" }}>
-          <h3 style={{ margin: "0 0 4px", fontFamily: "var(--font-display)", fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-            {t("section_logistics_new")}
-          </h3>
-          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
-            {t("logistics_desc")}
-          </p>
-          <div style={{ display: "grid", gap: 10 }}>
-            {([
-              { key: "accommodationAvailable", label: t("logistic_accommodation"), desc: t("logistic_accommodation_desc") },
-              { key: "breakfastProvided", label: t("logistic_breakfast"), desc: t("logistic_breakfast_desc") },
-              { key: "lunchProvided", label: t("logistic_lunch"), desc: t("logistic_lunch_desc") },
-              { key: "dinnerProvided", label: t("logistic_dinner"), desc: t("logistic_dinner_desc") },
-            ] as { key: keyof typeof form; label: string; desc: string }[]).map(({ key, label, desc }) => (
-              <label key={key} style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer", padding: "10px 14px", borderRadius: 8, border: `2px solid ${form[key] ? "var(--teal)" : "var(--border)"}`, background: form[key] ? "color-mix(in srgb, var(--teal) 8%, var(--surface))" : "var(--surface)", transition: "border-color 0.15s, background 0.15s" }}>
-                <input type="checkbox" checked={!!form[key]} onChange={setBool(key)} style={{ marginTop: 2, accentColor: "var(--teal)", width: 16, height: 16, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{label}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{desc}</div>
-                </div>
-              </label>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Section 5 : Co-organisateurs ── */}
-        <section className="panel" style={{ flex: "1 0 100%", display: "grid", gap: 14, padding: "20px 24px" }}>
+        {/* ── Section 4 : Co-organisateurs ── */}
+        <section className="panel" style={{ gridColumn: "1 / -1", display: "grid", gap: 14, padding: "20px 24px" }}>
           <h3 style={{ margin: "0 0 4px", fontFamily: "var(--font-display)", fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
             {t("section_co_organizers")} <span style={{ fontWeight: 400, fontSize: 12 }}>{t("co_organizer_optional")}</span>
           </h3>
@@ -340,9 +307,9 @@ export default function NewTournamentPage() {
           </div>
         </section>
 
-        {error && <p className="error" style={{ flex: "1 0 100%" }}>{error}</p>}
+        {error && <p className="error" style={{ gridColumn: "1 / -1" }}>{error}</p>}
 
-        <button className="primary" type="submit" disabled={submitting} style={{ flex: "1 0 100%", justifyContent: "center" }}>
+        <button className="primary" type="submit" disabled={submitting} style={{ gridColumn: "1 / -1", justifyContent: "center" }}>
           {submitting ? t("btn_submit_creating") : t("btn_submit_new")}
         </button>
 

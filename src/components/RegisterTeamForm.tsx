@@ -59,8 +59,7 @@ export function RegisterTeamForm({
   const [squads, setSquads] = useState<Squad[]>([]);
   const [pastTeamsLoading, setPastTeamsLoading] = useState(false);
   const [teamName, setTeamName] = useState("");
-  const [teamCity, setTeamCity] = useState("");
-  const [teamCountry, setTeamCountry] = useState("");
+  const [registrationNote, setRegistrationNote] = useState("");
   const [slots, setSlots] = useState<PlayerSlot[]>(() =>
     Array.from({ length: maxPlayers }, () => ({ type: "empty" as const }))
   );
@@ -74,7 +73,7 @@ export function RegisterTeamForm({
   };
 
   const reset = () => {
-    setTeamName(""); setTeamCity(""); setTeamCountry("");
+    setTeamName(""); setRegistrationNote("");
     setSlots(Array.from({ length: maxPlayers }, () => ({ type: "empty" as const })));
     setError(null); setMode("new");
   };
@@ -134,7 +133,7 @@ export function RegisterTeamForm({
     const res = await fetch(`/api/tournaments/${tournamentId}/register-team`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ teamName, city: teamCity || null, country: teamCountry, players, captainIndex })
+      body: JSON.stringify({ teamName, registrationNote: registrationNote || null, players, captainIndex })
     });
 
     setLoading(false);
@@ -242,20 +241,10 @@ export function RegisterTeamForm({
 
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 20 }}>
         {/* Team info */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <label className="field-row" style={{ gridColumn: "1/-1" }}>
-            {t("field_name")}
-            <input required value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder={t("field_name_placeholder")} />
-          </label>
-          <label className="field-row">
-            {t("field_city")}
-            <input value={teamCity} onChange={(e) => setTeamCity(e.target.value)} placeholder={t("field_city_placeholder")} />
-          </label>
-          <label className="field-row">
-            {t("field_country")}
-            <input required value={teamCountry} onChange={(e) => setTeamCountry(e.target.value)} placeholder="Belgium" />
-          </label>
-        </div>
+        <label className="field-row">
+          {t("field_name")}
+          <input required value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder={t("field_name_placeholder")} />
+        </label>
 
         {/* Player slots */}
         <div>
@@ -279,6 +268,20 @@ export function RegisterTeamForm({
             ))}
           </div>
         </div>
+
+        {/* Message pour les organisateurs */}
+        <label className="field-row">
+          {t("field_registration_note")}
+          <textarea
+            value={registrationNote}
+            onChange={(e) => setRegistrationNote(e.target.value)}
+            placeholder={t("field_registration_note_placeholder")}
+            maxLength={500}
+            rows={3}
+            style={{ resize: "vertical", fontSize: 13 }}
+          />
+          <span style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "right" }}>{registrationNote.length}/500</span>
+        </label>
 
         {error && <p className="error">{error}</p>}
 

@@ -12,7 +12,7 @@ export function computePlayerBadgesForTournament(
   events: { type: string; payload: unknown }[]
 ): string[] {
   const goals = events.filter(
-    (e) => e.type === "GOAL" && (e.payload as { playerId?: string }).playerId === playerId
+    (e) => (e.type === "GOAL" || e.type === "GOLDEN_GOAL") && (e.payload as { playerId?: string }).playerId === playerId
   ).length;
   const penalties = events.filter(
     (e) => e.type === "PENALTY" && (e.payload as { playerId?: string }).playerId === playerId
@@ -91,14 +91,15 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   const allEvents = await prisma.matchEvent.findMany({
     where: {
       OR: [
-        { type: "GOAL",    payload: { path: ["playerId"], equals: playerId } },
-        { type: "PENALTY", payload: { path: ["playerId"], equals: playerId } },
+        { type: "GOAL",        payload: { path: ["playerId"], equals: playerId } },
+        { type: "GOLDEN_GOAL", payload: { path: ["playerId"], equals: playerId } },
+        { type: "PENALTY",     payload: { path: ["playerId"], equals: playerId } },
       ],
     },
     include: { match: { select: { tournamentId: true, winnerTeamId: true } } },
   });
 
-  const totalGoals     = allEvents.filter((e) => e.type === "GOAL").length;
+  const totalGoals     = allEvents.filter((e) => e.type === "GOAL" || e.type === "GOLDEN_GOAL").length;
   const totalPenalties = allEvents.filter((e) => e.type === "PENALTY").length;
 
   // Performance
@@ -114,7 +115,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   const tournamentPenalties = new Map<string, number>();
   for (const e of allEvents) {
     const tid = e.match.tournamentId;
-    if (e.type === "GOAL")    tournamentGoals.set(tid, (tournamentGoals.get(tid) ?? 0) + 1);
+    if (e.type === "GOAL" || e.type === "GOLDEN_GOAL") tournamentGoals.set(tid, (tournamentGoals.get(tid) ?? 0) + 1);
     if (e.type === "PENALTY") tournamentPenalties.set(tid, (tournamentPenalties.get(tid) ?? 0) + 1);
   }
   for (const [tid, g] of tournamentGoals) {
@@ -123,6 +124,8 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
       break;
     }
   }
+
+  // dicey / golden_double: wins via golden goal — computed after teamPlayers are fetched below
 
   // ── All teams the player was part of ────────────────────────────────────
   const teamPlayers = await prisma.teamPlayer.findMany({
@@ -140,6 +143,16 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
 
   const captainCount = teamPlayers.filter((tp) => tp.isCaptain).length;
   if (captainCount >= 3) badges.add("captain");
+
+  // dicey / golden_double: wins via golden goal
+  const playerTeamIds = teamPlayers.map((tp) => tp.teamId);
+  if (playerTeamIds.length > 0) {
+    const goldenGoalWins = await prisma.match.count({
+      where: { goldenGoal: true, winnerTeamId: { in: playerTeamIds } },
+    });
+    if (goldenGoalWins >= 1) badges.add("dicey");
+    if (goldenGoalWins >= 3) badges.add("golden_double");
+  }
 
   const tournaments = teamPlayers.map((tp) => tp.team.tournament);
 
