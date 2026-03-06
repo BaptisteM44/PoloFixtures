@@ -1,13 +1,16 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { SquadDashboard } from "@/components/SquadDashboard";
+import { getTranslations } from "next-intl/server";
 
 export default async function SquadPage({ params }: { params: { squadId: string } }) {
   const session = await auth();
   const playerId = session?.user?.playerId;
   if (!playerId) redirect("/login");
+
+  const t = await getTranslations("my_teams");
 
   const squad = await prisma.squad.findUnique({
     where: { id: params.squadId },
@@ -33,16 +36,16 @@ export default async function SquadPage({ params }: { params: { squadId: string 
     },
   });
 
-  if (!squad) return <div className="page"><p>Équipe introuvable.</p></div>;
+  if (!squad) return <div className="page"><p>{t("squad_not_found")}</p></div>;
 
   const myMember = squad.members.find((m) => m.playerId === playerId);
   if (!myMember) {
     return (
       <div className="page">
         <div className="panel" style={{ textAlign: "center", padding: 48 }}>
-          <h2>Accès refusé</h2>
-          <p className="meta">Tu n&apos;es pas membre de cette équipe.</p>
-          <Link href="/my-teams" className="primary" style={{ marginTop: 16, display: "inline-block" }}>← Mes équipes</Link>
+          <h2>{t("squad_access_denied")}</h2>
+          <p className="meta">{t("squad_not_member")}</p>
+          <Link href="/my-teams" className="primary" style={{ marginTop: 16, display: "inline-block" }}>{t("btn_back_teams")}</Link>
         </div>
       </div>
     );
@@ -54,7 +57,7 @@ export default async function SquadPage({ params }: { params: { squadId: string 
     <div className="page">
       <div style={{ marginBottom: 16 }}>
         <Link href="/my-teams" style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
-          ← Mes équipes
+          {t("btn_back_teams")}
         </Link>
       </div>
 

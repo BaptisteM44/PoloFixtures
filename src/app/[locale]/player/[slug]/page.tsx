@@ -1,11 +1,13 @@
 import { prisma } from "@/lib/db";
 import { PokemonCard } from "@/components/PokemonCard";
+import { getTranslations } from "next-intl/server";
 
 export default async function PlayerPage({ params }: { params: { slug: string } }) {
+  const t = await getTranslations("player");
   const player =
     (await prisma.player.findUnique({ where: { slug: params.slug } })) ??
     (await prisma.player.findFirst({ where: { id: params.slug } }));
-  if (!player) return <div>Joueur introuvable</div>;
+  if (!player) return <div>{t("not_found")}</div>;
 
   return (
     <div className="player-profile">

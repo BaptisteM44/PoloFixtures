@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { TeamChat } from "@/components/TeamChat";
 
 type Teammate = {
@@ -48,10 +49,10 @@ type CreatedTournament = {
   _count: { teams: number };
 };
 
-const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  UPCOMING: { label: "À venir", className: "badge--upcoming" },
-  LIVE: { label: "En cours", className: "badge--live" },
-  COMPLETED: { label: "Terminé", className: "badge--completed" },
+const STATUS_CLASSES: Record<string, string> = {
+  UPCOMING: "badge--upcoming",
+  LIVE: "badge--live",
+  COMPLETED: "badge--completed",
 };
 
 function flagEmoji(countryCode: string) {
@@ -66,7 +67,19 @@ function formatDateRange(start: string, end: string) {
 }
 
 export default function MyTournamentsPage() {
+  const t = useTranslations("my_tournaments");
+  const ts = useTranslations("tournaments");
+  const tc = useTranslations("common");
   const { data: session, status: sessionStatus } = useSession();
+
+  const statusLabel = (s: string) => {
+    const map: Record<string, string> = {
+      UPCOMING: ts("status_upcoming"),
+      LIVE: ts("status_live"),
+      COMPLETED: ts("status_completed"),
+    };
+    return map[s] ?? s;
+  };
   const router = useRouter();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [created, setCreated] = useState<CreatedTournament[]>([]);
@@ -97,7 +110,7 @@ export default function MyTournamentsPage() {
   if (sessionStatus === "loading" || loading) {
     return (
       <div style={{ padding: 40, textAlign: "center" }}>
-        <p className="meta">Chargement…</p>
+        <p className="meta">{ts("empty_no_match")}</p>
       </div>
     );
   }
@@ -109,9 +122,9 @@ export default function MyTournamentsPage() {
   const completed = entries.filter((e) => e.tournament.status === "COMPLETED");
 
   const playerSections = [
-    { title: "🔴  En cours", entries: live, collapsible: false },
-    { title: "📅  À venir", entries: upcoming, collapsible: false },
-    { title: "✅  Terminés", entries: completed, collapsible: true },
+    { title: `🔴  ${ts("status_live")}`, entries: live, collapsible: false },
+    { title: `📅  ${ts("status_upcoming")}`, entries: upcoming, collapsible: false },
+    { title: `✅  ${ts("status_completed")}`, entries: completed, collapsible: true },
   ].filter((s) => s.entries.length > 0);
 
   const createdUpcoming = created.filter((t) => t.status === "UPCOMING");
@@ -119,28 +132,28 @@ export default function MyTournamentsPage() {
   const createdCompleted = created.filter((t) => t.status === "COMPLETED");
 
   const orgSections = [
-    { title: "🔴  En cours", items: createdLive, collapsible: false },
-    { title: "📅  À venir", items: createdUpcoming, collapsible: false },
-    { title: "✅  Terminés", items: createdCompleted, collapsible: true },
+    { title: `🔴  ${ts("status_live")}`, items: createdLive, collapsible: false },
+    { title: `📅  ${ts("status_upcoming")}`, items: createdUpcoming, collapsible: false },
+    { title: `✅  ${ts("status_completed")}`, items: createdCompleted, collapsible: true },
   ].filter((s) => s.items.length > 0);
 
   return (
     <div className="my-tournaments">
       <div className="my-tournaments__header">
-        <h1>Mes Tournois</h1>
+        <h1>{t("page_title")}</h1>
       </div>
 
       {/* ── SECTION JOUEUR ── */}
       <div className="my-tournaments__role-section">
         <div className="my-tournaments__role-heading">
-          <h2>🏑 En tant que joueur·euse</h2>
+          <h2>🏑 {t("section_player")}</h2>
           <span className="meta">{entries.length} tournoi{entries.length !== 1 ? "s" : ""}</span>
         </div>
 
         {entries.length === 0 ? (
           <div className="panel" style={{ textAlign: "center", padding: 32 }}>
-            <p style={{ fontSize: 15, marginBottom: 12 }}>Aucune inscription pour l&apos;instant</p>
-            <Link href="/tournaments" className="primary">Parcourir les tournois →</Link>
+            <p style={{ fontSize: 15, marginBottom: 12 }}>{t("empty_player")}</p>
+            <Link href="/tournaments" className="primary">{ts("page_title")} →</Link>
           </div>
         ) : (
           playerSections.map((section) => (
@@ -152,7 +165,7 @@ export default function MyTournamentsPage() {
                 <div className="my-tournaments__grid" style={{ marginTop: 12 }}>
                   {section.entries.map((entry) => {
                     const chatOpen = openChat === entry.teamId;
-                    const statusInfo = STATUS_LABELS[entry.tournament.status] ?? { label: entry.tournament.status, className: "" };
+                    const statusCls = STATUS_CLASSES[entry.tournament.status] ?? "";
                     return (
                       <div key={entry.teamId} className="my-tournaments__card panel">
                         <div className="my-tournaments__card-header">
@@ -163,7 +176,7 @@ export default function MyTournamentsPage() {
                               <span className="my-tournaments__card-dates">{formatDateRange(entry.tournament.dateStart, entry.tournament.dateEnd)}</span>
                             </div>
                           </div>
-                          <span className={`my-tournaments__status-badge ${statusInfo.className}`}>{statusInfo.label}</span>
+                          <span className={`my-tournaments__status-badge ${statusCls}`}>{statusLabel(entry.tournament.status)}</span>
                         </div>
                         <div className="my-tournaments__team" style={entry.teamColor ? { "--team-accent": entry.teamColor } as React.CSSProperties : undefined}>
                           <div className="my-tournaments__team-header">
@@ -171,7 +184,7 @@ export default function MyTournamentsPage() {
                               {entry.teamColor && <span className="my-tournaments__team-dot" />}
                               {entry.teamName}
                             </span>
-                            {entry.isCaptain && <span className="my-tournaments__captain-badge">Capitaine</span>}
+                            {entry.isCaptain && <span className="my-tournaments__captain-badge">{t("captain")}</span>}
                           </div>
                           <div className="my-tournaments__teammates">
                             {entry.teammates.map((tm) => (
@@ -195,7 +208,7 @@ export default function MyTournamentsPage() {
                           </div>
                         </div>
                         <button className="my-tournaments__chat-toggle" onClick={() => setOpenChat(chatOpen ? null : entry.teamId)}>
-                          💬 {chatOpen ? "Fermer la discussion" : "Discussion d'équipe"}
+                          💬 {chatOpen ? t("chat_close") : t("chat_open")}
                         </button>
                         {chatOpen && (
                           <div className="my-tournaments__chat-container">
@@ -213,7 +226,7 @@ export default function MyTournamentsPage() {
               <div className="my-tournaments__grid">
                 {section.entries.map((entry) => {
                   const chatOpen = openChat === entry.teamId;
-                  const statusInfo = STATUS_LABELS[entry.tournament.status] ?? { label: entry.tournament.status, className: "" };
+                  const statusCls = STATUS_CLASSES[entry.tournament.status] ?? "";
 
                   return (
                     <div key={entry.teamId} className="my-tournaments__card panel">
@@ -227,8 +240,8 @@ export default function MyTournamentsPage() {
                             <span className="my-tournaments__card-dates">{formatDateRange(entry.tournament.dateStart, entry.tournament.dateEnd)}</span>
                           </div>
                         </div>
-                        <span className={`my-tournaments__status-badge ${statusInfo.className}`}>
-                          {statusInfo.label}
+                        <span className={`my-tournaments__status-badge ${statusCls}`}>
+                          {statusLabel(entry.tournament.status)}
                         </span>
                       </div>
 
@@ -238,7 +251,7 @@ export default function MyTournamentsPage() {
                             {entry.teamColor && <span className="my-tournaments__team-dot" />}
                             {entry.teamName}
                           </span>
-                          {entry.isCaptain && <span className="my-tournaments__captain-badge">Capitaine</span>}
+                          {entry.isCaptain && <span className="my-tournaments__captain-badge">{t("captain")}</span>}
                         </div>
                         <div className="my-tournaments__teammates">
                           {entry.teammates.map((tm) => (
@@ -268,7 +281,7 @@ export default function MyTournamentsPage() {
                         className="my-tournaments__chat-toggle"
                         onClick={() => setOpenChat(chatOpen ? null : entry.teamId)}
                       >
-                        💬 {chatOpen ? "Fermer la discussion" : "Discussion d'équipe"}
+                        💬 {chatOpen ? t("chat_close") : t("chat_open")}
                       </button>
 
                       {chatOpen && (
@@ -289,47 +302,47 @@ export default function MyTournamentsPage() {
       {/* ── SECTION ORGANISATEUR ── */}
       <div className="my-tournaments__role-section">
         <div className="my-tournaments__role-heading">
-          <h2>🏗️ En tant qu&apos;organisateur·trice</h2>
+          <h2>🏗️ {t("section_organizer")}</h2>
           <span className="meta">{created.length} tournoi{created.length !== 1 ? "s" : ""}</span>
-          <Link href="/tournament/new" className="ghost" style={{ fontSize: 12, marginLeft: "auto" }}>+ Créer un tournoi</Link>
+          <Link href="/tournament/new" className="ghost" style={{ fontSize: 12, marginLeft: "auto" }}>+ {t("btn_create")}</Link>
         </div>
 
         {created.length === 0 ? (
           <div className="panel" style={{ textAlign: "center", padding: 32 }}>
-            <p style={{ fontSize: 15, marginBottom: 12 }}>Tu n&apos;as pas encore organisé de tournoi.</p>
-            <Link href="/tournament/new" className="primary">Créer un tournoi →</Link>
+            <p style={{ fontSize: 15, marginBottom: 12 }}>{t("empty_organizer")}</p>
+            <Link href="/tournament/new" className="primary">{t("btn_create")} →</Link>
           </div>
         ) : (
           orgSections.map((section) => {
-            const cards = section.items.map((t) => {
-              const statusInfo = STATUS_LABELS[t.status] ?? { label: t.status, className: "" };
+            const cards = section.items.map((tour) => {
+              const statusCls = STATUS_CLASSES[tour.status] ?? "";
               return (
-                <div key={t.id} className="my-tournaments__card panel">
+                <div key={tour.id} className="my-tournaments__card panel">
                   <div className="my-tournaments__card-header">
                     <div style={{ flex: 1 }}>
-                      <Link href={`/tournament/${t.id}`} className="my-tournaments__tournament-name">{t.name}</Link>
+                      <Link href={`/tournament/${tour.id}`} className="my-tournaments__tournament-name">{tour.name}</Link>
                       <div className="my-tournaments__card-sub">
-                        <span>{flagEmoji(t.country)} {t.city}, {t.country}</span>
-                        <span className="my-tournaments__card-dates">{formatDateRange(t.dateStart, t.dateEnd)}</span>
+                        <span>{flagEmoji(tour.country)} {tour.city}, {tour.country}</span>
+                        <span className="my-tournaments__card-dates">{formatDateRange(tour.dateStart, tour.dateEnd)}</span>
                       </div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                      <span className={`my-tournaments__status-badge ${statusInfo.className}`}>{statusInfo.label}</span>
-                      {!t.approved && (
+                      <span className={`my-tournaments__status-badge ${statusCls}`}>{statusLabel(tour.status)}</span>
+                      {!tour.approved && (
                         <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "var(--font-display)", background: "var(--yellow)", border: "1.5px solid var(--border)", borderRadius: 4, padding: "2px 7px" }}>
-                          EN ATTENTE
+                          {t("pending")}
                         </span>
                       )}
                     </div>
                   </div>
                   <div className="my-tournaments__team">
                     <span className="meta" style={{ fontSize: 13 }}>
-                      {t._count.teams} équipe{t._count.teams !== 1 ? "s" : ""} inscrite{t._count.teams !== 1 ? "s" : ""}
+                      {tour._count.teams} équipe{tour._count.teams !== 1 ? "s" : ""} inscrite{tour._count.teams !== 1 ? "s" : ""}
                     </span>
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <Link href={`/tournament/${t.id}`} className="ghost" style={{ fontSize: 12 }}>Voir →</Link>
-                    <Link href={`/tournament/${t.id}/edit`} className="ghost" style={{ fontSize: 12 }}>✏️ Gérer</Link>
+                    <Link href={`/tournament/${tour.id}`} className="ghost" style={{ fontSize: 12 }}>{tc("see_all").replace(" →", "")} →</Link>
+                    <Link href={`/tournament/${tour.id}/edit`} className="ghost" style={{ fontSize: 12 }}>✏️ {tc("edit")}</Link>
                   </div>
                 </div>
               );

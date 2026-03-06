@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { PokemonCard } from "@/components/PokemonCard";
 import { ClubMemberManager } from "@/components/ClubMemberManager";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,9 @@ export default async function ClubPage({
   const canSee = club.approved || isManager || isAdmin;
   if (!canSee) notFound();
 
+  const t = await getTranslations("club");
+  const ta = await getTranslations("admin");
+
   const activeMembers = club.members
     .filter((m) => m.status === "MEMBER")
     .sort(() => Math.random() - 0.5);
@@ -60,11 +64,11 @@ export default async function ClubPage({
       {/* Bannière pendante */}
       {!club.approved && (
         <div style={{ background: "color-mix(in srgb, var(--yellow) 12%, transparent)", border: "2px solid var(--yellow)", borderRadius: "var(--radius)", padding: "12px 20px", marginBottom: 20 }}>
-          ⏳ Ce club est en attente d&apos;approbation par un administrateur.
+          ⏳ {t("pending_approval")}
           {isAdmin && (
             <form action={`/api/admin/clubs/${club.id}/approve`} method="POST" style={{ display: "inline", marginLeft: 16 }}>
               <button type="submit" className="primary" style={{ fontSize: 12, padding: "4px 12px" }}>
-                ✓ Approuver
+                ✓ {ta("btn_approve")}
               </button>
             </form>
           )}
@@ -73,7 +77,7 @@ export default async function ClubPage({
 
       {searchParams.created && (
         <div style={{ background: "color-mix(in srgb, var(--teal) 12%, transparent)", border: "2px solid var(--teal)", borderRadius: "var(--radius)", padding: "12px 20px", marginBottom: 20 }}>
-          🎉 Club créé ! Il sera visible publiquement après approbation.
+          {t("created_success")}
         </div>
       )}
 
@@ -91,20 +95,20 @@ export default async function ClubPage({
           {club.description && <p style={{ marginTop: 8, fontSize: 14, color: "var(--text-muted)" }}>{club.description}</p>}
           {club.website && (
             <a href={club.website} target="_blank" rel="noopener noreferrer" className="ghost" style={{ marginTop: 8, display: "inline-flex", fontSize: 13 }}>
-              🌐 Site web →
+              {t("website_link")}
             </a>
           )}
           <p className="meta" style={{ marginTop: 8 }}>
-            Manager : <Link href={`/player/${club.manager.slug ?? club.manager.id}`}>{club.manager.name}</Link>
+            {t("manager_label")} : <Link href={`/player/${club.manager.slug ?? club.manager.id}`}>{club.manager.name}</Link>
           </p>
         </div>
         <div className="club-hero__actions">
           <Link href={`/continent/${club.continentCode}/${encodeURIComponent(club.country)}`} className="ghost">
-            ← {club.country}
+            {t("btn_back_country", { country: club.country })}
           </Link>
           {isManager && (
             <Link href={`/club/${club.id}/edit`} className="ghost" style={{ fontSize: 13 }}>
-              ✏️ Modifier
+              ✏️ {t("btn_edit")}
             </Link>
           )}
         </div>
@@ -115,7 +119,7 @@ export default async function ClubPage({
         <div className="club-players">
           <div className="section-header" style={{ marginBottom: 16 }}>
             <div>
-              <h2>Joueur·ses ({activeMembers.length})</h2>
+              <h2>{t("members_title", { count: activeMembers.length })}</h2>
             </div>
           </div>
           {activeMembers.length > 0 ? (
@@ -142,7 +146,7 @@ export default async function ClubPage({
               ))}
             </div>
           ) : (
-            <div className="empty-state"><p>Aucun membre pour l&apos;instant.</p></div>
+            <div className="empty-state"><p>{t("members_empty")}</p></div>
           )}
         </div>
 

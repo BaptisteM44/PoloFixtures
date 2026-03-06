@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { COUNTRIES } from "@/lib/countries";
 
 export default function RegisterPage() {
+  const t = useTranslations("auth");
+  const tc = useTranslations("common");
   const [form, setForm] = useState({ name: "", email: "", password: "", country: "FR", city: "" });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,11 +30,10 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(typeof data.error === "string" ? data.error : "Erreur lors de la création du compte.");
+        setError(typeof data.error === "string" ? data.error : t("error_register_failed"));
         return;
       }
 
-      // Auto-login after registration
       const result = await signIn("player", {
         email: form.email,
         password: form.password,
@@ -39,7 +41,7 @@ export default function RegisterPage() {
       });
 
       if (result?.error) {
-        setError("Compte créé mais connexion échouée. Essaie de te connecter manuellement.");
+        setError(t("error_login_after_register"));
         return;
       }
 
@@ -53,28 +55,26 @@ export default function RegisterPage() {
     <div className="login-page">
       <div style={{ width: "100%", maxWidth: 440 }}>
         <div style={{ marginBottom: 24 }}>
-          <h1>Créer un compte joueur</h1>
-          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-            Inscris-toi pour gérer ton profil et t&apos;inscrire aux tournois.
-          </p>
+          <h1>{t("register_title")}</h1>
+          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>{t("register_subtitle")}</p>
         </div>
 
         <form className="panel form" onSubmit={submit} style={{ display: "grid", gap: 16 }}>
           <label className="field-row">
-            Nom complet
-            <input required value={form.name} onChange={set("name")} placeholder="Ton nom" />
+            {t("field_full_name")}
+            <input required value={form.name} onChange={set("name")} placeholder={t("field_full_name_placeholder")} />
           </label>
           <label className="field-row">
-            Email
-            <input required type="email" value={form.email} onChange={set("email")} placeholder="toi@exemple.com" />
+            {t("field_email")}
+            <input required type="email" value={form.email} onChange={set("email")} placeholder={t("field_email_placeholder")} />
           </label>
           <label className="field-row">
-            Mot de passe <span style={{ color: "var(--text-muted)", fontSize: 12 }}>(min. 6 caractères)</span>
-            <input required type="password" value={form.password} onChange={set("password")} placeholder="••••••" />
+            {t("field_password")} <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{t("field_password_hint")}</span>
+            <input required type="password" value={form.password} onChange={set("password")} placeholder={t("field_password_placeholder")} />
           </label>
           <div className="form-grid">
             <label className="field-row">
-              Pays
+              {t("field_country")}
               <select value={form.country} onChange={set("country")}>
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>{c.name}</option>
@@ -82,20 +82,20 @@ export default function RegisterPage() {
               </select>
             </label>
             <label className="field-row">
-              Ville <span style={{ color: "var(--text-muted)", fontSize: 12 }}>(optionnel)</span>
-              <input value={form.city} onChange={set("city")} placeholder="Paris" />
+              {t("field_city")} <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{tc("optional")}</span>
+              <input value={form.city} onChange={set("city")} placeholder={t("field_city_placeholder")} />
             </label>
           </div>
 
           {error && <p className="error">{error}</p>}
 
           <button className="primary" type="submit" disabled={loading} style={{ width: "100%", justifyContent: "center" }}>
-            {loading ? "Création..." : "Créer mon compte"}
+            {loading ? t("btn_register_loading") : t("btn_register")}
           </button>
 
           <p style={{ textAlign: "center", fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
-            Déjà un compte ?{" "}
-            <Link href="/login" style={{ color: "var(--teal)", fontWeight: 700 }}>Se connecter</Link>
+            {t("link_already_account")}{" "}
+            <Link href="/login" style={{ color: "var(--teal)", fontWeight: 700 }}>{t("link_login")}</Link>
           </p>
         </form>
       </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { formatDate } from "@/lib/utils";
 
 type TournamentRow = {
@@ -20,23 +21,6 @@ type TournamentRow = {
   registrationEnd: string | null;
   bannerPath: string | null;
 };
-
-const CONTINENTS = [
-  { code: "", label: "Tous les continents" },
-  { code: "NA", label: "North America" },
-  { code: "SA", label: "South America" },
-  { code: "EU", label: "Europe" },
-  { code: "AF", label: "Africa" },
-  { code: "AS", label: "Asia" },
-  { code: "OC", label: "Oceania" },
-];
-
-const STATUSES = [
-  { code: "", label: "Tous les statuts" },
-  { code: "LIVE", label: "En cours" },
-  { code: "UPCOMING", label: "À venir" },
-  { code: "COMPLETED", label: "Terminés" },
-];
 
 const COUNTRY_FLAGS: Record<string, string> = {
   France: "🇫🇷", "United States": "🇺🇸", "United Kingdom": "🇬🇧",
@@ -60,9 +44,9 @@ function toMonthKey(dateStart: string): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function monthKeyLabel(key: string): string {
+function monthKeyLabel(key: string, locale: string): string {
   const [year, month] = key.split("-");
-  return new Date(Number(year), Number(month) - 1, 1).toLocaleString("en-US", {
+  return new Date(Number(year), Number(month) - 1, 1).toLocaleString(locale, {
     month: "long",
     year: "numeric",
   });
@@ -70,7 +54,7 @@ function monthKeyLabel(key: string): string {
 
 type MonthGroup = { key: string; label: string; tournaments: TournamentRow[] };
 
-function groupByMonth(items: TournamentRow[]): MonthGroup[] {
+function groupByMonth(items: TournamentRow[], locale: string): MonthGroup[] {
   const map = new Map<string, TournamentRow[]>();
   for (const t of items) {
     const key = toMonthKey(t.dateStart);
@@ -79,7 +63,7 @@ function groupByMonth(items: TournamentRow[]): MonthGroup[] {
   }
   return [...map.entries()].map(([key, ts]) => ({
     key,
-    label: monthKeyLabel(key),
+    label: monthKeyLabel(key, locale),
     tournaments: ts,
   }));
 }
@@ -120,31 +104,85 @@ export function TournamentBrowser({
 }: {
   tournaments: TournamentRow[];
 }) {
-  const [continent, setContinent] = useState(() => getDefaultContinent());
+  const t = useTranslations("tournaments");
+  const r = useTranslations("registration");
+  const locale = useLocale();
+
+  const CONTINENTS = [
+    { code: "", label: t("filter_all_continents") },
+    { code: "NA", label: t("continent_na") },
+    { code: "SA", label: t("continent_sa") },
+    { code: "EU", label: t("continent_eu") },
+    { code: "AF", label: t("continent_af") },
+    { code: "AS", label: t("continent_as") },
+    { code: "OC", label: t("continent_oc") },
+  ];
+
+  const STATUSES = [
+    { code: "", label: t("filter_all_statuses") },
+    { code: "LIVE", label: t("status_live") },
+    { code: "UPCOMING", label: t("status_upcoming") },
+    { code: "COMPLETED", label: t("status_completed") },
+  ];
+
+  const STATUS_LABELS: Record<string, string> = {
+    LIVE: t("status_live"),
+    UPCOMING: t("status_upcoming"),
+    COMPLETED: t("status_completed"),
+  };
+
+  const getRegLabel = (item: TournamentRow): string => {
+    const now = new Date();
+    const fmt = (d: string) =>
+      new Date(d).toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    if (item.registrationEnd) {
+      const end = new Date(item.registrationEnd);
+      if (now > end) return r("reg_badge_closed");
+      if (item.registrationStart && now < new Date(item.registrationStart)) {
+        const daysToOpen = Math.ceil((new Date(item.registrationStart).getTime() - now.getTime()) / 86_400_000);
+        const openLabel = daysToOpen <= 1 ? r("reg_badge_opens_tomorrow") : r("reg_badge_opens_in_days", { days: daysToOpen });
+        return `${openLabel} (${fmt(item.registrationStart)})`;
+      }
+      const daysLeft = Math.ceil((end.getTime() - now.getTime()) / 86_400_000);
+      const countdown = daysLeft <= 1 ? r("reg_badge_last_day") : daysLeft <= 7 ? `🔥 J-${daysLeft}` : r("reg_badge_days_left", { days: daysLeft });
+      return `${countdown} · ${r("reg_badge_closes_on", { date: fmt(item.registrationEnd) })}`;
+    }
+    if (item.registrationStart) {
+      const start = new Date(item.registrationStart);
+      if (now < start) {
+        const daysToOpen = Math.ceil((start.getTime() - now.getTime()) / 86_400_000);
+        const openLabel = daysToOpen <= 1 ? r("reg_badge_opens_tomorrow") : r("reg_badge_opens_in_days", { days: daysToOpen });
+        return `${openLabel} (${fmt(item.registrationStart)})`;
+      }
+      return r("reg_badge_open");
+    }
+    return "—";
+  };
   const [statusFilter, setStatusFilter] = useState("");
   const [countryFilter, setCountryFilter] = useState("");
   const [yearFilter, setYearFilter] = useState(() => getDefaultYear());
   const [monthFilter, setMonthFilter] = useState("");
+  const [continent, setContinent] = useState(() => getDefaultContinent());
 
-  const countries = [...new Set(tournaments.map((t) => t.country))].sort();
+  const countries = [...new Set(tournaments.map((tour) => tour.country))].sort();
 
   const availableYears = [
-    ...new Set(tournaments.map((t) => new Date(t.dateStart).getFullYear())),
+    ...new Set(tournaments.map((tour) => new Date(tour.dateStart).getFullYear())),
   ].sort((a, b) => a - b);
 
   const availableMonthKeys = [
-    ...new Set(tournaments.map((t) => toMonthKey(t.dateStart))),
+    ...new Set(tournaments.map((tour) => toMonthKey(tour.dateStart))),
   ].sort();
 
-  const filtered = tournaments.filter((t) => {
-    if (continent && t.continentCode !== continent) return false;
-    if (statusFilter && t.status !== statusFilter) return false;
-    if (countryFilter && t.country !== countryFilter) return false;
-    if (monthFilter && toMonthKey(t.dateStart) !== monthFilter) return false;
+  const filtered = tournaments.filter((tour) => {
+    if (continent && tour.continentCode !== continent) return false;
+    if (statusFilter && tour.status !== statusFilter) return false;
+    if (countryFilter && tour.country !== countryFilter) return false;
+    if (monthFilter && toMonthKey(tour.dateStart) !== monthFilter) return false;
     if (
       yearFilter &&
       !monthFilter &&
-      new Date(t.dateStart).getFullYear() !== Number(yearFilter)
+      new Date(tour.dateStart).getFullYear() !== Number(yearFilter)
     )
       return false;
     return true;
@@ -154,7 +192,7 @@ export function TournamentBrowser({
     (a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime()
   );
 
-  const groups = groupByMonth(sorted);
+  const groups = groupByMonth(sorted, locale);
 
   return (
     <div>
@@ -183,7 +221,7 @@ export function TournamentBrowser({
           value={countryFilter}
           onChange={(e) => setCountryFilter(e.target.value)}
         >
-          <option value="">Tous les pays</option>
+          <option value="">{t("filter_all_countries")}</option>
           {countries.map((c) => (
             <option key={c} value={c}>
               {c}
@@ -211,7 +249,7 @@ export function TournamentBrowser({
             if (monthFilter && !monthFilter.startsWith(y)) setMonthFilter("");
           }}
         >
-          <option value="">Toutes les années</option>
+          <option value="">{t("filter_all_years")}</option>
           {availableYears.map((y) => (
             <option key={y} value={String(y)}>
               {y}
@@ -224,12 +262,12 @@ export function TournamentBrowser({
           value={monthFilter}
           onChange={(e) => setMonthFilter(e.target.value)}
         >
-          <option value="">Tous les mois</option>
+          <option value="">{t("filter_all_months")}</option>
           {availableMonthKeys
             .filter((k) => !yearFilter || k.startsWith(yearFilter))
             .map((k) => (
               <option key={k} value={k}>
-                {monthKeyLabel(k)}
+                {monthKeyLabel(k, locale)}
               </option>
             ))}
         </select>
@@ -237,7 +275,7 @@ export function TournamentBrowser({
         <span
           style={{ fontSize: 13, color: "var(--text-muted)", marginLeft: "auto" }}
         >
-          {filtered.length} tournoi{filtered.length > 1 ? "s" : ""}
+          {filtered.length === 1 ? t("filter_count_one", { count: filtered.length }) : t("filter_count_other", { count: filtered.length })}
         </span>
       </div>
 
@@ -245,7 +283,7 @@ export function TournamentBrowser({
       <div>
       {groups.length === 0 && (
         <div className="empty-state">
-          <p>Aucun tournoi ne correspond à ces filtres.</p>
+          <p>{t("empty_no_match")}</p>
         </div>
       )}
 
@@ -253,72 +291,48 @@ export function TournamentBrowser({
         <section key={group.key} className="agenda-month">
           <h2 className="agenda-month__heading">{group.label}</h2>
           <div className="agenda-list">
-            {group.tournaments.map((t) => {
-              const d = new Date(t.dateStart);
+            {group.tournaments.map((tour) => {
+              const d = new Date(tour.dateStart);
 
               return (
-                <Link key={t.id} href={`/tournament/${t.id}`} className={`agenda-row${t.bannerPath ? " agenda-row--has-banner" : ""}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <Link key={tour.id} href={`/tournament/${tour.id}`} className={`agenda-row${tour.bannerPath ? " agenda-row--has-banner" : ""}`} style={{ textDecoration: "none", color: "inherit" }}>
                   {/* Date column */}
                   <div className="agenda-row__date">
                     <span className="agenda-row__day">{d.getDate()}</span>
                     <span className="agenda-row__month-short">
-                      {d.toLocaleString("en-US", { month: "short" })}
+                      {d.toLocaleString(locale, { month: "short" })}
                     </span>
                   </div>
 
                   {/* Body */}
                   <div className="agenda-row__body">
                     <div className="agenda-row__header">
-                      <h3 className="agenda-row__title">{t.name}</h3>
-                      <span className={`status ${t.status.toLowerCase()}`}>
-                        {t.status}
+                      <h3 className="agenda-row__title">{tour.name}</h3>
+                      <span className={`status ${tour.status.toLowerCase()}`}>
+                        {STATUS_LABELS[tour.status] ?? tour.status}
                       </span>
                     </div>
                     <div className="agenda-row__meta-row">
                       <span className="meta">
-                        {COUNTRY_FLAGS[t.country] ?? ""} {t.city}, {t.country}
+                        {COUNTRY_FLAGS[tour.country] ?? ""} {tour.city}, {tour.country}
                       </span>
                       <span className="meta">
-                        {formatDate(new Date(t.dateStart))} →{" "}
-                        {formatDate(new Date(t.dateEnd))}
+                        {formatDate(new Date(tour.dateStart))} →{" "}
+                        {formatDate(new Date(tour.dateEnd))}
                       </span>
                       <span className="meta">
-                        {t.format} · {t.teamCount}/{t.maxTeams} équipes
+                        {tour.format} · {t("teams_slots", { count: tour.teamCount, max: tour.maxTeams })}
                       </span>
                       <span className="meta">
-                        {(() => {
-                          const now = new Date();
-                          const fmt = (d: string) =>
-                            new Date(d).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-                          if (t.registrationEnd) {
-                            const end = new Date(t.registrationEnd);
-                            if (now > end) return "🔒 Inscriptions fermées";
-                            if (t.registrationStart && now < new Date(t.registrationStart)) {
-                              const daysToOpen = Math.ceil((new Date(t.registrationStart).getTime() - now.getTime()) / 86_400_000);
-                              return `🔓 Ouverture ${daysToOpen <= 1 ? "demain" : `dans ${daysToOpen}j`} (${fmt(t.registrationStart)})`;
-                            }
-                            const daysLeft = Math.ceil((end.getTime() - now.getTime()) / 86_400_000);
-                            const countdown = daysLeft <= 1 ? "🔥 Dernier jour" : daysLeft <= 7 ? `🔥 J-${daysLeft}` : `⏳ J-${daysLeft}`;
-                            return `${countdown} · Clôture le ${fmt(t.registrationEnd)}`;
-                          }
-                          if (t.registrationStart) {
-                            const start = new Date(t.registrationStart);
-                            if (now < start) {
-                              const daysToOpen = Math.ceil((start.getTime() - now.getTime()) / 86_400_000);
-                              return `🔓 Ouverture ${daysToOpen <= 1 ? "demain" : `dans ${daysToOpen}j`} (${fmt(t.registrationStart)})`;
-                            }
-                            return "🔓 Inscriptions ouvertes";
-                          }
-                          return "—";
-                        })()}
+                        {getRegLabel(tour)}
                       </span>
                     </div>
                   </div>
 
                   {/* Banner — flush right, full height */}
-                  {t.bannerPath && (
+                  {tour.bannerPath && (
                     <div className="agenda-row__banner">
-                      <img src={t.bannerPath} alt="" />
+                      <img src={tour.bannerPath} alt="" />
                     </div>
                   )}
                 </Link>

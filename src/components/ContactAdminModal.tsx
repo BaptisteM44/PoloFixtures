@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export function ContactAdminModal() {
+  const t = useTranslations("contact");
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,11 +34,11 @@ export function ContactAdminModal() {
         setStatus("ok");
       } else {
         const data = await res.json().catch(() => ({}));
-        setErrorMsg(data.error ?? "Une erreur est survenue.");
+        setErrorMsg(data.error ?? t("error_invalid"));
         setStatus("error");
       }
     } catch {
-      setErrorMsg("Impossible de contacter le serveur.");
+      setErrorMsg(t("error_invalid"));
       setStatus("error");
     }
   };
@@ -52,7 +54,7 @@ export function ContactAdminModal() {
           textDecoration: "underline", textDecorationStyle: "dotted",
         }}
       >
-        Contact
+        {t("btn_open")}
       </button>
 
       {open && (
@@ -71,7 +73,7 @@ export function ContactAdminModal() {
             width: "100%", maxWidth: 480, padding: 28,
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontFamily: "var(--font-display)" }}>Contacter l&apos;admin</h3>
+              <h3 style={{ margin: 0, fontFamily: "var(--font-display)" }}>{t("modal_title")}</h3>
               <button
                 type="button" onClick={handleClose}
                 style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "var(--text-muted)", lineHeight: 1 }}
@@ -81,37 +83,37 @@ export function ContactAdminModal() {
             {status === "ok" ? (
               <div style={{ textAlign: "center", padding: "24px 0" }}>
                 <div style={{ fontSize: 36, marginBottom: 12 }}>✅</div>
-                <h4 style={{ margin: "0 0 8px" }}>Message envoyé !</h4>
-                <p className="meta" style={{ margin: "0 0 20px" }}>L&apos;admin recevra ton message par email.</p>
-                <button className="primary" onClick={handleClose}>Fermer</button>
+                <h4 style={{ margin: "0 0 8px" }}>{t("success_title")}</h4>
+                <p className="meta" style={{ margin: "0 0 20px" }}>{t("success_desc")}</p>
+                <button className="primary" onClick={handleClose}>{t("btn_close")}</button>
               </div>
             ) : (
               <form onSubmit={send} style={{ display: "grid", gap: 14 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <label className="field-row">
-                    Ton nom *
-                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Prénom Nom" required />
+                    {t("field_name")}
+                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("field_name_placeholder")} required />
                   </label>
                   <label className="field-row">
-                    Ton email *
-                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="toi@example.com" required />
+                    {t("field_email")}
+                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("field_email_placeholder")} required />
                   </label>
                 </div>
                 <label className="field-row">
-                  Sujet *
-                  <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Bug, suggestion, question…" required />
+                  {t("field_subject")}
+                  <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder={t("field_subject_placeholder")} required />
                 </label>
                 <label className="field-row">
-                  Message *
-                  <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder="Décris ton problème ou ta demande…" required style={{ resize: "vertical" }} />
+                  {t("field_message")}
+                  <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={4} placeholder={t("field_message_placeholder")} required style={{ resize: "vertical" }} />
                 </label>
                 {status === "error" && (
                   <p className="error" style={{ margin: 0 }}>{errorMsg}</p>
                 )}
                 <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                  <button type="button" className="ghost" onClick={handleClose}>Annuler</button>
+                  <button type="button" className="ghost" onClick={handleClose}>{t("btn_cancel")}</button>
                   <button type="submit" className="primary" disabled={status === "sending"}>
-                    {status === "sending" ? "Envoi…" : "Envoyer"}
+                    {status === "sending" ? t("btn_send") + "…" : t("btn_send")}
                   </button>
                 </div>
               </form>

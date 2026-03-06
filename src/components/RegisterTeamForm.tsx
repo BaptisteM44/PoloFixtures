@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 type PlayerResult = {
   id: string;
@@ -9,13 +10,6 @@ type PlayerResult = {
   country: string;
   photoPath: string | null;
   diets?: string[];
-};
-
-const DIET_LABELS: Record<string, string> = {
-  OMNIVORE: "Omnivore",
-  VEGETARIAN: "Végétarien·ne",
-  VEGAN: "Vegan",
-  GLUTEN_FREE: "Sans gluten",
 };
 
 type PastTeam = {
@@ -125,7 +119,7 @@ export function RegisterTeamForm({
     e.preventDefault();
     setError(null);
     const filledSlots = slots.filter((s) => s.type !== "empty");
-    if (filledSlots.length === 0) { setError("Ajoutez au moins un joueur."); return; }
+    if (filledSlots.length === 0) { setError(t("error_add_player")); return; }
     setLoading(true);
 
     const filledIndices = slots.map((s, i) => s.type !== "empty" ? i : -1).filter((i) => i >= 0);
@@ -146,21 +140,23 @@ export function RegisterTeamForm({
     setLoading(false);
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? "Erreur lors de l'inscription.");
+      setError(data.error ?? t("error_generic"));
       return;
     }
     setSuccess(true);
     onSuccess?.();
   };
 
+  const t = useTranslations("team");
+
   if (success) {
     return (
       <div className="panel" style={{ textAlign: "center", padding: 32, marginTop: 24 }}>
         <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
-        <h3>Équipe inscrite !</h3>
-        <p className="meta">Votre équipe a été enregistrée. L&apos;organisateur va valider l&apos;inscription.</p>
+        <h3>{t("success_title")}</h3>
+        <p className="meta">{t("success_desc")}</p>
         <button className="ghost" style={{ marginTop: 16 }} onClick={() => { setSuccess(false); setOpen(false); reset(); }}>
-          Inscrire une autre équipe
+          {t("success_register_another")}
         </button>
       </div>
     );
@@ -169,7 +165,7 @@ export function RegisterTeamForm({
   if (!open) {
     return (
       <button className="primary" style={{ marginTop: 16 }} onClick={() => setOpen(true)}>
-        + Inscrire mon équipe
+        {t("btn_open")}
       </button>
     );
   }
@@ -179,17 +175,17 @@ export function RegisterTeamForm({
     return (
       <div className="panel" style={{ marginTop: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h3 style={{ margin: 0 }}>Choisir une équipe existante</h3>
-          <button className="ghost" style={{ padding: "4px 12px" }} onClick={() => setMode("new")}>← Retour</button>
+          <h3 style={{ margin: 0 }}>{t("existing_title")}</h3>
+          <button className="ghost" style={{ padding: "4px 12px" }} onClick={() => setMode("new")}>{t("btn_back")}</button>
         </div>
-        {pastTeamsLoading && <p className="meta">Chargement…</p>}
+        {pastTeamsLoading && <p className="meta">{t("loading")}</p>}
         {!pastTeamsLoading && squads.length === 0 && pastTeams.length === 0 && (
-          <p className="meta">Aucune équipe trouvée. <button type="button" className="ghost" style={{ fontSize: 12 }} onClick={() => setMode("new")}>Créer une nouvelle équipe</button></p>
+          <p className="meta">{t("empty_no_teams")} <button type="button" className="ghost" style={{ fontSize: 12 }} onClick={() => setMode("new")}>{t("btn_create_new")}</button></p>
         )}
         <div style={{ display: "grid", gap: 10 }}>
           {squads.length > 0 && (
             <>
-              <p style={{ margin: "4px 0 2px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Mes équipes permanentes</p>
+              <p style={{ margin: "4px 0 2px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>{t("section_permanent")}</p>
               {squads.map((sq) => (
                 <div key={sq.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", border: "2px solid var(--teal)", borderRadius: 8, background: "color-mix(in srgb, var(--teal) 6%, var(--surface))" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -200,7 +196,7 @@ export function RegisterTeamForm({
                     </div>
                   </div>
                   <button className="primary" type="button" style={{ fontSize: 12 }} onClick={() => applySquad(sq)}>
-                    Utiliser cette équipe
+                    {t("btn_use_this")}
                   </button>
                 </div>
               ))}
@@ -208,7 +204,7 @@ export function RegisterTeamForm({
           )}
           {pastTeams.length > 0 && (
             <>
-              <p style={{ margin: "8px 0 2px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>Équipes de tournois passés</p>
+              <p style={{ margin: "8px 0 2px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>{t("section_past")}</p>
               {pastTeams.map((pt) => (
                 <div key={pt.teamId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", border: "2px solid var(--border)", borderRadius: 8 }}>
                   <div>
@@ -217,7 +213,7 @@ export function RegisterTeamForm({
                     <div className="meta" style={{ fontSize: 12 }}>{pt.players.map((p) => p.name).join(", ")}</div>
                   </div>
                   <button className="primary" type="button" style={{ fontSize: 12 }} onClick={() => applyPastTeam(pt)}>
-                    Utiliser cette équipe
+                    {t("btn_use_this")}
                   </button>
                 </div>
               ))}
@@ -231,7 +227,7 @@ export function RegisterTeamForm({
   return (
     <div className="panel" style={{ marginTop: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h3 style={{ margin: 0 }}>Inscrire une équipe</h3>
+        <h3 style={{ margin: 0 }}>{t("register_title")}</h3>
         <button className="ghost" style={{ padding: "4px 12px" }} onClick={() => setOpen(false)}>✕</button>
       </div>
 
@@ -239,7 +235,7 @@ export function RegisterTeamForm({
       {currentPlayerId && (
         <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
           <button type="button" className="ghost" style={{ fontSize: 12 }} onClick={handleSwitchToExisting}>
-            Partir d&apos;une équipe existante →
+            {t("btn_use_existing")}
           </button>
         </div>
       )}
@@ -248,15 +244,15 @@ export function RegisterTeamForm({
         {/* Team info */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <label className="field-row" style={{ gridColumn: "1/-1" }}>
-            Nom de l&apos;équipe *
-            <input required value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team Bruxelles" />
+            {t("field_name")}
+            <input required value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder={t("field_name_placeholder")} />
           </label>
           <label className="field-row">
-            Ville
-            <input value={teamCity} onChange={(e) => setTeamCity(e.target.value)} placeholder="Bruxelles" />
+            {t("field_city")}
+            <input value={teamCity} onChange={(e) => setTeamCity(e.target.value)} placeholder={t("field_city_placeholder")} />
           </label>
           <label className="field-row">
-            Pays *
+            {t("field_country")}
             <input required value={teamCountry} onChange={(e) => setTeamCountry(e.target.value)} placeholder="Belgium" />
           </label>
         </div>
@@ -264,7 +260,7 @@ export function RegisterTeamForm({
         {/* Player slots */}
         <div>
           <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 12, fontSize: 14 }}>
-            JOUEURS (1–{maxPlayers}) · Format {format.toUpperCase()}
+            {t("players_title", { max: maxPlayers, format: format.toUpperCase() })}
           </p>
           <div style={{ display: "grid", gap: 12 }}>
             {slots.map((slot, i) => (
@@ -288,9 +284,9 @@ export function RegisterTeamForm({
 
         <div style={{ display: "flex", gap: 10 }}>
           <button className="primary" type="submit" disabled={loading}>
-            {loading ? "Inscription..." : "Inscrire l'équipe"}
+            {loading ? t("btn_submit_loading") : t("btn_submit")}
           </button>
-          <button className="ghost" type="button" onClick={() => setOpen(false)}>Annuler</button>
+          <button className="ghost" type="button" onClick={() => setOpen(false)}>{t("btn_cancel")}</button>
         </div>
       </form>
     </div>
@@ -318,6 +314,7 @@ function PlayerSlotInput({
   needsAccommodation?: boolean;
   onToggleAccommodation?: () => void;
 }) {
+  const t = useTranslations("team");
   const [mode, setMode] = useState<"search" | "manual">("search");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PlayerResult[]>([]);
@@ -327,6 +324,13 @@ function PlayerSlotInput({
   const [manualCountry, setManualCountry] = useState("");
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const DIET_LABELS: Record<string, string> = {
+    OMNIVORE: t("diet_omnivore"),
+    VEGETARIAN: t("diet_vegetarian"),
+    VEGAN: t("diet_vegan"),
+    GLUTEN_FREE: t("diet_gluten_free"),
+  };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -349,15 +353,15 @@ function PlayerSlotInput({
     }, 250);
   }, [tournamentId]);
 
-  const labelNum = `Joueur ${index + 1}${isCaptain ? " (capitaine)" : ""}`;
+  const labelNum = `${t("slot_label", { n: index + 1 })}${isCaptain ? ` ${t("slot_captain")}` : ""}`;
 
   if (slot.type === "existing") {
     const playerDiets = slot.player.diets ?? [];
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--teal)", borderRadius: 8, border: "2px solid var(--border)" }}>
-        <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }} title="Désigner comme capitaine">
+        <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }} title={t("slot_set_captain")}>
           <input type="radio" checked={!!isCaptain} onChange={() => onSetCaptain?.()} style={{ accentColor: "var(--pink)" }} />
-          <span style={{ fontSize: 11, fontWeight: 700 }}>CAP</span>
+          <span style={{ fontSize: 11, fontWeight: 700 }}>{t("slot_captain_abbr")}</span>
         </label>
         <div style={{ flex: 1 }}>
           <strong style={{ fontFamily: "var(--font-display)", fontSize: 14 }}>{slot.player.name}</strong>
@@ -375,7 +379,7 @@ function PlayerSlotInput({
         {showAccommodation && (
           <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11, whiteSpace: "nowrap" }}>
             <input type="checkbox" checked={!!needsAccommodation} onChange={() => onToggleAccommodation?.()} style={{ accentColor: "var(--teal)", width: 13, height: 13 }} />
-            Hébergement
+            {t("field_accommodation")}
           </label>
         )}
         <button type="button" className="ghost" style={{ padding: "2px 10px", fontSize: 12 }} onClick={() => { onChange({ type: "empty" }); setQuery(""); }}>
@@ -395,18 +399,18 @@ function PlayerSlotInput({
       <div style={{ padding: "10px 14px", background: "var(--surface-2)", borderRadius: 8, border: "2px solid var(--border)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }} title="Désigner comme capitaine">
+            <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }} title={t("slot_set_captain")}>
               <input type="radio" checked={!!isCaptain} onChange={() => onSetCaptain?.()} style={{ accentColor: "var(--pink)" }} />
-              <span style={{ fontSize: 11, fontWeight: 700 }}>CAP</span>
+              <span style={{ fontSize: 11, fontWeight: 700 }}>{t("slot_captain_abbr")}</span>
             </label>
-            <span style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700 }}>{labelNum} <span className="meta">— saisie manuelle</span></span>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700 }}>{labelNum} <span className="meta">— {t("slot_manual")}</span></span>
           </div>
           <button type="button" className="ghost" style={{ padding: "2px 10px", fontSize: 12 }} onClick={() => onChange({ type: "empty" })}>✕</button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 8 }}>
-          <input placeholder="Prénom Nom *" value={manualName} onChange={(e) => { setManualName(e.target.value); onChange({ type: "manual", name: e.target.value, city: manualCity, country: manualCountry, diets: currentDiets }); }} required />
-          <input placeholder="Ville" value={manualCity} onChange={(e) => { setManualCity(e.target.value); onChange({ type: "manual", name: manualName, city: e.target.value, country: manualCountry, diets: currentDiets }); }} />
-          <input placeholder="Pays *" value={manualCountry} onChange={(e) => { setManualCountry(e.target.value); onChange({ type: "manual", name: manualName, city: manualCity, country: e.target.value, diets: currentDiets }); }} required />
+          <input placeholder={t("slot_manual_name")} value={manualName} onChange={(e) => { setManualName(e.target.value); onChange({ type: "manual", name: e.target.value, city: manualCity, country: manualCountry, diets: currentDiets }); }} required />
+          <input placeholder={t("field_city_placeholder")} value={manualCity} onChange={(e) => { setManualCity(e.target.value); onChange({ type: "manual", name: manualName, city: e.target.value, country: manualCountry, diets: currentDiets }); }} />
+          <input placeholder={t("field_country")} value={manualCountry} onChange={(e) => { setManualCountry(e.target.value); onChange({ type: "manual", name: manualName, city: manualCity, country: e.target.value, diets: currentDiets }); }} required />
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
           {(["OMNIVORE", "VEGETARIAN", "VEGAN", "GLUTEN_FREE"] as const).map((d) => (
@@ -418,7 +422,7 @@ function PlayerSlotInput({
           {showAccommodation && (
             <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11, fontWeight: 600, marginLeft: 8 }}>
               <input type="checkbox" checked={!!needsAccommodation} onChange={() => onToggleAccommodation?.()} style={{ accentColor: "var(--teal)", width: 12, height: 12 }} />
-              Hébergement
+              {t("field_accommodation")}
             </label>
           )}
         </div>
@@ -433,17 +437,17 @@ function PlayerSlotInput({
         <span style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700, color: "var(--text-muted)" }}>{labelNum}</span>
         <div style={{ display: "flex", gap: 6 }}>
           <button type="button" onClick={() => setMode("search")} style={{ fontSize: 11, padding: "2px 8px", fontWeight: 700, background: mode === "search" ? "var(--teal)" : "transparent", border: "1.5px solid var(--border)", borderRadius: 4, cursor: "pointer" }}>
-            Rechercher
+            {t("slot_btn_search")}
           </button>
           <button type="button" onClick={() => { setMode("manual"); onChange({ type: "manual", name: "", city: "", country: "", diets: [] }); }} style={{ fontSize: 11, padding: "2px 8px", fontWeight: 700, background: mode === "manual" ? "var(--yellow)" : "transparent", border: "1.5px solid var(--border)", borderRadius: 4, cursor: "pointer" }}>
-            Saisie manuelle
+            {t("slot_btn_manual")}
           </button>
         </div>
       </div>
       {mode === "search" && (
         <div ref={containerRef} style={{ position: "relative" }}>
           <input
-            placeholder="Chercher un joueur sur le site..."
+            placeholder={t("slot_search_placeholder")}
             value={query}
             onChange={(e) => { setQuery(e.target.value); search(e.target.value); }}
             onFocus={() => results.length > 0 && setShowResults(true)}
@@ -466,9 +470,9 @@ function PlayerSlotInput({
           )}
           {showResults && results.length === 0 && query.length >= 2 && (
             <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 50, padding: "10px 12px" }}>
-              <span className="meta">Aucun joueur trouvé — </span>
+              <span className="meta">{t("slot_not_found")} </span>
               <button type="button" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", fontWeight: 700, fontSize: 13, padding: 0 }} onClick={() => { setMode("manual"); setManualName(query); onChange({ type: "manual", name: query, city: "", country: "", diets: [] }); setShowResults(false); }}>
-                Ajouter manuellement
+                {t("slot_add_manual")}
               </button>
             </div>
           )}

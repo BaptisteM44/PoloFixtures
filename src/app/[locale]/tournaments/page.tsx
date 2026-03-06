@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/db";
+import { getTranslations } from "next-intl/server";
 import { TournamentBrowser } from "@/components/TournamentBrowser";
 
 export default async function TournamentsPage() {
+  const t = await getTranslations("tournaments");
   const tournaments = await prisma.tournament.findMany({
     where: { approved: true },
     include: { teams: true },
@@ -29,8 +31,8 @@ export default async function TournamentsPage() {
     <div>
       <div className="section-header" style={{ marginBottom: 24 }}>
         <div>
-          <h1>Tous les tournois</h1>
-          <p>Filtre par continent, pays ou statut</p>
+          <h1>{t("page_title")}</h1>
+          <p>{t("page_subtitle")}</p>
         </div>
       </div>
       <TournamentBrowser tournaments={data} />

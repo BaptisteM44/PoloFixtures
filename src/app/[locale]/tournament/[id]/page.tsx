@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { Tabs } from "@/components/Tabs";
 import { ScheduleBoard } from "@/components/ScheduleBoard";
@@ -62,7 +63,12 @@ export default async function TournamentPage({
     }
   });
 
-  if (!tournament) return <div>Not found</div>;
+  const t = await getTranslations("tournament");
+  const r = await getTranslations("registration");
+  const tm = await getTranslations("team");
+  const fa = await getTranslations("free_agent");
+
+  if (!tournament) return <div>{t("not_found")}</div>;
 
   const session = await auth();
   const role = session?.user?.role;
@@ -91,15 +97,15 @@ export default async function TournamentPage({
   const youtubeEmbed = toYoutubeEmbed(tournament.streamYoutubeUrl);
 
   const tabs = [
-    { label: "Info", value: "info", href: `/tournament/${params.id}?tab=info` },
-    { label: "Inscription", value: "inscription", href: `/tournament/${params.id}?tab=inscription` },
-    { label: "Schedule", value: "schedule", href: `/tournament/${params.id}?tab=schedule` },
-    { label: "Pools", value: "pools", href: `/tournament/${params.id}?tab=pools` },
-    ...(hasSwiss ? [{ label: "Swiss", value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
-    { label: "Bracket", value: "bracket", href: `/tournament/${params.id}?tab=bracket` },
-    { label: `Équipes (${tournament.teams.length})`, value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
-    ...(youtubeEmbed || tournament.chatMode !== "DISABLED" ? [{ label: "🔴 Live", value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
-    ...(hasCommunity ? [{ label: `Zone free agent${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
+    { label: t("tab_info"), value: "info", href: `/tournament/${params.id}?tab=info` },
+    { label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` },
+    { label: t("tab_schedule"), value: "schedule", href: `/tournament/${params.id}?tab=schedule` },
+    { label: t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` },
+    ...(hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
+    { label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` },
+    { label: t("tab_teams", { count: tournament.teams.length }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
+    ...(youtubeEmbed || tournament.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
+    ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
   ];
 
   const allEvents = tournament.matches.flatMap((m) => m.events);
@@ -160,7 +166,7 @@ export default async function TournamentPage({
         <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           {canEdit && (
             <Link href={`/tournament/${params.id}/edit`} style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
-              ← Dashboard organisateur
+              {t("back_dashboard")}
             </Link>
           )}
           {canRef && (
@@ -169,7 +175,7 @@ export default async function TournamentPage({
               className="primary"
               style={{ fontSize: 13, padding: "6px 16px", display: "inline-flex", alignItems: "center", gap: 6 }}
             >
-              ⚖️ Arbitrer
+              {t("btn_referee")}
             </Link>
           )}
         </div>
@@ -183,7 +189,7 @@ export default async function TournamentPage({
             📅 {dateStart} — {dateEnd}
           </div>
           <p style={{ color: "var(--text-muted)", margin: "4px 0 8px", fontSize: 14 }}>
-            {tournament.city}, {tournament.country} · {tournament.format} · {tournament.courtsCount} terrain{tournament.courtsCount > 1 ? "s" : ""}
+            {tournament.city}, {tournament.country} · {tournament.format} · {tournament.courtsCount === 1 ? t("courts_count_one", { count: tournament.courtsCount }) : t("courts_count_other", { count: tournament.courtsCount })}
           </p>
           <HeroCountdown
             dateStart={tournament.dateStart.toISOString()}
@@ -197,7 +203,7 @@ export default async function TournamentPage({
         <div className="tournament-hero__sponsors">
           {tournament.sponsors.length > 0 ? (
             <>
-              <span className="tournament-hero__sponsors-title">Sponsors</span>
+              <span className="tournament-hero__sponsors-title">{t("sponsors_title")}</span>
               <div className="sponsors-strip">
                 {tournament.sponsors.map((sponsor) =>
                   sponsor.logoPath ? (
@@ -214,7 +220,7 @@ export default async function TournamentPage({
             <div className="sponsors-empty">
               <span>🤝</span>
               <Link href={`/tournament/${params.id}/edit`} style={{ color: "var(--teal)" }}>
-                Ajouter des sponsors
+                {t("sponsors_add")}
               </Link>
             </div>
           ) : null}
@@ -226,7 +232,7 @@ export default async function TournamentPage({
         active={tab}
         rightSlot={canEdit ? (
           <Link className="ghost" href={`/tournament/${params.id}/edit`} style={{ fontSize: 12, padding: "5px 14px", marginBottom: 2 }}>
-            ✏️ Modifier
+            {t("btn_edit")}
           </Link>
         ) : undefined}
       />
@@ -240,36 +246,36 @@ export default async function TournamentPage({
 
             {hasLogistique && (
               <div className="panel">
-                <h3 style={{ marginBottom: 14 }}>Lieux & Logistique</h3>
+                <h3 style={{ marginBottom: 14 }}>{t("section_logistics")}</h3>
 
                 <div className="logistics-grid">
                   {(tournament.venueName || tournament.venueAddress) && (
                     <div className="logistics-section">
-                      <h4>Terrain</h4>
+                      <h4>{t("venue_court")}</h4>
                       <p style={{ fontWeight: 600, margin: "4px 0" }}>{tournament.venueName}</p>
                       {tournament.venueAddress && <p style={{ margin: "2px 0", fontSize: 13 }}>{tournament.venueAddress}</p>}
                       {tournament.venueMapsUrl && (
-                        <a href={tournament.venueMapsUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>Maps</a>
+                        <a href={tournament.venueMapsUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>{t("venue_maps")}</a>
                       )}
                     </div>
                   )}
                   {(tournament.fridayWelcomeName || tournament.fridayWelcomeAddress) && (
                     <div className="logistics-section">
-                      <h4>Vendredi soir</h4>
+                      <h4>{t("venue_friday")}</h4>
                       <p style={{ fontWeight: 600, margin: "4px 0" }}>{tournament.fridayWelcomeName}</p>
                       {tournament.fridayWelcomeAddress && <p style={{ margin: "2px 0", fontSize: 13 }}>{tournament.fridayWelcomeAddress}</p>}
                       {tournament.fridayWelcomeMapsUrl && (
-                        <a href={tournament.fridayWelcomeMapsUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>Maps</a>
+                        <a href={tournament.fridayWelcomeMapsUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>{t("venue_maps")}</a>
                       )}
                     </div>
                   )}
                   {(tournament.saturdayEveningName || tournament.saturdayEveningAddress) && (
                     <div className="logistics-section">
-                      <h4>Soirée samedi</h4>
+                      <h4>{t("venue_saturday_evening")}</h4>
                       <p style={{ fontWeight: 600, margin: "4px 0" }}>{tournament.saturdayEveningName}</p>
                       {tournament.saturdayEveningAddress && <p style={{ margin: "2px 0", fontSize: 13 }}>{tournament.saturdayEveningAddress}</p>}
                       {tournament.saturdayEveningMapsUrl && (
-                        <a href={tournament.saturdayEveningMapsUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>Maps</a>
+                        <a href={tournament.saturdayEveningMapsUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>{t("venue_maps")}</a>
                       )}
                     </div>
                   )}
@@ -277,28 +283,28 @@ export default async function TournamentPage({
 
                 {tournament.accommodationAvailable && (
                   <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px solid var(--border-light)" }}>
-                    <span className="logistics-badge logistics-badge--teal">Hébergement proposé</span>
+                    <span className="logistics-badge logistics-badge--teal">{t("accommodation_available")}</span>
                     {tournament.accommodationType && (
                       <p style={{ margin: "6px 0 0", fontSize: 13 }}>{tournament.accommodationType}</p>
                     )}
                     {tournament.accommodationCapacity && (
-                      <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--text-muted)" }}>{tournament.accommodationCapacity} places</p>
+                      <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--text-muted)" }}>{t("accommodation_places", { count: tournament.accommodationCapacity })}</p>
                     )}
                   </div>
                 )}
 
                 {hasMeals && (
                   <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px solid var(--border-light)" }}>
-                    <p style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, marginBottom: 8 }}>REPAS</p>
+                    <p style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, marginBottom: 8 }}>{t("meals_title")}</p>
                     <div style={{ display: "grid", gap: 4 }}>
                       {meals.filter((m) => m.breakfast || m.lunch || m.dinner).map((m) => {
                         const d = new Date(tournament.dateStart);
                         d.setDate(d.getDate() + m.day - 1);
                         const label = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" });
                         const parts = [];
-                        if (m.breakfast) parts.push("Petit-déj");
-                        if (m.lunch) parts.push("Déjeuner");
-                        if (m.dinner) parts.push("Dîner");
+                        if (m.breakfast) parts.push(t("meal_breakfast_short"));
+                        if (m.lunch) parts.push(t("meal_lunch_short"));
+                        if (m.dinner) parts.push(t("meal_dinner_short"));
                         return (
                           <div key={m.day} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13 }}>
                             <span style={{ fontWeight: 600, minWidth: 140, textTransform: "capitalize" }}>{label}</span>
@@ -312,7 +318,7 @@ export default async function TournamentPage({
 
                 {(tournament.registrationStart || tournament.registrationEnd) && (
                   <p style={{ marginTop: 12, fontSize: 13, paddingTop: 10, borderTop: "1px solid var(--border-light)" }}>
-                    <strong>Inscriptions :</strong>{" "}
+                    <strong>{t("registration_period")}</strong>{" "}
                     {tournament.registrationStart
                       ? new Date(tournament.registrationStart).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
                       : "?"}{" "}
@@ -325,11 +331,11 @@ export default async function TournamentPage({
                 <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                   {tournament.contactEmail && (
                     <a href={`mailto:${tournament.contactEmail}`} className="ghost" style={{ fontSize: 14 }}>
-                      Contacter les organisateurs
+                      {t("btn_contact_organizers")}
                     </a>
                   )}
                   <Link href={`/tournament/${params.id}?tab=inscription`} className="primary" style={{ fontSize: 14 }}>
-                    S&apos;inscrire →
+                    {t("btn_register_cta")}
                   </Link>
                 </div>
               </div>
@@ -337,21 +343,21 @@ export default async function TournamentPage({
 
             {tournament.kitList && (
               <div className="panel">
-                <h3 style={{ marginBottom: 10 }}>Ce qu&apos;il faut apporter</h3>
+                <h3 style={{ marginBottom: 10 }}>{t("section_kit")}</h3>
                 <p style={{ fontSize: 13, whiteSpace: "pre-line", margin: 0, color: "var(--text-muted)" }}>{tournament.kitList}</p>
               </div>
             )}
 
             {tournament.additionalInfo && (
               <div className="panel">
-                <h3 style={{ marginBottom: 10 }}>Informations complémentaires</h3>
+                <h3 style={{ marginBottom: 10 }}>{t("section_info")}</h3>
                 <p style={{ fontSize: 13, whiteSpace: "pre-line", margin: 0 }}>{tournament.additionalInfo}</p>
               </div>
             )}
 
             {faq.length > 0 && (
               <div className="panel">
-                <h3 style={{ marginBottom: 14 }}>FAQ</h3>
+                <h3 style={{ marginBottom: 14 }}>{t("section_faq")}</h3>
                 <div style={{ display: "grid", gap: 12 }}>
                   {faq.map((item, i) => (
                     <div key={i}>
@@ -366,13 +372,13 @@ export default async function TournamentPage({
             {tournament.freeAgents.length > 0 && (
               <div className="panel">
                 <h3 style={{ marginBottom: 4 }}>
-                  Free agents{" "}
+                  {t("tab_free_agent")}{" "}
                   <span style={{ fontSize: 13, fontWeight: 400, color: "var(--text-muted)" }}>
                     ({tournament.freeAgents.length})
                   </span>
                 </h3>
                 <p className="meta" style={{ marginBottom: 14 }}>
-                  Joueur·ses sans équipe qui cherchent à rejoindre un groupe.
+                  {t("info_free_agents_desc")}
                 </p>
                 <FreeAgentList
                   agents={tournament.freeAgents}
@@ -418,7 +424,7 @@ export default async function TournamentPage({
             {/* Stream — full width of right column */}
             {youtubeEmbed && (
               <div className="panel">
-                <h3 style={{ marginBottom: 10 }}>Stream</h3>
+                <h3 style={{ marginBottom: 10 }}>{t("section_stream")}</h3>
                 <iframe
                   src={youtubeEmbed}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -438,28 +444,28 @@ export default async function TournamentPage({
           <div className="inscription-grid">
             {/* Inscrire mon équipe */}
             <div className="panel">
-              <h3>Inscrire mon équipe</h3>
+              <h3>{r("section_title")}</h3>
               {!tournament.approved ? (
-                <p className="meta">Ce tournoi n&apos;est pas encore approuvé.</p>
+                <p className="meta">{t("not_approved")}</p>
               ) : registrationOpen ? (
                 <>
                   <p className="meta" style={{ marginBottom: 16 }}>
-                    {tournament.teams.length} équipe{tournament.teams.length !== 1 ? "s" : ""} inscrite{tournament.teams.length !== 1 ? "s" : ""}
+                    {tournament.teams.length === 1 ? r("reg_open_teams_one", { count: tournament.teams.length }) : r("reg_open_teams_other", { count: tournament.teams.length })}
                     {tournament.teams.length > tournament.maxTeams
-                      ? ` · ${tournament.teams.length - tournament.maxTeams} en liste d'attente`
-                      : ` · ${tournament.maxTeams - tournament.teams.length} place${tournament.maxTeams - tournament.teams.length !== 1 ? "s" : ""} disponible${tournament.maxTeams - tournament.teams.length !== 1 ? "s" : ""}`}
+                      ? ` · ${tournament.teams.length - tournament.maxTeams} ${t("teams_on_waitlist")}`
+                      : ` · ${tournament.maxTeams - tournament.teams.length === 1 ? t("teams_spots_available_one", { count: tournament.maxTeams - tournament.teams.length }) : t("teams_spots_available_other", { count: tournament.maxTeams - tournament.teams.length })}`}
                   </p>
                   <RegisterTeamForm tournamentId={tournament.id} format={tournament.format} currentPlayerId={currentPlayerId} accommodationAvailable={tournament.accommodationAvailable} />
                 </>
               ) : (
                 <div style={{ textAlign: "center", padding: "24px 0" }}>
                   <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", margin: 0 }}>
-                    ⏳ Inscriptions fermées
+                    {t("reg_closed_title")}
                     {tournament.registrationEnd && ` — clôturées le ${new Date(tournament.registrationEnd).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}`}
                   </p>
                   {tournament.registrationStart && now < new Date(tournament.registrationStart) && (
                     <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--text-muted)" }}>
-                      Ouverture le {new Date(tournament.registrationStart).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      {t("reg_opens_on", { date: new Date(tournament.registrationStart).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) })}
                     </p>
                   )}
                 </div>
@@ -469,17 +475,17 @@ export default async function TournamentPage({
             {/* Renvoi vers Zone free agent */}
             <div className="panel" style={{ display: "flex", flexDirection: "column", gap: 12, justifyContent: "center", textAlign: "center" }}>
               <div style={{ fontSize: 32 }}>🤝</div>
-              <h3 style={{ margin: 0 }}>Pas d&apos;équipe ?</h3>
+              <h3 style={{ margin: 0 }}>{r("no_team_title")}</h3>
               <p className="meta" style={{ margin: 0 }}>
-                Signalez-vous comme free agent dans la Zone free agent — d&apos;autres joueurs sans équipe pourront vous contacter.
+                {r("no_team_desc")}
               </p>
               {tournament.freeAgents.length > 0 && (
                 <p className="meta" style={{ margin: 0, fontWeight: 700 }}>
-                  {tournament.freeAgents.length} free agent{tournament.freeAgents.length > 1 ? "s" : ""} déjà inscrit{tournament.freeAgents.length > 1 ? "s" : ""}
+                  {tournament.freeAgents.length === 1 ? r("free_agents_one", { count: tournament.freeAgents.length }) : r("free_agents_other", { count: tournament.freeAgents.length })}
                 </p>
               )}
               <Link href={`/tournament/${params.id}?tab=communaute`} className="ghost" style={{ fontSize: 13 }}>
-                Voir la Zone free agent →
+                {r("btn_view_free_agent")}
               </Link>
             </div>
           </div>
@@ -527,7 +533,7 @@ export default async function TournamentPage({
         <div style={{ padding: "24px 0" }}>
           {swissMatches.length === 0 ? (
             <div className="panel" style={{ textAlign: "center", padding: 48 }}>
-              <p className="meta">Aucun round Swiss généré pour l&apos;instant.</p>
+              <p className="meta">{t("swiss_empty")}</p>
             </div>
           ) : (() => {
             const standings = computeStandings(tournament.teams, swissMatches);
@@ -552,7 +558,7 @@ export default async function TournamentPage({
                           fontWeight: 700
                         }}
                       >
-                        Tour {r} · {done}/{rMatches.length} terminé(s)
+                        {t("swiss_round_header", { n: r, done, total: rMatches.length })}
                       </span>
                     );
                   })}
@@ -560,18 +566,18 @@ export default async function TournamentPage({
 
                 {/* Standings table */}
                 <div className="panel">
-                  <h3 style={{ marginBottom: 16 }}>Classement Swiss</h3>
+                  <h3 style={{ marginBottom: 16 }}>{t("swiss_standings_title")}</h3>
                   <table className="swiss-standings">
                     <thead>
                       <tr>
-                        <th>#</th>
-                        <th>Équipe</th>
-                        <th>Pts</th>
-                        <th>J</th>
-                        <th>G</th>
-                        <th>N</th>
-                        <th>D</th>
-                        <th>+/-</th>
+                        <th>{t("swiss_col_rank")}</th>
+                        <th>{t("swiss_col_team")}</th>
+                        <th>{t("swiss_col_pts")}</th>
+                        <th>{t("swiss_col_played")}</th>
+                        <th>{t("swiss_col_wins")}</th>
+                        <th>{t("swiss_col_draws")}</th>
+                        <th>{t("swiss_col_losses")}</th>
+                        <th>{t("swiss_col_diff")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -607,7 +613,7 @@ export default async function TournamentPage({
         if (tournament.teams.length === 0) {
           return (
             <div className="panel" style={{ textAlign: "center", padding: 48, marginTop: 16 }}>
-              <p className="meta">Aucune équipe inscrite pour l&apos;instant.</p>
+              <p className="meta">{t("empty_no_teams")}</p>
             </div>
           );
         }
@@ -621,18 +627,18 @@ export default async function TournamentPage({
                 className={view === "cards" ? "primary" : "ghost"}
                 style={{ fontSize: 12, padding: "5px 14px" }}
               >
-                Cartes
+                {t("view_cards")}
               </Link>
               <Link
                 href={`/tournament/${params.id}?tab=equipes&view=list`}
                 className={view === "list" ? "primary" : "ghost"}
                 style={{ fontSize: 12, padding: "5px 14px" }}
               >
-                Liste
+                {t("view_list")}
               </Link>
               <span className="meta" style={{ marginLeft: 8 }}>
-                {selected.length} équipe{selected.length !== 1 ? "s" : ""} retenue{selected.length !== 1 ? "s" : ""}
-                {hasWaitlist && ` · ${waitlist.length} en liste d'attente`}
+                {selected.length === 1 ? t("teams_retained_count_one", { count: selected.length }) : t("teams_retained_count_other", { count: selected.length })}
+                {hasWaitlist && t("teams_waitlist_suffix", { count: waitlist.length })}
               </span>
             </div>
 
@@ -643,10 +649,10 @@ export default async function TournamentPage({
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>Équipe</th>
-                      <th>Villes</th>
-                      <th>Joueurs</th>
-                      {hasWaitlist && <th>Statut</th>}
+                      <th>{t("teams_col_team")}</th>
+                      <th>{t("teams_col_cities")}</th>
+                      <th>{t("teams_col_players")}</th>
+                      {hasWaitlist && <th>{t("teams_col_status")}</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -669,13 +675,13 @@ export default async function TournamentPage({
                             </span>
                           ))}
                         </td>
-                        {hasWaitlist && <td><span style={{ color: "var(--teal)", fontWeight: 700, fontSize: 11, fontFamily: "var(--font-display)" }}>RETENU</span></td>}
+                        {hasWaitlist && <td><span style={{ color: "var(--teal)", fontWeight: 700, fontSize: 11, fontFamily: "var(--font-display)" }}>{t("badge_retained")}</span></td>}
                       </tr>
                     ))}
                     {hasWaitlist && (
                       <>
                         <tr className="teams-divider-row">
-                          <td colSpan={5} className="teams-divider">Liste d&apos;attente ({waitlist.length})</td>
+                          <td colSpan={5} className="teams-divider">{t("waitlist_divider", { count: waitlist.length })}</td>
                         </tr>
                         {waitlist.map((team) => (
                           <tr key={team.id} className="team-row--waitlist">
@@ -696,7 +702,7 @@ export default async function TournamentPage({
                                 </span>
                               ))}
                             </td>
-                            <td><span style={{ color: "var(--text-muted)", fontWeight: 700, fontSize: 11, fontFamily: "var(--font-display)" }}>ATTENTE</span></td>
+                            <td><span style={{ color: "var(--text-muted)", fontWeight: 700, fontSize: 11, fontFamily: "var(--font-display)" }}>{t("badge_waiting")}</span></td>
                           </tr>
                         ))}
                       </>
@@ -706,7 +712,7 @@ export default async function TournamentPage({
 
               {/* Récap régimes — visible pour l'orga */}
               {isOrga && (() => {
-                const dietLabels: Record<string, string> = { OMNIVORE: "Omnivore", VEGETARIAN: "Végétarien·ne", VEGAN: "Vegan", GLUTEN_FREE: "Sans gluten" };
+                const dietLabels: Record<string, string> = { OMNIVORE: tm("diet_omnivore"), VEGETARIAN: tm("diet_vegetarian"), VEGAN: tm("diet_vegan"), GLUTEN_FREE: tm("diet_gluten_free") };
                 const dietCounts = new Map<string, number>();
                 let nonPrecise = 0;
                 for (const team of selected) {
@@ -720,14 +726,14 @@ export default async function TournamentPage({
                 if (totalPlayers === 0) return null;
                 return (
                   <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--surface-2)", border: "1.5px solid var(--border)", borderRadius: 8, fontSize: 13 }}>
-                    <span style={{ fontWeight: 700, marginRight: 12 }}>Régimes alimentaires :</span>
+                    <span style={{ fontWeight: 700, marginRight: 12 }}>{t("diet_label")}</span>
                     {[...dietCounts.entries()].map(([d, n]) => (
                       <span key={d} style={{ marginRight: 12 }}>
                         {dietLabels[d] ?? d} <strong>{n}</strong>
                       </span>
                     ))}
                     {nonPrecise > 0 && (
-                      <span style={{ color: "var(--text-muted)", marginRight: 12 }}>Non précisé <strong>{nonPrecise}</strong></span>
+                      <span style={{ color: "var(--text-muted)", marginRight: 12 }}>{t("diet_not_specified")} <strong>{nonPrecise}</strong></span>
                     )}
                     <span style={{ color: "var(--text-muted)", marginLeft: 4 }}>/ {totalPlayers} joueur{totalPlayers > 1 ? "s" : ""}</span>
                   </div>
@@ -778,7 +784,7 @@ export default async function TournamentPage({
 
                 {hasWaitlist && (
                   <>
-                    <div className="teams-divider">Liste d&apos;attente ({waitlist.length})</div>
+                    <div className="teams-divider">{t("waitlist_divider", { count: waitlist.length })}</div>
                     {waitlist.map((team) => {
                       const teamBadges = computeTeamBadges(team.id, tournament.matches);
                       return (
@@ -788,7 +794,7 @@ export default async function TournamentPage({
                             <h3 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 20 }}>{team.name}</h3>
                             {(team.city || team.country) && <span className="meta">{team.city ? `${team.city}, ` : ""}{team.country}</span>}
                             {teamBadges.map((badge) => <span key={badge} className="badge">{badge}</span>)}
-                            <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-display)", fontWeight: 700 }}>LISTE D&apos;ATTENTE</span>
+                            <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-display)", fontWeight: 700 }}>{t("badge_waitlist")}</span>
                           </div>
                           <div className="team-cards-row">
                             {team.players.map((tp) => {
@@ -842,10 +848,10 @@ export default async function TournamentPage({
             </div>
           ) : (
             <div className="panel" style={{ textAlign: "center", padding: "32px 0" }}>
-              <p className="meta">Aucun stream configuré pour ce tournoi.</p>
+              <p className="meta">{t("stream_empty")}</p>
               {canEdit && (
                 <Link href={`/tournament/${params.id}/edit`} className="ghost" style={{ fontSize: 13, marginTop: 10, display: "inline-block" }}>
-                  Ajouter un lien YouTube →
+                  {t("stream_add")}
                 </Link>
               )}
             </div>
@@ -876,7 +882,7 @@ export default async function TournamentPage({
               </div>
             ) : (
               <div className="panel" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200 }}>
-                <p className="meta" style={{ textAlign: "center" }}>Chat désactivé pour ce tournoi.</p>
+                <p className="meta" style={{ textAlign: "center" }}>{t("chat_disabled")}</p>
               </div>
             )}
           </div>
@@ -889,20 +895,20 @@ export default async function TournamentPage({
           {/* Free agents publics */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div className="panel">
-              <h3 style={{ marginBottom: 4 }}>Free agents</h3>
+              <h3 style={{ marginBottom: 4 }}>{t("tab_free_agent")}</h3>
               <p className="meta" style={{ marginBottom: 16 }}>
-                Joueur·ses sans équipe qui cherchent à rejoindre un groupe pour ce tournoi.
+                {t("communaute_free_agents_desc")}
               </p>
 
               {registrationOpen && (
                 <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid var(--border-light)" }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Tu cherches une équipe ?</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{t("communaute_looking")}</p>
                   <FreeAgentForm tournamentId={tournament.id} />
                 </div>
               )}
 
               {tournament.freeAgents.length === 0 ? (
-                <p className="meta">Aucun free agent pour l&apos;instant.</p>
+                <p className="meta">{fa("empty")}</p>
               ) : (
                 <FreeAgentList
                   agents={tournament.freeAgents}
@@ -930,7 +936,7 @@ export default async function TournamentPage({
             </div>
           ) : (
             <div className="panel" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200 }}>
-              <p className="meta" style={{ textAlign: "center" }}>Chat désactivé pour ce tournoi.</p>
+              <p className="meta" style={{ textAlign: "center" }}>{t("chat_disabled")}</p>
             </div>
           )}
         </div>

@@ -1,9 +1,11 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { MessagesClient } from "./MessagesClient";
 
 export default async function MessagesPage() {
+  const t = await getTranslations("messages");
   const session = await auth();
   const playerId = session?.user?.playerId;
   if (!playerId) redirect("/");

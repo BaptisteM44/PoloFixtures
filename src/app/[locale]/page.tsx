@@ -1,5 +1,6 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { prisma } from "@/lib/db";
+import { getTranslations } from "next-intl/server";
 import { TournamentCard } from "@/components/TournamentCard";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import type { CalendarTournament } from "@/components/CalendarGrid";
@@ -14,6 +15,8 @@ const continents = [
 ];
 
 export default async function HomePage() {
+  const t = await getTranslations("home");
+  const tc = await getTranslations("common");
   const countryToContinent: Record<string, string> = {
     France: "EU", Germany: "EU", "United Kingdom": "EU", Spain: "EU", Italy: "EU",
     Netherlands: "EU", Belgium: "EU", Portugal: "EU", Switzerland: "EU", Austria: "EU",
@@ -62,23 +65,23 @@ export default async function HomePage() {
       <section className="hero">
         <div>
           <h1>
-            The <em>Bike Polo</em><br />
-            Tournament Platform
+            <em>Bike Polo</em><br />
+            {t("hero_title")}
           </h1>
-          <p>Poules, brackets, arbitrage en live — tout sur une seule plateforme.</p>
+          <p>{t("hero_subtitle")}</p>
           <div className="hero-actions">
-            <Link className="primary" href="/tournament/new">+ Créer un tournoi</Link>
-            <Link className="ghost" href="/tournaments">Voir les tournois</Link>
+            <Link className="primary" href="/tournament/new">{t("hero_create")}</Link>
+            <Link className="ghost" href="/tournaments">{t("hero_browse")}</Link>
           </div>
         </div>
         <div className="hero-feature-card">
-          <h3>Built for organizers</h3>
+          <h3>{t("features_title")}</h3>
           <ul>
-            <li>Pool standings &amp; schedules</li>
-            <li>Referee console</li>
-            <li>Bracket generator (SE / DE)</li>
-            <li>Live updates</li>
-            <li>Player cards &amp; profiles</li>
+            <li>{t("feature_pools")}</li>
+            <li>{t("feature_referee")}</li>
+            <li>{t("feature_bracket")}</li>
+            <li>{t("feature_live")}</li>
+            <li>{t("feature_players")}</li>
           </ul>
         </div>
       </section>
@@ -87,22 +90,22 @@ export default async function HomePage() {
       <section className="section">
         <div className="section-header">
           <div>
-            <h2>Active Tournaments</h2>
-            <p>Live and upcoming events worldwide</p>
+            <h2>{t("section_active_title")}</h2>
+            <p>{t("section_active_subtitle")}</p>
           </div>
-          <Link className="ghost" href="/continent/EU">See all →</Link>
+          <Link className="ghost" href="/continent/EU">{tc("see_all")}</Link>
         </div>
         {activeTournaments.length > 0 ? (
           <div className="tournament-grid">
-            {activeTournaments.map((t) => (
-              <TournamentCard key={t.id} tournament={t} teamCount={t.teams.length} />
+            {activeTournaments.map((tour) => (
+              <TournamentCard key={tour.id} tournament={tour} teamCount={tour.teams.length} />
             ))}
           </div>
         ) : (
           <div className="empty-state">
-            <p>No active tournaments right now.</p>
+            <p>{t("empty_no_active")}</p>
             <Link className="primary" style={{ marginTop: 12, display: "inline-flex" }} href="/tournament/new">
-              Create the first one
+              {t("btn_create_first")}
             </Link>
           </div>
         )}
@@ -112,7 +115,7 @@ export default async function HomePage() {
       <section className="section">
         <div className="section-header">
           <div>
-            <h2>Calendrier des tournois</h2>
+            <h2>{t("section_calendar_title")}</h2>
           </div>
         </div>
         <CalendarGrid
@@ -133,8 +136,8 @@ export default async function HomePage() {
       <section className="section">
         <div className="section-header">
           <div>
-            <h2>Browse by Continent</h2>
-            <p>Explore tournaments and players near you</p>
+            <h2>{t("section_continents_title")}</h2>
+            <p>{t("section_continents_subtitle")}</p>
           </div>
         </div>
         <div className="continent-grid">

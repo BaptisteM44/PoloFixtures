@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export function FreeAgentForm({ tournamentId }: { tournamentId: string }) {
+  const t = useTranslations("free_agent");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [city, setCity] = useState("");
@@ -31,11 +33,11 @@ export function FreeAgentForm({ tournamentId }: { tournamentId: string }) {
       <div className="free-agent-success">
         <span>✅</span>
         <div>
-          <strong>Demande envoyée !</strong>
-          <p>Les organisateurs ont été notifiés.</p>
+          <strong>{t("success_title")}</strong>
+          <p>{t("success_desc")}</p>
         </div>
         <button type="button" className="ghost" style={{ alignSelf: "center" }} onClick={() => setStatus("idle")}>
-          Nouvelle demande
+          {t("btn_new")}
         </button>
       </div>
     );
@@ -45,34 +47,34 @@ export function FreeAgentForm({ tournamentId }: { tournamentId: string }) {
     <form className="free-agent-form" onSubmit={submit}>
       <div className="free-agent-form__row">
         <label className="field-row">
-          Nom *
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ton nom" required />
+          {t("field_name")}
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("field_name_placeholder")} required />
         </label>
         <label className="field-row">
-          Email *
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="toi@exemple.com" required />
+          {t("field_email")}
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("field_email_placeholder")} required />
         </label>
       </div>
       <div className="free-agent-form__row">
         <label className="field-row">
-          Ville
-          <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Paris" />
+          {t("field_city")}
+          <input value={city} onChange={(e) => setCity(e.target.value)} placeholder={t("field_city_placeholder")} />
         </label>
         <label className="field-row">
-          Pays
+          {t("field_country")}
           <input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="FR" />
         </label>
       </div>
       <label className="field-row">
-        Notes <span style={{ color: "var(--text-muted)", fontSize: 12 }}>(niveau, préférences…)</span>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Je joue depuis 3 ans, j'ai mon vélo…" />
+        {t("field_notes")} <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{t("field_notes_hint")}</span>
+        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={t("field_notes_placeholder")} />
       </label>
       {status === "error" && (
-        <p className="error" style={{ margin: 0 }}>Une erreur est survenue, réessaie.</p>
+        <p className="error" style={{ margin: 0 }}>{t("error")}</p>
       )}
       <div>
         <button type="submit" className="primary" disabled={status === "sending"} style={{ width: "auto" }}>
-          {status === "sending" ? "Envoi…" : "Envoyer ma demande"}
+          {status === "sending" ? t("btn_sending") : t("btn_submit")}
         </button>
       </div>
     </form>

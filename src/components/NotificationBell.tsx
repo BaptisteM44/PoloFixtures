@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 
 type Notification = {
   id: string;
@@ -11,37 +12,43 @@ type Notification = {
   createdAt: string;
 };
 
-function notifLabel(n: Notification): { title: string; sub: string; href: string } {
-  const p = n.payload;
-  switch (n.type) {
-    case "SQUAD_INVITE":
-      return { title: `Invitation à rejoindre ${p.squadName}`, sub: `De : ${p.invitedByName}`, href: "/notifications" };
-    case "SQUAD_INVITE_ACCEPTED":
-      return { title: `${p.playerName} a rejoint ${p.squadName}`, sub: "", href: `/my-teams/${p.squadId}` };
-    case "SQUAD_INVITE_DECLINED":
-      return { title: `${p.playerName} a refusé l'invitation`, sub: `Équipe : ${p.squadName}`, href: `/my-teams/${p.squadId}` };
-    case "SQUAD_ROLE_CHANGED":
-      return { title: `Tu es maintenant capitaine`, sub: `Équipe : ${p.squadName ?? ""}`, href: `/my-teams/${p.squadId}` };
-    case "DIRECT_MESSAGE_REQUEST":
-      return { title: `Nouveau message de ${p.senderName}`, sub: p.preview ?? "", href: "/messages" };
-    case "DIRECT_MESSAGE_RECEIVED":
-      return { title: `${p.senderName} t'a répondu`, sub: p.preview ?? "", href: "/messages" };
-    case "TEAM_REGISTERED":
-      return { title: `Équipe inscrite : ${p.teamName}`, sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentId}?tab=inscription` };
-    case "TEAM_SELECTED":
-      return { title: `🎉 ${p.teamName} est IN !`, sub: `Tirée au sort — ${p.tournamentName}`, href: `/tournament/${p.tournamentId}?tab=inscription` };
-    case "TEAM_WAITLISTED":
-      return { title: `⏳ ${p.teamName} — Liste d'attente #${p.rank}`, sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentId}?tab=inscription` };
-    case "BADGE_UNLOCKED":
-      return { title: `Badge débloqué : ${p.badgeName}`, sub: "Consulte ton profil", href: "/account" };
-    case "TEAM_MESSAGE_RECEIVED":
-      return { title: `Nouveau message dans ${p.teamName}`, sub: p.preview ?? "", href: "/my-tournaments" };
-    default:
-      return { title: "Notification", sub: "", href: "/notifications" };
-  }
+function useNotifLabel() {
+  const t = useTranslations("notifications");
+
+  return (n: Notification): { title: string; sub: string; href: string } => {
+    const p = n.payload;
+    switch (n.type) {
+      case "SQUAD_INVITE":
+        return { title: t("squad_invite", { squadName: p.squadName }), sub: t("squad_invite_from", { name: p.invitedByName }), href: "/notifications" };
+      case "SQUAD_INVITE_ACCEPTED":
+        return { title: t("squad_invite_accepted", { name: p.playerName, squadName: p.squadName }), sub: "", href: `/my-teams/${p.squadId}` };
+      case "SQUAD_INVITE_DECLINED":
+        return { title: t("squad_invite_declined", { name: p.playerName }), sub: t("squad_invite_declined_sub", { squadName: p.squadName }), href: `/my-teams/${p.squadId}` };
+      case "SQUAD_ROLE_CHANGED":
+        return { title: t("squad_role_changed"), sub: t("squad_role_changed_sub", { squadName: p.squadName ?? "" }), href: `/my-teams/${p.squadId}` };
+      case "DIRECT_MESSAGE_REQUEST":
+        return { title: t("direct_message_request", { name: p.senderName }), sub: p.preview ?? "", href: "/messages" };
+      case "DIRECT_MESSAGE_RECEIVED":
+        return { title: t("direct_message_received", { name: p.senderName }), sub: p.preview ?? "", href: "/messages" };
+      case "TEAM_REGISTERED":
+        return { title: t("team_registered", { teamName: p.teamName }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentId}?tab=inscription` };
+      case "TEAM_SELECTED":
+        return { title: t("team_selected", { teamName: p.teamName }), sub: t("team_selected_sub", { tournamentName: p.tournamentName ?? "" }), href: `/tournament/${p.tournamentId}?tab=inscription` };
+      case "TEAM_WAITLISTED":
+        return { title: t("team_waitlisted", { teamName: p.teamName, rank: p.rank }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentId}?tab=inscription` };
+      case "BADGE_UNLOCKED":
+        return { title: t("badge_unlocked", { badgeName: p.badgeName }), sub: t("badge_unlocked_sub"), href: "/account" };
+      case "TEAM_MESSAGE_RECEIVED":
+        return { title: t("team_message", { teamName: p.teamName }), sub: p.preview ?? "", href: "/my-tournaments" };
+      default:
+        return { title: t("default"), sub: "", href: "/notifications" };
+    }
+  };
 }
 
 export function NotificationBell() {
+  const t = useTranslations("notifications");
+  const notifLabel = useNotifLabel();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
@@ -78,7 +85,7 @@ export function NotificationBell() {
 
   const handleClick = (href: string) => {
     setOpen(false);
-    router.push(href);
+    router.push(href as any);
   };
 
   return (
@@ -114,10 +121,10 @@ export function NotificationBell() {
           zIndex: 1000, overflow: "hidden",
         }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-light)" }}>
-            <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13 }}>Notifications</span>
+            <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13 }}>{t("title")}</span>
           </div>
           {notifications.length === 0 ? (
-            <p style={{ padding: 16, textAlign: "center", color: "var(--text-muted)", fontSize: 13, margin: 0 }}>Aucune notification</p>
+            <p style={{ padding: 16, textAlign: "center", color: "var(--text-muted)", fontSize: 13, margin: 0 }}>{t("empty")}</p>
           ) : (
             <div style={{ maxHeight: 360, overflowY: "auto" }}>
               {notifications.slice(0, 10).map((n) => {
@@ -135,7 +142,7 @@ export function NotificationBell() {
                     <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: n.read ? 400 : 700 }}>{title}</p>
                     {sub && <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>{sub}</p>}
                     <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--text-muted)" }}>
-                      {new Date(n.createdAt).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      {new Date(n.createdAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </button>
                 );
@@ -143,10 +150,10 @@ export function NotificationBell() {
             </div>
           )}
 
-          {/* Invitations en attente — actions directes */}
+          {/* Invitations en attente */}
           {notifications.filter((n) => n.type === "SQUAD_INVITE" && !n.read).length > 0 && (
             <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border-light)", background: "var(--surface-2)" }}>
-              <p style={{ fontSize: 11, fontWeight: 700, margin: "0 0 8px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Invitations en attente</p>
+              <p style={{ fontSize: 11, fontWeight: 700, margin: "0 0 8px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("section_pending_invites")}</p>
               {notifications
                 .filter((n) => n.type === "SQUAD_INVITE")
                 .map((n) => (
@@ -156,13 +163,13 @@ export function NotificationBell() {
                       await fetch(`/api/invitations/${n.payload.invitationId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "accept" }) });
                       setOpen(false);
                       fetchNotifs();
-                      router.push(`/my-teams/${n.payload.squadId}`);
-                    }}>Accepter</button>
+                      router.push(`/my-teams/${n.payload.squadId}` as any);
+                    }}>{t("btn_accept")}</button>
                     <button className="ghost" style={{ fontSize: 11, padding: "3px 10px" }} onClick={async () => {
                       await fetch(`/api/invitations/${n.payload.invitationId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "decline" }) });
                       fetchNotifs();
                       setOpen(false);
-                    }}>Refuser</button>
+                    }}>{t("btn_decline")}</button>
                   </div>
                 ))}
             </div>

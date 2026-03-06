@@ -1,20 +1,20 @@
 import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ClubCard } from "@/components/ClubCard";
-
-const continentNames: Record<string, string> = {
-  NA: "North America", SA: "South America", EU: "Europe",
-  AF: "Africa", AS: "Asia", OC: "Oceania",
-};
+import { getTranslations } from "next-intl/server";
 
 export default async function CountryPage({
   params,
 }: {
   params: { code: string; country: string };
 }) {
+  const t = await getTranslations("continent");
   const code = params.code.toUpperCase();
   const country = decodeURIComponent(params.country);
+
+  const validCodes = ["NA", "SA", "EU", "AF", "AS", "OC"];
+  if (!validCodes.includes(code)) notFound();
 
   const clubs = await prisma.club.findMany({
     where: { continentCode: code, country, approved: true },
@@ -27,22 +27,20 @@ export default async function CountryPage({
   });
 
   // Vérifier que le continent est valide
-  if (!continentNames[code]) notFound();
-
   return (
     <div>
       <div className="section-title" style={{ marginBottom: 24 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <Link className="ghost" href={`/continent/${code}`} style={{ fontSize: 13 }}>
-              ← {continentNames[code]}
+              ← {(t as (key: string) => string)(`name_${code.toLowerCase()}`)}
             </Link>
           </div>
           <h1>{country}</h1>
-          <p className="meta">{clubs.length} club{clubs.length > 1 ? "s" : ""}</p>
+          <p className="meta">{clubs.length === 1 ? t("country_clubs_count_one", { count: clubs.length }) : t("country_clubs_count_other", { count: clubs.length })}</p>
         </div>
         <Link className="primary" href={`/club/new`}>
-          + Ajouter votre club
+          {t("clubs_add")}
         </Link>
       </div>
 
@@ -62,9 +60,9 @@ export default async function CountryPage({
         </div>
       ) : (
         <div className="empty-state">
-          <p>Aucun club dans ce pays pour l&apos;instant.</p>
+          <p>{t("country_clubs_empty")}</p>
           <Link className="primary" href="/club/new" style={{ marginTop: 12, display: "inline-flex" }}>
-            Créer le premier club
+            {t("clubs_create_first")}
           </Link>
         </div>
       )}

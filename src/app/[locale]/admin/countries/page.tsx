@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { AdminNav } from "@/components/AdminNav";
 
 type Country = { id: string; code: string; name: string };
 
 export default function AdminCountriesPage() {
+  const t = useTranslations("admin");
   const [countries, setCountries] = useState<Country[]>([]);
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
@@ -26,11 +28,11 @@ export default function AdminCountriesPage() {
     e.preventDefault();
     setError(null);
     if (code.trim().length !== 2) {
-      setError("Le code doit faire exactement 2 lettres (ex: FR)");
+      setError(t("error_code_length"));
       return;
     }
     if (name.trim().length < 2) {
-      setError("Le nom est trop court");
+      setError(t("error_name_short"));
       return;
     }
     setLoading(true);
@@ -62,13 +64,13 @@ export default function AdminCountriesPage() {
 
   return (
     <div className="admin-page">
-      <h1>Known Bike Polo Countries</h1>
+      <h1>{t("countries_title")}</h1>
       <AdminNav />
       <div className="panel" style={{ marginTop: 24 }}>
-        <h3 style={{ marginBottom: 12 }}>Ajouter un pays</h3>
+        <h3 style={{ marginBottom: 12 }}>{t("countries_add")}</h3>
         <form onSubmit={add} style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
           <label className="field-row" style={{ flex: "0 0 100px" }}>
-            Code ISO <span className="meta">(2 lettres)</span>
+            {t("country_code_label")} <span className="meta">({t("country_code_hint")})</span>
             <input
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
@@ -78,7 +80,7 @@ export default function AdminCountriesPage() {
             />
           </label>
           <label className="field-row" style={{ flex: "1 1 200px" }}>
-            Nom complet
+            {t("country_name_label")}
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -86,21 +88,21 @@ export default function AdminCountriesPage() {
             />
           </label>
           <button type="submit" className="primary" disabled={loading} style={{ alignSelf: "flex-end", marginBottom: 0 }}>
-            {loading ? "Ajout…" : "Ajouter"}
+            {loading ? t("btn_adding") : t("btn_add")}
           </button>
         </form>
         {error && <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 8 }}>{error}</p>}
       </div>
       <div className="panel" style={{ marginTop: 16 }}>
-        <h3 style={{ marginBottom: 12 }}>Pays enregistrés ({countries.length})</h3>
+        <h3 style={{ marginBottom: 12 }}>{t("countries_list", { count: countries.length })}</h3>
         {countries.length === 0 ? (
-          <p className="meta">Aucun pays.</p>
+          <p className="meta">{t("countries_empty")}</p>
         ) : (
           countries.map((c) => (
             <div key={c.id} className="moderation-row">
               <div>{c.name} <span className="meta">({c.code})</span></div>
               <button className="ghost" style={{ color: "var(--danger)", fontSize: 13 }} onClick={() => remove(c.code)}>
-                Supprimer
+                {t("btn_delete")}
               </button>
             </div>
           ))

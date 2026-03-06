@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 
 type TeamRow = {
   id: string;
@@ -34,6 +35,7 @@ export function SelectionManager({
   drawOneAction,
   drawOneWaitlistAction,
 }: Props) {
+  const t = useTranslations("selection");
   const [teams, setTeams] = useState(initial);
   const [drawPool, setDrawPool] = useState<Set<string>>(new Set());
   const [wlDrawPool, setWlDrawPool] = useState<Set<string>>(new Set());
@@ -186,21 +188,21 @@ export function SelectionManager({
       {/* ── Header bilan ──────────────────────────────────────────────── */}
       <div className="selection-manager__header">
         <div>
-          <h4 style={{ margin: 0, fontFamily: "var(--font-display)" }}>Sélection des équipes</h4>
+          <h4 style={{ margin: 0, fontFamily: "var(--font-display)" }}>{t("header_title")}</h4>
           <p className="meta" style={{ margin: "4px 0 0", display: "flex", flexWrap: "wrap", gap: 8 }}>
-            <span style={{ color: "#16a34a", fontWeight: 700 }}>✅ {guaranteed.length} IN</span>
+            <span style={{ color: "#16a34a", fontWeight: 700 }}>{t("header_in", { count: guaranteed.length })}</span>
             <span style={{ color: "var(--text-muted)" }}>·</span>
-            <span style={{ color: "var(--text-muted)" }}>{pool.length} en attente</span>
+            <span style={{ color: "var(--text-muted)" }}>{t("header_pool", { count: pool.length })}</span>
             <span style={{ color: "var(--text-muted)" }}>·</span>
             <span style={{ fontWeight: 700, color: slotsLeft === 0 ? "#16a34a" : "inherit" }}>
-              {slotsLeft} place{slotsLeft > 1 ? "s" : ""} restante{slotsLeft > 1 ? "s" : ""}
+              {slotsLeft === 1 ? t("slots_left_one", { count: slotsLeft }) : t("slots_left_other", { count: slotsLeft })}
             </span>
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {allFit ? (
             <button className="primary" onClick={handleSelectAll} disabled={isPending} style={{ fontSize: 13 }}>
-              ✅ Valider toutes ({teams.length})
+              {t("validate_all_btn", { count: teams.length })}
             </button>
           ) : (
             <button
@@ -208,9 +210,8 @@ export function SelectionManager({
               onClick={handleDrawAll}
               disabled={isPending || pool.length === 0 || slotsLeft === 0}
               style={{ fontSize: 12 }}
-              title="Tire tous les slots restants en une seule fois"
             >
-              ⚡ Tirage rapide ({slotsLeft} d&apos;un coup)
+              {t("draw_all_btn", { count: slotsLeft })}
             </button>
           )}
         </div>
@@ -222,7 +223,7 @@ export function SelectionManager({
       {guaranteed.length > 0 && (
         <section style={{ marginBottom: 20 }}>
           <p className="meta" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: 11, marginBottom: 6, color: "#16a34a" }}>
-            ✅ Équipes IN ({guaranteed.length})
+            {t("section_in_header", { count: guaranteed.length })}
           </p>
           <div className="selection-manager__list">
             {[...guaranteed].sort((a, b) => a.seed - b.seed).map((team) => (
@@ -239,7 +240,7 @@ export function SelectionManager({
                 )}
                 {lastWinnerId === team.id && (
                   <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 700, fontFamily: "var(--font-display)" }}>
-                    TIRÉ AU SORT
+                    {t("drawn_label")}
                   </span>
                 )}
                 <button
@@ -247,9 +248,8 @@ export function SelectionManager({
                   disabled={isPending}
                   className="ghost"
                   style={{ marginLeft: "auto", fontSize: 11, padding: "2px 8px", color: "var(--text-muted)" }}
-                  title="Remettre dans le pool"
                 >
-                  × Retirer
+                  {t("btn_remove")}
                 </button>
               </div>
             ))}
@@ -263,14 +263,14 @@ export function SelectionManager({
           {/* Toolbar tirage */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
             <p className="meta" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: 11, margin: 0, color: "#f97316" }}>
-              🎲 Pool ({pool.length} équipes · {drawPoolTeams.length} dans ce tirage)
+              {t("pool_header", { count: pool.length, inDraw: drawPoolTeams.length })}
             </p>
             <div style={{ display: "flex", gap: 6, marginLeft: "auto", flexWrap: "wrap", alignItems: "center" }}>
               <button className="ghost" onClick={selectAllPool} disabled={isPending || pool.length === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
-                Tout cocher
+                {t("btn_select_all_pool")}
               </button>
               <button className="ghost" onClick={clearDrawPool} disabled={isPending || drawPool.size === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
-                Tout décocher
+                {t("btn_clear_pool")}
               </button>
               <button
                 className="primary"
@@ -278,7 +278,7 @@ export function SelectionManager({
                 disabled={isPending || drawPoolTeams.length === 0}
                 style={{ fontSize: 13, padding: "5px 18px" }}
               >
-                🎲 Tirer 1 équipe{drawPoolTeams.length > 0 ? ` (parmi ${drawPoolTeams.length})` : ""}
+                {t("btn_draw_one", { count: drawPoolTeams.length })}
               </button>
             </div>
           </div>
@@ -310,7 +310,7 @@ export function SelectionManager({
                   <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
                     {inDraw && (
                       <span style={{ fontSize: 10, color: "#f97316", fontFamily: "var(--font-display)", fontWeight: 700 }}>
-                        DANS LE TIRAGE
+                        {t("in_draw_label")}
                       </span>
                     )}
                     <button
@@ -318,9 +318,8 @@ export function SelectionManager({
                       disabled={isPending}
                       className="ghost"
                       style={{ fontSize: 11, padding: "2px 8px", color: "var(--teal)", fontWeight: 700 }}
-                      title="Valider directement IN sans tirage"
                     >
-                      ✓ Valider IN
+                      {t("btn_guarantee")}
                     </button>
                   </div>
                 </div>
@@ -329,7 +328,7 @@ export function SelectionManager({
           </div>
 
           <p className="meta" style={{ fontSize: 11, marginTop: 6, color: "var(--text-muted)" }}>
-            Coche les équipes à inclure dans le prochain tirage — clique sur une ligne pour la (dé)cocher
+            {t("pool_hint")}
           </p>
         </section>
       )}
@@ -338,7 +337,7 @@ export function SelectionManager({
       {slotsLeft === 0 && (waitlisted.length > 0 || pool.length > 0) && (
         <section>
           <p className="meta" style={{ fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: 11, marginBottom: 10, color: "var(--text-muted)" }}>
-            ⏳ Liste d&apos;attente ({waitlisted.length + pool.length})
+            {t("wl_header", { count: waitlisted.length + pool.length })}
           </p>
 
           {/* Équipes déjà classées dans la WL */}
@@ -361,7 +360,7 @@ export function SelectionManager({
                   )}
                   {lastWlWinnerId === team.id && (
                     <span style={{ marginLeft: "auto", fontSize: 10, color: "#6366f1", fontWeight: 700, fontFamily: "var(--font-display)" }}>
-                      TIRÉ AU SORT
+                      {t("drawn_label")}
                     </span>
                   )}
                 </div>
@@ -374,14 +373,14 @@ export function SelectionManager({
             <>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
                 <p className="meta" style={{ fontWeight: 700, fontSize: 11, margin: 0, color: "#6366f1" }}>
-                  🎲 Tirage waiting list ({pool.length} équipes · {wlDrawPoolTeams.length} dans ce tirage)
+                  {t("wl_draw_header", { count: pool.length, inDraw: wlDrawPoolTeams.length })}
                 </p>
                 <div style={{ display: "flex", gap: 6, marginLeft: "auto", flexWrap: "wrap", alignItems: "center" }}>
                   <button className="ghost" onClick={selectAllWlPool} disabled={isPending || pool.length === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
-                    Tout cocher
+                    {t("btn_select_all_wl")}
                   </button>
                   <button className="ghost" onClick={clearWlDrawPool} disabled={isPending || wlDrawPool.size === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
-                    Tout décocher
+                    {t("btn_clear_wl")}
                   </button>
                   <button
                     className="primary"
@@ -389,7 +388,7 @@ export function SelectionManager({
                     disabled={isPending || wlDrawPoolTeams.length === 0}
                     style={{ fontSize: 13, padding: "5px 18px", background: "#6366f1" }}
                   >
-                    🎲 Tirer WL #{waitlisted.length + 1}{wlDrawPoolTeams.length > 0 ? ` (parmi ${wlDrawPoolTeams.length})` : ""}
+                    {t("wl_draw_btn", { rank: waitlisted.length + 1 })}
                   </button>
                 </div>
               </div>
@@ -421,7 +420,7 @@ export function SelectionManager({
                       <div style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
                         {inWl && (
                           <span style={{ fontSize: 10, color: "#6366f1", fontFamily: "var(--font-display)", fontWeight: 700 }}>
-                            DANS LE TIRAGE
+                            {t("in_draw_label")}
                           </span>
                         )}
                       </div>
@@ -431,7 +430,7 @@ export function SelectionManager({
               </div>
 
               <p className="meta" style={{ fontSize: 11, marginTop: 6, color: "var(--text-muted)" }}>
-                Coche les équipes à inclure dans le tirage waiting list — une par une
+                {t("wl_hint")}
               </p>
             </>
           )}
@@ -439,7 +438,7 @@ export function SelectionManager({
       )}
 
       {isPending && (
-        <p className="meta" style={{ marginTop: 8, fontSize: 12 }}>Enregistrement…</p>
+        <p className="meta" style={{ marginTop: 8, fontSize: 12 }}>{t("saving")}</p>
       )}
     </div>
   );

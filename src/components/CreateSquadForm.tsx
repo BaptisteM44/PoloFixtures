@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 
 export function CreateSquadForm() {
+  const t = useTranslations("my_teams");
   const router = useRouter();
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -39,7 +41,7 @@ export function CreateSquadForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim().length < 2) { setError("Nom trop court (2 car. min)"); return; }
+    if (name.trim().length < 2) { setError(t("error_name_short")); return; }
     setLoading(true);
     setError(null);
     const res = await fetch("/api/squads", {
@@ -52,7 +54,7 @@ export function CreateSquadForm() {
       router.push(`/my-teams/${squad.id}`);
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Erreur lors de la création");
+      setError(data.error ?? t("error_create"));
       setLoading(false);
     }
   };
@@ -60,7 +62,7 @@ export function CreateSquadForm() {
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
       <label className="field-row">
-        Nom de l&apos;équipe *
+        {t("field_name")}
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -72,7 +74,7 @@ export function CreateSquadForm() {
 
       {/* Logo */}
       <div className="field-row">
-        <span>Logo (optionnel)</span>
+        <span>{t("field_logo")}</span>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {logoPath && (
             <div style={{ position: "relative" }}>
@@ -82,26 +84,26 @@ export function CreateSquadForm() {
           )}
           <input ref={logoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleLogoUpload} />
           <button type="button" className="ghost" style={{ fontSize: 12 }} onClick={() => logoInputRef.current?.click()} disabled={logoUploading}>
-            {logoUploading ? "Upload…" : logoPath ? "🔄 Changer" : "📷 Uploader un logo"}
+            {logoUploading ? t("logo_uploading") : logoPath ? t("logo_change") : t("logo_upload")}
           </button>
         </div>
       </div>
 
       <label className="field-row">
-        Description (optionnel)
+        {t("field_bio")}
         <textarea
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           rows={3}
           maxLength={500}
-          placeholder="Qui êtes-vous ? Votre style de jeu, votre région..."
+          placeholder={t("bio_placeholder")}
           style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }}
         />
       </label>
 
       {error && <p className="error">{error}</p>}
       <button className="primary" type="submit" disabled={loading || logoUploading}>
-        {loading ? "Création…" : "Créer l'équipe"}
+        {loading ? t("btn_creating") : t("btn_submit")}
       </button>
     </form>
   );

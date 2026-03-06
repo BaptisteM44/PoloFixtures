@@ -2,11 +2,13 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { getTranslations } from "next-intl/server";
 
 export default async function AdminClubsPage() {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") redirect("/");
+  const t = await getTranslations("admin");
 
   const pendingClubs = await prisma.club.findMany({
     where: { approved: false },
@@ -28,19 +30,19 @@ export default async function AdminClubsPage() {
 
   return (
     <div className="page">
-      <h1>Administration</h1>
+      <h1>{t("page_title")}</h1>
       <AdminNav />
 
       <section className="section" style={{ marginTop: 24 }}>
         <div className="section-header">
           <div>
-            <h2>Clubs en attente d&apos;approbation</h2>
-            <p>{pendingClubs.length} club{pendingClubs.length > 1 ? "s" : ""}</p>
+            <h2>{t("clubs_pending_title")}</h2>
+            <p>{pendingClubs.length === 1 ? t("players_count_one", { count: pendingClubs.length }) : t("players_count_other", { count: pendingClubs.length })}</p>
           </div>
         </div>
 
         {pendingClubs.length === 0 ? (
-          <div className="empty-state"><p>Aucun club en attente.</p></div>
+          <div className="empty-state"><p>{t("clubs_empty_pending")}</p></div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {pendingClubs.map((club) => (
@@ -52,16 +54,16 @@ export default async function AdminClubsPage() {
                   <p style={{ fontWeight: 600, margin: 0 }}>{club.name}</p>
                   <p className="meta" style={{ margin: 0 }}>{club.city}, {club.country}</p>
                   <p className="meta" style={{ margin: 0 }}>
-                    Manager : <Link href={`/player/${club.manager.slug ?? club.manager.id}`}>{club.manager.name}</Link>
+                    {t("clubs_manager")} : <Link href={`/player/${club.manager.slug ?? club.manager.id}`}>{club.manager.name}</Link>
                   </p>
                   {club.description && <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-muted)" }}>{club.description}</p>}
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
                   <form action={`/api/admin/clubs/${club.id}/approve`} method="POST">
-                    <button type="submit" className="primary" style={{ fontSize: 13 }}>✓ Approuver</button>
+                    <button type="submit" className="primary" style={{ fontSize: 13 }}>✓ {t("btn_approve")}</button>
                   </form>
                   <form action={`/api/admin/clubs/${club.id}/approve`} method="DELETE">
-                    <button type="submit" className="ghost" style={{ fontSize: 13, color: "var(--danger)" }}>✗ Refuser</button>
+                    <button type="submit" className="ghost" style={{ fontSize: 13, color: "var(--danger)" }}>✗ {t("btn_reject")}</button>
                   </form>
                 </div>
               </div>
@@ -73,12 +75,12 @@ export default async function AdminClubsPage() {
       <section className="section">
         <div className="section-header">
           <div>
-            <h2>Clubs approuvés</h2>
-            <p>{approvedClubs.length} clubs</p>
+            <h2>{t("clubs_approved_title")}</h2>
+            <p>{approvedClubs.length === 1 ? t("players_count_one", { count: approvedClubs.length }) : t("players_count_other", { count: approvedClubs.length })}</p>
           </div>
         </div>
         {approvedClubs.length === 0 ? (
-          <div className="empty-state"><p>Aucun club approuvé.</p></div>
+          <div className="empty-state"><p>{t("clubs_empty_approved")}</p></div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {approvedClubs.map((club) => (
@@ -91,9 +93,9 @@ export default async function AdminClubsPage() {
                   <span className="meta"> — {club.city}, {club.country} — {club._count.members} membre{club._count.members > 1 ? "s" : ""}</span>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <Link href={`/club/${club.id}`} className="ghost" style={{ fontSize: 13 }}>Voir</Link>
+                  <Link href={`/club/${club.id}`} className="ghost" style={{ fontSize: 13 }}>{t("btn_view")}</Link>
                   <form action={`/api/admin/clubs/${club.id}/approve`} method="DELETE">
-                    <button type="submit" className="ghost" style={{ fontSize: 13, color: "var(--danger)" }}>Supprimer</button>
+                    <button type="submit" className="ghost" style={{ fontSize: 13, color: "var(--danger)" }}>{t("btn_delete")}</button>
                   </form>
                 </div>
               </div>

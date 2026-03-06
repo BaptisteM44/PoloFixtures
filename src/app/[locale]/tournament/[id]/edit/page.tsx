@@ -9,7 +9,8 @@ import { TeamManager } from "@/components/TeamManager";
 import { CoOrganizerManager } from "@/components/CoOrganizerManager";
 import { RefereeManager } from "@/components/RefereeManager";
 import { hasAtLeastRole } from "@/lib/rbac";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { getTranslations } from "next-intl/server";
 
 export default async function TournamentEditPage({ params }: { params: { id: string } }) {
   const session = await auth();
@@ -25,7 +26,10 @@ export default async function TournamentEditPage({ params }: { params: { id: str
     }
   });
 
-  if (!tournament) return <div>Tournoi introuvable</div>;
+  if (!tournament) {
+    const t = await getTranslations("tournament");
+    return <div>{t("not_found")}</div>;
+  }
 
   // Accès : ADMIN (toujours), ORGA pour CE tournoi, créateur, ou co-organisateur
   const isAdmin = !!(session?.user?.role && hasAtLeastRole(session.user.role, "ADMIN"));
@@ -34,12 +38,13 @@ export default async function TournamentEditPage({ params }: { params: { id: str
   const isCoOrga = !!(session?.user?.playerId && tournament.coOrganizers.some((co) => co.playerId === session.user.playerId));
 
   if (!isAdmin && !isOrgaForThis && !isCreator && !isCoOrga) {
+    const t = await getTranslations("tournament");
     return (
       <div className="page">
         <div className="panel" style={{ textAlign: "center", padding: 48 }}>
-          <h2>Accès refusé</h2>
-          <p style={{ color: "var(--text-muted)" }}>Vous n&apos;êtes pas l&apos;organisateur de ce tournoi.</p>
-          <Link href={`/tournament/${tournament.id}`} className="primary" style={{ marginTop: 16 }}>Voir le tournoi</Link>
+          <h2>{t("edit_access_denied")}</h2>
+          <p style={{ color: "var(--text-muted)" }}>{t("edit_access_denied_desc")}</p>
+          <Link href={`/tournament/${tournament.id}`} className="primary" style={{ marginTop: 16 }}>{t("edit_view_tournament")}</Link>
         </div>
       </div>
     );
@@ -90,15 +95,16 @@ export default async function TournamentEditPage({ params }: { params: { id: str
   };
 
   const submissionStatus = (tournament.submissionStatus ?? (tournament.approved ? "APPROVED" : "PENDING")) as "PENDING" | "APPROVED" | "REJECTED";
+  const t = await getTranslations("tournament");
 
   return (
     <div className="page">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
-          <h1 style={{ marginBottom: 4 }}>Dashboard organisateur</h1>
+          <h1 style={{ marginBottom: 4 }}>{t("edit_dashboard_title")}</h1>
           <p className="meta">{tournament.name} · {tournament.city}, {tournament.country}</p>
         </div>
-        <Link href={`/tournament/${tournament.id}`} className="ghost">Voir la page publique →</Link>
+        <Link href={`/tournament/${tournament.id}`} className="ghost">{t("edit_view_public")}</Link>
       </div>
 
       {/* 2-column layout: checklist left, main content right */}
@@ -136,7 +142,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               await resubmitTournamentAction(params.id);
             }}>
               <button className="primary" type="submit" style={{ width: "100%", marginTop: 12, justifyContent: "center" }}>
-                Corriger et resoumettre
+                {t("edit_resubmit")}
               </button>
             </form>
           )}
@@ -149,15 +155,15 @@ export default async function TournamentEditPage({ params }: { params: { id: str
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             <div className="panel" style={{ textAlign: "center", padding: 16 }}>
               <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{tournament.teams.length}<span style={{ fontSize: 14, color: "var(--text-muted)", marginLeft: 2 }}>/{tournament.maxTeams}</span></div>
-              <p className="meta">Équipes</p>
+              <p className="meta">{t("edit_kpi_teams")}</p>
             </div>
             <div className="panel" style={{ textAlign: "center", padding: 16 }}>
               <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{tournament.freeAgents.length}</div>
-              <p className="meta">Free agents</p>
+              <p className="meta">{t("edit_kpi_free_agents")}</p>
             </div>
             <div className="panel" style={{ textAlign: "center", padding: 16 }}>
               <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{tournament.teams.reduce((acc, t) => acc + t.players.length, 0)}</div>
-              <p className="meta">Joueurs</p>
+              <p className="meta">{t("edit_kpi_players")}</p>
             </div>
             <div className="panel" style={{ textAlign: "center", padding: 16 }}>
               <span className={`status ${tournament.status.toLowerCase()}`}>{tournament.status}</span>
@@ -242,9 +248,9 @@ export default async function TournamentEditPage({ params }: { params: { id: str
 
       {/* Free agents list */}
       <div className="panel">
-        <h3 style={{ marginBottom: 12 }}>Free agents inscrits ({tournament.freeAgents.length})</h3>
+        <h3 style={{ marginBottom: 12 }}>{t("edit_free_agents_title", { count: tournament.freeAgents.length })}</h3>
         {tournament.freeAgents.length === 0 ? (
-          <p className="meta">Aucune demande pour l&apos;instant.</p>
+          <p className="meta">{t("edit_free_agents_empty")}</p>
         ) : (
           <FreeAgentList
             agents={tournament.freeAgents}

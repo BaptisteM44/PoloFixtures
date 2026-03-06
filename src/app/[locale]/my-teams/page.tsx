@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { getTranslations } from "next-intl/server";
 import { CreateSquadForm } from "@/components/CreateSquadForm";
 
 export default async function MyTeamsPage() {
+  const t = await getTranslations("my_teams");
   const session = await auth();
   const playerId = session?.user?.playerId;
   if (!playerId) redirect("/login");
@@ -27,8 +29,8 @@ export default async function MyTeamsPage() {
     <div className="page">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
         <div>
-          <h1 style={{ marginBottom: 4 }}>Mes équipes</h1>
-          <p className="meta">Tes équipes permanentes — indépendantes des tournois.</p>
+          <h1 style={{ marginBottom: 4 }}>{t("page_title")}</h1>
+          <p className="meta">{t("page_subtitle")}</p>
         </div>
       </div>
 
@@ -38,8 +40,8 @@ export default async function MyTeamsPage() {
           {squads.length === 0 ? (
             <div className="panel" style={{ textAlign: "center", padding: 48 }}>
               <p style={{ fontSize: 32, margin: "0 0 12px" }}>🏑</p>
-              <h3 style={{ margin: "0 0 8px" }}>Pas encore d&apos;équipe</h3>
-              <p className="meta">Crée ta première équipe ou attends une invitation d&apos;un coéquipier.</p>
+              <h3 style={{ margin: "0 0 8px" }}>{t("empty_title")}</h3>
+              <p className="meta">{t("empty_subtitle")}</p>
             </div>
           ) : (
             squads.map((squad) => {
@@ -119,7 +121,7 @@ export default async function MyTeamsPage() {
         {/* Formulaire de création */}
         <div style={{ position: "sticky", top: 80 }}>
           <div className="panel">
-            <h3 style={{ marginBottom: 16 }}>Créer une équipe</h3>
+            <h3 style={{ marginBottom: 16 }}>{t("create_title")}</h3>
             <CreateSquadForm />
           </div>
         </div>

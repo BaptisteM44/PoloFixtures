@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations("auth");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -30,39 +32,35 @@ export default function ForgotPasswordPage() {
   return (
     <div style={{ maxWidth: 420, margin: "80px auto" }}>
       <div className="panel">
-        <h1 style={{ fontSize: 22, marginBottom: 8 }}>Mot de passe oublié</h1>
+        <h1 style={{ fontSize: 22, marginBottom: 8 }}>{t("forgot_title")}</h1>
 
         {done ? (
           <div style={{ textAlign: "center", padding: "16px 0" }}>
-            <p style={{ fontSize: 15 }}>
-              Si cette adresse est associée à un compte, un lien de réinitialisation vient d&apos;être envoyé. Vérifiez votre boîte mail (et les spams).
-            </p>
+            <p style={{ fontSize: 15 }}>{t("forgot_sent")}</p>
             <Link className="ghost" href="/login" style={{ marginTop: 20, display: "inline-flex" }}>
-              Retour à la connexion
+              {t("link_back_login")}
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <p className="meta" style={{ marginBottom: 4 }}>
-              Entrez votre adresse email pour recevoir un lien de réinitialisation.
-            </p>
+            <p className="meta" style={{ marginBottom: 4 }}>{t("forgot_subtitle")}</p>
             <label className="field-row">
-              Email
+              {t("field_email")}
               <input
                 type="email"
                 required
                 autoFocus
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="vous@example.com"
+                placeholder={t("field_email_placeholder")}
               />
             </label>
             {error && <p style={{ color: "var(--danger)", fontSize: 13 }}>{error}</p>}
             <button type="submit" className="primary" disabled={loading}>
-              {loading ? "Envoi…" : "Envoyer le lien"}
+              {loading ? "…" : t("forgot_btn_send")}
             </button>
             <Link href="/login" className="ghost" style={{ textAlign: "center", fontSize: 13 }}>
-              Retour à la connexion
+              {t("link_back_login")}
             </Link>
           </form>
         )}

@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { PokemonCard } from "@/components/PokemonCard";
 import { COUNTRIES } from "@/lib/countries";
 import { BadgeShowcase } from "@/components/BadgeShowcase";
@@ -32,6 +33,7 @@ type Player = {
 
 
 export default function AccountPage() {
+  const t = useTranslations("account");
   const { data: session, status } = useSession();
   const router = useRouter();
   const [player, setPlayer] = useState<Player | null>(null);
@@ -49,7 +51,7 @@ export default function AccountPage() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pwForm.next !== pwForm.confirm) { setPwMsg({ ok: false, text: "Les mots de passe ne correspondent pas" }); return; }
+    if (pwForm.next !== pwForm.confirm) { setPwMsg({ ok: false, text: t("pw_mismatch") }); return; }
     setPwSaving(true); setPwMsg(null);
     const res = await fetch("/api/account/password", {
       method: "PATCH",
@@ -58,8 +60,8 @@ export default function AccountPage() {
     });
     const data = await res.json().catch(() => ({}));
     setPwSaving(false);
-    if (res.ok) { setPwMsg({ ok: true, text: "Mot de passe mis à jour !" }); setPwForm({ current: "", next: "", confirm: "" }); setTimeout(() => setPwOpen(false), 1500); }
-    else setPwMsg({ ok: false, text: data.error ?? "Erreur" });
+    if (res.ok) { setPwMsg({ ok: true, text: t("success_password") }); setPwForm({ current: "", next: "", confirm: "" }); setTimeout(() => setPwOpen(false), 1500); }
+    else setPwMsg({ ok: false, text: data.error ?? t("error_wrong_password") });
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,7 +73,7 @@ export default function AccountPage() {
       fd.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       if (!res.ok) {
-        setSaveMsg("Erreur lors de l'upload");
+        setSaveMsg(t("photo_error"));
         return;
       }
       const { path } = await res.json();
@@ -81,10 +83,10 @@ export default function AccountPage() {
         body: JSON.stringify({ photoPath: path })
       });
       await fetchPlayer();
-      setSaveMsg("Photo mise à jour !");
+      setSaveMsg(t("photo_success"));
       setTimeout(() => setSaveMsg(null), 3000);
     } catch {
-      setSaveMsg("Erreur lors de l'upload");
+      setSaveMsg(t("photo_error"));
     } finally {
       setUploading(false);
     }
@@ -129,14 +131,14 @@ export default function AccountPage() {
     if (res.ok) {
       await fetchPlayer();
       setEditing(false);
-      setSaveMsg("Profil mis à jour !");
+      setSaveMsg(t("success_profile"));
       setTimeout(() => setSaveMsg(null), 3000);
     }
     setSaving(false);
   };
 
   if (status === "loading" || !player) {
-    return <div className="player-profile"><p>Chargement…</p></div>;
+    return <div className="player-profile"><p>{t("loading")}</p></div>;
   }
 
   return (
@@ -164,7 +166,7 @@ export default function AccountPage() {
           <div style={{ marginTop: 12, textAlign: "center" }}>
             <label style={{ cursor: "pointer", display: "inline-block" }}>
               <span className="ghost" style={{ fontSize: 12, display: "inline-block", cursor: "pointer" }}>
-                {uploading ? "Upload en cours…" : "📷 Changer la photo"}
+                {uploading ? t("photo_uploading") : t("photo_change")}
               </span>
               <input
                 type="file"
@@ -191,9 +193,9 @@ export default function AccountPage() {
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button className="ghost" onClick={() => setEditing(!editing)}>
-                {editing ? "Annuler" : "Modifier"}
+                {editing ? t("btn_cancel") : t("btn_edit")}
               </button>
-              <button className="ghost" onClick={() => signOut({ callbackUrl: "/" })}>Déconnexion</button>
+              <button className="ghost" onClick={() => signOut({ callbackUrl: "/" })}>{t("btn_logout")}</button>
             </div>
           </div>
 
@@ -206,35 +208,35 @@ export default function AccountPage() {
           {/* Edit form */}
           {editing && (
             <form className="panel" onSubmit={save} style={{ display: "grid", gap: 14 }}>
-              <h3 style={{ margin: 0 }}>Modifier mon profil</h3>
+              <h3 style={{ margin: 0 }}>{t("edit_title")}</h3>
               <div className="form-grid">
                 <label className="field-row">
-                  Nom
+                  {t("field_name")}
                   <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                 </label>
                 <label className="field-row">
-                  Ville
+                  {t("field_city")}
                   <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="Paris" />
                 </label>
               </div>
               <label className="field-row">
-                Pays
+                {t("field_country")}
                 <select value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}>
                   {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
                 </select>
               </label>
               <label className="field-row">
-                Bio <span style={{ color: "var(--text-muted)", fontSize: 12 }}>(max 500 car.)</span>
+                {t("field_bio")} <span style={{ color: "var(--text-muted)", fontSize: 12 }}>({t("field_bio_hint")})</span>
                 <textarea
                   value={form.bio}
                   onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-                  placeholder="Présente-toi…"
+                  placeholder={t("field_bio_placeholder")}
                   style={{ resize: "vertical" }}
                 />
               </label>
               <div className="form-grid">
                 <label className="field-row">
-                  Année de début
+                  {t("field_start_year")}
                   <input
                     type="number" min={1990} max={2100}
                     value={form.startYear}
@@ -243,23 +245,23 @@ export default function AccountPage() {
                   />
                 </label>
                 <label className="field-row">
-                  Main dominante
+                  {t("field_hand")}
                   <select value={form.hand} onChange={(e) => setForm((f) => ({ ...f, hand: e.target.value }))}>
-                    <option value="">Non précisé</option>
-                    <option value="RIGHT">Droitier·e</option>
-                    <option value="LEFT">Gaucher·e</option>
+                    <option value="">{t("field_unset")}</option>
+                    <option value="RIGHT">{t("field_hand_right")}</option>
+                    <option value="LEFT">{t("field_hand_left")}</option>
                   </select>
                 </label>
               </div>
               <div className="form-grid">
                 <label className="field-row">
-                  Genre <span style={{ color: "var(--text-muted)", fontSize: 12 }}>(optionnel)</span>
+                  {t("field_gender")} <span style={{ color: "var(--text-muted)", fontSize: 12 }}>({t("field_gender_optional")})</span>
                   <select value={form.gender} onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value as typeof f.gender }))}>
-                    <option value="">Non précisé</option>
-                    <option value="MALE">Homme</option>
-                    <option value="FEMALE">Femme</option>
-                    <option value="NON_BINARY">Non-binaire</option>
-                    <option value="PREFER_NOT_SAY">Préfère ne pas préciser</option>
+                    <option value="">{t("field_unset")}</option>
+                    <option value="MALE">{t("field_gender_male")}</option>
+                    <option value="FEMALE">{t("field_gender_female")}</option>
+                    <option value="NON_BINARY">{t("field_gender_nb")}</option>
+                    <option value="PREFER_NOT_SAY">{t("field_gender_prefer_not")}</option>
                   </select>
                 </label>
                 <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontWeight: 600, fontSize: 14, paddingTop: 22 }}>
@@ -269,14 +271,14 @@ export default function AccountPage() {
                     onChange={(e) => setForm((f) => ({ ...f, showGender: e.target.checked }))}
                     style={{ width: 16, height: 16 }}
                   />
-                  Afficher sur ma carte
+                  {t("field_gender_show")}
                 </label>
               </div>
               <div className="field-row">
-                Régime alimentaire <span style={{ color: "var(--text-muted)", fontSize: 12 }}>(pour les repas en tournoi — cumulable)</span>
+                {t("field_diet")} <span style={{ color: "var(--text-muted)", fontSize: 12 }}>({t("field_diet_hint")})</span>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 6 }}>
                   {(["OMNIVORE", "VEGETARIAN", "VEGAN", "GLUTEN_FREE"] as const).map((d) => {
-                    const labels: Record<string, string> = { OMNIVORE: "Omnivore", VEGETARIAN: "Végétarien·ne", VEGAN: "Vegan", GLUTEN_FREE: "Sans gluten" };
+                    const labels: Record<string, string> = { OMNIVORE: t("diet_omnivore"), VEGETARIAN: t("diet_vegetarian"), VEGAN: t("diet_vegan"), GLUTEN_FREE: t("diet_gluten_free") };
                     const checked = form.diets.includes(d);
                     return (
                       <label key={d} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
@@ -297,27 +299,27 @@ export default function AccountPage() {
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button className="primary" type="submit" disabled={saving}>
-                  {saving ? "Sauvegarde…" : "Sauvegarder"}
+                  {saving ? t("btn_save_loading") : t("btn_save")}
                 </button>
-                <button className="ghost" type="button" onClick={() => setEditing(false)}>Annuler</button>
+                <button className="ghost" type="button" onClick={() => setEditing(false)}>{t("btn_cancel")}</button>
               </div>
             </form>
           )}
 
           {/* Badges & Emblème */}
           <div className="panel">
-            <h3 style={{ marginBottom: 16 }}>Badges & Emblème</h3>
+            <h3 style={{ marginBottom: 16 }}>{t("section_badges")}</h3>
 
             {/* Club logo upload */}
             <div style={{ marginBottom: 16 }}>
-              <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Logo de club <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>(en plus du drapeau)</span></p>
+              <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t("logo_club")} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({t("logo_club_hint")})</span></p>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 {player.clubLogoPath && (
                   <img src={player.clubLogoPath} alt="Club" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border)" }} />
                 )}
                 <label style={{ cursor: "pointer", display: "inline-block" }}>
                   <span className="ghost" style={{ fontSize: 12, display: "inline-block", cursor: "pointer" }}>
-                    {player.clubLogoPath ? "🔄 Changer le logo" : "⬆️ Ajouter un logo"}
+                    {player.clubLogoPath ? t("logo_change") : t("logo_add")}
                   </span>
                   <input
                     type="file"
@@ -353,7 +355,7 @@ export default function AccountPage() {
                       await fetchPlayer();
                     }}
                   >
-                    Supprimer
+                    {t("logo_delete")}
                   </button>
                 )}
               </div>
@@ -362,7 +364,7 @@ export default function AccountPage() {
             {/* Logo position picker */}
             {player.clubLogoPath && (
               <div style={{ marginBottom: 16 }}>
-                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Position du logo <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>(le drapeau reste en haut à gauche)</span></p>
+                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t("logo_position")} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({t("logo_position_hint")})</span></p>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {(["top-right", "bottom-left", "bottom-right"] as const).map((pos) => {
                     const current = player.emblemPosition && player.emblemPosition !== "top-left" ? player.emblemPosition : "top-right";
@@ -380,7 +382,7 @@ export default function AccountPage() {
                           await fetchPlayer();
                         }}
                       >
-                        {pos === "top-right" ? "↗ Haut-droite" : pos === "bottom-left" ? "↙ Bas-gauche" : "↘ Bas-droite"}
+                        {pos === "top-right" ? t("pos_top_right") : pos === "bottom-left" ? t("pos_bottom_left") : t("pos_bottom_right")}
                       </button>
                     );
                   })}
@@ -390,14 +392,14 @@ export default function AccountPage() {
 
             {/* ── Team logo upload ── */}
             <div style={{ marginBottom: 16, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-              <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Logo d'équipe <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>(optionnel, en plus du logo de club)</span></p>
+              <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t("logo_team")} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({t("logo_team_hint")})</span></p>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 {player.teamLogoPath && (
                   <img src={player.teamLogoPath} alt="Team" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border)" }} />
                 )}
                 <label style={{ cursor: "pointer", display: "inline-block" }}>
                   <span className="ghost" style={{ fontSize: 12, display: "inline-block", cursor: "pointer" }}>
-                    {player.teamLogoPath ? "🔄 Changer le logo" : "⬆️ Ajouter un logo d'équipe"}
+                    {player.teamLogoPath ? t("logo_change") : t("logo_add_team")}
                   </span>
                   <input
                     type="file"
@@ -433,7 +435,7 @@ export default function AccountPage() {
                       await fetchPlayer();
                     }}
                   >
-                    Supprimer
+                    {t("logo_delete")}
                   </button>
                 )}
               </div>
@@ -442,7 +444,7 @@ export default function AccountPage() {
             {/* Team logo position picker */}
             {player.teamLogoPath && (
               <div style={{ marginBottom: 16 }}>
-                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>Position du logo d'équipe <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>(ne peut pas être sur le même coin que le logo de club)</span></p>
+                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t("logo_position_team")} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({t("logo_position_team_hint")})</span></p>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {(["top-right", "bottom-left", "bottom-right"] as const).map((pos) => {
                     const clubPos = player.emblemPosition && player.emblemPosition !== "top-left" ? player.emblemPosition : "top-right";
@@ -464,7 +466,7 @@ export default function AccountPage() {
                           await fetchPlayer();
                         }}
                       >
-                        {pos === "top-right" ? "↗ Haut-droite" : pos === "bottom-left" ? "↙ Bas-gauche" : "↘ Bas-droite"}
+                        {pos === "top-right" ? t("pos_top_right") : pos === "bottom-left" ? t("pos_bottom_left") : t("pos_bottom_right")}
                         {isBlocked && " 🔒"}
                       </button>
                     );
@@ -498,24 +500,24 @@ export default function AccountPage() {
           {/* Changer le mot de passe */}
           <div style={{ borderTop: "2px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
             <button type="button" className="ghost" style={{ fontSize: 13, width: "100%", justifyContent: "space-between" }} onClick={() => { setPwOpen((v) => !v); setPwMsg(null); }}>
-              🔒 Changer le mot de passe {pwOpen ? "▲" : "▼"}
+              🔒 {t("pw_section")} {pwOpen ? "▲" : "▼"}
             </button>
             {pwOpen && (
               <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
                 <label className="field-row">
-                  Mot de passe actuel
+                  {t("field_current_password")}
                   <input type="password" required value={pwForm.current} onChange={(e) => setPwForm((p) => ({ ...p, current: e.target.value }))} />
                 </label>
                 <label className="field-row">
-                  Nouveau mot de passe
+                  {t("field_new_password")}
                   <input type="password" required minLength={8} value={pwForm.next} onChange={(e) => setPwForm((p) => ({ ...p, next: e.target.value }))} placeholder="8 caractères minimum" />
                 </label>
                 <label className="field-row">
-                  Confirmer
+                  {t("pw_confirm")}
                   <input type="password" required value={pwForm.confirm} onChange={(e) => setPwForm((p) => ({ ...p, confirm: e.target.value }))} />
                 </label>
                 {pwMsg && <p style={{ fontSize: 13, color: pwMsg.ok ? "var(--teal)" : "var(--danger)", margin: 0 }}>{pwMsg.text}</p>}
-                <button type="submit" className="primary" disabled={pwSaving}>{pwSaving ? "Enregistrement…" : "Mettre à jour"}</button>
+                <button type="submit" className="primary" disabled={pwSaving}>{pwSaving ? t("pw_saving") : t("pw_save")}</button>
               </form>
             )}
           </div>
@@ -523,7 +525,7 @@ export default function AccountPage() {
           {/* Player card link */}
           <div style={{ textAlign: "center", paddingTop: 8 }}>
             <Link className="ghost" href={`/player/${player.slug ?? player.id}`} target="_blank">
-              Voir ma page publique ↗
+              {t("btn_public_page")}
             </Link>
           </div>
         </div>

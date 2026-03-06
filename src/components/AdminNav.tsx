@@ -1,18 +1,21 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { usePathname } from "next/navigation";
-
-const links = [
-  { href: "/admin", label: "Vue d'ensemble" },
-  { href: "/admin/players", label: "Joueurs" },
-  { href: "/admin/clubs", label: "Clubs" },
-  { href: "/admin/countries", label: "Pays" },
-  { href: "/admin/settings", label: "Codes d'accès" }
-];
+import { useTranslations } from "next-intl";
 
 export function AdminNav() {
+  const t = useTranslations("admin");
   const pathname = usePathname();
+
+  const links = [
+    { href: "/admin", label: t("nav_overview") },
+    { href: "/admin/players", label: t("nav_players") },
+    { href: "/admin/clubs", label: t("nav_clubs") },
+    { href: "/admin/countries", label: t("nav_countries") },
+    { href: "/admin/settings", label: t("nav_access_codes") },
+  ];
+
   return (
     <div className="admin-nav">
       {links.map((l) => (
