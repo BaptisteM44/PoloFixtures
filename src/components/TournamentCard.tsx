@@ -44,20 +44,27 @@ export async function TournamentCard({ tournament, teamCount }: { tournament: To
   };
 
   return (
-    <Link className="tournament-card" href={`/tournament/${tournament.id}`}>
-      <div className="tournament-card__header">
-        <h3>{tournament.name}</h3>
-        <span className={`status ${tournament.status.toLowerCase()}`}>
-          {STATUS_LABELS[tournament.status] ?? tournament.status}
-        </span>
+    <Link className={`tournament-card${tournament.bannerPath ? " tournament-card--has-banner" : ""}`} href={`/tournament/${tournament.id}`}>
+      <div className="tournament-card__body">
+        <div className="tournament-card__header">
+          <h3>{tournament.name}</h3>
+          <span className={`status ${tournament.status.toLowerCase()}`}>
+            {STATUS_LABELS[tournament.status] ?? tournament.status}
+          </span>
+        </div>
+        <p className="tournament-card__location">📍 {tournament.city}, {tournament.country}</p>
+        <p className="meta">{formatDate(tournament.dateStart)} — {formatDate(tournament.dateEnd)}</p>
+        <p className="meta">{tournament.format} · {t("teams_slots", { count: teamCount, max: tournament.maxTeams })}</p>
+        <RegistrationBadge
+          start={tournament.registrationStart}
+          end={tournament.registrationEnd}
+        />
       </div>
-      <p className="tournament-card__location">📍 {tournament.city}, {tournament.country}</p>
-      <p className="meta">{formatDate(tournament.dateStart)} — {formatDate(tournament.dateEnd)}</p>
-      <p className="meta">{tournament.format} · {t("teams_slots", { count: teamCount, max: tournament.maxTeams })}</p>
-      <RegistrationBadge
-        start={tournament.registrationStart}
-        end={tournament.registrationEnd}
-      />
+      {tournament.bannerPath && (
+        <div className="tournament-card__banner">
+          <img src={tournament.bannerPath} alt="" />
+        </div>
+      )}
     </Link>
   );
 }

@@ -86,6 +86,22 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ---- CONTINENTS ---- */}
+      <section className="section" style={{ paddingBottom: 0 }}>
+        <div className="continent-grid">
+          {continents.map((c) => (
+            <Link key={c.code} className="continent-card" href={`/continent/${c.code}`}>
+              <h3>{c.name}</h3>
+              {playerCountByContinent[c.code] ? (
+                <span className="continent-stat">
+                  {playerCountByContinent[c.code]} player{playerCountByContinent[c.code] > 1 ? "s" : ""}
+                </span>
+              ) : null}
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* ---- LIVE + UPCOMING TOURNAMENTS ---- */}
       <section className="section">
         <div className="section-header">
@@ -93,7 +109,7 @@ export default async function HomePage() {
             <h2>{t("section_active_title")}</h2>
             <p>{t("section_active_subtitle")}</p>
           </div>
-          <Link className="ghost" href="/continent/EU">{tc("see_all")}</Link>
+          <Link className="ghost" href="/tournaments">{tc("see_all")}</Link>
         </div>
         {activeTournaments.length > 0 ? (
           <div className="tournament-grid">
@@ -132,27 +148,6 @@ export default async function HomePage() {
         />
       </section>
 
-      {/* ---- CONTINENTS ---- */}
-      <section className="section">
-        <div className="section-header">
-          <div>
-            <h2>{t("section_continents_title")}</h2>
-            <p>{t("section_continents_subtitle")}</p>
-          </div>
-        </div>
-        <div className="continent-grid">
-          {continents.map((c) => (
-            <Link key={c.code} className="continent-card" href={`/continent/${c.code}`}>
-              <h3>{c.name}</h3>
-              {playerCountByContinent[c.code] ? (
-                <span className="continent-stat">
-                  {playerCountByContinent[c.code]} player{playerCountByContinent[c.code] > 1 ? "s" : ""}
-                </span>
-              ) : null}
-            </Link>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

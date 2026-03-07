@@ -121,6 +121,15 @@ enum NotificationType {
   TEAM_WAITLISTED        // tiré au sort → liste d'attente (avec rang)
   BADGE_UNLOCKED         // badge débloqué
   TEAM_MESSAGE_RECEIVED  // nouveau message dans le chat d'équipe
+  TASK_ASSIGNED          // tâche orga assignée
+  TASK_DEADLINE_APPROACHING // deadline tâche orga proche
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 
 model AccessCode {
@@ -217,6 +226,10 @@ model Tournament {
   faq                     Json?
   // Telegram group/channel link (t.me/...)
   telegramUrl             String?
+  // Récap post-tournoi
+  recapText               String?   // markdown
+  photoFinishPath         String?   // URL upload photo finish
+  podiumNote              String?   // mention spéciale, MVP…
   // Legacy meal booleans (kept for migration compatibility)
   breakfastProvided       Boolean          @default(false)
   lunchProvided           Boolean          @default(false)
@@ -234,6 +247,9 @@ model Tournament {
   freeAgents     FreeAgent[]
   messages       TournamentMessage[]
   coOrganizers   TournamentOrganizer[]
+  orgaTasks      OrgaTask[]
+  orgaNotes      OrgaNote[]
+  orgaLinks      OrgaLink[]
 
   @@index([continentCode])
   @@index([status])
@@ -316,6 +332,10 @@ model Player {
   freeAgentRegistrations  FreeAgent[]
   managedClubs            Club[]       @relation("ManagedClubs")
   clubMemberships         ClubMember[]
+  assignedOrgaTasks       OrgaTask[]   @relation("AssignedTasks")
+  createdOrgaTasks        OrgaTask[]   @relation("CreatedTasks")
+  orgaNotes               OrgaNote[]   @relation("OrgaNotes")
+  orgaLinks               OrgaLink[]   @relation("OrgaLinks")
 }
 
 model PlayerAccount {
@@ -641,4 +661,55 @@ model ClubMember {
   @@unique([clubId, playerId])
   @@index([clubId])
   @@index([playerId])
+}
+
+// ── Orga Dashboard ───────────────────────────────────────────────────────────
+
+model OrgaTask {
+  id           String       @id @default(cuid())
+  tournamentId String
+  title        String
+  description  String?
+  deadline     DateTime?
+  completed    Boolean      @default(false)
+  priority     TaskPriority @default(MEDIUM)
+  assignedToId String?
+  createdById  String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  assignedTo Player?    @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy  Player     @relation("CreatedTasks", fields: [createdById], references: [id])
+
+  @@index([tournamentId])
+  @@index([assignedToId])
+}
+
+model OrgaNote {
+  id           String   @id @default(cuid())
+  tournamentId String
+  content      String
+  authorId     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  author     Player     @relation("OrgaNotes", fields: [authorId], references: [id])
+
+  @@index([tournamentId])
+}
+
+model OrgaLink {
+  id           String   @id @default(cuid())
+  tournamentId String
+  label        String
+  url          String
+  addedById    String
+  createdAt    DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  addedBy    Player     @relation("OrgaLinks", fields: [addedById], references: [id])
+
+  @@index([tournamentId])
 }

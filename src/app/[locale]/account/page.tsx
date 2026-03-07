@@ -49,6 +49,27 @@ export default function AccountPage() {
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  // Suppression de compte
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (deleteConfirm !== t("delete_confirm_word")) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const res = await fetch("/api/account/delete", { method: "DELETE" });
+    if (res.ok) {
+      await signOut({ callbackUrl: "/" });
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setDeleteError(data.error ?? t("delete_error"));
+      setDeleting(false);
+    }
+  };
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pwForm.next !== pwForm.confirm) { setPwMsg({ ok: false, text: t("pw_mismatch") }); return; }
@@ -518,6 +539,41 @@ export default function AccountPage() {
                 </label>
                 {pwMsg && <p style={{ fontSize: 13, color: pwMsg.ok ? "var(--teal)" : "var(--danger)", margin: 0 }}>{pwMsg.text}</p>}
                 <button type="submit" className="primary" disabled={pwSaving}>{pwSaving ? t("pw_saving") : t("pw_save")}</button>
+              </form>
+            )}
+          </div>
+
+          {/* Supprimer le compte */}
+          <div style={{ borderTop: "2px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
+            <button
+              type="button"
+              className="ghost"
+              style={{ fontSize: 13, width: "100%", justifyContent: "space-between", color: "var(--danger)" }}
+              onClick={() => { setDeleteOpen((v) => !v); setDeleteConfirm(""); setDeleteError(null); }}
+            >
+              {t("delete_section")} {deleteOpen ? "▲" : "▼"}
+            </button>
+            {deleteOpen && (
+              <form onSubmit={handleDeleteAccount} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12, padding: "12px 16px", background: "rgba(var(--danger-rgb,220,38,38),0.06)", border: "1px solid var(--danger)", borderRadius: 8 }}>
+                <p style={{ fontSize: 13, margin: 0, lineHeight: 1.6 }}>{t("delete_warning")}</p>
+                <label className="field-row">
+                  {t("delete_confirm_label", { word: t("delete_confirm_word") })}
+                  <input
+                    value={deleteConfirm}
+                    onChange={(e) => setDeleteConfirm(e.target.value)}
+                    placeholder={t("delete_confirm_word")}
+                    style={{ borderColor: "var(--danger)" }}
+                  />
+                </label>
+                {deleteError && <p style={{ fontSize: 13, color: "var(--danger)", margin: 0 }}>{deleteError}</p>}
+                <button
+                  type="submit"
+                  className="primary"
+                  disabled={deleting || deleteConfirm !== t("delete_confirm_word")}
+                  style={{ background: "var(--danger)", opacity: deleteConfirm !== t("delete_confirm_word") ? 0.5 : 1 }}
+                >
+                  {deleting ? t("delete_deleting") : t("delete_btn")}
+                </button>
               </form>
             )}
           </div>

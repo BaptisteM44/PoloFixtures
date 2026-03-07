@@ -535,8 +535,6 @@ export async function toggleTeamSelectedAction(
   selected: boolean
 ): Promise<{ ok?: boolean; error?: string }> {
   await prisma.team.update({ where: { id: teamId }, data: { selected } });
-  revalidatePath(`/tournament/${tournamentId}`);
-  revalidatePath(`/tournament/${tournamentId}/edit`);
   return { ok: true };
 }
 
@@ -550,27 +548,31 @@ export async function toggleTeamGuaranteedAction(
     where: { id: teamId },
     data: { guaranteed, ...(guaranteed ? { selected: true } : {}) },
   });
-  revalidatePath(`/tournament/${tournamentId}`);
-  revalidatePath(`/tournament/${tournamentId}/edit`);
   return { ok: true };
 }
 
 export async function drawTeamsAction(
   tournamentId: string,
-  count: number
+  count: number,
+  preDrawnIds?: string[]
 ): Promise<{ ok?: boolean; error?: string }> {
   const teams = await prisma.team.findMany({ where: { tournamentId }, select: { id: true, guaranteed: true } });
 
-  // Les équipes garanties sont toujours IN — elles ne participent pas au tirage
   const guaranteed = teams.filter((t) => t.guaranteed);
-  const pool = teams.filter((t) => !t.guaranteed);
-  const slotsLeft = Math.max(0, count - guaranteed.length);
-
-  // Tirage aléatoire sur le pool
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  const drawnIds = new Set(shuffled.slice(0, slotsLeft).map((t) => t.id));
   const guaranteedIds = new Set(guaranteed.map((t) => t.id));
-  const selectedIds = new Set([...drawnIds, ...guaranteedIds]);
+
+  let selectedIds: Set<string>;
+  if (preDrawnIds && preDrawnIds.length > 0) {
+    // Le client a déjà fait le tirage — on valide juste que les IDs appartiennent au tournoi
+    const validIds = new Set(teams.map((t) => t.id));
+    selectedIds = new Set([...guaranteedIds, ...preDrawnIds.filter((id) => validIds.has(id))]);
+  } else {
+    const pool = teams.filter((t) => !t.guaranteed);
+    const slotsLeft = Math.max(0, count - guaranteed.length);
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    const drawnIds = new Set(shuffled.slice(0, slotsLeft).map((t) => t.id));
+    selectedIds = new Set([...drawnIds, ...guaranteedIds]);
+  }
 
   await prisma.team.updateMany({
     where: { tournamentId, id: { in: Array.from(selectedIds) } },
@@ -580,8 +582,6 @@ export async function drawTeamsAction(
     where: { tournamentId, id: { notIn: Array.from(selectedIds) } },
     data: { selected: false },
   });
-  revalidatePath(`/tournament/${tournamentId}`);
-  revalidatePath(`/tournament/${tournamentId}/edit`);
   return { ok: true };
 }
 
@@ -616,8 +616,6 @@ export async function drawOneTeamAction(
     tournamentName: tournament?.name ?? "",
     tournamentId,
   });
-  revalidatePath(`/tournament/${tournamentId}`);
-  revalidatePath(`/tournament/${tournamentId}/edit`);
   return { ok: true, winnerId: winner.id };
 }
 
@@ -659,9 +657,34 @@ export async function drawOneWaitlistAction(
     tournamentId,
     rank: nextRank,
   });
-  revalidatePath(`/tournament/${tournamentId}`);
-  revalidatePath(`/tournament/${tournamentId}/edit`);
   return { ok: true, winnerId: winner.id, waitlistPosition: nextRank };
+}
+
+/**
+ * Retire une équipe de la waiting list (remet waitlistPosition à null)
+ * et renuméroté les équipes restantes.
+ */
+export async function removeFromWaitlistAction(
+  tournamentId: string,
+  teamId: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const team = await prisma.team.findUnique({ where: { id: teamId }, select: { waitlistPosition: true } });
+  if (!team || team.waitlistPosition === null) return { error: "Équipe introuvable ou pas en WL." };
+
+  const removedRank = team.waitlistPosition;
+  await prisma.team.update({ where: { id: teamId }, data: { waitlistPosition: null } });
+
+  // Renuméroter les équipes avec un rang supérieur
+  const toRenumber = await prisma.team.findMany({
+    where: { tournamentId, waitlistPosition: { gt: removedRank } },
+    select: { id: true, waitlistPosition: true },
+    orderBy: { waitlistPosition: "asc" },
+  });
+  for (const t of toRenumber) {
+    await prisma.team.update({ where: { id: t.id }, data: { waitlistPosition: (t.waitlistPosition ?? 0) - 1 } });
+  }
+
+  return { ok: true };
 }
 
 export async function addPlayerToTeamAction(

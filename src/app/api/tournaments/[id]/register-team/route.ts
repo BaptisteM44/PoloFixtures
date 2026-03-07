@@ -43,8 +43,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return Response.json({ error: "Les inscriptions sont clôturées pour ce tournoi." }, { status: 403 });
   }
 
+  const fmtMatch = tournament.format.match(/^(\d+)v\d+$/i);
+  const maxPlayersPerTeam = fmtMatch ? parseInt(fmtMatch[1], 10) : 5;
+  const dynamicSchema = registerSchema.extend({
+    players: z.array(playerSlotSchema).min(1).max(maxPlayersPerTeam),
+  });
+
   const json = await request.json();
-  const parsed = registerSchema.safeParse(json);
+  const parsed = dynamicSchema.safeParse(json);
   if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const { teamName, city, country, registrationNote, players, captainIndex = 0 } = parsed.data;

@@ -108,10 +108,10 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       </div>
 
       {/* 2-column layout: checklist left, main content right */}
-      <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 24, alignItems: "start" }}>
+      <div className="edit-page-layout">
 
         {/* Left: checklist sticky */}
-        <div style={{ position: "sticky", top: 80 }}>
+        <div className="edit-page-sidebar" style={{ position: "sticky", top: 80 }}>
           <TournamentChecklist t={{
             name: tournament.name,
             country: tournament.country,
@@ -152,7 +152,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
         <div style={{ display: "grid", gap: 24 }}>
 
           {/* KPI bar */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+          <div className="kpi-grid">
             <div className="panel" style={{ textAlign: "center", padding: 16 }}>
               <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{tournament.teams.length}<span style={{ fontSize: 14, color: "var(--text-muted)", marginLeft: 2 }}>/{tournament.maxTeams}</span></div>
               <p className="meta">{t("edit_kpi_teams")}</p>

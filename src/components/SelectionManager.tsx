@@ -19,10 +19,11 @@ type Props = {
   maxTeams: number;
   tournamentId: string;
   toggleAction: (teamId: string, tournamentId: string, selected: boolean) => Promise<{ ok?: boolean; error?: string }>;
-  drawAction: (tournamentId: string, count: number) => Promise<{ ok?: boolean; error?: string }>;
+  drawAction: (tournamentId: string, count: number, preDrawnIds?: string[]) => Promise<{ ok?: boolean; error?: string }>;
   guaranteeAction: (teamId: string, tournamentId: string, guaranteed: boolean) => Promise<{ ok?: boolean; error?: string }>;
   drawOneAction: (tournamentId: string, candidateIds: string[]) => Promise<{ ok?: boolean; winnerId?: string; error?: string }>;
   drawOneWaitlistAction: (tournamentId: string, candidateIds: string[]) => Promise<{ ok?: boolean; winnerId?: string; waitlistPosition?: number; error?: string }>;
+  removeFromWaitlistAction: (tournamentId: string, teamId: string) => Promise<{ ok?: boolean; error?: string }>;
 };
 
 export function SelectionManager({
@@ -34,6 +35,7 @@ export function SelectionManager({
   guaranteeAction,
   drawOneAction,
   drawOneWaitlistAction,
+  removeFromWaitlistAction,
 }: Props) {
   const t = useTranslations("selection");
   const [teams, setTeams] = useState(initial);
@@ -126,6 +128,20 @@ export function SelectionManager({
     });
   }
 
+  function handleRemoveFromWaitlist(teamId: string, removedRank: number) {
+    setTeams((prev) =>
+      prev.map((t) => {
+        if (t.id === teamId) return { ...t, waitlistPosition: null };
+        if (t.waitlistPosition !== null && t.waitlistPosition > removedRank) return { ...t, waitlistPosition: t.waitlistPosition - 1 };
+        return t;
+      })
+    );
+    startTransition(async () => {
+      const res = await removeFromWaitlistAction(tournamentId, teamId);
+      if (res.error) setError(res.error);
+    });
+  }
+
   /** Tirage waiting list : 1 équipe tirée au sort parmi le wlDrawPool → rang WL suivant */
   function handleDrawOneWaitlist() {
     setError(null);
@@ -156,12 +172,13 @@ export function SelectionManager({
     setError(null);
     setLastWinnerId(null);
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    const drawnIds = new Set(shuffled.slice(0, slotsLeft).map((t) => t.id));
+    const drawn = shuffled.slice(0, slotsLeft);
+    const drawnIds = new Set(drawn.map((t) => t.id));
     setTeams((prev) =>
-      prev.map((t) => t.guaranteed ? t : { ...t, selected: drawnIds.has(t.id) })
+      prev.map((t) => t.guaranteed ? t : { ...t, selected: drawnIds.has(t.id), guaranteed: drawnIds.has(t.id) })
     );
     startTransition(async () => {
-      const res = await drawAction(tournamentId, maxTeams);
+      const res = await drawAction(tournamentId, maxTeams, Array.from(drawnIds));
       if (res.error) setError(res.error);
     });
   }
@@ -171,9 +188,7 @@ export function SelectionManager({
     setError(null);
     setTeams((prev) => prev.map((t) => ({ ...t, selected: true, guaranteed: true })));
     startTransition(async () => {
-      for (const t of pool) {
-        await guaranteeAction(t.id, tournamentId, true);
-      }
+      await Promise.all(pool.map((t) => guaranteeAction(t.id, tournamentId, true)));
     });
   }
 
@@ -358,11 +373,14 @@ export function SelectionManager({
                       {team.city ? `${team.city}, ` : ""}{team.country}
                     </span>
                   )}
-                  {lastWlWinnerId === team.id && (
-                    <span style={{ marginLeft: "auto", fontSize: 10, color: "#6366f1", fontWeight: 700, fontFamily: "var(--font-display)" }}>
-                      {t("drawn_label")}
-                    </span>
-                  )}
+                  <button
+                    onClick={() => handleRemoveFromWaitlist(team.id, team.waitlistPosition!)}
+                    disabled={isPending}
+                    className="ghost"
+                    style={{ marginLeft: "auto", fontSize: 11, padding: "2px 8px", color: "var(--text-muted)" }}
+                  >
+                    {t("btn_remove")}
+                  </button>
                 </div>
               ))}
             </div>

@@ -184,8 +184,8 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
   return (
     <div className="panel" style={{ marginBottom: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h2>Modifier les informations du tournoi</h2>
+      <div className="edit-header">
+        <h2 style={{ margin: 0 }}>Modifier les informations du tournoi</h2>
         <button
           type="button"
           className={isLocked ? "ghost" : "primary"}
@@ -403,7 +403,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             {/* Adresse du terrain */}
             <div style={{ display: "grid", gap: 8 }}>
               <p style={subTitleStyle}>Adresse du terrain</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+              <div className="edit-grid-3">
                 <label className="field-row">
                   Nom du lieu
                   <input name="venueName" defaultValue={tournament.venueName ?? ""} placeholder="Ex: Skatepark Central" />
@@ -424,7 +424,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             <input type="hidden" name="saturdayEventAddress" value={tournament.saturdayEventAddress ?? ""} />
             <input type="hidden" name="saturdayEventMapsUrl" value={tournament.saturdayEventMapsUrl ?? ""} />
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="edit-grid-2">
               {/* Accueil vendredi */}
               <div style={{ display: "grid", gap: 8 }}>
                 <p style={subTitleStyle}>Accueil vendredi soir <span style={{ fontWeight: 400 }}>(opt.)</span></p>
@@ -470,7 +470,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             <span style={{ fontWeight: accommodation ? 700 : 400 }}>Hébergement proposé</span>
           </label>
           {accommodation && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, paddingLeft: 4 }}>
+            <div className="edit-grid-2" style={{ paddingLeft: 4 }}>
               <label className="field-row">
                 Type (gymnase, camping, chez l&apos;habitant...)
                 <input value={accommodationType} onChange={(e) => setAccommodationType(e.target.value)} placeholder="Ex: Gymnase à côté du terrain" />
@@ -488,11 +488,11 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           <p style={sectionTitleStyle}>REPAS ({days} jour{days > 1 ? "s" : ""})</p>
           <div style={{ display: "grid", gap: 8 }}>
             {meals.slice(0, days).map((m, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", borderRadius: 8, border: "2px solid var(--border)", background: "var(--surface)" }}>
-                <span style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, minWidth: 180 }}>
+              <div key={i} className="meal-row">
+                <span className="meal-row-label">
                   {dayLabel(i, days, tournament.dateStart)}
                 </span>
-                <div style={{ display: "flex", gap: 14 }}>
+                <div className="meal-row-checks">
                   {(["breakfast", "lunch", "dinner"] as const).map((meal) => {
                     const labels = { breakfast: "Petit-déj", lunch: "Déjeuner", dinner: "Dîner" };
                     const active = m[meal];

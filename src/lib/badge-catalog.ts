@@ -26,7 +26,6 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   clean_ride:    { id: "clean_ride",    name: "Clean Ride",     emoji: "🧤", description: "0 pénalités dans un tournoi (au moins 1 but)",       category: "performance", rarity: "common" },
   hard_edge:     { id: "hard_edge",     name: "Hard Edge",      emoji: "💥", description: "3+ pénalités dans un tournoi",                      category: "performance", rarity: "common" },
   tidal_wave:    { id: "tidal_wave",    name: "Tidal Wave",     emoji: "🌊", description: "Gagner un match par 5+ buts d'écart",               category: "performance", rarity: "rare" },
-  iron_fist:     { id: "iron_fist",     name: "Iron Fist",      emoji: "💪", description: "Jouer 3+ matches dans la même journée",             category: "performance", rarity: "rare" },
   dicey:         { id: "dicey",         name: "Golden Touch",   emoji: "⭐", description: "Gagner un match en golden goal",                    category: "performance", rarity: "rare" },
   golden_double: { id: "golden_double", name: "Golden Double",  emoji: "🌟", description: "Gagner 3+ matchs en golden goal en carrière",         category: "performance", rarity: "epic" },
   unbeaten:      { id: "unbeaten",      name: "Unbeaten",       emoji: "🛡️", description: "Aucune défaite dans un tournoi",                   category: "performance", rarity: "rare" },
@@ -49,9 +48,11 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   veteran:       { id: "veteran",       name: "Veteran",        emoji: "⚔️", description: "15+ tournois joués",                               category: "team", rarity: "rare" },
   road_warrior:  { id: "road_warrior",  name: "Road Warrior",   emoji: "🗺️", description: "Jouer dans 3+ pays différents",                    category: "team", rarity: "rare" },
   grassroots:    { id: "grassroots",    name: "Grassroots",     emoji: "🌿", description: "Participer à un tournoi de moins de 6 équipes",     category: "team", rarity: "common" },
-  globe_trotter: { id: "globe_trotter", name: "Globe Trotter",  emoji: "🌍", description: "Jouer sur 3+ continents",                          category: "team", rarity: "epic" },
-  wild_card:     { id: "wild_card",     name: "Wild Card",      emoji: "🃏", description: "Rejoindre comme agent libre et finir top 3",         category: "team", rarity: "epic" },
-  circus_act:    { id: "circus_act",    name: "Circus Act",     emoji: "🎪", description: "Participer à 3+ tournois dans le même mois",        category: "team", rarity: "mythic" },
+  globe_trotter:   { id: "globe_trotter",   name: "Globe Trotter",   emoji: "🌍", description: "Jouer sur 3+ continents",                            category: "team", rarity: "mythic" },
+  five_continents: { id: "five_continents", name: "Five Continents", emoji: "🌐", description: "Jouer sur les 5 continents",                          category: "team", rarity: "legendary" },
+  wild_card:       { id: "wild_card",       name: "Wild Card",       emoji: "🃏", description: "Rejoindre comme agent libre et finir top 3",           category: "team", rarity: "epic" },
+  circus_act:      { id: "circus_act",      name: "Circus Act",      emoji: "🎪", description: "Participer à 3+ tournois dans le même mois",          category: "team", rarity: "mythic" },
+  united_nations:  { id: "united_nations",  name: "United Nations",  emoji: "🇺🇳", description: "Jouer dans une équipe avec 3 nationalités différentes", category: "team", rarity: "epic" },
 
   // ─────────────────────────────────────────────────────
   // 🏗️ Organisation
@@ -96,6 +97,8 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   collector:     { id: "collector",     name: "Collector",     emoji: "🃏", description: "Débloquer 20+ badges",                                  category: "secret", rarity: "epic" },
   completionist: { id: "completionist", name: "Completionist", emoji: "🏅", description: "Débloquer 40+ badges",                                  category: "secret", rarity: "mythic" },
   phantom:       { id: "phantom",       name: "Phantom",       emoji: "👻", description: "Jouer un tournoi sans apparaître dans le top 5…puis en gagner un", category: "secret", rarity: "legendary" },
+  askip:         { id: "askip",         name: "Askip",         emoji: "🐬", description: "Perdre tous ses matchs d'un tournoi — et revenir quand même",         category: "secret", rarity: "rare" },
+  birthday_ride: { id: "birthday_ride", name: "Birthday Ride", emoji: "🎂", description: "Participer à un tournoi le jour de son anniversaire",                 category: "secret", rarity: "rare" },
 };
 
 /** Lookup a badge by ID or try by legacy name match. Returns fallback for unknown badges. */
@@ -120,22 +123,42 @@ export function getBadgeInfo(badgeIdOrName: string): BadgeInfo {
   };
 }
 
-/** Card visual rarity based on badge count (6 tiers)
+/** Card visual rarity — based on badge quality AND quantity.
  *
- * common    =  0 badges
- * uncommon  =  1–2  badges  ★
- * rare      =  3–7  badges  ★★
- * epic      =  8–14 badges  ★★★
- * mythic    = 15–24 badges  ★★★★
- * legendary = 25+   badges  ★★★★★
+ * A badge counts toward all tiers at or below its own rarity level.
+ * (legendary counts as mythic, epic, rare, common too)
+ *
+ * Tier thresholds:
+ *   ★     (uncommon)  =  1+ badge total
+ *   ★★    (rare)      =  5+ badges total  AND  5+ rare-or-above
+ *   ★★★   (epic)      = 12+ badges total  AND  5+ epic-or-above
+ *   ★★★★  (mythic)    = 20+ badges total  AND  5+ mythic-or-above
+ *   ★★★★★ (legendary) = 30+ badges total  AND  3+ legendary
  */
 export type CardRarity = "common" | "uncommon" | "rare" | "epic" | "mythic" | "legendary";
 
-export function getCardRarity(badgeCount: number): CardRarity {
-  if (badgeCount >= 25) return "legendary";
-  if (badgeCount >= 15) return "mythic";
-  if (badgeCount >= 8)  return "epic";
-  if (badgeCount >= 3)  return "rare";
-  if (badgeCount >= 1)  return "uncommon";
-  return "common";
+const RARITY_RANK: Record<BadgeRarity, number> = {
+  common: 1, rare: 2, epic: 3, mythic: 4, legendary: 5,
+};
+
+export function getCardRarity(badgeIds: string[]): CardRarity {
+  const total = badgeIds.length;
+  if (total === 0) return "common";
+
+  const counts = { rare: 0, epic: 0, mythic: 0, legendary: 0 };
+  for (const id of badgeIds) {
+    const info = BADGE_CATALOG[id];
+    if (!info) continue;
+    const rank = RARITY_RANK[info.rarity] ?? 1;
+    if (rank >= 2) counts.rare++;
+    if (rank >= 3) counts.epic++;
+    if (rank >= 4) counts.mythic++;
+    if (rank >= 5) counts.legendary++;
+  }
+
+  if (total >= 30 && counts.legendary >= 3) return "legendary";
+  if (total >= 20 && counts.mythic    >= 5) return "mythic";
+  if (total >= 12 && counts.epic      >= 5) return "epic";
+  if (total >= 5  && counts.rare      >= 5) return "rare";
+  return "uncommon";
 }
