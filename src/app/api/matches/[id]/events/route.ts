@@ -65,7 +65,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   if (parsed.data.type === "START") status = "LIVE";
-  if (parsed.data.type === "PAUSE") status = "SCHEDULED";
+  // PAUSE garde le match LIVE — c'est juste une pause du chrono local
   if (parsed.data.type === "END") {
     status = "FINISHED";
     if (match.teamAId && match.teamBId) {
@@ -80,28 +80,35 @@ export async function POST(request: Request, { params }: { params: { id: string 
   });
 
   const triggerAdvance = (parsed.data.type === "END" || parsed.data.type === "GOLDEN_GOAL") && winnerTeamId;
+  const advancedMatches: Record<string, unknown>[] = [];
+
   if (triggerAdvance) {
     if (match.nextMatchWinId && match.nextSlotWin) {
-      await prisma.match.update({
+      const updatedWin = await prisma.match.update({
         where: { id: match.nextMatchWinId },
         data:
           match.nextSlotWin === "A"
             ? { teamAId: winnerTeamId }
-            : { teamBId: winnerTeamId }
+            : { teamBId: winnerTeamId },
+        include: { teamA: true, teamB: true }
       });
+      advancedMatches.push(updatedWin);
     }
     if (match.nextMatchLoseId && match.nextSlotLose && match.teamAId && match.teamBId) {
       const loserId = winnerTeamId === match.teamAId ? match.teamBId : match.teamAId;
-      await prisma.match.update({
+      const updatedLose = await prisma.match.update({
         where: { id: match.nextMatchLoseId },
         data:
           match.nextSlotLose === "A"
             ? { teamAId: loserId }
-            : { teamBId: loserId }
+            : { teamBId: loserId },
+        include: { teamA: true, teamB: true }
       });
+      advancedMatches.push(updatedLose);
     }
   }
 
+  // Broadcaster le match terminé
   publishMatchUpdate({
     matchId: match.id,
     tournamentId: match.tournamentId,
@@ -109,5 +116,16 @@ export async function POST(request: Request, { params }: { params: { id: string 
     data: { event, match: updated }
   });
 
-  return Response.json({ event, match: updated });
+  // Broadcaster chaque match avancé (pour que les panels se mettent à jour)
+  for (const adv of advancedMatches) {
+    const advMatch = adv as { id: string };
+    publishMatchUpdate({
+      matchId: advMatch.id,
+      tournamentId: match.tournamentId,
+      type: "match_update",
+      data: adv
+    });
+  }
+
+  return Response.json({ event, match: updated, advancedMatches });
 }

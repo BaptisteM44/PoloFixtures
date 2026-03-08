@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { CharterModal } from "./CharterModal";
 
 type Author = { id: string; name: string; photoPath: string | null };
 type Message = { id: string; content: string; createdAt: string; author: Author; isOrga?: boolean };
@@ -13,6 +14,7 @@ type Props = {
   isOrga: boolean;
   creatorId: string | null;
   fullPage?: boolean;
+  charterAccepted?: boolean;
 };
 
 const CHAT_COLORS = 12;
@@ -25,12 +27,14 @@ function authorColorIndex(id: string): number {
   return Math.abs(hash) % CHAT_COLORS;
 }
 
-export function TournamentChat({ tournamentId, chatMode, currentPlayerId, currentPlayerName, isOrga, creatorId, fullPage }: Props) {
+export function TournamentChat({ tournamentId, chatMode, currentPlayerId, currentPlayerName, isOrga, creatorId, fullPage, charterAccepted: initialCharterAccepted }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [localCharterAccepted, setLocalCharterAccepted] = useState(initialCharterAccepted ?? false);
+  const [showCharter, setShowCharter] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef(0);
@@ -77,6 +81,7 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
     e.preventDefault();
     const content = text.trim();
     if (!content) return;
+    if (!localCharterAccepted) { setShowCharter(true); return; }
     setSending(true);
     setError(null);
     const res = await fetch(`/api/tournaments/${tournamentId}/messages`, {
@@ -107,6 +112,8 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
   if (chatMode === "DISABLED") return null;
 
   return (
+    <>
+    {showCharter && <CharterModal onAccepted={() => { setLocalCharterAccepted(true); setShowCharter(false); }} />}
     <div className={`tournament-chat ${fullPage ? "tournament-chat--full" : ""}`}>
       <div className="tournament-chat__header">
         <h3 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 15 }}>
@@ -185,5 +192,6 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
 
       {error && <p className="error" style={{ margin: "4px 0 0", fontSize: 12 }}>{error}</p>}
     </div>
+    </>
   );
 }

@@ -36,29 +36,33 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   const isNowFinished = parsed.data.status === "FINISHED" && existing.status !== "FINISHED";
   const scoreA = parsed.data.scoreA ?? existing.scoreA ?? 0;
   const scoreB = parsed.data.scoreB ?? existing.scoreB ?? 0;
+  const advancedMatchesPut: Record<string, unknown>[] = [];
 
   if (isNowFinished) {
-    const winnerId = scoreA >= scoreB ? existing.teamAId : existing.teamBId;
-    const loserId = scoreA >= scoreB ? existing.teamBId : existing.teamAId;
+    const winnerId = scoreA > scoreB ? existing.teamAId : scoreB > scoreA ? existing.teamBId : null;
+    const loserId = winnerId === existing.teamAId ? existing.teamBId : existing.teamAId;
+
+    // Persiste winnerTeamId sur le match terminé
+    if (winnerId) {
+      await prisma.match.update({ where: { id: match.id }, data: { winnerTeamId: winnerId } });
+    }
 
     if (winnerId && match.nextMatchWinId) {
-      await prisma.match.update({
+      const updatedWin = await prisma.match.update({
         where: { id: match.nextMatchWinId },
-        data:
-          match.nextSlotWin === "A"
-            ? { teamAId: winnerId }
-            : { teamBId: winnerId }
+        data: match.nextSlotWin === "A" ? { teamAId: winnerId } : { teamBId: winnerId },
+        include: { teamA: true, teamB: true }
       });
+      advancedMatchesPut.push(updatedWin);
     }
 
     if (loserId && match.nextMatchLoseId && match.nextSlotLose) {
-      await prisma.match.update({
+      const updatedLose = await prisma.match.update({
         where: { id: match.nextMatchLoseId },
-        data:
-          match.nextSlotLose === "A"
-            ? { teamAId: loserId }
-            : { teamBId: loserId }
+        data: match.nextSlotLose === "A" ? { teamAId: loserId } : { teamBId: loserId },
+        include: { teamA: true, teamB: true }
       });
+      advancedMatchesPut.push(updatedLose);
     }
   }
 
@@ -118,6 +122,17 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     type: "match_update",
     data: match
   });
+
+  // Broadcaster les matches avancés (bracket)
+  for (const adv of advancedMatchesPut) {
+    const advMatch = adv as { id: string };
+    publishMatchUpdate({
+      matchId: advMatch.id,
+      tournamentId: match.tournamentId,
+      type: "match_update",
+      data: adv
+    });
+  }
 
   return Response.json(match);
 }

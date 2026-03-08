@@ -9,7 +9,8 @@ const schema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   country: z.string().min(2),
-  city: z.string().optional().nullable()
+  city: z.string().optional().nullable(),
+  charterAccepted: z.literal(true, { errorMap: () => ({ message: "Vous devez accepter la charte." }) }),
 });
 
 export async function POST(req: Request) {
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
       status: PlayerStatus.ACTIVE,
       badges: [],
       account: {
-        create: { email, passwordHash }
+        create: { email, passwordHash, charterAcceptedAt: new Date() }
       }
     },
     include: { account: true }

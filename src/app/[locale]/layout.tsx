@@ -53,24 +53,24 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
           <SessionProvider>
             <Header />
             <main className="page">{children}</main>
-            <footer
-              style={{
-                borderTop: "1px solid var(--border-light)",
-                padding: "16px 24px",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 16,
-                marginTop: 40,
-              }}
-            >
-              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                PoloFixtures © {new Date().getFullYear()}
-              </span>
-              <span style={{ color: "var(--border)", fontSize: 12 }}>·</span>
-              <LanguageSwitcher />
-              <span style={{ color: "var(--border)", fontSize: 12 }}>·</span>
-              <ContactAdminModal />
+            <footer className="site-footer">
+              <div className="site-footer__links">
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  PoloFixtures © {new Date().getFullYear()}
+                </span>
+                <span className="site-footer__sep">·</span>
+                <a href="/legal/mentions" style={{ fontSize: 12, color: "var(--text-muted)" }}>Mentions légales</a>
+                <span className="site-footer__sep">·</span>
+                <a href="/legal/privacy" style={{ fontSize: 12, color: "var(--text-muted)" }}>Confidentialité</a>
+                <span className="site-footer__sep">·</span>
+                <a href="/legal/terms" style={{ fontSize: 12, color: "var(--text-muted)" }}>CGU</a>
+                <span className="site-footer__sep">·</span>
+                <a href="/legal/charter" style={{ fontSize: 12, color: "var(--text-muted)" }}>Charte</a>
+                <span className="site-footer__sep">·</span>
+                <LanguageSwitcher />
+                <span className="site-footer__sep">·</span>
+                <ContactAdminModal />
+              </div>
             </footer>
           </SessionProvider>
         </NextIntlClientProvider>

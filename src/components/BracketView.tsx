@@ -1,15 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Match, Team } from "@prisma/client";
 import { MatchEditPanel, type MatchForEdit } from "./MatchEditPanel";
 
 export type MatchWithTeams = Match & { teamA?: Team | null; teamB?: Team | null };
-
-const ROUND_LABELS: Record<number, Record<number, string>> = {
-  // SE   roundIndex → label
-  0: { 1: "R1", 2: "R2", 3: "R3", 4: "R4" },
-};
 
 const SE_ROUND_NAMES: Record<number, string> = {
   1: "Quarts", 2: "Demies", 3: "Finale", 4: "Finale",
@@ -21,26 +16,24 @@ const DE_ROUND_NAMES: Record<string, string> = {
   "G4": "Grande Finale", "G3": "Grande Finale",
 };
 
-function roundLabel(match: MatchWithTeams, isDE: boolean) {
-  if (!isDE) return SE_ROUND_NAMES[match.roundIndex] ?? `R${match.roundIndex}`;
-  const key = `${match.bracketSide ?? "?"}${match.roundIndex}`;
-  return DE_ROUND_NAMES[key] ?? key;
-}
+// ── Single match card ─────────────────────────────────────────────────────
 
-// ── Single match card ──────────────────────────────────────────────────────
+const CARD_W = 180;
+const COL_W = 220;
+const CELL_BASE = 96;
+const CARD_H = 72;
+const CARD_OFFSET_X = (COL_W - CARD_W) / 2; // 20px centré dans la colonne
 
-function BracketMatch({
+function BracketCard({
   match,
   onEdit,
-  cellHeight,
-  offsetTop,
   isSelected,
+  matchNumber,
 }: {
   match: MatchWithTeams;
   onEdit: () => void;
-  cellHeight: number;
-  offsetTop: number;
   isSelected?: boolean;
+  matchNumber?: number;
 }) {
   const teamA = match.teamA?.name ?? (match.teamAId ? "???" : "TBD");
   const teamB = match.teamB?.name ?? (match.teamBId ? "???" : "TBD");
@@ -50,33 +43,61 @@ function BracketMatch({
   const winB = isFinished && match.scoreB > match.scoreA;
 
   return (
-    <div
-      className="bracket-slot"
-      style={{ height: cellHeight, paddingTop: offsetTop }}
+    <button
+      type="button"
+      className={`bracket-match-btn`}
+      onClick={onEdit}
     >
-      {/* Connector – left vertical bar + horizontal arm */}
-      <div className="bracket-connector-left" />
-
-      <button
-        type="button"
-        className={`bracket-match-btn`}
-        onClick={onEdit}
-      >
-        <div className={`bracket-match-card${isLive ? " bracket-match-card--live" : ""}${isFinished ? " bracket-match-card--finished" : ""}${isSelected ? " bracket-match-card--selected" : ""}`}>
-        <div className={`bracket-team ${winA ? "bracket-team--winner" : ""}`}>
+      <div className={[
+        "bracket-match-card",
+        isLive ? "bracket-match-card--live" : "",
+        isFinished ? "bracket-match-card--finished" : "",
+        isSelected ? "bracket-match-card--selected" : "",
+      ].join(" ")}>
+        {matchNumber !== undefined && (
+          <div className="bracket-match-number">#{matchNumber}</div>
+        )}
+        {isLive && <span className="bracket-live-indicator">LIVE</span>}
+        <div className={`bracket-team ${winA ? "bracket-team-row--winner" : ""}`}>
           <span className="bracket-team-name">{teamA}</span>
           <strong className="bracket-score">{isFinished || isLive ? match.scoreA : "–"}</strong>
         </div>
-        <div className={`bracket-team ${winB ? "bracket-team--winner" : ""}`}>
+        <div className={`bracket-team ${winB ? "bracket-team-row--winner" : ""}`}>
           <span className="bracket-team-name">{teamB}</span>
           <strong className="bracket-score">{isFinished || isLive ? match.scoreB : "–"}</strong>
         </div>
-        {isLive && <span className="bracket-live-indicator">LIVE</span>}
-        </div>
-      </button>
+      </div>
+    </button>
+  );
+}
 
-      {/* Connector – right arm going to next round */}
-      <div className="bracket-connector-right" />
+// ── Scroll wrapper with fade indicator ────────────────────────────────────
+
+function ScrollWrapper({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => {
+      setCanScrollLeft(el.scrollLeft > 4);
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+    };
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    return () => { el.removeEventListener("scroll", check); window.removeEventListener("resize", check); };
+  }, []);
+
+  return (
+    <div className="bracket-scroll-wrapper">
+      {canScrollLeft && <div className="bracket-scroll-fade bracket-scroll-fade--left" />}
+      <div className="bracket-scroll-inner" ref={ref}>
+        {children}
+      </div>
+      {canScrollRight && <div className="bracket-scroll-fade bracket-scroll-fade--right" />}
     </div>
   );
 }
@@ -98,9 +119,13 @@ export function BracketView({
     const es = new EventSource(`/api/sse?tournamentId=${tournamentId}`);
     es.addEventListener("match", (event) => {
       const payload = JSON.parse((event as MessageEvent).data);
-      if (payload?.data?.match) {
+      // Match update depuis events route: payload.data.match
+      // Match update depuis PUT route: payload.data directement
+      const updated: Partial<MatchWithTeams> =
+        payload?.data?.match ?? (payload?.data?.id ? payload.data : null);
+      if (updated?.id) {
         setMatches((prev) =>
-          prev.map((m) => (m.id === payload.data.match.id ? { ...m, ...payload.data.match } : m))
+          prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
         );
       }
     });
@@ -111,69 +136,42 @@ export function BracketView({
   const isDE = bracketMatches.some((m) => m.bracketSide === "L");
 
   const openEdit = (m: MatchWithTeams) => {
-    if (selectedId === m.id) {
-      setSelectedId(null);
-      setEditMatch(null);
-      return;
-    }
+    if (selectedId === m.id) { setSelectedId(null); setEditMatch(null); return; }
     setSelectedId(m.id);
     setEditMatch({
       id: m.id,
       teamAName: m.teamA?.name ?? (m.teamAId ? "???" : "TBD"),
       teamBName: m.teamB?.name ?? (m.teamBId ? "???" : "TBD"),
-      scoreA: m.scoreA,
-      scoreB: m.scoreB,
-      status: m.status,
-      phase: m.phase,
-      roundIndex: m.roundIndex,
-      courtName: m.courtName,
+      scoreA: m.scoreA, scoreB: m.scoreB, status: m.status,
+      phase: m.phase, roundIndex: m.roundIndex, courtName: m.courtName,
     });
   };
 
   const handleSaved = (updated: { id: string; scoreA: number; scoreB: number; status: string }) => {
     setMatches((prev) =>
-      prev.map((m) =>
-        m.id === updated.id
-          ? { ...m, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status as Match["status"] }
-          : m
-      )
+      prev.map((m) => m.id === updated.id
+        ? { ...m, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status as Match["status"] }
+        : m)
     );
     setEditMatch((prev) =>
-      prev?.id === updated.id
-        ? { ...prev, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status }
-        : prev
+      prev?.id === updated.id ? { ...prev, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status } : prev
     );
-  };
-
-  const closePanel = () => {
-    setSelectedId(null);
-    setEditMatch(null);
   };
 
   if (bracketMatches.length === 0) {
     return <div className="empty-state"><p>Bracket non encore généré.</p></div>;
   }
 
-  const panel = (
-    <MatchEditPanel
-      match={editMatch}
-      onClose={closePanel}
-      onSaved={handleSaved}
-    />
-  );
-
-  if (isDE) {
-    return (
-      <div style={{ paddingBottom: editMatch ? 220 : 0 }}>
-        <DEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} />
-        {panel}
-      </div>
-    );
-  }
+  const panel = <MatchEditPanel match={editMatch} onClose={() => { setSelectedId(null); setEditMatch(null); }} onSaved={handleSaved} />;
 
   return (
-    <div style={{ paddingBottom: editMatch ? 220 : 0 }}>
-      <SEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} />
+    <div>
+      <ScrollWrapper>
+        {isDE
+          ? <DEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} />
+          : <SEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} />
+        }
+      </ScrollWrapper>
       {panel}
     </div>
   );
@@ -181,14 +179,7 @@ export function BracketView({
 
 // ── Single Elimination ─────────────────────────────────────────────────────
 
-const CELL_BASE = 96; // px – height of a R1 match slot (including gap)
-const CARD_HEIGHT = 72; // px – visual height of the match card
-
-function SEBracket({
-  matches,
-  onEdit,
-  selectedId,
-}: {
+function SEBracket({ matches, onEdit, selectedId }: {
   matches: MatchWithTeams[];
   onEdit: (m: MatchWithTeams) => void;
   selectedId: string | null;
@@ -200,61 +191,65 @@ function SEBracket({
     rounds.set(m.roundIndex, list);
   });
 
+  const sortedRounds = Array.from(rounds.entries()).sort(([a], [b]) => a - b);
   const maxRound = Math.max(...rounds.keys());
-  const r1Count = rounds.get(1)?.length ?? 1;
+  const r1Count = rounds.get(sortedRounds[0]?.[0] ?? 1)?.length ?? 1;
+  const totalHeight = r1Count * CELL_BASE;
+
+  // Numérotation séquentielle des matchs R1→finale
+  let matchCounter = 1;
+  const matchNumbers = new Map<string, number>();
+  for (const [, roundMatches] of sortedRounds) {
+    const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
+    for (const m of sorted) {
+      matchNumbers.set(m.id, matchCounter++);
+    }
+  }
 
   return (
     <div className="bracket-tree">
-      {Array.from(rounds.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([roundIdx, roundMatches]) => {
-          const r = roundIdx - 1; // 0-indexed
-          // Each slot at round r occupies 2^r cells of the base unit
-          const slotsPerMatch = Math.pow(2, r);
-          const cellH = CELL_BASE * slotsPerMatch;
-          // First match offset: half a slot minus half a match
-          const firstOffset = (CELL_BASE * slotsPerMatch - CARD_HEIGHT) / 2;
+      {sortedRounds.map(([roundIdx, roundMatches]) => {
+        const r = roundIdx - sortedRounds[0][0];
+        // Taille de slot : chaque match "représente" 2^r matchs du premier round
+        const slotsPerMatch = Math.pow(2, r);
+        const cellH = CELL_BASE * slotsPerMatch;
 
-          const label =
-            roundIdx === maxRound
-              ? "🏆 Finale"
-              : roundIdx === maxRound - 1
-              ? "Demi-finales"
-              : roundIdx === maxRound - 2
-              ? "Quarts de finale"
-              : `Round ${roundIdx}`;
+        const label = roundIdx === maxRound ? "🏆 Finale"
+          : roundIdx === maxRound - 1 ? "Demi-finales"
+          : roundIdx === maxRound - 2 ? "Quarts"
+          : `Round ${roundIdx}`;
 
-          return (
-            <div key={roundIdx} className="bracket-col">
-              <div className="bracket-round-header">{label}</div>
-              <div className="bracket-col-body" style={{ height: r1Count * CELL_BASE }}>
-                {roundMatches
-                  .sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0))
-                  .map((m) => (
-                    <BracketMatch
-                      key={m.id}
+        const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
+
+        return (
+          <div key={roundIdx} className="bracket-col">
+            <div className="bracket-round-header">{label}</div>
+            <div className="bracket-col-body" style={{ height: totalHeight, position: "relative" }}>
+              {sorted.map((m, i) => {
+                // Centre la carte dans son slot naturel
+                const top = i * cellH + (cellH - CARD_H) / 2;
+                return (
+                  <div key={m.id} style={{ position: "absolute", top, left: CARD_OFFSET_X, width: CARD_W }}>
+                    <BracketCard
                       match={m}
                       onEdit={() => onEdit(m)}
-                      cellHeight={cellH}
-                      offsetTop={firstOffset}
                       isSelected={selectedId === m.id}
+                      matchNumber={matchNumbers.get(m.id)}
                     />
-                  ))}
-              </div>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 // ── Double Elimination ─────────────────────────────────────────────────────
 
-function DEBracket({
-  matches,
-  onEdit,
-  selectedId,
-}: {
+function DEBracket({ matches, onEdit, selectedId }: {
   matches: MatchWithTeams[];
   onEdit: (m: MatchWithTeams) => void;
   selectedId: string | null;
@@ -262,6 +257,13 @@ function DEBracket({
   const upper = matches.filter((m) => m.bracketSide === "W");
   const lower = matches.filter((m) => m.bracketSide === "L");
   const grand = matches.filter((m) => m.bracketSide === "G");
+
+  let matchCounter = 1;
+  const matchNumbers = new Map<string, number>();
+  for (const group of [upper, lower, grand]) {
+    const sorted = [...group].sort((a, b) => (a.roundIndex - b.roundIndex) || (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
+    for (const m of sorted) matchNumbers.set(m.id, matchCounter++);
+  }
 
   const renderSection = (title: string, sectionMatches: MatchWithTeams[], accentClass: string) => {
     const rounds = new Map<number, MatchWithTeams[]>();
@@ -271,40 +273,42 @@ function DEBracket({
       rounds.set(m.roundIndex, list);
     });
     if (rounds.size === 0) return null;
-    const r1Count = Math.max(...Array.from(rounds.values()).map((r) => r.length));
+    const sortedR = Array.from(rounds.entries()).sort(([a], [b]) => a - b);
+    // Hauteur fixe = max matchs dans un round × CELL_BASE (pas d'exponentiel)
+    const maxMatchesPerRound = Math.max(...Array.from(rounds.values()).map((r) => r.length));
+    const totalH = maxMatchesPerRound * CELL_BASE;
 
     return (
       <div className={`de-section ${accentClass}`}>
         <h4 className="de-section-title">{title}</h4>
         <div className="bracket-tree">
-          {Array.from(rounds.entries())
-            .sort(([a], [b]) => a - b)
-            .map(([roundIdx, roundMatches]) => {
-              const r = roundIdx - 1;
-              const slotsPerMatch = Math.pow(2, r);
-              const cellH = CELL_BASE * slotsPerMatch;
-              const firstOffset = (CELL_BASE * slotsPerMatch - CARD_HEIGHT) / 2;
+          {sortedR.map(([roundIdx, roundMatches]) => {
+            const rKey = `${sectionMatches[0]?.bracketSide ?? ""}${roundIdx}`;
+            const label = DE_ROUND_NAMES[rKey] ?? `R${roundIdx}`;
+            const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
 
-              return (
-                <div key={roundIdx} className="bracket-col">
-                  <div className="bracket-round-header">R{roundIdx}</div>
-                  <div className="bracket-col-body" style={{ height: r1Count * CELL_BASE }}>
-                    {roundMatches
-                      .sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0))
-                      .map((m) => (
-                        <BracketMatch
-                          key={m.id}
+            return (
+              <div key={roundIdx} className="bracket-col">
+                <div className="bracket-round-header">{label}</div>
+                {/* Position absolue : chaque carte centrée dans son slot CELL_BASE */}
+                <div className="bracket-col-body" style={{ height: totalH, position: "relative" }}>
+                  {sorted.map((m, i) => {
+                    const top = i * CELL_BASE + (CELL_BASE - CARD_H) / 2;
+                    return (
+                      <div key={m.id} style={{ position: "absolute", top, left: CARD_OFFSET_X, width: CARD_W }}>
+                        <BracketCard
                           match={m}
                           onEdit={() => onEdit(m)}
-                          cellHeight={cellH}
-                          offsetTop={firstOffset}
                           isSelected={selectedId === m.id}
+                          matchNumber={matchNumbers.get(m.id)}
                         />
-                      ))}
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -318,4 +322,3 @@ function DEBracket({
     </div>
   );
 }
-

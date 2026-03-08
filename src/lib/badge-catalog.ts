@@ -99,6 +99,57 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   phantom:       { id: "phantom",       name: "Phantom",       emoji: "👻", description: "Jouer un tournoi sans apparaître dans le top 5…puis en gagner un", category: "secret", rarity: "legendary" },
   askip:         { id: "askip",         name: "Askip",         emoji: "🐬", description: "Perdre tous ses matchs d'un tournoi — et revenir quand même",         category: "secret", rarity: "rare" },
   birthday_ride: { id: "birthday_ride", name: "Birthday Ride", emoji: "🎂", description: "Participer à un tournoi le jour de son anniversaire",                 category: "secret", rarity: "rare" },
+
+  // ─────────────────────────────────────────────────────
+  // 🔧 Vélo & Terrain
+  // ─────────────────────────────────────────────────────
+  macgyver:      { id: "macgyver",      name: "MacGyver",         emoji: "🔧", description: "Signaler une réparation vélo dans le chat d'un tournoi",           category: "secret",  rarity: "common" },
+  flat_tire:     { id: "flat_tire",     name: "Flat Tire",        emoji: "🛞", description: "Mentionner une crevaison dans un chat de tournoi",                 category: "secret",  rarity: "common" },
+  duct_tape:     { id: "duct_tape",     name: "Duct Tape Fix",    emoji: "🩹", description: "Mentionner 'tape' ou 'réparation' dans 5+ messages de chat",       category: "secret",  rarity: "common" },
+
+  // ─────────────────────────────────────────────────────
+  // ☁️ Conditions & Météo
+  // ─────────────────────────────────────────────────────
+  into_the_storm: { id: "into_the_storm", name: "Into the Storm", emoji: "🌪️", description: "Participer à 5+ tournois en hiver (décembre–février)",            category: "secret",  rarity: "epic" },
+
+  // ─────────────────────────────────────────────────────
+  // 🎒 Voyage
+  // ─────────────────────────────────────────────────────
+  tourist:       { id: "tourist",       name: "Tourist",          emoji: "🗺️", description: "Premier tournoi joué dans un pays étranger",                      category: "team",    rarity: "common" },
+
+  // ─────────────────────────────────────────────────────
+  // 😄 Personnalité & Humour
+  // ─────────────────────────────────────────────────────
+  fashionably_late: { id: "fashionably_late", name: "Fashionably Late", emoji: "🥱", description: "Être la dernière inscription dans la dernière heure avant clôture", category: "secret", rarity: "common" },
+  grudge_match:     { id: "grudge_match",     name: "Grudge Match",     emoji: "😤", description: "Affronter la même équipe 5× en carrière",                         category: "secret", rarity: "rare" },
+  poulidor:         { id: "poulidor",         name: "Poulidor",         emoji: "💔", description: "Perdre 3 finales sans jamais en gagner une",                        category: "secret", rarity: "epic" },
+  cthulhu:          { id: "cthulhu",          name: "Cthulhu",          emoji: "🦑", description: "Perdre 10+ matchs d'affilée et continuer à jouer",                 category: "secret", rarity: "rare" },
+
+  // ─────────────────────────────────────────────────────
+  // 🎤 Chat & Social
+  // ─────────────────────────────────────────────────────
+  glhf:          { id: "glhf",          name: "GLHF",             emoji: "🫡", description: "Envoyer 'gl' ou 'glhf' avant un match dans un chat",                category: "secret",  rarity: "common" },
+  afterparty:    { id: "afterparty",    name: "After Party",      emoji: "🍺", description: "Envoyer un message entre 4h et 5h du matin le jour d'un tournoi",         category: "secret",  rarity: "common" },
+  hype_train:    { id: "hype_train",    name: "Hype Train",       emoji: "🚂", description: "Envoyer 10+ messages dans les 30 min avant une finale",             category: "secret",  rarity: "rare" },
+  oracle:        { id: "oracle",        name: "Oracle",           emoji: "🔮", description: "Écrire le score exact d'un match avant qu'il soit joué",            category: "secret",  rarity: "epic" },
+
+  // ─────────────────────────────────────────────────────
+  // 🧠 Meta / Légendaire
+  // ─────────────────────────────────────────────────────
+  schedule_head: { id: "schedule_head", name: "Schedule Head",   emoji: "🤓", description: "Ouvrir la page de résultats 10× en une journée de tournoi",         category: "secret",  rarity: "common" },
+  chaos_agent:   { id: "chaos_agent",   name: "Chaos Agent",     emoji: "🧨", description: "Être impliqué dans 3+ égalisations en phase de poules",             category: "secret",  rarity: "epic" },
+  stone_cold:    { id: "stone_cold",    name: "Stone Cold",      emoji: "🗿", description: "Aucun but encaissé dans tout un tournoi — du premier match à la finale", category: "secret", rarity: "legendary" },
+  butterfly:     { id: "butterfly",     name: "Butterfly Effect", emoji: "🦋", description: "But inscrit à la dernière seconde qui change une qualification",    category: "secret",  rarity: "mythic" },
+
+  // ─────────────────────────────────────────────────────
+  // 🆕 Vague 2
+  // ─────────────────────────────────────────────────────
+  the_commentator: { id: "the_commentator", name: "The Commentator", emoji: "🎙️", description: "Envoyer 50+ messages dans un seul tournoi",                                  category: "social",  rarity: "common" },
+  seven_nations:   { id: "seven_nations",   name: "Seven Nations",  emoji: "🌐", description: "Avoir joué avec des coéquipiers de 7 nationalités différentes",          category: "team",    rarity: "epic" },
+  the_historian:   { id: "the_historian",   name: "The Historian",  emoji: "📚", description: "Envoyer un message dans un chat de tournoi terminé depuis 6+ mois",     category: "secret",  rarity: "rare" },
+  squeaky_clean:   { id: "squeaky_clean",   name: "Squeaky Clean",  emoji: "🧹", description: "Gagner un tournoi en n'encaissant jamais plus d'1 but par match",      category: "performance", rarity: "legendary" },
+  ref_duty:        { id: "ref_duty",        name: "Ref & Player",   emoji: "🪬", description: "Arbitrer 3 matchs ET jouer 3 matchs dans la même journée",              category: "secret",  rarity: "mythic" },
+  double_duty:     { id: "double_duty",     name: "Double Duty",    emoji: "🎝️", description: "Arbitrer 5 matchs ET jouer 5 matchs dans la même journée",              category: "secret",  rarity: "legendary" },
 };
 
 /** Lookup a badge by ID or try by legacy name match. Returns fallback for unknown badges. */

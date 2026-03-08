@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const t = useTranslations("auth");
   const tc = useTranslations("common");
   const [form, setForm] = useState({ name: "", email: "", password: "", country: "FR", city: "" });
+  const [charterAccepted, setCharterAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +26,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
+        body: JSON.stringify({ ...form, charterAccepted: true })
       });
       const data = await res.json();
 
@@ -87,9 +88,27 @@ export default function RegisterPage() {
             </label>
           </div>
 
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", fontSize: 13 }}>
+            <input
+              type="checkbox"
+              required
+              checked={charterAccepted}
+              onChange={(e) => setCharterAccepted(e.target.checked)}
+              style={{ accentColor: "var(--teal)", width: 16, height: 16, marginTop: 2, flexShrink: 0 }}
+            />
+            <span style={{ color: "var(--text-muted)", lineHeight: 1.4 }}>
+              {t("charter_accept_label_pre")}{" "}
+              <a href="/legal/terms" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>{t("charter_accept_cgu")}</a>
+              {", "}
+              <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>{t("charter_accept_privacy")}</a>
+              {" "}{t("charter_accept_label_post")}{" "}
+              <a href="/legal/charter" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>{t("charter_accept_charter_link")}</a>
+            </span>
+          </label>
+
           {error && <p className="error">{error}</p>}
 
-          <button className="primary" type="submit" disabled={loading} style={{ width: "100%", justifyContent: "center" }}>
+          <button className="primary" type="submit" disabled={loading || !charterAccepted} style={{ width: "100%", justifyContent: "center" }}>
             {loading ? t("btn_register_loading") : t("btn_register")}
           </button>
 

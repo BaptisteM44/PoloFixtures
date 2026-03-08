@@ -73,7 +73,8 @@ export const authConfig = {
           email: account.email,
           role: null,
           playerId: account.playerId,
-          tournamentId: null
+          tournamentId: null,
+          charterAccepted: !!account.charterAcceptedAt,
         };
       }
     })
@@ -86,6 +87,7 @@ export const authConfig = {
         token.tournamentId = user.tournamentId ?? null;
         token.accessCodeId = user.id ?? null;
         token.playerId = user.playerId ?? null;
+        token.charterAccepted = user.charterAccepted ?? false;
       }
       return token;
     },
@@ -94,7 +96,8 @@ export const authConfig = {
         ...(session.user ?? {}),
         role: token.role ?? null,
         tournamentId: token.tournamentId ?? null,
-        playerId: token.playerId ?? null
+        playerId: token.playerId ?? null,
+        charterAccepted: token.charterAccepted ?? false,
       };
       return session;
     }

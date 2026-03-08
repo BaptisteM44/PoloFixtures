@@ -102,16 +102,15 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   const totalGoals     = allEvents.filter((e) => e.type === "GOAL" || e.type === "GOLDEN_GOAL").length;
   const totalPenalties = allEvents.filter((e) => e.type === "PENALTY").length;
 
-  // Performance
   if (totalGoals >= 1)   badges.add("first_blood");
   if (totalGoals >= 3)   badges.add("hat_trick");
-  if (totalGoals >= 10)  badges.add("sniper");
-  if (totalGoals >= 50)  badges.add("goal_machine");
-  if (totalGoals >= 100) badges.add("century_club");
+  if (totalGoals >= 15)  badges.add("sniper");
+  if (totalGoals >= 75)  badges.add("goal_machine");
+  if (totalGoals >= 150) badges.add("century_club");
   if (totalPenalties >= 3) badges.add("hard_edge");
 
   // clean_ride: a tournament where player scored ≥1 goal AND 0 penalties
-  const tournamentGoals    = new Map<string, number>();
+  const tournamentGoals     = new Map<string, number>();
   const tournamentPenalties = new Map<string, number>();
   for (const e of allEvents) {
     const tid = e.match.tournamentId;
@@ -119,13 +118,8 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     if (e.type === "PENALTY") tournamentPenalties.set(tid, (tournamentPenalties.get(tid) ?? 0) + 1);
   }
   for (const [tid, g] of tournamentGoals) {
-    if (g > 0 && (tournamentPenalties.get(tid) ?? 0) === 0) {
-      badges.add("clean_ride");
-      break;
-    }
+    if (g > 0 && (tournamentPenalties.get(tid) ?? 0) === 0) { badges.add("clean_ride"); break; }
   }
-
-  // dicey / golden_double: wins via golden goal — computed after teamPlayers are fetched below
 
   // ── All teams the player was part of ────────────────────────────────────
   const teamPlayers = await prisma.teamPlayer.findMany({
@@ -133,7 +127,12 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     include: {
       team: {
         include: {
-          tournament: { select: { id: true, status: true, dateEnd: true, country: true } },
+          tournament: {
+            select: {
+              id: true, status: true, dateStart: true, dateEnd: true,
+              country: true, registrationEnd: true,
+            },
+          },
           matchesA: { select: { scoreA: true, scoreB: true, status: true, winnerTeamId: true } },
           matchesB: { select: { scoreA: true, scoreB: true, status: true, winnerTeamId: true } },
         },
@@ -144,8 +143,10 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   const captainCount = teamPlayers.filter((tp) => tp.isCaptain).length;
   if (captainCount >= 3) badges.add("captain");
 
-  // dicey / golden_double: wins via golden goal
-  const playerTeamIds = teamPlayers.map((tp) => tp.teamId);
+  const playerTeamIds    = teamPlayers.map((tp) => tp.teamId);
+  const playerTeamIdSet  = new Set(playerTeamIds);
+
+  // dicey / golden_double
   if (playerTeamIds.length > 0) {
     const goldenGoalWins = await prisma.match.count({
       where: { goldenGoal: true, winnerTeamId: { in: playerTeamIds } },
@@ -155,77 +156,65 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   }
 
   const tournaments = teamPlayers.map((tp) => tp.team.tournament);
-
-  // team_player / squad_up / veteran
   const uniqueTournamentIds = new Set(tournaments.map((t) => t.id));
   if (uniqueTournamentIds.size >= 1)  badges.add("team_player");
-  if (uniqueTournamentIds.size >= 3)  badges.add("squad_up");
-  if (uniqueTournamentIds.size >= 10) badges.add("veteran");
+  if (uniqueTournamentIds.size >= 5)  badges.add("squad_up");
+  if (uniqueTournamentIds.size >= 15) badges.add("veteran");
 
-  // road_warrior: played in 3+ different countries
-  const countries = new Set(tournaments.map((t) => t.country));
-  if (countries.size >= 3) badges.add("road_warrior");
-
-  // globe_trotter: played on 3+ continents
+  // road_warrior / globe_trotter / five_continents
+  const countries  = new Set(tournaments.map((t) => t.country));
   const continents = new Set([...countries].map(getContinent));
+  if (countries.size  >= 3) badges.add("road_warrior");
   if (continents.size >= 3) badges.add("globe_trotter");
+  if (continents.size >= 5) badges.add("five_continents");
 
-  // champion: won a completed tournament
-  // unbeaten: completed a tournament with no losses
-  // back_to_back: won 2 consecutive tournaments (by dateEnd)
-  const completedTournaments = teamPlayers.filter(
-    (tp) => tp.team.tournament.status === "COMPLETED"
-  );
+  // into_the_storm: 5+ tournaments in winter (Dec, Jan, Feb)
+  const winterCount = tournaments.filter((t) => {
+    const m = new Date(t.dateStart).getMonth() + 1;
+    return m === 12 || m === 1 || m === 2;
+  }).length;
+  if (winterCount >= 5) badges.add("into_the_storm");
 
+  // champion / unbeaten / back_to_back
+  const completedTournaments = teamPlayers.filter((tp) => tp.team.tournament.status === "COMPLETED");
   const wonTournamentIds: string[] = [];
+
   for (const tp of completedTournaments) {
-    const allMatches = [...tp.team.matchesA, ...tp.team.matchesB];
-    const playedMatches = allMatches.filter((m) => m.status === "FINISHED");
-    if (playedMatches.length === 0) continue;
+    const allMatches  = [...tp.team.matchesA, ...tp.team.matchesB];
+    const played      = allMatches.filter((m) => m.status === "FINISHED");
+    if (played.length === 0) continue;
 
-    const teamId = tp.teamId;
-    let losses = 0;
-    let isChampion = false;
-
-    for (const m of playedMatches) {
+    let losses = 0, isChampion = false;
+    for (const m of played) {
       const isA = tp.team.matchesA.includes(m);
       const won = isA ? m.scoreA > m.scoreB : m.scoreB > m.scoreA;
       if (!won) losses++;
-      if (m.winnerTeamId === teamId) isChampion = true;
+      if (m.winnerTeamId === tp.teamId) isChampion = true;
     }
-
-    if (isChampion) {
-      badges.add("champion");
-      wonTournamentIds.push(tp.team.tournament.id);
-    }
-    if (losses === 0 && playedMatches.length > 0) badges.add("unbeaten");
+    if (isChampion) { badges.add("champion"); wonTournamentIds.push(tp.team.tournament.id); }
+    if (losses === 0 && played.length > 0) badges.add("unbeaten");
   }
 
-  // back_to_back: check if any 2 won tournaments are consecutive in time
   if (wonTournamentIds.length >= 2) {
     const wonDates = completedTournaments
       .filter((tp) => wonTournamentIds.includes(tp.team.tournament.id))
-      .map((tp) => ({ id: tp.team.tournament.id, date: new Date(tp.team.tournament.dateEnd) }))
+      .map((tp) => ({ date: new Date(tp.team.tournament.dateEnd) }))
       .sort((a, b) => a.date.getTime() - b.date.getTime());
-
     for (let i = 1; i < wonDates.length; i++) {
-      const diff = wonDates[i].date.getTime() - wonDates[i - 1].date.getTime();
-      const daysDiff = diff / (1000 * 60 * 60 * 24);
-      if (daysDiff <= 90) { // within 3 months
-        badges.add("back_to_back");
-        break;
+      if ((wonDates[i].date.getTime() - wonDates[i-1].date.getTime()) / 86400000 <= 90) {
+        badges.add("back_to_back"); break;
       }
     }
   }
 
-  // loyal_rider: played 3+ tournaments with the same teammate
-  const coTeammates = new Map<string, Set<string>>(); // coplayerId → set of tournamentIds
+  // loyal_rider
+  const coTeammates = new Map<string, Set<string>>();
   for (const tp of teamPlayers) {
-    const teamMates = await prisma.teamPlayer.findMany({
+    const mates = await prisma.teamPlayer.findMany({
       where: { teamId: tp.teamId, NOT: { playerId } },
       select: { playerId: true },
     });
-    for (const mate of teamMates) {
+    for (const mate of mates) {
       if (!coTeammates.has(mate.playerId)) coTeammates.set(mate.playerId, new Set());
       coTeammates.get(mate.playerId)!.add(tp.team.tournament.id);
     }
@@ -234,41 +223,174 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     if (tids.size >= 3) { badges.add("loyal_rider"); break; }
   }
 
-  // ── Engagement badges ────────────────────────────────────────────────────
-  badges.add("welcome"); // always — just having a profile
+  // ── All finished matches for player's teams (used by many badges) ────────
+  const allTeamMatches = playerTeamIds.length > 0
+    ? await prisma.match.findMany({
+        where: {
+          status: "FINISHED",
+          OR: [{ teamAId: { in: playerTeamIds } }, { teamBId: { in: playerTeamIds } }],
+        },
+        select: {
+          id: true, tournamentId: true, phase: true, startAt: true,
+          teamAId: true, teamBId: true,
+          scoreA: true, scoreB: true,
+          winnerTeamId: true, goldenGoal: true, nextMatchWinId: true,
+        },
+        orderBy: { startAt: "asc" },
+      })
+    : [];
 
-  // say_cheese: has a photo
+  // stone_cold: 0 goals against in entire tournament run (≥3 matches)
+  const matchesByTournament = new Map<string, typeof allTeamMatches>();
+  for (const m of allTeamMatches) {
+    if (!matchesByTournament.has(m.tournamentId)) matchesByTournament.set(m.tournamentId, []);
+    matchesByTournament.get(m.tournamentId)!.push(m);
+  }
+  const playerTournamentTeam = new Map<string, string>();
+  for (const tp of teamPlayers) playerTournamentTeam.set(tp.team.tournament.id, tp.teamId);
+
+  for (const [tid, tMatches] of matchesByTournament) {
+    const teamId = playerTournamentTeam.get(tid);
+    if (!teamId) continue;
+    const myMatches = tMatches.filter((m) => m.teamAId === teamId || m.teamBId === teamId);
+    if (myMatches.length < 3) continue;
+    const goalsAgainst = myMatches.reduce((acc, m) =>
+      acc + (m.teamAId === teamId ? m.scoreB : m.scoreA), 0);
+    if (goalsAgainst === 0) { badges.add("stone_cold"); break; }
+  }
+
+  // poulidor: 3+ finals lost, never won one
+  // Final = BRACKET match with no nextMatchWinId (no further match after winning)
+  const finals = allTeamMatches.filter((m) => m.phase === "BRACKET" && !m.nextMatchWinId);
+  let finalsWon = 0, finalsLost = 0;
+  for (const m of finals) {
+    const teamId = playerTeamIdSet.has(m.teamAId ?? "") ? m.teamAId : m.teamBId;
+    if (!teamId) continue;
+    if (m.winnerTeamId === teamId) finalsWon++; else finalsLost++;
+  }
+  if (finalsLost >= 3 && finalsWon === 0) badges.add("poulidor");
+
+  // cthulhu: 10+ consecutive losses
+  let streak = 0, maxStreak = 0;
+  for (const m of allTeamMatches) {
+    const teamId = playerTeamIdSet.has(m.teamAId ?? "") ? m.teamAId : m.teamBId;
+    if (!teamId || m.winnerTeamId === null) continue;
+    if (m.winnerTeamId !== teamId) { streak++; if (streak > maxStreak) maxStreak = streak; }
+    else streak = 0;
+  }
+  if (maxStreak >= 10) badges.add("cthulhu");
+
+  // grudge_match: same opponent 5+ times
+  const opponentCounts = new Map<string, number>();
+  for (const m of allTeamMatches) {
+    const isA = playerTeamIdSet.has(m.teamAId ?? "");
+    const opp = isA ? m.teamBId : m.teamAId;
+    if (opp) opponentCounts.set(opp, (opponentCounts.get(opp) ?? 0) + 1);
+  }
+  if ([...opponentCounts.values()].some((c) => c >= 5)) badges.add("grudge_match");
+
+  // chaos_agent: 3+ POOL matches with equalization (draw or golden goal triggered)
+  if (allTeamMatches.filter((m) => m.phase === "POOL" && (m.goldenGoal || m.scoreA === m.scoreB)).length >= 3)
+    badges.add("chaos_agent");
+
+  // butterfly: scored the winning goal in a golden-goal match via last event
+  // (approximated: any golden-goal win where player scored the golden goal)
+  if (playerTeamIds.length > 0) {
+    const ggWinMatches = await prisma.match.findMany({
+      where: { goldenGoal: true, winnerTeamId: { in: playerTeamIds } },
+      select: { id: true },
+    });
+    if (ggWinMatches.length > 0) {
+      const ggMatchIds = ggWinMatches.map((m) => m.id);
+      const playerGGGoal = await prisma.matchEvent.findFirst({
+        where: {
+          matchId: { in: ggMatchIds },
+          type: "GOLDEN_GOAL",
+          payload: { path: ["playerId"], equals: playerId },
+        },
+      });
+      if (playerGGGoal) badges.add("butterfly");
+    }
+  }
+
+  // ── Player profile ───────────────────────────────────────────────────────
+  badges.add("welcome");
+
   const player = await prisma.player.findUnique({
     where: { id: playerId },
-    select: { photoPath: true, bio: true, city: true, startYear: true, hand: true, createdAt: true },
+    select: {
+      photoPath: true, bio: true, city: true, startYear: true,
+      hand: true, createdAt: true, country: true,
+    },
   });
-
   if (player?.photoPath) badges.add("say_cheese");
-
-  if (
-    player?.photoPath &&
-    player?.bio &&
-    player?.city &&
-    player?.startYear &&
-    player?.hand
-  ) badges.add("profile_complete");
-
-  // og: account created before April 1, 2026
+  if (player?.photoPath && player.bio && player.city && player.startYear && player.hand)
+    badges.add("profile_complete");
   if (player && player.createdAt < new Date("2026-04-01")) badges.add("og");
 
-  // ── Social badges ───────────────────────────────────────────────────────
-  // Note: free_agent badge is awarded manually (FreeAgent model has no playerId link)
+  // tourist: at least one tournament in a country different from player's home country
+  if (player?.country && tournaments.some((t) => t.country !== player.country))
+    badges.add("tourist");
 
-  // host / serial_organizer / community_builder / mega_event
-  // host / serial_organizer / community_builder / mega_event
-  // Counts completed tournaments where player is creator OR co-organizer
+  // ── Chat / Messages ──────────────────────────────────────────────────────
+  const allMessages = await prisma.tournamentMessage.findMany({
+    where: { authorId: playerId },
+    select: { content: true, createdAt: true, tournamentId: true },
+  });
+  const messageCount = allMessages.length;
+
+  if (messageCount >= 50)  badges.add("chatterbox");
+  if (messageCount >= 300) badges.add("hype_machine");
+
+  // macgyver / flat_tire / duct_tape
+  if (allMessages.some((m) => /réparation|répare|repair|macgyver/i.test(m.content)))
+    badges.add("macgyver");
+  if (allMessages.some((m) => /crevaison|flat[\s-]?tire|\bflat\b/i.test(m.content)))
+    badges.add("flat_tire");
+  if (allMessages.filter((m) => /tape|réparation|repair/i.test(m.content)).length >= 5)
+    badges.add("duct_tape");
+
+  // glhf
+  if (allMessages.some((m) => /\bgl(hf)?\b/i.test(m.content))) badges.add("glhf");
+
+  // afterparty: message sent between 4:00 and 5:00 AM
+  if (allMessages.some((m) => { const h = m.createdAt.getHours(); return h >= 4 && h < 5; }))
+    badges.add("afterparty");
+
+  // hype_train: 10+ messages in the 30 min before a tournament final
+  const tournamentFinals = await prisma.match.findMany({
+    where: { status: "FINISHED", phase: "BRACKET", nextMatchWinId: null },
+    select: { tournamentId: true, startAt: true },
+  });
+  hype: for (const tf of tournamentFinals) {
+    const end   = new Date(tf.startAt);
+    const start = new Date(end.getTime() - 30 * 60 * 1000);
+    const count = allMessages.filter((m) =>
+      m.tournamentId === tf.tournamentId &&
+      m.createdAt >= start && m.createdAt <= end
+    ).length;
+    if (count >= 10) { badges.add("hype_train"); break hype; }
+  }
+
+  // oracle: predicted exact score before a match (pattern "X-Y" or "X–Y")
+  const scoreRx = /\b(\d{1,2})\s*[-–:]\s*(\d{1,2})\b/;
+  oracle: for (const msg of allMessages) {
+    const hit = msg.content.match(scoreRx);
+    if (!hit) continue;
+    const [pA, pB] = [parseInt(hit[1]), parseInt(hit[2])];
+    const found = allTeamMatches.some((m) =>
+      m.tournamentId === msg.tournamentId &&
+      m.startAt > msg.createdAt &&
+      ((m.scoreA === pA && m.scoreB === pB) || (m.scoreA === pB && m.scoreB === pA))
+    );
+    if (found) { badges.add("oracle"); break oracle; }
+  }
+
+  // ── Organisation ─────────────────────────────────────────────────────────
   const organizedTournaments = await prisma.tournament.findMany({
     where: {
       status: "COMPLETED",
-      OR: [
-        { creatorId: playerId },
-        { coOrganizers: { some: { playerId } } },
-      ],
+      OR: [{ creatorId: playerId }, { coOrganizers: { some: { playerId } } }],
     },
     include: { teams: { select: { id: true } } },
   });
@@ -277,15 +399,103 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   if (organizedTournaments.length >= 5) badges.add("community_builder");
   if (organizedTournaments.some((t) => t.teams.length >= 16)) badges.add("mega_event");
 
-  // chatterbox / hype_machine
-  const messageCount = await prisma.tournamentMessage.count({ where: { authorId: playerId } });
-  if (messageCount >= 50)  badges.add("chatterbox");
-  if (messageCount >= 200) badges.add("hype_machine");
+  // fashionably_late: very last registration, within 1 h before deadline
+  for (const tp of teamPlayers) {
+    const { tournament } = tp.team;
+    if (!tournament.registrationEnd) continue;
+    const deadline     = new Date(tournament.registrationEnd);
+    const oneHourBefore = new Date(deadline.getTime() - 60 * 60 * 1000);
+    const regAt        = (tp as { registeredAt?: Date }).registeredAt;
+    if (!regAt || regAt < oneHourBefore || regAt > deadline) continue;
 
-  // collector / completionist (based on total badges earned)
+    const last = await prisma.teamPlayer.findFirst({
+      where: { team: { tournamentId: tournament.id } },
+      orderBy: { registeredAt: "desc" },
+      select: { playerId: true },
+    });
+    if (last?.playerId === playerId) { badges.add("fashionably_late"); break; }
+  }
+
+  // schedule_head: awarded manually (requires frontend tracking — not automatable)
+
+  // ── Collector / Completionist ────────────────────────────────────────────
   const total = badges.size;
-  if (total >= 15) badges.add("collector");
-  if (total >= 30) badges.add("completionist");
+  if (total >= 20) badges.add("collector");
+  if (total >= 35) badges.add("completionist");
+
+  // ── Vague 2 ──────────────────────────────────────────────────────────────
+
+  // the_commentator: 50+ messages in a single tournament
+  const msgByTournament = new Map<string, number>();
+  for (const m of allMessages) {
+    msgByTournament.set(m.tournamentId, (msgByTournament.get(m.tournamentId) ?? 0) + 1);
+  }
+  if ([...msgByTournament.values()].some((c) => c >= 50)) badges.add("the_commentator");
+
+  // seven_nations: teammates of 7+ different nationalities across all tournaments
+  const teammateNationalities = new Set<string>();
+  for (const tp of teamPlayers) {
+    const mates = await prisma.teamPlayer.findMany({
+      where: { teamId: tp.teamId, NOT: { playerId } },
+      include: { player: { select: { country: true } } },
+    });
+    for (const mate of mates) {
+      if (mate.player.country) teammateNationalities.add(mate.player.country);
+    }
+  }
+  if (teammateNationalities.size >= 7) badges.add("seven_nations");
+
+  // the_historian: message sent in a chat of a tournament that ended 6+ months ago
+  if (allMessages.length > 0) {
+    const tournamentDates = await prisma.tournament.findMany({
+      where: { id: { in: [...new Set(allMessages.map((m) => m.tournamentId))] } },
+      select: { id: true, dateEnd: true },
+    });
+    const dateMap = new Map(tournamentDates.map((t) => [t.id, new Date(t.dateEnd)]));
+    const historian = allMessages.some((m) => {
+      const end = dateMap.get(m.tournamentId);
+      if (!end) return false;
+      return m.createdAt.getTime() - end.getTime() > 6 * 30 * 24 * 3600 * 1000;
+    });
+    if (historian) badges.add("the_historian");
+  }
+
+  // squeaky_clean: win a completed tournament conceding ≤1 goal per match
+  for (const tp of completedTournaments) {
+    const teamId = tp.teamId;
+    const allMatches = [...tp.team.matchesA, ...tp.team.matchesB].filter((m) => m.status === "FINISHED");
+    if (allMatches.length < 3) continue;
+    const isChampion = allMatches.some((m) => m.winnerTeamId === teamId);
+    if (!isChampion) continue;
+    const clean = allMatches.every((m) => {
+      const goalsAgainst = tp.team.matchesA.includes(m) ? m.scoreB : m.scoreA;
+      return goalsAgainst <= 1;
+    });
+    if (clean) { badges.add("squeaky_clean"); break; }
+  }
+
+  // ref_duty (mythic 4★) + double_duty (legendary 5★)
+  const refereedMatches = await prisma.match.findMany({
+    where: { refereePlayerId: playerId, status: "FINISHED" },
+    select: { startAt: true },
+  });
+  if (refereedMatches.length >= 3 && allTeamMatches.length >= 3) {
+    const playDayCount = new Map<string, number>();
+    for (const m of allTeamMatches) {
+      const day = m.startAt.toISOString().slice(0, 10);
+      playDayCount.set(day, (playDayCount.get(day) ?? 0) + 1);
+    }
+    const refDayCount = new Map<string, number>();
+    for (const m of refereedMatches) {
+      const day = m.startAt.toISOString().slice(0, 10);
+      refDayCount.set(day, (refDayCount.get(day) ?? 0) + 1);
+    }
+    for (const [day, refCount] of refDayCount) {
+      const playCount = playDayCount.get(day) ?? 0;
+      if (refCount >= 3 && playCount >= 3) badges.add("ref_duty");
+      if (refCount >= 5 && playCount >= 5) badges.add("double_duty");
+    }
+  }
 
   return Array.from(badges);
 }

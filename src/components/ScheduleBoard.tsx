@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Match, Team } from "@prisma/client";
+import { Match, MatchEvent, Team } from "@prisma/client";
 import { formatTime } from "@/lib/utils";
 import { MatchEditPanel, type MatchForEdit } from "./MatchEditPanel";
 
-export type MatchWithTeams = Match & { teamA?: Team | null; teamB?: Team | null };
+export type MatchWithTeams = Match & {
+  teamA?: Team | null;
+  teamB?: Team | null;
+  events?: MatchEvent[];
+};
 
 const PHASE_LABEL: Record<string, string> = {
   POOL: "Poule", SWISS: "Swiss", BRACKET: "Tableau",

@@ -576,11 +576,11 @@ export async function drawTeamsAction(
 
   await prisma.team.updateMany({
     where: { tournamentId, id: { in: Array.from(selectedIds) } },
-    data: { selected: true },
+    data: { selected: true, guaranteed: true },
   });
   await prisma.team.updateMany({
     where: { tournamentId, id: { notIn: Array.from(selectedIds) } },
-    data: { selected: false },
+    data: { selected: false, guaranteed: false },
   });
   return { ok: true };
 }

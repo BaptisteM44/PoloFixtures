@@ -46,21 +46,59 @@ function matchLabel(m: MatchInfo) {
 export function TournamentRefereePanel({
   tournament, canManageRefs,
 }: { tournament: TournamentData; canManageRefs: boolean }) {
-  // Matches triés : LIVE en premier, puis SCHEDULED, puis FINISHED
+  const [matchMap, setMatchMap] = useState<Map<string, MatchInfo>>(() => new Map(tournament.matches.map((m) => [m.id, m])));
+
+  // Matches triés depuis matchMap (réactif aux mises à jour SSE)
   const sortedMatches = useMemo(() => {
     const order: Record<string, number> = { LIVE: 0, SCHEDULED: 1, FINISHED: 2 };
-    return [...tournament.matches].sort(
+    return [...matchMap.values()].sort(
       (a, b) => (order[a.status] ?? 1) - (order[b.status] ?? 1) || a.startAt.localeCompare(b.startAt)
     );
-  }, [tournament.matches]);
-
-  const [matchMap, setMatchMap] = useState<Map<string, MatchInfo>>(() => new Map(tournament.matches.map((m) => [m.id, m])));
+  }, [matchMap]);
   const [selectedMatchId, setSelectedMatchId] = useState<string>(() => sortedMatches.find((m) => m.status === "LIVE" || m.status === "SCHEDULED")?.id ?? sortedMatches[0]?.id ?? "");
   const [clockSec, setClockSec] = useState(0);
   const [running, setRunning] = useState(false);
   const [buzzerPlayed, setBuzzerPlayed] = useState(false);
   const [muted, setMuted] = useState(false);
   const [matchEnded, setMatchEnded] = useState(false);
+
+  // Édition / correction d'un match terminé
+  const [editMode, setEditMode] = useState(false);
+  const [editScoreA, setEditScoreA] = useState(0);
+  const [editScoreB, setEditScoreB] = useState(0);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const openEdit = () => {
+    const m = matchMap.get(selectedMatchId);
+    if (!m) return;
+    setEditScoreA(m.scoreA);
+    setEditScoreB(m.scoreB);
+    setEditError(null);
+    setEditMode(true);
+  };
+
+  const saveEdit = async (reopen = false) => {
+    setEditSaving(true); setEditError(null);
+    const newStatus = reopen ? "LIVE" : "FINISHED";
+    const res = await fetch(`/api/matches/${selectedMatchId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scoreA: editScoreA, scoreB: editScoreB, status: newStatus }),
+    });
+    if (!res.ok) { setEditError("Erreur lors de la sauvegarde"); setEditSaving(false); return; }
+    const updated = await res.json();
+    setMatchMap((prev) => {
+      const cur = prev.get(selectedMatchId);
+      if (!cur) return prev;
+      const next = new Map(prev);
+      next.set(selectedMatchId, { ...cur, ...updated });
+      return next;
+    });
+    if (reopen) { setMatchEnded(false); setRunning(false); setBuzzerPlayed(false); }
+    setEditMode(false);
+    setEditSaving(false);
+  };
 
   // Modals
   const [goalModal, setGoalModal] = useState<GoalModal>(null);
@@ -70,6 +108,31 @@ export function TournamentRefereePanel({
   const [timeoutTimer, setTimeoutTimer] = useState<{ sec: number; label: string } | null>(null);
 
   const lastMatchId = useRef<string>("");
+
+  // SSE — met à jour matchMap quand un match avancé (ou mis à jour par un autre panel) arrive
+  useEffect(() => {
+    const es = new EventSource(`/api/sse?tournamentId=${tournament.id}`);
+    es.addEventListener("match", (evt) => {
+      const payload = JSON.parse((evt as MessageEvent).data);
+      const updatedMatch: Partial<MatchInfo> | undefined =
+        payload?.data?.match ?? (payload?.data?.id ? payload.data : undefined);
+      if (updatedMatch?.id) {
+        setMatchMap((prev) => {
+          const cur = prev.get(updatedMatch.id!);
+          const next = new Map(prev);
+          if (cur) {
+            // Match existant : merge
+            next.set(updatedMatch.id!, { ...cur, ...updatedMatch });
+          } else {
+            // Nouveau match (rare) — on l'ajoute si on a assez d'infos
+            next.set(updatedMatch.id!, updatedMatch as MatchInfo);
+          }
+          return next;
+        });
+      }
+    });
+    return () => es.close();
+  }, [tournament.id]);
 
   // Garder l'écran allumé tant que running
   useWakeLock(running || !!timeoutTimer);
@@ -150,8 +213,13 @@ export function TournamentRefereePanel({
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const onStart = () => { setRunning(true); postEvent("START"); };
+  // Pause locale uniquement — le match reste LIVE côté serveur
   const onPause = () => { setRunning(false); postEvent("PAUSE"); };
-  const onReset = () => { setClockSec(0); setBuzzerPlayed(false); };
+  const onReset = () => {
+    if (!window.confirm("Remettre le chrono à zéro ? Cette action ne peut pas être annulée.")) return;
+    setClockSec(0);
+    setBuzzerPlayed(false);
+  };
 
   const onGoalConfirmed = (teamId: string, delta: number, playerId: string | null) => {
     setGoalModal(null);
@@ -176,10 +244,12 @@ export function TournamentRefereePanel({
 
   const onTimeoutConfirmed = (teamId: string, type: "normal" | "mechanical") => {
     setTimeoutModal(null);
+    // Pause locale du chrono (match reste LIVE côté serveur)
     setRunning(false);
     const dur = type === "mechanical" ? 150 : 120;
     setTimeoutTimer({ sec: dur, label: type === "mechanical" ? "Timeout technique (2:30)" : "Timeout équipe (2:00)" });
     postEvent("TIMEOUT", { teamId, timeoutType: type, delta: 1 });
+    // Pas d'event PAUSE — le match reste LIVE
   };
 
   const onEndMatch = () => postEvent("END");
@@ -468,6 +538,42 @@ export function TournamentRefereePanel({
                 );
               })}
             </div>
+          ) : editMode ? (
+            /* ── Édition du score ────────────────────────────────────── */
+            <div className="ref-result">
+              <p className="ref-result-label">Corriger le score</p>
+              <div className="ref-result-score" style={{ gap: 16 }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700 }}>{selectedMatch.teamAName ?? "Team A"}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button className="ghost ref-smBtn" onClick={() => setEditScoreA((s) => Math.max(0, s - 1))}>−</button>
+                    <span className="ref-result-num" style={{ minWidth: 32, textAlign: "center" }}>{editScoreA}</span>
+                    <button className="ghost ref-smBtn" onClick={() => setEditScoreA((s) => s + 1)}>+</button>
+                  </div>
+                </div>
+                <span style={{ opacity: 0.4, fontSize: 20 }}>—</span>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700 }}>{selectedMatch.teamBName ?? "Team B"}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button className="ghost ref-smBtn" onClick={() => setEditScoreB((s) => Math.max(0, s - 1))}>−</button>
+                    <span className="ref-result-num" style={{ minWidth: 32, textAlign: "center" }}>{editScoreB}</span>
+                    <button className="ghost ref-smBtn" onClick={() => setEditScoreB((s) => s + 1)}>+</button>
+                  </div>
+                </div>
+              </div>
+              {editError && <p style={{ color: "var(--danger)", fontSize: 13, margin: 0 }}>{editError}</p>}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                <button className="primary" onClick={() => saveEdit(false)} disabled={editSaving}>
+                  {editSaving ? "…" : "✓ Sauvegarder"}
+                </button>
+                <button className="ghost" style={{ color: "var(--danger)" }}
+                  onClick={() => { if (window.confirm("Rouvrir ce match ? Le chrono repartira de zéro.")) saveEdit(true); }}
+                  disabled={editSaving}>
+                  ↩ Rouvrir le match
+                </button>
+                <button className="ghost" onClick={() => setEditMode(false)} disabled={editSaving}>Annuler</button>
+              </div>
+            </div>
           ) : (
             /* ── Résultat final ──────────────────────────────────────── */
             <div className="ref-result">
@@ -483,16 +589,21 @@ export function TournamentRefereePanel({
                   ? <p className="ref-result-winner">🏆 {selectedMatch.teamBName}</p>
                   : <p className="ref-result-winner">Égalité</p>
               }
-              {nextScheduled && (
-                <button className="primary ref-nextmatch-btn"
-                  onClick={() => {
-                    lastMatchId.current = "";
-                    setSelectedMatchId(nextScheduled.id);
-                    setMatchEnded(false);
-                  }}>
-                  Prochain match →
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                {nextScheduled && (
+                  <button className="primary ref-nextmatch-btn"
+                    onClick={() => {
+                      lastMatchId.current = "";
+                      setSelectedMatchId(nextScheduled.id);
+                      setMatchEnded(false);
+                    }}>
+                    Prochain match →
+                  </button>
+                )}
+                <button className="ghost" style={{ fontSize: 13 }} onClick={openEdit}>
+                  ✏️ Corriger
                 </button>
-              )}
+              </div>
             </div>
           )}
 

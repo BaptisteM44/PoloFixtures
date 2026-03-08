@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 
 export type CalendarTournament = {
@@ -75,17 +75,33 @@ function fmtFR(d: Date) {
 export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = false }: Props) {
   const now = new Date();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [month, setMonth] = useState(initialMonth ?? now.getMonth());
   const [year, setYear] = useState(initialYear ?? now.getFullYear());
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const expandedIds = useMemo(() => {
+    const raw = searchParams.get("open");
+    return new Set(raw ? raw.split(",").filter(Boolean) : []);
+  }, [searchParams]);
 
   const toggle = (id: string) => {
     if (mini) { router.push(`/tournament/${id}`); return; }
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    const next = new Set(expandedIds);
+    next.has(id) ? next.delete(id) : next.add(id);
+    const params = new URLSearchParams(searchParams.toString());
+    if (next.size > 0) {
+      params.set("open", Array.from(next).join(","));
+    } else {
+      params.delete("open");
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const clearAll = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("open");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   const days = useMemo(() => getCalendarDays(year, month), [year, month]);
@@ -233,7 +249,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
 
       {/* Modal bottom-sheet — mobile/tablette uniquement (CSS gère l'affichage) */}
       {expandedList.length > 0 && (
-        <div className="cal-modal-overlay" onClick={() => setExpandedIds(new Set())}>
+        <div className="cal-modal-overlay" onClick={clearAll}>
           <div className="cal-modal" onClick={(e) => e.stopPropagation()}>
             <div className="cal-modal-handle" />
             {expandedList.map((t) => (

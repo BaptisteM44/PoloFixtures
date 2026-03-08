@@ -7,8 +7,11 @@ import { MessagesClient } from "./MessagesClient";
 export default async function MessagesPage() {
   const t = await getTranslations("messages");
   const session = await auth();
-  const playerId = session?.user?.playerId;
+  const playerId = (session?.user as { playerId?: string } | undefined)?.playerId;
   if (!playerId) redirect("/");
+
+  const account = await prisma.playerAccount.findUnique({ where: { playerId }, select: { charterAcceptedAt: true } });
+  const charterAccepted = !!account?.charterAcceptedAt;
 
   const conversations = await prisma.directConversation.findMany({
     where: { OR: [{ playerAId: playerId }, { playerBId: playerId }] },
@@ -46,7 +49,7 @@ export default async function MessagesPage() {
           <p>Tes conversations privées</p>
         </div>
       </div>
-      <MessagesClient conversations={data} currentPlayerId={playerId} />
+      <MessagesClient conversations={data} currentPlayerId={playerId} charterAccepted={charterAccepted} />
     </div>
   );
 }

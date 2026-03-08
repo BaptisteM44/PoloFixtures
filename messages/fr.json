@@ -29,14 +29,12 @@
     "in": "à",
     "of": "de"
   },
-
   "seo": {
     "site_name": "PoloFixtures",
     "site_description": "La plateforme de tournois de Bike Polo. Poules, brackets, arbitrage en live.",
     "og_title": "PoloFixtures — Tournois de Bike Polo",
     "og_description": "Organisez et suivez vos tournois de bike polo en temps réel."
   },
-
   "nav": {
     "tournaments": "Tournois",
     "calendar": "Calendrier",
@@ -52,12 +50,10 @@
     "register": "Créer un compte",
     "language": "Langue"
   },
-
   "header": {
     "brand_name": "Hardcourt Polo",
     "brand_tag": "Tournament Ops"
   },
-
   "auth": {
     "login_title": "Connexion",
     "login_subtitle": "Accède à ton espace joueur.",
@@ -100,9 +96,13 @@
     "error_invalid_credentials": "Email ou mot de passe incorrect.",
     "error_invalid_code": "Code invalide.",
     "error_register_failed": "Erreur lors de la création du compte.",
-    "error_login_after_register": "Compte créé mais connexion échouée. Essaie de te connecter manuellement."
+    "error_login_after_register": "Compte créé mais connexion échouée. Essaie de te connecter manuellement.",
+    "charter_accept_label_pre": "J'ai lu et j'accepte les",
+    "charter_accept_cgu": "CGU",
+    "charter_accept_privacy": "Politique de confidentialité",
+    "charter_accept_label_post": "et la charte de bonne conduite.",
+    "charter_accept_charter_link": "Voir la charte"
   },
-
   "about": {
     "page_title": "Polo Fixtures",
     "hero_eyebrow": "Pour la communauté bike polo",
@@ -169,7 +169,6 @@
     "contact_sent_desc": "Merci pour ton message. On te répond dès que possible.",
     "contact_send_another": "Envoyer un autre message"
   },
-
   "home": {
     "hero_title": "La plateforme de tournois de Bike Polo",
     "hero_subtitle": "Poules, brackets, arbitrage en live — tout sur une seule plateforme.",
@@ -189,7 +188,6 @@
     "empty_no_active": "Aucun tournoi actif en ce moment.",
     "btn_create_first": "Créer le premier"
   },
-
   "tournaments": {
     "page_title": "Tous les tournois",
     "page_subtitle": "Filtre par continent, pays ou statut",
@@ -218,7 +216,6 @@
     "create_new": "+ Créer un tournoi",
     "upcoming_title": "Prochains tournois"
   },
-
   "tournament": {
     "not_found": "Tournoi introuvable.",
     "not_approved": "Ce tournoi n'est pas encore approuvé.",
@@ -415,7 +412,6 @@
     "communaute_free_agents_desc": "Joueur·ses sans équipe qui cherchent à rejoindre un groupe pour ce tournoi.",
     "communaute_looking": "Tu cherches une équipe ?"
   },
-
   "registration": {
     "section_title": "Inscrire mon équipe",
     "reg_open_teams_one": "{count} équipe inscrite",
@@ -433,7 +429,6 @@
     "reg_badge_open": "🔓 Inscriptions ouvertes",
     "reg_badge_closed": "🔒 Inscriptions fermées"
   },
-
   "team": {
     "register_title": "Inscrire une équipe",
     "existing_title": "Choisir une équipe existante",
@@ -488,7 +483,6 @@
     "error_generic": "Erreur lors de l'inscription.",
     "btn_cancel": "Annuler"
   },
-
   "selection": {
     "title": "Tirage au sort — Sélection des équipes",
     "slots_info": "{guaranteed} IN · {slotsLeft} places restantes · {total} équipes total",
@@ -529,7 +523,6 @@
     "wl_hint": "Coche les équipes à inclure dans le tirage waiting list — une par une",
     "saving": "Enregistrement…"
   },
-
   "free_agent": {
     "title": "Zone free agent",
     "subtitle": "Aucune équipe pour ce tournoi ? Laisse tes coordonnées, d'autres joueurs pourront te contacter.",
@@ -551,7 +544,6 @@
     "empty": "Aucun free agent pour l'instant.",
     "error": "Une erreur est survenue, réessaie."
   },
-
   "notifications": {
     "title": "Notifications",
     "empty": "Aucune notification",
@@ -578,7 +570,6 @@
     "btn_decline": "Refuser",
     "default": "Notification"
   },
-
   "contact": {
     "btn_open": "Contact",
     "modal_title": "Contacter l'admin",
@@ -598,11 +589,9 @@
     "error_rate_limit": "Trop de messages envoyés. Réessayez dans 30 minutes.",
     "error_invalid": "Données invalides."
   },
-
   "footer": {
     "copyright": "PoloFixtures © {year}"
   },
-
   "player": {
     "page_title": "Profil joueur",
     "not_found": "Joueur introuvable",
@@ -619,7 +608,6 @@
     "section_teams": "Équipes",
     "section_badges": "Badges"
   },
-
   "my_teams": {
     "page_title": "Mes équipes",
     "page_subtitle": "Tes équipes permanentes — indépendantes des tournois.",
@@ -650,7 +638,6 @@
     "btn_creating": "Création…",
     "btn_submit": "Créer l'équipe"
   },
-
   "my_tournaments": {
     "page_title": "Mes tournois",
     "section_player": "En tant que joueur·euse",
@@ -668,7 +655,6 @@
     "chat_open": "Discussion d'équipe",
     "chat_close": "Fermer la discussion"
   },
-
   "calendar": {
     "page_title": "Calendrier des tournois",
     "page_subtitle": "Vue mensuelle de tous les événements",
@@ -696,7 +682,6 @@
       "sun": "Dim"
     }
   },
-
   "admin": {
     "page_title": "Administration",
     "section_tournaments": "Tournois",
@@ -767,7 +752,6 @@
     "nav_countries": "Pays",
     "nav_access_codes": "Codes d'accès"
   },
-
   "club": {
     "page_title": "Club",
     "create_title": "Créer un club",
@@ -796,7 +780,6 @@
     "logo_uploading": "Upload…",
     "new_desc": "Après création, votre club sera soumis à l'approbation d'un admin avant d'apparaître publiquement. Vous en deviendrez automatiquement le manager."
   },
-
   "continent": {
     "page_title": "Continent",
     "tournaments_title": "Tournois",
@@ -820,7 +803,6 @@
     "name_as": "Asia",
     "name_oc": "Oceania"
   },
-
   "messages": {
     "page_title": "Messages",
     "page_subtitle": "Tes conversations privées",
@@ -829,7 +811,6 @@
     "btn_send": "Envoyer",
     "new_conversation": "Nouvelle conversation"
   },
-
   "referee": {
     "page_title": "Console arbitrage",
     "btn_start": "Démarrer",
@@ -840,7 +821,6 @@
     "team_home": "Domicile",
     "team_away": "Extérieur"
   },
-
   "account": {
     "page_title": "Mon compte",
     "section_profile": "Profil",
@@ -916,5 +896,158 @@
     "delete_btn": "Supprimer définitivement mon compte",
     "delete_deleting": "Suppression…",
     "delete_error": "Une erreur est survenue. Réessaie."
+  },
+  "charter": {
+    "title": "Charte de bonne conduite",
+    "point_1": "Respecter toutes les personnes, sans discrimination de genre, origine, orientation ou niveau.",
+    "point_2": "Zéro harcèlement, insultes ou propos haineux dans les échanges.",
+    "point_3": "Fair-play en toutes circonstances — sur le terrain comme en ligne.",
+    "point_4": "Pas de spam, publicité non sollicitée ou contenu hors-sujet.",
+    "point_5": "Signaler tout problème aux organisateurs plutôt que d'escalader.",
+    "checkbox_label": "J'ai lu et j'accepte la charte de bonne conduite",
+    "btn_continue": "Continuer",
+    "read_full_charter": "Lire la charte complète"
+  },
+  "legal_mentions": {
+    "title": "Mentions légales",
+    "editor_title": "Éditeur du site",
+    "name_label": "Nom",
+    "address_label": "Adresse",
+    "email_label": "Email",
+    "status_label": "Statut",
+    "status_value": "Particulier",
+    "publication_director": "Directeur de la publication",
+    "hosting_title": "Hébergement",
+    "hosted_by": "Site hébergé par",
+    "db_hosted_by": "Base de données hébergée par",
+    "usa": "États-Unis",
+    "singapore": "Singapour",
+    "ip_title": "Propriété intellectuelle",
+    "ip_text_1": "L'ensemble du contenu de ce site (textes, images, graphismes, logo) est la propriété exclusive de l'éditeur, sauf mention contraire.",
+    "ip_text_2": "Toute reproduction, représentation, modification, publication ou adaptation de tout ou partie des éléments du site est interdite sans autorisation préalable écrite.",
+    "liability_title": "Responsabilité",
+    "liability_text": "L'éditeur ne saurait être tenu responsable des dommages directs ou indirects causés au matériel de l'utilisateur lors de l'accès au site, ni des éventuelles erreurs ou omissions dans le contenu.",
+    "law_title": "Droit applicable",
+    "law_text": "Les présentes mentions légales sont soumises au droit belge. En cas de litige, les tribunaux compétents sont ceux de Bruxelles.",
+    "updated": "Mis à jour"
+  },
+  "legal_privacy": {
+    "title": "Politique de confidentialité",
+    "intro": "Nous attachons une grande importance à la protection de vos données personnelles. Cette politique explique quelles données nous collectons, pourquoi, et quels sont vos droits.",
+    "s1_title": "Responsable du traitement",
+    "email_label": "Email",
+    "s2_title": "Données collectées",
+    "s2_account_intro": "Lors de la création de votre compte :",
+    "s2_name": "Nom d'affichage",
+    "s2_email": "Adresse email",
+    "s2_location": "Pays et ville (optionnel)",
+    "s2_photo": "Photo de profil (optionnel)",
+    "s2_bio": "Biographie courte (optionnel)",
+    "s2_tournament_intro": "Dans le cadre des tournois :",
+    "s2_registrations": "Inscriptions aux tournois",
+    "s2_results": "Résultats de matchs",
+    "s2_messages": "Messages dans les conversations privées et de groupe",
+    "s2_technical_intro": "Données techniques :",
+    "s2_ip": "Adresse IP (journaux de connexion)",
+    "s2_charter_date": "Date d'acceptation de la charte",
+    "s2_created_at": "Date de création du compte",
+    "s3_title": "Finalités et bases légales",
+    "s3_col_purpose": "Finalité",
+    "s3_col_basis": "Base légale",
+    "s3_r1_purpose": "Gestion du compte utilisateur",
+    "s3_r1_basis": "Exécution du contrat",
+    "s3_r2_purpose": "Organisation des tournois",
+    "s3_r2_basis": "Exécution du contrat",
+    "s3_r3_purpose": "Messagerie privée",
+    "s3_r3_basis": "Consentement",
+    "s3_r4_purpose": "Sécurité et lutte contre la fraude",
+    "s3_r4_basis": "Intérêt légitime",
+    "s3_r5_purpose": "Statistiques anonymes",
+    "s3_r5_basis": "Intérêt légitime",
+    "s3_r6_purpose": "Respect des obligations légales",
+    "s3_r6_basis": "Obligation légale",
+    "s4_title": "Durée de conservation",
+    "s4_active": "Compte actif : données conservées pendant toute la durée de l'activité",
+    "s4_deleted": "Compte supprimé : données effacées sous 30 jours",
+    "s4_messages": "Messages : conservés tant que la conversation existe",
+    "s4_ip": "Logs IP : conservés 12 mois maximum",
+    "s5_title": "Sous-traitants et transferts",
+    "s5_intro": "Vos données sont traitées par les prestataires suivants :",
+    "s5_smtp": "service d'envoi d'emails transactionnels",
+    "s5_privacy_policy": "politique de confidentialité",
+    "s5_public_profiles": "Les profils définis comme publics sont visibles par tous les visiteurs du site.",
+    "s6_title": "Vos droits",
+    "s6_intro": "Conformément au RGPD, vous disposez des droits suivants :",
+    "s6_access": "Droit d'accès : obtenir une copie de vos données",
+    "s6_rectification": "Droit de rectification : corriger vos données inexactes",
+    "s6_erasure": "Droit à l'effacement : demander la suppression de vos données",
+    "s6_opposition": "Droit d'opposition : vous opposer à certains traitements — écrivez-nous à",
+    "s6_portability": "Droit à la portabilité : recevoir vos données dans un format structuré",
+    "s6_contact_text": "Pour exercer vos droits, contactez-nous à",
+    "s6_cnil_text": "Vous pouvez également introduire une réclamation auprès de la",
+    "s7_title": "Cookies",
+    "s7_text": "Ce site utilise uniquement des cookies techniques strictement nécessaires au fonctionnement (session d'authentification). Aucun cookie publicitaire ou de tracking tiers n'est utilisé.",
+    "s8_title": "Sécurité",
+    "s8_text": "Vos données sont transmises via HTTPS et stockées de manière sécurisée chez Supabase. L'accès est restreint aux seules personnes habilitées.",
+    "updated": "Mis à jour"
+  },
+  "legal_terms": {
+    "title": "Conditions Générales d'Utilisation",
+    "intro": "Les présentes CGU régissent l'utilisation de la plateforme PoloFixtures. En vous inscrivant, vous acceptez ces conditions dans leur intégralité.",
+    "s1_title": "Objet",
+    "s1_text": "PoloFixtures est une plateforme dédiée à l'organisation de tournois de bike polo. Elle permet de gérer les inscriptions, les brackets, les résultats et la communication entre joueurs.",
+    "s2_title": "Inscription et compte",
+    "s2_age": "Vous devez avoir au moins 16 ans pour créer un compte.",
+    "s2_accuracy": "Les informations fournies lors de l'inscription doivent être exactes et à jour.",
+    "s2_password": "Vous êtes responsable de la confidentialité de votre mot de passe.",
+    "s2_one_account": "Un seul compte par personne est autorisé.",
+    "s2_delete": "Vous pouvez supprimer votre compte à tout moment depuis les paramètres.",
+    "s3_title": "Règles de conduite",
+    "s3_intro": "En utilisant la plateforme, vous vous engagez à :",
+    "s3_respect": "Respecter tous les utilisateurs, sans discrimination.",
+    "s3_no_harassment": "Ne pas harceler, insulter ou menacer d'autres membres.",
+    "s3_fair_play": "Faire preuve de fair-play dans vos échanges et vos résultats.",
+    "s3_no_spam": "Ne pas publier de spam, de publicité ou de contenu hors-sujet.",
+    "s3_report": "Signaler tout comportement inapproprié aux organisateurs ou à l'administration.",
+    "s3_sanction": "Tout manquement peut entraîner une suspension ou la suppression définitive du compte.",
+    "s4_title": "Contenu et propriété intellectuelle",
+    "s4_ownership": "Le contenu que vous publiez (messages, résultats, informations) reste votre propriété. Vous accordez à PoloFixtures une licence non exclusive pour l'afficher sur la plateforme.",
+    "s4_forbidden_intro": "Il est interdit de publier :",
+    "s4_illegal": "Du contenu illégal ou contraire à l'ordre public.",
+    "s4_false": "Des informations délibérément fausses ou trompeuses.",
+    "s4_malware": "Des liens vers des logiciels malveillants ou des tentatives de phishing.",
+    "s5_title": "Rôles et accès",
+    "s5_intro": "La plateforme distingue plusieurs niveaux d'accès :",
+    "s5_player": "Joueur : peut s'inscrire aux tournois, consulter les résultats et écrire dans les chats.",
+    "s5_ref": "Arbitre : peut saisir les résultats des matchs.",
+    "s5_orga": "Organisateur : peut créer et gérer des tournois.",
+    "s5_admin": "Administrateur : accès complet à la gestion de la plateforme.",
+    "s5_access_codes": "Certains rôles sont attribués via des codes d'accès fournis par l'administration.",
+    "s6_title": "Disponibilité",
+    "s6_text": "PoloFixtures est fourni 'en l'état'. Nous ne garantissons pas une disponibilité ininterrompue et nous réservons le droit de modifier ou d'interrompre le service sans préavis.",
+    "s7_title": "Modifications des CGU",
+    "s7_text": "Nous pouvons modifier ces CGU à tout moment. Les utilisateurs seront informés des changements significatifs. La poursuite de l'utilisation du service vaut acceptation des nouvelles CGU.",
+    "s8_title": "Résiliation",
+    "s8_text": "Nous nous réservons le droit de suspendre ou supprimer tout compte qui ne respecterait pas ces CGU, sans préavis ni remboursement.",
+    "s9_title": "Droit applicable",
+    "s9_text": "Les présentes CGU sont soumises au droit belge. Tout litige relève de la compétence exclusive des tribunaux de Bruxelles.",
+    "updated": "Mis à jour"
+  },
+  "legal_charter": {
+    "title": "Charte de bonne conduite",
+    "intro": "En utilisant PoloFixtures, vous vous engagez à respecter les règles suivantes. Cette charte s'applique à tous les échanges sur la plateforme : messages privés, chats d'équipe et de tournoi.",
+    "s1_title": "Respect et inclusion",
+    "s1_text": "Chaque personne doit être traitée avec respect, sans discrimination de genre, d'origine, d'orientation sexuelle, de religion ou de niveau sportif. Les propos offensants ou dégradants ne sont pas tolérés.",
+    "s2_title": "Zéro harcèlement",
+    "s2_text": "Le harcèlement, les insultes, les menaces ou les propos haineux envers d'autres membres sont strictement interdits, qu'ils soient publics ou privés.",
+    "s3_title": "Fair-play",
+    "s3_text": "Le fair-play est au cœur du bike polo. Adoptez une attitude sportive dans vos échanges et dans la saisie des résultats. Pas de triche, pas de contestation de mauvaise foi.",
+    "s4_title": "Pas de spam ni de publicité",
+    "s4_text": "Les messages non sollicités, la publicité commerciale, les liens hors-sujet ou toute forme de spam sont interdits dans les conversations.",
+    "s5_title": "Signalement",
+    "s5_text": "Si vous êtes témoin d'un comportement inapproprié, signalez-le aux organisateurs du tournoi ou à l'administration via le formulaire de contact plutôt que de répondre de manière agressive.",
+    "s6_title": "Sanctions",
+    "s6_text": "Tout manquement à cette charte peut entraîner un avertissement, la suspension temporaire ou la suppression définitive du compte, selon la gravité des faits.",
+    "updated": "Mis à jour"
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { type MatchEvent } from "@prisma/client";
 import { type MatchWithTeams } from "./ScheduleBoard";
 import { formatTime } from "@/lib/utils";
 
@@ -16,16 +17,192 @@ const STATUS_LABEL: Record<string, string> = {
   FINISHED: "✓ Terminé",
 };
 
+type EnrichedMatch = MatchWithTeams & { events: MatchEvent[] };
+
+function fmtClock(sec: number) {
+  const s = Math.max(0, sec);
+  return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+}
+
+/** Calcule le résumé des events pour affichage rapide */
+function buildMatchStats(match: EnrichedMatch) {
+  const goalsByTeam: Record<string, { count: number; scorers: string[] }> = {};
+  const penaltiesByTeam: Record<string, { count: number; players: string[] }> = {};
+
+  for (const e of match.events ?? []) {
+    const p = e.payload as Record<string, unknown>;
+    const teamId = String(p.teamId ?? "");
+    const playerId = String(p.playerId ?? "");
+    const delta = Number(p.delta ?? 1);
+
+    if ((e.type === "GOAL" || e.type === "GOLDEN_GOAL") && teamId) {
+      if (!goalsByTeam[teamId]) goalsByTeam[teamId] = { count: 0, scorers: [] };
+      goalsByTeam[teamId].count += delta;
+      if (playerId && playerId !== "undefined") goalsByTeam[teamId].scorers.push(playerId);
+    }
+    if (e.type === "PENALTY" && teamId) {
+      if (!penaltiesByTeam[teamId]) penaltiesByTeam[teamId] = { count: 0, players: [] };
+      penaltiesByTeam[teamId].count += delta;
+      if (playerId && playerId !== "undefined") penaltiesByTeam[teamId].players.push(playerId);
+    }
+  }
+
+  // Derniers events pertinents (hors START/PAUSE/TIME_ADJUST)
+  const notable = [...(match.events ?? [])]
+    .filter((e) => ["GOAL", "GOLDEN_GOAL", "PENALTY", "TIMEOUT"].includes(e.type))
+    .slice(-5)
+    .reverse();
+
+  return { goalsByTeam, penaltiesByTeam, notable };
+}
+
+function eventIcon(type: string) {
+  if (type === "GOAL") return "⚽";
+  if (type === "GOLDEN_GOAL") return "🥇";
+  if (type === "PENALTY") return "⚠️";
+  if (type === "TIMEOUT") return "⏸";
+  return "•";
+}
+
+/** Carte LIVE enrichie avec chrono + events */
+function LiveCard({
+  match,
+  gameDurationMin,
+  teamNames,
+}: {
+  match: EnrichedMatch;
+  gameDurationMin: number;
+  teamNames: Record<string, string>;
+}) {
+  const gameDurSec = gameDurationMin * 60;
+
+  // Seed clockSec depuis dernier event
+  const lastEvt = match.events?.[match.events.length - 1];
+  const seedSec = lastEvt?.matchClockSec ?? 0;
+  const [clockSec, setClockSec] = useState(seedSec);
+
+  // Mémorise le seed pour reset si le match change
+  const prevMatchId = useRef(match.id);
+  useEffect(() => {
+    if (prevMatchId.current !== match.id) {
+      prevMatchId.current = match.id;
+      setClockSec(lastEvt?.matchClockSec ?? 0);
+    }
+  }, [match.id, lastEvt?.matchClockSec]);
+
+  // Timer local — tourne uniquement si LIVE
+  useEffect(() => {
+    if (match.status !== "LIVE") return;
+    const interval = setInterval(() => setClockSec((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, [match.status, match.id]);
+
+  // Mise à jour du seed si un event SSE arrive avec un nouveau matchClockSec
+  useEffect(() => {
+    if (lastEvt?.matchClockSec !== undefined) {
+      setClockSec(lastEvt.matchClockSec);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastEvt?.id]);
+
+  const displaySec = Math.max(0, gameDurSec - clockSec);
+  const isOvertime = clockSec >= gameDurSec;
+
+  const clockColor = isOvertime
+    ? "var(--danger)"
+    : displaySec < 60
+    ? "var(--danger)"
+    : displaySec < 120
+    ? "#f59e0b"
+    : "var(--teal)";
+
+  const { notable, penaltiesByTeam } = buildMatchStats(match);
+
+  const teamAId = match.teamAId ?? "";
+  const teamBId = match.teamBId ?? "";
+  const penA = penaltiesByTeam[teamAId]?.count ?? 0;
+  const penB = penaltiesByTeam[teamBId]?.count ?? 0;
+
+  return (
+    <div className="match-card match-card--live match-card--detailed">
+      {/* Header */}
+      <div className="match-card__header">
+        <span className="pill">{match.courtName}</span>
+        <span className="match-card__clock" style={{ color: clockColor, fontVariantNumeric: "tabular-nums" }}>
+          {isOvertime ? `+${fmtClock(clockSec - gameDurSec)}` : fmtClock(displaySec)}
+        </span>
+        <span className="match-card__status--live">🔴 Live</span>
+      </div>
+
+      {/* Score principal */}
+      <div className="match-card__center">
+        <div className={`match-card__team${match.winnerTeamId === teamAId ? " match-winner" : ""}`}>
+          {match.teamA?.name ?? "TBD"}
+          {penA > 0 && <span className="match-card__pen">⚠️{penA}</span>}
+        </div>
+        <div className="match-card__score">
+          <span>{match.scoreA}</span>
+          <span style={{ opacity: 0.4, fontSize: 14 }}>–</span>
+          <span>{match.scoreB}</span>
+        </div>
+        <div className={`match-card__team${match.winnerTeamId === teamBId ? " match-winner" : ""}`}>
+          {match.teamB?.name ?? "TBD"}
+          {penB > 0 && <span className="match-card__pen">⚠️{penB}</span>}
+        </div>
+      </div>
+
+      {/* Events récents */}
+      {notable.length > 0 && (
+        <div className="match-card__events">
+          {notable.map((e) => {
+            const ep = e.payload as Record<string, unknown>;
+            const teamId = String(ep.teamId ?? "");
+            const teamName = teamNames[teamId] ?? teamId;
+            const playerName = String(ep.playerName ?? ep.playerId ?? "");
+            return (
+              <div key={e.id} className="match-card__event-row">
+                <span className="match-card__event-time">{fmtClock(e.matchClockSec)}</span>
+                <span>{eventIcon(e.type as string)}</span>
+                <span className="match-card__event-team">{teamName}</span>
+                {playerName && playerName !== "undefined" && (
+                  <span className="match-card__event-player">{playerName}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="match-card__footer">
+        <span className="pill">{PHASE_LABEL[match.phase] ?? match.phase} R{match.roundIndex + 1}</span>
+        {match.goldenGoal && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--yellow)" }}>🥇 But en or</span>}
+      </div>
+    </div>
+  );
+}
+
 export function LiveMatchTile({
   tournamentId,
   initialMatches,
+  gameDurationMin = 12,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
+  gameDurationMin?: number;
 }) {
-  const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
+  const [matches, setMatches] = useState<EnrichedMatch[]>(
+    initialMatches.map((m) => ({ ...m, events: (m.events ?? []) as MatchEvent[] }))
+  );
 
-  // SSE listener — même pattern que ScheduleBoard
+  // Noms des équipes pour les events
+  const teamNames: Record<string, string> = {};
+  matches.forEach((m) => {
+    if (m.teamAId && m.teamA?.name) teamNames[m.teamAId] = m.teamA.name;
+    if (m.teamBId && m.teamB?.name) teamNames[m.teamBId] = m.teamB.name;
+  });
+
+  // SSE listener
   useEffect(() => {
     const es = new EventSource(`/api/sse?tournamentId=${tournamentId}`);
     es.addEventListener("match", (event) => {
@@ -34,19 +211,27 @@ export function LiveMatchTile({
       if (payload?.type === "new_matches" && Array.isArray(payload.matches)) {
         setMatches((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
-          const newOnes = (payload.matches as MatchWithTeams[]).filter(
-            (m) => !existingIds.has(m.id)
-          );
+          const newOnes = (payload.matches as MatchWithTeams[])
+            .filter((m) => !existingIds.has(m.id))
+            .map((m) => ({ ...m, events: [] as MatchEvent[] }));
           return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
         });
         return;
       }
 
       if (payload?.data) {
-        const updated: MatchWithTeams = payload.data.match ?? payload.data;
-        if (updated.id) {
+        const updatedMatch: Partial<MatchWithTeams> = payload.data.match ?? payload.data;
+        const newEvent: MatchEvent | undefined = payload.data.event;
+
+        if (updatedMatch.id) {
           setMatches((prev) =>
-            prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
+            prev.map((m) => {
+              if (m.id !== updatedMatch.id) return m;
+              const updatedEvents = newEvent
+                ? [...m.events.filter((e) => e.id !== newEvent.id), newEvent]
+                : m.events;
+              return { ...m, ...updatedMatch, events: updatedEvents };
+            })
           );
         }
       }
@@ -54,19 +239,15 @@ export function LiveMatchTile({
     return () => es.close();
   }, [tournamentId]);
 
-  // Matchs LIVE en cours
   const liveMatches = matches.filter((m) => m.status === "LIVE");
-
-  // Prochains matchs SCHEDULED triés par heure (on deck / in the hole)
   const upcomingMatches = matches
     .filter((m) => m.status === "SCHEDULED")
     .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
 
-  // Jusqu'à 3 cartes au total : LIVE en premier, puis on complète avec les suivants
   const slotsLeft = Math.max(0, 3 - liveMatches.length);
-  const displayMatches = [...liveMatches, ...upcomingMatches.slice(0, slotsLeft)];
+  const upcomingToShow = upcomingMatches.slice(0, slotsLeft);
 
-  if (displayMatches.length === 0) {
+  if (liveMatches.length === 0 && upcomingToShow.length === 0) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 80 }}>
         <p className="meta" style={{ margin: 0, textAlign: "center" }}>
@@ -82,45 +263,37 @@ export function LiveMatchTile({
         {liveMatches.length > 0 ? "En cours & à venir" : "Prochains matchs"}
       </h3>
       <div className="live-match-tile__list">
-        {displayMatches.map((match) => (
-          <div
+        {/* Cartes LIVE enrichies */}
+        {liveMatches.map((match) => (
+          <LiveCard
             key={match.id}
-            className={`match-card match-card--${match.status.toLowerCase()}`}
-          >
+            match={match}
+            gameDurationMin={gameDurationMin}
+            teamNames={teamNames}
+          />
+        ))}
+
+        {/* Cartes scheduled classiques */}
+        {upcomingToShow.map((match) => (
+          <div key={match.id} className="match-card match-card--scheduled">
             <div className="match-card__corner match-card__corner--tl">
               <span className="pill">{match.courtName}</span>
             </div>
             <div className="match-card__corner match-card__corner--tr">
               <span>{formatTime(match.startAt)}</span>
             </div>
-
             <div className="match-card__center">
-              <div
-                className={`match-card__team${match.status === "FINISHED" && match.scoreA > match.scoreB ? " match-winner" : ""}`}
-              >
-                {match.teamA?.name ?? "TBD"}
-              </div>
+              <div className="match-card__team">{match.teamA?.name ?? "TBD"}</div>
               <div className="match-card__score">
-                <span>{match.scoreA}</span>
-                <span style={{ opacity: 0.4, fontSize: 14 }}>–</span>
-                <span>{match.scoreB}</span>
+                <span style={{ opacity: 0.4, fontSize: 14 }}>vs</span>
               </div>
-              <div
-                className={`match-card__team${match.status === "FINISHED" && match.scoreB > match.scoreA ? " match-winner" : ""}`}
-              >
-                {match.teamB?.name ?? "TBD"}
-              </div>
+              <div className="match-card__team">{match.teamB?.name ?? "TBD"}</div>
             </div>
-
             <div className="match-card__corner match-card__corner--bl">
-              <span className="pill">
-                {PHASE_LABEL[match.phase] ?? match.phase} R{match.roundIndex}
-              </span>
+              <span className="pill">{PHASE_LABEL[match.phase] ?? match.phase} R{match.roundIndex + 1}</span>
             </div>
-            <div
-              className={`match-card__corner match-card__corner--br match-card__status--${match.status.toLowerCase()}`}
-            >
-              <span>{STATUS_LABEL[match.status] ?? match.status}</span>
+            <div className="match-card__corner match-card__corner--br">
+              <span>{STATUS_LABEL[match.status]}</span>
             </div>
           </div>
         ))}

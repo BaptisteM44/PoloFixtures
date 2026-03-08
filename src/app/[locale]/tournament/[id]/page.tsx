@@ -79,8 +79,9 @@ export default async function TournamentPage({
 
   const session = await auth();
   const role = session?.user?.role;
-  const currentPlayerId = session?.user?.playerId ?? null;
+  const currentPlayerId = (session?.user as { playerId?: string } | undefined)?.playerId ?? null;
   const currentPlayerName = session?.user?.name ?? null;
+  const charterAccepted = !!((session?.user as { charterAccepted?: boolean } | undefined)?.charterAccepted);
   const canEdit =
     role === "ADMIN" ||
     (role === "ORGA" && session?.user?.tournamentId === tournament.id) ||
@@ -481,6 +482,7 @@ export default async function TournamentPage({
                 <LiveMatchTile
                   tournamentId={tournament.id}
                   initialMatches={tournament.matches}
+                  gameDurationMin={tournament.gameDurationMin}
                 />
               </div>
             )}
@@ -896,6 +898,7 @@ export default async function TournamentPage({
               <LiveMatchTile
                 tournamentId={tournament.id}
                 initialMatches={tournament.matches}
+                gameDurationMin={tournament.gameDurationMin}
               />
             </div>
 
@@ -909,6 +912,7 @@ export default async function TournamentPage({
                   currentPlayerName={currentPlayerName}
                   isOrga={isOrga}
                   creatorId={tournament.creatorId}
+                  charterAccepted={charterAccepted}
                   fullPage
                 />
               </div>

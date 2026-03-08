@@ -87,6 +87,7 @@ export default function MyTournamentsPage() {
   const [openChat, setOpenChat] = useState<string | null>(null);
 
   const playerId = (session?.user as any)?.playerId as string | null;
+  const charterAccepted = !!((session?.user as any)?.charterAccepted);
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") router.push("/login?next=/my-tournaments");
@@ -212,7 +213,7 @@ export default function MyTournamentsPage() {
                         </button>
                         {chatOpen && (
                           <div className="my-tournaments__chat-container">
-                            <TeamChat teamId={entry.teamId} currentPlayerId={playerId} teammates={entry.teammates} />
+                            <TeamChat teamId={entry.teamId} currentPlayerId={playerId} teammates={entry.teammates} charterAccepted={charterAccepted} />
                           </div>
                         )}
                       </div>
@@ -286,7 +287,7 @@ export default function MyTournamentsPage() {
 
                       {chatOpen && (
                         <div className="my-tournaments__chat-container">
-                          <TeamChat teamId={entry.teamId} currentPlayerId={playerId} teammates={entry.teammates} />
+                          <TeamChat teamId={entry.teamId} currentPlayerId={playerId} teammates={entry.teammates} charterAccepted={charterAccepted} />
                         </div>
                       )}
                     </div>

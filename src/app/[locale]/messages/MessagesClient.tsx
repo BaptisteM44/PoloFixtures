@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { CharterModal } from "@/components/CharterModal";
 
 type OtherPlayer = {
   id: string;
@@ -39,9 +40,11 @@ function formatRelative(iso: string) {
 export function MessagesClient({
   conversations,
   currentPlayerId,
+  charterAccepted: initialCharterAccepted,
 }: {
   conversations: ConvSummary[];
   currentPlayerId: string;
+  charterAccepted?: boolean;
 }) {
   const [activeId, setActiveId] = useState<string | null>(
     conversations[0]?.id ?? null
@@ -51,6 +54,8 @@ export function MessagesClient({
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [convList, setConvList] = useState(conversations);
+  const [localCharterAccepted, setLocalCharterAccepted] = useState(initialCharterAccepted ?? false);
+  const [showCharter, setShowCharter] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const activeConv = convList.find((c) => c.id === activeId) ?? null;
@@ -89,6 +94,7 @@ export function MessagesClient({
 
   const send = async () => {
     if (!activeId || !input.trim() || sending) return;
+    if (!localCharterAccepted) { setShowCharter(true); return; }
     setSending(true);
     const res = await fetch(`/api/direct-conversations/${activeId}/messages`, {
       method: "POST",
@@ -121,6 +127,8 @@ export function MessagesClient({
   }
 
   return (
+    <>
+    {showCharter && <CharterModal onAccepted={() => { setLocalCharterAccepted(true); setShowCharter(false); }} />}
     <div className="messages-layout">
       {/* ── Sidebar — conversation list ── */}
       <aside className="messages-sidebar">
@@ -213,5 +221,6 @@ export function MessagesClient({
         )}
       </main>
     </div>
+    </>
   );
 }

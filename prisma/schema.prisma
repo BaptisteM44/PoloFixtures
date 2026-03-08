@@ -336,6 +336,7 @@ model Player {
   createdOrgaTasks        OrgaTask[]   @relation("CreatedTasks")
   orgaNotes               OrgaNote[]   @relation("OrgaNotes")
   orgaLinks               OrgaLink[]   @relation("OrgaLinks")
+  refereedMatches         Match[]      @relation("RefereedMatches")
 }
 
 model PlayerAccount {
@@ -343,9 +344,10 @@ model PlayerAccount {
   email            String    @unique
   passwordHash     String
   playerId         String    @unique
-  resetToken       String?   @unique
-  resetTokenExpiry DateTime?
-  createdAt        DateTime  @default(now())
+  resetToken        String?   @unique
+  resetTokenExpiry  DateTime?
+  charterAcceptedAt DateTime?
+  createdAt         DateTime  @default(now())
 
   player Player @relation(fields: [playerId], references: [id])
 
@@ -353,11 +355,12 @@ model PlayerAccount {
 }
 
 model TeamPlayer {
-  id                 String  @id @default(cuid())
+  id                 String   @id @default(cuid())
   teamId             String
   playerId           String
-  isCaptain          Boolean @default(false)
-  needsAccommodation Boolean @default(false)
+  isCaptain          Boolean  @default(false)
+  needsAccommodation Boolean  @default(false)
+  registeredAt       DateTime @default(now())
 
   team   Team   @relation(fields: [teamId], references: [id])
   player Player @relation(fields: [playerId], references: [id])
@@ -411,11 +414,13 @@ model Match {
   nextMatchLoseId String?
   nextSlotLose    String?
   goldenGoal      Boolean     @default(false)
+  refereePlayerId String?
 
   tournament Tournament @relation(fields: [tournamentId], references: [id])
   pool       Pool?      @relation(fields: [poolId], references: [id])
   teamA      Team?      @relation("TeamA", fields: [teamAId], references: [id])
   teamB      Team?      @relation("TeamB", fields: [teamBId], references: [id])
+  referee    Player?    @relation("RefereedMatches", fields: [refereePlayerId], references: [id])
   events     MatchEvent[]
 
   @@index([tournamentId])

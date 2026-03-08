@@ -1546,18 +1546,35 @@ button:focus-visible,
   border-bottom: 2px solid var(--border);
   margin: 24px 0;
   gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.tabs-bar::-webkit-scrollbar { display: none; }
 
 .tabs {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 4px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
   padding-bottom: 0;
 }
 
 .tabs-right-slot {
   padding-bottom: 4px;
   flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .tabs-bar {
+    gap: 0;
+    margin: 16px 0;
+  }
+  .tab {
+    padding: 7px 12px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
 }
 
 .tab {
@@ -2206,6 +2223,94 @@ button:focus-visible,
   font-weight: 800;
   font-family: var(--font-display);
   flex-shrink: 0;
+}
+
+/* — Carte LIVE enrichie (layout flex column) — */
+.match-card--detailed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  position: relative;
+  min-height: unset;
+}
+
+.match-card--detailed .match-card__center {
+  position: static;
+  transform: none;
+  width: 100%;
+}
+
+.match-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.match-card__clock {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.match-card__status--live {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pink);
+}
+
+.match-card__pen {
+  font-size: 11px;
+  margin-left: 4px;
+  opacity: 0.8;
+}
+
+.match-card__events {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-top: 1px solid var(--border-light);
+  padding-top: 6px;
+  margin-top: 2px;
+}
+
+.match-card__event-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.match-card__event-time {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  min-width: 32px;
+}
+
+.match-card__event-team {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.match-card__event-player {
+  opacity: 0.7;
+  font-size: 10px;
+}
+
+.match-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
 /* — Statut : bordure colorée — */
@@ -4436,6 +4541,61 @@ textarea {
    BRACKET TREE
    ======================== */
 
+/* ── Scroll wrapper with fade indicators ── */
+.bracket-scroll-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.bracket-scroll-inner {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 0 16px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  cursor: grab;
+}
+
+.bracket-scroll-inner:active { cursor: grabbing; }
+
+/* Fade dégradé gauche/droite pour indiquer le scroll */
+.bracket-scroll-fade {
+  position: absolute;
+  top: 0;
+  bottom: 16px;
+  width: 48px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.bracket-scroll-fade--left {
+  left: 0;
+  background: linear-gradient(to right, var(--surface), transparent);
+}
+
+.bracket-scroll-fade--right {
+  right: 0;
+  background: linear-gradient(to left, var(--surface), transparent);
+}
+
+/* Flèche scroll visible quand on peut scroller à droite */
+.bracket-scroll-fade--right::after {
+  content: "›";
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text-muted);
+  animation: pulseRight 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseRight {
+  0%, 100% { opacity: 0.4; transform: translateY(-50%) translateX(0); }
+  50% { opacity: 1; transform: translateY(-50%) translateX(4px); }
+}
+
 .bracket-scroll {
   overflow-x: auto;
   padding-bottom: 16px;
@@ -4443,16 +4603,17 @@ textarea {
 
 .bracket-tree {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 0;
   min-width: max-content;
-  padding: 16px 0 24px;
+  padding: 16px 16px 24px;
 }
 
 .bracket-col {
   display: flex;
   flex-direction: column;
-  min-width: 220px;
+  width: 220px;
+  flex-shrink: 0;
 }
 
 .bracket-round-label,
@@ -4461,19 +4622,19 @@ textarea {
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 0 22px 12px;
+  padding: 0 22px 10px;
   color: var(--text-muted);
   white-space: nowrap;
 }
 
 .bracket-col-body {
   position: relative;
-  flex: 1;
+  width: 220px;
 }
 
 .bracket-slot {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   position: relative;
   box-sizing: border-box;
 }
@@ -4504,6 +4665,11 @@ textarea {
 
 .bracket-match-card--live {
   border-color: var(--pink) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--pink) 20%, transparent);
+}
+
+.bracket-match-card--finished {
+  border-color: var(--success) !important;
 }
 
 .bracket-match-card--selected {
@@ -4513,18 +4679,37 @@ textarea {
   pointer-events: none;
 }
 
-.bracket-live-badge {
-  background: var(--pink);
-  color: var(--border);
+/* Numéro de match (ordre chronologique) */
+.bracket-match-number {
   font-size: 9px;
   font-family: var(--font-display);
-  font-weight: 700;
-  text-align: center;
-  letter-spacing: 0.1em;
-  padding: 2px;
+  font-weight: 800;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-bottom: 1px solid var(--border-light);
+  letter-spacing: 0.05em;
 }
 
-.bracket-team-row {
+/* Indicateur LIVE */
+.bracket-live-indicator {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 9px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--pink);
+  letter-spacing: 0.1em;
+  animation: pulseLive 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulseLive {
+  from { opacity: 1; }
+  to { opacity: 0.4; }
+}
+
+/* Rangée équipe dans la carte */
+.bracket-team {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -4533,9 +4718,7 @@ textarea {
   border-top: 1px solid var(--border-light);
 }
 
-.bracket-team-row:first-of-type {
-  border-top: none;
-}
+.bracket-team:first-of-type { border-top: none; }
 
 .bracket-team-row--winner {
   background: var(--teal);
@@ -4558,7 +4741,7 @@ textarea {
   flex-shrink: 0;
 }
 
-/* Right connector line extending out of a bracket card */
+/* Connectors */
 .bracket-connector-right {
   flex-shrink: 0;
   width: 20px;
@@ -4567,7 +4750,14 @@ textarea {
   align-self: center;
 }
 
-/* Left connector group (vertical bar + horizontal line) */
+.bracket-connector-left {
+  flex-shrink: 0;
+  width: 20px;
+  height: 2px;
+  background: var(--border-light);
+  align-self: center;
+}
+
 .bracket-connectors-left {
   flex-shrink: 0;
   width: 20px;
@@ -6377,5 +6567,202 @@ details[open] .my-tournaments__section-title--summary::after {
   }
   .club-sidebar {
     position: static;
+  }
+}
+
+/* ── Charter Modal ─────────────────────────────────────────────────────────── */
+
+.charter-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.charter-modal {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px 28px 24px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.charter-modal__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.charter-modal__title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.charter-modal__list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.charter-modal__list li {
+  display: flex;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.charter-modal__check {
+  color: var(--teal);
+  font-weight: 800;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.charter-modal__actions {
+  border-top: 1px solid var(--border-light);
+  padding-top: 20px;
+}
+
+.charter-modal__checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* ── Legal pages ───────────────────────────────────────────────────────────── */
+
+.legal-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 16px 80px;
+}
+
+.legal-page h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.legal-intro {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin-bottom: 32px;
+  line-height: 1.6;
+  border-left: 3px solid var(--teal);
+  padding-left: 14px;
+}
+
+.legal-page section {
+  margin-bottom: 32px;
+}
+
+.legal-page h2 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 6px;
+}
+
+.legal-page p,
+.legal-page li {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.legal-page ul {
+  padding-left: 20px;
+  margin-bottom: 10px;
+}
+
+.legal-page a {
+  color: var(--teal);
+  text-decoration: underline;
+}
+
+.legal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.legal-table th,
+.legal-table td {
+  padding: 8px 12px;
+  border: 1px solid var(--border-light);
+  text-align: left;
+  line-height: 1.4;
+}
+
+.legal-table th {
+  background: var(--surface-2);
+  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.legal-updated {
+  margin-top: 40px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Site footer ───────────────────────────────────────────────────────────── */
+
+.site-footer {
+  border-top: 1px solid var(--border-light);
+  padding: 16px 24px;
+  margin-top: 40px;
+}
+
+.site-footer__links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.site-footer__sep {
+  color: var(--border);
+  font-size: 12px;
+}
+
+.site-footer__links a:hover {
+  color: var(--text);
+}
+
+@media (max-width: 600px) {
+  .site-footer__links {
+    gap: 6px;
   }
 }

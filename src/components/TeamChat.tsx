@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { CharterModal } from "./CharterModal";
 
 type Author = { id: string; name: string; photoPath: string | null };
 type Message = { id: string; content: string; createdAt: string; author: Author };
@@ -9,6 +10,7 @@ type Props = {
   teamId: string;
   currentPlayerId: string;
   teammates: { id: string; name: string }[];
+  charterAccepted?: boolean;
 };
 
 const CHAT_COLORS = 12;
@@ -21,12 +23,14 @@ function authorColorIndex(id: string): number {
   return Math.abs(hash) % CHAT_COLORS;
 }
 
-export function TeamChat({ teamId, currentPlayerId, teammates }: Props) {
+export function TeamChat({ teamId, currentPlayerId, teammates, charterAccepted: initialCharterAccepted }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [localCharterAccepted, setLocalCharterAccepted] = useState(initialCharterAccepted ?? false);
+  const [showCharter, setShowCharter] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
 
@@ -62,6 +66,7 @@ export function TeamChat({ teamId, currentPlayerId, teammates }: Props) {
     e.preventDefault();
     const content = text.trim();
     if (!content) return;
+    if (!localCharterAccepted) { setShowCharter(true); return; }
     setSending(true);
     setError(null);
     const res = await fetch(`/api/teams/${teamId}/messages`, {
@@ -81,6 +86,8 @@ export function TeamChat({ teamId, currentPlayerId, teammates }: Props) {
   };
 
   return (
+    <>
+    {showCharter && <CharterModal onAccepted={() => { setLocalCharterAccepted(true); setShowCharter(false); }} />}
     <div className="team-chat">
       <div className="team-chat__messages" ref={containerRef}>
         {loading && <p className="meta" style={{ textAlign: "center", padding: 16 }}>Chargement…</p>}
@@ -125,5 +132,6 @@ export function TeamChat({ teamId, currentPlayerId, teammates }: Props) {
 
       {error && <p className="error" style={{ margin: "4px 0 0", fontSize: 12 }}>{error}</p>}
     </div>
+    </>
   );
 }
