@@ -9,6 +9,7 @@ import SessionProvider from "@/components/SessionProvider";
 import { Header } from "@/components/Header";
 import { ContactAdminModal } from "@/components/ContactAdminModal";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const space = Space_Grotesk({
   subsets: ["latin"],
@@ -74,6 +75,7 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
             </footer>
           </SessionProvider>
         </NextIntlClientProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
