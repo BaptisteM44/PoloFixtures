@@ -37,7 +37,14 @@ export default auth((req) => {
   }
 
   // ── Pages nécessitant un compte joueur ─────────────────────────────────────
-  if (bare.startsWith("/account") || bare.startsWith("/my-tournaments")) {
+  if (
+    bare.startsWith("/account") ||
+    bare.startsWith("/my-tournaments") ||
+    bare.startsWith("/club/new") ||
+    bare.startsWith("/tournament/new") ||
+    bare.startsWith("/messages") ||
+    bare.startsWith("/my-teams")
+  ) {
     if (!session?.user?.playerId) {
       const url = req.nextUrl.clone();
       url.pathname = `${localePrefix}/login`;
