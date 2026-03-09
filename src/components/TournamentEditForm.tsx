@@ -280,7 +280,26 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </label>
           <label className="field-row">
             Fin inscriptions
-            <input type="datetime-local" name="registrationEnd" defaultValue={tournament.registrationEnd ? new Date(tournament.registrationEnd).toISOString().slice(0, 16) : ""} />
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="datetime-local"
+                name="registrationEnd"
+                id="registrationEnd"
+                defaultValue={tournament.registrationEnd ? new Date(tournament.registrationEnd).toISOString().slice(0, 16) : ""}
+                style={{ flex: 1 }}
+              />
+              <button
+                type="button"
+                className="ghost"
+                style={{ fontSize: 12, whiteSpace: "nowrap", padding: "4px 10px" }}
+                onClick={() => {
+                  const input = document.getElementById("registrationEnd") as HTMLInputElement;
+                  if (input) input.value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                }}
+              >
+                Clôturer maintenant
+              </button>
+            </div>
           </label>
           <label className="field-row">
             Format
