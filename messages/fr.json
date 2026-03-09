@@ -639,7 +639,8 @@
     "error_name_short": "Nom trop court (2 car. min)",
     "error_create": "Erreur lors de la création",
     "btn_creating": "Création…",
-    "btn_submit": "Créer l'équipe"
+    "btn_submit": "Créer l'équipe",
+    "login_required": "Connecte-toi pour voir tes équipes."
   },
   "my_tournaments": {
     "page_title": "Mes tournois",
@@ -812,7 +813,8 @@
     "empty": "Aucune conversation.",
     "input_placeholder": "Écris ton message…",
     "btn_send": "Envoyer",
-    "new_conversation": "Nouvelle conversation"
+    "new_conversation": "Nouvelle conversation",
+    "login_required": "Connecte-toi pour accéder à tes messages."
   },
   "referee": {
     "page_title": "Console arbitrage",

@@ -1,6 +1,5 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { MessagesClient } from "./MessagesClient";
 
@@ -8,7 +7,11 @@ export default async function MessagesPage() {
   const t = await getTranslations("messages");
   const session = await auth();
   const playerId = (session?.user as { playerId?: string } | undefined)?.playerId;
-  if (!playerId) redirect("/");
+  if (!playerId) return (
+    <div style={{ textAlign: "center", padding: "64px 24px", color: "var(--text-muted)", fontSize: 15 }}>
+      {t("login_required")}
+    </div>
+  );
 
   const account = await prisma.playerAccount.findUnique({ where: { playerId }, select: { charterAcceptedAt: true } });
   const charterAccepted = !!account?.charterAcceptedAt;

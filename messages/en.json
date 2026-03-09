@@ -639,7 +639,8 @@
     "error_name_short": "Name too short (min. 2 chars)",
     "error_create": "Error creating the team",
     "btn_creating": "Creating…",
-    "btn_submit": "Create team"
+    "btn_submit": "Create team",
+    "login_required": "Log in to view your teams."
   },
   "my_tournaments": {
     "page_title": "My tournaments",
@@ -812,7 +813,8 @@
     "empty": "No conversations.",
     "input_placeholder": "Write your message…",
     "btn_send": "Send",
-    "new_conversation": "New conversation"
+    "new_conversation": "New conversation",
+    "login_required": "Log in to access your messages."
   },
   "referee": {
     "page_title": "Referee console",

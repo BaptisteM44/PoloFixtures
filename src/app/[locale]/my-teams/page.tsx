@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { CreateSquadForm } from "@/components/CreateSquadForm";
@@ -9,7 +8,11 @@ export default async function MyTeamsPage() {
   const t = await getTranslations("my_teams");
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) redirect("/login");
+  if (!playerId) return (
+    <div style={{ textAlign: "center", padding: "64px 24px", color: "var(--text-muted)", fontSize: 15 }}>
+      {t("login_required")}
+    </div>
+  );
 
   const squads = await prisma.squad.findMany({
     where: { members: { some: { playerId } } },

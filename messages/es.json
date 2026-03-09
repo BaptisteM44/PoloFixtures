@@ -508,7 +508,8 @@
     "btn_leave": "Leave team",
     "btn_disband": "Disband team",
     "role_captain": "Captain",
-    "role_member": "Member"
+    "role_member": "Member",
+    "login_required": "Inicia sesión para ver tus equipos."
   },
   "my_tournaments": {
     "page_title": "My tournaments",
@@ -589,7 +590,8 @@
     "empty": "No conversations.",
     "input_placeholder": "Write your message…",
     "btn_send": "Send",
-    "new_conversation": "New conversation"
+    "new_conversation": "New conversation",
+    "login_required": "Inicia sesión para acceder a tus mensajes."
   },
   "referee": {
     "page_title": "Referee console",
