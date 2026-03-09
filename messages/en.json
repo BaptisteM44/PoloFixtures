@@ -27,7 +27,10 @@
     "on": "on",
     "at": "at",
     "in": "in",
-    "of": "of"
+    "of": "of",
+    "auth_required_title": "Login required",
+    "auth_required_desc": "You must be logged in to access this page.",
+    "auth_required_btn": "Log in"
   },
   "seo": {
     "site_name": "PoloFixtures",

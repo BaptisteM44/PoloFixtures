@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "@/i18n/navigation";
+import { useSession } from "next-auth/react";
+import { useRouter, Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { COUNTRIES } from "@/lib/countries";
 
@@ -9,6 +10,22 @@ export default function NewClubPage() {
   const t = useTranslations("club");
   const tc = useTranslations("common");
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  if (status === "loading") return null;
+  if (!session?.user?.playerId) {
+    return (
+      <div className="page">
+        <div className="panel" style={{ textAlign: "center", padding: 48 }}>
+          <h2>{tc("auth_required_title")}</h2>
+          <p style={{ color: "var(--text-muted)" }}>{tc("auth_required_desc")}</p>
+          <Link href="/login?next=/club/new" className="primary" style={{ marginTop: 16, display: "inline-block" }}>
+            {tc("auth_required_btn")}
+          </Link>
+        </div>
+      </div>
+    );
+  }
   const [form, setForm] = useState({
     name: "", city: "", country: "France", description: "", website: "",
   });

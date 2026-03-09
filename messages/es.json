@@ -27,7 +27,10 @@
     "on": "on",
     "at": "at",
     "in": "in",
-    "of": "of"
+    "of": "of",
+    "auth_required_title": "Inicio de sesión requerido",
+    "auth_required_desc": "Debe estar conectado para acceder a esta página.",
+    "auth_required_btn": "Iniciar sesión"
   },
   "seo": {
     "site_name": "PoloFixtures",

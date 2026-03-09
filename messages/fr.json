@@ -27,7 +27,10 @@
     "on": "le",
     "at": "à",
     "in": "à",
-    "of": "de"
+    "of": "de",
+    "auth_required_title": "Connexion requise",
+    "auth_required_desc": "Vous devez être connecté pour accéder à cette page.",
+    "auth_required_btn": "Se connecter"
   },
   "seo": {
     "site_name": "PoloFixtures",
