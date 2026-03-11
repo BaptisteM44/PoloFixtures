@@ -88,6 +88,12 @@ export function NotificationBell() {
     router.push(href as any);
   };
 
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    await fetch(`/api/notifications?id=${id}`, { method: "DELETE" });
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
   return (
     <div ref={ref} style={{ position: "relative" }}>
       <button
@@ -102,7 +108,7 @@ export function NotificationBell() {
         {unread > 0 && (
           <span style={{
             position: "absolute", top: -6, right: -6,
-            background: "var(--pink)", color: "#fff",
+            background: "var(--coral)", color: "#fff",
             borderRadius: "50%", width: 18, height: 18,
             fontSize: 10, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center",
@@ -130,21 +136,39 @@ export function NotificationBell() {
               {notifications.slice(0, 10).map((n) => {
                 const { title, sub, href } = notifLabel(n);
                 return (
-                  <button
+                  <div
                     key={n.id}
-                    onClick={() => handleClick(href)}
                     style={{
-                      display: "block", width: "100%", textAlign: "left",
-                      padding: "12px 16px", border: "none", background: n.read ? "transparent" : "color-mix(in srgb, var(--teal) 6%, var(--surface))",
-                      borderBottom: "1px solid var(--border-light)", cursor: "pointer",
+                      display: "flex", alignItems: "flex-start",
+                      background: n.read ? "transparent" : "color-mix(in srgb, var(--teal) 6%, var(--surface))",
+                      borderBottom: "1px solid var(--border-light)",
                     }}
                   >
-                    <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: n.read ? 400 : 700 }}>{title}</p>
-                    {sub && <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>{sub}</p>}
-                    <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--text-muted)" }}>
-                      {new Date(n.createdAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </button>
+                    <button
+                      onClick={() => handleClick(href)}
+                      style={{
+                        flex: 1, textAlign: "left", padding: "12px 16px",
+                        border: "none", background: "transparent", cursor: "pointer",
+                      }}
+                    >
+                      <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: n.read ? 400 : 700 }}>{title}</p>
+                      {sub && <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>{sub}</p>}
+                      <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--text-muted)" }}>
+                        {new Date(n.createdAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(e, n.id)}
+                      style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        color: "var(--text-muted)", padding: "10px 10px 10px 0",
+                        fontSize: 14, lineHeight: 1, flexShrink: 0,
+                      }}
+                      title="Supprimer"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 );
               })}
             </div>

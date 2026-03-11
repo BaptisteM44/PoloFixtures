@@ -1,23 +1,19 @@
-import { uploadsEnabled } from "@/lib/uploads";
 import { nanoid } from "nanoid";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
 import sharp from "sharp";
+import { createClient } from "@supabase/supabase-js";
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
 export async function POST(request: Request) {
   const formData = await request.formData();
-  const base64 = formData.get("base64");
-
-  if (!uploadsEnabled()) {
-    if (typeof base64 === "string") {
-      return Response.json({ path: base64, isBase64: true });
-    }
-    return new Response("Uploads disabled", { status: 400 });
-  }
-
   const file = formData.get("file");
+  const folder = (formData.get("folder") as string) || "misc";
+
   if (!file || typeof file === "string") {
     return new Response("Missing file", { status: 400 });
   }
@@ -29,22 +25,28 @@ export async function POST(request: Request) {
     return new Response("Fichier trop volumineux (max 5 Mo)", { status: 413 });
   }
 
-  // Vérifier que c'est bien une image
-  const mime = file.type ?? "";
+  const mime = (file as File).type ?? "";
   if (!mime.startsWith("image/")) {
     return new Response("Seules les images sont acceptées", { status: 415 });
   }
 
-  // Convertir en WebP avec Sharp
-  const webpBuffer = await sharp(buffer)
-    .webp({ quality: 82 })
-    .toBuffer();
+  const webpBuffer = await sharp(buffer).webp({ quality: 82 }).toBuffer();
 
-  const filename = `${nanoid(8)}.webp`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads");
+  const filename = `${folder}/${nanoid(8)}.webp`;
 
-  await mkdir(uploadDir, { recursive: true });
-  await writeFile(path.join(uploadDir, filename), webpBuffer);
+  const { error } = await supabase.storage
+    .from("uploads")
+    .upload(filename, webpBuffer, {
+      contentType: "image/webp",
+      upsert: false,
+    });
 
-  return Response.json({ path: `/uploads/${filename}`, isBase64: false });
+  if (error) {
+    console.error("Supabase upload error:", error);
+    return new Response("Erreur upload", { status: 500 });
+  }
+
+  const { data } = supabase.storage.from("uploads").getPublicUrl(filename);
+
+  return Response.json({ path: data.publicUrl, isBase64: false });
 }
