@@ -78,7 +78,7 @@ function TournamentRow({
         </button>
         <button
           className="ghost"
-          style={{ fontSize: 12, padding: "6px 14px", borderColor: "var(--pink)", color: "var(--pink)" }}
+          style={{ fontSize: 12, padding: "6px 14px", borderColor: "var(--coral)", color: "var(--coral)" }}
           onClick={() => onReject(t.id)}
         >
           ✗ Refuser
@@ -172,7 +172,7 @@ export function AdminTournamentsPanel({
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
               <button className="ghost" onClick={closeRejectModal} disabled={rejectSubmitting}>Annuler</button>
               <button
-                style={{ background: "var(--pink)", color: "#fff", border: "2px solid var(--pink)", borderRadius: "var(--radius)", padding: "8px 18px", fontWeight: 700, cursor: "pointer", fontSize: 13 }}
+                style={{ background: "var(--coral)", color: "#fff", border: "2px solid var(--coral)", borderRadius: "var(--radius)", padding: "8px 18px", fontWeight: 700, cursor: "pointer", fontSize: 13 }}
                 onClick={handleRejectSubmit}
                 disabled={rejectSubmitting || rejectReason.trim().length < 10}
               >
@@ -207,7 +207,7 @@ export function AdminTournamentsPanel({
           <h2 style={{ marginBottom: 16 }}>Tournois refusés <span style={{ fontSize: 14, fontWeight: 400, color: "var(--text-muted)" }}>({rejected.length})</span></h2>
           <div style={{ display: "grid", gap: 12 }}>
             {rejected.map((t) => (
-              <div key={t.id} className="panel" style={{ borderColor: "color-mix(in srgb, var(--pink) 40%, var(--border))" }}>
+              <div key={t.id} className="panel" style={{ borderColor: "color-mix(in srgb, var(--coral) 40%, var(--border))" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
                   <div>
                     <strong style={{ fontFamily: "var(--font-display)", fontSize: 15 }}>{t.name}</strong>
@@ -216,8 +216,8 @@ export function AdminTournamentsPanel({
                   </div>
                   <Link href={`/tournament/${t.id}/edit`} className="ghost" style={{ fontSize: 12, flexShrink: 0 }}>Voir édition →</Link>
                 </div>
-                <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, background: "color-mix(in srgb, var(--pink) 8%, var(--surface))", border: "1.5px solid color-mix(in srgb, var(--pink) 30%, var(--border))" }}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "var(--pink)", margin: "0 0 4px" }}>Raison du refus :</p>
+                <div style={{ marginTop: 12, padding: "10px 14px", borderRadius: 8, background: "color-mix(in srgb, var(--coral) 8%, var(--surface))", border: "1.5px solid color-mix(in srgb, var(--coral) 30%, var(--border))" }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: "var(--coral)", margin: "0 0 4px" }}>Raison du refus :</p>
                   <p style={{ fontSize: 13, margin: 0 }}>{t.rejectionReason}</p>
                 </div>
               </div>

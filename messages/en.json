@@ -771,6 +771,8 @@
     "btn_create": "Create club",
     "btn_creating": "Creating…",
     "btn_edit": "Edit",
+    "btn_save": "Save changes",
+    "btn_saving": "Saving…",
     "btn_back_country": "← {country}",
     "members_title": "Players ({count})",
     "members_empty": "No members yet.",

@@ -79,7 +79,7 @@ export function CreateSquadForm() {
           {logoPath && (
             <div style={{ position: "relative" }}>
               <img src={logoPath} alt="Logo" style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border)" }} />
-              <button type="button" onClick={() => setLogoPath("")} style={{ position: "absolute", top: -6, right: -6, background: "var(--danger)", color: "#fff", border: "none", borderRadius: "50%", width: 18, height: 18, cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+              <button type="button" onClick={() => setLogoPath("")} style={{ position: "absolute", top: -6, right: -6, background: "var(--danger)", color: "#fff", border: "none", borderRadius: "50%", width: 20, height: 20, minWidth: 20, minHeight: 20, padding: 0, cursor: "pointer", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" }}>✕</button>
             </div>
           )}
           <input ref={logoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleLogoUpload} />

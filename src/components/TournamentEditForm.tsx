@@ -209,7 +209,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
       )}
 
       {error && (
-        <div style={{ background: "var(--pink)", border: "2px solid var(--border)", borderRadius: 8, padding: "10px 16px", marginBottom: 16, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14 }}>
+        <div style={{ background: "var(--orange)", border: "2px solid var(--border)", borderRadius: 8, padding: "10px 16px", marginBottom: 16, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14 }}>
           {error}
         </div>
       )}
@@ -398,7 +398,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             {bannerPath && (
               <div style={{ position: "relative", display: "inline-block" }}>
                 <img src={bannerPath} alt="Affiche" style={{ height: 100, borderRadius: 8, border: "2px solid var(--border)", objectFit: "cover" }} />
-                <button type="button" onClick={() => setBannerPath("")} style={{ position: "absolute", top: -8, right: -8, background: "var(--danger)", color: "#fff", border: "none", borderRadius: "50%", width: 22, height: 22, cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                <button type="button" onClick={() => setBannerPath("")} style={{ position: "absolute", top: -8, right: -8, background: "var(--danger)", color: "#fff", border: "none", borderRadius: "50%", width: 22, height: 22, minWidth: 22, minHeight: 22, padding: 0, cursor: "pointer", fontSize: 12, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
               </div>
             )}
             <div>

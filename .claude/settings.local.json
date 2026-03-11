@@ -4,7 +4,14 @@
       "Bash(lsof -i -P)",
       "Bash(npx next build)",
       "Bash(node -e \":*)",
-      "Bash(npx prisma db push)"
+      "Bash(npx prisma db push)",
+      "Bash(grep -n \"auth\\(\\)\" src/app/[locale]/tournament/[id]/edit/actions.ts)",
+      "Bash(grep -n \"getOrgaPlayerId\\\\|hasAtLeastRole\\\\|playerId.*tournament\\\\|tournament.*playerId\" src/app/api/tournaments/[id]/route.ts)",
+      "Bash(grep -n \"auth\\(\\)\\\\|session\\\\|playerId\\\\|getOrgaPlayerId\" src/app/[locale]/tournament/[id]/edit/actions.ts)",
+      "Bash(npm run build)"
+       "Bash(mkdir:*)",
+      "Bash(ls:*)",
+      "Bash(git status:*)"
     ]
   }
 }

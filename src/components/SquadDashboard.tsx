@@ -264,7 +264,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                 <>
                   <button className="ghost" style={{ fontSize: 12 }} onClick={() => setActiveTab("invitations")}>👥 Inviter</button>
                   <button className="ghost" style={{ fontSize: 12 }} onClick={() => setEditing(true)}>✏️ Modifier</button>
-                  <button className="ghost" style={{ fontSize: 12, borderColor: "var(--pink)", color: "var(--pink)" }} onClick={handleDelete}>Supprimer</button>
+                  <button className="ghost" style={{ fontSize: 12, borderColor: "var(--coral)", color: "var(--coral)" }} onClick={handleDelete}>Supprimer</button>
                 </>
               )}
               {!isCaptain && (
@@ -368,7 +368,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                         → Cap
                       </button>
                     )}
-                    <button className="ghost" style={{ fontSize: 11, padding: "4px 10px", color: "var(--pink)", borderColor: "var(--pink)" }} onClick={() => handleKick(m.playerId)}>
+                    <button className="ghost" style={{ fontSize: 11, padding: "4px 10px", color: "var(--coral)", borderColor: "var(--coral)" }} onClick={() => handleKick(m.playerId)}>
                       Exclure
                     </button>
                   </div>

@@ -44,7 +44,7 @@ export default async function AdminPage() {
         </div>
         {rejectedTournaments > 0 && (
           <div className="panel" style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 36, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--pink)" }}>{rejectedTournaments}</div>
+            <div style={{ fontSize: 36, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--coral)" }}>{rejectedTournaments}</div>
             <p className="meta">{t("rejected_tournaments")}</p>
           </div>
         )}

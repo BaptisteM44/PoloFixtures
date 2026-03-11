@@ -1,6 +1,6 @@
 /* ================================================
    HARDCOURT POLO — Retro 90s Design System
-   Palette: #fcfbf5 #e7e7e7 #60c9cf #ffa2af #fffc8a
+   Palette: #fcfbf5 #e7e7e7 #60c9cf #ff7c6e #fffc8a #c9a8f5 #ffb347
    ================================================ */
 
 :root {
@@ -20,13 +20,15 @@
 
   /* Accents */
   --teal:   #60c9cf;
-  --pink:   #ffa2af;
+  --coral:  #ff7c6e;
   --yellow: #fffc8a;
+  --purple: #c9a8f5;
+  --orange: #ffb347;
   --gray:   #e7e7e7;
 
   /* Semantic */
   --accent:   var(--teal);
-  --accent-2: var(--pink);
+  --accent-2: var(--coral);
   --danger:   #e84040;
   --success:  #2db37a;
 
@@ -162,7 +164,7 @@ a {
   display: block;
 }
 
-.about-mockup__bar span:nth-child(1) { background: var(--pink); }
+.about-mockup__bar span:nth-child(1) { background: var(--coral); }
 .about-mockup__bar span:nth-child(2) { background: var(--yellow); }
 .about-mockup__bar span:nth-child(3) { background: var(--teal); }
 
@@ -787,7 +789,7 @@ button,
 }
 
 .danger-btn {
-  background: var(--pink);
+  background: var(--coral);
   color: var(--text);
   box-shadow: var(--shadow);
 }
@@ -1321,7 +1323,7 @@ button:focus-visible,
   white-space: nowrap;
   flex-shrink: 0;
 }
-.orga-priority-badge--urgent { background: var(--pink); }
+.orga-priority-badge--urgent { background: var(--coral); }
 .orga-priority-badge--high   { background: var(--yellow); }
 .orga-priority-badge--medium { background: var(--teal); }
 .orga-priority-badge--low    { background: var(--surface-2); }
@@ -1546,34 +1548,68 @@ button:focus-visible,
   border-bottom: 2px solid var(--border);
   margin: 24px 0;
   gap: 8px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+  position: relative;
+  z-index: 2;
+  /* No overflow here — rightSlot must never be clipped */
 }
-.tabs-bar::-webkit-scrollbar { display: none; }
 
 .tabs {
   display: flex;
   gap: 4px;
   flex-wrap: nowrap;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   padding-bottom: 0;
 }
+.tabs::-webkit-scrollbar { display: none; }
 
 .tabs-right-slot {
   padding-bottom: 4px;
   flex-shrink: 0;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .tabs-bar {
-    gap: 0;
-    margin: 16px 0;
+    flex-direction: column;
+    align-items: stretch;
+    border-bottom: none;
+    gap: 6px;
+    margin: 12px 0 16px;
+  }
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 4px;
+    overflow: visible;
+    flex: none;
+    width: 100%;
+  }
+  .tabs-right-slot {
+    padding-bottom: 0;
+    width: 100%;
+  }
+  .tabs-right-slot > * {
+    width: 100%;
+    text-align: center;
+    display: block;
   }
   .tab {
-    padding: 7px 12px;
-    font-size: 11px;
+    border-radius: var(--radius-sm) !important;
+    border: 2px solid var(--border) !important;
+    border-bottom: 2px solid var(--border) !important;
+    margin-bottom: 0 !important;
+    text-align: center;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tab.active {
+    background: var(--text) !important;
+    color: var(--bg) !important;
+    border-color: var(--text) !important;
   }
 }
 
@@ -1592,6 +1628,8 @@ button:focus-visible,
   background: none;
   color: var(--text-muted);
   margin-bottom: -2px;
+  position: relative;
+  z-index: 1;
 }
 
 .tab.active {
@@ -1599,13 +1637,15 @@ button:focus-visible,
   border-color: var(--border);
   border-bottom-color: var(--surface);
   color: var(--text);
+  z-index: 3;
 }
 
 .tab:not(.active):hover {
   color: var(--text);
-  background: var(--bg);
-  border: 2px solid black;
+  background: var(--gray);
+  border: 2px solid var(--border);
   border-bottom: none;
+  z-index: 2;
 }
 
 /* ========================
@@ -1964,7 +2004,7 @@ button:focus-visible,
   letter-spacing: 0.06em;
   padding: 2px 7px;
   border-radius: 4px;
-  background: var(--pink);
+  background: var(--coral);
   color: #fff;
 }
 
@@ -2009,12 +2049,12 @@ button:focus-visible,
 }
 
 .hero-countdown--live {
-  border-color: var(--pink);
-  background: color-mix(in srgb, var(--pink) 10%, var(--surface));
+  border-color: var(--coral);
+  background: color-mix(in srgb, var(--coral) 10%, var(--surface));
 }
 
 .hero-countdown--live .hero-countdown__value {
-  color: var(--pink);
+  color: var(--coral);
 }
 
 .hero-countdown--done {
@@ -2026,7 +2066,7 @@ button:focus-visible,
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--pink);
+  background: var(--coral);
   animation: live-pulse 1.2s ease-in-out infinite;
 }
 
@@ -2055,7 +2095,7 @@ button:focus-visible,
 }
 
 .schedule-round--active {
-  border-color: var(--pink);
+  border-color: var(--coral);
 }
 
 .schedule-round--finished {
@@ -2096,9 +2136,9 @@ button:focus-visible,
 }
 
 .schedule-round__badge--live {
-  background: var(--pink);
+  background: var(--coral);
   color: white;
-  border-color: var(--pink);
+  border-color: var(--coral);
 }
 
 .schedule-round__badge--scheduled {
@@ -2260,7 +2300,7 @@ button:focus-visible,
 .match-card__status--live {
   font-size: 11px;
   font-weight: 700;
-  color: var(--pink);
+  color: var(--coral);
 }
 
 .match-card__pen {
@@ -2315,8 +2355,8 @@ button:focus-visible,
 
 /* — Statut : bordure colorée — */
 .match-card--live {
-  border-color: var(--pink);
-  box-shadow: 4px 4px 0px var(--pink);
+  border-color: var(--coral);
+  box-shadow: 4px 4px 0px var(--coral);
 }
 
 .match-card--finished {
@@ -2800,7 +2840,7 @@ button:focus-visible,
   font-size: 40px;
   font-family: var(--font-display);
   font-weight: 700;
-  background: var(--pink);
+  background: var(--coral);
   border: 2px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 8px 16px;
@@ -2854,7 +2894,7 @@ button:focus-visible,
 }
 
 .danger {
-  background: var(--pink);
+  background: var(--coral);
   color: var(--text);
   border: 2px solid var(--border);
 }
@@ -4173,7 +4213,7 @@ textarea {
   letter-spacing: 2px;
 }
 .pkmn-card__rarity-stars--uncommon { color: var(--teal); }
-.pkmn-card__rarity-stars--rare     { color: var(--pink); }
+.pkmn-card__rarity-stars--rare     { color: var(--coral); }
 .pkmn-card__rarity-stars--epic     { color: #a855f7; text-shadow: 0 0 8px rgba(168,85,247,0.5); }
 .pkmn-card__rarity-stars--mythic {
   background: linear-gradient(90deg, #a855f7, #ec4899, #f97316, #a855f7);
@@ -4218,7 +4258,7 @@ textarea {
   opacity: 0.7;
 }
 .pkmn-card__attack-rarity--common    { color: var(--text-muted); }
-.pkmn-card__attack-rarity--rare      { color: var(--pink); }
+.pkmn-card__attack-rarity--rare      { color: var(--coral); }
 .pkmn-card__attack-rarity--epic      { color: #a855f7; }
 .pkmn-card__attack-rarity--legendary { color: #fffc8a; }
 
@@ -4491,8 +4531,8 @@ textarea {
 }
 
 .match-btn--live {
-  border-color: var(--pink);
-  background: color-mix(in srgb, var(--pink) 8%, transparent);
+  border-color: var(--coral);
+  background: color-mix(in srgb, var(--coral) 8%, transparent);
 }
 
 .match-btn--finished {
@@ -4528,7 +4568,7 @@ textarea {
 }
 
 .match-status--live {
-  color: var(--pink);
+  color: var(--coral);
   font-weight: 700;
   font-family: var(--font-display);
 }
@@ -4664,8 +4704,8 @@ textarea {
 }
 
 .bracket-match-card--live {
-  border-color: var(--pink) !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--pink) 20%, transparent);
+  border-color: var(--coral) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--coral) 20%, transparent);
 }
 
 .bracket-match-card--finished {
@@ -4698,7 +4738,7 @@ textarea {
   font-size: 9px;
   font-family: var(--font-display);
   font-weight: 800;
-  color: var(--pink);
+  color: var(--coral);
   letter-spacing: 0.1em;
   animation: pulseLive 1s ease-in-out infinite alternate;
 }
@@ -4798,13 +4838,13 @@ textarea {
 }
 
 .de-section--grand .de-section-title {
-  background: var(--pink);
+  background: var(--coral);
   color: var(--border);
 }
 
 .de-section--upper .bracket-match-card { border-color: color-mix(in srgb, var(--teal) 40%, var(--border-light)); }
 .de-section--lower .bracket-match-card { border-color: color-mix(in srgb, var(--yellow) 60%, var(--border-light)); }
-.de-section--grand .bracket-match-card { border: 3px solid var(--pink); }
+.de-section--grand .bracket-match-card { border: 3px solid var(--coral); }
 
 /* ========================
    SWISS STANDINGS TABLE
@@ -5547,7 +5587,7 @@ textarea {
 }
 
 .tournament-chat__msg-delete:hover {
-  color: var(--pink);
+  color: var(--coral);
   background: var(--surface-2);
 }
 
@@ -6442,7 +6482,7 @@ details[open] .my-tournaments__section-title--summary::after {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--teal), var(--pink));
+  background: linear-gradient(135deg, var(--teal), var(--coral));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6495,7 +6535,7 @@ details[open] .my-tournaments__section-title--summary::after {
   width: 96px;
   height: 96px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--teal), var(--pink));
+  background: linear-gradient(135deg, var(--teal), var(--coral));
   display: flex;
   align-items: center;
   justify-content: center;

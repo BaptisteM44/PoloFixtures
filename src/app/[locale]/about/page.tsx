@@ -17,7 +17,7 @@ export default async function AboutPage() {
 
   const steps = [
     { key: "create", color: "var(--teal)" },
-    { key: "register", color: "var(--pink)" },
+    { key: "register", color: "var(--coral)" },
     { key: "draw", color: "var(--yellow)" },
     { key: "play", color: "var(--teal)" },
   ] as const;
@@ -74,7 +74,7 @@ export default async function AboutPage() {
               </div>
               <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
                 <div className="about-mockup__badge" style={{ background: "var(--yellow)" }}>8 équipes</div>
-                <div className="about-mockup__badge" style={{ background: "var(--pink)" }}>24 joueurs</div>
+                <div className="about-mockup__badge" style={{ background: "var(--coral)" }}>24 joueurs</div>
                 <div className="about-mockup__badge" style={{ background: "var(--teal)" }}>SE Format</div>
               </div>
             </div>

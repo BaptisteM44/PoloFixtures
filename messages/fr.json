@@ -771,6 +771,8 @@
     "btn_create": "Créer le club",
     "btn_creating": "Création…",
     "btn_edit": "Modifier",
+    "btn_save": "Enregistrer",
+    "btn_saving": "Enregistrement…",
     "btn_back_country": "← {country}",
     "members_title": "Joueur·ses ({count})",
     "members_empty": "Aucun membre pour l'instant.",

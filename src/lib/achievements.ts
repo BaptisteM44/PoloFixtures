@@ -357,6 +357,12 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   if (allMessages.some((m) => { const h = m.createdAt.getHours(); return h >= 4 && h < 5; }))
     badges.add("afterparty");
 
+  // night_owl: message sent between 4h55 and 5h05
+  if (allMessages.some((m) => {
+    const h = m.createdAt.getHours(), min = m.createdAt.getMinutes();
+    return (h === 4 && min >= 55) || (h === 5 && min <= 5);
+  })) badges.add("night_owl");
+
   // hype_train: 10+ messages in the 30 min before a tournament final
   const tournamentFinals = await prisma.match.findMany({
     where: { status: "FINISHED", phase: "BRACKET", nextMatchWinId: null },
