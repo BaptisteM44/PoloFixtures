@@ -1,16 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { BADGE_CATALOG, type BadgeInfo } from "@/lib/badge-catalog";
-
-const CATEGORY_LABELS: Record<string, string> = {
-  performance: "⚡ Performance",
-  team: "🤝 Équipe",
-  organization: "🏗️ Organisation",
-  engagement: "🌐 Engagement",
-  social: "🎉 Social",
-  secret: "🔮 Secret",
-};
 
 const CATEGORY_ORDER = ["performance", "team", "organization", "engagement", "social", "secret"];
 
@@ -23,12 +15,14 @@ const RARITY_COLOR: Record<string, string> = {
 
 function BadgeRow({
   info,
+  description,
   earned,
   pinned,
   canPin,
   onTogglePin,
 }: {
   info: BadgeInfo;
+  description: string;
   earned: boolean;
   pinned: boolean;
   canPin?: boolean;
@@ -61,7 +55,7 @@ function BadgeRow({
           </span>
         </div>
         <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, marginTop: 1 }}>
-          {info.description}
+          {description}
         </p>
       </div>
 
@@ -99,6 +93,7 @@ export function BadgeShowcase({
   pinnedBadges: string[];
   onTogglePin?: (badgeId: string) => void;
 }) {
+  const t = useTranslations("badges");
   const [expanded, setExpanded] = useState(false);
 
   const earnedSet = new Set(earnedBadges);
@@ -127,7 +122,7 @@ export function BadgeShowcase({
           </span>
           {onTogglePin && (
             <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-              · {pinnedBadges.length}/5 épinglés sur la carte
+              · {t("pinned_count", { count: pinnedBadges.length })}
             </span>
           )}
         </div>
@@ -137,7 +132,7 @@ export function BadgeShowcase({
           style={{ fontSize: 13, padding: "4px 12px" }}
           onClick={() => setExpanded((v) => !v)}
         >
-          {expanded ? "Réduire ▲" : "Voir tous les badges ▼"}
+          {expanded ? t("btn_collapse") : t("btn_see_all")}
         </button>
       </div>
 
@@ -145,7 +140,7 @@ export function BadgeShowcase({
       {count === 0 && !expanded && (
         <div className="panel">
           <p style={{ color: "var(--text-muted)", fontSize: 14, margin: 0 }}>
-            Aucun badge encore. Joue, organise, explore !
+            {t("empty")}
           </p>
         </div>
       )}
@@ -156,7 +151,7 @@ export function BadgeShowcase({
           <div key={cat} className="panel" style={{ padding: "16px 20px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <h3 style={{ margin: 0, fontSize: 14, fontFamily: "var(--font-display)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
-                {CATEGORY_LABELS[cat]}
+                {t(`category_${cat}`)}
               </h3>
               <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
                 {earned.length} / {earned.length + locked.length}
@@ -168,6 +163,7 @@ export function BadgeShowcase({
                 <BadgeRow
                   key={info.id}
                   info={info}
+                  description={t.has(info.id as never) ? t(info.id as never) : info.description}
                   earned
                   pinned={pinnedBadges.includes(info.id)}
                   canPin={!pinnedBadges.includes(info.id) && pinnedBadges.length < 5}
@@ -177,7 +173,13 @@ export function BadgeShowcase({
 
               {expanded &&
                 locked.map((info) => (
-                  <BadgeRow key={info.id} info={info} earned={false} pinned={false} />
+                  <BadgeRow
+                    key={info.id}
+                    info={info}
+                    description={t.has(info.id as never) ? t(info.id as never) : info.description}
+                    earned={false}
+                    pinned={false}
+                  />
                 ))}
             </div>
           </div>
