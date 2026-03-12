@@ -35,7 +35,6 @@ export default async function AboutPage() {
       {/* ── HERO ── */}
       <section className="about-hero">
         <div className="about-hero__content">
-          <span className="about-eyebrow">{t("hero_eyebrow")}</span>
           <h1 className="about-hero__title">
             {t("hero_title").split("\n").map((line, i) => (
               <span key={i}>{line}{i === 0 && <br />}</span>
