@@ -2,8 +2,8 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import { PokemonCard } from "@/components/PokemonCard";
 import { ClubMemberManager } from "@/components/ClubMemberManager";
+import { ClubMembersGrid } from "@/components/ClubMembersGrid";
 import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
@@ -50,8 +50,7 @@ export default async function ClubPage({
   const ta = await getTranslations("admin");
 
   const activeMembers = club.members
-    .filter((m) => m.status === "MEMBER")
-    .sort(() => Math.random() - 0.5);
+    .filter((m) => m.status === "MEMBER");
   const membersForManager = club.members.map((m) => ({
     id: m.id,
     playerId: m.playerId,
@@ -123,28 +122,7 @@ export default async function ClubPage({
             </div>
           </div>
           {activeMembers.length > 0 ? (
-            <div className="pokemon-card-grid">
-              {activeMembers.map((m) => (
-                <Link key={m.id} href={`/player/${m.player.slug ?? m.player.id}`} style={{ textDecoration: "none" }}>
-                  <PokemonCard
-                    name={m.player.name}
-                    country={m.player.country}
-                    city={m.player.city}
-                    photoPath={m.player.photoPath}
-                    clubLogoPath={m.player.clubLogoPath}
-                    emblemPosition={(m.player.emblemPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "top-right"}
-                    teamLogoPath={m.player.teamLogoPath}
-                    teamLogoPosition={(m.player.teamLogoPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "bottom-right"}
-                    badges={m.player.badges}
-                    pinnedBadges={m.player.pinnedBadges}
-                    startYear={m.player.startYear}
-                    hand={m.player.hand}
-                    gender={m.player.gender ?? undefined}
-                    showGender={m.player.showGender}
-                  />
-                </Link>
-              ))}
-            </div>
+            <ClubMembersGrid members={activeMembers} emptyLabel={t("members_empty")} />
           ) : (
             <div className="empty-state"><p>{t("members_empty")}</p></div>
           )}

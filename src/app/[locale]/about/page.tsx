@@ -16,10 +16,10 @@ export default async function AboutPage() {
   ] as const;
 
   const steps = [
-    { key: "create", color: "var(--teal)" },
-    { key: "register", color: "var(--coral)" },
-    { key: "draw", color: "var(--yellow)" },
-    { key: "play", color: "var(--teal)" },
+    { key: "create", color: "var(--coral)" },
+    { key: "register", color: "var(--yellow)" },
+    { key: "draw", color: "var(--teal)" },
+    { key: "play", color: "var(--coral)" },
   ] as const;
 
   const audiences = [

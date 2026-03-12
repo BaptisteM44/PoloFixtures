@@ -52,6 +52,8 @@ export function NotificationBell() {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   const unread = notifications.filter((n) => !n.read).length;
@@ -69,22 +71,34 @@ export function NotificationBell() {
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) closePanel();
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const closePanel = () => {
+    if (!open) return;
+    setClosing(true);
+    closeTimerRef.current = setTimeout(() => {
+      setOpen(false);
+      setClosing(false);
+    }, 150);
+  };
+
   const handleOpen = async () => {
-    setOpen((v) => !v);
-    if (!open && unread > 0) {
+    if (open) { closePanel(); return; }
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    setClosing(false);
+    setOpen(true);
+    if (unread > 0) {
       await fetch("/api/notifications", { method: "POST" });
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     }
   };
 
   const handleClick = (href: string) => {
-    setOpen(false);
+    closePanel();
     router.push(href as any);
   };
 
@@ -120,11 +134,11 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div style={{
+        <div className={`notif-panel${closing ? " notif-panel--closing" : ""}`} style={{
           position: "absolute", top: "calc(100% + 8px)", right: 0,
-          width: 320, background: "var(--surface)", border: "2px solid var(--border)",
+          width: 380, background: "var(--surface)", border: "2px solid var(--border)",
           borderRadius: "var(--radius)", boxShadow: "var(--shadow-lg)",
-          zIndex: 1000, overflow: "hidden",
+          zIndex: 1000, overflow: "hidden", transformOrigin: "top right",
         }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-light)" }}>
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13 }}>{t("title")}</span>
@@ -132,7 +146,7 @@ export function NotificationBell() {
           {notifications.length === 0 ? (
             <p style={{ padding: 16, textAlign: "center", color: "var(--text-muted)", fontSize: 13, margin: 0 }}>{t("empty")}</p>
           ) : (
-            <div style={{ maxHeight: 360, overflowY: "auto" }}>
+            <div style={{ maxHeight: 420, overflowY: "auto" }}>
               {notifications.slice(0, 10).map((n) => {
                 const { title, sub, href } = notifLabel(n);
                 return (
@@ -140,7 +154,7 @@ export function NotificationBell() {
                     key={n.id}
                     style={{
                       display: "flex", alignItems: "flex-start",
-                      background: n.read ? "transparent" : "color-mix(in srgb, var(--teal) 6%, var(--surface))",
+                      background: n.read ? "transparent" : "color-mix(in srgb, var(--yellow) 25%, var(--surface))",
                       borderBottom: "1px solid var(--border-light)",
                     }}
                   >
@@ -185,14 +199,14 @@ export function NotificationBell() {
                     <span style={{ flex: 1, fontSize: 12 }}>{n.payload.squadName}</span>
                     <button className="primary" style={{ fontSize: 11, padding: "3px 10px" }} onClick={async () => {
                       await fetch(`/api/invitations/${n.payload.invitationId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "accept" }) });
-                      setOpen(false);
+                      closePanel();
                       fetchNotifs();
                       router.push(`/my-teams/${n.payload.squadId}` as any);
                     }}>{t("btn_accept")}</button>
                     <button className="ghost" style={{ fontSize: 11, padding: "3px 10px" }} onClick={async () => {
                       await fetch(`/api/invitations/${n.payload.invitationId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "decline" }) });
                       fetchNotifs();
-                      setOpen(false);
+                      closePanel();
                     }}>{t("btn_decline")}</button>
                   </div>
                 ))}

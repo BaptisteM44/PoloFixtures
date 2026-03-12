@@ -40,7 +40,7 @@ function LoginForm() {
         <h1 style={{ marginBottom: 24 }}>{t('login_title')}</h1>
 
         {resetDone && (
-          <div style={{ background: 'color-mix(in srgb, var(--teal) 12%, transparent)', border: '1px solid var(--teal)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 16, fontSize: 14 }}>
+          <div style={{ background: 'color-mix(in srgb, var(--yellow) 30%, transparent)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '10px 14px', marginBottom: 16, fontSize: 14 }}>
             {t('reset_success')}
           </div>
         )}

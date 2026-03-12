@@ -221,7 +221,7 @@ export default function AccountPage() {
           </div>
 
           {saveMsg && (
-            <div style={{ background: "var(--teal)", border: "2px solid var(--border)", borderRadius: 8, padding: "10px 16px", fontWeight: 700, fontSize: 14 }}>
+            <div style={{ background: "var(--yellow)", border: "2px solid var(--border)", borderRadius: 8, padding: "10px 16px", fontWeight: 700, fontSize: 14 }}>
               ✓ {saveMsg}
             </div>
           )}

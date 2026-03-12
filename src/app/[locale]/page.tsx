@@ -64,10 +64,7 @@ export default async function HomePage() {
       {/* ---- HERO ---- */}
       <section className="hero">
         <div>
-          <h1>
-            <em>Bike Polo</em><br />
-            {t("hero_title")}
-          </h1>
+          <h1>Bike Polo platform.</h1>
           <p>{t("hero_subtitle")}</p>
           <div className="hero-actions">
             <Link className="primary" href="/tournament/new">{t("hero_create")}</Link>

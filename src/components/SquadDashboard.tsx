@@ -284,8 +284,8 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
             style={{
               padding: "8px 16px", fontSize: 13, fontWeight: 700, fontFamily: "var(--font-display)",
               border: "none", background: "none", cursor: "pointer",
-              borderBottom: activeTab === t.key ? "2px solid var(--teal)" : "2px solid transparent",
-              color: activeTab === t.key ? "var(--teal)" : "var(--text-muted)",
+              borderBottom: activeTab === t.key ? "2px solid var(--coral)" : "2px solid transparent",
+              color: activeTab === t.key ? "var(--coral)" : "var(--text-muted)",
               marginBottom: -2,
             }}
           >

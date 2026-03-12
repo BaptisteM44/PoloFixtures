@@ -186,7 +186,7 @@ export function RegisterTeamForm({
             <>
               <p style={{ margin: "4px 0 2px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-muted)" }}>{t("section_permanent")}</p>
               {squads.map((sq) => (
-                <div key={sq.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", border: "2px solid var(--teal)", borderRadius: 8, background: "color-mix(in srgb, var(--teal) 6%, var(--surface))" }}>
+                <div key={sq.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", border: "2px solid var(--yellow)", borderRadius: 8, background: "color-mix(in srgb, var(--yellow) 12%, var(--surface))" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     {sq.logoPath && <img src={sq.logoPath} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />}
                     <div>
@@ -361,7 +361,7 @@ function PlayerSlotInput({
   if (slot.type === "existing") {
     const playerDiets = slot.player.diets ?? [];
     return (
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--teal)", borderRadius: 8, border: "2px solid var(--border)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--yellow)", borderRadius: 8, border: "2px solid var(--border)" }}>
         <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }} title={t("slot_set_captain")}>
           <input type="radio" checked={!!isCaptain} onChange={() => onSetCaptain?.()} style={{ accentColor: "var(--coral)" }} />
           <span style={{ fontSize: 11, fontWeight: 700 }}>{t("slot_captain_abbr")}</span>

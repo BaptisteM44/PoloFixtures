@@ -27,8 +27,8 @@
   --gray:   #e7e7e7;
 
   /* Semantic */
-  --accent:   var(--teal);
-  --accent-2: var(--coral);
+  --accent:   var(--coral);
+  --accent-2: var(--teal);
   --danger:   #e84040;
   --success:  #2db37a;
 
@@ -101,9 +101,9 @@ a {
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--teal);
-  background: color-mix(in srgb, var(--teal) 12%, var(--bg));
-  border: 2px solid var(--teal);
+  color: var(--coral);
+  background: color-mix(in srgb, var(--coral) 12%, var(--bg));
+  border: 2px solid var(--coral);
   border-radius: 20px;
   padding: 4px 14px;
   margin-bottom: 20px;
@@ -373,7 +373,7 @@ a {
 
 /* Free section */
 .about-free {
-  background: color-mix(in srgb, var(--teal) 8%, var(--bg));
+  background: color-mix(in srgb, var(--yellow) 20%, var(--bg));
   border-top: 2px solid var(--border);
   border-bottom: 2px solid var(--border);
   padding: 64px 6vw;
@@ -569,7 +569,7 @@ a {
 .site-header .brand .brand-dot {
   width: 10px;
   height: 10px;
-  background: var(--teal);
+  background: var(--coral);
   border-radius: 50%;
   display: inline-block;
   border: 2px solid var(--border);
@@ -586,7 +586,7 @@ a {
 
 .nav {
   display: flex;
-  gap: 4px;
+  gap: 6px;
 }
 
 .nav a {
@@ -595,7 +595,7 @@ a {
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  padding: 6px 14px;
+  padding: 6px 18px;
   border-radius: var(--radius-sm);
   transition: background var(--transition), color var(--transition);
 }
@@ -614,6 +614,21 @@ a {
 /* ========================
    BURGER MENU (mobile)
    ======================== */
+
+@keyframes notif-slide-down {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)  scale(1); }
+}
+@keyframes notif-slide-up {
+  from { opacity: 1; transform: translateY(0)  scale(1); }
+  to   { opacity: 0; transform: translateY(-8px) scale(0.97); }
+}
+.notif-panel {
+  animation: notif-slide-down 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.notif-panel--closing {
+  animation: notif-slide-up 0.15s ease-in forwards;
+}
 
 .burger-btn {
   display: none;
@@ -766,7 +781,7 @@ button,
 }
 
 .primary {
-  background: var(--teal);
+  background: var(--coral);
   color: var(--text);
   box-shadow: var(--shadow);
 }
@@ -802,7 +817,7 @@ button,
 button:focus-visible,
 .primary:focus-visible,
 .ghost:focus-visible {
-  outline: 3px solid var(--teal);
+  outline: 3px solid var(--coral);
   outline-offset: 2px;
 }
 
@@ -865,7 +880,7 @@ button:focus-visible,
 }
 
 .hero-feature-card {
-  background: var(--teal);
+  background: var(--yellow);
   border: 2px solid var(--border);
   border-radius: var(--radius);
   padding: 24px;

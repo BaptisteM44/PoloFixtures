@@ -109,7 +109,7 @@
   "about": {
     "page_title": "Polo Fixtures",
     "hero_eyebrow": "Für die Bike-Polo-Community",
-    "hero_title": "Alles, was du für ein Turnier brauchst.",
+    "hero_title": "Turnier-Plattform.",
     "hero_subtitle": "Polo Fixtures ist eine kostenlose Plattform, gebaut von Spielern für Spieler. Anmeldungen, Gruppen, Brackets, Live-Schiedsrichter, Spielerprofile – alles an einem Ort.",
     "hero_cta_primary": "Turniere ansehen",
     "hero_cta_secondary": "Turnier erstellen",
@@ -173,7 +173,7 @@
     "contact_send_another": "Weitere Nachricht senden"
   },
   "home": {
-    "hero_title": "Bike Polo Tournament Platform",
+    "hero_title": "Turnier-Plattform.",
     "hero_subtitle": "Pools, brackets, live refereeing — all on one platform.",
     "hero_create": "+ Create a tournament",
     "hero_browse": "Browse tournaments",
