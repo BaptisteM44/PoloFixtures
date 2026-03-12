@@ -164,10 +164,10 @@ export default function AccountPage() {
 
   return (
     <div className="page">
-      <div style={{ display: "grid", gridTemplateColumns: "340px 1fr", gap: 64, alignItems: "start", minHeight: "100vh" }}>
+      <div className="account-layout">
 
         {/* Pokemon card + photo upload */}
-        <div style={{ position: "sticky", top: 88, alignSelf: "start" }}>
+        <div className="account-sidebar">
           <PokemonCard
             name={player.name}
             country={player.country}
@@ -204,7 +204,7 @@ export default function AccountPage() {
         <div style={{ display: "grid", gap: 24 }}>
 
           {/* Header */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div className="account-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <h1 style={{ marginBottom: 4 }}>{player.name}</h1>
               <p style={{ color: "var(--text-muted)", fontSize: 14, margin: 0 }}>

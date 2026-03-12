@@ -37,7 +37,7 @@ export default async function MyTeamsPage() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24, alignItems: "start" }}>
+      <div className="my-teams-layout">
         {/* Liste des squads */}
         <div style={{ display: "grid", gap: 16 }}>
           {squads.length === 0 ? (

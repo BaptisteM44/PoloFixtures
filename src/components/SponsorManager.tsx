@@ -163,7 +163,7 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
         {error && <p className="error" style={{ margin: 0 }}>{error}</p>}
         {success && <p style={{ margin: 0, color: "var(--success)", fontSize: 13, fontWeight: 700 }}>✅ Sponsor ajouté !</p>}
 
-        <button className="primary" type="submit" disabled={isPending || uploading} style={{ justifyContent: "center" }}>
+        <button className="primary" type="submit" disabled={isPending || uploading} style={{ justifyContent: "center", alignSelf: "flex-start", justifySelf: "start" }}>
           {uploading ? "Upload…" : isPending ? "Ajout…" : "Ajouter le sponsor"}
         </button>
       </form>

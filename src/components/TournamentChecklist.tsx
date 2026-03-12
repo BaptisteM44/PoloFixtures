@@ -80,7 +80,7 @@ export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
 
   const statusColor =
     t.submissionStatus === "APPROVED" ? "var(--teal)" :
-    t.submissionStatus === "REJECTED" ? "var(--coral)" :
+    t.submissionStatus === "REJECTED" ? "var(--pink)" :
     "var(--yellow)";
 
   const statusLabel =
@@ -116,8 +116,8 @@ export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
 
       {/* Rejection reason */}
       {t.submissionStatus === "REJECTED" && t.rejectionReason && (
-        <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 8, border: "2px solid var(--coral)", background: "color-mix(in srgb, var(--coral) 8%, var(--surface))" }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: "var(--coral)", margin: "0 0 4px" }}>Raison du refus :</p>
+        <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 8, border: "2px solid var(--pink)", background: "color-mix(in srgb, var(--pink) 8%, var(--surface))" }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "var(--pink)", margin: "0 0 4px" }}>Raison du refus :</p>
           <p style={{ fontSize: 13, margin: 0 }}>{t.rejectionReason}</p>
         </div>
       )}

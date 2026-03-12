@@ -92,6 +92,9 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
   const [editColor, setEditColor] = useState(squad.color ?? "#22d3ee");
   const [editBio, setEditBio] = useState(squad.bio ?? "");
   const [editSaving, setEditSaving] = useState(false);
+  const [editLogoPath, setEditLogoPath] = useState(squad.logoPath);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -114,6 +117,13 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
       setSearchLoading(false);
     }, 300);
   }, [searchQ, members, pendingInvitations]);
+
+  const handleCancelInvite = async (invitationId: string) => {
+    const res = await fetch(`/api/squads/${squad.id}/invite?invitationId=${invitationId}`, { method: "DELETE" });
+    if (res.ok) {
+      setPendingInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
+    }
+  };
 
   const handleInvite = async (playerId: string) => {
     const res = await fetch(`/api/squads/${squad.id}/invite`, {
@@ -204,12 +214,25 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
     setChatSending(false);
   };
 
+  const handleLogoUpload = async (file: File) => {
+    setLogoUploading(true);
+    const form = new FormData();
+    form.append("file", file);
+    form.append("folder", "squads");
+    const res = await fetch("/api/upload", { method: "POST", body: form });
+    if (res.ok) {
+      const data = await res.json();
+      setEditLogoPath(data.url);
+    }
+    setLogoUploading(false);
+  };
+
   const handleSaveEdit = async () => {
     setEditSaving(true);
     const res = await fetch(`/api/squads/${squad.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editName.trim(), color: editColor, bio: editBio.trim() || null }),
+      body: JSON.stringify({ name: editName.trim(), color: editColor, bio: editBio.trim() || null, logoPath: editLogoPath }),
     });
     if (res.ok) {
       setEditing(false);
@@ -230,6 +253,22 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
       <div className="panel" style={{ marginBottom: 20 }}>
         {editing ? (
           <div style={{ display: "grid", gap: 12 }}>
+            <div className="field-row">
+              Logo
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div
+                  onClick={() => logoInputRef.current?.click()}
+                  style={{ width: 56, height: 56, borderRadius: "50%", border: "2px dashed var(--border)", background: squad.color ?? "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", flexShrink: 0 }}
+                >
+                  {logoUploading ? <span style={{ fontSize: 11 }}>…</span> : editLogoPath ? <img src={editLogoPath} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 22 }}>🏑</span>}
+                </div>
+                <input ref={logoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); }} />
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Clique sur le logo pour changer</span>
+                {editLogoPath && (
+                  <button type="button" className="ghost" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => setEditLogoPath(null)}>Supprimer</button>
+                )}
+              </div>
+            </div>
             <label className="field-row">
               Nom
               <input value={editName} onChange={(e) => setEditName(e.target.value)} maxLength={60} />
@@ -246,7 +285,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
               <textarea value={editBio} onChange={(e) => setEditBio(e.target.value)} rows={3} maxLength={500} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
             </label>
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="primary" onClick={handleSaveEdit} disabled={editSaving}>{editSaving ? "Sauvegarde…" : "Sauvegarder"}</button>
+              <button className="primary" onClick={handleSaveEdit} disabled={editSaving || logoUploading}>{editSaving ? "Sauvegarde…" : "Sauvegarder"}</button>
               <button className="ghost" onClick={() => setEditing(false)}>Annuler</button>
             </div>
           </div>
@@ -262,9 +301,8 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
             <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               {isCaptain && (
                 <>
-                  <button className="ghost" style={{ fontSize: 12 }} onClick={() => setActiveTab("invitations")}>👥 Inviter</button>
                   <button className="ghost" style={{ fontSize: 12 }} onClick={() => setEditing(true)}>✏️ Modifier</button>
-                  <button className="ghost" style={{ fontSize: 12, borderColor: "var(--coral)", color: "var(--coral)" }} onClick={handleDelete}>Supprimer</button>
+                  <button className="ghost" style={{ fontSize: 12, borderColor: "var(--pink)", color: "var(--pink)" }} onClick={handleDelete}>Supprimer</button>
                 </>
               )}
               {!isCaptain && (
@@ -284,8 +322,8 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
             style={{
               padding: "8px 16px", fontSize: 13, fontWeight: 700, fontFamily: "var(--font-display)",
               border: "none", background: "none", cursor: "pointer",
-              borderBottom: activeTab === t.key ? "2px solid var(--coral)" : "2px solid transparent",
-              color: activeTab === t.key ? "var(--coral)" : "var(--text-muted)",
+              borderBottom: activeTab === t.key ? "2px solid var(--pink)" : "2px solid transparent",
+              color: activeTab === t.key ? "var(--pink)" : "var(--text-muted)",
               marginBottom: -2,
             }}
           >
@@ -296,7 +334,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
 
       {/* MEMBRES */}
       {activeTab === "membres" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 20, alignItems: "start" }}>
+        <div className="my-teams-layout">
           <div style={{ display: "grid", gap: 20 }}>
 
             {/* ── PokemonCard banner ── */}
@@ -368,7 +406,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                         → Cap
                       </button>
                     )}
-                    <button className="ghost" style={{ fontSize: 11, padding: "4px 10px", color: "var(--coral)", borderColor: "var(--coral)" }} onClick={() => handleKick(m.playerId)}>
+                    <button className="ghost" style={{ fontSize: 11, padding: "4px 10px", color: "var(--pink)", borderColor: "var(--pink)" }} onClick={() => handleKick(m.playerId)}>
                       Exclure
                     </button>
                   </div>
@@ -485,6 +523,11 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                 <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 4, background: "color-mix(in srgb, var(--yellow) 20%, var(--surface))", border: "1.5px solid var(--yellow)" }}>
                   En attente
                 </span>
+                {isCaptain && (
+                  <button className="ghost" style={{ fontSize: 11, padding: "3px 10px", borderColor: "var(--pink)", color: "var(--pink)" }} onClick={() => handleCancelInvite(inv.id)}>
+                    Annuler
+                  </button>
+                )}
               </div>
             ))
           )}

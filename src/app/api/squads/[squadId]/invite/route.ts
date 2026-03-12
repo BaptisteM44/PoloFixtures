@@ -61,3 +61,25 @@ export async function POST(req: Request, { params }: { params: { squadId: string
 
   return NextResponse.json(invitation, { status: 201 });
 }
+
+// DELETE /api/squads/[squadId]/invite?invitationId=xxx — annuler une invitation
+export async function DELETE(req: Request, { params }: { params: { squadId: string } }) {
+  const session = await auth();
+  const currentPlayerId = session?.user?.playerId;
+  if (!currentPlayerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+
+  const member = await prisma.squadMember.findUnique({
+    where: { squadId_playerId: { squadId: params.squadId, playerId: currentPlayerId } },
+  });
+  if (!member) return NextResponse.json({ error: "Pas membre de cette équipe" }, { status: 403 });
+
+  const { searchParams } = new URL(req.url);
+  const invitationId = searchParams.get("invitationId");
+  if (!invitationId) return NextResponse.json({ error: "invitationId manquant" }, { status: 400 });
+
+  await prisma.squadInvitation.deleteMany({
+    where: { id: invitationId, squadId: params.squadId },
+  });
+
+  return NextResponse.json({ ok: true });
+}

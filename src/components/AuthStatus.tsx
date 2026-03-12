@@ -12,7 +12,6 @@ export function AuthStatus() {
   if (data?.user?.playerId) {
     return (
       <div className="auth-status">
-        <Link href="/tournament/new" className="ghost" style={{ fontSize: 12 }}>+ Tournoi</Link>
         <Link href="/account" className="ghost">{t("account")}</Link>
         <button className="ghost" onClick={() => signOut({ callbackUrl: "/" })}>{t("logout")}</button>
       </div>

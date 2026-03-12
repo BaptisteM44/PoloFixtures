@@ -76,33 +76,15 @@ function getDefaultYear(): string {
   return String(now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear());
 }
 
-function getDefaultContinent(): string {
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (tz.startsWith("Europe/")) return "EU";
-    if (tz.startsWith("America/")) {
-      // Rough split: known South American timezones
-      const sa = ["America/Bogota","America/Lima","America/Santiago","America/Argentina",
-        "America/Sao_Paulo","America/Caracas","America/La_Paz","America/Guayaquil",
-        "America/Asuncion","America/Montevideo","America/Manaus","America/Recife",
-        "America/Fortaleza","America/Belem","America/Cuiaba","America/Porto_Velho"];
-      return sa.some((z) => tz === z || tz.startsWith(z + "/")) ? "SA" : "NA";
-    }
-    if (tz.startsWith("Africa/")) return "AF";
-    if (tz.startsWith("Asia/") || tz.startsWith("Pacific/Asia")) return "AS";
-    if (tz.startsWith("Australia/") || tz.startsWith("Pacific/")) return "OC";
-  } catch {
-    // ignore
-  }
-  return "";
-}
 
 // ─── component ──────────────────────────────────────────────────────────────
 
 export function TournamentBrowser({
   tournaments,
+  defaultContinent = null,
 }: {
   tournaments: TournamentRow[];
+  defaultContinent?: string | null;
 }) {
   const t = useTranslations("tournaments");
   const r = useTranslations("registration");
@@ -162,7 +144,7 @@ export function TournamentBrowser({
   const [countryFilter, setCountryFilter] = useState("");
   const [yearFilter, setYearFilter] = useState(() => getDefaultYear());
   const [monthFilter, setMonthFilter] = useState("");
-  const [continent, setContinent] = useState(() => getDefaultContinent());
+  const [continent, setContinent] = useState(() => defaultContinent ?? "");
 
   const countries = [...new Set(tournaments.map((tour) => tour.country))].sort();
 

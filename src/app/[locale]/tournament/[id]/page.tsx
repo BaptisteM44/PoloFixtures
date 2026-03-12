@@ -538,6 +538,13 @@ export default async function TournamentPage({
                 <p className="meta">{t("not_approved")}</p>
               ) : registrationOpen ? (
                 <>
+                  {tournament.registrationEnd && (
+                    <p className="meta" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ background: "color-mix(in srgb, var(--teal) 15%, transparent)", color: "var(--teal)", borderRadius: "var(--radius-sm)", padding: "2px 10px", fontWeight: 700, fontSize: 12, fontFamily: "var(--font-display)" }}>
+                        {t("reg_closes_on", { date: new Date(tournament.registrationEnd).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) })}
+                      </span>
+                    </p>
+                  )}
                   <p className="meta" style={{ marginBottom: 16 }}>
                     {tournament.teams.length === 1 ? r("reg_open_teams_one", { count: tournament.teams.length }) : r("reg_open_teams_other", { count: tournament.teams.length })}
                     {tournament.teams.length > tournament.maxTeams
@@ -546,14 +553,19 @@ export default async function TournamentPage({
                   </p>
                   <RegisterTeamForm tournamentId={tournament.id} format={tournament.format} currentPlayerId={currentPlayerId} accommodationAvailable={tournament.accommodationAvailable} />
                 </>
+              ) : registrationClosed ? (
+                <div style={{ textAlign: "center", padding: "24px 0" }}>
+                  <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", margin: 0 }}>
+                    {t("reg_closed_title", { date: tournament.registrationEnd ? new Date(tournament.registrationEnd).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "" })}
+                  </p>
+                </div>
               ) : (
                 <div style={{ textAlign: "center", padding: "24px 0" }}>
                   <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", margin: 0 }}>
-                    {t("reg_closed_title")}
-                    {tournament.registrationEnd && ` — clôturées le ${new Date(tournament.registrationEnd).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}`}
+                    {t("reg_not_open_title")}
                   </p>
-                  {tournament.registrationStart && now < new Date(tournament.registrationStart) && (
-                    <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--text-muted)" }}>
+                  {tournament.registrationStart && (
+                    <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--text-muted)" }}>
                       {t("reg_opens_on", { date: new Date(tournament.registrationStart).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) })}
                     </p>
                   )}

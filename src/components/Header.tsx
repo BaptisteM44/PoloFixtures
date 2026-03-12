@@ -52,17 +52,20 @@ export function Header() {
         <AuthStatus />
       </div>
 
-      {/* Burger button (mobile only) */}
-      <button
-        className="burger-btn"
-        aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
-        aria-expanded={menuOpen}
-        onClick={() => setMenuOpen((v) => !v)}
-      >
-        <span className={`burger-icon${menuOpen ? " burger-icon--open" : ""}`}>
-          <span /><span /><span />
-        </span>
-      </button>
+      {/* Zone mobile : cloche + burger */}
+      <div className="header-mobile-actions">
+        {hasPlayer && <NotificationBell />}
+        <button
+          className="burger-btn"
+          aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <span className={`burger-icon${menuOpen ? " burger-icon--open" : ""}`}>
+            <span /><span /><span />
+          </span>
+        </button>
+      </div>
 
       {/* Overlay + drawer mobile */}
       {menuOpen && (
@@ -84,7 +87,6 @@ export function Header() {
               {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)}>{t("nav.admin")}</Link>}
             </div>
             <div className="nav-drawer__footer">
-              {hasPlayer && <NotificationBell />}
               <AuthStatus />
             </div>
           </nav>

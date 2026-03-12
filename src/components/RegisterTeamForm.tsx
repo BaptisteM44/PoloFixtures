@@ -363,7 +363,7 @@ function PlayerSlotInput({
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--yellow)", borderRadius: 8, border: "2px solid var(--border)" }}>
         <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }} title={t("slot_set_captain")}>
-          <input type="radio" checked={!!isCaptain} onChange={() => onSetCaptain?.()} style={{ accentColor: "var(--coral)" }} />
+          <input type="radio" checked={!!isCaptain} onChange={() => onSetCaptain?.()} style={{ accentColor: "var(--pink)" }} />
           <span style={{ fontSize: 11, fontWeight: 700 }}>{t("slot_captain_abbr")}</span>
         </label>
         <div style={{ flex: 1 }}>
@@ -403,7 +403,7 @@ function PlayerSlotInput({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <label style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }} title={t("slot_set_captain")}>
-              <input type="radio" checked={!!isCaptain} onChange={() => onSetCaptain?.()} style={{ accentColor: "var(--coral)" }} />
+              <input type="radio" checked={!!isCaptain} onChange={() => onSetCaptain?.()} style={{ accentColor: "var(--pink)" }} />
               <span style={{ fontSize: 11, fontWeight: 700 }}>{t("slot_captain_abbr")}</span>
             </label>
             <span style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700 }}>{labelNum} <span className="meta">— {t("slot_manual")}</span></span>

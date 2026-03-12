@@ -55,7 +55,7 @@ export function HeroCountdown({ dateStart, dateEnd, registrationEnd, teamCount, 
   // Team fill gauge
   const filled = Math.min(teamCount, maxTeams);
   const pct = maxTeams > 0 ? Math.round((filled / maxTeams) * 100) : 0;
-  const gaugeColor = pct >= 100 ? "var(--coral)" : pct >= 75 ? "var(--yellow)" : "var(--teal)";
+  const gaugeColor = pct >= 100 ? "var(--pink)" : pct >= 75 ? "var(--yellow)" : "var(--teal)";
 
   return (
     <div className="hero-extra-row">

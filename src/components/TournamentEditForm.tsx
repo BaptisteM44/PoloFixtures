@@ -99,6 +99,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const [lockPending, setLockPending] = useState(false);
   const [bannerPath, setBannerPath] = useState(tournament.bannerPath ?? "");
   const [bannerUploading, setBannerUploading] = useState(false);
+  const [bannerError, setBannerError] = useState<string | null>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
   // Hébergement
@@ -132,14 +133,25 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     const file = e.target.files?.[0];
     if (!file) return;
     setBannerUploading(true);
+    setBannerError(null);
     const fd = new FormData();
     fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    if (res.ok) {
-      const data = await res.json();
-      setBannerPath(data.path);
+    fd.append("folder", "banners");
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        setBannerPath(data.path);
+      } else {
+        const text = await res.text();
+        setBannerError(`Erreur upload : ${text || res.status}`);
+      }
+    } catch {
+      setBannerError("Erreur réseau lors de l'upload.");
     }
     setBannerUploading(false);
+    // Reset input so the same file can be re-selected after an error
+    e.target.value = "";
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -293,6 +305,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                 className="ghost"
                 style={{ fontSize: 12, whiteSpace: "nowrap", padding: "4px 10px" }}
                 onClick={() => {
+                  if (!window.confirm("Clôturer les inscriptions maintenant ? Les équipes ne pourront plus s'inscrire. Cette action sera effective après avoir sauvegardé.")) return;
                   const input = document.getElementById("registrationEnd") as HTMLInputElement;
                   if (input) input.value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
                 }}
@@ -394,6 +407,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         <div>
           <p style={sectionTitleStyle}>AFFICHE / BANNIÈRE</p>
           <input type="hidden" name="bannerPath" value={bannerPath} />
+          {/* Note: the hidden field above must stay inside <form> */}
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
             {bannerPath && (
               <div style={{ position: "relative", display: "inline-block" }}>
@@ -404,8 +418,11 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             <div>
               <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleBannerUpload} />
               <button type="button" className="ghost" style={{ fontSize: 12 }} onClick={() => bannerInputRef.current?.click()} disabled={bannerUploading}>
-                {bannerUploading ? "Upload…" : bannerPath ? "Changer l'affiche" : "Uploader une affiche"}
+                {bannerUploading ? "Upload en cours…" : bannerPath ? "Changer l'affiche" : "Uploader une affiche"}
               </button>
+              {bannerError && (
+                <p style={{ color: "var(--danger)", fontSize: 12, marginTop: 6 }}>{bannerError}</p>
+              )}
               {!bannerPath && (
                 <div style={{ marginTop: 8 }}>
                   <input placeholder="…ou coller une URL" value={bannerPath} onChange={(e) => setBannerPath(e.target.value)} style={{ fontSize: 12 }} />

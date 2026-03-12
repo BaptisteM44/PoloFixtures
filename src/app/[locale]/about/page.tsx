@@ -12,20 +12,21 @@ export default async function AboutPage() {
     { key: "schedule", icon: "📅" },
     { key: "live", icon: "⚡" },
     { key: "players", icon: "🃏" },
+    { key: "squads", icon: "👥" },
+    { key: "clubs", icon: "🏙️" },
     { key: "orga", icon: "🎯" },
   ] as const;
 
   const steps = [
-    { key: "create", color: "var(--coral)" },
+    { key: "create", color: "var(--pink)" },
     { key: "register", color: "var(--yellow)" },
     { key: "draw", color: "var(--teal)" },
-    { key: "play", color: "var(--coral)" },
+    { key: "play", color: "var(--pink)" },
   ] as const;
 
   const audiences = [
     { key: "orga", icon: "🛠️" },
     { key: "player", icon: "🚲" },
-    { key: "spectator", icon: "👀" },
   ] as const;
 
   return (
@@ -73,8 +74,8 @@ export default async function AboutPage() {
                 <strong>— — —</strong>
               </div>
               <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-                <div className="about-mockup__badge" style={{ background: "var(--yellow)" }}>8 équipes</div>
-                <div className="about-mockup__badge" style={{ background: "var(--coral)" }}>24 joueurs</div>
+                <div className="about-mockup__badge" style={{ background: "var(--yellow)" }}>16 équipes</div>
+                <div className="about-mockup__badge" style={{ background: "var(--pink)" }}>48 joueurs</div>
                 <div className="about-mockup__badge" style={{ background: "var(--teal)" }}>SE Format</div>
               </div>
             </div>
