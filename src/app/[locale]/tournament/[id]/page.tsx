@@ -44,8 +44,8 @@ export default async function TournamentPage({
   searchParams: { tab?: string; view?: string };
 }) {
   const view = searchParams.view ?? "cards";
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: params.id },
+  const tournament = await prisma.tournament.findFirst({
+    where: { OR: [{ id: params.id }, { slug: params.id }] },
     include: {
       sponsors: true,
       teams: {

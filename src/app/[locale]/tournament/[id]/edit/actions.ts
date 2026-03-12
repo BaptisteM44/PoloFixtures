@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { generateTournamentSlug } from "@/lib/slug";
 import { revalidatePath } from "next/cache";
 import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
@@ -91,11 +92,20 @@ export async function updateTournamentAction(formData: FormData) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, ...rest } = data;
 
+  const dateStart = new Date(data.dateStart);
+  // Regenerate slug if name or city changed (only if tournament has no slug yet, or name/city changed)
+  const existing = await prisma.tournament.findUnique({ where: { id: data.id }, select: { slug: true, name: true, city: true } });
+  const needsNewSlug = !existing?.slug || existing.name !== data.name || existing.city !== data.city;
+  const slug = needsNewSlug
+    ? await generateTournamentSlug(data.name, data.city, dateStart.getFullYear(), data.id)
+    : existing.slug;
+
   await prisma.tournament.update({
     where: { id: data.id },
     data: {
       ...rest,
-      dateStart: new Date(data.dateStart),
+      slug,
+      dateStart,
       dateEnd: new Date(data.dateEnd),
       registrationStart: data.registrationStart ? new Date(data.registrationStart) : null,
       registrationEnd: data.registrationEnd ? new Date(data.registrationEnd) : null,

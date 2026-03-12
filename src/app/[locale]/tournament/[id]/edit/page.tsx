@@ -14,8 +14,8 @@ import { getTranslations } from "next-intl/server";
 
 export default async function TournamentEditPage({ params }: { params: { id: string } }) {
   const session = await auth();
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: params.id },
+  const tournament = await prisma.tournament.findFirst({
+    where: { OR: [{ id: params.id }, { slug: params.id }] },
     include: {
       teams: { include: { players: { include: { player: true } } } },
       freeAgents: true,

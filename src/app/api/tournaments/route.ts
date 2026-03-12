@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { generateTournamentSlug } from "@/lib/slug";
 
 export async function GET() {
   const tournaments = await prisma.tournament.findMany({
@@ -69,9 +70,12 @@ export async function POST(request: Request) {
     }
   }
 
+  const slug = await generateTournamentSlug(data.name, data.city, start.getFullYear());
+
   const created = await prisma.tournament.create({
     data: {
       ...data,
+      slug,
       dateStart: start,
       dateEnd: end,
       registrationStart: data.registrationStart ? new Date(data.registrationStart) : null,
