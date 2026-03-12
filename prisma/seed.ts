@@ -37,20 +37,31 @@ async function main() {
 
   await prisma.knownBikePoloCountry.createMany({ data: knownCountries });
 
+  const adminCode = process.env.SEED_ADMIN_CODE;
+  const orgaCode = process.env.SEED_ORGA_CODE;
+  const refCode = process.env.SEED_REF_CODE;
+  if (!adminCode || !orgaCode || !refCode) {
+    throw new Error('Missing SEED_ADMIN_CODE / SEED_ORGA_CODE / SEED_REF_CODE env vars');
+  }
+
   for (const c of [
-    { role: Role.REF, code: 'REF2025' },
-    { role: Role.ORGA, code: 'ORGA2025' },
-    { role: Role.ADMIN, code: 'ADMIN2025' }
+    { role: Role.REF, code: refCode },
+    { role: Role.ORGA, code: orgaCode },
+    { role: Role.ADMIN, code: adminCode }
   ]) {
     await prisma.accessCode.create({ data: { role: c.role, codeHash: await bcrypt.hash(c.code, 10) } });
   }
 
-  const demoPlayer = await prisma.player.create({
-    data: { name: 'Demo Player', country: 'FR', city: 'Paris', status: PlayerStatus.ACTIVE, badges: [] }
-  });
-  await prisma.playerAccount.create({
-    data: { email: 'demo@bikepolo.app', passwordHash: await bcrypt.hash('demo1234', 10), playerId: demoPlayer.id }
-  });
+  const demoEmail = process.env.SEED_DEMO_EMAIL ?? 'demo@bikepolo.app';
+  const demoPassword = process.env.SEED_DEMO_PASSWORD;
+  if (demoPassword) {
+    const demoPlayer = await prisma.player.create({
+      data: { name: 'Demo Player', country: 'FR', city: 'Paris', status: PlayerStatus.ACTIVE, badges: [] }
+    });
+    await prisma.playerAccount.create({
+      data: { email: demoEmail, passwordHash: await bcrypt.hash(demoPassword, 10), playerId: demoPlayer.id }
+    });
+  }
 
   console.log('Seed done!');
 }
