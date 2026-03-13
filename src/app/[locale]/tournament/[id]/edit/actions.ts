@@ -204,7 +204,7 @@ export async function generateBracketAction(id: string) {
   }
 
   // Limit to bracketSize (top N teams from standings)
-  const bracketSize = tournament.bracketSize ?? 16;
+  const bracketSize = (tournament as any).bracketSize ?? 16;
   if (seededTeams.length > bracketSize) {
     seededTeams = seededTeams.slice(0, bracketSize);
   }
