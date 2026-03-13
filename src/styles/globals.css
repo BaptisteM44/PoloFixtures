@@ -461,13 +461,13 @@ a {
   position: relative;
   overflow: hidden;
   border-radius: 12px;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 4 / 3;
+  min-height: 320px;
   box-shadow: 0 24px 64px rgba(0,0,0,0.18);
 }
 .stagger-parallax-inner {
   position: absolute;
-  inset: -12% 0;
-  will-change: transform;
+  inset: 0;
 }
 .stagger-img {
   object-fit: cover;
