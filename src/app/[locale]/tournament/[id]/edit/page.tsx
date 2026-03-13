@@ -31,11 +31,12 @@ export default async function TournamentEditPage({ params }: { params: { id: str
     return <div>{t("not_found")}</div>;
   }
 
+  const t_ = tournament as any;
   // Accès : ADMIN (toujours), ORGA pour CE tournoi, créateur, ou co-organisateur
   const isAdmin = !!(session?.user?.role && hasAtLeastRole(session.user.role, "ADMIN"));
-  const isOrgaForThis = session?.user?.role === "ORGA" && session?.user?.tournamentId === tournament.id;
-  const isCreator = !!(session?.user?.playerId && session?.user?.playerId === tournament.creatorId);
-  const isCoOrga = !!(session?.user?.playerId && tournament.coOrganizers.some((co) => co.playerId === session.user.playerId));
+  const isOrgaForThis = session?.user?.role === "ORGA" && session?.user?.tournamentId === t_.id;
+  const isCreator = !!(session?.user?.playerId && session?.user?.playerId === t_.creatorId);
+  const isCoOrga = !!(session?.user?.playerId && t_.coOrganizers.some((co: any) => co.playerId === session.user.playerId));
 
   if (!isAdmin && !isOrgaForThis && !isCreator && !isCoOrga) {
     const t = await getTranslations("tournament");
@@ -94,7 +95,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
     return await addPlayerToTeamAction(teamId, tId, playerData);
   };
 
-  const submissionStatus = (tournament.submissionStatus ?? (tournament.approved ? "APPROVED" : "PENDING")) as "PENDING" | "APPROVED" | "REJECTED";
+  const submissionStatus = (t_.submissionStatus ?? (t_.approved ? "APPROVED" : "PENDING")) as "PENDING" | "APPROVED" | "REJECTED";
   const t = await getTranslations("tournament");
 
   return (
@@ -102,9 +103,9 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h1 style={{ marginBottom: 4 }}>{t("edit_dashboard_title")}</h1>
-          <p className="meta">{tournament.name} · {tournament.city}, {tournament.country}</p>
+          <p className="meta">{t_.name} · {t_.city}, {t_.country}</p>
         </div>
-        <Link href={`/tournament/${tournament.id}`} className="ghost">{t("edit_view_public")}</Link>
+        <Link href={`/tournament/${t_.id}`} className="ghost">{t("edit_view_public")}</Link>
       </div>
 
       {/* 2-column layout: checklist left, main content right */}
@@ -113,26 +114,26 @@ export default async function TournamentEditPage({ params }: { params: { id: str
         {/* Left: checklist sticky */}
         <div className="edit-page-sidebar" style={{ position: "sticky", top: 80 }}>
           <TournamentChecklist t={{
-            name: tournament.name,
-            country: tournament.country,
-            city: tournament.city,
-            dateStart: tournament.dateStart.toISOString(),
-            dateEnd: tournament.dateEnd.toISOString(),
-            contactEmail: tournament.contactEmail,
-            registrationStart: tournament.registrationStart?.toISOString() ?? null,
-            registrationEnd: tournament.registrationEnd?.toISOString() ?? null,
-            registrationFeePerTeam: tournament.registrationFeePerTeam,
-            fridayWelcomeName: tournament.fridayWelcomeName,
-            saturdayEventName: tournament.saturdayEventName,
-            saturdayEventAddress: tournament.saturdayEventAddress,
-            bannerPath: tournament.bannerPath,
-            maxTeams: tournament.maxTeams,
-            courtsCount: tournament.courtsCount,
-            accommodationAvailable: tournament.accommodationAvailable,
+            name: t_.name,
+            country: t_.country,
+            city: t_.city,
+            dateStart: t_.dateStart.toISOString(),
+            dateEnd: t_.dateEnd.toISOString(),
+            contactEmail: t_.contactEmail,
+            registrationStart: t_.registrationStart?.toISOString() ?? null,
+            registrationEnd: t_.registrationEnd?.toISOString() ?? null,
+            registrationFeePerTeam: t_.registrationFeePerTeam,
+            fridayWelcomeName: t_.fridayWelcomeName,
+            saturdayEventName: t_.saturdayEventName,
+            saturdayEventAddress: t_.saturdayEventAddress,
+            bannerPath: t_.bannerPath,
+            maxTeams: t_.maxTeams,
+            courtsCount: t_.courtsCount,
+            accommodationAvailable: t_.accommodationAvailable,
             submissionStatus,
-            rejectionReason: tournament.rejectionReason,
-            coOrganizersCount: tournament.coOrganizers.length,
-            sponsorsCount: tournament.sponsors.length,
+            rejectionReason: t_.rejectionReason,
+            coOrganizersCount: t_.coOrganizers.length,
+            sponsorsCount: t_.sponsors.length,
           }} />
 
           {/* Resubmit button if REJECTED */}
@@ -152,10 +153,10 @@ export default async function TournamentEditPage({ params }: { params: { id: str
         <div style={{ display: "grid", gap: 24 }}>
 
           {/* Launch tournament button */}
-          {(tournament.status === "UPCOMING" || (tournament.status === "LIVE" && tournament.matches.length === 0)) && tournament.teams.some((t: any) => t.selected === true) && (
+          {(t_.status === "UPCOMING" || (t_.status === "LIVE" && t_.matches.length === 0)) && t_.teams.some((t: any) => t.selected === true) && (
             <form action={async () => {
               "use server";
-              const res = await launchTournamentAction(tournament.id);
+              const res = await launchTournamentAction(t_.id);
               if (res.error) throw new Error(res.error);
             }}>
               <button className="primary" type="submit" style={{ width: "100%", padding: "16px 24px", fontSize: 16, fontFamily: "var(--font-display)", fontWeight: 700, justifyContent: "center", display: "flex", alignItems: "center", gap: 10 }}>
@@ -167,73 +168,73 @@ export default async function TournamentEditPage({ params }: { params: { id: str
           {/* KPI bar */}
           <div className="kpi-grid">
             <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{(tournament.status === "LIVE" || tournament.status === "COMPLETED") && tournament.teams.filter((t: any) => t.selected !== false).length > 0 ? tournament.teams.filter((t: any) => t.selected !== false).length : tournament.teams.length}<span style={{ fontSize: 14, color: "var(--text-muted)", marginLeft: 2 }}>/{tournament.maxTeams}</span></div>
+              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{(t_.status === "LIVE" || t_.status === "COMPLETED") && t_.teams.filter((t: any) => t.selected !== false).length > 0 ? t_.teams.filter((t: any) => t.selected !== false).length : t_.teams.length}<span style={{ fontSize: 14, color: "var(--text-muted)", marginLeft: 2 }}>/{t_.maxTeams}</span></div>
               <p className="meta">{t("edit_kpi_teams")}</p>
             </div>
             <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{tournament.freeAgents.length}</div>
+              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{t_.freeAgents.length}</div>
               <p className="meta">{t("edit_kpi_free_agents")}</p>
             </div>
             <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{tournament.teams.reduce((acc, t) => acc + t.players.length, 0)}</div>
+              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{t_.teams.reduce((acc: number, t: any) => acc + t.players.length, 0)}</div>
               <p className="meta">{t("edit_kpi_players")}</p>
             </div>
             <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-              <span className={`status ${tournament.status.toLowerCase()}`}>{tournament.status}</span>
+              <span className={`status ${t_.status.toLowerCase()}`}>{t_.status}</span>
             </div>
           </div>
 
       {/* Edit form — toujours visible, en haut */}
       <TournamentEditForm
         tournament={{
-          id: tournament.id,
-          name: tournament.name,
-          continentCode: tournament.continentCode,
-          region: tournament.region,
-          country: tournament.country,
-          city: tournament.city,
-          dateStart: tournament.dateStart.toISOString(),
-          dateEnd: tournament.dateEnd.toISOString(),
-          format: tournament.format,
-          gameDurationMin: tournament.gameDurationMin,
-          maxTeams: tournament.maxTeams,
-          courtsCount: tournament.courtsCount,
-          registrationFeePerTeam: tournament.registrationFeePerTeam,
-          registrationFeeCurrency: tournament.registrationFeeCurrency,
-          contactEmail: tournament.contactEmail,
-          registrationStart: tournament.registrationStart?.toISOString() ?? null,
-          registrationEnd: tournament.registrationEnd?.toISOString() ?? null,
-          venueName: tournament.venueName,
-          venueAddress: tournament.venueAddress,
-          venueMapsUrl: tournament.venueMapsUrl,
-          fridayWelcomeName: tournament.fridayWelcomeName,
-          fridayWelcomeAddress: tournament.fridayWelcomeAddress,
-          fridayWelcomeMapsUrl: tournament.fridayWelcomeMapsUrl,
-          saturdayEventName: tournament.saturdayEventName,
-          saturdayEventAddress: tournament.saturdayEventAddress,
-          saturdayEventMapsUrl: tournament.saturdayEventMapsUrl,
-          saturdayEveningName: tournament.saturdayEveningName,
-          saturdayEveningAddress: tournament.saturdayEveningAddress,
-          saturdayEveningMapsUrl: tournament.saturdayEveningMapsUrl,
-          otherNotes: tournament.otherNotes,
-          links: tournament.links,
-          bannerPath: tournament.bannerPath,
-          streamYoutubeUrl: tournament.streamYoutubeUrl,
-          chatMode: tournament.chatMode,
-          saturdayFormat: tournament.saturdayFormat,
-          swissRounds: tournament.swissRounds,
-          bracketSize: tournament.bracketSize,
-          sundayFormat: tournament.sundayFormat,
-          status: tournament.status,
-          locked: tournament.locked,
-          accommodationAvailable: tournament.accommodationAvailable,
-          accommodationType: tournament.accommodationType,
-          accommodationCapacity: tournament.accommodationCapacity,
-          meals: tournament.meals as any,
-          kitList: tournament.kitList,
-          additionalInfo: tournament.additionalInfo,
-          faq: tournament.faq as any,
-          telegramUrl: (tournament as { telegramUrl?: string | null }).telegramUrl,
+          id: t_.id,
+          name: t_.name,
+          continentCode: t_.continentCode,
+          region: t_.region,
+          country: t_.country,
+          city: t_.city,
+          dateStart: t_.dateStart.toISOString(),
+          dateEnd: t_.dateEnd.toISOString(),
+          format: t_.format,
+          gameDurationMin: t_.gameDurationMin,
+          maxTeams: t_.maxTeams,
+          courtsCount: t_.courtsCount,
+          registrationFeePerTeam: t_.registrationFeePerTeam,
+          registrationFeeCurrency: t_.registrationFeeCurrency,
+          contactEmail: t_.contactEmail,
+          registrationStart: t_.registrationStart?.toISOString() ?? null,
+          registrationEnd: t_.registrationEnd?.toISOString() ?? null,
+          venueName: t_.venueName,
+          venueAddress: t_.venueAddress,
+          venueMapsUrl: t_.venueMapsUrl,
+          fridayWelcomeName: t_.fridayWelcomeName,
+          fridayWelcomeAddress: t_.fridayWelcomeAddress,
+          fridayWelcomeMapsUrl: t_.fridayWelcomeMapsUrl,
+          saturdayEventName: t_.saturdayEventName,
+          saturdayEventAddress: t_.saturdayEventAddress,
+          saturdayEventMapsUrl: t_.saturdayEventMapsUrl,
+          saturdayEveningName: t_.saturdayEveningName,
+          saturdayEveningAddress: t_.saturdayEveningAddress,
+          saturdayEveningMapsUrl: t_.saturdayEveningMapsUrl,
+          otherNotes: t_.otherNotes,
+          links: t_.links,
+          bannerPath: t_.bannerPath,
+          streamYoutubeUrl: t_.streamYoutubeUrl,
+          chatMode: t_.chatMode,
+          saturdayFormat: t_.saturdayFormat,
+          swissRounds: t_.swissRounds,
+          bracketSize: t_.bracketSize,
+          sundayFormat: t_.sundayFormat,
+          status: t_.status,
+          locked: t_.locked,
+          accommodationAvailable: t_.accommodationAvailable,
+          accommodationType: t_.accommodationType,
+          accommodationCapacity: t_.accommodationCapacity,
+          meals: t_.meals,
+          kitList: t_.kitList,
+          additionalInfo: t_.additionalInfo,
+          faq: t_.faq,
+          telegramUrl: t_.telegramUrl,
         }}
         action={updateAction}
         toggleLockAction={toggleLock}
@@ -241,34 +242,34 @@ export default async function TournamentEditPage({ params }: { params: { id: str
 
       {/* Sponsors */}
       <SponsorManager
-        tournamentId={tournament.id}
-        sponsors={tournament.sponsors}
+        tournamentId={t_.id}
+        sponsors={t_.sponsors}
         addAction={addSponsor}
         deleteAction={deleteSponsor}
       />
 
       {/* Co-organisateurs */}
       <CoOrganizerManager
-        tournamentId={tournament.id}
-        coOrganizers={tournament.coOrganizers.filter((co) => (co as { role?: string }).role !== "REF").map((co) => co.player)}
+        tournamentId={t_.id}
+        coOrganizers={t_.coOrganizers.filter((co: any) => co.role !== "REF").map((co: any) => co.player)}
         canManage={isCreator || isAdmin}
       />
 
       {/* Arbitres assignés */}
       <RefereeManager
-        tournamentId={tournament.id}
-        referees={tournament.coOrganizers.filter((co) => (co as { role?: string }).role === "REF").map((co) => co.player)}
+        tournamentId={t_.id}
+        referees={t_.coOrganizers.filter((co: any) => co.role === "REF").map((co: any) => co.player)}
         canManage={isCreator || isAdmin || isOrgaForThis}
       />
 
       {/* Free agents list */}
       <div className="panel">
-        <h3 style={{ marginBottom: 12 }}>{t("edit_free_agents_title", { count: tournament.freeAgents.length })}</h3>
-        {tournament.freeAgents.length === 0 ? (
+        <h3 style={{ marginBottom: 12 }}>{t("edit_free_agents_title", { count: t_.freeAgents.length })}</h3>
+        {t_.freeAgents.length === 0 ? (
           <p className="meta">{t("edit_free_agents_empty")}</p>
         ) : (
           <FreeAgentList
-            agents={tournament.freeAgents}
+            agents={t_.freeAgents}
             canDelete
             deleteAction={deleteFreeAgent}
             title=""
