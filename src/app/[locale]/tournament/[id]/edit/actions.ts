@@ -381,7 +381,7 @@ export async function generateSwissRoundAction(id: string) {
   }
 
   // Stop generating rounds if we've reached the configured limit
-  const maxRounds = tournament.swissRounds ?? 5;
+  const maxRounds = (tournament as any).swissRounds ?? 5;
   if (existingRounds >= maxRounds) {
     return { error: `Tous les ${maxRounds} tours Swiss sont terminés.` };
   }
