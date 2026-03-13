@@ -26,11 +26,12 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   clean_ride:    { id: "clean_ride",    name: "Clean Ride",     emoji: "🧤", description: "0 pénalités dans un tournoi (au moins 1 but)",       category: "performance", rarity: "common" },
   hard_edge:     { id: "hard_edge",     name: "Hard Edge",      emoji: "💥", description: "3+ pénalités dans un tournoi",                      category: "performance", rarity: "common" },
   tidal_wave:    { id: "tidal_wave",    name: "Tidal Wave",     emoji: "🌊", description: "Gagner un match par 5+ buts d'écart",               category: "performance", rarity: "rare" },
-  dicey:         { id: "dicey",         name: "Golden Touch",   emoji: "⭐", description: "Gagner un match en golden goal",                    category: "performance", rarity: "rare" },
-  golden_double: { id: "golden_double", name: "Golden Double",  emoji: "🌟", description: "Gagner 3+ matchs en golden goal",         category: "performance", rarity: "epic" },
-  unbeaten:      { id: "unbeaten",      name: "Unbeaten",       emoji: "🛡️", description: "Aucune défaite dans un tournoi",                   category: "performance", rarity: "rare" },
+  dicey:         { id: "dicey",         name: "Golden Touch",   emoji: "⭐", description: "Gagner un match en golden goal",                    category: "performance", rarity: "common" },
+  golden_double: { id: "golden_double", name: "Golden Double",  emoji: "🌟", description: "Gagner 3 matchs en golden goal dans un même tournoi", category: "performance", rarity: "epic" },
+  unbeaten:      { id: "unbeaten",      name: "Unbeaten",       emoji: "🛡️", description: "Aucune défaite dans un tournoi",                   category: "performance", rarity: "legendary" },
   sniper:        { id: "sniper",        name: "Sniper",         emoji: "🎯", description: "15+ buts en carrière",                              category: "performance", rarity: "rare" },
-  eruption:      { id: "eruption",      name: "Eruption",       emoji: "🌋", description: "5 buts dans un seul match",                         category: "performance", rarity: "epic" },
+  eruption:      { id: "eruption",      name: "Eruption",       emoji: "🌋", description: "5 buts dans un seul match",                         category: "performance", rarity: "legendary" },
+  reverse_sweep: { id: "reverse_sweep", name: "Reverse Sweep",  emoji: "⚡", description: "Revenir de 3 buts de retard et gagner en golden goal", category: "performance", rarity: "epic" },
   on_fire:       { id: "on_fire",       name: "On Fire",        emoji: "🔥", description: "Gagner 5 matches consécutifs dans un tournoi",       category: "performance", rarity: "epic" },
   dragon_slayer: { id: "dragon_slayer", name: "Dragon Slayer",  emoji: "🐉", description: "Battre le tenant du titre",                         category: "performance", rarity: "epic" },
   goal_machine:  { id: "goal_machine",  name: "Goal Machine",   emoji: "💣", description: "75+ buts en carrière",                              category: "performance", rarity: "epic" },
@@ -60,21 +61,19 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   patient_zero:      { id: "patient_zero",      name: "Patient Zero",      emoji: "🦠", description: "Être le premier inscrit à un tournoi",          category: "organization", rarity: "rare" },
   mega_event:        { id: "mega_event",        name: "Mega Event",        emoji: "🌟", description: "Organiser un tournoi de 16+ équipes",           category: "organization", rarity: "rare" },
   serial_organizer:  { id: "serial_organizer",  name: "Serial Organizer",  emoji: "🎪", description: "Organiser 5+ tournois",                        category: "organization", rarity: "rare" },
-  community_builder: { id: "community_builder", name: "Community Builder", emoji: "🏗️", description: "Organiser 10+ tournois",                       category: "organization", rarity: "epic" },
+  community_builder: { id: "community_builder", name: "Community Builder", emoji: "🏗️", description: "Organiser 10+ tournois",                       category: "organization", rarity: "mythic" },
+  grand_architect:   { id: "grand_architect",   name: "Grand Architect",   emoji: "🌆", description: "Organiser 20+ tournois",                            category: "organization", rarity: "legendary" },
 
   // ─────────────────────────────────────────────────────
   // 🌐 Engagement
   // ─────────────────────────────────────────────────────
   welcome:          { id: "welcome",          name: "Welcome",          emoji: "👋", description: "Créer son compte",                                  category: "engagement", rarity: "common" },
-  say_cheese:       { id: "say_cheese",       name: "Say Cheese",       emoji: "📸", description: "Ajouter une photo de profil",                       category: "engagement", rarity: "common" },
-  profile_complete: { id: "profile_complete", name: "Profile Complete", emoji: "✨", description: "Remplir tous les champs du profil",                 category: "engagement", rarity: "common" },
   bookmarked:       { id: "bookmarked",       name: "Bookmarked",       emoji: "🔖", description: "Épingler ses 5 badges sur la carte",                category: "engagement", rarity: "common" },
   broadcaster:      { id: "broadcaster",      name: "Broadcaster",      emoji: "📡", description: "Partager un lien de tournoi",                       category: "engagement", rarity: "common" },
-  card_designer:    { id: "card_designer",    name: "Card Designer",    emoji: "🎨", description: "Choisir un thème de carte non-standard",            category: "engagement", rarity: "common" },
   regular:          { id: "regular",          name: "Regular",          emoji: "📅", description: "Se connecter 30 jours différents",                  category: "engagement", rarity: "common" },
   addict:           { id: "addict",           name: "Addict",           emoji: "🔋", description: "Se connecter 100 jours différents",                category: "engagement", rarity: "rare" },
   no_days_off:      { id: "no_days_off",      name: "No Days Off",      emoji: "🗓️", description: "Se connecter 200 jours différents",               category: "engagement", rarity: "epic" },
-  full_year:        { id: "full_year",        name: "Full Year",        emoji: "⚙️", description: "Se connecter 365 jours différents",               category: "engagement", rarity: "mythic" },
+  full_year:        { id: "full_year",        name: "Full Year",        emoji: "⚙️", description: "Se connecter 365 jours différents",               category: "engagement", rarity: "legendary" },
   og:               { id: "og",               name: "OG",               emoji: "🏴", description: "Compte créé avant le 1er avril 2026",               category: "engagement", rarity: "legendary" },
 
   // ─────────────────────────────────────────────────────
@@ -96,8 +95,8 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   collector:     { id: "collector",     name: "Collector",     emoji: "🃏", description: "Débloquer 20+ badges",                                  category: "secret", rarity: "epic" },
   completionist: { id: "completionist", name: "Completionist", emoji: "🏅", description: "Débloquer 40+ badges",                                  category: "secret", rarity: "mythic" },
   phantom:       { id: "phantom",       name: "Phantom",       emoji: "👻", description: "Jouer un tournoi sans apparaître dans le top 5…puis en gagner un", category: "secret", rarity: "legendary" },
-  askip:         { id: "askip",         name: "Askip",         emoji: "🐬", description: "Perdre tous ses matchs d'un tournoi — et revenir quand même",         category: "secret", rarity: "rare" },
-  birthday_ride: { id: "birthday_ride", name: "Birthday Ride", emoji: "🎂", description: "Participer à un tournoi le jour de son anniversaire",                 category: "secret", rarity: "rare" },
+  askip:         { id: "askip",         name: "Askip",         emoji: "🐬", description: "Perdre tous ses matchs d'un tournoi — et revenir jouer un autre",   category: "secret", rarity: "mythic" },
+  birthday_ride: { id: "birthday_ride", name: "Birthday Ride", emoji: "🎂", description: "Participer à un tournoi le jour de son anniversaire",                 category: "secret", rarity: "epic" },
 
   // ─────────────────────────────────────────────────────
   // 🔧 Vélo & Terrain
@@ -121,7 +120,7 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   // ─────────────────────────────────────────────────────
   fashionably_late: { id: "fashionably_late", name: "Fashionably Late", emoji: "🥱", description: "Être la dernière inscription dans la dernière heure avant clôture", category: "secret", rarity: "common" },
   grudge_match:     { id: "grudge_match",     name: "Grudge Match",     emoji: "😤", description: "Affronter la même équipe 5× en carrière",                         category: "secret", rarity: "rare" },
-  poulidor:         { id: "poulidor",         name: "Poulidor",         emoji: "💔", description: "Perdre 3 finales sans jamais en gagner une",                        category: "secret", rarity: "epic" },
+  poulidor:         { id: "poulidor",         name: "Poulidor",         emoji: "💔", description: "Perdre 3 finales sans jamais en gagner une",                        category: "secret", rarity: "mythic" },
   cthulhu:          { id: "cthulhu",          name: "Cthulhu",          emoji: "🦑", description: "Perdre 10+ matchs d'affilée et continuer à jouer",                 category: "secret", rarity: "rare" },
 
   // ─────────────────────────────────────────────────────
@@ -131,6 +130,7 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   afterparty:    { id: "afterparty",    name: "After Party",      emoji: "🍺", description: "Envoyer un message entre 4h et 5h du matin le jour d'un tournoi",         category: "secret",  rarity: "common" },
   hype_train:    { id: "hype_train",    name: "Hype Train",       emoji: "🚂", description: "Envoyer 10+ messages dans les 30 min avant une finale",             category: "secret",  rarity: "rare" },
   oracle:        { id: "oracle",        name: "Oracle",           emoji: "🔮", description: "Écrire le score exact d'un match avant qu'il soit joué",            category: "secret",  rarity: "epic" },
+  final_oracle:  { id: "final_oracle",  name: "Final Oracle",     emoji: "🌐", description: "Écrire le score exact de la finale avant qu'elle soit jouée",      category: "secret",  rarity: "mythic" },
 
   // ─────────────────────────────────────────────────────
   // 🧠 Meta / Légendaire
@@ -143,13 +143,30 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   // ─────────────────────────────────────────────────────
   // 🆕 Vague 2
   // ─────────────────────────────────────────────────────
-  the_commentator: { id: "the_commentator", name: "The Commentator", emoji: "🎙️", description: "Envoyer 50+ messages dans un seul tournoi",                                  category: "social",  rarity: "common" },
+  the_commentator: { id: "the_commentator", name: "The Commentator", emoji: "🎙️", description: "Envoyer 50+ messages dans un seul tournoi",                                  category: "social",  rarity: "epic" },
   seven_nations:   { id: "seven_nations",   name: "Seven Nations",  emoji: "🌐", description: "Avoir joué avec des coéquipiers de 7 nationalités différentes",          category: "team",    rarity: "epic" },
   the_historian:   { id: "the_historian",   name: "The Historian",  emoji: "📚", description: "Envoyer un message dans un chat de tournoi terminé depuis 6+ mois",     category: "secret",  rarity: "rare" },
   squeaky_clean:   { id: "squeaky_clean",   name: "Squeaky Clean",  emoji: "🧹", description: "Gagner un tournoi en n'encaissant jamais plus d'1 but par match",      category: "performance", rarity: "legendary" },
   ref_duty:        { id: "ref_duty",        name: "Ref & Player",   emoji: "🪬", description: "Arbitrer 3 matchs ET jouer 3 matchs dans la même journée",              category: "secret",  rarity: "mythic" },
   double_duty:     { id: "double_duty",     name: "Double Duty",    emoji: "🎝️", description: "Arbitrer 5 matchs ET jouer 5 matchs dans la même journée",              category: "secret",  rarity: "legendary" },
 };
+
+/**
+ * Returns a "public" version of the catalog safe to send to the client.
+ * Secret badge descriptions are hidden unless the player has already earned them.
+ */
+export function getPublicBadgeCatalog(earnedBadgeIds: string[]): Record<string, BadgeInfo> {
+  const earned = new Set(earnedBadgeIds);
+  const result: Record<string, BadgeInfo> = {};
+  for (const [id, info] of Object.entries(BADGE_CATALOG)) {
+    if (info.category === "secret" && !earned.has(id)) {
+      result[id] = { ...info, description: "???" };
+    } else {
+      result[id] = info;
+    }
+  }
+  return result;
+}
 
 /** Lookup a badge by ID or try by legacy name match. Returns fallback for unknown badges. */
 export function getBadgeInfo(badgeIdOrName: string): BadgeInfo {

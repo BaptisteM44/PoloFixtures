@@ -30,7 +30,7 @@ type Props = {
 export async function generateMetadata({ params: { locale } }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: "seo" });
   return {
-    title: { default: t("og_title"), template: `%s | PoloFixtures` },
+    title: { default: t("og_title"), template: `%s | Poloperator` },
     description: t("og_description"),
   };
 }
@@ -57,7 +57,7 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
             <footer className="site-footer">
               <div className="site-footer__links">
                 <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  PoloFixtures © {new Date().getFullYear()}
+                  Poloperator © {new Date().getFullYear()}
                 </span>
                 <span className="site-footer__sep">·</span>
                 <a href="/legal/mentions" style={{ fontSize: 12, color: "var(--text-muted)" }}>Mentions légales</a>

@@ -29,9 +29,9 @@ export async function POST(req: Request) {
 
   await sendMail({
     to: adminEmail,
-    subject: `[Polo Fixtures] Contact : ${subject}`,
+    subject: `[Poloperator] Contact : ${subject}`,
     html: `
-      <h2 style="font-family:sans-serif">Message depuis Polo Fixtures</h2>
+      <h2 style="font-family:sans-serif">Message depuis Poloperator</h2>
       <table style="font-family:sans-serif;font-size:14px;line-height:1.6">
         <tr><td><strong>De :</strong></td><td>${name} &lt;${email}&gt;</td></tr>
         <tr><td><strong>Sujet :</strong></td><td>${subject}</td></tr>
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   // Also send a confirmation to the sender
   await sendMail({
     to: email,
-    subject: "On a bien reçu ton message — Polo Fixtures",
+    subject: "On a bien reçu ton message — Poloperator",
     html: `
       <h2 style="font-family:sans-serif">Merci ${name} !</h2>
       <p style="font-family:sans-serif;font-size:14px;line-height:1.6">
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       <blockquote style="font-family:sans-serif;font-size:13px;color:#666;border-left:3px solid #60c9cf;padding-left:12px;margin:16px 0">
         ${message.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}
       </blockquote>
-      <p style="font-family:sans-serif;font-size:12px;color:#888">— L'équipe Polo Fixtures</p>
+      <p style="font-family:sans-serif;font-size:12px;color:#888">— L'équipe Poloperator</p>
     `,
   });
 

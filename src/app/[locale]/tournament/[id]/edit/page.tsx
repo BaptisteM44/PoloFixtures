@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction } from "./actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction } from "./actions";
 import { TournamentEditForm } from "@/components/TournamentEditForm";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { SponsorManager } from "@/components/SponsorManager";
@@ -151,10 +151,23 @@ export default async function TournamentEditPage({ params }: { params: { id: str
         {/* Right: main content */}
         <div style={{ display: "grid", gap: 24 }}>
 
+          {/* Launch tournament button */}
+          {(tournament.status === "UPCOMING" || (tournament.status === "LIVE" && tournament.matches.length === 0)) && tournament.teams.some((t: any) => t.selected === true) && (
+            <form action={async () => {
+              "use server";
+              const res = await launchTournamentAction(tournament.id);
+              if (res.error) throw new Error(res.error);
+            }}>
+              <button className="primary" type="submit" style={{ width: "100%", padding: "16px 24px", fontSize: 16, fontFamily: "var(--font-display)", fontWeight: 700, justifyContent: "center", display: "flex", alignItems: "center", gap: 10 }}>
+                {t("edit_launch_tournament")}
+              </button>
+            </form>
+          )}
+
           {/* KPI bar */}
           <div className="kpi-grid">
             <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{tournament.teams.length}<span style={{ fontSize: 14, color: "var(--text-muted)", marginLeft: 2 }}>/{tournament.maxTeams}</span></div>
+              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{(tournament.status === "LIVE" || tournament.status === "COMPLETED") && tournament.teams.filter((t: any) => t.selected !== false).length > 0 ? tournament.teams.filter((t: any) => t.selected !== false).length : tournament.teams.length}<span style={{ fontSize: 14, color: "var(--text-muted)", marginLeft: 2 }}>/{tournament.maxTeams}</span></div>
               <p className="meta">{t("edit_kpi_teams")}</p>
             </div>
             <div className="panel" style={{ textAlign: "center", padding: 16 }}>
@@ -208,6 +221,8 @@ export default async function TournamentEditPage({ params }: { params: { id: str
           streamYoutubeUrl: tournament.streamYoutubeUrl,
           chatMode: tournament.chatMode,
           saturdayFormat: tournament.saturdayFormat,
+          swissRounds: tournament.swissRounds,
+          bracketSize: tournament.bracketSize,
           sundayFormat: tournament.sundayFormat,
           status: tournament.status,
           locked: tournament.locked,
@@ -261,27 +276,6 @@ export default async function TournamentEditPage({ params }: { params: { id: str
         )}
       </div>
 
-      {/* Teams list */}
-      <TeamManager
-        teams={tournament.teams.map((t) => ({
-          id: t.id,
-          name: t.name,
-          seed: t.seed,
-          city: t.city,
-          country: t.country,
-          players: t.players.map((tp) => ({
-            id: tp.id,
-            player: { id: tp.player.id, name: tp.player.name, country: tp.player.country },
-          })),
-        }))}
-        locked={tournament.locked}
-        format={tournament.format}
-        renameAction={renameTeam}
-        deleteTeamAction={deleteTeam}
-        removePlayerAction={removePlayer}
-        addPlayerAction={addPlayer}
-        tournamentId={tournament.id}
-      />
 
         </div>{/* end right column */}
       </div>{/* end 2-col grid */}

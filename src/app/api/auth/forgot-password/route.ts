@@ -42,13 +42,13 @@ export async function POST(req: Request) {
   if (isMailerConfigured()) {
     await sendMail({
       to: account.email,
-      subject: "Réinitialisation de votre mot de passe — PoloFixtures",
+      subject: "Réinitialisation de votre mot de passe — Poloperator",
       html: `
         <p>Bonjour,</p>
         <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
         <p><a href="${resetUrl}" style="color:#14b8a6">Cliquez ici pour définir un nouveau mot de passe</a></p>
         <p>Ce lien est valable 1 heure. Si vous n'avez pas fait cette demande, ignorez cet email.</p>
-        <p style="color:#888;font-size:12px">PoloFixtures</p>
+        <p style="color:#888;font-size:12px">Poloperator</p>
       `,
     });
   } else {

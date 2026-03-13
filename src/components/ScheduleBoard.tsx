@@ -43,10 +43,12 @@ export function ScheduleBoard({
   tournamentId,
   initialMatches,
   teams,
+  isOrganizer,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
   teams: Team[];
+  isOrganizer?: boolean;
 }) {
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
   const [filterTeamId, setFilterTeamId] = useState("");
@@ -170,15 +172,16 @@ export function ScheduleBoard({
     return entries;
   }, [filtered]);
 
-  // Global match ordering for numbering
+  // Global match ordering for numbering (based on ALL matches, not filtered)
   const globalOrder = useMemo(() => {
-    const sorted = [...filtered].sort(
+    const sorted = [...matches].sort(
       (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+        || a.courtName.localeCompare(b.courtName)
     );
     const map = new Map<string, number>();
     sorted.forEach((m, i) => map.set(m.id, i + 1));
     return map;
-  }, [filtered]);
+  }, [matches]);
 
   const phases = [...new Set(matches.map((m) => m.phase))];
 
@@ -240,7 +243,7 @@ export function ScheduleBoard({
             Équipe
             <select value={filterTeamId} onChange={(e) => setFilterTeamId(e.target.value)}>
               <option value="">Toutes</option>
-              {teams.map((team) => (
+              {teams.filter((t) => (t as any).selected !== false).map((team) => (
                 <option key={team.id} value={team.id}>{team.name}</option>
               ))}
             </select>
@@ -324,6 +327,7 @@ export function ScheduleBoard({
         match={editMatch}
         onClose={closePanel}
         onSaved={handleSaved}
+        isOrganizer={isOrganizer}
       />
     </div>
   );

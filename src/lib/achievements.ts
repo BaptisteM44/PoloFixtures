@@ -148,11 +148,15 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
 
   // dicey / golden_double
   if (playerTeamIds.length > 0) {
-    const goldenGoalWins = await prisma.match.count({
+    const ggWins = await prisma.match.findMany({
       where: { goldenGoal: true, winnerTeamId: { in: playerTeamIds } },
+      select: { tournamentId: true },
     });
-    if (goldenGoalWins >= 1) badges.add("dicey");
-    if (goldenGoalWins >= 3) badges.add("golden_double");
+    if (ggWins.length >= 1) badges.add("dicey");
+    // golden_double: 3+ golden goal wins dans un même tournoi
+    const ggByTournament = new Map<string, number>();
+    for (const m of ggWins) ggByTournament.set(m.tournamentId, (ggByTournament.get(m.tournamentId) ?? 0) + 1);
+    if ([...ggByTournament.values()].some(c => c >= 3)) badges.add("golden_double");
   }
 
   const tournaments = teamPlayers.map((tp) => tp.team.tournament);
@@ -323,9 +327,6 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
       hand: true, createdAt: true, country: true,
     },
   });
-  if (player?.photoPath) badges.add("say_cheese");
-  if (player?.photoPath && player.bio && player.city && player.startYear && player.hand)
-    badges.add("profile_complete");
   if (player && player.createdAt < new Date("2026-04-01")) badges.add("og");
 
   // tourist: at least one tournament in a country different from player's home country
@@ -392,6 +393,65 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     if (found) { badges.add("oracle"); break oracle; }
   }
 
+  // reverse_sweep: était mené de 3+ buts et gagne en golden goal
+  const ggWinMatchesSweep = allTeamMatches.filter(
+    (m) => m.goldenGoal && playerTeamIdSet.has(m.winnerTeamId ?? "")
+  );
+  if (ggWinMatchesSweep.length > 0) {
+    const sweepEvents = await prisma.matchEvent.findMany({
+      where: { matchId: { in: ggWinMatchesSweep.map((m) => m.id) }, type: { in: ["GOAL", "GOLDEN_GOAL"] } },
+      select: { matchId: true, payload: true, matchClockSec: true },
+      orderBy: { matchClockSec: "asc" },
+    });
+    const eventsByMatch = new Map<string, typeof sweepEvents>();
+    for (const e of sweepEvents) {
+      if (!eventsByMatch.has(e.matchId)) eventsByMatch.set(e.matchId, []);
+      eventsByMatch.get(e.matchId)!.push(e);
+    }
+    reverseSweep: for (const m of ggWinMatchesSweep) {
+      const myTeamId = playerTeamIdSet.has(m.teamAId ?? "") ? m.teamAId : m.teamBId;
+      if (!myTeamId) continue;
+      let myScore = 0, oppScore = 0;
+      for (const e of (eventsByMatch.get(m.id) ?? [])) {
+        const scorer = (e.payload as { teamId?: string }).teamId;
+        if (scorer === myTeamId) myScore++; else oppScore++;
+        if (oppScore - myScore >= 3) { badges.add("reverse_sweep"); break reverseSweep; }
+      }
+    }
+  }
+
+  // askip: perdre tous ses matchs dans un tournoi ET rejouer un autre tournoi après
+  for (const tp of completedTournaments) {
+    const allMatches = [...tp.team.matchesA, ...tp.team.matchesB].filter((m) => m.status === "FINISHED");
+    if (allMatches.length === 0) continue;
+    const allLost = allMatches.every((m) => m.winnerTeamId !== tp.teamId);
+    if (!allLost) continue;
+    const thisDate = new Date(tp.team.tournament.dateEnd);
+    const hasReturn = teamPlayers.some(
+      (other) => other.teamId !== tp.teamId && new Date(other.team.tournament.dateStart) > thisDate
+    );
+    if (hasReturn) { badges.add("askip"); break; }
+  }
+
+  // final_oracle: prédire le score exact de la finale avant qu'elle soit jouée
+  const finalsForOracle = await prisma.match.findMany({
+    where: { status: "FINISHED", phase: "BRACKET", nextMatchWinId: null },
+    select: { tournamentId: true, startAt: true, scoreA: true, scoreB: true },
+  });
+  finalOracle: for (const final of finalsForOracle) {
+    const msgs = allMessages.filter(
+      (m) => m.tournamentId === final.tournamentId && m.createdAt < final.startAt
+    );
+    for (const msg of msgs) {
+      const hit = msg.content.match(scoreRx);
+      if (!hit) continue;
+      const [pA, pB] = [parseInt(hit[1]), parseInt(hit[2])];
+      if ((final.scoreA === pA && final.scoreB === pB) || (final.scoreA === pB && final.scoreB === pA)) {
+        badges.add("final_oracle"); break finalOracle;
+      }
+    }
+  }
+
   // ── Organisation ─────────────────────────────────────────────────────────
   const organizedTournaments = await prisma.tournament.findMany({
     where: {
@@ -400,9 +460,10 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     },
     include: { teams: { select: { id: true } } },
   });
-  if (organizedTournaments.length >= 1) badges.add("host");
-  if (organizedTournaments.length >= 3) badges.add("serial_organizer");
-  if (organizedTournaments.length >= 5) badges.add("community_builder");
+  if (organizedTournaments.length >= 1)  badges.add("host");
+  if (organizedTournaments.length >= 3)  badges.add("serial_organizer");
+  if (organizedTournaments.length >= 10) badges.add("community_builder");
+  if (organizedTournaments.length >= 20) badges.add("grand_architect");
   if (organizedTournaments.some((t) => t.teams.length >= 16)) badges.add("mega_event");
 
   // fashionably_late: very last registration, within 1 h before deadline

@@ -13,7 +13,7 @@ import { FreeAgentForm } from "@/components/FreeAgentForm";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { RegisterTeamForm } from "@/components/RegisterTeamForm";
 import { computeStandings } from "@/lib/standings";
-import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction } from "./edit/actions";
+import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, generateBracketAction } from "./edit/actions";
 import { SelectionManager } from "@/components/SelectionManager";
 import { TournamentChat } from "@/components/TournamentChat";
 import { TelegramWidget } from "@/components/TelegramWidget";
@@ -98,6 +98,11 @@ export default async function TournamentPage({
   const swissMatches = tournament.matches.filter((m) => m.phase === "SWISS");
   const hasSwiss = swissMatches.length > 0 || tournament.saturdayFormat === "SWISS";
 
+  // When tournament is launched (LIVE/COMPLETED), show selected teams count instead of total registered
+  const isLaunched = tournament.status === "LIVE" || tournament.status === "COMPLETED";
+  const selectedTeams = tournament.teams.filter((t: any) => t.selected !== false);
+  const displayTeamCount = isLaunched && selectedTeams.length > 0 ? selectedTeams.length : tournament.teams.length;
+
   const dateStart = new Date(tournament.dateStart).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   const dateEnd = new Date(tournament.dateEnd).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
@@ -108,11 +113,11 @@ export default async function TournamentPage({
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
     { label: t("tab_info"), value: "info", href: `/tournament/${params.id}?tab=info` },
     { label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` },
-    { label: t("tab_schedule"), value: "schedule", href: `/tournament/${params.id}?tab=schedule` },
-    { label: t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` },
-    ...(hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
-    { label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` },
-    { label: t("tab_teams", { count: tournament.teams.length }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
+    ...(isLaunched ? [{ label: t("tab_schedule"), value: "schedule", href: `/tournament/${params.id}?tab=schedule` }] : []),
+    ...(isLaunched && tournament.saturdayFormat !== "SWISS" ? [{ label: t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
+    ...(isLaunched && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
+    ...(isLaunched ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : []),
+    { label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
     ...(youtubeEmbed || tournament.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(isOrga ? [{ label: t("tab_orga"), value: "orga", href: `/tournament/${params.id}?tab=orga` }] : []),
@@ -261,7 +266,7 @@ export default async function TournamentPage({
             dateStart={tournament.dateStart.toISOString()}
             dateEnd={tournament.dateEnd.toISOString()}
             registrationEnd={tournament.registrationEnd?.toISOString() ?? null}
-            teamCount={tournament.teams.length}
+            teamCount={displayTeamCount}
             maxTeams={tournament.maxTeams}
           />
         </div>
@@ -418,7 +423,7 @@ export default async function TournamentPage({
                   )}
                   {registrationClosed ? (
                     <span className="primary" style={{ fontSize: 14, opacity: 0.45, cursor: "not-allowed", pointerEvents: "none" }}>
-                      {t("reg_closed_title")}
+                      {t("reg_closed_title", { date: tournament.registrationEnd ? new Date(tournament.registrationEnd).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "" })}
                     </span>
                   ) : (
                     <Link href={`/tournament/${params.id}?tab=inscription`} className="primary" style={{ fontSize: 14 }}>
@@ -596,16 +601,76 @@ export default async function TournamentPage({
       )}
 
       {tab === "schedule" && (
-        <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} />
+        <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} isOrganizer={isOrga} />
       )}
 
       {tab === "pools" && (
         <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} />
       )}
 
-      {tab === "bracket" && (
-        <BracketView matches={tournament.matches.filter((m) => m.phase === "BRACKET")} tournamentId={tournament.id} />
-      )}
+      {tab === "bracket" && (() => {
+        const bracketMatches = tournament.matches.filter((m) => m.phase === "BRACKET");
+        if (bracketMatches.length > 0) {
+          return (
+            <>
+              {isOrga && (
+                <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
+                  <form action={async () => {
+                    "use server";
+                    await generateBracketAction(tournament.id);
+                    const { redirect } = await import("next/navigation");
+                    const { revalidatePath } = await import("next/cache");
+                    revalidatePath(`/tournament/${tournament.id}`);
+                    redirect(`/tournament/${tournament.id}?tab=bracket`);
+                  }}>
+                    <button type="submit" className="ghost" style={{ fontSize: 12, padding: "5px 14px", color: "var(--danger)" }}>
+                      Régénérer le bracket
+                    </button>
+                  </form>
+                  <span className="meta" style={{ fontSize: 11 }}>
+                    Recalcule le seeding depuis les standings actuels
+                  </span>
+                </div>
+              )}
+              <BracketView matches={bracketMatches} tournamentId={tournament.id} />
+            </>
+          );
+        }
+        const swissAll = tournament.matches.filter((m) => m.phase === "SWISS");
+        const maxSwissRound = swissAll.length > 0 ? Math.max(...swissAll.map((m) => m.roundIndex)) : 0;
+        const swissDone = maxSwissRound >= (tournament.swissRounds ?? 5) && swissAll.every((m) => m.status === "FINISHED");
+        const canLaunch = isOrga && isLaunched && (swissDone || tournament.saturdayFormat !== "SWISS");
+        return (
+          <div className="panel" style={{ textAlign: "center", padding: 48, marginTop: 16 }}>
+            {canLaunch ? (
+              <>
+                <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 8, fontSize: 18 }}>
+                  Top {tournament.bracketSize ?? 16} qualifiés
+                </p>
+                <p className="meta" style={{ marginBottom: 20 }}>
+                  {tournament.sundayFormat === "DE" ? "Double élimination" : "Simple élimination"}
+                </p>
+                <form action={async () => {
+                  "use server";
+                  await generateBracketAction(tournament.id);
+                  const { redirect } = await import("next/navigation");
+                  const { revalidatePath } = await import("next/cache");
+                  revalidatePath(`/tournament/${tournament.id}`);
+                  redirect(`/tournament/${tournament.id}?tab=bracket`);
+                }}>
+                  <button type="submit" className="primary" style={{ fontSize: 16, padding: "12px 32px" }}>
+                    🏆 Lancer le bracket
+                  </button>
+                </form>
+              </>
+            ) : (
+              <p className="meta">
+                {swissDone ? "Le bracket sera lancé par l\u2019organisateur." : "Le bracket sera disponible une fois les rounds Swiss terminés."}
+              </p>
+            )}
+          </div>
+        );
+      })()}
 
       {tab === "swiss" && (
         <div style={{ padding: "24px 0" }}>
@@ -614,7 +679,7 @@ export default async function TournamentPage({
               <p className="meta">{t("swiss_empty")}</p>
             </div>
           ) : (() => {
-            const standings = computeStandings(tournament.teams, swissMatches);
+            const standings = computeStandings(tournament.teams.filter(t => t.selected), swissMatches);
             const maxRound = Math.max(...swissMatches.map((m) => m.roundIndex));
             return (
               <>
@@ -686,7 +751,8 @@ export default async function TournamentPage({
         const sortedTeams = [...tournament.teams].sort((a, b) => a.seed - b.seed);
         const selected = sortedTeams.filter((t) => t.selected);
         const waitlist = sortedTeams.filter((t) => !t.selected);
-        const hasWaitlist = waitlist.length > 0;
+        // Hide waitlist when tournament is launched — only show selected (IN) teams
+        const hasWaitlist = !isLaunched && waitlist.length > 0;
 
         if (tournament.teams.length === 0) {
           return (
@@ -763,7 +829,7 @@ export default async function TournamentPage({
                         </tr>
                         {waitlist.map((team) => (
                           <tr key={team.id} className="team-row--waitlist">
-                            <td style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>#{team.seed}</td>
+                            <td style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>WL{team.waitlistPosition ?? "?"}</td>
                             <td style={{ fontWeight: 600 }}>{team.name}</td>
                             <td className="meta">{summarizeCities(team.players)}</td>
                             <td>
@@ -837,7 +903,7 @@ export default async function TournamentPage({
                       return (
                         <div key={team.id} className="team-section--waitlist">
                           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                            <span style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, background: "var(--border)", padding: "3px 8px", borderRadius: 4 }}>#{team.seed}</span>
+                            <span style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, background: "var(--border)", padding: "3px 8px", borderRadius: 4 }}>WL{team.waitlistPosition ?? "?"}</span>
                             <h3 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 20 }}>{team.name}</h3>
                             {(team.city || team.country) && <span className="meta">{team.city ? `${team.city}, ` : ""}{team.country}</span>}
                             <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-display)", fontWeight: 700 }}>{t("badge_waitlist")}</span>
@@ -998,7 +1064,7 @@ export default async function TournamentPage({
         const dietCounts = new Map<string, number>();
         let nonPrecise = 0;
         let totalAccommodation = 0;
-        for (const team of selected) {
+        for (const team of tournament.teams) {
           for (const tp of team.players) {
             const diets = (tp.player as { diets?: string[] }).diets ?? [];
             if (diets.length === 0) nonPrecise++;
@@ -1006,22 +1072,27 @@ export default async function TournamentPage({
             if ((tp as { needsAccommodation?: boolean }).needsAccommodation) totalAccommodation++;
           }
         }
-        const totalPlayers = selected.reduce((s, t) => s + t.players.length, 0);
+        const totalPlayers = tournament.teams.reduce((s, t) => s + t.players.length, 0);
+        const totalMatches = tournament.matches.length;
+        const doneMatches = tournament.matches.filter((m) => m.status === "FINISHED").length;
 
         return (
           <div style={{ display: "grid", gap: 24 }}>
             {/* Stats bar */}
             <div className="orga-stats-bar">
               <span style={{ fontWeight: 700, fontFamily: "var(--font-display)" }}>{t("orga_stats_title")}</span>
-              <span>{t("orga_stats_teams", { count: selected.length, max: tournament.maxTeams })}</span>
-              <span>{t("orga_stats_players", { count: totalPlayers })}</span>
-              {[...dietCounts.entries()].map(([d, n]) => (
-                <span key={d}>{dietLabels[d] ?? d} <strong>{n}</strong></span>
-              ))}
-              {nonPrecise > 0 && <span style={{ color: "var(--text-muted)" }}>{t("diet_not_specified")} <strong>{nonPrecise}</strong></span>}
+              <span>🏑 <strong>{displayTeamCount}</strong>/{tournament.maxTeams} {t("orga_stats_teams_label")}</span>
+              <span>👤 <strong>{totalPlayers}</strong> {t("orga_stats_players_label")}</span>
+              <span>🏟️ <strong>{tournament.courtsCount}</strong> {t("orga_stats_courts_label")}</span>
+              <span>⚡ {tournament.format} · {tournament.gameDurationMin} min</span>
+              {totalMatches > 0 && (
+                <span style={{ padding: "2px 10px", background: doneMatches === totalMatches ? "color-mix(in srgb, var(--teal) 20%, var(--surface))" : "color-mix(in srgb, var(--yellow) 20%, var(--surface))", borderRadius: 6, fontWeight: 700 }}>
+                  🎯 {doneMatches}/{totalMatches} {t("orga_stats_matches_label")}
+                </span>
+              )}
               {tournament.accommodationAvailable && totalAccommodation > 0 && (
                 <span style={{ padding: "2px 10px", background: "color-mix(in srgb, var(--teal) 15%, var(--surface))", borderRadius: 6, fontWeight: 700 }}>
-                  {t("orga_stats_accommodation", { count: totalAccommodation })}
+                  🛏️ {totalAccommodation} {t("orga_stats_accommodation_label")}
                 </span>
               )}
             </div>

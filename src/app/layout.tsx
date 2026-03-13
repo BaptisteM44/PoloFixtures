@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "PoloFixtures",
+  title: "Poloperator",
   description: "Bike Polo Tournament Platform.",
 };
 

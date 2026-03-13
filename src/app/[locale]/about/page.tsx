@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { PokemonCard } from "@/components/PokemonCard";
 import { ContactForm } from "@/components/ContactForm";
+import { ParallaxImage } from "@/components/ParallaxImage";
 
 export default async function AboutPage() {
   const t = await getTranslations("about");
@@ -96,19 +97,37 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ── PHOTO PLACEHOLDER 1 (action shot) ── */}
-      <section className="about-photo-band">
-        <div className="about-photo-placeholder">
-          <span>📸</span>
-          <p>Photo d'un match en live — un but en pleine action</p>
+      {/* ── PHOTOS QUINCONCE ── */}
+      <section className="about-stagger">
+        <div className="about-stagger-item about-stagger-item--left">
+          <div className="about-stagger-img-wrap">
+            <ParallaxImage src="/live.png" alt="Match en live" />
+          </div>
+          <div className="about-stagger-text">
+            <span className="about-stagger-tag">Live</span>
+            <h3>Matches en direct</h3>
+            <p>Suivez chaque but, chaque score en temps réel depuis n'importe quel appareil.</p>
+          </div>
         </div>
-        <div className="about-photo-placeholder">
-          <span>📸</span>
-          <p>Les équipes au tirage au sort du tournoi</p>
+        <div className="about-stagger-item about-stagger-item--right">
+          <div className="about-stagger-img-wrap">
+            <ParallaxImage src="/tirage.png" alt="Tirage au sort" />
+          </div>
+          <div className="about-stagger-text">
+            <span className="about-stagger-tag">Organisation</span>
+            <h3>Tirage au sort</h3>
+            <p>Générez vos poules automatiquement, avec optimisation des têtes de série.</p>
+          </div>
         </div>
-        <div className="about-photo-placeholder">
-          <span>📸</span>
-          <p>Podium & remise des prix</p>
+        <div className="about-stagger-item about-stagger-item--left">
+          <div className="about-stagger-img-wrap">
+            <ParallaxImage src="/bracket.png" alt="Podium" />
+          </div>
+          <div className="about-stagger-text">
+            <span className="about-stagger-tag">Bracket</span>
+            <h3>Tableau final</h3>
+            <p>Un bracket clair, mis à jour en live jusqu'au podium.</p>
+          </div>
         </div>
       </section>
 
@@ -126,17 +145,36 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ── SCREENSHOT PLACEHOLDER ── */}
-      <section className="about-section">
-        <div className="about-screenshot-row">
-          <div className="about-screenshot-placeholder">
-            <div className="about-screenshot-placeholder__label">📱 Vue tournoi (live)</div>
+      {/* ── SCREENSHOTS QUINCONCE ── */}
+      <section className="about-stagger">
+        <div className="about-stagger-item about-stagger-item--right">
+          <div className="about-stagger-img-wrap">
+            <ParallaxImage src="/matchs.png" alt="Vue tournoi live" />
           </div>
-          <div className="about-screenshot-placeholder">
-            <div className="about-screenshot-placeholder__label">🎯 Console arbitre</div>
+          <div className="about-stagger-text">
+            <span className="about-stagger-tag">App</span>
+            <h3>Vue tournoi live</h3>
+            <p>Tous les matchs d'un tournoi sur une seule page, mis à jour en temps réel.</p>
           </div>
-          <div className="about-screenshot-placeholder">
-            <div className="about-screenshot-placeholder__label">📊 Tableau des poules</div>
+        </div>
+        <div className="about-stagger-item about-stagger-item--left">
+          <div className="about-stagger-img-wrap">
+            <ParallaxImage src="/arbitres2.png" alt="Console arbitre" />
+          </div>
+          <div className="about-stagger-text">
+            <span className="about-stagger-tag">Arbitrage</span>
+            <h3>Console arbitre</h3>
+            <p>Saisissez les buts, gérez le chrono et le golden goal directement depuis votre téléphone.</p>
+          </div>
+        </div>
+        <div className="about-stagger-item about-stagger-item--right">
+          <div className="about-stagger-img-wrap">
+            <ParallaxImage src="/tableau.png" alt="Tableau des poules" />
+          </div>
+          <div className="about-stagger-text">
+            <span className="about-stagger-tag">Classement</span>
+            <h3>Tableau des poules</h3>
+            <p>Points, goal average, qualifications — tout est calculé et affiché instantanément.</p>
           </div>
         </div>
       </section>

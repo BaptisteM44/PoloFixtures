@@ -35,12 +35,14 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const continentCode = searchParams.get("continent");
   const country = searchParams.get("country");
+  const search = searchParams.get("search");
 
   const clubs = await prisma.club.findMany({
     where: {
       approved: true,
       ...(continentCode ? { continentCode } : {}),
       ...(country ? { country } : {}),
+      ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
     },
     include: {
       manager: { select: { id: true, name: true, slug: true } },

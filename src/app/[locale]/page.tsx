@@ -37,7 +37,7 @@ export default async function HomePage() {
   const [activeTournaments, allTournaments, countryCounts] = await Promise.all([
     prisma.tournament.findMany({
       where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true },
-      include: { teams: true },
+      include: { teams: { where: { selected: true } } },
       orderBy: [{ status: "asc" }, { dateStart: "asc" }],
       take: 8,
     }),

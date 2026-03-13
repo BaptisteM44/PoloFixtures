@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { getPublicBadgeCatalog } from "@/lib/badge-catalog";
 
 export async function GET() {
   const session = await auth();
@@ -24,7 +25,7 @@ export async function GET() {
   });
 
   if (!player) return new Response("Not found", { status: 404 });
-  return Response.json(player);
+  return Response.json({ ...player, badgeCatalog: getPublicBadgeCatalog(player.badges) });
 }
 
 const updateSchema = z.object({

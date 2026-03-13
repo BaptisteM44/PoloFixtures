@@ -29,7 +29,7 @@ export default async function TournamentsPage() {
 
   const tournaments = await prisma.tournament.findMany({
     where: { approved: true },
-    include: { teams: true },
+    include: { teams: { where: { selected: true } } },
     orderBy: { dateStart: "asc" }
   });
 

@@ -21,6 +21,8 @@ type Team = {
   city: string | null;
   country: string | null;
   players: TeamPlayer[];
+  selected?: boolean;
+  waitlistPosition?: number | null;
 };
 
 type AddPlayerData =
@@ -66,29 +68,42 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
 
   if (teams.length === 0) return null;
 
+  const selected = [...teams].filter((t) => t.selected !== false).sort((a, b) => a.seed - b.seed);
+  const waitlist = [...teams].filter((t) => t.selected === false).sort((a, b) => (a.waitlistPosition ?? 999) - (b.waitlistPosition ?? 999));
+
+  const renderRow = (team: Team) => (
+    <TeamRow
+      key={team.id}
+      team={team}
+      locked={locked}
+      maxPlayers={maxPlayers}
+      tournamentId={tournamentId}
+      isEditing={editingId === team.id}
+      onStartEdit={() => { setEditingId(team.id); setGlobalError(null); }}
+      onCancelEdit={() => setEditingId(null)}
+      onDelete={() => handleDeleteTeam(team.id, team.name)}
+      onRemovePlayer={handleRemovePlayer}
+      isPending={isPending}
+      renameAction={renameAction}
+      addPlayerAction={addPlayerAction}
+      startTransition={startTransition}
+      setEditingId={setEditingId}
+    />
+  );
+
   return (
     <div style={{ marginBottom: 24 }}>
       <h3 style={{ marginBottom: 16 }}>Équipes inscrites ({teams.length})</h3>
       <div style={{ display: "grid", gap: 12 }}>
-        {[...teams].sort((a, b) => a.seed - b.seed).map((team) => (
-          <TeamRow
-            key={team.id}
-            team={team}
-            locked={locked}
-            maxPlayers={maxPlayers}
-            tournamentId={tournamentId}
-            isEditing={editingId === team.id}
-            onStartEdit={() => { setEditingId(team.id); setGlobalError(null); }}
-            onCancelEdit={() => setEditingId(null)}
-            onDelete={() => handleDeleteTeam(team.id, team.name)}
-            onRemovePlayer={handleRemovePlayer}
-            isPending={isPending}
-            renameAction={renameAction}
-            addPlayerAction={addPlayerAction}
-            startTransition={startTransition}
-            setEditingId={setEditingId}
-          />
-        ))}
+        {selected.map(renderRow)}
+        {waitlist.length > 0 && (
+          <>
+            <div style={{ padding: "6px 0", borderTop: "2px solid var(--border)", borderBottom: "1px solid var(--border-light)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Liste d&apos;attente ({waitlist.length})
+            </div>
+            {waitlist.map(renderRow)}
+          </>
+        )}
       </div>
       {globalError && <p className="error" style={{ marginTop: 8 }}>{globalError}</p>}
       {locked && (
@@ -188,8 +203,8 @@ function TeamRow({
     <div className="panel" style={{ padding: "14px 18px" }}>
       {/* Team header row */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <span style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, background: "var(--border)", padding: "3px 8px", borderRadius: 4, flexShrink: 0 }}>
-          #{team.seed}
+        <span style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, background: team.selected === false ? "var(--surface-3)" : "var(--border)", padding: "3px 8px", borderRadius: 4, flexShrink: 0, color: team.selected === false ? "var(--text-muted)" : undefined }}>
+          {team.selected === false ? `WL${team.waitlistPosition ?? "?"}` : `#${team.seed}`}
         </span>
 
         {isEditing ? (

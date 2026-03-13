@@ -24,6 +24,39 @@ function fmtClock(sec: number) {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/**
+ * Reconstruit l'état du chrono depuis les events START/PAUSE.
+ * Retourne { clockSec, paused } en tenant compte du temps réel écoulé.
+ */
+function computeClockFromEvents(events: MatchEvent[]): { clockSec: number; paused: boolean } {
+  let clockSec = 0;
+  let lastStartSec = 0;
+  let lastStartReal = 0;
+  let paused = true;
+
+  for (const e of events) {
+    const t = new Date(e.createdAt as unknown as string).getTime();
+    if (e.type === "START") {
+      lastStartSec = e.matchClockSec;
+      lastStartReal = t;
+      paused = false;
+    } else if (e.type === "PAUSE") {
+      clockSec = e.matchClockSec;
+      paused = true;
+    } else if (e.type === "END") {
+      clockSec = e.matchClockSec;
+      paused = true;
+    }
+  }
+
+  if (!paused && lastStartReal > 0) {
+    const elapsed = Math.floor((Date.now() - lastStartReal) / 1000);
+    clockSec = lastStartSec + elapsed;
+  }
+
+  return { clockSec, paused };
+}
+
 /** Calcule le résumé des events pour affichage rapide */
 function buildMatchStats(match: EnrichedMatch) {
   const goalsByTeam: Record<string, { count: number; scorers: string[] }> = {};
@@ -76,34 +109,26 @@ function LiveCard({
 }) {
   const gameDurSec = gameDurationMin * 60;
 
-  // Seed clockSec depuis dernier event
-  const lastEvt = match.events?.[match.events.length - 1];
-  const seedSec = lastEvt?.matchClockSec ?? 0;
-  const [clockSec, setClockSec] = useState(seedSec);
+  // Seed depuis reconstruction des events (tient compte de l'heure réelle)
+  const getInitialClock = () => computeClockFromEvents(match.events ?? []);
+  const [clockSec, setClockSec] = useState(() => getInitialClock().clockSec);
+  const [paused, setPaused] = useState(() => getInitialClock().paused);
 
-  // Mémorise le seed pour reset si le match change
-  const prevMatchId = useRef(match.id);
+  // Recalculer quand les events changent (nouvel event SSE : START, PAUSE, GOAL…)
+  const lastEvtId = match.events?.[match.events.length - 1]?.id;
   useEffect(() => {
-    if (prevMatchId.current !== match.id) {
-      prevMatchId.current = match.id;
-      setClockSec(lastEvt?.matchClockSec ?? 0);
-    }
-  }, [match.id, lastEvt?.matchClockSec]);
+    const { clockSec: c, paused: p } = computeClockFromEvents(match.events ?? []);
+    setClockSec(c);
+    setPaused(p);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastEvtId, match.id]);
 
-  // Timer local — tourne uniquement si LIVE
+  // Timer local — tourne uniquement si non pausé et LIVE
   useEffect(() => {
-    if (match.status !== "LIVE") return;
+    if (paused || match.status !== "LIVE") return;
     const interval = setInterval(() => setClockSec((s) => s + 1), 1000);
     return () => clearInterval(interval);
-  }, [match.status, match.id]);
-
-  // Mise à jour du seed si un event SSE arrive avec un nouveau matchClockSec
-  useEffect(() => {
-    if (lastEvt?.matchClockSec !== undefined) {
-      setClockSec(lastEvt.matchClockSec);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastEvt?.id]);
+  }, [paused, match.status, match.id]);
 
   const displaySec = Math.max(0, gameDurSec - clockSec);
   const isOvertime = clockSec >= gameDurSec;

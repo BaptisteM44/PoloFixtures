@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { BADGE_CATALOG, type BadgeInfo } from "@/lib/badge-catalog";
+import type { BadgeInfo } from "@/lib/badge-catalog";
 
 const CATEGORY_ORDER = ["performance", "team", "organization", "engagement", "social", "secret"];
 
 const RARITY_COLOR: Record<string, string> = {
-  legendary: "var(--yellow)",
+  legendary: "#d4a017",
+  mythic: "#a855f7",
   epic: "#c084fc",
   rare: "var(--teal)",
   common: "var(--text-muted)",
@@ -87,21 +88,23 @@ function BadgeRow({
 export function BadgeShowcase({
   earnedBadges,
   pinnedBadges,
+  catalog,
   onTogglePin,
 }: {
   earnedBadges: string[];
   pinnedBadges: string[];
+  catalog: Record<string, BadgeInfo>;
   onTogglePin?: (badgeId: string) => void;
 }) {
   const t = useTranslations("badges");
   const [expanded, setExpanded] = useState(false);
 
   const earnedSet = new Set(earnedBadges);
-  const total = Object.keys(BADGE_CATALOG).length;
+  const total = Object.keys(catalog).length;
   const count = earnedBadges.length;
 
   const categories = CATEGORY_ORDER.map((cat) => {
-    const all = Object.values(BADGE_CATALOG).filter((b) => b.category === cat);
+    const all = Object.values(catalog).filter((b) => b.category === cat);
     const earned = all.filter((b) => earnedSet.has(b.id));
     const locked = all.filter((b) => !earnedSet.has(b.id));
     return { cat, earned, locked };
@@ -176,7 +179,7 @@ export function BadgeShowcase({
                   <BadgeRow
                     key={info.id}
                     info={info}
-                    description={t.has(info.id as never) ? t(info.id as never) : info.description}
+                    description={info.description === "???" ? "???" : (t.has(info.id as never) ? t(info.id as never) : info.description)}
                     earned={false}
                     pinned={false}
                   />

@@ -8,7 +8,7 @@ import { useWakeLock } from "@/lib/useWakeLock";
 
 type PlayerInfo = { id: string; name: string };
 type TeamInfo = { id: string; name: string; color: string | null; players: PlayerInfo[] };
-type MatchEvent = { id: string; type: string; matchClockSec: number; payload: Record<string, unknown> };
+type MatchEvent = { id: string; type: string; matchClockSec: number; payload: Record<string, unknown>; createdAt?: string };
 type MatchInfo = {
   id: string; phase: string; roundIndex: number; courtName: string;
   dayIndex: string; startAt: string; status: string;
@@ -30,6 +30,38 @@ const PHASE_LABEL: Record<string, string> = { POOL: "Poule", SWISS: "Swiss", BRA
 const DAY_LABEL: Record<string, string> = { SAT: "Sam", SUN: "Dim" };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Reconstruit l'état du chrono depuis les events START/PAUSE.
+ * Utilise createdAt pour calculer le temps réel écoulé depuis le dernier START.
+ */
+function computeClockFromEvents(events: MatchEvent[]): { clockSec: number; running: boolean } {
+  let clockSec = 0;
+  let lastStartSec = 0;
+  let lastStartReal = 0;
+  let running = false;
+
+  for (const e of events) {
+    if (e.type === "START") {
+      lastStartSec = e.matchClockSec;
+      // createdAt n'est pas dans le type local MatchEvent — on utilise l'heure courante
+      // comme fallback si pas disponible (les events locaux nouvellement créés n'ont pas createdAt)
+      lastStartReal = e.createdAt ? new Date(e.createdAt).getTime() : Date.now();
+      running = true;
+    } else if (e.type === "PAUSE" || e.type === "END") {
+      clockSec = e.matchClockSec;
+      running = false;
+      lastStartReal = 0;
+    }
+  }
+
+  if (running && lastStartReal > 0) {
+    const elapsed = Math.floor((Date.now() - lastStartReal) / 1000);
+    clockSec = lastStartSec + elapsed;
+  }
+
+  return { clockSec, running };
+}
 
 function fmtClock(sec: number) {
   const s = Math.max(0, sec);
@@ -147,9 +179,10 @@ export function TournamentRefereePanel({
     lastMatchId.current = selectedMatchId;
     const m = matchMap.get(selectedMatchId);
     if (!m) return;
-    const lastEvt = m.events[m.events.length - 1];
-    setClockSec(lastEvt?.matchClockSec ?? 0);
-    setRunning(m.status === "LIVE");
+    // Reconstruire le chrono depuis les events (persistance après reload)
+    const { clockSec: restoredClock, running: restoredRunning } = computeClockFromEvents(m.events);
+    setClockSec(restoredClock);
+    setRunning(m.status === "LIVE" ? restoredRunning : false);
     setBuzzerPlayed(false);
     setMatchEnded(m.status === "FINISHED");
   }, [selectedMatchId, matchMap]);
@@ -200,15 +233,25 @@ export function TournamentRefereePanel({
       const cur = prev.get(selectedMatchId);
       if (!cur) return prev;
       const next = new Map(prev);
+      // For score-changing events (GOAL, GOLDEN_GOAL, END), use server scores
+      // For other events (START, PAUSE, TIMEOUT, PENALTY), keep local scores to avoid overwriting optimistic updates
+      const scoreEvents = ["GOAL", "GOLDEN_GOAL", "END"];
+      const mergeMatch = data.match ? (scoreEvents.includes(type)
+        ? data.match
+        : { ...data.match, scoreA: undefined, scoreB: undefined }
+      ) : {};
       next.set(selectedMatchId, {
         ...cur,
-        ...(data.match ?? {}),
+        ...mergeMatch,
+        scoreA: mergeMatch.scoreA !== undefined ? mergeMatch.scoreA : cur.scoreA,
+        scoreB: mergeMatch.scoreB !== undefined ? mergeMatch.scoreB : cur.scoreB,
         events: data.event ? [...cur.events, data.event] : cur.events,
       });
       return next;
     });
     if (data.match?.status === "FINISHED") { setRunning(false); setMatchEnded(true); }
-    if (data.match?.status === "LIVE") setRunning(true);
+    // Don't restart clock after TIMEOUT or PAUSE events
+    if (data.match?.status === "LIVE" && type !== "TIMEOUT" && type !== "PAUSE") setRunning(true);
   }, [selectedMatchId, clockSec]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -426,7 +469,7 @@ export function TournamentRefereePanel({
 
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
       <div className="ref-topbar">
-        <Link href={`/tournament/${tournament.id}`} className="ref-back">
+        <Link href={`/tournament/${tournament.id}?tab=schedule`} className="ref-back">
           ← Tournoi
         </Link>
         <span className="ref-tourney-name">{tournament.name}</span>
@@ -442,8 +485,11 @@ export function TournamentRefereePanel({
           value={selectedMatchId}
           onChange={(e) => {
             lastMatchId.current = "";
-            setSelectedMatchId(e.target.value);
+            setClockSec(0);
+            setRunning(false);
+            setBuzzerPlayed(false);
             setMatchEnded(false);
+            setSelectedMatchId(e.target.value);
           }}
           className="ref-select"
         >
@@ -504,10 +550,19 @@ export function TournamentRefereePanel({
 
                     {/* Buts */}
                     <div className="ref-score-btns">
-                      <button className="primary ref-bigbtn"
-                        onClick={() => setGoalModal({ teamId: tid, teamName: team.name, delta: 1 })}>
-                        ⚽ +1 But
-                      </button>
+                      {clockSec >= gameDurSec && selectedMatch.phase === "BRACKET" ? (
+                        <button className="primary ref-bigbtn"
+                          disabled={selectedMatch.scoreA !== selectedMatch.scoreB}
+                          style={selectedMatch.scoreA === selectedMatch.scoreB ? { background: "var(--yellow)", color: "var(--text)", border: "none" } : undefined}
+                          onClick={() => setGoldenGoalModal({ teamId: tid, teamName: team.name })}>
+                          ⭐ Golden Goal
+                        </button>
+                      ) : (
+                        <button className="primary ref-bigbtn"
+                          onClick={() => setGoalModal({ teamId: tid, teamName: team.name, delta: 1 })}>
+                          +1 But
+                        </button>
+                      )}
                       <button className="ghost ref-smallbtn"
                         onClick={() => setGoalModal({ teamId: tid, teamName: team.name, delta: -1 })}>
                         −1
@@ -518,12 +573,6 @@ export function TournamentRefereePanel({
                     <button className="ghost ref-penaltybtn"
                       onClick={() => setPenaltyModal({ teamId: tid, teamName: team.name, players: team.players })}>
                       🟨 Pénalité
-                    </button>
-
-                    {/* Golden Goal */}
-                    <button className="ghost ref-goldenbtn"
-                      onClick={() => setGoldenGoalModal({ teamId: tid, teamName: team.name })}>
-                      ⭐ Golden Goal
                     </button>
 
                     {/* Timeout */}
@@ -538,7 +587,10 @@ export function TournamentRefereePanel({
                 );
               })}
             </div>
-          ) : editMode ? (
+          ) : null}
+
+
+          {matchEnded && (editMode ? (
             /* ── Édition du score ────────────────────────────────────── */
             <div className="ref-result">
               <p className="ref-result-label">Corriger le score</p>
@@ -594,8 +646,11 @@ export function TournamentRefereePanel({
                   <button className="primary ref-nextmatch-btn"
                     onClick={() => {
                       lastMatchId.current = "";
-                      setSelectedMatchId(nextScheduled.id);
+                      setClockSec(0);
+                      setRunning(false);
+                      setBuzzerPlayed(false);
                       setMatchEnded(false);
+                      setSelectedMatchId(nextScheduled.id);
                     }}>
                     Prochain match →
                   </button>
@@ -605,7 +660,7 @@ export function TournamentRefereePanel({
                 </button>
               </div>
             </div>
-          )}
+          ))}
 
           {/* ── Pénalités détail ───────────────────────────────────────── */}
           <details className="ref-section">

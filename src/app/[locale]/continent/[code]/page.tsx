@@ -21,7 +21,7 @@ export default async function ContinentPage({
   const [tournaments, clubs, clubCountByCountry] = await Promise.all([
     prisma.tournament.findMany({
       where: { continentCode: code, status: { in: ["LIVE", "UPCOMING"] } },
-      include: { teams: true },
+      include: { teams: { where: { selected: true } } },
       orderBy: [{ status: "asc" }, { dateStart: "asc" }],
     }),
     prisma.club.findMany({

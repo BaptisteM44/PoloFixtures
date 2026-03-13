@@ -45,6 +45,8 @@ const updateSchema = z.object({
   streamYoutubeUrl: z.string().optional().nullable(),
   chatMode: z.enum(["OPEN", "ORG_ONLY", "DISABLED"]).default("DISABLED"),
   saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS"]),
+  swissRounds: z.coerce.number().int().min(1).max(20).default(5),
+  bracketSize: z.coerce.number().int().min(2).max(64).default(16),
   sundayFormat: z.enum(["SE", "DE"]),
   status: z.enum(["UPCOMING", "LIVE", "COMPLETED"]),
   locked: z.coerce.boolean(),
@@ -127,7 +129,7 @@ export async function updateTournamentAction(formData: FormData) {
 export async function generatePoolsAction(id: string) {
   const tournament = await prisma.tournament.findUnique({
     where: { id },
-    include: { teams: true }
+    include: { teams: { where: { selected: true } } }
   });
   if (!tournament) return { error: "Not found" };
 
@@ -157,25 +159,26 @@ export async function generatePoolsAction(id: string) {
         data: pool.teams.map((team) => ({ poolId: createdPool.id, teamId: team.id }))
       });
 
-      for (const match of matches.filter((m) => m.poolName === pool.name)) {
-        await tx.match.create({
-          data: {
+      const poolMatches = matches.filter((m) => m.poolName === pool.name);
+      if (poolMatches.length > 0) {
+        await tx.match.createMany({
+          data: poolMatches.map((match) => ({
             tournamentId: id,
-            phase: "POOL",
+            phase: "POOL" as const,
             poolId: createdPool.id,
             bracketSide: null,
             roundIndex: 1,
             courtName: match.courtName,
             startAt: match.startAt,
             dayIndex: "SAT",
-            status: "SCHEDULED",
+            status: "SCHEDULED" as const,
             teamAId: match.teamAId,
             teamBId: match.teamBId
-          }
+          }))
         });
       }
     }
-  });
+  }, { timeout: 15000 });
 
   revalidatePath(`/tournament/${id}`);
   return { ok: true };
@@ -184,7 +187,7 @@ export async function generatePoolsAction(id: string) {
 export async function generateBracketAction(id: string) {
   const tournament = await prisma.tournament.findUnique({
     where: { id },
-    include: { teams: true, matches: true }
+    include: { teams: { where: { selected: true } }, matches: true }
   });
   if (!tournament) return { error: "Not found" };
 
@@ -198,6 +201,12 @@ export async function generateBracketAction(id: string) {
     seededTeams = standings
       .map((row) => tournament.teams.find((t) => t.id === row.teamId))
       .filter((t): t is NonNullable<typeof t> => t !== undefined);
+  }
+
+  // Limit to bracketSize (top N teams from standings)
+  const bracketSize = tournament.bracketSize ?? 16;
+  if (seededTeams.length > bracketSize) {
+    seededTeams = seededTeams.slice(0, bracketSize);
   }
 
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
@@ -353,7 +362,7 @@ export async function importTeamsAction(id: string, raw: string) {
 export async function generateSwissRoundAction(id: string) {
   const tournament = await prisma.tournament.findUnique({
     where: { id },
-    include: { teams: true, matches: true }
+    include: { teams: { where: { selected: true } }, matches: true }
   });
   if (!tournament) return { error: "Tournoi introuvable" };
 
@@ -369,6 +378,12 @@ export async function generateSwissRoundAction(id: string) {
     if (unfinished.length > 0) {
       return { error: `Le tour Swiss ${existingRounds} contient encore ${unfinished.length} match(es) non terminé(s).` };
     }
+  }
+
+  // Stop generating rounds if we've reached the configured limit
+  const maxRounds = tournament.swissRounds ?? 5;
+  if (existingRounds >= maxRounds) {
+    return { error: `Tous les ${maxRounds} tours Swiss sont terminés.` };
   }
 
   const standings = computeStandings(tournament.teams, swissMatches);
@@ -517,13 +532,25 @@ export async function deleteTeamAction(
   teamId: string,
   tournamentId: string
 ): Promise<{ ok?: boolean; error?: string }> {
+  const team = await prisma.team.findUnique({
+    where: { id: teamId },
+    select: { selected: true, waitlistPosition: true },
+  });
+
   // Supprimer les relations avant l'équipe
   await prisma.teamPlayer.deleteMany({ where: { teamId } });
   await prisma.poolTeam.deleteMany({ where: { teamId } });
-  // Retirer les références dans les matchs (teamA/teamB) sans supprimer les matchs
   await prisma.match.updateMany({ where: { teamAId: teamId }, data: { teamAId: null } });
   await prisma.match.updateMany({ where: { teamBId: teamId }, data: { teamBId: null } });
   await prisma.team.delete({ where: { id: teamId } });
+
+  // Dans tous les cas : remettre toutes les équipes non-sélectionnées en pool libre
+  // (waitlistPosition = null) pour relancer un tirage propre
+  await prisma.team.updateMany({
+    where: { tournamentId, selected: false },
+    data: { waitlistPosition: null },
+  });
+
   revalidatePath(`/tournament/${tournamentId}/edit`);
   revalidatePath(`/tournament/${tournamentId}`);
   return { ok: true };
@@ -558,6 +585,13 @@ export async function toggleTeamGuaranteedAction(
     where: { id: teamId },
     data: { guaranteed, ...(guaranteed ? { selected: true } : {}) },
   });
+  // Quand on retire un garanti, remettre toutes les WL en pool libre
+  if (!guaranteed) {
+    await prisma.team.updateMany({
+      where: { tournamentId, selected: false },
+      data: { waitlistPosition: null },
+    });
+  }
   return { ok: true };
 }
 
@@ -746,6 +780,43 @@ export async function resubmitTournamentAction(id: string): Promise<{ ok?: boole
     data: { submissionStatus: "PENDING", rejectionReason: null, approved: false }
   });
 
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+/**
+ * Lance le tournoi : verrouille, passe en LIVE, génère les poules/swiss (samedi).
+ */
+export async function launchTournamentAction(
+  id: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: { teams: { where: { selected: true } }, matches: { select: { id: true } } },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if (tournament.status === "LIVE" && tournament.matches.length > 0) return { error: "Le tournoi est déjà en cours avec des matchs." };
+  if (tournament.status === "COMPLETED") return { error: "Le tournoi est déjà terminé." };
+
+  const selectedCount = tournament.teams.length;
+  if (selectedCount < 3) return { error: `Pas assez d'équipes sélectionnées (${selectedCount}). Minimum 3.` };
+
+  // Verrouiller + passer LIVE
+  await prisma.tournament.update({
+    where: { id },
+    data: { status: "LIVE", locked: true },
+  });
+
+  // Générer les matchs du samedi selon le format choisi
+  if (tournament.saturdayFormat === "SWISS") {
+    const res = await generateSwissRoundAction(id);
+    if (res.error) return { error: `Lancement OK mais erreur Swiss : ${res.error}` };
+  } else {
+    const res = await generatePoolsAction(id);
+    if (res.error) return { error: `Lancement OK mais erreur Poules : ${res.error}` };
+  }
+
+  revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);
   return { ok: true };
 }

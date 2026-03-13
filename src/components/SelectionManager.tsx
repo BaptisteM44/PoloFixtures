@@ -90,12 +90,14 @@ export function SelectionManager({
   }
 
   function handleGuarantee(teamId: string, current: boolean) {
+    const removing = current; // current=true → on retire un garanti
     setTeams((prev) =>
-      prev.map((t) =>
-        t.id === teamId
-          ? { ...t, guaranteed: !current, selected: !current ? true : t.selected }
-          : t
-      )
+      prev.map((t) => {
+        if (t.id === teamId) return { ...t, guaranteed: !current, selected: !current ? true : t.selected };
+        // Quand on retire un garanti, remettre toutes les WL en pool libre
+        if (removing && t.waitlistPosition !== null) return { ...t, waitlistPosition: null };
+        return t;
+      })
     );
     if (current) setDrawPool((prev) => { const n = new Set(prev); n.delete(teamId); return n; });
     startTransition(async () => {
@@ -106,24 +108,41 @@ export function SelectionManager({
 
   /** Tirage unitaire : 1 équipe tirée au sort parmi le drawPool */
   function handleDrawOne() {
+    if (isPending) return;
     setError(null);
     setLastWinnerId(null);
     const candidates = Array.from(drawPool).filter((id) => pool.some((t) => t.id === id));
     if (candidates.length === 0) return;
 
-    const winnerId = candidates[Math.floor(Math.random() * candidates.length)];
-    setLastWinnerId(winnerId);
+    // Tirage local immédiat (optimistic)
+    const localWinnerId = candidates[Math.floor(Math.random() * candidates.length)];
+    setLastWinnerId(localWinnerId);
     setTeams((prev) =>
-      prev.map((t) => (t.id === winnerId ? { ...t, guaranteed: true, selected: true } : t))
+      prev.map((t) => (t.id === localWinnerId ? { ...t, guaranteed: true, selected: true } : t))
     );
-    setDrawPool((prev) => { const n = new Set(prev); n.delete(winnerId); return n; });
+    setDrawPool((prev) => { const n = new Set(prev); n.delete(localWinnerId); return n; });
 
+    // Persistance serveur — si le serveur tire un gagnant différent, on corrige
     startTransition(async () => {
       const res = await drawOneAction(tournamentId, candidates);
       if (res.error) {
         setError(res.error);
-        setTeams((prev) => prev.map((t) => (t.id === winnerId ? { ...t, guaranteed: false } : t)));
+        setTeams((prev) => prev.map((t) => (t.id === localWinnerId ? { ...t, guaranteed: false } : t)));
         setLastWinnerId(null);
+        setDrawPool((prev) => { const n = new Set(prev); n.add(localWinnerId); return n; });
+        return;
+      }
+      if (res.winnerId && res.winnerId !== localWinnerId) {
+        // Corriger si le serveur a tiré différemment
+        setTeams((prev) =>
+          prev.map((t) => {
+            if (t.id === localWinnerId) return { ...t, guaranteed: false };
+            if (t.id === res.winnerId) return { ...t, guaranteed: true, selected: true };
+            return t;
+          })
+        );
+        setLastWinnerId(res.winnerId);
+        setDrawPool((prev) => { const n = new Set(prev); n.add(localWinnerId); n.delete(res.winnerId!); return n; });
       }
     });
   }
@@ -144,25 +163,41 @@ export function SelectionManager({
 
   /** Tirage waiting list : 1 équipe tirée au sort parmi le wlDrawPool → rang WL suivant */
   function handleDrawOneWaitlist() {
+    if (isPending) return;
     setError(null);
     setLastWlWinnerId(null);
     const candidates = Array.from(wlDrawPool).filter((id) => pool.some((t) => t.id === id));
     if (candidates.length === 0) return;
 
-    const winnerId = candidates[Math.floor(Math.random() * candidates.length)];
+    // Tirage local immédiat (optimistic)
+    const localWinnerId = candidates[Math.floor(Math.random() * candidates.length)];
     const nextRank = (Math.max(0, ...waitlisted.map((t) => t.waitlistPosition ?? 0))) + 1;
-    setLastWlWinnerId(winnerId);
+    setLastWlWinnerId(localWinnerId);
     setTeams((prev) =>
-      prev.map((t) => (t.id === winnerId ? { ...t, waitlistPosition: nextRank, selected: false } : t))
+      prev.map((t) => (t.id === localWinnerId ? { ...t, waitlistPosition: nextRank, selected: false } : t))
     );
-    setWlDrawPool((prev) => { const n = new Set(prev); n.delete(winnerId); return n; });
+    setWlDrawPool((prev) => { const n = new Set(prev); n.delete(localWinnerId); return n; });
 
+    // Persistance serveur — correction si divergence
     startTransition(async () => {
       const res = await drawOneWaitlistAction(tournamentId, candidates);
       if (res.error) {
         setError(res.error);
-        setTeams((prev) => prev.map((t) => (t.id === winnerId ? { ...t, waitlistPosition: null } : t)));
+        setTeams((prev) => prev.map((t) => (t.id === localWinnerId ? { ...t, waitlistPosition: null } : t)));
         setLastWlWinnerId(null);
+        setWlDrawPool((prev) => { const n = new Set(prev); n.add(localWinnerId); return n; });
+        return;
+      }
+      if (res.winnerId && res.winnerId !== localWinnerId) {
+        setTeams((prev) =>
+          prev.map((t) => {
+            if (t.id === localWinnerId) return { ...t, waitlistPosition: null };
+            if (t.id === res.winnerId) return { ...t, waitlistPosition: res.waitlistPosition!, selected: false };
+            return t;
+          })
+        );
+        setLastWlWinnerId(res.winnerId);
+        setWlDrawPool((prev) => { const n = new Set(prev); n.add(localWinnerId); n.delete(res.winnerId!); return n; });
       }
     });
   }

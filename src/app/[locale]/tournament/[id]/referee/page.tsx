@@ -89,6 +89,7 @@ export default async function RefereeMatchPage({ params }: { params: { id: strin
             type: e.type,
             matchClockSec: e.matchClockSec,
             payload: e.payload as Record<string, unknown>,
+            createdAt: e.createdAt.toISOString(),
           })),
         })),
       }}

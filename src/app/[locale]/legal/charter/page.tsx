@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Charte de bonne conduite — PoloFixtures" };
+export const metadata: Metadata = { title: "Charte de bonne conduite — Poloperator" };
 
 export default async function CharterPage() {
   const t = await getTranslations("legal_charter");

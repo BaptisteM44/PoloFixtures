@@ -70,7 +70,7 @@ function LoginForm() {
           <form className="panel form" onSubmit={submitAdmin} style={{ display: 'grid', gap: 16 }}>
             <label className="field-row">
               {t('field_admin_code')}
-              <input type="password" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="ADMIN2025" />
+              <input type="password" required value={code} onChange={(e) => setCode(e.target.value)} placeholder="password" />
             </label>
             {error && <p className="error">{error}</p>}
             <button className="primary" type="submit" disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>

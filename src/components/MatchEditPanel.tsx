@@ -23,9 +23,10 @@ type Props = {
   match: MatchForEdit | null;
   onClose: () => void;
   onSaved: (updated: { id: string; scoreA: number; scoreB: number; status: string }) => void;
+  isOrganizer?: boolean;
 };
 
-export function MatchEditPanel({ match, onClose, onSaved }: Props) {
+export function MatchEditPanel({ match, onClose, onSaved, isOrganizer }: Props) {
   const { data: session } = useSession();
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);
@@ -46,6 +47,7 @@ export function MatchEditPanel({ match, onClose, onSaved }: Props) {
   if (!match) return null;
 
   const canEdit =
+    isOrganizer ||
     session?.user?.role === "REF" ||
     session?.user?.role === "ADMIN" ||
     session?.user?.role === "ORGA";

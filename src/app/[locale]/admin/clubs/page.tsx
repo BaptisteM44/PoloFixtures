@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/AdminNav";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
+import { AdminClubActions } from "@/components/AdminClubActions";
 
 export default async function AdminClubsPage() {
   const session = await auth();
@@ -58,14 +59,7 @@ export default async function AdminClubsPage() {
                   </p>
                   {club.description && <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-muted)" }}>{club.description}</p>}
                 </div>
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  <form action={`/api/admin/clubs/${club.id}/approve`} method="POST">
-                    <button type="submit" className="primary" style={{ fontSize: 13 }}>✓ {t("btn_approve")}</button>
-                  </form>
-                  <form action={`/api/admin/clubs/${club.id}/approve`} method="DELETE">
-                    <button type="submit" className="ghost" style={{ fontSize: 13, color: "var(--danger)" }}>✗ {t("btn_reject")}</button>
-                  </form>
-                </div>
+                <AdminClubActions clubId={club.id} mode="pending" />
               </div>
             ))}
           </div>
@@ -94,9 +88,7 @@ export default async function AdminClubsPage() {
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <Link href={`/club/${club.id}`} className="ghost" style={{ fontSize: 13 }}>{t("btn_view")}</Link>
-                  <form action={`/api/admin/clubs/${club.id}/approve`} method="DELETE">
-                    <button type="submit" className="ghost" style={{ fontSize: 13, color: "var(--danger)" }}>{t("btn_delete")}</button>
-                  </form>
+                  <AdminClubActions clubId={club.id} mode="approved" />
                 </div>
               </div>
             ))}

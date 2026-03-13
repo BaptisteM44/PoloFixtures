@@ -87,7 +87,7 @@ export function Header() {
               {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)}>{t("nav.admin")}</Link>}
             </div>
             <div className="nav-drawer__footer">
-              <AuthStatus />
+              <AuthStatus onNavigate={() => setMenuOpen(false)} />
             </div>
           </nav>
         </div>

@@ -13,9 +13,6 @@ const schema = z.object({
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.role || !hasAtLeastRole(session.user.role, "REF")) {
-    return new Response("Unauthorized", { status: 401 });
-  }
 
   const body = await request.json();
   const parsed = schema.safeParse(body);
@@ -26,6 +23,22 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   // Fetch match before update to check current state and next-match links
   const existing = await prisma.match.findUnique({ where: { id: params.id } });
   if (!existing) return new Response("Not found", { status: 404 });
+
+  // Auth: allow REF/ADMIN/ORGA roles OR tournament creator/co-organizer
+  const hasRole = session?.user?.role && hasAtLeastRole(session.user.role, "REF");
+  let isOrganizer = false;
+  const playerId = session?.user?.playerId;
+  if (!hasRole && playerId) {
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: existing.tournamentId },
+      select: { creatorId: true, coOrganizers: { select: { id: true } } },
+    });
+    isOrganizer = tournament?.creatorId === playerId ||
+      tournament?.coOrganizers.some((co) => co.id === playerId) || false;
+  }
+  if (!hasRole && !isOrganizer) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   const match = await prisma.match.update({
     where: { id: params.id },

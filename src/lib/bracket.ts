@@ -253,7 +253,8 @@ function generateSingleElim(
   startAt: Date,
   gameDurationMin: number
 ): GeneratedMatch[] {
-  const sorted = [...teams].sort((a, b) => a.seed - b.seed);
+  // teams is already sorted by standings (1st = best), don't re-sort by inscription seed
+  const sorted = [...teams];
   const size = nextPowerOf2(sorted.length);
   const totalRounds = Math.log2(size);
   const slotMin = gameDurationMin + 5;
@@ -309,7 +310,8 @@ function generateDoubleElim(
   startAt: Date,
   gameDurationMin: number
 ): GeneratedMatch[] {
-  const sorted = [...teams].sort((a, b) => a.seed - b.seed);
+  // teams is already sorted by standings (1st = best), don't re-sort by inscription seed
+  const sorted = [...teams];
   const size = nextPowerOf2(sorted.length);
   const seedOrder = bracketSeeding(size);
   const slots: (Team | null)[] = seedOrder.map((s) => sorted[s - 1] ?? null);

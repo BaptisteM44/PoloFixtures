@@ -136,7 +136,7 @@ export function NotificationBell() {
       {open && (
         <div className={`notif-panel${closing ? " notif-panel--closing" : ""}`} style={{
           position: "absolute", top: "calc(100% + 8px)", right: 0,
-          width: 380, background: "var(--surface)", border: "2px solid var(--border)",
+          width: 380, maxWidth: "calc(100vw - 16px)", background: "var(--surface)", border: "2px solid var(--border)",
           borderRadius: "var(--radius)", boxShadow: "var(--shadow-lg)",
           zIndex: 1000, overflow: "hidden", transformOrigin: "top right",
         }}>

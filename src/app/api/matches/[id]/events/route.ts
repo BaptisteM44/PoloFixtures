@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
-import { publishMatchUpdate } from "@/lib/sse";
+import { publishMatchUpdate, publishNewMatches } from "@/lib/sse";
+import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { z } from "zod";
 
 const schema = z.object({
@@ -15,9 +16,6 @@ const schema = z.object({
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.role || !hasAtLeastRole(session.user.role, "REF")) {
-    return new Response("Unauthorized", { status: 401 });
-  }
 
   const body = await request.json();
   const parsed = schema.safeParse(body);
@@ -27,6 +25,22 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   const match = await prisma.match.findUnique({ where: { id: params.id } });
   if (!match) return new Response("Not found", { status: 404 });
+
+  // Auth: allow REF/ADMIN/ORGA roles OR tournament creator/co-organizer
+  const hasRole = session?.user?.role && hasAtLeastRole(session.user.role, "REF");
+  let isOrganizer = false;
+  const playerId = session?.user?.playerId;
+  if (!hasRole && playerId) {
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: match.tournamentId },
+      select: { creatorId: true, coOrganizers: { select: { id: true } } },
+    });
+    isOrganizer = tournament?.creatorId === playerId ||
+      tournament?.coOrganizers.some((co) => co.id === playerId) || false;
+  }
+  if (!hasRole && !isOrganizer) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   const payload = {
     teamId: parsed.data.teamId ?? undefined,
@@ -105,6 +119,43 @@ export async function POST(request: Request, { params }: { params: { id: string 
         include: { teamA: true, teamB: true }
       });
       advancedMatches.push(updatedLose);
+    }
+  }
+
+  // Auto-advance: when a match finishes, set the next SCHEDULED match on the same court to LIVE
+  const isNowFinished = status === "FINISHED" && match.status !== "FINISHED";
+  if (isNowFinished) {
+    const nextOnCourt = await prisma.match.findFirst({
+      where: { tournamentId: match.tournamentId, courtName: match.courtName, status: "SCHEDULED" },
+      orderBy: { startAt: "asc" },
+    });
+    if (nextOnCourt) {
+      const advanced = await prisma.match.update({ where: { id: nextOnCourt.id }, data: { status: "LIVE" } });
+      publishMatchUpdate({ matchId: advanced.id, tournamentId: advanced.tournamentId, type: "match_update", data: advanced });
+    }
+  }
+
+  // Auto-generate next Swiss round when all matches of current round are finished
+  if (isNowFinished && match.phase === "SWISS") {
+    const roundMatches = await prisma.match.findMany({
+      where: { tournamentId: match.tournamentId, phase: "SWISS", roundIndex: match.roundIndex },
+    });
+    const allDone = roundMatches.every((m) => m.status === "FINISHED");
+    if (allDone) {
+      const result = await generateSwissRoundAction(match.tournamentId).catch(() => null);
+      if (result && "round" in result && result.round) {
+        const newMatches = await prisma.match.findMany({
+          where: { tournamentId: match.tournamentId, phase: "SWISS", roundIndex: result.round },
+          include: { teamA: true, teamB: true },
+        });
+        if (newMatches.length > 0) {
+          publishNewMatches({
+            tournamentId: match.tournamentId,
+            type: "new_matches",
+            matches: newMatches as unknown as Record<string, unknown>[],
+          });
+        }
+      }
     }
   }
 

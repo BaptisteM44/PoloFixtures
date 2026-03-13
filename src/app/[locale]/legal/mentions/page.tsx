@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Mentions légales — PoloFixtures" };
+export const metadata: Metadata = { title: "Mentions légales — Poloperator" };
 
 export default async function MentionsLegalesPage() {
   const t = await getTranslations("legal_mentions");

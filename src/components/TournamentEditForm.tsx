@@ -42,6 +42,8 @@ type Tournament = {
   streamYoutubeUrl: string | null;
   chatMode: string;
   saturdayFormat: string;
+  swissRounds?: number | null;
+  bracketSize?: number | null;
   sundayFormat: string;
   status: string;
   locked: boolean;
@@ -198,15 +200,29 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     <div className="panel" style={{ marginBottom: 24 }}>
       <div className="edit-header">
         <h2 style={{ margin: 0 }}>Modifier les informations du tournoi</h2>
-        <button
-          type="button"
-          className={isLocked ? "ghost" : "primary"}
-          onClick={handleToggleLock}
-          disabled={lockPending}
-          style={{ fontSize: 13, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}
-        >
-          {lockPending ? "…" : isLocked ? "🔒 Verrouillé" : "🔓 Déverrouillé"}
-        </button>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button
+            type="button"
+            className="ghost"
+            style={{ fontSize: 12, whiteSpace: "nowrap", padding: "6px 12px", color: "var(--pink)", borderColor: "var(--pink)" }}
+            onClick={() => {
+              if (!window.confirm("Clôturer les inscriptions maintenant ? Les équipes ne pourront plus s'inscrire. Cette action sera effective après avoir sauvegardé.")) return;
+              const input = document.getElementById("registrationEnd") as HTMLInputElement;
+              if (input) input.value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            }}
+          >
+            Clôturer inscriptions
+          </button>
+          <button
+            type="button"
+            className={isLocked ? "ghost" : "primary"}
+            onClick={handleToggleLock}
+            disabled={lockPending}
+            style={{ fontSize: 13, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            {lockPending ? "…" : isLocked ? "🔒 Verrouillé" : "🔓 Déverrouillé"}
+          </button>
+        </div>
       </div>
       {isLocked && (
         <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
@@ -234,6 +250,8 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           <input type="hidden" name="maxTeams" value={tournament.maxTeams} />
           <input type="hidden" name="courtsCount" value={tournament.courtsCount} />
           <input type="hidden" name="saturdayFormat" value={tournament.saturdayFormat} />
+          <input type="hidden" name="swissRounds" value={tournament.swissRounds ?? 5} />
+          <input type="hidden" name="bracketSize" value={tournament.bracketSize ?? 16} />
           <input type="hidden" name="sundayFormat" value={tournament.sundayFormat} />
         </>}
         <input type="hidden" name="region" value={tournament.region ?? ""} />
@@ -292,27 +310,12 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </label>
           <label className="field-row">
             Fin inscriptions
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                type="datetime-local"
-                name="registrationEnd"
-                id="registrationEnd"
-                defaultValue={tournament.registrationEnd ? new Date(tournament.registrationEnd).toISOString().slice(0, 16) : ""}
-                style={{ flex: 1 }}
-              />
-              <button
-                type="button"
-                className="ghost"
-                style={{ fontSize: 12, whiteSpace: "nowrap", padding: "4px 10px" }}
-                onClick={() => {
-                  if (!window.confirm("Clôturer les inscriptions maintenant ? Les équipes ne pourront plus s'inscrire. Cette action sera effective après avoir sauvegardé.")) return;
-                  const input = document.getElementById("registrationEnd") as HTMLInputElement;
-                  if (input) input.value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-                }}
-              >
-                Clôturer maintenant
-              </button>
-            </div>
+            <input
+              type="datetime-local"
+              name="registrationEnd"
+              id="registrationEnd"
+              defaultValue={tournament.registrationEnd ? new Date(tournament.registrationEnd).toISOString().slice(0, 16) : ""}
+            />
           </label>
           <label className="field-row">
             Format
@@ -369,6 +372,14 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
               <option value="SPLIT_POOLS">Poules séparées</option>
               <option value="SWISS">Swiss</option>
             </select>
+          </label>
+          <label className="field-row">
+            Nombre de tours Swiss
+            <input type="number" name="swissRounds" defaultValue={tournament.swissRounds ?? 5} min={1} max={20} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
+          </label>
+          <label className="field-row">
+            Équipes qualifiées pour le bracket
+            <input type="number" name="bracketSize" defaultValue={tournament.bracketSize ?? 16} min={2} max={64} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
           </label>
           <label className="field-row">
             Format dimanche
