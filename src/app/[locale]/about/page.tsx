@@ -101,32 +101,32 @@ export default async function AboutPage() {
       <section className="about-stagger">
         <div className="about-stagger-item about-stagger-item--left">
           <div className="about-stagger-img-wrap">
-            <ParallaxImage src="/live.png" alt="Match en live" />
+            <ParallaxImage src="/live.png" alt={t("stagger1_title")} />
           </div>
           <div className="about-stagger-text">
-            <span className="about-stagger-tag">Live</span>
-            <h3>Matches en direct</h3>
-            <p>Suivez chaque but, chaque score en temps réel depuis n'importe quel appareil.</p>
+            <span className="about-stagger-tag">{t("stagger1_tag")}</span>
+            <h3>{t("stagger1_title")}</h3>
+            <p>{t("stagger1_desc")}</p>
           </div>
         </div>
         <div className="about-stagger-item about-stagger-item--right">
           <div className="about-stagger-img-wrap">
-            <ParallaxImage src="/tirage.png" alt="Tirage au sort" />
+            <ParallaxImage src="/tirage.png" alt={t("stagger2_title")} />
           </div>
           <div className="about-stagger-text">
-            <span className="about-stagger-tag">Organisation</span>
-            <h3>Tirage au sort</h3>
-            <p>Générez vos poules automatiquement, avec optimisation des têtes de série.</p>
+            <span className="about-stagger-tag">{t("stagger2_tag")}</span>
+            <h3>{t("stagger2_title")}</h3>
+            <p>{t("stagger2_desc")}</p>
           </div>
         </div>
         <div className="about-stagger-item about-stagger-item--left">
           <div className="about-stagger-img-wrap">
-            <ParallaxImage src="/bracket.png" alt="Podium" />
+            <ParallaxImage src="/bracket.png" alt={t("stagger3_title")} />
           </div>
           <div className="about-stagger-text">
-            <span className="about-stagger-tag">Bracket</span>
-            <h3>Tableau final</h3>
-            <p>Un bracket clair, mis à jour en live jusqu'au podium.</p>
+            <span className="about-stagger-tag">{t("stagger3_tag")}</span>
+            <h3>{t("stagger3_title")}</h3>
+            <p>{t("stagger3_desc")}</p>
           </div>
         </div>
       </section>
@@ -149,32 +149,32 @@ export default async function AboutPage() {
       <section className="about-stagger">
         <div className="about-stagger-item about-stagger-item--right">
           <div className="about-stagger-img-wrap">
-            <ParallaxImage src="/matchs.png" alt="Vue tournoi live" />
+            <ParallaxImage src="/matchs.png" alt={t("stagger4_title")} />
           </div>
           <div className="about-stagger-text">
-            <span className="about-stagger-tag">App</span>
-            <h3>Vue tournoi live</h3>
-            <p>Tous les matchs d'un tournoi sur une seule page, mis à jour en temps réel.</p>
+            <span className="about-stagger-tag">{t("stagger4_tag")}</span>
+            <h3>{t("stagger4_title")}</h3>
+            <p>{t("stagger4_desc")}</p>
           </div>
         </div>
         <div className="about-stagger-item about-stagger-item--left">
           <div className="about-stagger-img-wrap about-stagger-img-wrap--portrait">
-            <ParallaxImage src="/arbitre2.png" alt="Console arbitre" />
+            <ParallaxImage src="/arbitre2.png" alt={t("stagger5_title")} />
           </div>
           <div className="about-stagger-text">
-            <span className="about-stagger-tag">Arbitrage</span>
-            <h3>Console arbitre</h3>
-            <p>Saisissez les buts, gérez le chrono et le golden goal directement depuis votre téléphone.</p>
+            <span className="about-stagger-tag">{t("stagger5_tag")}</span>
+            <h3>{t("stagger5_title")}</h3>
+            <p>{t("stagger5_desc")}</p>
           </div>
         </div>
         <div className="about-stagger-item about-stagger-item--right">
           <div className="about-stagger-img-wrap">
-            <ParallaxImage src="/tableau.png" alt="Tableau des poules" />
+            <ParallaxImage src="/tableau.png" alt={t("stagger6_title")} />
           </div>
           <div className="about-stagger-text">
-            <span className="about-stagger-tag">Classement</span>
-            <h3>Tableau des poules</h3>
-            <p>Points, goal average, qualifications — tout est calculé et affiché instantanément.</p>
+            <span className="about-stagger-tag">{t("stagger6_tag")}</span>
+            <h3>{t("stagger6_title")}</h3>
+            <p>{t("stagger6_desc")}</p>
           </div>
         </div>
       </section>
@@ -213,7 +213,7 @@ export default async function AboutPage() {
         </div>
         <div className="about-card-section__card">
           <PokemonCard
-            name="Baptiste M."
+            name="BM"
             country="France"
             city="Paris"
             badges={[
