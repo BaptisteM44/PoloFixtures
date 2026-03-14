@@ -122,6 +122,11 @@ export async function updateTournamentAction(formData: FormData) {
         faq: faqJson,
         telegramUrl: data.telegramUrl || null,
         streamYoutubeUrl: data.streamYoutubeUrl || null,
+        swissRounds: data.swissRounds,
+        bracketSize: data.bracketSize,
+        chatMode: data.chatMode,
+        saturdayFormat: data.saturdayFormat,
+        sundayFormat: data.sundayFormat,
       }
     });
   } catch (err) {
