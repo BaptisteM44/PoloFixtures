@@ -110,10 +110,16 @@ export default async function TournamentPage({
   const hasCommunity = tournament.freeAgents.length > 0 || t_.chatMode !== "DISABLED";
   const youtubeEmbed = toYoutubeEmbed(t_.streamYoutubeUrl);
 
+  const now = new Date();
+  const registrationOpen =
+    (!tournament.registrationStart || now >= new Date(tournament.registrationStart)) &&
+    (!tournament.registrationEnd || now <= new Date(tournament.registrationEnd));
+  const registrationClosed = !!tournament.registrationEnd && now > new Date(tournament.registrationEnd);
+
   const tabs = [
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
     { label: t("tab_info"), value: "info", href: `/tournament/${params.id}?tab=info` },
-    { label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` },
+    ...(!registrationClosed ? [{ label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` }] : []),
     ...(isLaunched ? [{ label: t("tab_schedule"), value: "schedule", href: `/tournament/${params.id}?tab=schedule` }] : []),
     ...(isLaunched && tournament.saturdayFormat !== "SWISS" ? [{ label: t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
     ...(isLaunched && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
@@ -125,12 +131,6 @@ export default async function TournamentPage({
   ];
 
   const allEvents = tournament.matches.flatMap((m) => m.events);
-
-  const now = new Date();
-  const registrationOpen =
-    (!tournament.registrationStart || now >= new Date(tournament.registrationStart)) &&
-    (!tournament.registrationEnd || now <= new Date(tournament.registrationEnd));
-  const registrationClosed = !!tournament.registrationEnd && now > new Date(tournament.registrationEnd);
 
   // Orga dashboard data (only fetched when needed)
   let orgaTasks: { id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignedTo: { id: string; name: string } | null; createdBy: { id: string; name: string }; createdAt: string }[] = [];
