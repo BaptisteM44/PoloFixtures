@@ -74,6 +74,7 @@ export default async function TournamentPage({
 
   if (!tournament) return <div>{t("not_found")}</div>;
 
+  const t_ = tournament as any;
   const isCompleted = tournament.status === "COMPLETED";
   const tab = searchParams.tab ?? (isCompleted ? "recap" : "info");
 
@@ -106,8 +107,8 @@ export default async function TournamentPage({
   const dateStart = new Date(tournament.dateStart).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   const dateEnd = new Date(tournament.dateEnd).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
-  const hasCommunity = tournament.freeAgents.length > 0 || tournament.chatMode !== "DISABLED";
-  const youtubeEmbed = toYoutubeEmbed(tournament.streamYoutubeUrl);
+  const hasCommunity = tournament.freeAgents.length > 0 || t_.chatMode !== "DISABLED";
+  const youtubeEmbed = toYoutubeEmbed(t_.streamYoutubeUrl);
 
   const tabs = [
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
@@ -118,7 +119,7 @@ export default async function TournamentPage({
     ...(isLaunched && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
     ...(isLaunched ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : []),
     { label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
-    ...(youtubeEmbed || tournament.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
+    ...(youtubeEmbed || t_.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(isOrga ? [{ label: t("tab_orga"), value: "orga", href: `/tournament/${params.id}?tab=orga` }] : []),
   ];
@@ -638,14 +639,14 @@ export default async function TournamentPage({
         }
         const swissAll = tournament.matches.filter((m) => m.phase === "SWISS");
         const maxSwissRound = swissAll.length > 0 ? Math.max(...swissAll.map((m) => m.roundIndex)) : 0;
-        const swissDone = maxSwissRound >= (tournament.swissRounds ?? 5) && swissAll.every((m) => m.status === "FINISHED");
+        const swissDone = maxSwissRound >= (t_.swissRounds ?? 5) && swissAll.every((m) => m.status === "FINISHED");
         const canLaunch = isOrga && isLaunched && (swissDone || tournament.saturdayFormat !== "SWISS");
         return (
           <div className="panel" style={{ textAlign: "center", padding: 48, marginTop: 16 }}>
             {canLaunch ? (
               <>
                 <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 8, fontSize: 18 }}>
-                  Top {tournament.bracketSize ?? 16} qualifiés
+                  Top {t_.bracketSize ?? 16} qualifiés
                 </p>
                 <p className="meta" style={{ marginBottom: 20 }}>
                   {tournament.sundayFormat === "DE" ? "Double élimination" : "Simple élimination"}
@@ -981,11 +982,11 @@ export default async function TournamentPage({
             </div>
 
             {/* Chat */}
-            {tournament.chatMode !== "DISABLED" ? (
+            {t_.chatMode !== "DISABLED" ? (
               <div className="panel" style={{ minHeight: 400 }}>
                 <TournamentChat
                   tournamentId={tournament.id}
-                  chatMode={tournament.chatMode}
+                  chatMode={t_.chatMode}
                   currentPlayerId={currentPlayerId}
                   currentPlayerName={currentPlayerName}
                   isOrga={isOrga}
@@ -1036,11 +1037,11 @@ export default async function TournamentPage({
           </div>
 
           {/* Chat */}
-          {tournament.chatMode !== "DISABLED" ? (
+          {t_.chatMode !== "DISABLED" ? (
             <div className="panel" style={{ minHeight: 400 }}>
               <TournamentChat
                 tournamentId={tournament.id}
-                chatMode={tournament.chatMode}
+                chatMode={t_.chatMode}
                 currentPlayerId={currentPlayerId}
                 currentPlayerName={currentPlayerName}
                 isOrga={isOrga}
