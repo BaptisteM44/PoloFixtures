@@ -76,6 +76,7 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
           </SessionProvider>
         </NextIntlClientProvider>
         <SpeedInsights />
+        <script defer src="https://cloud.umami.is/script.js" data-website-id="7cfea7de-a1f5-4085-a45a-886bb62a83fe" />
       </body>
     </html>
   );
