@@ -206,11 +206,8 @@ export default async function AboutPage() {
           <h2>{t("card_section_title")}</h2>
           <p>{t("card_section_desc")}</p>
           <div className="about-card-stars">
-            {"★★★".split("").map((s, i) => (
+            {"★★★★★".split("").map((s, i) => (
               <span key={i} style={{ color: "var(--yellow)", fontSize: 24 }}>{s}</span>
-            ))}
-            {"★★".split("").map((s, i) => (
-              <span key={i} style={{ color: "var(--text-muted)", fontSize: 24 }}>{s}</span>
             ))}
           </div>
         </div>
@@ -219,11 +216,19 @@ export default async function AboutPage() {
             name="Baptiste M."
             country="France"
             city="Paris"
-            badges={["champion", "hat_trick", "tidal_wave"]}
+            badges={[
+              "unbeaten", "eruption", "century_club",
+              "champion", "back_to_back", "comeback_kid", "globe_trotter", "circus_act",
+              "hat_trick", "tidal_wave", "golden_double", "on_fire", "dragon_slayer", "goal_machine",
+              "reverse_sweep", "wild_card", "united_nations", "no_days_off",
+              "first_blood", "hat_trick", "podium", "dedicated",
+              "veteran", "tidal_wave", "on_fire", "dragon_slayer",
+              "wild_card", "comeback_kid", "globe_trotter", "circus_act",
+            ]}
             startYear={2019}
             theme="teal"
-            metalBorder="gold"
-            holoVariant="iris"
+            metalBorder="diamond"
+            holoVariant="constellation"
           />
         </div>
       </section>
