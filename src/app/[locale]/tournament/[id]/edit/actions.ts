@@ -103,7 +103,8 @@ export async function updateTournamentAction(formData: FormData) {
     : existing.slug;
 
   try {
-    await prisma.tournament.update({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma.tournament.update as any)({
       where: { id: data.id },
       data: {
         ...rest,
@@ -122,10 +123,10 @@ export async function updateTournamentAction(formData: FormData) {
         telegramUrl: data.telegramUrl || null,
         swissRounds: data.swissRounds,
         bracketSize: data.bracketSize,
-        chatMode: data.chatMode as "OPEN" | "ORG_ONLY" | "DISABLED",
+        chatMode: data.chatMode,
         streamYoutubeUrl: data.streamYoutubeUrl || null,
-        saturdayFormat: data.saturdayFormat as "ALL_DAY" | "SPLIT_POOLS" | "SWISS",
-        sundayFormat: data.sundayFormat as "SE" | "DE",
+        saturdayFormat: data.saturdayFormat,
+        sundayFormat: data.sundayFormat,
       }
     });
   } catch (err) {
