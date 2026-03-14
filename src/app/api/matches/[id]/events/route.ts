@@ -81,6 +81,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (parsed.data.type === "START") status = "LIVE";
   // PAUSE garde le match LIVE — c'est juste une pause du chrono local
   if (parsed.data.type === "END") {
+    // Block ending a BRACKET match on a draw
+    if (match.phase === "BRACKET" && scoreA === scoreB) {
+      return Response.json({ error: "Impossible de terminer un match de bracket sur une égalité. Utilisez le Golden Goal pour désigner un vainqueur." }, { status: 422 });
+    }
     status = "FINISHED";
     if (match.teamAId && match.teamBId) {
       if (scoreA > scoreB) winnerTeamId = match.teamAId;

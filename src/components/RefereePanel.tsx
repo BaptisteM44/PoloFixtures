@@ -23,6 +23,7 @@ export function RefereePanel() {
   const [clockSec, setClockSec] = useState(0);
   const [running, setRunning] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [matchError, setMatchError] = useState<string | null>(null);
   const [volume, setVolume] = useState(0.4);
   const [buzzerPlayed, setBuzzerPlayed] = useState(false);
 
@@ -88,6 +89,7 @@ export function RefereePanel() {
 
   const postEvent = async (type: string, payload: Record<string, unknown> = {}) => {
     if (!selectedMatch) return;
+    setMatchError(null);
     const response = await fetch(`/api/matches/${selectedMatch.id}/events`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -99,6 +101,10 @@ export function RefereePanel() {
     });
 
     const data = await response.json();
+    if (!response.ok) {
+      setMatchError(data?.error ?? "Erreur inconnue");
+      return;
+    }
     if (data?.match) {
       setSelectedMatch((prev) => {
         if (!prev) return prev;
@@ -341,6 +347,9 @@ export function RefereePanel() {
               </button>
             </div>
             <button className="danger" style={{ marginTop: 8 }} onClick={() => postEvent("END")}>End Match</button>
+            {matchError && (
+              <p style={{ color: "var(--pink)", fontSize: 13, marginTop: 8, fontWeight: 600 }}>{matchError}</p>
+            )}
           </div>
         </div>
       )}

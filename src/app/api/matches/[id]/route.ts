@@ -40,6 +40,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     return new Response("Unauthorized", { status: 401 });
   }
 
+  const scoreA = parsed.data.scoreA ?? existing.scoreA ?? 0;
+  const scoreB = parsed.data.scoreB ?? existing.scoreB ?? 0;
+
+  // Block finishing a BRACKET match on a draw
+  if (parsed.data.status === "FINISHED" && existing.phase === "BRACKET" && scoreA === scoreB) {
+    return Response.json({ error: "Impossible de clôturer un match de bracket sur une égalité. Un vainqueur est obligatoire." }, { status: 422 });
+  }
+
   const match = await prisma.match.update({
     where: { id: params.id },
     data: parsed.data
@@ -47,19 +55,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
   // Cascade: when a match becomes FINISHED, advance winner to next match
   const isNowFinished = parsed.data.status === "FINISHED" && existing.status !== "FINISHED";
-  const scoreA = parsed.data.scoreA ?? existing.scoreA ?? 0;
-  const scoreB = parsed.data.scoreB ?? existing.scoreB ?? 0;
+  const wasAlreadyFinished = parsed.data.status === "FINISHED" && existing.status === "FINISHED";
   const advancedMatchesPut: Record<string, unknown>[] = [];
 
-  if (isNowFinished) {
-    const winnerId = scoreA > scoreB ? existing.teamAId : scoreB > scoreA ? existing.teamBId : null;
-    const loserId = winnerId === existing.teamAId ? existing.teamBId : existing.teamAId;
-
-    // Persiste winnerTeamId sur le match terminé
+  // Helper to propagate winner/loser into next matches
+  const propagateBracket = async (winnerId: string | null, loserId: string | null) => {
     if (winnerId) {
       await prisma.match.update({ where: { id: match.id }, data: { winnerTeamId: winnerId } });
     }
-
     if (winnerId && match.nextMatchWinId) {
       const updatedWin = await prisma.match.update({
         where: { id: match.nextMatchWinId },
@@ -68,7 +71,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       });
       advancedMatchesPut.push(updatedWin);
     }
-
     if (loserId && match.nextMatchLoseId && match.nextSlotLose) {
       const updatedLose = await prisma.match.update({
         where: { id: match.nextMatchLoseId },
@@ -76,6 +78,45 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         include: { teamA: true, teamB: true }
       });
       advancedMatchesPut.push(updatedLose);
+    }
+  };
+
+  if (isNowFinished && existing.phase === "BRACKET") {
+    const winnerId = scoreA > scoreB ? existing.teamAId : existing.teamBId;
+    const loserId = winnerId === existing.teamAId ? existing.teamBId : existing.teamAId;
+    await propagateBracket(winnerId, loserId);
+  } else if (isNowFinished) {
+    // Non-bracket: original logic (draw allowed)
+    const winnerId = scoreA > scoreB ? existing.teamAId : scoreB > scoreA ? existing.teamBId : null;
+    const loserId = winnerId === existing.teamAId ? existing.teamBId : existing.teamAId;
+    if (winnerId) {
+      await prisma.match.update({ where: { id: match.id }, data: { winnerTeamId: winnerId } });
+    }
+    if (winnerId && match.nextMatchWinId) {
+      const updatedWin = await prisma.match.update({
+        where: { id: match.nextMatchWinId },
+        data: match.nextSlotWin === "A" ? { teamAId: winnerId } : { teamBId: winnerId },
+        include: { teamA: true, teamB: true }
+      });
+      advancedMatchesPut.push(updatedWin);
+    }
+    if (loserId && match.nextMatchLoseId && match.nextSlotLose) {
+      const updatedLose = await prisma.match.update({
+        where: { id: match.nextMatchLoseId },
+        data: match.nextSlotLose === "A" ? { teamAId: loserId } : { teamBId: loserId },
+        include: { teamA: true, teamB: true }
+      });
+      advancedMatchesPut.push(updatedLose);
+    }
+  } else if (wasAlreadyFinished && existing.phase === "BRACKET") {
+    // Score correction on already-finished BRACKET match: re-propagate with new winner
+    const newWinnerId = scoreA > scoreB ? existing.teamAId : existing.teamBId;
+    const newLoserId = newWinnerId === existing.teamAId ? existing.teamBId : existing.teamAId;
+    const oldWinnerId = existing.winnerTeamId;
+
+    // Only re-propagate if winner changed
+    if (newWinnerId !== oldWinnerId) {
+      await propagateBracket(newWinnerId, newLoserId);
     }
   }
 
