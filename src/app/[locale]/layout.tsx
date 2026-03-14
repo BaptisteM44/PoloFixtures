@@ -10,6 +10,7 @@ import { Header } from "@/components/Header";
 import { ContactAdminModal } from "@/components/ContactAdminModal";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Script from "next/script";
 
 const space = Space_Grotesk({
   subsets: ["latin"],
@@ -76,7 +77,7 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
           </SessionProvider>
         </NextIntlClientProvider>
         <SpeedInsights />
-        <script defer src="https://cloud.umami.is/script.js" data-website-id="7cfea7de-a1f5-4085-a45a-886bb62a83fe" />
+        <Script defer src="https://cloud.umami.is/script.js" data-website-id="7cfea7de-a1f5-4085-a45a-886bb62a83fe" strategy="afterInteractive" />
       </body>
     </html>
   );
