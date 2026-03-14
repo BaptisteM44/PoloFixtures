@@ -92,7 +92,7 @@ export async function updateTournamentAction(formData: FormData) {
   try { faqJson = data.faq ? JSON.parse(data.faq) : null; } catch { /* ignore */ }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, ...rest } = data;
+  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, ...rest } = data;
 
   const dateStart = new Date(data.dateStart);
   // Regenerate slug if name or city changed (only if tournament has no slug yet, or name/city changed)
@@ -120,6 +120,12 @@ export async function updateTournamentAction(formData: FormData) {
         additionalInfo: data.additionalInfo || null,
         faq: faqJson,
         telegramUrl: data.telegramUrl || null,
+        swissRounds: data.swissRounds,
+        bracketSize: data.bracketSize,
+        chatMode: data.chatMode as "OPEN" | "ORG_ONLY" | "DISABLED",
+        streamYoutubeUrl: data.streamYoutubeUrl || null,
+        saturdayFormat: data.saturdayFormat as "ALL_DAY" | "SPLIT_POOLS" | "SWISS",
+        sundayFormat: data.sundayFormat as "SE" | "DE",
       }
     });
   } catch (err) {
