@@ -158,8 +158,8 @@ export default async function AboutPage() {
           </div>
         </div>
         <div className="about-stagger-item about-stagger-item--left">
-          <div className="about-stagger-img-wrap">
-            <ParallaxImage src="/arbitres2.png" alt="Console arbitre" />
+          <div className="about-stagger-img-wrap about-stagger-img-wrap--portrait">
+            <ParallaxImage src="/arbitre2.png" alt="Console arbitre" />
           </div>
           <div className="about-stagger-text">
             <span className="about-stagger-tag">Arbitrage</span>
@@ -213,7 +213,6 @@ export default async function AboutPage() {
               <span key={i} style={{ color: "var(--text-muted)", fontSize: 24 }}>{s}</span>
             ))}
           </div>
-          <p className="meta" style={{ marginTop: 8 }}>Joue plus pour débloquer plus d'étoiles — jusqu'à 5 ✨</p>
         </div>
         <div className="about-card-section__card">
           <PokemonCard
