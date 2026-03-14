@@ -524,8 +524,8 @@ a {
   .about-stagger-item--right .about-stagger-text,
   .about-stagger-item--left .about-stagger-text     { order: 1; }
   /* reset min-height pour que l'image ne soit pas gigantesque sur mobile */
-  .about-stagger-img-wrap { min-height: 0; aspect-ratio: 16 / 9; }
-  .about-stagger-img-wrap--portrait { aspect-ratio: 4 / 3; max-height: none; }
+  .about-stagger-img-wrap { min-height: 0; aspect-ratio: 16 / 9; width: 100%; }
+  .about-stagger-img-wrap--portrait { aspect-ratio: 9 / 16; max-height: none; width: 60%; max-width: 260px; margin: 0 auto; display: block; }
   .about-stagger { padding-left: 16px; padding-right: 16px; padding-top: 40px; padding-bottom: 40px; }
   .about-stagger-text h3 { font-size: 20px; }
 }
