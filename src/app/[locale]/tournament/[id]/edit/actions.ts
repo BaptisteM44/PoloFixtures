@@ -121,12 +121,7 @@ export async function updateTournamentAction(formData: FormData) {
         additionalInfo: data.additionalInfo || null,
         faq: faqJson,
         telegramUrl: data.telegramUrl || null,
-        swissRounds: data.swissRounds,
-        bracketSize: data.bracketSize,
-        chatMode: data.chatMode,
         streamYoutubeUrl: data.streamYoutubeUrl || null,
-        saturdayFormat: data.saturdayFormat,
-        sundayFormat: data.sundayFormat,
       }
     });
   } catch (err) {
