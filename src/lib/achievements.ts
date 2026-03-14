@@ -485,6 +485,220 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
 
   // schedule_head: awarded manually (requires frontend tracking — not automatable)
 
+  // ── Vague 3 : 22 missing badges ──────────────────────────────────────────
+
+  // bookmarked: player has pinned at least 5 badges on their card
+  const playerFull = await prisma.player.findUnique({
+    where: { id: playerId },
+    select: { pinnedBadges: true, startYear: true },
+  });
+  if ((playerFull?.pinnedBadges ?? []).length >= 5) badges.add("bookmarked");
+
+  // time_traveler: startYear before 2015
+  if (playerFull?.startYear && playerFull.startYear < 2015) badges.add("time_traveler");
+
+  // birthday_ride: no birthdate field on Player model — skip
+  // addict / regular / no_days_off / full_year: no login-day tracking in DB — skip
+  // broadcaster: no share/link tracking in DB — skip
+
+  // pit_stop: mention food in a tournament chat message
+  if (allMessages.some((m) =>
+    /\b(pizza|burger|sandwich|tacos?|frite|snack|manger|bouffe|repas|food|nourriture|kebab|sushi|burritos?|naan|falafel)\b/i.test(m.content)
+  )) badges.add("pit_stop");
+
+  // free_agent: player registered as free agent for at least one tournament
+  const freeAgentCount = await prisma.freeAgent.count({ where: { playerId } });
+  if (freeAgentCount >= 1) badges.add("free_agent");
+
+  // early_bird: first message ever sent in a tournament chat (first by createdAt in that tournament)
+  earlyBird: for (const msg of allMessages) {
+    const firstMsg = await prisma.tournamentMessage.findFirst({
+      where: { tournamentId: msg.tournamentId },
+      orderBy: { createdAt: "asc" },
+      select: { authorId: true },
+    });
+    if (firstMsg?.authorId === playerId) { badges.add("early_bird"); break earlyBird; }
+  }
+
+  // patient_zero: first TeamPlayer registered in a tournament
+  patientZero: for (const tp of teamPlayers) {
+    const first = await prisma.teamPlayer.findFirst({
+      where: { team: { tournamentId: tp.team.tournament.id } },
+      orderBy: { registeredAt: "asc" },
+      select: { playerId: true },
+    });
+    if (first?.playerId === playerId) { badges.add("patient_zero"); break patientZero; }
+  }
+
+  // circus_act: 3+ tournaments in the same calendar month
+  const monthCounts = new Map<string, number>();
+  for (const t of tournaments) {
+    const d = new Date(t.dateStart);
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+    monthCounts.set(key, (monthCounts.get(key) ?? 0) + 1);
+  }
+  if ([...monthCounts.values()].some((c) => c >= 3)) badges.add("circus_act");
+
+  // night_ride: played a match starting after 22:00
+  if (allTeamMatches.some((m) => m.startAt.getHours() >= 22)) badges.add("night_ride");
+
+  // eruption: 5+ goals by the player in a single match
+  if (playerTeamIds.length > 0) {
+    const goalEventsByMatch = new Map<string, number>();
+    for (const e of allEvents) {
+      if (e.type === "GOAL" || e.type === "GOLDEN_GOAL") {
+        const mid = e.matchId;
+        goalEventsByMatch.set(mid, (goalEventsByMatch.get(mid) ?? 0) + 1);
+      }
+    }
+    if ([...goalEventsByMatch.values()].some((c) => c >= 5)) badges.add("eruption");
+  }
+
+  // tidal_wave: win a match by 5+ goals difference
+  for (const m of allTeamMatches) {
+    const isA = playerTeamIdSet.has(m.teamAId ?? "");
+    const isB = playerTeamIdSet.has(m.teamBId ?? "");
+    if (!isA && !isB) continue;
+    const diff = isA ? m.scoreA - m.scoreB : m.scoreB - m.scoreA;
+    if (diff >= 5 && m.winnerTeamId && (isA ? m.winnerTeamId === m.teamAId : m.winnerTeamId === m.teamBId)) {
+      badges.add("tidal_wave"); break;
+    }
+  }
+
+  // on_fire: 5 consecutive wins in a single tournament
+  onFire: for (const [tid, tMatches] of matchesByTournament) {
+    const teamId = playerTournamentTeam.get(tid);
+    if (!teamId) continue;
+    const myMatches = tMatches.filter((m) => m.teamAId === teamId || m.teamBId === teamId);
+    let consec = 0;
+    for (const m of myMatches) {
+      if (m.winnerTeamId === teamId) { consec++; if (consec >= 5) { badges.add("on_fire"); break onFire; } }
+      else consec = 0;
+    }
+  }
+
+  // comeback_kid: win a match after being down 3+ goals (non-golden-goal)
+  // Reuse ggWinMatchesSweep logic but for all won matches
+  if (allTeamMatches.length > 0) {
+    const wonMatches = allTeamMatches.filter((m) => playerTeamIdSet.has(m.winnerTeamId ?? ""));
+    if (wonMatches.length > 0) {
+      const comebackEvents = await prisma.matchEvent.findMany({
+        where: { matchId: { in: wonMatches.map((m) => m.id) }, type: { in: ["GOAL", "GOLDEN_GOAL"] } },
+        select: { matchId: true, payload: true, matchClockSec: true },
+        orderBy: { matchClockSec: "asc" },
+      });
+      const cbEventsByMatch = new Map<string, typeof comebackEvents>();
+      for (const e of comebackEvents) {
+        if (!cbEventsByMatch.has(e.matchId)) cbEventsByMatch.set(e.matchId, []);
+        cbEventsByMatch.get(e.matchId)!.push(e);
+      }
+      comebackKid: for (const m of wonMatches) {
+        const myTeamId = playerTeamIdSet.has(m.teamAId ?? "") ? m.teamAId : m.teamBId;
+        if (!myTeamId) continue;
+        let myScore = 0, oppScore = 0;
+        for (const e of (cbEventsByMatch.get(m.id) ?? [])) {
+          const scorer = (e.payload as { teamId?: string }).teamId;
+          if (scorer === myTeamId) myScore++; else oppScore++;
+          if (oppScore - myScore >= 3) { badges.add("comeback_kid"); break comebackKid; }
+        }
+      }
+    }
+  }
+
+  // dragon_slayer: beat the winner of the immediately preceding tournament
+  // We look for each tournament's previous one (by dateEnd) and check if that winner is among opponents we beat
+  if (playerTeamIds.length > 0) {
+    const allCompletedTournaments = await prisma.tournament.findMany({
+      where: { status: "COMPLETED" },
+      select: { id: true, dateEnd: true },
+      orderBy: { dateEnd: "asc" },
+    });
+    // Map tournament id -> winner team id (team that won the final)
+    const tournamentWinners = new Map<string, string>();
+    for (const ct of allCompletedTournaments) {
+      const final = await prisma.match.findFirst({
+        where: { tournamentId: ct.id, phase: "BRACKET", nextMatchWinId: null, status: "FINISHED" },
+        select: { winnerTeamId: true },
+      });
+      if (final?.winnerTeamId) tournamentWinners.set(ct.id, final.winnerTeamId);
+    }
+    // For each tournament the player participated in, find the previous completed tournament's winner
+    dragonSlayer: for (const tp of completedTournaments) {
+      const tDate = new Date(tp.team.tournament.dateEnd);
+      // Find latest tournament that ended before this one
+      const prev = [...allCompletedTournaments]
+        .filter((ct) => ct.id !== tp.team.tournament.id && new Date(ct.dateEnd) < tDate)
+        .sort((a, b) => new Date(b.dateEnd).getTime() - new Date(a.dateEnd).getTime())[0];
+      if (!prev) continue;
+      const prevWinner = tournamentWinners.get(prev.id);
+      if (!prevWinner) continue;
+      // Check if player's team beat the defending champion in this tournament
+      const beat = allTeamMatches.some(
+        (m) => m.tournamentId === tp.team.tournament.id &&
+          m.winnerTeamId === tp.teamId &&
+          (m.teamAId === prevWinner || m.teamBId === prevWinner)
+      );
+      if (beat) { badges.add("dragon_slayer"); break dragonSlayer; }
+    }
+  }
+
+  // united_nations: played in a team with 3+ different nationalities (including self)
+  unitedNations: for (const tp of teamPlayers) {
+    const mates = await prisma.teamPlayer.findMany({
+      where: { teamId: tp.teamId },
+      include: { player: { select: { country: true } } },
+    });
+    const nats = new Set(mates.map((m) => m.player.country).filter(Boolean));
+    if (nats.size >= 3) { badges.add("united_nations"); break unitedNations; }
+  }
+
+  // wild_card: joined as free agent AND team finished top 3 in that tournament
+  if (freeAgentCount >= 1) {
+    const freeAgentTournaments = await prisma.freeAgent.findMany({
+      where: { playerId },
+      select: { tournamentId: true },
+    });
+    const faTournamentIds = new Set(freeAgentTournaments.map((fa) => fa.tournamentId).filter(Boolean) as string[]);
+    wildCard: for (const tp of completedTournaments) {
+      if (!faTournamentIds.has(tp.team.tournament.id)) continue;
+      // Top 3: finalist (final + semi-final losers)
+      // Simplified: team won at least one bracket match OR reached finals
+      const bracketWins = allTeamMatches.filter(
+        (m) => m.tournamentId === tp.team.tournament.id &&
+          m.phase === "BRACKET" &&
+          m.winnerTeamId === tp.teamId
+      ).length;
+      if (bracketWins >= 1) { badges.add("wild_card"); break wildCard; }
+    }
+  }
+
+  // phantom: player participated in a tournament without appearing in the top 5 goal scorers,
+  // then later won a tournament
+  // top 5 scorers = top 5 players by goal count in that tournament's events
+  if (wonTournamentIds.length > 0) {
+    phantom: for (const tp of completedTournaments) {
+      if (wonTournamentIds.includes(tp.team.tournament.id)) continue; // skip won ones
+      // Get all goals in this tournament
+      const tGoalEvents = await prisma.matchEvent.findMany({
+        where: { match: { tournamentId: tp.team.tournament.id }, type: { in: ["GOAL", "GOLDEN_GOAL"] } },
+        select: { payload: true },
+      });
+      const scorerCounts = new Map<string, number>();
+      for (const e of tGoalEvents) {
+        const pid = (e.payload as { playerId?: string }).playerId;
+        if (pid) scorerCounts.set(pid, (scorerCounts.get(pid) ?? 0) + 1);
+      }
+      const top5 = [...scorerCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([pid]) => pid);
+      if (!top5.includes(playerId)) {
+        // Player was NOT in top 5 of this tournament — and they won another one
+        badges.add("phantom"); break phantom;
+      }
+    }
+  }
+
   // ── Collector / Completionist ────────────────────────────────────────────
   const total = badges.size;
   if (total >= 20) badges.add("collector");
