@@ -516,13 +516,18 @@ a {
 @media (max-width: 700px) {
   .about-stagger-item {
     grid-template-columns: 1fr !important;
-    gap: 24px;
-    padding: 32px 0;
+    gap: 20px;
+    padding: 28px 0;
   }
   .about-stagger-item--right .about-stagger-img-wrap,
   .about-stagger-item--left .about-stagger-img-wrap { order: 0; }
   .about-stagger-item--right .about-stagger-text,
   .about-stagger-item--left .about-stagger-text     { order: 1; }
+  /* reset min-height pour que l'image ne soit pas gigantesque sur mobile */
+  .about-stagger-img-wrap { min-height: 0; aspect-ratio: 16 / 9; }
+  .about-stagger-img-wrap--portrait { aspect-ratio: 4 / 3; max-height: none; }
+  .about-stagger { padding-left: 16px; padding-right: 16px; padding-top: 40px; padding-bottom: 40px; }
+  .about-stagger-text h3 { font-size: 20px; }
 }
 
 /* ── Card section ── */
@@ -582,10 +587,37 @@ a {
   .about-features-grid { grid-template-columns: repeat(2, 1fr); }
   .about-card-section { grid-template-columns: 1fr !important; }
   .about-card-section__card { order: -1; }
+  .about-section { padding: 48px 5vw; }
+  .about-section--dark { padding: 48px 5vw; }
+  .about-cta { padding: 56px 5vw; }
+  .about-free { padding: 44px 5vw; }
+  .about-stagger { padding-left: 24px; padding-right: 24px; }
+}
+
+@media (max-width: 768px) {
+  .about-hero { padding: 36px 5vw 28px; }
+  .about-section { padding: 40px 5vw; }
+  .about-section--dark { padding: 40px 5vw; }
+  .about-section__title { margin-bottom: 28px; }
+  .about-cta { padding: 44px 5vw; }
+  .about-free { padding: 36px 5vw; }
+  .about-stagger-text h3 { font-size: 22px; }
+  .about-step__body h3 { font-size: 16px; }
+  .about-steps { max-width: 100%; }
 }
 
 @media (max-width: 480px) {
   .about-features-grid { grid-template-columns: 1fr; }
+  .about-hero { padding: 24px 4vw 20px; }
+  .about-section { padding: 32px 4vw; }
+  .about-section--dark { padding: 32px 4vw; }
+  .about-cta { padding: 36px 4vw; }
+  .about-free { padding: 28px 4vw; }
+  .about-stagger { padding-left: 12px; padding-right: 12px; padding-top: 28px; padding-bottom: 28px; }
+  /* Scale la carte pokémon pour qu'elle rentre sur les très petits écrans */
+  .about-card-section__card { transform: scale(0.88); transform-origin: top center; overflow: visible; }
+  .about-audience-card { padding: 20px 16px; }
+  .about-hero__subtitle { font-size: 15px; }
 }
 
 /* ========================

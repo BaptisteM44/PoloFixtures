@@ -76,7 +76,7 @@ export default async function AboutPage() {
               <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
                 <div className="about-mockup__badge" style={{ background: "var(--yellow)" }}>16 équipes</div>
                 <div className="about-mockup__badge" style={{ background: "var(--pink)" }}>48 joueurs</div>
-                <div className="about-mockup__badge" style={{ background: "var(--teal)" }}>SE Format</div>
+                <div className="about-mockup__badge" style={{ background: "var(--teal)" }}>S.E Format</div>
               </div>
             </div>
           </div>

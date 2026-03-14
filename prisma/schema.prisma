@@ -207,6 +207,8 @@ model Tournament {
   chatMode                ChatMode         @default(DISABLED)
   infoTilesLayout         Json?
   saturdayFormat          SaturdayFormat
+  swissRounds             Int              @default(5)
+  bracketSize             Int              @default(16)
   sundayFormat            SundayFormat
   status                  TournamentStatus
   locked                  Boolean          @default(false)
