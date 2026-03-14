@@ -102,25 +102,30 @@ export async function updateTournamentAction(formData: FormData) {
     ? await generateTournamentSlug(data.name, data.city, dateStart.getFullYear(), data.id)
     : existing.slug;
 
-  await prisma.tournament.update({
-    where: { id: data.id },
-    data: {
-      ...rest,
-      slug,
-      dateStart,
-      dateEnd: new Date(data.dateEnd),
-      registrationStart: data.registrationStart ? new Date(data.registrationStart) : null,
-      registrationEnd: data.registrationEnd ? new Date(data.registrationEnd) : null,
-      links,
-      accommodationType: data.accommodationType || null,
-      accommodationCapacity: data.accommodationCapacity && !isNaN(data.accommodationCapacity) ? data.accommodationCapacity : null,
-      meals: mealsJson,
-      kitList: data.kitList || null,
-      additionalInfo: data.additionalInfo || null,
-      faq: faqJson,
-      telegramUrl: data.telegramUrl || null,
-    }
-  });
+  try {
+    await prisma.tournament.update({
+      where: { id: data.id },
+      data: {
+        ...rest,
+        slug,
+        dateStart,
+        dateEnd: new Date(data.dateEnd),
+        registrationStart: data.registrationStart ? new Date(data.registrationStart) : null,
+        registrationEnd: data.registrationEnd ? new Date(data.registrationEnd) : null,
+        links,
+        accommodationType: data.accommodationType || null,
+        accommodationCapacity: data.accommodationCapacity && !isNaN(data.accommodationCapacity) ? data.accommodationCapacity : null,
+        meals: mealsJson,
+        kitList: data.kitList || null,
+        additionalInfo: data.additionalInfo || null,
+        faq: faqJson,
+        telegramUrl: data.telegramUrl || null,
+      }
+    });
+  } catch (err) {
+    console.error("[updateTournamentAction] Prisma error:", err);
+    return { error: err instanceof Error ? err.message : String(err) };
+  }
 
   revalidatePath(`/tournament/${data.id}`);
   return { ok: true };
