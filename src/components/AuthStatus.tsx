@@ -3,7 +3,7 @@
 import { signOut, useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 
 function getInitials(name?: string | null): string {
@@ -19,18 +19,30 @@ export function AuthStatus({ onNavigate }: { onNavigate?: () => void } = {}) {
   const { data } = useSession();
   const t = useTranslations("nav");
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const closeDropdown = useCallback(() => {
+    setClosing(true);
+    closeTimerRef.current = setTimeout(() => {
+      setOpen(false);
+      setClosing(false);
+    }, 150);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setOpen(false);
+        closeDropdown();
       }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+  }, [open, closeDropdown]);
+
+  useEffect(() => () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); }, []);
 
   // Joueur connecté → avatar dropdown
   if ((data?.user as any)?.playerId) {
@@ -41,7 +53,7 @@ export function AuthStatus({ onNavigate }: { onNavigate?: () => void } = {}) {
       <div className="avatar-wrapper" ref={wrapperRef}>
         <button
           className="avatar-btn"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => { if (open) closeDropdown(); else setOpen(true); }}
           aria-label="Menu utilisateur"
           aria-expanded={open}
         >
@@ -59,29 +71,29 @@ export function AuthStatus({ onNavigate }: { onNavigate?: () => void } = {}) {
         </button>
 
         {open && (
-          <div className="avatar-dropdown">
+          <div className={`avatar-dropdown${closing ? " avatar-dropdown--closing" : ""}`}>
             <Link
               href="/my-tournaments"
-              onClick={() => { setOpen(false); onNavigate?.(); }}
+              onClick={() => { closeDropdown(); onNavigate?.(); }}
             >
               {t("my_tournaments")}
             </Link>
             <Link
               href="/my-teams"
-              onClick={() => { setOpen(false); onNavigate?.(); }}
+              onClick={() => { closeDropdown(); onNavigate?.(); }}
             >
               {t("my_teams")}
             </Link>
             <Link
               href="/settings/notifications"
-              onClick={() => { setOpen(false); onNavigate?.(); }}
+              onClick={() => { closeDropdown(); onNavigate?.(); }}
             >
               {t("settings")}
             </Link>
             <hr />
             <button
               onClick={() => {
-                setOpen(false);
+                closeDropdown();
                 onNavigate?.();
                 signOut({ callbackUrl: "/" });
               }}
