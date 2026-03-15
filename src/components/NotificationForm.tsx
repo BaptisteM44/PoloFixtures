@@ -22,15 +22,18 @@ const GEO = [
     { code: "EE", label: "Estonie/Estonia" }, { code: "UA", label: "Ukraine" },
     { code: "IS", label: "Islande/Iceland" },
   ]},
-  { continent: "AM", label: "Amériques", flag: "🌎", countries: [
+  { continent: "NA", label: "Amérique du Nord", flag: "🌎", countries: [
     { code: "US", label: "États-Unis/USA" }, { code: "CA", label: "Canada" },
-    { code: "MX", label: "Mexique/Mexico" }, { code: "BR", label: "Brésil/Brazil" },
-    { code: "AR", label: "Argentine/Argentina" }, { code: "CL", label: "Chili/Chile" },
-    { code: "CO", label: "Colombie/Colombia" }, { code: "PE", label: "Pérou/Peru" },
-    { code: "UY", label: "Uruguay" }, { code: "EC", label: "Équateur/Ecuador" },
-    { code: "VE", label: "Venezuela" }, { code: "BO", label: "Bolivie/Bolivia" },
-    { code: "PY", label: "Paraguay" }, { code: "GT", label: "Guatemala" },
+    { code: "MX", label: "Mexique/Mexico" }, { code: "GT", label: "Guatemala" },
     { code: "CR", label: "Costa Rica" }, { code: "CU", label: "Cuba" },
+    { code: "PR", label: "Porto Rico/Puerto Rico" },
+  ]},
+  { continent: "SA", label: "Amérique du Sud", flag: "🌎", countries: [
+    { code: "BR", label: "Brésil/Brazil" }, { code: "AR", label: "Argentine/Argentina" },
+    { code: "CL", label: "Chili/Chile" }, { code: "CO", label: "Colombie/Colombia" },
+    { code: "PE", label: "Pérou/Peru" }, { code: "UY", label: "Uruguay" },
+    { code: "EC", label: "Équateur/Ecuador" }, { code: "VE", label: "Venezuela" },
+    { code: "BO", label: "Bolivie/Bolivia" }, { code: "PY", label: "Paraguay" },
   ]},
   { continent: "AP", label: "Asie-Pacifique", flag: "🌏", countries: [
     { code: "AU", label: "Australie/Australia" }, { code: "NZ", label: "Nouvelle-Zélande/New Zealand" },
