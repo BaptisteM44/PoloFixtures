@@ -199,12 +199,14 @@ export function NotificationBell() {
                     <span style={{ flex: 1, fontSize: 12 }}>{n.payload.squadName}</span>
                     <button className="primary" style={{ fontSize: 11, padding: "3px 10px" }} onClick={async () => {
                       await fetch(`/api/invitations/${n.payload.invitationId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "accept" }) });
+                      await fetch(`/api/notifications?id=${n.id}`, { method: "DELETE" });
                       closePanel();
                       fetchNotifs();
                       router.push(`/my-teams/${n.payload.squadId}` as any);
                     }}>{t("btn_accept")}</button>
                     <button className="ghost" style={{ fontSize: 11, padding: "3px 10px" }} onClick={async () => {
                       await fetch(`/api/invitations/${n.payload.invitationId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "decline" }) });
+                      await fetch(`/api/notifications?id=${n.id}`, { method: "DELETE" });
                       fetchNotifs();
                       closePanel();
                     }}>{t("btn_decline")}</button>
