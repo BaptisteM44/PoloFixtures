@@ -1,0 +1,62 @@
+{
+  "EU": {
+    "AT": ["Bikepolo Graz", "Bikepolo Linz", "Bikepolo Salzburg", "Bikepolo Vienna"],
+    "BY": ["Minsk Bike Polo"],
+    "BE": ["Aalst Bike Polo", "Antwerp Bike Polo", "Brussels Bike Polo", "Ghent Bike Polo"],
+    "HR": ["Bike Polo Zagreb"],
+    "CZ": ["Prague Bike Polo", "Bikepolo Pardubice"],
+    "DK": ["Copenhagen Bike Polo Club"],
+    "FI": ["Helsinki Bike Polo", "Kokkola Bike Polo", "Oulu Bike Polo", "Tampere Bike Polo"],
+    "FR": ["Angers bike polo", "Annecy bike polo", "Blois bike polo", "Bordeaux Bike Polo", "Carcassonne fix'n polo", "Clermont-ferrand bike polo", "La Rochelle Bike Polo", "Lyon Bike Polo", "Grenoble Bike Polo", "Marseille Bike Polo", "Metz Bike Polo", "Montpellier Bike Polo", "Nancy Bike Polo", "Nantes bike polo", "Paris Bike Polo", "Perpignon fixe", "Petites Pyrénées Polo Club PPPC", "Rouen Bike Polo", "Saint-Etienne bike polo", "Strasbourg Bike Polo", "Toulouse Bike Polo", "Tours bike polo"],
+    "DE": ["Augusta Bikepolo", "Berlin Bike Polo", "Bielefeld", "Bike Polo Bremen", "BikePolo Büppel", "Cologne Bike Polo", "BikePolo Frankfurt", "Giessen", "Bike Polo Halle", "Hamburg Bikepolo", "BikePolo Hannover", "BikePolo Heilbronn", "Bikepolo Ingolstadt", "Bike Polo Leipzig", "Bikepolo München", "Bike Polo Munster", "Bikepolo Nürnberg", "Bikepolo bei Freier TuS Regensburg e.V.", "Sylt Bike Polo", "Bikepolo Ulm", "Magdeburg", "Dusseldorf"],
+    "HU": ["Budapest Bike Polo", "Debreceni Bike Polo Akademia", "Bike Polo Szeged"],
+    "IE": ["Dublin Bike Polo"],
+    "IT": ["Milano Bike Polo", "Padova Bike Polo", "Venezia Mestre bikepolo", "Vicenza Bike Polo", "Carpi Bike Polo", "Bolo Bike Polo", "Bike Polo Fano", "Pescara Bike Polo", "Roma Bike Polo", "Eliodoro Bike Polo Catania"],
+    "LV": ["Riga Bike Polo"],
+    "LT": ["Vilnius Bike polo"],
+    "NL": ["Amsterdam Hardcourt Bike Polo", "Enschede Hardcourt Bike Polo", "Rotterdam Bike Polo", "Utrecht Hardcourt Bike Polo", "Groningen Bike Polo", "Zwolle Bike Polo"],
+    "NO": ["Oslo"],
+    "PL": ["3City Bike Polo", "Bike Polo Club Kraków", "Bike Polo Lublin", "Bike Polo Poznań", "Rzeszów Bike Polo", "Bike Polo Warszawa", "Bike Polo Bielsko Biała", "Bike Polo Wrocław"],
+    "PT": ["Algarve Bike Polo", "Avanca Bike Polo", "Lisboa Bike Polo", "Oeiras Bike Polo", "Ponta Delgada"],
+    "RO": ["Bucharest Bike Polo", "Bike Polo Oradea"],
+    "RU": ["Kursk Bike Polo Family", "St. Petersburg MadCourt", "Voronezh Bike Polo"],
+    "RS": ["Belgrade Bike Polo"],
+    "SK": ["Hardcourt Bike Polo Slovakia"],
+    "SI": ["Bike Polo Ptuj"],
+    "ES": ["Alicante Bike Polo", "Barcelona Bike Polo", "Bike Polo Madrid", "Hardcourt Bike Polo Olot", "Valencia Bike Polo", "Zaragoza Bike Polo"],
+    "SE": ["Linköping"],
+    "CH": ["Basel Bike Polo", "Bern bike Polo", "Bex Bike Polo", "Biel", "Geneve Velo Polo", "Sankt Gallen", "Zürich Bike Polo"],
+    "TR": ["Istanbul Bike Polo"],
+    "UA": ["Bike Polo Kharkiv", "Kyiv Hardcourt Bike Polo", "Lviv Hardcourt Bike Polo"],
+    "GB": ["Bristol Bike Polo", "Glasgow Bike Polo", "Grantham bike polo", "Hull", "London Hardcourt Bike Polo", "Manchester", "Oxford Bike Polo", "Sheffield"]
+  },
+  "NA": {
+    "US": ["Boston Bike Polo", "NYC Bike Polo", "Philly Bike Polo", "Trenton Bike Polo", "Lancaster United", "DC Bike Polo", "Pittsburgh Bike Polo", "Burlington Bike Polo", "C-Ville Bike Polo", "Norfolk Bike Polo", "Baltimore Bike Polo", "Triangle Bike Polo", "Asheville Bike Polo", "Atlanta Bike Polo", "Macon Bike Polo", "Charleston Bike Polo", "Tallahassee Bike Polo", "Orlando Gangster Bike Polo", "FTL Co-ed Bike Polo", "Tampa Bike Polo", "Little Rock Bike Polo", "Chattanooga Bike Polo", "Jacksonville Bike Polo", "Gainesville Bike Polo", "Memphis Bike Polo", "Jackson Bike Polo", "Mobile Bike Polo", "NOLA Polo", "Sarasota Bike Polo", "Pensacola Polo", "Weston Bike Polo", "Miami Biki Polo", "Twin Cities Bike Polo", "MKE Bike Polo", "Madison Bike Polo", "Chicago Bike Polo", "Grand Rapids Bike Polo", "Detroit Bike Polo", "Lansing Bike Polo", "Blue Skunk Bike Polo", "Missoula Bike Polo", "Seattle Bike Polo", "Portland Bike Polo", "Eugene Bike Polo", "Corvallis Bike Polo", "Rogue Valley Bike Polo", "Anchorage Bike Polo", "Sacramento Bike Polo", "Davis Bike Polo", "SF Bike Polo", "Oakland Bike Polo", "San Jose Bike Polo", "Santa Cruz Bike Polo", "Santa Cruz Bike Polo (Salinas Union)", "peDal jUnkies | Fresno Bike Polo", "LA Bike Polo", "SD Bike Polo", "Kona Bike Polo", "SLC Bike Polo", "Ogden Bike Polo", "Colorado Bike Polo", "Albuquerque Bike Polo", "Austin Bike Polo Social Club", "Houston Hardcourt", "Dallas Bike Polo", "San Antonio Bike Polo", "Scary Larry Bike Polo", "Como Polo", "Decatur Bike Polo", "Indy Bike Polo", "Lexington Bike Polo", "Cincy Bike Polo", "Columbus Bike Polo", "Cleveland Bike Polo", "Lafayette Bike Polo", "STL Bike Polo", "Caruthersville Bike Polo", "Fayetteville Bike Polo", "River Valley Bike Polo", "Duluth Bike Polo", "Hardwoods Bike Polo", "Black Ribbon Bike Polo", "Flour City Hardcourt", "New Haven Bike Polo", "Santa Rosa Bike Polo", "RVA Bike Polo", "Newport Bike Polo", "Greenville Bike Polo", "Santa Fe Bike Polo", "Lost Coast Bike Polo", "Valley Bike Polo", "Buffalo Bike Polo", "Tulsa Bike Polo", "Birmingham Bike Polo", "Colorado Springs bike polo"],
+    "CA": ["Montreal Bike Polo", "Bike Polo Toronto", "Kitchener Bike Polo", "Ottawa Mallets of Mayhem", "Winnipeg Bike Polo", "Saskatoon Bike Polo", "Calgary Bike Polo", "East Van Bike Polo", "Victoria Bike Polo", "Whitehorse"],
+    "MX": ["Guadalajara Bici Polo", "Mexico City Bici Polo", "San Luis Potosi Bici Polo"],
+    "CU": ["Havana Bike Polo"],
+    "PR": ["San Juan Bike Polo"]
+  },
+  "SA": {
+    "BR": ["Sao Paulo Bike Polo", "Santos Bike Polo", "Sao José dos Campos Bike Polo", "Río de Janeiro Bike Polo", "Belo Horizonte Bike Polo", "Brasilia Bike Polo", "Porto Alegre Bike Polo", "Florianopolis Bike Polo", "Recife Bike Polo", "Fortaleza Bike Polo", "Joinville Bike Polo", "CWB Bike Polo", "Bike Polo São José"],
+    "AR": ["Buenos Aires Hardcourt Bike Polo", "Camorra Bike Polo", "Córdoba Bike Polo"],
+    "CL": ["Santiago Bike Polo", "Temuco Bike Polo"],
+    "CO": ["Liga Bike Polo de Bogotá", "Bike Polo Medellín", "Bike Polo Cali"],
+    "PE": ["Bike Polo Perú"],
+    "UY": ["Montevideo Bike Polo"],
+    "EC": ["Bike Polo Quito", "Bike Polo Ibarra"]
+  },
+  "AP": {
+    "JP": ["Tokyo Bike Polo Ninja", "Osaka Hardcourt Bike Polo", "Nagasaki Omura Hardcourt Bike Polo", "Akita Hardcourt Bike Polo", "Kochi Hardcourt Bike Polo", "Morioka Hardcourt Bike Polo", "Tokushima Hardcourt Bike polo", "Kamome Hardcourt Bike Polo", "Suzuka Hardcourt Bike Polo", "Nagoya Hardcourt Bike Polo"],
+    "TW": ["Taipei GloryC Bike Polo", "Kaohsiung Bike Polo Association", "Taichung"],
+    "HK": ["Hong Kong Bike Polo"],
+    "CN": ["Beijing", "Chengdu Bike Polo", "Shanghai"],
+    "AU": ["Adelaide Bike Polo", "Brisbane Bike Polo", "Canberra Bike Polo", "Hobart Bike Polo", "Launceston Bike Polo", "Melbourne Bike Polo", "Newcastle Bike Polo", "Perth Cycle Polo", "Sydney Bike Polo"],
+    "NZ": ["Auckland Bike Polo", "Bikes of Old Dunedin Bike Polo", "Christchurch Bike Polo", "Hamilton Bike Polo", "Hawera Bike Polo", "Napier", "Nelson Bike Polo", "Rotorua", "Taupo", "Timaru Bike Polo", "Wellington"],
+    "MY": ["Kuala Lumpur Bike Polo"],
+    "SG": ["Polo Lausanne Sports"]
+  },
+  "AF": {
+    "EG": ["Cairo Bike polo"]
+  }
+}
