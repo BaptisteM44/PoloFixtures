@@ -7185,8 +7185,11 @@ details[open] .my-tournaments__section-title--summary::after {
   background: var(--surface);
   border: 2px solid var(--border);
   border-radius: var(--radius);
+  padding: 0;
   width: 32px;
   height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -7195,6 +7198,10 @@ details[open] .my-tournaments__section-title--summary::after {
   color: var(--text-muted);
   flex-shrink: 0;
   line-height: 1;
+  overflow: visible;
+  text-transform: none;
+  letter-spacing: normal;
+  font-family: inherit;
   transition: border-color 0.12s ease, color 0.12s ease;
 }
 .follow-btn:hover {
