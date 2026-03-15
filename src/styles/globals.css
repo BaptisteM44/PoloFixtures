@@ -7187,8 +7187,11 @@ details[open] .my-tournaments__section-title--summary::after {
   line-height: 1;
   transition: border-color 0.12s ease, color 0.12s ease;
 }
-.follow-btn:hover,
+.follow-btn:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
 .follow-btn--active {
-  border-color: var(--yellow);
-  color: var(--yellow);
+  border-color: var(--text);
+  color: var(--text);
 }

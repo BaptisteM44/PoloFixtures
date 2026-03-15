@@ -264,7 +264,7 @@ export default async function TournamentPage({
       <section className="tournament-hero">
         <div className="tournament-hero__main">
           <h1>{tournament.name}</h1>
-          <div className="tournament-hero__dates" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="tournament-hero__dates">
             <span>📅 {dateStart} — {dateEnd}</span>
             <FollowButton
               tournamentId={tournament.id}
