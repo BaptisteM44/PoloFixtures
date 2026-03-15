@@ -3,6 +3,7 @@ import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { PlayerStatus } from "@prisma/client";
+import { computeCareerBadges } from "@/lib/achievements";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -47,6 +48,12 @@ export async function POST(req: Request) {
     },
     include: { account: true }
   });
+
+  // Attribuer les badges initiaux (welcome, og, etc.)
+  const initialBadges = await computeCareerBadges(player.id);
+  if (initialBadges.length > 0) {
+    await prisma.player.update({ where: { id: player.id }, data: { badges: initialBadges } });
+  }
 
   return Response.json({ playerId: player.id, email: player.account!.email }, { status: 201 });
 }

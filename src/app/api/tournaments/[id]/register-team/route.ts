@@ -3,6 +3,7 @@ import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { notifyTeamPlayers } from "@/lib/notify";
 import { z } from "zod";
 import { toSlug } from "@/lib/utils";
+import { computeCareerBadges } from "@/lib/achievements";
 
 const playerSlotSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("existing"), playerId: z.string(), needsAccommodation: z.boolean().optional() }),
@@ -96,6 +97,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   // Resolve players (existing or create manual)
   const resolvedPlayerIds: string[] = [];
+  const existingAccountPlayerIds: string[] = [];
   const accommodationFlags: boolean[] = [];
   for (const slot of players) {
     if (slot.type === "existing") {
@@ -111,6 +113,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       }
 
       resolvedPlayerIds.push(player.id);
+      existingAccountPlayerIds.push(player.id);
       accommodationFlags.push(slot.needsAccommodation ?? false);
     } else {
       // Create a new player record (PENDING) with slug
@@ -164,6 +167,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
     tournamentName: tournament.name,
     tournamentId: params.id,
   });
+
+  // Recalculer les badges pour les joueurs existants (team_player, patient_zero, etc.)
+  for (const pid of existingAccountPlayerIds) {
+    const newBadges = await computeCareerBadges(pid);
+    await prisma.player.update({ where: { id: pid }, data: { badges: newBadges } });
+  }
 
   return Response.json(team, { status: 201 });
 }
