@@ -189,7 +189,7 @@ export function NotificationBell() {
           )}
 
           {/* Invitations en attente */}
-          {notifications.filter((n) => n.type === "SQUAD_INVITE" && !n.read).length > 0 && (
+          {notifications.filter((n) => n.type === "SQUAD_INVITE").length > 0 && (
             <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border-light)", background: "var(--surface-2)" }}>
               <p style={{ fontSize: 11, fontWeight: 700, margin: "0 0 8px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("section_pending_invites")}</p>
               {notifications
