@@ -42,6 +42,11 @@ export async function POST(req: Request, { params }: { params: { squadId: string
     where: { id: invitedPlayerId },
     select: { name: true, account: { select: { email: true } } },
   });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const invitedPlayerPrefs = await (prisma as any).notificationPreference.findUnique({
+    where: { playerId: invitedPlayerId },
+    select: { notifySquadInvite: true },
+  });
 
   const invitation = await prisma.squadInvitation.upsert({
     where: { squadId_invitedPlayerId: { squadId: params.squadId, invitedPlayerId } },
@@ -64,9 +69,10 @@ export async function POST(req: Request, { params }: { params: { squadId: string
     },
   });
 
-  // Email au joueur invité
+  // Email au joueur invité (sauf si désactivé dans ses prefs)
+  const wantsSquadInviteEmail = invitedPlayerPrefs?.notifySquadInvite !== false;
   const invitedEmail = invitedPlayer?.account?.email;
-  if (invitedEmail) {
+  if (invitedEmail && wantsSquadInviteEmail) {
     const appUrl = process.env.NEXTAUTH_URL ?? "https://poloperator.app";
     await sendMail({
       to: invitedEmail,

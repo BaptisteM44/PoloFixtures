@@ -1199,7 +1199,11 @@
   "settings_notifications": {
     "title": "Tournament Notifications",
     "subtitle": "Receive a daily email when new tournaments are published in your selected regions.",
-    "enable_notifications": "Receive new tournament notifications",
+    "enable_notifications": "Receive tournament notifications",
+    "notif_types_title": "Notification types",
+    "notif_new_tournaments": "New tournaments in my geographic area",
+    "notif_followed_closing": "Registration closing on tournaments I follow",
+    "notif_squad_invite": "Invitations to join a team",
     "geo_zones": "Geographic Zones",
     "geo_hint": "Select the regions you want to be notified about. If no zone is selected, you will be notified for all tournaments.",
     "all_continent": "All {label}",

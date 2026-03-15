@@ -24,6 +24,7 @@ import { OrgaNoteBoard } from "@/components/OrgaNoteBoard";
 import { OrgaLinkBoard } from "@/components/OrgaLinkBoard";
 import { HeroCountdown } from "@/components/HeroCountdown";
 import { TournamentRecap } from "@/components/TournamentRecap";
+import { FollowButton } from "@/components/FollowButton";
 
 function summarizeCities(players: { player: { city: string | null } }[]): string {
   const counts = new Map<string, number>();
@@ -81,6 +82,11 @@ export default async function TournamentPage({
   const session = await auth();
   const role = session?.user?.role;
   const currentPlayerId = (session?.user as { playerId?: string } | undefined)?.playerId ?? null;
+  const isFollowing = currentPlayerId
+    ? await (prisma as any).tournamentFollow.findUnique({
+        where: { playerId_tournamentId: { playerId: currentPlayerId, tournamentId: tournament.id } },
+      }) !== null
+    : false;
   const currentPlayerName = session?.user?.name ?? null;
   const charterAccepted = !!((session?.user as { charterAccepted?: boolean } | undefined)?.charterAccepted);
   const canEdit =
@@ -257,8 +263,13 @@ export default async function TournamentPage({
       <section className="tournament-hero">
         <div className="tournament-hero__main">
           <h1>{tournament.name}</h1>
-          <div className="tournament-hero__dates">
-            📅 {dateStart} — {dateEnd}
+          <div className="tournament-hero__dates" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span>📅 {dateStart} — {dateEnd}</span>
+            <FollowButton
+              tournamentId={tournament.id}
+              initialFollowing={isFollowing}
+              isLoggedIn={!!currentPlayerId}
+            />
           </div>
           <p style={{ color: "var(--text-muted)", margin: "4px 0 8px", fontSize: 14 }}>
             {tournament.city}, {tournament.country} · {tournament.format} · {tournament.courtsCount === 1 ? t("courts_count_one", { count: tournament.courtsCount }) : t("courts_count_other", { count: tournament.courtsCount })}

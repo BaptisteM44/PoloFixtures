@@ -2,6 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { Tournament } from "@prisma/client";
 import { formatDate } from "@/lib/utils";
+import { FollowButton } from "@/components/FollowButton";
 
 async function RegistrationBadge({ start, end }: { start: Date | null; end: Date | null }) {
   const t = await getTranslations("registration");
@@ -35,7 +36,17 @@ async function RegistrationBadge({ start, end }: { start: Date | null; end: Date
   return null;
 }
 
-export async function TournamentCard({ tournament, teamCount }: { tournament: Tournament; teamCount: number }) {
+export async function TournamentCard({
+  tournament,
+  teamCount,
+  initialFollowing = false,
+  isLoggedIn = false,
+}: {
+  tournament: Tournament;
+  teamCount: number;
+  initialFollowing?: boolean;
+  isLoggedIn?: boolean;
+}) {
   const t = await getTranslations("tournaments");
   const STATUS_LABELS: Record<string, string> = {
     LIVE: t("status_live"),
@@ -44,27 +55,36 @@ export async function TournamentCard({ tournament, teamCount }: { tournament: To
   };
 
   return (
-    <Link className={`tournament-card${tournament.bannerPath ? " tournament-card--has-banner" : ""}`} href={`/tournament/${tournament.id}`}>
-      <div className="tournament-card__body">
-        <div className="tournament-card__header">
-          <h3>{tournament.name}</h3>
-          <span className={`status ${tournament.status.toLowerCase()}`}>
-            {STATUS_LABELS[tournament.status] ?? tournament.status}
-          </span>
+    <div className={`tournament-card-wrapper${tournament.bannerPath ? " tournament-card-wrapper--has-banner" : ""}`} style={{ position: "relative" }}>
+      <Link className={`tournament-card${tournament.bannerPath ? " tournament-card--has-banner" : ""}`} href={`/tournament/${tournament.id}`}>
+        <div className="tournament-card__body">
+          <div className="tournament-card__header">
+            <h3>{tournament.name}</h3>
+            <span className={`status ${tournament.status.toLowerCase()}`}>
+              {STATUS_LABELS[tournament.status] ?? tournament.status}
+            </span>
+          </div>
+          <p className="tournament-card__location">📍 {tournament.city}, {tournament.country}</p>
+          <p className="meta">{formatDate(tournament.dateStart)} — {formatDate(tournament.dateEnd)}</p>
+          <p className="meta">{tournament.format} · {t("teams_slots", { count: teamCount, max: tournament.maxTeams })}</p>
+          <RegistrationBadge
+            start={tournament.registrationStart}
+            end={tournament.registrationEnd}
+          />
         </div>
-        <p className="tournament-card__location">📍 {tournament.city}, {tournament.country}</p>
-        <p className="meta">{formatDate(tournament.dateStart)} — {formatDate(tournament.dateEnd)}</p>
-        <p className="meta">{tournament.format} · {t("teams_slots", { count: teamCount, max: tournament.maxTeams })}</p>
-        <RegistrationBadge
-          start={tournament.registrationStart}
-          end={tournament.registrationEnd}
+        {tournament.bannerPath && (
+          <div className="tournament-card__banner">
+            <img src={tournament.bannerPath} alt="" />
+          </div>
+        )}
+      </Link>
+      <div style={{ position: "absolute", bottom: 12, left: 12 }}>
+        <FollowButton
+          tournamentId={tournament.id}
+          initialFollowing={initialFollowing}
+          isLoggedIn={isLoggedIn}
         />
       </div>
-      {tournament.bannerPath && (
-        <div className="tournament-card__banner">
-          <img src={tournament.bannerPath} alt="" />
-        </div>
-      )}
-    </Link>
+    </div>
   );
 }

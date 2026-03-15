@@ -25,6 +25,9 @@ export default async function NotificationsSettingsPage() {
         initialEnabled={prefs?.enabled ?? true}
         initialContinents={prefs?.continents ?? []}
         initialCountries={prefs?.countries ?? []}
+        initialNotifyNewTournaments={prefs?.notifyNewTournaments ?? true}
+        initialNotifyFollowedClosing={prefs?.notifyFollowedClosing ?? true}
+        initialNotifySquadInvite={prefs?.notifySquadInvite ?? true}
       />
     </main>
   );

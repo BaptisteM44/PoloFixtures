@@ -11,12 +11,15 @@ export async function saveNotificationPreferences(formData: FormData) {
   const enabled = formData.get("enabled") === "on";
   const continents = formData.getAll("continents") as string[];
   const countries = formData.getAll("countries") as string[];
+  const notifyNewTournaments = formData.get("notifyNewTournaments") === "on";
+  const notifyFollowedClosing = formData.get("notifyFollowedClosing") === "on";
+  const notifySquadInvite = formData.get("notifySquadInvite") === "on";
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (prisma as any).notificationPreference.upsert({
     where: { playerId },
-    create: { playerId, enabled, continents, countries },
-    update: { enabled, continents, countries },
+    create: { playerId, enabled, continents, countries, notifyNewTournaments, notifyFollowedClosing, notifySquadInvite },
+    update: { enabled, continents, countries, notifyNewTournaments, notifyFollowedClosing, notifySquadInvite },
   });
 
   revalidatePath("/settings/notifications");

@@ -1199,7 +1199,11 @@
   "settings_notifications": {
     "title": "Notifications de tournois",
     "subtitle": "Recevez un email quotidien lorsque de nouveaux tournois sont publiés dans vos zones géographiques.",
-    "enable_notifications": "Recevoir les notifications de nouveaux tournois",
+    "enable_notifications": "Recevoir les notifications de tournois",
+    "notif_types_title": "Types de notifications",
+    "notif_new_tournaments": "Nouveaux tournois dans ma zone géographique",
+    "notif_followed_closing": "Fermeture d'inscriptions sur mes tournois suivis",
+    "notif_squad_invite": "Invitations dans une équipe",
     "geo_zones": "Zones géographiques",
     "geo_hint": "Sélectionnez les régions pour lesquelles vous souhaitez être notifié. Si aucune zone n'est sélectionnée, vous serez notifié pour tous les tournois.",
     "all_continent": "Tout(e) {label}",

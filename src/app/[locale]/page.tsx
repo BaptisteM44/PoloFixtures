@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { TournamentCard } from "@/components/TournamentCard";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import type { CalendarTournament } from "@/components/CalendarGrid";
+import { auth } from "@/lib/auth";
 
 const continents = [
   { code: "NA", name: "North America" },
@@ -34,6 +35,9 @@ export default async function HomePage() {
     Egypt: "AF", Tanzania: "AF", Senegal: "AF",
   };
 
+  const session = await auth();
+  const currentPlayerId = (session?.user as any)?.playerId ?? null;
+
   const [activeTournaments, allTournaments, countryCounts] = await Promise.all([
     prisma.tournament.findMany({
       where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true },
@@ -52,6 +56,16 @@ export default async function HomePage() {
       _count: { _all: true },
     }),
   ]);
+
+  // Fetch followed tournament IDs for current player
+  let followedTournamentIds = new Set<string>();
+  if (currentPlayerId) {
+    const follows = await (prisma as any).tournamentFollow.findMany({
+      where: { playerId: currentPlayerId },
+      select: { tournamentId: true },
+    });
+    followedTournamentIds = new Set(follows.map((f: any) => f.tournamentId));
+  }
 
   const playerCountByContinent: Record<string, number> = {};
   for (const row of countryCounts) {
@@ -111,7 +125,13 @@ export default async function HomePage() {
         {activeTournaments.length > 0 ? (
           <div className="tournament-grid">
             {activeTournaments.map((tour) => (
-              <TournamentCard key={tour.id} tournament={tour} teamCount={tour.teams.length} />
+              <TournamentCard
+                key={tour.id}
+                tournament={tour}
+                teamCount={tour.teams.length}
+                initialFollowing={followedTournamentIds.has(tour.id)}
+                isLoggedIn={!!currentPlayerId}
+              />
             ))}
           </div>
         ) : (

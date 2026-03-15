@@ -48,13 +48,26 @@ interface Props {
   initialEnabled: boolean;
   initialContinents: string[];
   initialCountries: string[];
+  initialNotifyNewTournaments?: boolean;
+  initialNotifyFollowedClosing?: boolean;
+  initialNotifySquadInvite?: boolean;
 }
 
-export function NotificationForm({ initialEnabled, initialContinents, initialCountries }: Props) {
+export function NotificationForm({
+  initialEnabled,
+  initialContinents,
+  initialCountries,
+  initialNotifyNewTournaments = true,
+  initialNotifyFollowedClosing = true,
+  initialNotifySquadInvite = true,
+}: Props) {
   const t = useTranslations("settings_notifications");
   const [enabled, setEnabled] = useState(initialEnabled);
   const [selectedContinents, setSelectedContinents] = useState<Set<string>>(new Set(initialContinents));
   const [selectedCountries, setSelectedCountries] = useState<Set<string>>(new Set(initialCountries));
+  const [notifyNewTournaments, setNotifyNewTournaments] = useState(initialNotifyNewTournaments);
+  const [notifyFollowedClosing, setNotifyFollowedClosing] = useState(initialNotifyFollowedClosing);
+  const [notifySquadInvite, setNotifySquadInvite] = useState(initialNotifySquadInvite);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
@@ -99,6 +112,9 @@ export function NotificationForm({ initialEnabled, initialContinents, initialCou
     if (enabled) formData.set("enabled", "on");
     selectedContinents.forEach((c) => formData.append("continents", c));
     selectedCountries.forEach((c) => formData.append("countries", c));
+    if (notifyNewTournaments) formData.set("notifyNewTournaments", "on");
+    if (notifyFollowedClosing) formData.set("notifyFollowedClosing", "on");
+    if (notifySquadInvite) formData.set("notifySquadInvite", "on");
 
     startTransition(async () => {
       await saveNotificationPreferences(formData);
@@ -122,6 +138,42 @@ export function NotificationForm({ initialEnabled, initialContinents, initialCou
       </div>
 
       {enabled && (
+        <div className="settings-notif-types" style={{ marginBottom: 24 }}>
+          <h3 className="settings-section-title">{t("notif_types_title")}</h3>
+          <div className="settings-toggle-row">
+            <label className="settings-toggle-label">
+              <input
+                type="checkbox"
+                checked={notifyNewTournaments}
+                onChange={(e) => setNotifyNewTournaments(e.target.checked)}
+              />
+              <span>✉️ {t("notif_new_tournaments")}</span>
+            </label>
+          </div>
+          <div className="settings-toggle-row">
+            <label className="settings-toggle-label">
+              <input
+                type="checkbox"
+                checked={notifyFollowedClosing}
+                onChange={(e) => setNotifyFollowedClosing(e.target.checked)}
+              />
+              <span>⭐ {t("notif_followed_closing")}</span>
+            </label>
+          </div>
+          <div className="settings-toggle-row">
+            <label className="settings-toggle-label">
+              <input
+                type="checkbox"
+                checked={notifySquadInvite}
+                onChange={(e) => setNotifySquadInvite(e.target.checked)}
+              />
+              <span>👥 {t("notif_squad_invite")}</span>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {enabled && notifyNewTournaments && (
         <div className="settings-geo">
           <h3 className="settings-section-title">{t("geo_zones")}</h3>
           <p className="settings-hint">{t("geo_hint")}</p>

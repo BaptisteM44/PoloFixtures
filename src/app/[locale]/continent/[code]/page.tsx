@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { TournamentCard } from "@/components/TournamentCard";
 import { ClubCard } from "@/components/ClubCard";
+import { auth } from "@/lib/auth";
 
 const continentNames: Record<string, string> = {
   NA: "North America", SA: "South America", EU: "Europe",
@@ -36,6 +37,17 @@ export default async function ContinentPage({
     }),
   ]);
 
+  const session = await auth();
+  const currentPlayerId = (session?.user as any)?.playerId ?? null;
+  let followedTournamentIds = new Set<string>();
+  if (currentPlayerId) {
+    const follows = await (prisma as any).tournamentFollow.findMany({
+      where: { playerId: currentPlayerId },
+      select: { tournamentId: true },
+    });
+    followedTournamentIds = new Set(follows.map((f: any) => f.tournamentId));
+  }
+
   const countryMap: Record<string, number> = {};
   for (const row of clubCountByCountry) countryMap[row.country] = row._count._all;
 
@@ -60,7 +72,13 @@ export default async function ContinentPage({
           {tournaments.length > 0 ? (
             <div className="tournament-grid">
               {tournaments.map((tournament) => (
-                <TournamentCard key={tournament.id} tournament={tournament} teamCount={tournament.teams.length} />
+                <TournamentCard
+                  key={tournament.id}
+                  tournament={tournament}
+                  teamCount={tournament.teams.length}
+                  initialFollowing={followedTournamentIds.has(tournament.id)}
+                  isLoggedIn={!!currentPlayerId}
+                />
               ))}
             </div>
           ) : (

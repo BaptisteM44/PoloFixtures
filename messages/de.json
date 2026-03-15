@@ -971,7 +971,11 @@
   "settings_notifications": {
     "title": "Turnier-Benachrichtigungen",
     "subtitle": "Erhalte täglich eine E-Mail, wenn neue Turniere in deinen ausgewählten Regionen veröffentlicht werden.",
-    "enable_notifications": "Benachrichtigungen über neue Turniere erhalten",
+    "enable_notifications": "Turnierbenachrichtigungen empfangen",
+    "notif_types_title": "Benachrichtigungstypen",
+    "notif_new_tournaments": "Neue Turniere in meiner geografischen Zone",
+    "notif_followed_closing": "Anmeldeschluss bei verfolgten Turnieren",
+    "notif_squad_invite": "Einladungen in ein Team",
     "geo_zones": "Geografische Zonen",
     "geo_hint": "Wähle die Regionen aus, über die du benachrichtigt werden möchtest. Wenn keine Zone ausgewählt ist, wirst du über alle Turniere benachrichtigt.",
     "all_continent": "Ganz {label}",

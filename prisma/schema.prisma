@@ -253,6 +253,7 @@ model Tournament {
   orgaTasks      OrgaTask[]
   orgaNotes      OrgaNote[]
   orgaLinks      OrgaLink[]
+  followers      TournamentFollow[]
 
   @@index([continentCode])
   @@index([status])
@@ -341,6 +342,7 @@ model Player {
   orgaLinks               OrgaLink[]   @relation("OrgaLinks")
   refereedMatches         Match[]      @relation("RefereedMatches")
   notificationPreference  NotificationPreference?
+  tournamentFollows       TournamentFollow[]
 }
 
 model PlayerAccount {
@@ -730,6 +732,19 @@ model NotificationPreference {
   enabled    Boolean  @default(true)
   continents String[] @default([])
   countries  String[] @default([])
+  notifyNewTournaments  Boolean @default(true)
+  notifyFollowedClosing Boolean @default(true)
+  notifySquadInvite     Boolean @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model TournamentFollow {
+  id           String     @id @default(cuid())
+  playerId     String
+  tournamentId String
+  createdAt    DateTime   @default(now())
+  player       Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  @@unique([playerId, tournamentId])
 }
