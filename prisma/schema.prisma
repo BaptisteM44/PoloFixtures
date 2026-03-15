@@ -340,6 +340,7 @@ model Player {
   orgaNotes               OrgaNote[]   @relation("OrgaNotes")
   orgaLinks               OrgaLink[]   @relation("OrgaLinks")
   refereedMatches         Match[]      @relation("RefereedMatches")
+  notificationPreference  NotificationPreference?
 }
 
 model PlayerAccount {
@@ -720,4 +721,15 @@ model OrgaLink {
   addedBy    Player     @relation("OrgaLinks", fields: [addedById], references: [id])
 
   @@index([tournamentId])
+}
+
+model NotificationPreference {
+  id         String   @id @default(cuid())
+  playerId   String   @unique
+  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  enabled    Boolean  @default(true)
+  continents String[] @default([])
+  countries  String[] @default([])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

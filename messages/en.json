@@ -51,7 +51,8 @@
     "logout": "Log out",
     "login": "Log in",
     "register": "Sign up",
-    "language": "Language"
+    "language": "Language",
+    "settings": "Settings"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -1194,5 +1195,16 @@
     "squeaky_clean": "Win a tournament without ever conceding more than 1 goal per match",
     "ref_duty": "Referee 3 matches AND play 3 matches on the same day",
     "double_duty": "Referee 5 matches AND play 5 matches on the same day"
+  },
+  "settings_notifications": {
+    "title": "Tournament Notifications",
+    "subtitle": "Receive a daily email when new tournaments are published in your selected regions.",
+    "enable_notifications": "Receive new tournament notifications",
+    "geo_zones": "Geographic Zones",
+    "geo_hint": "Select the regions you want to be notified about. If no zone is selected, you will be notified for all tournaments.",
+    "all_continent": "All {label}",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Preferences saved!"
   }
 }

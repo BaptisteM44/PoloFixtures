@@ -51,7 +51,8 @@
     "logout": "Log out",
     "login": "Log in",
     "register": "Sign up",
-    "language": "Language"
+    "language": "Language",
+    "settings": "Ajustes"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -966,5 +967,16 @@
     "squeaky_clean": "Ganar un torneo sin encajar nunca más de 1 gol por partido",
     "ref_duty": "Arbitrar 3 partidos Y jugar 3 partidos en el mismo día",
     "double_duty": "Arbitrar 5 partidos Y jugar 5 partidos en el mismo día"
+  },
+  "settings_notifications": {
+    "title": "Notificaciones de torneos",
+    "subtitle": "Recibe un email diario cuando se publiquen nuevos torneos en tus zonas seleccionadas.",
+    "enable_notifications": "Recibir notificaciones de nuevos torneos",
+    "geo_zones": "Zonas geográficas",
+    "geo_hint": "Selecciona las regiones sobre las que deseas ser notificado. Si no se selecciona ninguna zona, serás notificado de todos los torneos.",
+    "all_continent": "Todo {label}",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "saved": "¡Preferencias guardadas!"
   }
 }

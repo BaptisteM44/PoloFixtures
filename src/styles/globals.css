@@ -6971,6 +6971,89 @@ details[open] .my-tournaments__section-title--summary::after {
   font-style: italic;
 }
 
+/* ── Settings form ─────────────────────────────────────────────────────────── */
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.settings-section-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.settings-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.settings-continent {
+  margin-bottom: 20px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.settings-continent-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.settings-countries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-left: 4px;
+}
+
+.settings-country-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 140px;
+}
+
+.settings-form-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings-saved {
+  font-size: 13px;
+  color: var(--success);
+  font-weight: 600;
+}
+
 /* ── Site footer ───────────────────────────────────────────────────────────── */
 
 .site-footer {
@@ -6994,6 +7077,74 @@ details[open] .my-tournaments__section-title--summary::after {
 
 .site-footer__links a:hover {
   color: var(--text);
+}
+
+/* ── Avatar dropdown ───────────────────────────────────────────────────────── */
+
+.avatar-wrapper {
+  position: relative;
+}
+
+.avatar-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--teal);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+  padding: 0;
+  overflow: hidden;
+  transition: box-shadow var(--transition);
+}
+
+.avatar-btn:hover {
+  box-shadow: var(--shadow);
+}
+
+.avatar-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-width: 180px;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 6px 0;
+}
+
+.avatar-dropdown a,
+.avatar-dropdown button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: var(--font-body);
+}
+
+.avatar-dropdown a:hover,
+.avatar-dropdown button:hover {
+  background: var(--surface-2);
+}
+
+.avatar-dropdown hr {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 4px 0;
 }
 
 @media (max-width: 768px) {

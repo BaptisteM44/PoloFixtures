@@ -41,8 +41,6 @@ export function Header() {
         <Link href="/tournaments">{t("nav.tournaments")}</Link>
         <Link href="/calendar">{t("nav.calendar")}</Link>
         <Link href="/about">{t("nav.about")}</Link>
-        {hasPlayer && <Link href="/my-tournaments">{t("nav.my_tournaments")}</Link>}
-        {hasPlayer && <Link href="/my-teams">{t("nav.my_teams")}</Link>}
         {isAdmin && <Link href="/admin">{t("nav.admin")}</Link>}
       </nav>
 
@@ -82,8 +80,6 @@ export function Header() {
               <Link href="/tournaments" onClick={() => setMenuOpen(false)}>{t("nav.tournaments")}</Link>
               <Link href="/calendar" onClick={() => setMenuOpen(false)}>{t("nav.calendar")}</Link>
               <Link href="/about" onClick={() => setMenuOpen(false)}>{t("nav.about")}</Link>
-              {hasPlayer && <Link href="/my-tournaments" onClick={() => setMenuOpen(false)}>{t("nav.my_tournaments")}</Link>}
-              {hasPlayer && <Link href="/my-teams" onClick={() => setMenuOpen(false)}>{t("nav.my_teams")}</Link>}
               {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)}>{t("nav.admin")}</Link>}
             </div>
             <div className="nav-drawer__footer">
