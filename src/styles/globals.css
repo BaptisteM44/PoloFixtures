@@ -7116,15 +7116,14 @@ details[open] .my-tournaments__section-title--summary::after {
   border: 1px solid var(--border);
   border-radius: 10px;
   min-width: 180px;
+  z-index: 200;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 6px 0;
   transform-origin: top right;
   animation: notif-slide-down 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .avatar-dropdown--closing {
   animation: notif-slide-up 0.15s ease-in forwards;
-}
-  z-index: 200;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-  padding: 6px 0;
 }
 
 .avatar-dropdown a,
