@@ -55,7 +55,7 @@ export async function TournamentCard({
   };
 
   return (
-    <div className={`tournament-card-wrapper${tournament.bannerPath ? " tournament-card-wrapper--has-banner" : ""}`} style={{ position: "relative" }}>
+    <div className={`tournament-card-wrapper${tournament.bannerPath ? " tournament-card-wrapper--has-banner" : ""}`}>
       <Link className={`tournament-card${tournament.bannerPath ? " tournament-card--has-banner" : ""}`} href={`/tournament/${tournament.id}`}>
         <div className="tournament-card__body">
           <div className="tournament-card__header">
@@ -67,10 +67,6 @@ export async function TournamentCard({
           <p className="tournament-card__location">📍 {tournament.city}, {tournament.country}</p>
           <p className="meta">{formatDate(tournament.dateStart)} — {formatDate(tournament.dateEnd)}</p>
           <p className="meta">{tournament.format} · {t("teams_slots", { count: teamCount, max: tournament.maxTeams })}</p>
-          <RegistrationBadge
-            start={tournament.registrationStart}
-            end={tournament.registrationEnd}
-          />
         </div>
         {tournament.bannerPath && (
           <div className="tournament-card__banner">
@@ -78,7 +74,11 @@ export async function TournamentCard({
           </div>
         )}
       </Link>
-      <div style={{ position: "absolute", bottom: 12, left: 12, zIndex: 2 }}>
+      <div className="tournament-card__footer">
+        <RegistrationBadge
+          start={tournament.registrationStart}
+          end={tournament.registrationEnd}
+        />
         <FollowButton
           tournamentId={tournament.id}
           initialFollowing={initialFollowing}

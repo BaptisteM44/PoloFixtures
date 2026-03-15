@@ -1112,17 +1112,25 @@ button:focus-visible,
   gap: 16px;
 }
 
-.tournament-card {
+.tournament-card-wrapper {
   background: var(--surface);
   border-radius: var(--radius);
   border: 2px solid var(--border);
   box-shadow: var(--shadow);
+  transition: transform var(--transition), box-shadow var(--transition);
+  overflow: hidden;
+}
+
+.tournament-card-wrapper:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.tournament-card {
   display: flex;
   flex-direction: row;
-  transition: transform var(--transition), box-shadow var(--transition);
   text-decoration: none;
   color: inherit;
-  overflow: hidden;
 }
 
 .tournament-card__body {
@@ -1147,9 +1155,13 @@ button:focus-visible,
   display: block;
 }
 
-.tournament-card:hover {
-  transform: translate(-3px, -3px);
-  box-shadow: var(--shadow-lg);
+.tournament-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 12px;
+  border-top: 1px solid var(--border-light);
+  gap: 8px;
 }
 
 .tournament-card__header {
@@ -7160,35 +7172,23 @@ details[open] .my-tournaments__section-title--summary::after {
 
 /* ── Follow Button (étoile tournoi) ─────────────────────────────────────── */
 .follow-btn {
-  position: relative;
-  z-index: 2;
   background: var(--surface);
   border: 2px solid var(--border);
   border-radius: var(--radius);
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
   color: var(--text-muted);
-  box-shadow: var(--shadow-lg);
-  transition: border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
   flex-shrink: 0;
   line-height: 1;
+  transition: border-color 0.12s ease, color 0.12s ease;
 }
-.follow-btn:hover {
-  border-color: var(--yellow);
-  color: var(--yellow);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-}
+.follow-btn:hover,
 .follow-btn--active {
-  border-color: var(--yellow);
-  color: var(--yellow);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-}
-.follow-btn--active:hover {
   border-color: var(--yellow);
   color: var(--yellow);
 }
