@@ -78,7 +78,7 @@ export async function TournamentCard({
           </div>
         )}
       </Link>
-      <div style={{ position: "absolute", bottom: 12, left: 12 }}>
+      <div style={{ position: "absolute", bottom: 12, left: 12, zIndex: 2 }}>
         <FollowButton
           tournamentId={tournament.id}
           initialFollowing={initialFollowing}

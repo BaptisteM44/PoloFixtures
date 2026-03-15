@@ -7160,28 +7160,33 @@ details[open] .my-tournaments__section-title--summary::after {
 
 /* ── Follow Button (étoile tournoi) ─────────────────────────────────────── */
 .follow-btn {
-  background: none;
+  position: relative;
+  z-index: 2;
+  background: var(--surface);
   border: 2px solid var(--border);
-  border-radius: 8px;
-  padding: 5px 10px;
+  border-radius: var(--radius);
+  width: 36px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--text-muted);
-  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
+  box-shadow: var(--shadow-lg);
+  transition: border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
   flex-shrink: 0;
   line-height: 1;
 }
 .follow-btn:hover {
   border-color: var(--yellow);
   color: var(--yellow);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
 }
 .follow-btn--active {
-  background: none;
   border-color: var(--yellow);
   color: var(--yellow);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
 }
 .follow-btn--active:hover {
   border-color: var(--yellow);
