@@ -239,25 +239,26 @@ export default async function TournamentPage({
 
   return (
     <div className="tournament-page">
-      {/* ── Barre retour dashboard + bouton arbitrage ── */}
-      {(canEdit || canRef) && (
-        <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          {canEdit && (
-            <Link href={`/tournament/${params.id}/edit`} style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}>
-              {t("back_dashboard")}
-            </Link>
-          )}
-          {canRef && (
-            <Link
-              href={`/tournament/${params.id}/referee`}
-              className="primary"
-              style={{ fontSize: 13, padding: "6px 16px", display: "inline-flex", alignItems: "center", gap: 6 }}
-            >
-              {t("btn_referee")}
-            </Link>
-          )}
-        </div>
-      )}
+      {/* ── Barre retour + actions ── */}
+      <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <Link href="/tournaments" style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "var(--font-display)" }}>
+          ← {t("back_tournaments")}
+        </Link>
+        {canEdit && (
+          <Link href={`/tournament/${params.id}/edit`} style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-display)" }}>
+            {t("back_dashboard")}
+          </Link>
+        )}
+        {canRef && (
+          <Link
+            href={`/tournament/${params.id}/referee`}
+            className="primary"
+            style={{ fontSize: 13, padding: "6px 16px", display: "inline-flex", alignItems: "center", gap: 6 }}
+          >
+            {t("btn_referee")}
+          </Link>
+        )}
+      </div>
 
       {/* ── HERO ── */}
       <section className="tournament-hero">
