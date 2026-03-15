@@ -667,7 +667,11 @@
     "error_create": "Erreur lors de la création",
     "btn_creating": "Création…",
     "btn_submit": "Créer l'équipe",
-    "login_required": "Connecte-toi pour voir tes équipes."
+    "login_required": "Connecte-toi pour voir tes équipes.",
+    "invites_title": "Invitations reçues",
+    "invite_from": "Invité par {name}",
+    "btn_accept": "Accepter",
+    "btn_decline": "Refuser"
   },
   "my_tournaments": {
     "page_title": "Mes tournois",

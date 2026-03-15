@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { CreateSquadForm } from "@/components/CreateSquadForm";
+import { PendingInvites } from "@/components/PendingInvites";
 
 export default async function MyTeamsPage() {
   const t = await getTranslations("my_teams");
@@ -13,6 +14,15 @@ export default async function MyTeamsPage() {
       {t("login_required")}
     </div>
   );
+
+  const pendingInvites = await prisma.squadInvitation.findMany({
+    where: { invitedPlayerId: playerId, status: "PENDING" },
+    include: {
+      squad: { select: { id: true, name: true } },
+      invitedBy: { select: { name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
   const squads = await prisma.squad.findMany({
     where: { members: { some: { playerId } } },
@@ -36,6 +46,13 @@ export default async function MyTeamsPage() {
           <p className="meta">{t("page_subtitle")}</p>
         </div>
       </div>
+
+      <PendingInvites invites={pendingInvites.map((inv) => ({
+        id: inv.id,
+        squadId: inv.squad.id,
+        squadName: inv.squad.name,
+        invitedByName: inv.invitedBy.name,
+      }))} />
 
       <div className="my-teams-layout">
         {/* Liste des squads */}

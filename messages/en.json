@@ -667,7 +667,11 @@
     "error_create": "Error creating the team",
     "btn_creating": "Creating…",
     "btn_submit": "Create team",
-    "login_required": "Log in to view your teams."
+    "login_required": "Log in to view your teams.",
+    "invites_title": "Pending invitations",
+    "invite_from": "Invited by {name}",
+    "btn_accept": "Accept",
+    "btn_decline": "Decline"
   },
   "my_tournaments": {
     "page_title": "My tournaments",
