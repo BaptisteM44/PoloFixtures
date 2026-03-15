@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { FollowButton } from "@/components/FollowButton";
 import { formatDate } from "@/lib/utils";
 
 type TournamentRow = {
@@ -82,9 +83,13 @@ function getDefaultYear(): string {
 export function TournamentBrowser({
   tournaments,
   defaultContinent = null,
+  isLoggedIn = false,
+  followedIds = [],
 }: {
   tournaments: TournamentRow[];
   defaultContinent?: string | null;
+  isLoggedIn?: boolean;
+  followedIds?: string[];
 }) {
   const t = useTranslations("tournaments");
   const r = useTranslations("registration");
@@ -277,7 +282,8 @@ export function TournamentBrowser({
               const d = new Date(tour.dateStart);
 
               return (
-                <Link key={tour.id} href={`/tournament/${tour.id}`} className={`agenda-row${tour.bannerPath ? " agenda-row--has-banner" : ""}`} style={{ textDecoration: "none", color: "inherit" }}>
+                <div key={tour.id} className={`agenda-row-wrapper${tour.bannerPath ? " agenda-row-wrapper--has-banner" : ""}`}>
+                <Link href={`/tournament/${tour.id}`} className={`agenda-row${tour.bannerPath ? " agenda-row--has-banner" : ""}`} style={{ textDecoration: "none", color: "inherit" }}>
                   {/* Date column */}
                   <div className="agenda-row__date">
                     <span className="agenda-row__day">{d.getDate()}</span>
@@ -318,6 +324,14 @@ export function TournamentBrowser({
                     </div>
                   )}
                 </Link>
+                <div className="agenda-row__follow">
+                  <FollowButton
+                    tournamentId={tour.id}
+                    initialFollowing={followedIds.includes(tour.id)}
+                    isLoggedIn={isLoggedIn}
+                  />
+                </div>
+                </div>
               );
             })}
           </div>

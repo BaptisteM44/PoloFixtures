@@ -1287,22 +1287,32 @@ button:focus-visible,
   gap: 10px;
 }
 
+.agenda-row-wrapper {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: transform var(--transition), box-shadow var(--transition);
+  overflow: hidden;
+}
+
+.agenda-row-wrapper:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
 .agenda-row {
   display: grid;
   grid-template-columns: 56px 1fr auto;
   align-items: start;
   gap: 16px;
-  background: var(--surface);
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
   padding: 16px 20px;
-  transition: transform var(--transition), box-shadow var(--transition);
 }
 
-.agenda-row:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow-lg);
+.agenda-row__follow {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 16px 12px;
 }
 
 .agenda-row__date {

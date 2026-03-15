@@ -27,11 +27,16 @@ export default async function TournamentsPage() {
     }
   }
 
-  const tournaments = await prisma.tournament.findMany({
-    where: { approved: true },
-    include: { teams: { where: { selected: true } } },
-    orderBy: { dateStart: "asc" }
-  });
+  const [tournaments, followedTournamentIds] = await Promise.all([
+    prisma.tournament.findMany({
+      where: { approved: true },
+      include: { teams: { where: { selected: true } } },
+      orderBy: { dateStart: "asc" },
+    }),
+    playerId
+      ? (prisma as any).tournamentFollow.findMany({ where: { playerId }, select: { tournamentId: true } }).then((r: any[]) => r.map((f: any) => f.tournamentId))
+      : Promise.resolve([]),
+  ]);
 
   const data = tournaments.map((t) => ({
     id: t.id,
@@ -58,7 +63,7 @@ export default async function TournamentsPage() {
           <p>{t("page_subtitle")}</p>
         </div>
       </div>
-      <TournamentBrowser tournaments={data} defaultContinent={playerContinent} />
+      <TournamentBrowser tournaments={data} defaultContinent={playerContinent} isLoggedIn={!!playerId} followedIds={followedTournamentIds} />
     </div>
   );
 }
