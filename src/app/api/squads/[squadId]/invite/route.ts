@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { sendMail } from "@/lib/mailer";
 import { z } from "zod";
 
 // POST /api/squads/[squadId]/invite — inviter un joueur
@@ -37,6 +38,10 @@ export async function POST(req: Request, { params }: { params: { squadId: string
   // Recréer l'invitation si elle avait été refusée
   const squad = await prisma.squad.findUnique({ where: { id: params.squadId }, select: { name: true } });
   const inviter = await prisma.player.findUnique({ where: { id: currentPlayerId }, select: { name: true } });
+  const invitedPlayer = await prisma.player.findUnique({
+    where: { id: invitedPlayerId },
+    select: { name: true, account: { select: { email: true } } },
+  });
 
   const invitation = await prisma.squadInvitation.upsert({
     where: { squadId_invitedPlayerId: { squadId: params.squadId, invitedPlayerId } },
@@ -58,6 +63,32 @@ export async function POST(req: Request, { params }: { params: { squadId: string
       },
     },
   });
+
+  // Email au joueur invité
+  const invitedEmail = invitedPlayer?.account?.email;
+  if (invitedEmail) {
+    const appUrl = process.env.NEXTAUTH_URL ?? "https://poloperator.app";
+    await sendMail({
+      to: invitedEmail,
+      subject: `${inviter?.name ?? "Quelqu'un"} t'invite à rejoindre ${squad?.name ?? "une équipe"}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #1a1a1a;">Invitation à rejoindre une équipe</h2>
+          <p>Bonjour ${invitedPlayer?.name ?? ""},</p>
+          <p><strong>${inviter?.name ?? "Un joueur"}</strong> t'invite à rejoindre l'équipe <strong>${squad?.name ?? ""}</strong> sur Poloperator.</p>
+          <p style="margin: 24px 0;">
+            <a href="${appUrl}/my-teams"
+               style="background: #60c9cf; color: #1a1a1a; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+              Voir l'invitation
+            </a>
+          </p>
+          <p style="color: #666; font-size: 12px; margin-top: 32px;">
+            Vous pouvez accepter ou refuser cette invitation depuis votre espace <a href="${appUrl}/my-teams">Mes équipes</a>.
+          </p>
+        </div>
+      `,
+    });
+  }
 
   return NextResponse.json(invitation, { status: 201 });
 }
