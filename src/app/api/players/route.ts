@@ -25,7 +25,8 @@ export async function GET(request: Request) {
       ...(excludedPlayerIds.length > 0 ? { id: { notIn: excludedPlayerIds } } : {})
     },
     orderBy: { name: "asc" },
-    take: search ? 10 : undefined
+    take: search ? 10 : undefined,
+    include: status ? { account: { select: { email: true } } } : undefined,
   });
   return Response.json(players);
 }

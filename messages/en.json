@@ -730,6 +730,7 @@
     "btn_recompute_badges": "Recompute badges",
     "btn_delete": "Delete",
     "btn_reactivate": "Reactivate",
+    "btn_suspend": "Suspend",
     "btn_accept": "Accept",
     "btn_view": "View",
     "btn_add": "Add",

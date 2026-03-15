@@ -15,6 +15,7 @@ type Player = {
   status: string;
   gender: string | null;
   createdAt: string;
+  account?: { email: string } | null;
 };
 
 export default function AdminPlayersPage() {
@@ -73,6 +74,7 @@ export default function AdminPlayersPage() {
                   </span>
                 )}
                 <p className="meta">{player.city ? `${player.city}, ` : ""}{player.country}</p>
+                {player.account?.email && <p className="meta" style={{ fontSize: 11 }}>{player.account.email}</p>}
               </div>
               <div className="button-row">
                 {filter === "PENDING" && (
@@ -80,6 +82,9 @@ export default function AdminPlayersPage() {
                     <button className="primary" style={{ fontSize: 12 }} onClick={() => moderate(player.id, "ACTIVE")}>{t("btn_accept")}</button>
                     <button className="ghost" style={{ fontSize: 12 }} onClick={() => moderate(player.id, "REJECTED")}>{t("btn_reject")}</button>
                   </>
+                )}
+                {filter === "ACTIVE" && (
+                  <button className="ghost" style={{ fontSize: 12 }} onClick={() => moderate(player.id, "REJECTED")}>{t("btn_suspend")}</button>
                 )}
                 {filter === "REJECTED" && (
                   <button className="primary" style={{ fontSize: 12 }} onClick={() => moderate(player.id, "ACTIVE")}>{t("btn_reactivate")}</button>

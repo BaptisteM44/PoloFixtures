@@ -19,7 +19,7 @@ function useNotifLabel() {
     const p = n.payload;
     switch (n.type) {
       case "SQUAD_INVITE":
-        return { title: t("squad_invite", { squadName: p.squadName }), sub: t("squad_invite_from", { name: p.invitedByName }), href: "/notifications" };
+        return { title: t("squad_invite", { squadName: p.squadName }), sub: t("squad_invite_from", { name: p.invitedByName }), href: "/my-teams" };
       case "SQUAD_INVITE_ACCEPTED":
         return { title: t("squad_invite_accepted", { name: p.playerName, squadName: p.squadName }), sub: "", href: `/my-teams/${p.squadId}` };
       case "SQUAD_INVITE_DECLINED":
@@ -41,7 +41,7 @@ function useNotifLabel() {
       case "TEAM_MESSAGE_RECEIVED":
         return { title: t("team_message", { teamName: p.teamName }), sub: p.preview ?? "", href: "/my-tournaments" };
       default:
-        return { title: t("default"), sub: "", href: "/notifications" };
+        return { title: t("default"), sub: "", href: "/my-teams" };
     }
   };
 }

@@ -15,7 +15,7 @@ function getInitials(name?: string | null): string {
   return name[0].toUpperCase();
 }
 
-export function AuthStatus({ onNavigate }: { onNavigate?: () => void } = {}) {
+export function AuthStatus({ onNavigate, inDrawer }: { onNavigate?: () => void; inDrawer?: boolean } = {}) {
   const { data } = useSession();
   const t = useTranslations("nav");
   const [open, setOpen] = useState(false);
@@ -44,10 +44,23 @@ export function AuthStatus({ onNavigate }: { onNavigate?: () => void } = {}) {
 
   useEffect(() => () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); }, []);
 
-  // Joueur connecté → avatar dropdown
+  // Joueur connecté → drawer inline ou avatar dropdown
   if ((data?.user as any)?.playerId) {
     const user = data!.user!;
     const initials = getInitials(user.name);
+
+    // Mode drawer : afficher les liens directement sans dropdown
+    if (inDrawer) {
+      return (
+        <div className="nav-drawer__links" style={{ borderTop: "1px solid var(--border-light)", paddingTop: 8, marginTop: 8 }}>
+          <Link href="/account" onClick={onNavigate}>{t("account")}</Link>
+          <Link href="/my-tournaments" onClick={onNavigate}>{t("my_tournaments")}</Link>
+          <Link href="/my-teams" onClick={onNavigate}>{t("my_teams")}</Link>
+          <Link href="/settings/notifications" onClick={onNavigate}>{t("settings")}</Link>
+          <button onClick={() => { onNavigate?.(); signOut({ callbackUrl: "/" }); }}>{t("logout")}</button>
+        </div>
+      );
+    }
 
     return (
       <div className="avatar-wrapper" ref={wrapperRef}>
@@ -72,6 +85,12 @@ export function AuthStatus({ onNavigate }: { onNavigate?: () => void } = {}) {
 
         {open && (
           <div className={`avatar-dropdown${closing ? " avatar-dropdown--closing" : ""}`}>
+            <Link
+              href="/account"
+              onClick={() => { closeDropdown(); onNavigate?.(); }}
+            >
+              {t("account")}
+            </Link>
             <Link
               href="/my-tournaments"
               onClick={() => { closeDropdown(); onNavigate?.(); }}
