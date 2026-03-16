@@ -104,8 +104,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ---- MAP SECTION (WIP — hidden) ---- */}
-      {false && mapTournaments.length > 0 && (
+      {/* ---- MAP SECTION (WIP) ---- */}
+      {process.env.NEXT_PUBLIC_MAP_ENABLED === "true" && mapTournaments.length > 0 && (
         <TournamentMapClient
           tournaments={mapTournaments.map((t): MapTournament => ({
             id: t.id,
