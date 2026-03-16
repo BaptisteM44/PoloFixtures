@@ -121,7 +121,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
   });
   if (!tournament) return new Response("Not found", { status: 404 });
 
-  const isAdmin = hasAtLeastRole(role ?? "", "ADMIN");
+  const isAdmin = role ? hasAtLeastRole(role, "ADMIN") : false;
   const isCreator = tournament.creatorId === playerId;
   if (!isAdmin && !isCreator) return new Response("Forbidden", { status: 403 });
 
