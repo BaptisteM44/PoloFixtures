@@ -78,7 +78,6 @@ a {
 
 .page {
   padding: 32px 6vw 80px;
-  overflow-x: hidden;
 }
 
 /* ========================
@@ -4503,13 +4502,17 @@ textarea {
 
 @media (max-width: 480px) {
   .pokemon-cards-scroll {
-    /* Sur mobile : centre si une seule carte, scroll si plusieurs */
     scroll-snap-type: x mandatory;
-    padding: 0 4vw 12px;
     gap: 12px;
+    /* Étend le scroll bord à bord en compensant le padding de .page (4vw sur mobile) */
+    margin-left: -4vw;
+    margin-right: -4vw;
+    padding-left: 4vw;
+    padding-right: 4vw;
+    padding-bottom: 12px;
   }
   .pokemon-cards-scroll > * {
-    scroll-snap-align: center;
+    scroll-snap-align: start;
   }
 }
 

@@ -334,7 +334,41 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
 
       {/* MEMBRES */}
       {activeTab === "membres" && (
-        <div className="my-teams-layout">
+        <div style={{ display: "grid", gap: 20 }}>
+
+          {/* ── Invite panel (captain only) ── */}
+          {isCaptain && (
+            <div className="panel">
+              <h4 style={{ margin: "0 0 12px" }}>Inviter un joueur</h4>
+              <input
+                placeholder="Rechercher par nom…"
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                style={{ marginBottom: 10 }}
+              />
+              {searchLoading && <p className="meta" style={{ fontSize: 12 }}>Recherche…</p>}
+              {searchResults.length > 0 && (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {searchResults.slice(0, 6).map((p) => (
+                    <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", border: "1.5px solid var(--border)", borderRadius: 8 }}>
+                      <Avatar name={p.name} photoPath={p.photoPath} size={32} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</p>
+                        {(p.city || p.country) && <p className="meta" style={{ margin: 0, fontSize: 11 }}>{[p.city, p.country].filter(Boolean).join(", ")}</p>}
+                      </div>
+                      <button className="primary" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => handleInvite(p.id)}>
+                        Inviter
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {searchQ.trim().length >= 2 && !searchLoading && searchResults.length === 0 && (
+                <p className="meta" style={{ fontSize: 12 }}>Aucun résultat.</p>
+              )}
+            </div>
+          )}
+
           <div style={{ display: "grid", gap: 20 }}>
 
             {/* ── PokemonCard banner ── */}
@@ -419,38 +453,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
               </div>
             ))}
             </div>{/* end member list */}
-          </div>{/* end left column */}
-
-          {/* Invite panel */}
-          <div className="panel" style={{ position: "sticky", top: 80 }}>
-            <h4 style={{ margin: "0 0 12px" }}>Inviter un joueur</h4>
-            <input
-              placeholder="Rechercher par nom…"
-              value={searchQ}
-              onChange={(e) => setSearchQ(e.target.value)}
-              style={{ marginBottom: 10 }}
-            />
-            {searchLoading && <p className="meta" style={{ fontSize: 12 }}>Recherche…</p>}
-            {searchResults.length > 0 && (
-              <div style={{ display: "grid", gap: 8 }}>
-                {searchResults.slice(0, 6).map((p) => (
-                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", border: "1.5px solid var(--border)", borderRadius: 8 }}>
-                    <Avatar name={p.name} photoPath={p.photoPath} size={32} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ margin: 0, fontWeight: 600, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</p>
-                      {(p.city || p.country) && <p className="meta" style={{ margin: 0, fontSize: 11 }}>{[p.city, p.country].filter(Boolean).join(", ")}</p>}
-                    </div>
-                    <button className="primary" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => handleInvite(p.id)}>
-                      Inviter
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            {searchQ.trim().length >= 2 && !searchLoading && searchResults.length === 0 && (
-              <p className="meta" style={{ fontSize: 12 }}>Aucun résultat.</p>
-            )}
-          </div>
+          </div>{/* end inner grid */}
         </div>
       )}
 
