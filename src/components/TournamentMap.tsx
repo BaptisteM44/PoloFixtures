@@ -76,8 +76,8 @@ export default function TournamentMap({ tournaments, selectedContinent, onSelect
     >
       <MapInvalidator />
       <TileLayer
-        url={`https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${process.env.NEXT_PUBLIC_STADIA_API_KEY ?? ""}`}
-        attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+        url="https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://stamen.com">Stamen Design</a>'
       />
       {filtered.map((t) => (
         <Marker
