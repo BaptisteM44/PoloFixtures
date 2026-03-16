@@ -7295,12 +7295,25 @@ details[open] .my-tournaments__section-title--summary::after {
   overflow: hidden;
   height: 520px;
   border: 2px solid var(--border);
+  position: relative;
+  z-index: 0;
 }
 
 /* Leaflet needs explicit height on its root element */
 .map-container-wrap .leaflet-container {
   height: 520px !important;
   width: 100% !important;
+  z-index: 0;
+}
+
+/* Keep leaflet panes below site header (z-index ~100) */
+.map-container-wrap .leaflet-pane,
+.map-container-wrap .leaflet-top,
+.map-container-wrap .leaflet-bottom {
+  z-index: 1 !important;
+}
+.map-container-wrap .leaflet-control {
+  z-index: 2 !important;
 }
 
 .map-side-panel {

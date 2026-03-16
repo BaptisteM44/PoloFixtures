@@ -122,24 +122,7 @@ export default function TournamentMapClient({ tournaments }: Props) {
                   );
                 })()}
               </div>
-              <a
-                href={`/tournament/${selectedTournament.id}`}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "8px 16px",
-                  background: "var(--teal)",
-                  color: "var(--border)",
-                  border: "2px solid var(--border)",
-                  borderRadius: "var(--radius-sm)",
-                  fontFamily: "var(--font-display)",
-                  fontWeight: 700,
-                  fontSize: 12,
-                  textDecoration: "none",
-                  boxShadow: "var(--shadow)",
-                }}
-              >
+              <a href={`/tournament/${selectedTournament.id}`} className="primary" style={{ fontSize: 13 }}>
                 View tournament →
               </a>
             </div>
