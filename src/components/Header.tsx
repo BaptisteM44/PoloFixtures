@@ -33,7 +33,7 @@ export function Header() {
           <span className="brand-dot" />
           {t("header.brand_name")}
         </Link>
-        <span className="tag">{t("header.brand_tag")}</span>
+        <span className="tag">BETA</span>
       </div>
 
       {/* Navigation desktop */}
