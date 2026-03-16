@@ -59,7 +59,7 @@ export default async function HomePage() {
     }),
     prisma.tournament.findMany({
       where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true, lat: { not: null }, lng: { not: null } },
-      select: { id: true, name: true, city: true, country: true, continentCode: true, dateStart: true, dateEnd: true, status: true, registrationStart: true, registrationEnd: true, lat: true, lng: true },
+      select: { id: true, name: true, city: true, country: true, continentCode: true, format: true, dateStart: true, dateEnd: true, status: true, registrationStart: true, registrationEnd: true, lat: true, lng: true },
       orderBy: [{ status: "asc" }, { dateStart: "asc" }],
     }),
   ]);
@@ -113,6 +113,7 @@ export default async function HomePage() {
             city: t.city,
             country: t.country,
             continentCode: t.continentCode,
+            format: t.format,
             dateStart: t.dateStart.toISOString(),
             dateEnd: t.dateEnd.toISOString(),
             status: t.status,

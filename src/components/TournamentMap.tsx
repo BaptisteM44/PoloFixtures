@@ -11,6 +11,7 @@ export type MapTournament = {
   city: string;
   country: string;
   continentCode: string;
+  format: string;
   dateStart: string;
   dateEnd: string;
   status: string;
@@ -22,7 +23,6 @@ export type MapTournament = {
 
 type Props = {
   tournaments: MapTournament[];
-  selectedContinent?: string;
   onSelect?: (tournament: MapTournament) => void;
 };
 
@@ -61,11 +61,7 @@ function MapInvalidator() {
   return null;
 }
 
-export default function TournamentMap({ tournaments, selectedContinent, onSelect }: Props) {
-  const filtered = selectedContinent
-    ? tournaments.filter((t) => t.continentCode === selectedContinent)
-    : tournaments;
-
+export default function TournamentMap({ tournaments, onSelect }: Props) {
   return (
     <MapContainer
       center={[30, 10]}
@@ -79,7 +75,7 @@ export default function TournamentMap({ tournaments, selectedContinent, onSelect
         url="https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png"
         attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://stamen.com">Stamen Design</a>'
       />
-      {filtered.map((t) => (
+      {tournaments.map((t) => (
         <Marker
           key={t.id}
           position={[t.lat, t.lng]}
