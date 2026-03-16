@@ -39,6 +39,8 @@ const createSchema = z.object({
   breakfastProvided: z.boolean().default(false),
   lunchProvided: z.boolean().default(false),
   dinnerProvided: z.boolean().default(false),
+  lat: z.number().optional().nullable(),
+  lng: z.number().optional().nullable(),
   coOrganizerIds: z.array(z.string()).optional(),
 });
 

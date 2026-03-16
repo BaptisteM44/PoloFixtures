@@ -5,6 +5,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import cityCoords from "@/data/polo-city-coords.json";
+
+type CityEntry = { lat: number; lng: number; country: string; continent: string };
 
 type PlayerResult = { id: string; name: string; city: string | null; country: string };
 
@@ -28,6 +31,8 @@ export default function NewTournamentPage() {
     continentCode: "EU",
     country: "",
     city: "",
+    lat: "" as string | number,
+    lng: "" as string | number,
     dateStart: "",
     dateEnd: "",
     registrationStart: "",
@@ -42,6 +47,38 @@ export default function NewTournamentPage() {
     saturdayFormat: "ALL_DAY",
     sundayFormat: "SE",
   });
+
+  const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+  const cityRef = useRef<HTMLDivElement>(null);
+
+  const handleCityInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setForm((f) => ({ ...f, city: val, lat: "", lng: "" }));
+    if (val.length >= 2) {
+      const lower = val.toLowerCase();
+      const matches = Object.keys(cityCoords).filter((c) =>
+        c.toLowerCase().startsWith(lower)
+      ).slice(0, 8);
+      setCitySuggestions(matches);
+      setShowCitySuggestions(matches.length > 0);
+    } else {
+      setCitySuggestions([]);
+      setShowCitySuggestions(false);
+    }
+  };
+
+  const selectCity = (cityName: string) => {
+    const entry = (cityCoords as Record<string, CityEntry>)[cityName];
+    setForm((f) => ({
+      ...f,
+      city: cityName,
+      lat: entry?.lat ?? "",
+      lng: entry?.lng ?? "",
+    }));
+    setCitySuggestions([]);
+    setShowCitySuggestions(false);
+  };
 
   const [coOrganizers, setCoOrganizers] = useState<PlayerResult[]>([]);
   const [coOrgQuery, setCoOrgQuery] = useState("");
@@ -117,6 +154,8 @@ export default function NewTournamentPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        lat: form.lat !== "" ? Number(form.lat) : undefined,
+        lng: form.lng !== "" ? Number(form.lng) : undefined,
         contactEmail: form.contactEmail || session.user!.email || "contact@bikepolo.app",
         coOrganizerIds: coOrganizers.map((c) => c.id),
       })
@@ -170,10 +209,37 @@ export default function NewTournamentPage() {
               {t("field_country")}
               <input value={form.country} onChange={set("country")} required placeholder="France" />
             </label>
-            <label className="field-row">
-              {t("field_city")}
-              <input value={form.city} onChange={set("city")} required placeholder="Paris" />
-            </label>
+            <div className="field-row" ref={cityRef} style={{ position: "relative" }}>
+              <span>{t("field_city")}</span>
+              <input
+                value={form.city}
+                onChange={handleCityInput}
+                onFocus={() => citySuggestions.length > 0 && setShowCitySuggestions(true)}
+                onBlur={() => setTimeout(() => setShowCitySuggestions(false), 150)}
+                required
+                placeholder="Paris"
+                autoComplete="off"
+              />
+              {showCitySuggestions && (
+                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 50, maxHeight: 200, overflowY: "auto", boxShadow: "var(--shadow-lg)" }}>
+                  {citySuggestions.map((city) => (
+                    <button
+                      key={city}
+                      type="button"
+                      style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid var(--border-light)", fontSize: 13 }}
+                      onMouseDown={() => selectCity(city)}
+                    >
+                      <strong>{city}</strong>
+                      <span style={{ color: "var(--text-muted)", marginLeft: 8, fontSize: 11 }}>
+                        {(cityCoords as Record<string, CityEntry>)[city]?.country}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <input type="hidden" name="lat" value={form.lat} />
+              <input type="hidden" name="lng" value={form.lng} />
+            </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <label className="field-row">

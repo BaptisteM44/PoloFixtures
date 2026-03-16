@@ -5,6 +5,8 @@ import { TournamentCard } from "@/components/TournamentCard";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import type { CalendarTournament } from "@/components/CalendarGrid";
 import { auth } from "@/lib/auth";
+import TournamentMapClient from "@/components/TournamentMapClient";
+import type { MapTournament } from "@/components/TournamentMap";
 
 const continents = [
   { code: "NA", name: "North America" },
@@ -38,7 +40,7 @@ export default async function HomePage() {
   const session = await auth();
   const currentPlayerId = (session?.user as any)?.playerId ?? null;
 
-  const [activeTournaments, allTournaments, countryCounts] = await Promise.all([
+  const [activeTournaments, allTournaments, countryCounts, mapTournaments] = await Promise.all([
     prisma.tournament.findMany({
       where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true },
       include: { teams: { where: { selected: true } } },
@@ -54,6 +56,11 @@ export default async function HomePage() {
       by: ["country"],
       where: { status: "ACTIVE" },
       _count: { _all: true },
+    }),
+    prisma.tournament.findMany({
+      where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true, lat: { not: null }, lng: { not: null } },
+      select: { id: true, name: true, city: true, country: true, continentCode: true, dateStart: true, dateEnd: true, status: true, registrationStart: true, registrationEnd: true, lat: true, lng: true },
+      orderBy: [{ status: "asc" }, { dateStart: "asc" }],
     }),
   ]);
 
@@ -96,6 +103,26 @@ export default async function HomePage() {
           </ul>
         </div>
       </section>
+
+      {/* ---- MAP SECTION ---- */}
+      {mapTournaments.length > 0 && (
+        <TournamentMapClient
+          tournaments={mapTournaments.map((t): MapTournament => ({
+            id: t.id,
+            name: t.name,
+            city: t.city,
+            country: t.country,
+            continentCode: t.continentCode,
+            dateStart: t.dateStart.toISOString(),
+            dateEnd: t.dateEnd.toISOString(),
+            status: t.status,
+            registrationStart: t.registrationStart?.toISOString() ?? null,
+            registrationEnd: t.registrationEnd?.toISOString() ?? null,
+            lat: t.lat as number,
+            lng: t.lng as number,
+          }))}
+        />
+      )}
 
       <div className="home-reorder">
 

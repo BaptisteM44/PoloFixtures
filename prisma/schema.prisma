@@ -237,6 +237,8 @@ model Tournament {
   breakfastProvided       Boolean          @default(false)
   lunchProvided           Boolean          @default(false)
   dinnerProvided          Boolean          @default(false)
+  lat                     Float?
+  lng                     Float?
   creatorId               String?
   createdAt               DateTime         @default(now())
   updatedAt               DateTime         @updatedAt

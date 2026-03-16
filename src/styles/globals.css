@@ -7277,3 +7277,37 @@ details[open] .my-tournaments__section-title--summary::after {
   border-color: var(--text);
   color: var(--text);
 }
+
+/* ========================
+   MAP SECTION (home)
+   ======================== */
+
+.map-section-layout {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 20px;
+  align-items: stretch;
+  min-height: 500px;
+}
+
+.map-container-wrap {
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-height: 500px;
+  border: 2px solid var(--border);
+}
+
+.map-side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .map-section-layout {
+    grid-template-columns: 1fr;
+  }
+  .map-container-wrap {
+    min-height: 320px;
+  }
+}
