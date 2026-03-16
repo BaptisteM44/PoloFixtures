@@ -36,12 +36,12 @@ export default async function SquadPage({ params }: { params: { squadId: string 
     },
   });
 
-  if (!squad) return <div className="page"><p>{t("squad_not_found")}</p></div>;
+  if (!squad) return <div><p>{t("squad_not_found")}</p></div>;
 
   const myMember = squad.members.find((m) => m.playerId === playerId);
   if (!myMember) {
     return (
-      <div className="page">
+      <div>
         <div className="panel" style={{ textAlign: "center", padding: 48 }}>
           <h2>{t("squad_access_denied")}</h2>
           <p className="meta">{t("squad_not_member")}</p>
@@ -54,7 +54,7 @@ export default async function SquadPage({ params }: { params: { squadId: string 
   const isCaptain = myMember.role === "CAPTAIN";
 
   return (
-    <div className="page">
+    <div>
       <div style={{ marginBottom: 16 }}>
         <Link href="/my-teams" style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none" }}>
           {t("btn_back_teams")}

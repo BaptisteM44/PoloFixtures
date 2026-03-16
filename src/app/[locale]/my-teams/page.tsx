@@ -39,7 +39,7 @@ export default async function MyTeamsPage() {
     squads.find((s) => s.id === squadId)?.members.find((m) => m.playerId === playerId)?.role;
 
   return (
-    <div className="page">
+    <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
         <div>
           <h1 style={{ marginBottom: 4 }}>{t("page_title")}</h1>
