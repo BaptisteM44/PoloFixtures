@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { sendMail, isMailerConfigured } from "@/lib/mailer";
+import { getLangFromCountry, resetPasswordEmail } from "@/lib/email-templates";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { randomBytes } from "crypto";
 import { z } from "zod";
@@ -20,6 +21,7 @@ export async function POST(req: Request) {
 
   const account = await prisma.playerAccount.findUnique({
     where: { email: parsed.data.email.toLowerCase() },
+    include: { player: { select: { country: true } } },
   });
 
   // Toujours répondre OK pour éviter l'énumération des emails
@@ -40,17 +42,9 @@ export async function POST(req: Request) {
   const resetUrl = `${baseUrl}/reset-password/${token}`;
 
   if (isMailerConfigured()) {
-    await sendMail({
-      to: account.email,
-      subject: "Réinitialisation de votre mot de passe — Poloperator",
-      html: `
-        <p>Bonjour,</p>
-        <p>Vous avez demandé à réinitialiser votre mot de passe.</p>
-        <p><a href="${resetUrl}" style="color:#14b8a6">Cliquez ici pour définir un nouveau mot de passe</a></p>
-        <p>Ce lien est valable 1 heure. Si vous n'avez pas fait cette demande, ignorez cet email.</p>
-        <p style="color:#888;font-size:12px">Poloperator</p>
-      `,
-    });
+    const lang = getLangFromCountry(account.player?.country);
+    const { subject, html } = resetPasswordEmail(lang, { resetUrl });
+    await sendMail({ to: account.email, subject, html });
   } else {
     // Dev : affiche le lien dans les logs serveur
     console.info("[reset-password] Lien (SMTP non configuré):", resetUrl);

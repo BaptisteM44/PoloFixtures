@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { sendMail } from "@/lib/mailer";
+import { getLangFromCountry, squadInviteEmail } from "@/lib/email-templates";
 import { z } from "zod";
 
 // POST /api/squads/[squadId]/invite — inviter un joueur
@@ -40,7 +41,7 @@ export async function POST(req: Request, { params }: { params: { squadId: string
   const inviter = await prisma.player.findUnique({ where: { id: currentPlayerId }, select: { name: true } });
   const invitedPlayer = await prisma.player.findUnique({
     where: { id: invitedPlayerId },
-    select: { name: true, account: { select: { email: true } } },
+    select: { name: true, country: true, account: { select: { email: true } } },
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const invitedPlayerPrefs = await (prisma as any).notificationPreference.findUnique({
@@ -73,27 +74,13 @@ export async function POST(req: Request, { params }: { params: { squadId: string
   const wantsSquadInviteEmail = invitedPlayerPrefs?.notifySquadInvite !== false;
   const invitedEmail = invitedPlayer?.account?.email;
   if (invitedEmail && wantsSquadInviteEmail) {
-    const appUrl = process.env.NEXTAUTH_URL ?? "https://poloperator.app";
-    await sendMail({
-      to: invitedEmail,
-      subject: `${inviter?.name ?? "Quelqu'un"} t'invite à rejoindre ${squad?.name ?? "une équipe"}`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #1a1a1a;">Invitation à rejoindre une équipe</h2>
-          <p>Bonjour ${invitedPlayer?.name ?? ""},</p>
-          <p><strong>${inviter?.name ?? "Un joueur"}</strong> t'invite à rejoindre l'équipe <strong>${squad?.name ?? ""}</strong> sur Poloperator.</p>
-          <p style="margin: 24px 0;">
-            <a href="${appUrl}/my-teams"
-               style="background: #60c9cf; color: #1a1a1a; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-              Voir l'invitation
-            </a>
-          </p>
-          <p style="color: #666; font-size: 12px; margin-top: 32px;">
-            Vous pouvez accepter ou refuser cette invitation depuis votre espace <a href="${appUrl}/my-teams">Mes équipes</a>.
-          </p>
-        </div>
-      `,
+    const lang = getLangFromCountry(invitedPlayer?.country);
+    const { subject, html } = squadInviteEmail(lang, {
+      inviterName: inviter?.name ?? "Someone",
+      squadName: squad?.name ?? "",
+      playerName: invitedPlayer?.name ?? "",
     });
+    await sendMail({ to: invitedEmail, subject, html });
   }
 
   return NextResponse.json(invitation, { status: 201 });
