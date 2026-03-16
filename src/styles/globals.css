@@ -7286,28 +7286,43 @@ details[open] .my-tournaments__section-title--summary::after {
   display: grid;
   grid-template-columns: 3fr 2fr;
   gap: 20px;
-  align-items: stretch;
-  min-height: 500px;
+  align-items: start;
+  height: 520px;
 }
 
 .map-container-wrap {
   border-radius: var(--radius);
   overflow: hidden;
-  min-height: 500px;
+  height: 520px;
   border: 2px solid var(--border);
+}
+
+/* Leaflet needs explicit height on its root element */
+.map-container-wrap .leaflet-container {
+  height: 520px !important;
+  width: 100% !important;
 }
 
 .map-side-panel {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: 520px;
+  overflow-y: auto;
 }
 
 @media (max-width: 768px) {
   .map-section-layout {
     grid-template-columns: 1fr;
+    height: auto;
   }
   .map-container-wrap {
-    min-height: 320px;
+    height: 340px;
+  }
+  .map-container-wrap .leaflet-container {
+    height: 340px !important;
+  }
+  .map-side-panel {
+    max-height: none;
   }
 }
