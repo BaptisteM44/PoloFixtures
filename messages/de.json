@@ -105,7 +105,8 @@
     "charter_accept_cgu": "Nutzungsbedingungen",
     "charter_accept_privacy": "Datenschutzerklärung",
     "charter_accept_label_post": "und die Verhaltenscharta gelesen und akzeptiere sie.",
-    "charter_accept_charter_link": "Kodex ansehen"
+    "charter_accept_charter_link": "Kodex ansehen",
+    "charter_required": "Sie müssen die Charta akzeptieren, um ein Konto zu erstellen."
   },
   "about": {
     "page_title": "Poloperator",

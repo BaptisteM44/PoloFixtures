@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ name: "", email: "", password: "", country: "FR", city: "" });
   const [charterAccepted, setCharterAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [charterError, setCharterError] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -19,7 +20,9 @@ export default function RegisterPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!charterAccepted) { setCharterError(true); return; }
     setError(null);
+    setCharterError(false);
     setLoading(true);
 
     try {
@@ -88,27 +91,33 @@ export default function RegisterPage() {
             </label>
           </div>
 
-          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", fontSize: 13 }}>
-            <input
-              type="checkbox"
-              required
-              checked={charterAccepted}
-              onChange={(e) => setCharterAccepted(e.target.checked)}
-              style={{ accentColor: "var(--teal)", width: 16, height: 16, marginTop: 2, flexShrink: 0 }}
-            />
-            <span style={{ color: "var(--text-muted)", lineHeight: 1.4 }}>
-              {t("charter_accept_label_pre")}{" "}
-              <a href="/legal/terms" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>{t("charter_accept_cgu")}</a>
-              {", "}
-              <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>{t("charter_accept_privacy")}</a>
-              {" "}{t("charter_accept_label_post")}{" "}
-              <a href="/legal/charter" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>{t("charter_accept_charter_link")}</a>
-            </span>
-          </label>
+          <div>
+            <label style={{ display: "flex", gap: 10, alignItems: "flex-start", cursor: "pointer", fontSize: 13 }}>
+              <input
+                type="checkbox"
+                checked={charterAccepted}
+                onChange={(e) => { setCharterAccepted(e.target.checked); if (e.target.checked) setCharterError(false); }}
+                style={{ accentColor: "var(--teal)", width: 16, height: 16, marginTop: 2, flexShrink: 0 }}
+              />
+              <span style={{ color: charterError ? "var(--danger)" : "var(--text-muted)", lineHeight: 1.4 }}>
+                {t("charter_accept_label_pre")}{" "}
+                <a href="/legal/terms" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>{t("charter_accept_cgu")}</a>
+                {", "}
+                <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>{t("charter_accept_privacy")}</a>
+                {" "}{t("charter_accept_label_post")}{" "}
+                <a href="/legal/charter" target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>{t("charter_accept_charter_link")}</a>
+              </span>
+            </label>
+            {charterError && (
+              <p style={{ margin: "6px 0 0 26px", fontSize: 12, color: "var(--danger)" }}>
+                {t("charter_required")}
+              </p>
+            )}
+          </div>
 
           {error && <p className="error">{error}</p>}
 
-          <button className="primary" type="submit" disabled={loading || !charterAccepted} style={{ width: "100%", justifyContent: "center" }}>
+          <button className="primary" type="submit" disabled={loading} style={{ width: "100%", justifyContent: "center" }}>
             {loading ? t("btn_register_loading") : t("btn_register")}
           </button>
 

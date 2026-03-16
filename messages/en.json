@@ -105,7 +105,8 @@
     "charter_accept_cgu": "Terms of Use",
     "charter_accept_privacy": "Privacy Policy",
     "charter_accept_label_post": "and the community charter.",
-    "charter_accept_charter_link": "See the charter"
+    "charter_accept_charter_link": "See the charter",
+    "charter_required": "You must accept the charter to create an account."
   },
   "about": {
     "page_title": "Poloperator",

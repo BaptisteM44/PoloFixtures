@@ -105,7 +105,8 @@
     "charter_accept_cgu": "CGU",
     "charter_accept_privacy": "Politique de confidentialité",
     "charter_accept_label_post": "et la charte de bonne conduite.",
-    "charter_accept_charter_link": "Voir la charte"
+    "charter_accept_charter_link": "Voir la charte",
+    "charter_required": "Vous devez accepter la charte pour créer un compte."
   },
   "about": {
     "page_title": "Poloperator",
