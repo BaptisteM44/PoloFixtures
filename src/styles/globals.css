@@ -78,6 +78,7 @@ a {
 
 .page {
   padding: 32px 6vw 80px;
+  overflow-x: hidden;
 }
 
 /* ========================
@@ -4467,7 +4468,32 @@ textarea {
 }
 
 @media (max-width: 480px) {
-  .pkmn-card { width: 92vw; }
+  .pkmn-card {
+    width: min(340px, 88vw);
+    height: auto;
+    aspect-ratio: 340 / 520;
+  }
+}
+
+.pokemon-cards-scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  /* Centre les cartes quand elles tiennent dans la largeur */
+  justify-content: flex-start;
+}
+
+@media (max-width: 480px) {
+  .pokemon-cards-scroll {
+    /* Sur mobile : centre si une seule carte, scroll si plusieurs */
+    scroll-snap-type: x mandatory;
+    padding: 0 4vw 12px;
+    gap: 12px;
+  }
+  .pokemon-cards-scroll > * {
+    scroll-snap-align: center;
+  }
 }
 
 /* ========================

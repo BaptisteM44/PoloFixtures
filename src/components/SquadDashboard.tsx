@@ -290,24 +290,24 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
             </div>
           </div>
         ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: squad.color ?? "var(--teal)", border: "2px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>
               {squad.logoPath ? <img src={squad.logoPath} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} /> : "🏑"}
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <h2 style={{ margin: "0 0 4px", fontFamily: "var(--font-display)" }}>{squad.name}</h2>
               {squad.bio && <p className="meta" style={{ margin: 0 }}>{squad.bio}</p>}
-            </div>
-            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-              {isCaptain && (
-                <>
-                  <button className="ghost" style={{ fontSize: 12 }} onClick={() => setEditing(true)}>✏️ Modifier</button>
-                  <button className="ghost" style={{ fontSize: 12, borderColor: "var(--pink)", color: "var(--pink)" }} onClick={handleDelete}>Supprimer</button>
-                </>
-              )}
-              {!isCaptain && (
-                <button className="ghost" style={{ fontSize: 12, color: "var(--text-muted)" }} onClick={handleLeave}>Quitter</button>
-              )}
+              <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                {isCaptain && (
+                  <>
+                    <button className="ghost" style={{ fontSize: 12 }} onClick={() => setEditing(true)}>✏️ Modifier</button>
+                    <button className="ghost" style={{ fontSize: 12, borderColor: "var(--pink)", color: "var(--pink)" }} onClick={handleDelete}>Supprimer</button>
+                  </>
+                )}
+                {!isCaptain && (
+                  <button className="ghost" style={{ fontSize: 12, color: "var(--text-muted)" }} onClick={handleLeave}>Quitter</button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -338,7 +338,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
           <div style={{ display: "grid", gap: 20 }}>
 
             {/* ── PokemonCard banner ── */}
-            <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 8 }}>
+            <div className="pokemon-cards-scroll">
               {members.map((m) => (
                 <div key={m.id} style={{ flexShrink: 0 }}>
                   {m.slug ? (
