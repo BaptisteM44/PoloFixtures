@@ -244,28 +244,16 @@ export default async function TournamentPage({
         <Link href="/tournaments" style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "var(--font-display)" }}>
           ← {t("back_tournaments")}
         </Link>
-        {canEdit && (
-          <Link href={`/tournament/${params.id}/edit`} style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, fontFamily: "var(--font-display)" }}>
-            {t("back_dashboard")}
-          </Link>
-        )}
-        {canRef && (
-          <Link
-            href={`/tournament/${params.id}/referee`}
-            className="primary"
-            style={{ fontSize: 13, padding: "6px 16px", display: "inline-flex", alignItems: "center", gap: 6 }}
-          >
-            {t("btn_referee")}
-          </Link>
-        )}
       </div>
 
       {/* ── HERO ── */}
       <section className="tournament-hero">
         <div className="tournament-hero__main">
           <h1>{tournament.name}</h1>
-          <div className="tournament-hero__dates">
-            <span>📅 {dateStart} — {dateEnd}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div className="tournament-hero__dates">
+              <span>📅 {dateStart} — {dateEnd}</span>
+            </div>
             <FollowButton
               tournamentId={tournament.id}
               initialFollowing={isFollowing}
@@ -314,10 +302,19 @@ export default async function TournamentPage({
       <Tabs
         items={tabs}
         active={tab}
-        rightSlot={canEdit ? (
-          <Link className="ghost" href={`/tournament/${params.id}/edit`} style={{ fontSize: 12, padding: "5px 14px", marginBottom: 2 }}>
-            {t("btn_edit")}
-          </Link>
+        rightSlot={(canEdit || canRef) ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {canEdit && (
+              <Link className="ghost" href={`/tournament/${params.id}/edit`} style={{ fontSize: 12, padding: "5px 14px", marginBottom: 2 }}>
+                {t("btn_edit")}
+              </Link>
+            )}
+            {canRef && (
+              <Link className="primary" href={`/tournament/${params.id}/referee`} style={{ fontSize: 12, padding: "5px 14px", marginBottom: 2 }}>
+                {t("btn_referee")}
+              </Link>
+            )}
+          </div>
         ) : undefined}
       />
 
