@@ -31,5 +31,11 @@ export async function sendMail({
     auth: { user, pass },
   });
 
-  await transporter.sendMail({ from, to, subject, html });
+  try {
+    await transporter.sendMail({ from, to, subject, html });
+    console.log("[mailer] Email envoyé à", to, "—", subject);
+  } catch (err) {
+    console.error("[mailer] Échec envoi à", to, ":", err);
+    throw err;
+  }
 }
