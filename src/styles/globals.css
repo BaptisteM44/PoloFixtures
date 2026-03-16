@@ -1058,6 +1058,16 @@ button:focus-visible,
    CONTINENT GRID
    ======================== */
 
+.home-reorder {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .home-reorder__active    { order: 1; }
+  .home-reorder__continents { order: 2; }
+}
+
 .continent-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -2718,6 +2728,13 @@ button:focus-visible,
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+@media (max-width: 600px) {
+  .badges-header {
+    gap: 10px;
+    flex-direction: column;
+  }
 }
 
 .badge {
@@ -5075,9 +5092,15 @@ textarea {
    SWISS STANDINGS TABLE
    ======================== */
 
+.swiss-standings-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .swiss-standings {
   border-collapse: collapse;
   width: 100%;
+  min-width: 480px;
   font-size: 14px;
 }
 
@@ -5115,6 +5138,19 @@ textarea {
 /* ========================
    ACTION GRID (organizer)
    ======================== */
+
+.two-col-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .two-col-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
 .action-grid {
   display: grid;

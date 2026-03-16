@@ -97,8 +97,10 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <div className="home-reorder">
+
       {/* ---- CONTINENTS ---- */}
-      <section className="section" style={{ paddingBottom: 0 }}>
+      <section className="section home-reorder__continents" style={{ paddingBottom: 0 }}>
         <div className="continent-grid">
           {continents.map((c) => (
             <Link key={c.code} className="continent-card" href={`/continent/${c.code}`}>
@@ -114,7 +116,7 @@ export default async function HomePage() {
       </section>
 
       {/* ---- LIVE + UPCOMING TOURNAMENTS ---- */}
-      <section className="section">
+      <section className="section home-reorder__active">
         <div className="section-header">
           <div>
             <h2>{t("section_active_title")}</h2>
@@ -143,6 +145,8 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+
+      </div>
 
       {/* ---- CALENDAR ---- */}
       <section className="section">

@@ -108,3 +108,28 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
   return Response.json(updated);
 }
+
+export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+  const session = await auth();
+  const playerId = session?.user?.playerId;
+  const role = session?.user?.role;
+  if (!playerId) return new Response("Unauthorized", { status: 401 });
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: params.id },
+    select: { id: true, creatorId: true, status: true },
+  });
+  if (!tournament) return new Response("Not found", { status: 404 });
+
+  const isAdmin = hasAtLeastRole(role ?? "", "ADMIN");
+  const isCreator = tournament.creatorId === playerId;
+  if (!isAdmin && !isCreator) return new Response("Forbidden", { status: 403 });
+
+  // Bloquer la suppression si le tournoi est LIVE ou COMPLETED
+  if (tournament.status === "LIVE" || tournament.status === "COMPLETED") {
+    return Response.json({ error: "Impossible de supprimer un tournoi en cours ou terminé." }, { status: 400 });
+  }
+
+  await prisma.tournament.delete({ where: { id: params.id } });
+  return Response.json({ ok: true });
+}

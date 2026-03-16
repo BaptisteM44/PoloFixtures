@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { ISO_COUNTRIES } from "@/lib/iso-countries";
 
 type MealDay = { day: number; breakfast: boolean; lunch: boolean; dinner: boolean };
@@ -176,6 +177,22 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     });
   };
 
+  const [deletePending, setDeletePending] = useState(false);
+  const router = useRouter();
+
+  const handleDelete = async () => {
+    if (!window.confirm("Supprimer ce tournoi ? Cette action est irréversible.")) return;
+    setDeletePending(true);
+    const res = await fetch(`/api/tournaments/${tournament.id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/tournaments");
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? "Erreur lors de la suppression.");
+      setDeletePending(false);
+    }
+  };
+
   const handleToggleLock = async () => {
     setLockPending(true);
     setError(null);
@@ -221,6 +238,15 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             style={{ fontSize: 13, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}
           >
             {lockPending ? "…" : isLocked ? "🔒 Verrouillé" : "🔓 Déverrouillé"}
+          </button>
+          <button
+            type="button"
+            className="ghost"
+            onClick={handleDelete}
+            disabled={deletePending}
+            style={{ fontSize: 12, padding: "6px 12px", color: "var(--pink)", borderColor: "var(--pink)" }}
+          >
+            {deletePending ? "…" : "Supprimer"}
           </button>
         </div>
       </div>

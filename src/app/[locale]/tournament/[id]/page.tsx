@@ -720,6 +720,7 @@ export default async function TournamentPage({
                 {/* Standings table */}
                 <div className="panel">
                   <h3 style={{ marginBottom: 16 }}>{t("swiss_standings_title")}</h3>
+                  <div className="swiss-standings-wrap">
                   <table className="swiss-standings">
                     <thead>
                       <tr>
@@ -750,6 +751,7 @@ export default async function TournamentPage({
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </>
             );
@@ -980,7 +982,7 @@ export default async function TournamentPage({
           )}
 
           {/* Scores live + Chat — 2 colonnes */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, alignItems: "start" }}>
+          <div className="two-col-grid">
             {/* Scores live */}
             <div className="panel">
               <LiveMatchTile
@@ -1015,7 +1017,7 @@ export default async function TournamentPage({
 
       {/* ── ONGLET ZONE FREE AGENT ── */}
       {tab === "communaute" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, alignItems: "start" }}>
+        <div className="two-col-grid">
           {/* Free agents publics */}
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div className="panel">

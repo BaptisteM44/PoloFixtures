@@ -117,7 +117,7 @@ export function BadgeShowcase({
   return (
     <div>
       {/* ── Header ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+      <div className="badges-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <h2 style={{ margin: 0, fontSize: 18 }}>Badges</h2>
           <span style={{ fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 20, border: "2px solid var(--border)", color: "var(--text-muted)" }}>
