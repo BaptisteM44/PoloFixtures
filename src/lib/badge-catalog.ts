@@ -74,7 +74,7 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   addict:           { id: "addict",           name: "Addict",           emoji: "🔋", description: "Se connecter 100 jours différents",                category: "engagement", rarity: "rare" },
   no_days_off:      { id: "no_days_off",      name: "No Days Off",      emoji: "🗓️", description: "Se connecter 200 jours différents",               category: "engagement", rarity: "epic" },
   full_year:        { id: "full_year",        name: "Full Year",        emoji: "⚙️", description: "Se connecter 365 jours différents",               category: "engagement", rarity: "legendary" },
-  og:               { id: "og",               name: "OG",               emoji: "🏴", description: "Compte créé avant le 1er avril 2026",               category: "engagement", rarity: "legendary" },
+  og:               { id: "og",               name: "OG",               emoji: "🏴", description: "Compte créé avant le 1er avril 2026",               category: "engagement", rarity: "epic" },
 
   // ─────────────────────────────────────────────────────
   // 🎉 Social
