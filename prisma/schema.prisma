@@ -184,6 +184,7 @@ model Tournament {
   contactEmail            String
   registrationStart       DateTime?
   registrationEnd         DateTime?
+  maxSoloPlayers          Int?      // null = pas de limite (ABC Chapeau)
   // Lieu principal (tout le tournoi)
   venueName               String?
   venueAddress            String?
@@ -256,6 +257,7 @@ model Tournament {
   orgaNotes      OrgaNote[]
   orgaLinks      OrgaLink[]
   followers      TournamentFollow[]
+  soloEntries    TournamentSoloEntry[]
 
   @@index([continentCode])
   @@index([status])
@@ -288,12 +290,17 @@ model Team {
   registrationNote   String?
   orgaNote           String?
 
+  playerALevel       String?   // "A" | "B" | "C" — format ABC
+  playerBLevel       String?
+  playerCLevel       String?
+
   tournament Tournament   @relation(fields: [tournamentId], references: [id])
   players    TeamPlayer[]
   poolTeams  PoolTeam[]
   matchesA   Match[]        @relation("TeamA")
   matchesB   Match[]        @relation("TeamB")
   messages   TeamMessage[]
+  soloEntries TournamentSoloEntry[]
 
   @@index([tournamentId])
 }
@@ -321,6 +328,7 @@ model Player {
   createdAt DateTime     @default(now())
 
   teams              TeamPlayer[]
+  soloEntries        TournamentSoloEntry[]
   account            PlayerAccount?
   operator           Operator?
   createdTournaments Tournament[]    @relation("CreatedTournaments")
@@ -749,4 +757,22 @@ model TournamentFollow {
   player       Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   @@unique([playerId, tournamentId])
+}
+
+model TournamentSoloEntry {
+  id            String   @id @default(cuid())
+  tournamentId  String
+  playerId      String
+  level         String   // "C"|"C+"|"B-"|"B"|"B+"|"A-"|"A"|"A+"
+  teamId        String?  // rempli après le tirage
+  waitlisted    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  tournament    Tournament     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player        Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team          Team?          @relation(fields: [teamId], references: [id])
+
+  @@unique([tournamentId, playerId])
+  @@index([tournamentId])
+  @@index([playerId])
 }

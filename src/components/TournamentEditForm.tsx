@@ -60,6 +60,7 @@ type Tournament = {
   breakfastProvided?: boolean;
   lunchProvided?: boolean;
   dinnerProvided?: boolean;
+  maxSoloPlayers?: number | null;
 };
 
 type Props = {
@@ -104,6 +105,11 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const [bannerUploading, setBannerUploading] = useState(false);
   const [bannerError, setBannerError] = useState<string | null>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
+
+  // ABC Chapeau
+  const [maxSoloPlayers, setMaxSoloPlayers] = useState<string>(
+    tournament.maxSoloPlayers != null ? String(tournament.maxSoloPlayers) : ""
+  );
 
   // Hébergement
   const [accommodation, setAccommodation] = useState(tournament.accommodationAvailable ?? false);
@@ -284,6 +290,9 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         <input type="hidden" name="links" value={tournament.links.join("\n")} />
         <input type="hidden" name="otherNotes" value={tournament.otherNotes ?? ""} />
 
+        {/* ABC Chapeau hidden field */}
+        <input type="hidden" name="maxSoloPlayers" value={maxSoloPlayers} />
+
         {/* Hidden fields for new data */}
         <input type="hidden" name="accommodationAvailable" value={accommodation ? "true" : "false"} />
         <input type="hidden" name="accommodationType" value={accommodationType} />
@@ -356,6 +365,18 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             Durée match (min)
             <input type="number" name="gameDurationMin" defaultValue={tournament.gameDurationMin} />
           </label>
+          {tournament.format === "ABC Chapeau" && (
+            <label className="field-row">
+              Nombre max de joueurs solo <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}>(laisser vide = pas de limite)</span>
+              <input
+                type="number"
+                min={3}
+                value={maxSoloPlayers}
+                onChange={(e) => setMaxSoloPlayers(e.target.value)}
+                placeholder="Ex: 30"
+              />
+            </label>
+          )}
           <label className="field-row">
             Max équipes
             <input type="number" name="maxTeams" defaultValue={tournament.maxTeams} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />

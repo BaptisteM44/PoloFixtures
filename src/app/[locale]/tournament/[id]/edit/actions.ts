@@ -58,6 +58,7 @@ const updateSchema = z.object({
   additionalInfo: z.string().optional().nullable(),
   faq: z.string().optional().nullable(),
   telegramUrl: z.string().optional().nullable(),
+  maxSoloPlayers: z.coerce.number().int().min(1).optional().nullable().transform((v) => (isNaN(v as number) ? null : v)),
 });
 
 export async function updateTournamentAction(formData: FormData) {

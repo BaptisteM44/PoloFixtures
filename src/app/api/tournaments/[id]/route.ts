@@ -67,7 +67,8 @@ const updateSchema = z.object({
   saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS"]),
   sundayFormat: z.enum(["SE", "DE"]),
   status: z.enum(["UPCOMING", "LIVE", "COMPLETED"]),
-  locked: z.boolean()
+  locked: z.boolean(),
+  maxSoloPlayers: z.number().int().min(1).optional().nullable(),
 });
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {

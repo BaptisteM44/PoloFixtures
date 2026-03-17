@@ -25,6 +25,8 @@ import { OrgaLinkBoard } from "@/components/OrgaLinkBoard";
 import { HeroCountdown } from "@/components/HeroCountdown";
 import { TournamentRecap } from "@/components/TournamentRecap";
 import { FollowButton } from "@/components/FollowButton";
+import { SoloRegisterForm } from "@/components/SoloRegisterForm";
+import { DrawPanel } from "@/components/DrawPanel";
 
 function summarizeCities(players: { player: { city: string | null } }[]): string {
   const counts = new Map<string, number>();
@@ -64,7 +66,11 @@ export default async function TournamentPage({
         orderBy: { startAt: "asc" }
       },
       freeAgents: true,
-      coOrganizers: { include: { player: { select: { id: true, name: true } } } }
+      coOrganizers: { include: { player: { select: { id: true, name: true } } } },
+      soloEntries: {
+        include: { player: { select: { id: true, name: true } } },
+        orderBy: { createdAt: "asc" as const },
+      },
     }
   });
 
@@ -566,7 +572,22 @@ export default async function TournamentPage({
                       ? ` · ${tournament.teams.length - tournament.maxTeams} ${t("teams_on_waitlist")}`
                       : ` · ${tournament.maxTeams - tournament.teams.length === 1 ? t("teams_spots_available_one", { count: tournament.maxTeams - tournament.teams.length }) : t("teams_spots_available_other", { count: tournament.maxTeams - tournament.teams.length })}`}
                   </p>
-                  <RegisterTeamForm tournamentId={tournament.id} format={tournament.format} currentPlayerId={currentPlayerId} accommodationAvailable={tournament.accommodationAvailable} />
+                  {tournament.format === "ABC Chapeau" ? (() => {
+                    const soloEntries = (t_ as { soloEntries?: { id: string; player: { id: string; name: string }; level: string; teamId: string | null; waitlisted: boolean }[] }).soloEntries ?? [];
+                    const currentEntry = currentPlayerId ? soloEntries.find((e) => e.player.id === currentPlayerId) : null;
+                    return (
+                      <SoloRegisterForm
+                        tournamentId={tournament.id}
+                        currentPlayerId={currentPlayerId}
+                        maxSoloPlayers={(t_ as { maxSoloPlayers?: number | null }).maxSoloPlayers ?? null}
+                        soloCount={soloEntries.filter((e) => !e.waitlisted).length}
+                        alreadyRegistered={!!currentEntry}
+                        alreadyLevel={currentEntry?.level ?? null}
+                      />
+                    );
+                  })() : (
+                    <RegisterTeamForm tournamentId={tournament.id} format={tournament.format} currentPlayerId={currentPlayerId} accommodationAvailable={tournament.accommodationAvailable} />
+                  )}
                 </>
               ) : registrationClosed ? (
                 <div style={{ textAlign: "center", padding: "24px 0" }}>
@@ -818,18 +839,29 @@ export default async function TournamentPage({
                         <td style={{ fontWeight: 600 }}>{team.name}</td>
                         <td className="meta">{summarizeCities(team.players)}</td>
                         <td>
-                          {team.players.map((tp, i) => (
-                            <span key={tp.player.id}>
-                              {i > 0 && ", "}
-                              {(tp.player as { slug?: string | null }).slug ? (
-                                <Link href={`/player/${(tp.player as { slug?: string | null }).slug}`} style={{ color: "var(--teal)", textDecoration: "none", fontWeight: 500 }}>
-                                  {tp.player.name}
-                                </Link>
-                              ) : (
-                                tp.player.name
-                              )}
-                            </span>
-                          ))}
+                          {team.players.map((tp, i) => {
+                            const abcLevel = tournament.format === "ABC"
+                              ? (tp.player.id === (team as { playerALevel?: string | null }).playerALevel ? "A"
+                                : tp.player.id === (team as { playerBLevel?: string | null }).playerBLevel ? "B"
+                                : tp.player.id === (team as { playerCLevel?: string | null }).playerCLevel ? "C"
+                                : null)
+                              : null;
+                            return (
+                              <span key={tp.player.id}>
+                                {i > 0 && ", "}
+                                {(tp.player as { slug?: string | null }).slug ? (
+                                  <Link href={`/player/${(tp.player as { slug?: string | null }).slug}`} style={{ color: "var(--teal)", textDecoration: "none", fontWeight: 500 }}>
+                                    {tp.player.name}
+                                  </Link>
+                                ) : (
+                                  tp.player.name
+                                )}
+                                {abcLevel && (
+                                  <span className="level-badge" data-level={abcLevel} style={{ marginLeft: 4, fontSize: 10 }}>{abcLevel}</span>
+                                )}
+                              </span>
+                            );
+                          })}
                         </td>
                         {hasWaitlist && <td><span style={{ color: "var(--teal)", fontWeight: 700, fontSize: 11, fontFamily: "var(--font-display)" }}>{t("badge_retained")}</span></td>}
                       </tr>
@@ -1132,8 +1164,21 @@ export default async function TournamentPage({
               tournamentId={tournament.id}
             />
 
+            {/* DrawPanel ABC Chapeau */}
+            {tournament.format === "ABC Chapeau" && (() => {
+              const soloEntries = (t_ as { soloEntries?: { id: string; player: { id: string; name: string }; level: string; teamId: string | null; waitlisted: boolean }[] }).soloEntries ?? [];
+              const abcTeams = tournament.teams.map((t) => ({ id: t.id, name: t.name }));
+              return (
+                <DrawPanel
+                  tournamentId={tournament.id}
+                  soloEntries={soloEntries}
+                  teams={abcTeams}
+                />
+              );
+            })()}
+
             {/* Sélection / Tirage au sort */}
-            {tournament.teams.length > 0 && (
+            {tournament.teams.length > 0 && tournament.format !== "ABC Chapeau" && (
               <div className="panel">
                 <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 12 }}>{t("orga_selection_title")}</h3>
                 <SelectionManager

@@ -7339,3 +7339,56 @@ details[open] .my-tournaments__section-title--summary::after {
     max-height: none;
   }
 }
+
+/* ── ABC Format — Level badges ────────────────────────────────────────────── */
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.level-badge[data-level="C"] {
+  background: var(--gray);
+  color: var(--text-muted);
+}
+
+.level-badge[data-level="B"] {
+  background: color-mix(in srgb, var(--teal) 20%, var(--surface));
+  color: var(--text);
+  border-color: var(--teal);
+}
+
+.level-badge[data-level="A"] {
+  background: color-mix(in srgb, var(--yellow) 50%, var(--surface));
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--yellow) 80%, var(--border));
+}
+
+/* ── DrawPanel ────────────────────────────────────────────────────────────── */
+.draw-panel-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.draw-panel-table th {
+  text-align: left;
+  padding: 6px 10px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  color: var(--text-muted);
+  border-bottom: 2px solid var(--border);
+}
+
+.draw-panel-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-light);
+}

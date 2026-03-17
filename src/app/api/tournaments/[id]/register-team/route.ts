@@ -24,6 +24,10 @@ const registerSchema = z.object({
   registrationNote: z.string().max(500).optional().nullable(),
   players: z.array(playerSlotSchema).min(1).max(3),
   captainIndex: z.number().int().min(0).optional(),
+  // ABC format: index (0-based) of the player with level A/B/C in the players array
+  playerALevel: z.number().int().min(0).optional(),
+  playerBLevel: z.number().int().min(0).optional(),
+  playerCLevel: z.number().int().min(0).optional(),
 });
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -54,7 +58,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const parsed = dynamicSchema.safeParse(json);
   if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { teamName, city, country, registrationNote, players, captainIndex = 0 } = parsed.data;
+  const { teamName, city, country, registrationNote, players, captainIndex = 0, playerALevel, playerBLevel, playerCLevel } = parsed.data;
 
   const existingCount = await prisma.team.count({ where: { tournamentId: params.id } });
   const seed = existingCount + 1;
@@ -139,6 +143,19 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
   }
 
+  // Résoudre les niveaux ABC : playerALevel/B/C contiennent l'index dans le tableau players
+  // On les convertit en ID de joueur résolu
+  const isAbcFormat = tournament.format === "ABC";
+  const abcData: { playerALevel?: string; playerBLevel?: string; playerCLevel?: string } = {};
+  if (isAbcFormat) {
+    const resolvedA = playerALevel !== undefined ? resolvedPlayerIds[playerALevel] : undefined;
+    const resolvedB = playerBLevel !== undefined ? resolvedPlayerIds[playerBLevel] : undefined;
+    const resolvedC = playerCLevel !== undefined ? resolvedPlayerIds[playerCLevel] : undefined;
+    if (resolvedA) abcData.playerALevel = resolvedA;
+    if (resolvedB) abcData.playerBLevel = resolvedB;
+    if (resolvedC) abcData.playerCLevel = resolvedC;
+  }
+
   // Create team + team players
   const team = await prisma.team.create({
     data: {
@@ -148,6 +165,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       country: country ?? null,
       registrationNote: registrationNote ?? null,
       seed,
+      ...abcData,
       players: {
         create: resolvedPlayerIds.map((playerId, i) => ({
           playerId,

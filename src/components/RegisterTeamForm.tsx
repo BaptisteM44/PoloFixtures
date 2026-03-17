@@ -51,7 +51,8 @@ export function RegisterTeamForm({
   onSuccess?: () => void;
   accommodationAvailable?: boolean;
 }) {
-  const maxPlayers = maxPlayersFromFormat(format);
+  const isABC = format === "ABC";
+  const maxPlayers = isABC ? 3 : maxPlayersFromFormat(format);
   const [open, setOpen] = useState(false);
   const [needsAccommodation, setNeedsAccommodation] = useState<boolean[]>(() => Array(maxPlayers).fill(false));
   const [mode, setMode] = useState<"new" | "existing">("new");
@@ -64,6 +65,10 @@ export function RegisterTeamForm({
     Array.from({ length: maxPlayers }, () => ({ type: "empty" as const }))
   );
   const [captainIndex, setCaptainIndex] = useState(0);
+  // ABC level assignment: playerAIndex/playerBIndex/playerCIndex = index dans slots
+  const [playerAIdx, setPlayerAIdx] = useState<number | null>(null);
+  const [playerBIdx, setPlayerBIdx] = useState<number | null>(null);
+  const [playerCIdx, setPlayerCIdx] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -75,6 +80,7 @@ export function RegisterTeamForm({
   const reset = () => {
     setTeamName(""); setRegistrationNote("");
     setSlots(Array.from({ length: maxPlayers }, () => ({ type: "empty" as const })));
+    setPlayerAIdx(null); setPlayerBIdx(null); setPlayerCIdx(null);
     setError(null); setMode("new");
   };
 
@@ -119,6 +125,18 @@ export function RegisterTeamForm({
     setError(null);
     const filledSlots = slots.filter((s) => s.type !== "empty");
     if (filledSlots.length === 0) { setError(t("error_add_player")); return; }
+
+    // Validation ABC
+    if (isABC) {
+      if (filledSlots.length !== 3) { setError("Le format ABC requiert exactement 3 joueurs."); return; }
+      if (playerAIdx === null || playerBIdx === null || playerCIdx === null) {
+        setError("Veuillez désigner un joueur A, B et C."); return;
+      }
+      if (new Set([playerAIdx, playerBIdx, playerCIdx]).size !== 3) {
+        setError("Chaque joueur doit avoir un niveau différent (A, B, C)."); return;
+      }
+    }
+
     setLoading(true);
 
     const filledIndices = slots.map((s, i) => s.type !== "empty" ? i : -1).filter((i) => i >= 0);
@@ -130,10 +148,37 @@ export function RegisterTeamForm({
       return null;
     }).filter(Boolean);
 
+    // ABC levels: on passe les niveaux indexés par position dans filledIndices
+    let playerALevel: string | undefined;
+    let playerBLevel: string | undefined;
+    let playerCLevel: string | undefined;
+    if (isABC && playerAIdx !== null && playerBIdx !== null && playerCIdx !== null) {
+      const getPlayerIdAtSlot = (slotIdx: number) => {
+        const s = slots[slotIdx];
+        if (s.type === "existing") return s.player.id;
+        return null;
+      };
+      playerALevel = getPlayerIdAtSlot(playerAIdx) ? "A" : undefined;
+      playerBLevel = getPlayerIdAtSlot(playerBIdx) ? "B" : undefined;
+      playerCLevel = getPlayerIdAtSlot(playerCIdx) ? "C" : undefined;
+      // On encode les niveaux comme suit : playerALevel/B/C = ID du joueur A/B/C
+      // Pour simplifier on passe directement les playerId indexés
+    }
+
+    const body: Record<string, unknown> = { teamName, registrationNote: registrationNote || null, players, captainIndex };
+    if (isABC && playerAIdx !== null && playerBIdx !== null && playerCIdx !== null) {
+      // Encoder: niveau par position dans filledIndices
+      // filledIndices[i] = slot index du i-ème joueur
+      const getFilledPosition = (slotIdx: number) => filledIndices.indexOf(slotIdx);
+      body.playerALevel = getFilledPosition(playerAIdx);
+      body.playerBLevel = getFilledPosition(playerBIdx);
+      body.playerCLevel = getFilledPosition(playerCIdx);
+    }
+
     const res = await fetch(`/api/tournaments/${tournamentId}/register-team`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ teamName, registrationNote: registrationNote || null, players, captainIndex })
+      body: JSON.stringify(body)
     });
 
     setLoading(false);
@@ -268,6 +313,48 @@ export function RegisterTeamForm({
             ))}
           </div>
         </div>
+
+        {/* ABC level assignment */}
+        {isABC && slots.filter((s) => s.type !== "empty").length === 3 && (() => {
+          const filledSlots = slots
+            .map((s, i) => ({ slot: s, idx: i }))
+            .filter(({ slot }) => slot.type !== "empty");
+          const getPlayerName = (idx: number) => {
+            const s = slots[idx];
+            if (s.type === "existing") return s.player.name;
+            if (s.type === "manual") return s.name || `Joueur ${idx + 1}`;
+            return `Joueur ${idx + 1}`;
+          };
+          return (
+            <div style={{ padding: "14px 16px", background: "color-mix(in srgb, var(--yellow) 20%, var(--surface))", borderRadius: 8, border: "2px solid var(--border)" }}>
+              <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 12, fontSize: 13 }}>
+                Assignation des niveaux ABC
+              </p>
+              <div style={{ display: "grid", gap: 8 }}>
+                {(["A", "B", "C"] as const).map((lvl) => {
+                  const currentIdx = lvl === "A" ? playerAIdx : lvl === "B" ? playerBIdx : playerCIdx;
+                  const setIdx = lvl === "A" ? setPlayerAIdx : lvl === "B" ? setPlayerBIdx : setPlayerCIdx;
+                  return (
+                    <label key={lvl} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                      <span className="level-badge" data-level={lvl} style={{ minWidth: 28 }}>{lvl}</span>
+                      <select
+                        value={currentIdx ?? ""}
+                        onChange={(e) => setIdx(e.target.value === "" ? null : Number(e.target.value))}
+                        style={{ flex: 1 }}
+                        required
+                      >
+                        <option value="">— Sélectionner un joueur</option>
+                        {filledSlots.map(({ idx }) => (
+                          <option key={idx} value={idx}>{getPlayerName(idx)}</option>
+                        ))}
+                      </select>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Message pour les organisateurs */}
         <label className="field-row">
