@@ -194,6 +194,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     teamName,
     tournamentName: tournament.name,
     tournamentId: params.id,
+    tournamentSlug: tournament.slug ?? "",
   });
 
   // Recalculer les badges pour les joueurs existants (team_player, patient_zero, etc.)

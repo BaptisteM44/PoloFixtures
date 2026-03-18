@@ -14,6 +14,7 @@ type PendingTournament = {
   createdAt: string;
   creatorName: string;
   creatorId: string | null;
+  creatorSlug?: string | null;
 };
 
 type RejectedTournament = {
@@ -26,6 +27,7 @@ type RejectedTournament = {
   rejectionReason: string;
   creatorName: string;
   creatorId: string | null;
+  creatorSlug?: string | null;
 };
 
 function formatDate(iso: string) {
@@ -60,7 +62,7 @@ function TournamentRow({
         <p className="meta" style={{ margin: 0 }}>
           Créé par{" "}
           {t.creatorId
-            ? <Link href={`/player/${t.creatorId}`} style={{ color: "var(--teal)", textDecoration: "none", fontWeight: 600 }}>{t.creatorName}</Link>
+            ? <Link href={`/player/${t.creatorSlug ?? t.creatorId}`} style={{ color: "var(--teal)", textDecoration: "none", fontWeight: 600 }}>{t.creatorName}</Link>
             : <span>{t.creatorName}</span>
           }
           {" · "}

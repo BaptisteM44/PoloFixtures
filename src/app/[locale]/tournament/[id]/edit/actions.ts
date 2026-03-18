@@ -662,7 +662,7 @@ export async function drawOneTeamAction(
   const winner = valid[Math.floor(Math.random() * valid.length)];
   const [winnerTeam, tournament] = await Promise.all([
     prisma.team.findUnique({ where: { id: winner.id }, select: { name: true } }),
-    prisma.tournament.findUnique({ where: { id: tournamentId }, select: { name: true } }),
+    prisma.tournament.findUnique({ where: { id: tournamentId }, select: { name: true, slug: true } }),
   ]);
   await prisma.team.update({
     where: { id: winner.id },
@@ -672,6 +672,7 @@ export async function drawOneTeamAction(
     teamName: winnerTeam?.name ?? "",
     tournamentName: tournament?.name ?? "",
     tournamentId,
+    tournamentSlug: tournament?.slug ?? "",
   });
   return { ok: true, winnerId: winner.id };
 }
@@ -702,7 +703,7 @@ export async function drawOneWaitlistAction(
   const winner = valid[Math.floor(Math.random() * valid.length)];
   const [winnerTeam, tournament] = await Promise.all([
     prisma.team.findUnique({ where: { id: winner.id }, select: { name: true } }),
-    prisma.tournament.findUnique({ where: { id: tournamentId }, select: { name: true } }),
+    prisma.tournament.findUnique({ where: { id: tournamentId }, select: { name: true, slug: true } }),
   ]);
   await prisma.team.update({
     where: { id: winner.id },
@@ -712,6 +713,7 @@ export async function drawOneWaitlistAction(
     teamName: winnerTeam?.name ?? "",
     tournamentName: tournament?.name ?? "",
     tournamentId,
+    tournamentSlug: tournament?.slug ?? "",
     rank: nextRank,
   });
   return { ok: true, winnerId: winner.id, waitlistPosition: nextRank };

@@ -17,13 +17,13 @@ export default async function AdminPage() {
 
   const pending = await prisma.tournament.findMany({
     where: { submissionStatus: "PENDING" },
-    include: { creator: { select: { id: true, name: true } } },
+    include: { creator: { select: { id: true, name: true, slug: true } } },
     orderBy: { createdAt: "asc" }
   });
 
   const rejected = await prisma.tournament.findMany({
     where: { submissionStatus: "REJECTED" },
-    include: { creator: { select: { id: true, name: true } } },
+    include: { creator: { select: { id: true, name: true, slug: true } } },
     orderBy: { updatedAt: "desc" }
   });
 
@@ -73,6 +73,7 @@ export default async function AdminPage() {
           createdAt: t.createdAt.toISOString(),
           creatorName: t.creator?.name ?? "?",
           creatorId: t.creator?.id ?? null,
+          creatorSlug: t.creator?.slug ?? null,
         }))}
         rejected={rejected.map((t) => ({
           id: t.id,
@@ -84,6 +85,7 @@ export default async function AdminPage() {
           rejectionReason: t.rejectionReason ?? "",
           creatorName: t.creator?.name ?? "?",
           creatorId: t.creator?.id ?? null,
+          creatorSlug: t.creator?.slug ?? null,
         }))}
       />
     </div>

@@ -31,11 +31,11 @@ function useNotifLabel() {
       case "DIRECT_MESSAGE_RECEIVED":
         return { title: t("direct_message_received", { name: p.senderName }), sub: p.preview ?? "", href: "/messages" };
       case "TEAM_REGISTERED":
-        return { title: t("team_registered", { teamName: p.teamName }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentId}?tab=inscription` };
+        return { title: t("team_registered", { teamName: p.teamName }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=inscription` };
       case "TEAM_SELECTED":
-        return { title: t("team_selected", { teamName: p.teamName }), sub: t("team_selected_sub", { tournamentName: p.tournamentName ?? "" }), href: `/tournament/${p.tournamentId}?tab=inscription` };
+        return { title: t("team_selected", { teamName: p.teamName }), sub: t("team_selected_sub", { tournamentName: p.tournamentName ?? "" }), href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=inscription` };
       case "TEAM_WAITLISTED":
-        return { title: t("team_waitlisted", { teamName: p.teamName, rank: p.rank }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentId}?tab=inscription` };
+        return { title: t("team_waitlisted", { teamName: p.teamName, rank: p.rank }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=inscription` };
       case "BADGE_UNLOCKED":
         return { title: t("badge_unlocked", { badgeName: p.badgeName }), sub: t("badge_unlocked_sub"), href: "/account" };
       case "TEAM_MESSAGE_RECEIVED":

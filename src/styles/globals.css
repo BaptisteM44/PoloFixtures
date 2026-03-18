@@ -6962,6 +6962,7 @@ details[open] .my-tournaments__section-title--summary::after {
 
 .clubs-browser__search {
   flex: 1;
+  max-width: 320px;
   min-width: 200px;
   padding: 8px 14px;
   border: 1.5px solid var(--border);
