@@ -178,7 +178,7 @@ export default function TournamentMapClient({ tournaments }: Props) {
                   {selectedTournament.format}
                 </span>
               </div>
-              <a href={`/tournament/${selectedTournament.id}`} className="primary" style={{ fontSize: 13 }}>
+              <a href={`/tournament/${selectedTournament.slug ?? selectedTournament.id}`} className="primary" style={{ fontSize: 13 }}>
                 View tournament →
               </a>
             </div>

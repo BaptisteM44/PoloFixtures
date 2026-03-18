@@ -9,6 +9,7 @@ export default async function CalendarPage() {
     where: { approved: true },
     select: {
       id: true,
+      slug: true,
       name: true,
       dateStart: true,
       dateEnd: true,
@@ -22,6 +23,7 @@ export default async function CalendarPage() {
 
   const data: CalendarTournament[] = tournaments.map((t) => ({
     id: t.id,
+    slug: t.slug,
     name: t.name,
     dateStart: t.dateStart.toISOString(),
     dateEnd: t.dateEnd.toISOString(),

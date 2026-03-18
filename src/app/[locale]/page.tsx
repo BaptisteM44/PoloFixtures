@@ -49,7 +49,7 @@ export default async function HomePage() {
     }),
     prisma.tournament.findMany({
       where: { approved: true },
-      select: { id: true, name: true, dateStart: true, dateEnd: true, status: true, city: true, country: true, format: true },
+      select: { id: true, slug: true, name: true, dateStart: true, dateEnd: true, status: true, city: true, country: true, format: true },
       orderBy: { dateStart: "asc" },
     }),
     prisma.player.groupBy({
@@ -59,7 +59,7 @@ export default async function HomePage() {
     }),
     prisma.tournament.findMany({
       where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true, lat: { not: null }, lng: { not: null } },
-      select: { id: true, name: true, city: true, country: true, continentCode: true, format: true, dateStart: true, dateEnd: true, status: true, registrationStart: true, registrationEnd: true, lat: true, lng: true },
+      select: { id: true, slug: true, name: true, city: true, country: true, continentCode: true, format: true, dateStart: true, dateEnd: true, status: true, registrationStart: true, registrationEnd: true, lat: true, lng: true },
       orderBy: [{ status: "asc" }, { dateStart: "asc" }],
     }),
   ]);
@@ -115,6 +115,7 @@ export default async function HomePage() {
         <TournamentMapClient
           tournaments={mapTournaments.map((t): MapTournament => ({
             id: t.id,
+            slug: t.slug,
             name: t.name,
             city: t.city,
             country: t.country,
@@ -192,6 +193,7 @@ export default async function HomePage() {
         <CalendarGrid
           tournaments={allTournaments.map((t): CalendarTournament => ({
             id: t.id,
+            slug: t.slug,
             name: t.name,
             dateStart: t.dateStart.toISOString(),
             dateEnd: t.dateEnd.toISOString(),

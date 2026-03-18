@@ -17,7 +17,7 @@ type MatchInfo = {
   scoreA: number; scoreB: number; events: MatchEvent[];
 };
 type TournamentData = {
-  id: string; name: string; gameDurationMin: number;
+  id: string; slug?: string | null; name: string; gameDurationMin: number;
   teams: TeamInfo[]; matches: MatchInfo[];
 };
 
@@ -469,7 +469,7 @@ export function TournamentRefereePanel({
 
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
       <div className="ref-topbar">
-        <Link href={`/tournament/${tournament.id}?tab=schedule`} className="ref-back">
+        <Link href={`/tournament/${tournament.slug ?? tournament.id}?tab=schedule`} className="ref-back">
           ← Tournoi
         </Link>
         <span className="ref-tourney-name">{tournament.name}</span>

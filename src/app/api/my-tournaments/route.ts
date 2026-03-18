@@ -18,6 +18,7 @@ export async function GET() {
           tournament: {
             select: {
               id: true,
+              slug: true,
               name: true,
               city: true,
               country: true,
@@ -69,6 +70,7 @@ export async function GET() {
     where: { creatorId: playerId },
     select: {
       id: true,
+      slug: true,
       name: true,
       city: true,
       country: true,

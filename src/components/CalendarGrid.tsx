@@ -6,6 +6,7 @@ import Link from "next/link";
 
 export type CalendarTournament = {
   id: string;
+  slug?: string | null;
   name: string;
   dateStart: string;
   dateEnd: string;
@@ -86,8 +87,8 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
     return new Set(raw ? raw.split(",").filter(Boolean) : []);
   }, [searchParams]);
 
-  const toggle = (id: string) => {
-    if (mini) { router.push(`/tournament/${id}`); return; }
+  const toggle = (id: string, slug?: string) => {
+    if (mini) { router.push(`/tournament/${slug ?? id}`); return; }
     const next = new Set(expandedIds);
     next.has(id) ? next.delete(id) : next.add(id);
     const params = new URLSearchParams(searchParams.toString());
@@ -187,7 +188,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
                   className={`calendar-event${expandedIds.has(t.id) ? " calendar-event--active" : ""}`}
                   style={{ background: colorMap.get(t.id) }}
                   title={`${t.name} — ${t.city}, ${t.country}`}
-                  onClick={() => toggle(t.id)}
+                  onClick={() => toggle(t.id, t.slug ?? undefined)}
                 >
                   {t.city}
                 </button>
@@ -229,7 +230,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
       <p className="calendar-expand__meta" style={{ textTransform: "capitalize" }}>
         🔴 Statut : {t.status.toLowerCase()}
       </p>
-      <Link href={`/tournament/${t.id}`} className="calendar-expand__link">
+      <Link href={`/tournament/${t.slug ?? t.id}`} className="calendar-expand__link">
         Voir le tournoi →
       </Link>
     </div>
@@ -267,7 +268,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
                 <p className="calendar-expand__meta" style={{ textTransform: "capitalize" }}>
                   🔴 Statut : {t.status.toLowerCase()}
                 </p>
-                <Link href={`/tournament/${t.id}`} className="calendar-expand__link">
+                <Link href={`/tournament/${t.slug ?? t.id}`} className="calendar-expand__link">
                   Voir le tournoi →
                 </Link>
               </div>

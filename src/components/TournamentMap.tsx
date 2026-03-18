@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 
 export type MapTournament = {
   id: string;
+  slug?: string | null;
   name: string;
   city: string;
   country: string;

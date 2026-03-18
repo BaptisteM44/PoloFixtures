@@ -18,6 +18,7 @@ type Teammate = {
 
 type Tournament = {
   id: string;
+  slug: string;
   name: string;
   city: string;
   country: string;
@@ -38,6 +39,7 @@ type Entry = {
 
 type CreatedTournament = {
   id: string;
+  slug: string;
   name: string;
   city: string;
   country: string;
@@ -171,7 +173,7 @@ export default function MyTournamentsPage() {
                       <div key={entry.teamId} className="my-tournaments__card panel">
                         <div className="my-tournaments__card-header">
                           <div style={{ flex: 1 }}>
-                            <Link href={`/tournament/${entry.tournament.id}`} className="my-tournaments__tournament-name">{entry.tournament.name}</Link>
+                            <Link href={`/tournament/${entry.tournament.slug}`} className="my-tournaments__tournament-name">{entry.tournament.name}</Link>
                             <div className="my-tournaments__card-sub">
                               <span>{flagEmoji(entry.tournament.country)} {entry.tournament.city}, {entry.tournament.country}</span>
                               <span className="my-tournaments__card-dates">{formatDateRange(entry.tournament.dateStart, entry.tournament.dateEnd)}</span>
@@ -233,7 +235,7 @@ export default function MyTournamentsPage() {
                     <div key={entry.teamId} className="my-tournaments__card panel">
                       <div className="my-tournaments__card-header">
                         <div style={{ flex: 1 }}>
-                          <Link href={`/tournament/${entry.tournament.id}`} className="my-tournaments__tournament-name">
+                          <Link href={`/tournament/${entry.tournament.slug}`} className="my-tournaments__tournament-name">
                             {entry.tournament.name}
                           </Link>
                           <div className="my-tournaments__card-sub">
@@ -321,7 +323,7 @@ export default function MyTournamentsPage() {
                 <div key={tour.id} className="my-tournaments__card panel">
                   <div className="my-tournaments__card-header">
                     <div style={{ flex: 1 }}>
-                      <Link href={`/tournament/${tour.id}`} className="my-tournaments__tournament-name">{tour.name}</Link>
+                      <Link href={`/tournament/${tour.slug}`} className="my-tournaments__tournament-name">{tour.name}</Link>
                       <div className="my-tournaments__card-sub">
                         <span>{flagEmoji(tour.country)} {tour.city}, {tour.country}</span>
                         <span className="my-tournaments__card-dates">{formatDateRange(tour.dateStart, tour.dateEnd)}</span>
@@ -342,8 +344,8 @@ export default function MyTournamentsPage() {
                     </span>
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <Link href={`/tournament/${tour.id}`} className="ghost" style={{ fontSize: 12 }}>{tc("see_all").replace(" →", "")} →</Link>
-                    <Link href={`/tournament/${tour.id}/edit`} className="ghost" style={{ fontSize: 12 }}>✏️ {tc("edit")}</Link>
+                    <Link href={`/tournament/${tour.slug}`} className="ghost" style={{ fontSize: 12 }}>{tc("see_all").replace(" →", "")} →</Link>
+                    <Link href={`/tournament/${tour.slug}/edit`} className="ghost" style={{ fontSize: 12 }}>✏️ {tc("edit")}</Link>
                   </div>
                 </div>
               );

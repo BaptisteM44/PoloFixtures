@@ -651,8 +651,8 @@ export default async function TournamentPage({
                     await generateBracketAction(tournament.id);
                     const { redirect } = await import("next/navigation");
                     const { revalidatePath } = await import("next/cache");
-                    revalidatePath(`/tournament/${tournament.id}`);
-                    redirect(`/tournament/${tournament.id}?tab=bracket`);
+                    revalidatePath(`/tournament/${tournament.slug}`);
+                    redirect(`/tournament/${tournament.slug}?tab=bracket`);
                   }}>
                     <button type="submit" className="ghost" style={{ fontSize: 12, padding: "5px 14px", color: "var(--danger)" }}>
                       Régénérer le bracket

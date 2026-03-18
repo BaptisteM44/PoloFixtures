@@ -8,6 +8,7 @@ import { getTournamentStatusBadge } from "@/components/TournamentCard";
 
 type TournamentRow = {
   id: string;
+  slug?: string | null;
   name: string;
   continentCode: string;
   country: string;
@@ -289,7 +290,7 @@ export function TournamentBrowser({
 
               return (
                 <div key={tour.id} className={`tournament-card-wrapper${tour.bannerPath ? " tournament-card-wrapper--has-banner" : ""}`}>
-                  <Link className={`tournament-card${tour.bannerPath ? " tournament-card--has-banner" : ""}`} href={`/tournament/${tour.id}`}>
+                  <Link className={`tournament-card${tour.bannerPath ? " tournament-card--has-banner" : ""}`} href={`/tournament/${tour.slug ?? tour.id}`}>
                     {/* Date column */}
                     <div className="tournament-card__date">
                       <span className="tournament-card__day">{dayStart}</span>

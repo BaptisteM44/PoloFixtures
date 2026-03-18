@@ -49,7 +49,7 @@ export async function TournamentCard({
 
   return (
     <div className={`tournament-card-wrapper${tournament.bannerPath ? " tournament-card-wrapper--has-banner" : ""}`}>
-      <Link className={`tournament-card${tournament.bannerPath ? " tournament-card--has-banner" : ""}`} href={`/tournament/${tournament.id}`}>
+      <Link className={`tournament-card${tournament.bannerPath ? " tournament-card--has-banner" : ""}`} href={`/tournament/${tournament.slug}`}>
 
         {/* Date column */}
         <div className="tournament-card__date">

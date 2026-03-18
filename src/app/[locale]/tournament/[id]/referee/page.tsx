@@ -59,6 +59,7 @@ export default async function RefereeMatchPage({ params }: { params: { id: strin
     <TournamentRefereePanel
       tournament={{
         id: tournament.id,
+        slug: tournament.slug,
         name: tournament.name,
         gameDurationMin: tournament.gameDurationMin,
         teams: tournament.teams.map((t) => ({

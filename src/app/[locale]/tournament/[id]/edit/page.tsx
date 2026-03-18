@@ -45,7 +45,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
         <div className="panel" style={{ textAlign: "center", padding: 48 }}>
           <h2>{t("edit_access_denied")}</h2>
           <p style={{ color: "var(--text-muted)" }}>{t("edit_access_denied_desc")}</p>
-          <Link href={`/tournament/${tournament.id}`} className="primary" style={{ marginTop: 16 }}>{t("edit_view_tournament")}</Link>
+          <Link href={`/tournament/${tournament.slug}`} className="primary" style={{ marginTop: 16 }}>{t("edit_view_tournament")}</Link>
         </div>
       </div>
     );
@@ -105,7 +105,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
           <h1 style={{ marginBottom: 4 }}>{t("edit_dashboard_title")}</h1>
           <p className="meta">{t_.name} · {t_.city}, {t_.country}</p>
         </div>
-        <Link href={`/tournament/${t_.id}`} className="ghost">{t("edit_view_public")}</Link>
+        <Link href={`/tournament/${t_.slug}`} className="ghost">{t("edit_view_public")}</Link>
       </div>
 
       {/* 2-column layout: checklist left, main content right */}

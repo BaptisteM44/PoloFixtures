@@ -166,7 +166,7 @@ export default function NewTournamentPage() {
 
     if (res.ok) {
       const data = await res.json();
-      router.push(`/tournament/${data.id}/edit`);
+      router.push(`/tournament/${data.slug ?? data.id}/edit`);
     } else {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? t("error_create"));

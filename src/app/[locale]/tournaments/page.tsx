@@ -40,6 +40,7 @@ export default async function TournamentsPage() {
 
   const data = tournaments.map((t) => ({
     id: t.id,
+    slug: t.slug,
     name: t.name,
     continentCode: t.continentCode,
     country: t.country,
