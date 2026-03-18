@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type Member = {
   id: string;
@@ -8,6 +8,8 @@ type Member = {
   status: "MEMBER" | "PENDING_BY_MANAGER" | "PENDING_BY_PLAYER";
   player: { id: string; name: string; slug?: string | null };
 };
+
+type PlayerSuggestion = { id: string; name: string; slug?: string | null };
 
 type Props = {
   clubId: string;
@@ -20,37 +22,64 @@ type Props = {
 export function ClubMemberManager({ clubId, managerId, members: initialMembers, currentPlayerId, isManager }: Props) {
   const [members, setMembers] = useState(initialMembers);
   const [searchSlug, setSearchSlug] = useState("");
+  const [suggestions, setSuggestions] = useState<PlayerSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [searching, setSearching] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Fermer le dropdown si clic dehors
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Autocomplete en live
+  useEffect(() => {
+    if (searchSlug.trim().length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/players?search=${encodeURIComponent(searchSlug)}&status=ACTIVE`);
+        const data: PlayerSuggestion[] = await res.json();
+        // Exclure ceux déjà membres ou avec invitation en cours
+        const memberIds = new Set(members.map((m) => m.playerId));
+        setSuggestions(data.filter((p) => !memberIds.has(p.id)).slice(0, 8));
+        setShowSuggestions(true);
+      } catch { setSuggestions([]); }
+      setSearching(false);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchSlug, members]);
 
   const myMembership = currentPlayerId ? members.find((m) => m.playerId === currentPlayerId) : null;
   const isAlreadyMember = myMembership?.status === "MEMBER";
   const hasPendingRequest = myMembership?.status === "PENDING_BY_PLAYER";
   const hasPendingInvite = myMembership?.status === "PENDING_BY_MANAGER";
 
-  async function invitePlayer() {
-    if (!searchSlug.trim()) return;
-    setSearching(true);
+  async function invitePlayer(player: PlayerSuggestion) {
     setInviteError(null);
+    setShowSuggestions(false);
+    setSearchSlug(player.name);
+    setLoading("invite-" + player.id);
     try {
-      // Chercher le joueur par slug ou nom
-      const res = await fetch(`/api/players?search=${encodeURIComponent(searchSlug)}&limit=1`);
-      const data = await res.json();
-      if (!data?.length) { setInviteError("Joueur introuvable"); setSearching(false); return; }
-      const player = data[0];
-
       const r = await fetch(`/api/clubs/${clubId}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playerId: player.id, action: "invite" }),
       });
-      if (!r.ok) { const e = await r.json(); setInviteError(e.error ?? "Erreur"); setSearching(false); return; }
+      if (!r.ok) { const e = await r.json(); setInviteError(e.error ?? "Erreur"); setLoading(null); return; }
       const m = await r.json();
-      setMembers((prev) => [...prev, { ...m, player: { id: player.id, name: player.name, slug: player.slug } }]);
+      setMembers((prev) => [...prev, { ...m, player: { id: player.id, name: player.name, slug: player.slug ?? null } }]);
       setSearchSlug("");
     } catch { setInviteError("Erreur réseau"); }
-    setSearching(false);
+    setLoading(null);
   }
 
   async function joinDirectly() {
@@ -156,17 +185,33 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
       {isManager && (
         <div className="club-members__section" style={{ marginBottom: 16 }}>
           <h4>Inviter un joueur</h4>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <div ref={searchRef} style={{ position: "relative" }}>
             <input
-              placeholder="Nom ou slug du joueur…"
+              placeholder="Commence à taper un nom…"
               value={searchSlug}
-              onChange={(e) => setSearchSlug(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && invitePlayer()}
-              style={{ flex: 1, minWidth: 180 }}
+              onChange={(e) => { setSearchSlug(e.target.value); setInviteError(null); }}
+              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              style={{ width: "100%" }}
             />
-            <button className="primary" disabled={searching || !searchSlug.trim()} onClick={invitePlayer}>
-              {searching ? "…" : "Inviter"}
-            </button>
+            {searching && <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "var(--text-muted)" }}>…</span>}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="player-autocomplete">
+                {suggestions.map((p) => (
+                  <button
+                    key={p.id}
+                    className="player-autocomplete__item"
+                    onMouseDown={(e) => { e.preventDefault(); invitePlayer(p); }}
+                  >
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            {showSuggestions && suggestions.length === 0 && searchSlug.trim().length >= 2 && !searching && (
+              <div className="player-autocomplete">
+                <span className="player-autocomplete__empty">Aucun joueur trouvé</span>
+              </div>
+            )}
           </div>
           {inviteError && <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 6 }}>{inviteError}</p>}
           {pendingByManager.length > 0 && (
