@@ -1118,8 +1118,7 @@ button:focus-visible,
 
 .tournament-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(390px, 1fr));
-  max-width: 1200px;
+  grid-template-columns: repeat(auto-fit, minmax(390px, 1fr));
   gap: 16px;
 }
 
