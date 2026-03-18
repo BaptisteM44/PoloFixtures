@@ -1118,7 +1118,8 @@ button:focus-visible,
 
 .tournament-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(390px, min(600px, 100%)));
+  grid-template-columns: repeat(auto-fill, minmax(390px, 1fr));
+  max-width: 1200px;
   gap: 16px;
 }
 
@@ -6898,6 +6899,125 @@ details[open] .my-tournaments__section-title--summary::after {
   padding: 2px 8px;
   border: 1px solid var(--yellow);
   border-radius: 999px;
+}
+
+/* ========================
+   CLUBS PAGE
+   ======================== */
+.clubs-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.clubs-page__hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.clubs-page__hero h1 {
+  font-size: clamp(28px, 5vw, 42px);
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+.clubs-page__hero p {
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.clubs-browser__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.clubs-browser__search {
+  flex: 1;
+  min-width: 200px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.clubs-browser__search:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+.clubs-browser__select {
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.clubs-browser__select:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+
+.clubs-browser__count {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 32px;
+}
+
+.clubs-continent-group {
+  margin-bottom: 48px;
+}
+
+.clubs-continent-group__title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border);
+}
+
+.clubs-country-group {
+  margin-bottom: 28px;
+}
+
+.clubs-country-group__title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.clubs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .clubs-page {
+    padding: 24px 16px 60px;
+  }
+  .clubs-page__hero {
+    flex-direction: column;
+  }
+  .clubs-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
 }
 
 /* Club hero (page détail) */

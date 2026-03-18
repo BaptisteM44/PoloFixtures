@@ -52,7 +52,8 @@
     "login": "Log in",
     "register": "Sign up",
     "language": "Language",
-    "settings": "Ajustes"
+    "settings": "Ajustes",
+    "clubs": "Clubs"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -984,5 +985,10 @@
     "save": "Guardar",
     "saving": "Guardando…",
     "saved": "¡Preferencias guardadas!"
+  },
+  "clubs": {
+    "title": "Clubs de todo el mundo",
+    "subtitle": "Encuentra todos los clubs de bike polo del mundo.",
+    "create_club": "Crear mi club"
   }
 }

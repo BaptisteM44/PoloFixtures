@@ -137,7 +137,7 @@ export default async function HomePage() {
       <section className="section home-reorder__continents" style={{ paddingBottom: 0 }}>
         <div className="continent-grid">
           {continents.map((c) => (
-            <Link key={c.code} className="continent-card" href={`/continent/${c.code}`}>
+            <Link key={c.code} className="continent-card" href={`/clubs?continent=${c.code}`}>
               <h3>{c.name}</h3>
               {playerCountByContinent[c.code] ? (
                 <span className="continent-stat">

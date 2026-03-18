@@ -49,6 +49,7 @@ export function Header() {
       {/* Navigation desktop */}
       <nav className="nav nav--desktop">
         <Link href="/tournaments">{t("nav.tournaments")}</Link>
+        <Link href="/clubs">{t("nav.clubs")}</Link>
         <Link href="/calendar">{t("nav.calendar")}</Link>
         <Link href="/about">{t("nav.about")}</Link>
         {isAdmin && <Link href="/admin">{t("nav.admin")}</Link>}
@@ -88,6 +89,7 @@ export function Header() {
             </div>
             <div className="nav-drawer__links">
               <Link href="/tournaments" onClick={() => setMenuOpen(false)}>{t("nav.tournaments")}</Link>
+              <Link href="/clubs" onClick={() => setMenuOpen(false)}>{t("nav.clubs")}</Link>
               <Link href="/calendar" onClick={() => setMenuOpen(false)}>{t("nav.calendar")}</Link>
               <Link href="/about" onClick={() => setMenuOpen(false)}>{t("nav.about")}</Link>
               {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)}>{t("nav.admin")}</Link>}
