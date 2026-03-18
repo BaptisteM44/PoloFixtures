@@ -53,16 +53,16 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
     setSearching(false);
   }
 
-  async function requestJoin() {
+  async function joinDirectly() {
     setLoading("request");
     const r = await fetch(`/api/clubs/${clubId}/members`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "request" }),
+      body: JSON.stringify({ action: "join" }),
     });
     if (r.ok) {
       const m = await r.json();
-      setMembers((prev) => [...prev, { ...m, player: { id: currentPlayerId!, name: "Vous", slug: null } }]);
+      setMembers((prev) => [...prev, { ...m, status: "MEMBER", player: { id: currentPlayerId!, name: "Vous", slug: null } }]);
     }
     setLoading(null);
   }
@@ -146,14 +146,9 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
       {/* Bouton rejoindre (joueur non-membre) */}
       {currentPlayerId && !isManager && !isAlreadyMember && !hasPendingInvite && !hasPendingRequest && (
         <div className="club-members__section">
-          <button className="ghost" disabled={loading === "request"} onClick={requestJoin}>
-            {loading === "request" ? "Envoi…" : "Demander à rejoindre le club"}
+          <button className="primary" disabled={loading === "request"} onClick={joinDirectly}>
+            {loading === "request" ? "Envoi…" : "Rejoindre ce club"}
           </button>
-        </div>
-      )}
-      {hasPendingRequest && (
-        <div className="club-members__section">
-          <p className="meta">⏳ Demande envoyée — en attente du manager</p>
         </div>
       )}
 

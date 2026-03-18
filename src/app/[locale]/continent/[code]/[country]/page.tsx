@@ -29,19 +29,19 @@ export default async function CountryPage({
   // Vérifier que le continent est valide
   return (
     <div>
-      <div className="section-title" style={{ marginBottom: 24 }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <Link className="ghost" href={`/continent/${code}`} style={{ fontSize: 13 }}>
-              ← {(t as (key: string) => string)(`name_${code.toLowerCase()}`)}
-            </Link>
-          </div>
-          <h1>{country}</h1>
-          <p className="meta">{clubs.length === 1 ? t("country_clubs_count_one", { count: clubs.length }) : t("country_clubs_count_other", { count: clubs.length })}</p>
-        </div>
-        <Link className="primary" href={`/club/new`}>
-          {t("clubs_add")}
+      <div className="country-page__hero">
+        <Link className="ghost" href={`/continent/${code}`} style={{ fontSize: 13, alignSelf: "flex-start" }}>
+          ← {(t as (key: string) => string)(`name_${code.toLowerCase()}`)}
         </Link>
+        <div className="country-page__hero-main">
+          <div>
+            <h1>{country}</h1>
+            <p className="meta">{clubs.length === 1 ? t("country_clubs_count_one", { count: clubs.length }) : t("country_clubs_count_other", { count: clubs.length })}</p>
+          </div>
+          <Link className="primary" href={`/club/new`}>
+            {t("clubs_add")}
+          </Link>
+        </div>
       </div>
 
       {clubs.length > 0 ? (

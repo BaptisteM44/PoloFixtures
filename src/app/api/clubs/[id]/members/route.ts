@@ -6,7 +6,7 @@ import { z } from "zod";
 // POST : manager invite un joueur  OR  un joueur demande à rejoindre
 const postSchema = z.object({
   playerId: z.string().optional(), // manager fournit l'id du joueur
-  action: z.enum(["invite", "request"]).default("request"),
+  action: z.enum(["invite", "request", "join"]).default("join"),
 });
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
@@ -36,8 +36,19 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       data: { clubId: params.id, playerId: targetId, status: "PENDING_BY_MANAGER" },
     });
     return Response.json(member, { status: 201 });
+  } else if (data.data.action === "join") {
+    // Le joueur rejoint directement sans validation
+    const existing = await prisma.clubMember.findUnique({
+      where: { clubId_playerId: { clubId: params.id, playerId: session.user.playerId } },
+    });
+    if (existing) return Response.json({ error: "Déjà membre ou demande en cours" }, { status: 409 });
+
+    const member = await prisma.clubMember.create({
+      data: { clubId: params.id, playerId: session.user.playerId, status: "MEMBER" },
+    });
+    return Response.json(member, { status: 201 });
   } else {
-    // Le joueur connecté demande à rejoindre
+    // Le joueur connecté demande à rejoindre (request = avec validation manager)
     const existing = await prisma.clubMember.findUnique({
       where: { clubId_playerId: { clubId: params.id, playerId: session.user.playerId } },
     });
