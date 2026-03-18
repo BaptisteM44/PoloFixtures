@@ -75,6 +75,8 @@ export const authConfig = {
           playerId: account.playerId,
           tournamentId: null,
           charterAccepted: !!account.charterAcceptedAt,
+          playerStatus: account.player.status,
+          suspendedReason: (account.player as { suspendedReason?: string | null }).suspendedReason ?? null,
         };
       }
     })
@@ -88,6 +90,8 @@ export const authConfig = {
         token.accessCodeId = user.id ?? null;
         token.playerId = user.playerId ?? null;
         token.charterAccepted = user.charterAccepted ?? false;
+        token.playerStatus = user.playerStatus ?? null;
+        token.suspendedReason = user.suspendedReason ?? null;
       }
       return token;
     },
@@ -98,6 +102,8 @@ export const authConfig = {
         tournamentId: token.tournamentId ?? null,
         playerId: token.playerId ?? null,
         charterAccepted: token.charterAccepted ?? false,
+        playerStatus: token.playerStatus ?? null,
+        suspendedReason: token.suspendedReason ?? null,
       };
       return session;
     }

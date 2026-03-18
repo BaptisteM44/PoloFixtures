@@ -4,7 +4,8 @@ import { hasAtLeastRole } from "@/lib/rbac";
 import { z } from "zod";
 
 const schema = z.object({
-  status: z.enum(["ACTIVE", "REJECTED"])
+  status: z.enum(["ACTIVE", "REJECTED"]),
+  suspendedReason: z.string().max(500).optional().nullable(),
 });
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -21,7 +22,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   const player = await prisma.player.update({
     where: { id: params.id },
-    data: { status: parsed.data.status }
+    data: {
+      status: parsed.data.status,
+      suspendedReason: parsed.data.status === "REJECTED" ? (parsed.data.suspendedReason ?? null) : null,
+      suspendedAt: parsed.data.status === "REJECTED" ? new Date() : null,
+    }
   });
 
   return Response.json(player);

@@ -49,7 +49,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   const fmtMatch = tournament.format.match(/^(\d+)v\d+$/i);
-  const maxPlayersPerTeam = fmtMatch ? parseInt(fmtMatch[1], 10) : 5;
+  const maxPlayersPerTeam = fmtMatch ? parseInt(fmtMatch[1], 10) : (tournament.format === "ABC" ? 3 : 5);
   const dynamicSchema = registerSchema.extend({
     players: z.array(playerSlotSchema).min(1).max(maxPlayersPerTeam),
   });
@@ -62,6 +62,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   const existingCount = await prisma.team.count({ where: { tournamentId: params.id } });
   const seed = existingCount + 1;
+
+  // Rush registration: si activé et max atteint → liste d'attente (selected=false)
+  // Si non activé → toutes les inscriptions sont admises (selected=true)
+  const isRush = (tournament as { rushRegistration?: boolean }).rushRegistration ?? false;
+  const selectedTeam = !(isRush && existingCount >= tournament.maxTeams);
+  const waitlistPos = !selectedTeam
+    ? await prisma.team.count({ where: { tournamentId: params.id, selected: false } }) + 1
+    : null;
 
   // Check: duplicate team name in this tournament (case-insensitive)
   const duplicateTeam = await prisma.team.findFirst({
@@ -85,12 +93,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return Response.json({ error: "Le même joueur apparaît deux fois dans le formulaire." }, { status: 400 });
   }
 
-  // Check: manual player name already registered in this tournament (best-effort, case-insensitive)
+  // Check: manual player name already registered in this tournament (case-insensitive, any status)
   for (const slot of manualSlots) {
     const alreadyManual = await prisma.player.findFirst({
       where: {
         name: { equals: slot.name.trim(), mode: "insensitive" },
-        status: "PENDING",
         teams: { some: { team: { tournamentId: params.id } } },
       },
     });
@@ -107,6 +114,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (slot.type === "existing") {
       const player = await prisma.player.findUnique({ where: { id: slot.playerId } });
       if (!player) return Response.json({ error: `Joueur ${slot.playerId} introuvable` }, { status: 400 });
+      if (player.status === "REJECTED") return Response.json({ error: `${player.name} est suspendu·e et ne peut pas participer à un tournoi.` }, { status: 403 });
 
       // Check: player already in a team for this tournament?
       const alreadyInTeam = await prisma.teamPlayer.findFirst({
@@ -165,6 +173,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
       country: country ?? null,
       registrationNote: registrationNote ?? null,
       seed,
+      selected: selectedTeam,
+      waitlistPosition: waitlistPos,
       ...abcData,
       players: {
         create: resolvedPlayerIds.map((playerId, i) => ({
@@ -192,5 +202,5 @@ export async function POST(request: Request, { params }: { params: { id: string 
     await prisma.player.update({ where: { id: pid }, data: { badges: newBadges } });
   }
 
-  return Response.json(team, { status: 201 });
+  return Response.json({ ...team, waitlisted: !selectedTeam, waitlistPosition: waitlistPos }, { status: 201 });
 }

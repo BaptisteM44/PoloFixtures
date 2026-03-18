@@ -72,6 +72,7 @@ export function RegisterTeamForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [waitlisted, setWaitlisted] = useState(false);
 
   const updateSlot = (i: number, val: PlayerSlot) => {
     setSlots((prev) => prev.map((s, idx) => (idx === i ? val : s)));
@@ -187,6 +188,8 @@ export function RegisterTeamForm({
       setError(data.error ?? t("error_generic"));
       return;
     }
+    const data = await res.json();
+    setWaitlisted(data.waitlisted === true);
     setSuccess(true);
     onSuccess?.();
   };
@@ -196,9 +199,9 @@ export function RegisterTeamForm({
   if (success) {
     return (
       <div className="panel" style={{ textAlign: "center", padding: 32, marginTop: 24 }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
-        <h3>{t("success_title")}</h3>
-        <p className="meta">{t("success_desc")}</p>
+        <div style={{ fontSize: 32, marginBottom: 8 }}>{waitlisted ? "⏳" : "🎉"}</div>
+        <h3>{waitlisted ? "Inscription en liste d'attente" : t("success_title")}</h3>
+        <p className="meta">{waitlisted ? "Le tournoi est complet. Votre équipe est en liste d'attente — vous serez notifié si une place se libère." : t("success_desc")}</p>
         <button className="ghost" style={{ marginTop: 16 }} onClick={() => { setSuccess(false); setOpen(false); reset(); }}>
           {t("success_register_another")}
         </button>

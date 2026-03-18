@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { FollowButton } from "@/components/FollowButton";
-import { formatDate } from "@/lib/utils";
+import { getTournamentStatusBadge } from "@/components/TournamentCard";
 
 type TournamentRow = {
   id: string;
@@ -107,16 +107,12 @@ export function TournamentBrowser({
 
   const STATUSES = [
     { code: "", label: t("filter_all_statuses") },
-    { code: "LIVE", label: t("status_live") },
-    { code: "UPCOMING", label: t("status_upcoming") },
-    { code: "COMPLETED", label: t("status_completed") },
+    { code: "live", label: "En cours" },
+    { code: "reg-open", label: "Inscriptions ouvertes" },
+    { code: "reg-closed", label: "Inscriptions fermées" },
+    { code: "announced", label: "Annoncé" },
+    { code: "completed", label: "Terminé" },
   ];
-
-  const STATUS_LABELS: Record<string, string> = {
-    LIVE: t("status_live"),
-    UPCOMING: t("status_upcoming"),
-    COMPLETED: t("status_completed"),
-  };
 
   const getRegLabel = (item: TournamentRow): string => {
     const now = new Date();
@@ -163,7 +159,10 @@ export function TournamentBrowser({
 
   const filtered = tournaments.filter((tour) => {
     if (continent && tour.continentCode !== continent) return false;
-    if (statusFilter && tour.status !== statusFilter) return false;
+    if (statusFilter) {
+      const { cls } = getTournamentStatusBadge(tour.status, tour.registrationStart, tour.registrationEnd);
+      if (cls !== statusFilter) return false;
+    }
     if (countryFilter && tour.country !== countryFilter) return false;
     if (monthFilter && toMonthKey(tour.dateStart) !== monthFilter) return false;
     if (
@@ -277,60 +276,59 @@ export function TournamentBrowser({
       {groups.map((group) => (
         <section key={group.key} className="agenda-month">
           <h2 className="agenda-month__heading">{group.label}</h2>
-          <div className="agenda-list">
+          <div className="tournament-grid">
             {group.tournaments.map((tour) => {
-              const d = new Date(tour.dateStart);
+              const dStart = new Date(tour.dateStart);
+              const dEnd = new Date(tour.dateEnd);
+              const dayStart = dStart.getDate();
+              const monthStart = dStart.toLocaleString(locale, { month: "short" });
+              const dayEnd = dEnd.getDate();
+              const monthEnd = dEnd.toLocaleString(locale, { month: "short" });
+              const sameDay = dayStart === dayEnd && monthStart === monthEnd;
+              const { label: statusLabel, cls: statusCls } = getTournamentStatusBadge(tour.status, tour.registrationStart, tour.registrationEnd);
 
               return (
-                <div key={tour.id} className={`agenda-row-wrapper${tour.bannerPath ? " agenda-row-wrapper--has-banner" : ""}`}>
-                <Link href={`/tournament/${tour.id}`} className={`agenda-row${tour.bannerPath ? " agenda-row--has-banner" : ""}`} style={{ textDecoration: "none", color: "inherit" }}>
-                  {/* Date column */}
-                  <div className="agenda-row__date">
-                    <span className="agenda-row__day">{d.getDate()}</span>
-                    <span className="agenda-row__month-short">
-                      {d.toLocaleString(locale, { month: "short" })}
-                    </span>
-                  </div>
+                <div key={tour.id} className={`tournament-card-wrapper${tour.bannerPath ? " tournament-card-wrapper--has-banner" : ""}`}>
+                  <Link className={`tournament-card${tour.bannerPath ? " tournament-card--has-banner" : ""}`} href={`/tournament/${tour.id}`}>
+                    {/* Date column */}
+                    <div className="tournament-card__date">
+                      <span className="tournament-card__day">{dayStart}</span>
+                      <span className="tournament-card__month">{monthStart}</span>
+                      {!sameDay && (
+                        <>
+                          <span className="tournament-card__date-arrow">↓</span>
+                          <span className="tournament-card__day-end">{dayEnd}</span>
+                          <span className="tournament-card__month-end">{monthEnd}</span>
+                        </>
+                      )}
+                    </div>
 
-                  {/* Body */}
-                  <div className="agenda-row__body">
-                    <div className="agenda-row__header">
-                      <h3 className="agenda-row__title">{tour.name}</h3>
-                      <span className={`status ${tour.status.toLowerCase()}`}>
-                        {STATUS_LABELS[tour.status] ?? tour.status}
-                      </span>
+                    {/* Body */}
+                    <div className="tournament-card__body">
+                      <div className="tournament-card__header">
+                        <h3>{tour.name}</h3>
+                        <span className={`status ${statusCls}`}>{statusLabel}</span>
+                      </div>
+                      <p className="tournament-card__location">📍 {tour.city}, {tour.country}</p>
+                      <p className="meta">{tour.format} · {t("teams_slots", { count: tour.teamCount, max: tour.maxTeams })}</p>
                     </div>
-                    <div className="agenda-row__meta-row">
-                      <span className="meta">
-                        {COUNTRY_FLAGS[tour.country] ?? ""} {tour.city}, {tour.country}
-                      </span>
-                      <span className="meta">
-                        {formatDate(new Date(tour.dateStart))} →{" "}
-                        {formatDate(new Date(tour.dateEnd))}
-                      </span>
-                      <span className="meta">
-                        {tour.format} · {t("teams_slots", { count: tour.teamCount, max: tour.maxTeams })}
-                      </span>
-                      <span className="meta">
-                        {getRegLabel(tour)}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Banner — flush right, full height */}
-                  {tour.bannerPath && (
-                    <div className="agenda-row__banner">
-                      <img src={tour.bannerPath} alt="" />
-                    </div>
-                  )}
-                </Link>
-                <div className="agenda-row__follow">
-                  <FollowButton
-                    tournamentId={tour.id}
-                    initialFollowing={followedIds.includes(tour.id)}
-                    isLoggedIn={isLoggedIn}
-                  />
-                </div>
+                    {/* Banner full height */}
+                    {tour.bannerPath && (
+                      <div className="tournament-card__banner">
+                        <img src={tour.bannerPath} alt="" />
+                      </div>
+                    )}
+                  </Link>
+
+                  {/* Follow button — outside the link */}
+                  <div className="tournament-card__follow">
+                    <FollowButton
+                      tournamentId={tour.id}
+                      initialFollowing={followedIds.includes(tour.id)}
+                      isLoggedIn={isLoggedIn}
+                    />
+                  </div>
                 </div>
               );
             })}

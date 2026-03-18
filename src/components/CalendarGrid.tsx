@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Link from "next/link";
 
 export type CalendarTournament = {
@@ -78,17 +78,31 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
   const [month, setMonth] = useState(initialMonth ?? now.getMonth());
   const [year, setYear] = useState(initialYear ?? now.getFullYear());
 
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const expandedIds = useMemo(() => {
+    const raw = searchParams.get("open");
+    return new Set(raw ? raw.split(",").filter(Boolean) : []);
+  }, [searchParams]);
 
   const toggle = (id: string) => {
     if (mini) { router.push(`/tournament/${id}`); return; }
     const next = new Set(expandedIds);
     next.has(id) ? next.delete(id) : next.add(id);
-    setExpandedIds(next);
+    const params = new URLSearchParams(searchParams.toString());
+    if (next.size > 0) {
+      params.set("open", Array.from(next).join(","));
+    } else {
+      params.delete("open");
+    }
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   const clearAll = () => {
-    setExpandedIds(new Set());
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("open");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   const days = useMemo(() => getCalendarDays(year, month), [year, month]);

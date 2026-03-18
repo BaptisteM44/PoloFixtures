@@ -13,6 +13,7 @@ export function Header() {
   const role = session?.user?.role;
   const isAdmin = role === "ADMIN";
   const hasPlayer = !!(session?.user as any)?.playerId;
+  const isSuspended = (session?.user as any)?.playerStatus === "REJECTED";
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Fermer le menu sur changement de route
@@ -27,6 +28,15 @@ export function Header() {
   }, [menuOpen]);
 
   return (
+    <>
+    {isSuspended && (
+      <div style={{ background: "var(--pink)", color: "#fff", textAlign: "center", padding: "10px 16px", fontSize: 13, fontWeight: 700, fontFamily: "var(--font-display)", letterSpacing: "0.02em" }}>
+        ⚠️ Votre compte est suspendu.
+        {(session?.user as any)?.suspendedReason && (
+          <span style={{ fontWeight: 400, marginLeft: 8 }}>Raison : {(session?.user as any).suspendedReason}</span>
+        )}
+      </div>
+    )}
     <header className="site-header">
       <div className="brand">
         <Link href="/" onClick={() => setMenuOpen(false)}>
@@ -89,5 +99,6 @@ export function Header() {
         </div>
       )}
     </header>
+    </>
   );
 }

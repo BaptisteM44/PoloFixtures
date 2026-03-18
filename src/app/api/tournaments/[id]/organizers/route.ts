@@ -26,7 +26,7 @@ const addSchema = z.object({
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!await isCreatorOrAdmin(params.id, session?.user?.role, session?.user?.playerId)) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response("Forbidden", { status: 403 });
   }
 
   const body = await req.json();
@@ -49,7 +49,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!await isCreatorOrAdmin(params.id, session?.user?.role, session?.user?.playerId)) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response("Forbidden", { status: 403 });
   }
 
   const { playerId } = await req.json();

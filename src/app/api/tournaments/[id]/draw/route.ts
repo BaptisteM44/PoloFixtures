@@ -26,10 +26,10 @@ export async function POST(_request: Request, { params }: { params: { id: string
   if (!tournament) return Response.json({ error: "Tournoi introuvable" }, { status: 404 });
 
   const isOrga =
-    (role && hasAtLeastRole(role, "ORGA") && (session?.user as { tournamentId?: string }).tournamentId === params.id) ||
     role === "ADMIN" ||
     tournament.creatorId === playerId ||
-    tournament.coOrganizers.some((co) => co.playerId === playerId);
+    tournament.coOrganizers.some((co) => co.playerId === playerId) ||
+    (role === "ORGA" && (session?.user as { tournamentId?: string }).tournamentId === params.id);
 
   if (!isOrga) return Response.json({ error: "Accès refusé" }, { status: 403 });
 
@@ -91,8 +91,22 @@ export async function POST(_request: Request, { params }: { params: { id: string
     if (team.length > 0) triplets.push(team);
   }
 
-  // Supprimer les anciennes équipes formées par tirage (teamId set sur les soloEntries)
-  // On crée de nouvelles équipes Team
+  // Supprimer les anciennes équipes issues d'un tirage précédent (celles dont des soloEntries ont un teamId)
+  const prevDrawnTeamIds = await prisma.tournamentSoloEntry.findMany({
+    where: { tournamentId: params.id, teamId: { not: null } },
+    select: { teamId: true },
+    distinct: ["teamId"],
+  }).then((r) => r.map((e) => e.teamId).filter(Boolean) as string[]);
+
+  if (prevDrawnTeamIds.length > 0) {
+    await prisma.teamPlayer.deleteMany({ where: { teamId: { in: prevDrawnTeamIds } } });
+    await prisma.team.deleteMany({ where: { id: { in: prevDrawnTeamIds } } });
+    await prisma.tournamentSoloEntry.updateMany({
+      where: { tournamentId: params.id },
+      data: { teamId: null },
+    });
+  }
+
   const existingCount = await prisma.team.count({ where: { tournamentId: params.id } });
 
   const createdTeams: Array<{ id: string; name: string; players: Array<{ playerId: string; name: string; level: string }> }> = [];

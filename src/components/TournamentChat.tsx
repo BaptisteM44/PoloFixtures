@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { CharterModal } from "./CharterModal";
 
 type Author = { id: string; name: string; photoPath: string | null };
-type Message = { id: string; content: string; createdAt: string; author: Author; isOrga?: boolean };
+type Message = { id: string; content: string; createdAt: string; author: Author; isOrga?: boolean; deletedByModeration?: boolean };
 
 type Props = {
   tournamentId: string;
@@ -105,7 +105,7 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
       method: "DELETE",
     });
     if (res.ok) {
-      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+      setMessages((prev) => prev.map((m) => m.id === messageId ? { ...m, deletedByModeration: true, content: "" } : m));
     }
   };
 
@@ -148,16 +148,24 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
               </span>
             </div>
             <div className="tournament-chat__msg-bubble">
-              {msg.content}
-              {isOrga && (
-                <button
-                  className="tournament-chat__msg-delete"
-                  onClick={() => handleDelete(msg.id)}
-                  title="Supprimer ce message"
-                  type="button"
-                >
-                  ✕
-                </button>
+              {msg.deletedByModeration ? (
+                <span style={{ fontStyle: "italic", color: "var(--text-muted)", fontSize: 12 }}>
+                  [Message supprimé par la modération]
+                </span>
+              ) : (
+                <>
+                  {msg.content}
+                  {isOrga && (
+                    <button
+                      className="tournament-chat__msg-delete"
+                      onClick={() => handleDelete(msg.id)}
+                      title="Supprimer ce message"
+                      type="button"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>

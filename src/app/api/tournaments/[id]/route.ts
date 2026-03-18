@@ -64,17 +64,18 @@ const updateSchema = z.object({
   links: z.array(z.string()).default([]),
   bannerPath: z.string().optional().nullable(),
   streamYoutubeUrl: z.string().optional().nullable(),
-  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS"]),
+  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS"]),
   sundayFormat: z.enum(["SE", "DE"]),
   status: z.enum(["UPCOMING", "LIVE", "COMPLETED"]),
   locked: z.boolean(),
   maxSoloPlayers: z.number().int().min(1).optional().nullable(),
+  rushRegistration: z.boolean().optional(),
 });
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user?.role || !hasAtLeastRole(session.user.role, "ORGA")) {
-    return new Response("Unauthorized", { status: 401 });
+    return new Response("Forbidden", { status: 403 });
   }
 
   const tournament = await prisma.tournament.findUnique({ where: { id: params.id } });

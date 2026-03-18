@@ -41,11 +41,13 @@ export default function NewTournamentPage() {
     format: "3v3",
     gameDurationMin: 12,
     maxTeams: 12,
+    maxSoloPlayers: "" as string | number,
     courtsCount: 2,
     registrationFeePerTeam: 0,
     registrationFeeCurrency: "EUR",
     saturdayFormat: "ALL_DAY",
     sundayFormat: "SE",
+    rushRegistration: false,
   });
 
   const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
@@ -156,6 +158,7 @@ export default function NewTournamentPage() {
         ...form,
         lat: form.lat !== "" ? Number(form.lat) : undefined,
         lng: form.lng !== "" ? Number(form.lng) : undefined,
+        maxSoloPlayers: form.maxSoloPlayers !== "" ? Number(form.maxSoloPlayers) : undefined,
         contactEmail: form.contactEmail || session.user!.email || "contact@bikepolo.app",
         coOrganizerIds: coOrganizers.map((c) => c.id),
       })
@@ -203,6 +206,8 @@ export default function NewTournamentPage() {
                 <option value="3v3">3v3</option>
                 <option value="4v4">4v4</option>
                 <option value="5v5">5v5</option>
+                <option value="ABC">ABC</option>
+                <option value="ABC Chapeau">ABC Chapeau</option>
               </select>
             </label>
             <label className="field-row">
@@ -328,6 +333,36 @@ export default function NewTournamentPage() {
             <input type="email" value={form.contactEmail} onChange={set("contactEmail")}
               placeholder={session.user!.email ?? "contact@bikepolo.app"} />
           </label>
+
+          {/* Rush registration */}
+          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13 }}>
+            <input
+              type="checkbox"
+              checked={form.rushRegistration}
+              onChange={(e) => setForm((f) => ({ ...f, rushRegistration: e.target.checked }))}
+            />
+            <span>
+              <strong>Inscription au rush</strong>
+              <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>— premier arrivé, premier servi. Les inscriptions au-delà du max seront en liste d&apos;attente.</span>
+            </span>
+          </label>
+          <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", marginTop: -8 }}>
+            Si décoché, toutes les inscriptions sont admises et le départ / tirage se fait après la clôture des inscriptions.
+          </p>
+
+          {/* Max solo players for ABC Chapeau */}
+          {form.format === "ABC Chapeau" && (
+            <label className="field-row">
+              Nombre max de joueurs <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}>(laisser vide = pas de limite)</span>
+              <input
+                type="number"
+                min={3}
+                value={form.maxSoloPlayers}
+                onChange={(e) => setForm((f) => ({ ...f, maxSoloPlayers: e.target.value }))}
+                placeholder="Ex: 30"
+              />
+            </label>
+          )}
         </section>
 
         {/* ── Section 4 : Co-organisateurs ── */}

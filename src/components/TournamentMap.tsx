@@ -29,15 +29,18 @@ type Props = {
 function getMarkerColor(t: MapTournament): string {
   if (t.status === "LIVE") return "#ef4444";
   const now = new Date();
+  // Inscriptions ouvertes
   if (
-    t.registrationStart &&
-    t.registrationEnd &&
-    new Date(t.registrationStart) <= now &&
-    new Date(t.registrationEnd) >= now
-  ) {
-    return "#22c55e";
-  }
-  return "#f97316";
+    t.registrationStart && t.registrationEnd &&
+    new Date(t.registrationStart) <= now && new Date(t.registrationEnd) >= now
+  ) return "#22c55e";
+  // Inscriptions fermées (reg passée ou pas de dates d'inscription mais tournoi futur)
+  if (
+    (t.registrationEnd && new Date(t.registrationEnd) < now) ||
+    (t.registrationStart && new Date(t.registrationStart) > now && t.registrationEnd && new Date(t.registrationEnd) < now)
+  ) return "#f97316";
+  // Annoncé (pas encore de dates d'inscription ouvertes)
+  return "#3b82f6";
 }
 
 function createCircleIcon(color: string) {

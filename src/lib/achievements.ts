@@ -12,10 +12,10 @@ export function computePlayerBadgesForTournament(
   events: { type: string; payload: unknown }[]
 ): string[] {
   const goals = events.filter(
-    (e) => (e.type === "GOAL" || e.type === "GOLDEN_GOAL") && (e.payload as { playerId?: string }).playerId === playerId
+    (e) => (e.type === "GOAL" || e.type === "GOLDEN_GOAL") && e.payload != null && (e.payload as { playerId?: string }).playerId === playerId
   ).length;
   const penalties = events.filter(
-    (e) => e.type === "PENALTY" && (e.payload as { playerId?: string }).playerId === playerId
+    (e) => e.type === "PENALTY" && e.payload != null && (e.payload as { playerId?: string }).playerId === playerId
   ).length;
 
   const badges: string[] = [];

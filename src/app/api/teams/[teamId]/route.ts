@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { hasAtLeastRole } from "@/lib/rbac";
 import { z } from "zod";
 
 const patchSchema = z.object({
@@ -31,4 +32,47 @@ export async function PATCH(req: Request, { params }: { params: { teamId: string
   });
 
   return Response.json(updated);
+}
+
+export async function DELETE(_req: Request, { params }: { params: { teamId: string } }) {
+  const session = await auth();
+  if (!session?.user) return new Response("Unauthorized", { status: 401 });
+
+  const team = await prisma.team.findUnique({
+    where: { id: params.teamId },
+    include: { tournament: { select: { id: true, creatorId: true, rushRegistration: true, maxTeams: true } } },
+  });
+  if (!team) return new Response("Not found", { status: 404 });
+
+  const playerId = session.user.playerId;
+  const role = session.user.role;
+  const isOrga =
+    (role != null && hasAtLeastRole(role, "ADMIN")) ||
+    team.tournament.creatorId === playerId;
+  if (!isOrga) return new Response("Forbidden", { status: 403 });
+
+  const wasSelected = team.selected;
+  const tournamentId = team.tournament.id;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.teamPlayer.deleteMany({ where: { teamId: params.teamId } });
+    await tx.team.delete({ where: { id: params.teamId } });
+
+    // Si l'équipe supprimée était sélectionnée et que le tournoi est en mode rush,
+    // promouvoir automatiquement la première équipe en liste d'attente
+    if (wasSelected && team.tournament.rushRegistration) {
+      const firstWaiting = await tx.team.findFirst({
+        where: { tournamentId, selected: false },
+        orderBy: { waitlistPosition: "asc" },
+      });
+      if (firstWaiting) {
+        await tx.team.update({
+          where: { id: firstWaiting.id },
+          data: { selected: true, waitlistPosition: null },
+        });
+      }
+    }
+  });
+
+  return Response.json({ ok: true });
 }

@@ -185,6 +185,7 @@ model Tournament {
   registrationStart       DateTime?
   registrationEnd         DateTime?
   maxSoloPlayers          Int?      // null = pas de limite (ABC Chapeau)
+  rushRegistration        Boolean   @default(false) // true = waitlist si complet, false = toutes inscriptions admises
   // Lieu principal (tout le tournoi)
   venueName               String?
   venueAddress            String?
@@ -318,7 +319,9 @@ model Player {
   gender      Gender?
   showGender  Boolean  @default(false)
   diets       String[]  // OMNIVORE | VEGETARIAN | VEGAN | GLUTEN_FREE (cumulative)
-  status      PlayerStatus @default(PENDING)
+  status           PlayerStatus @default(PENDING)
+  suspendedReason  String?      // raison de la suspension (visible par l'admin)
+  suspendedAt      DateTime?    // date de suspension
   badges       String[]
   pinnedBadges String[]  // badges shown on the card (max 5, subset of badges)
   clubLogoPath       String?
@@ -496,11 +499,12 @@ model TeamMessage {
 }
 
 model TournamentMessage {
-  id           String   @id @default(cuid())
-  tournamentId String
-  authorId     String
-  content      String
-  createdAt    DateTime @default(now())
+  id                  String   @id @default(cuid())
+  tournamentId        String
+  authorId            String
+  content             String
+  deletedByModeration Boolean  @default(false)
+  createdAt           DateTime @default(now())
 
   tournament Tournament @relation(fields: [tournamentId], references: [id])
   author     Player     @relation(fields: [authorId], references: [id])

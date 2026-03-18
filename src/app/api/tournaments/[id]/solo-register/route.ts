@@ -11,6 +11,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const playerId = (session?.user as { playerId?: string } | undefined)?.playerId;
   if (!playerId) return Response.json({ error: "Non connecté" }, { status: 401 });
 
+  const player = await prisma.player.findUnique({ where: { id: playerId }, select: { status: true } });
+  if (player?.status === "REJECTED") return Response.json({ error: "Votre compte est suspendu. Vous ne pouvez pas vous inscrire à un tournoi." }, { status: 403 });
+
   const tournament = await prisma.tournament.findUnique({ where: { id: params.id } });
   if (!tournament) return Response.json({ error: "Tournoi introuvable" }, { status: 404 });
 
@@ -36,13 +39,17 @@ export async function POST(request: Request, { params }: { params: { id: string 
   });
   if (existing) return Response.json({ error: "Vous êtes déjà inscrit à ce tournoi." }, { status: 400 });
 
-  // Compter les inscrits non-waitlisted
-  const currentCount = await prisma.tournamentSoloEntry.count({
-    where: { tournamentId: params.id, waitlisted: false },
-  });
-
   const maxSolo = (tournament as { maxSoloPlayers?: number | null }).maxSoloPlayers ?? null;
-  const waitlisted = maxSolo !== null && currentCount >= maxSolo;
+  const isRush = (tournament as { rushRegistration?: boolean }).rushRegistration ?? false;
+
+  // Si rush + max défini → waitlist possible. Sinon toujours admis.
+  let waitlisted = false;
+  if (isRush && maxSolo !== null) {
+    const currentCount = await prisma.tournamentSoloEntry.count({
+      where: { tournamentId: params.id, waitlisted: false },
+    });
+    waitlisted = currentCount >= maxSolo;
+  }
 
   const entry = await prisma.tournamentSoloEntry.create({
     data: {
@@ -66,8 +73,28 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
   });
   if (!entry) return Response.json({ error: "Inscription introuvable" }, { status: 404 });
 
-  await prisma.tournamentSoloEntry.delete({
-    where: { tournamentId_playerId: { tournamentId: params.id, playerId } },
+  const wasActive = !entry.waitlisted;
+  const tournament = await prisma.tournament.findUnique({ where: { id: params.id }, select: { rushRegistration: true } });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.tournamentSoloEntry.delete({
+      where: { tournamentId_playerId: { tournamentId: params.id, playerId } },
+    });
+
+    // Si le joueur supprimé était actif et que le tournoi est en mode rush,
+    // promouvoir atomiquement le premier en liste d'attente
+    if (wasActive && tournament?.rushRegistration) {
+      const firstWaiting = await tx.tournamentSoloEntry.findFirst({
+        where: { tournamentId: params.id, waitlisted: true },
+        orderBy: { createdAt: "asc" },
+      });
+      if (firstWaiting) {
+        await tx.tournamentSoloEntry.update({
+          where: { id: firstWaiting.id },
+          data: { waitlisted: false },
+        });
+      }
+    }
   });
 
   return Response.json({ ok: true });

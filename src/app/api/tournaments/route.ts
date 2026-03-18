@@ -7,8 +7,7 @@ export async function GET() {
   const tournaments = await prisma.tournament.findMany({
     where: { approved: true },
     include: {
-      teams: true,
-      matches: true
+      teams: { select: { id: true, selected: true } },
     },
     orderBy: { dateStart: "asc" }
   });
@@ -41,6 +40,8 @@ const createSchema = z.object({
   dinnerProvided: z.boolean().default(false),
   lat: z.number().optional().nullable(),
   lng: z.number().optional().nullable(),
+  maxSoloPlayers: z.number().int().min(1).optional().nullable(),
+  rushRegistration: z.boolean().default(false),
   coOrganizerIds: z.array(z.string()).optional(),
 });
 

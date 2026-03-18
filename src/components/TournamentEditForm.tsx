@@ -106,9 +106,17 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const [bannerError, setBannerError] = useState<string | null>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
+  // Format
+  const [currentFormat, setCurrentFormat] = useState(tournament.format);
+
   // ABC Chapeau
   const [maxSoloPlayers, setMaxSoloPlayers] = useState<string>(
     tournament.maxSoloPlayers != null ? String(tournament.maxSoloPlayers) : ""
+  );
+
+  // Rush registration
+  const [rushRegistration, setRushRegistration] = useState(
+    (tournament as { rushRegistration?: boolean }).rushRegistration ?? false
   );
 
   // Hébergement
@@ -292,6 +300,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
         {/* ABC Chapeau hidden field */}
         <input type="hidden" name="maxSoloPlayers" value={maxSoloPlayers} />
+        <input type="hidden" name="rushRegistration" value={rushRegistration ? "true" : "false"} />
 
         {/* Hidden fields for new data */}
         <input type="hidden" name="accommodationAvailable" value={accommodation ? "true" : "false"} />
@@ -354,18 +363,20 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </label>
           <label className="field-row">
             Format
-            <select name="format" defaultValue={tournament.format} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
+            <select name="format" value={currentFormat} onChange={(e) => setCurrentFormat(e.target.value)} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
               <option value="2v2">2v2</option>
               <option value="3v3">3v3</option>
               <option value="4v4">4v4</option>
               <option value="5v5">5v5</option>
+              <option value="ABC">ABC</option>
+              <option value="ABC Chapeau">ABC Chapeau</option>
             </select>
           </label>
           <label className="field-row">
             Durée match (min)
             <input type="number" name="gameDurationMin" defaultValue={tournament.gameDurationMin} />
           </label>
-          {tournament.format === "ABC Chapeau" && (
+          {currentFormat === "ABC Chapeau" && (
             <label className="field-row">
               Nombre max de joueurs solo <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}>(laisser vide = pas de limite)</span>
               <input
@@ -412,6 +423,25 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             Email contact
             <input name="contactEmail" defaultValue={tournament.contactEmail} />
           </label>
+
+          {/* Rush registration */}
+          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontSize: 13, gridColumn: "1 / -1" }}>
+            <input
+              type="checkbox"
+              checked={rushRegistration}
+              onChange={(e) => setRushRegistration(e.target.checked)}
+              style={{ marginTop: 2, flexShrink: 0 }}
+            />
+            <span>
+              <strong>Inscription au rush</strong>
+              <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>— premier arrivé, premier servi. Les inscriptions au-delà du max seront en liste d&apos;attente.</span>
+              <br />
+              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                Si décoché, toutes les inscriptions sont admises et le départ / tirage se fait après la clôture.
+              </span>
+            </span>
+          </label>
+
           <label className="field-row">
             Format samedi
             <select name="saturdayFormat" defaultValue={tournament.saturdayFormat} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>

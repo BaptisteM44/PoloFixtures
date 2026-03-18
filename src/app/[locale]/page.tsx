@@ -44,8 +44,8 @@ export default async function HomePage() {
     prisma.tournament.findMany({
       where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true },
       include: { teams: { where: { selected: true } } },
-      orderBy: [{ status: "asc" }, { dateStart: "asc" }],
-      take: 8,
+      orderBy: { dateStart: "asc" },
+      take: 20,
     }),
     prisma.tournament.findMany({
       where: { approved: true },
@@ -63,6 +63,12 @@ export default async function HomePage() {
       orderBy: [{ status: "asc" }, { dateStart: "asc" }],
     }),
   ]);
+
+  // Sort: LIVE first, then UPCOMING by dateStart asc, cap at 8
+  const sortedActiveTournaments = [...activeTournaments].sort((a, b) => {
+    if (a.status === b.status) return new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime();
+    return a.status === "LIVE" ? -1 : 1;
+  }).slice(0, 8);
 
   // Fetch followed tournament IDs for current player
   let followedTournamentIds = new Set<string>();
@@ -152,9 +158,9 @@ export default async function HomePage() {
           </div>
           <Link className="ghost" href="/tournaments">{tc("see_all")}</Link>
         </div>
-        {activeTournaments.length > 0 ? (
+        {sortedActiveTournaments.length > 0 ? (
           <div className="tournament-grid">
-            {activeTournaments.map((tour) => (
+            {sortedActiveTournaments.map((tour) => (
               <TournamentCard
                 key={tour.id}
                 tournament={tour}

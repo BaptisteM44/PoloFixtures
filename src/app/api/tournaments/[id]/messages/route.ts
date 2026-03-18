@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   });
   if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (tournament.chatMode === "DISABLED") {
+  if (!tournament.chatMode || tournament.chatMode === "DISABLED") {
     return NextResponse.json([]);
   }
 
@@ -123,7 +123,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ error: "Message introuvable" }, { status: 404 });
   }
 
-  await prisma.tournamentMessage.delete({ where: { id: messageId } });
+  await prisma.tournamentMessage.update({
+    where: { id: messageId },
+    data: { deletedByModeration: true, content: "" },
+  });
 
   return NextResponse.json({ ok: true });
 }

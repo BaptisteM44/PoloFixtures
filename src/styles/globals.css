@@ -1118,11 +1118,12 @@ button:focus-visible,
 
 .tournament-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(390px, min(600px, 100%)));
   gap: 16px;
 }
 
 .tournament-card-wrapper {
+  position: relative;
   background: var(--surface);
   border-radius: var(--radius);
   border: 2px solid var(--border);
@@ -1141,19 +1142,73 @@ button:focus-visible,
   flex-direction: row;
   text-decoration: none;
   color: inherit;
+  min-height: 100px;
+}
+
+/* Date column — left side like agenda-row */
+.tournament-card__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  flex-shrink: 0;
+  padding: 14px 0 14px 14px;
+  gap: 0;
+}
+
+.tournament-card__day {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tournament-card__month {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.tournament-card__date-arrow {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+.tournament-card__day-end {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tournament-card__month-end {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
 .tournament-card__body {
   flex: 1;
   min-width: 0;
-  padding: 20px;
+  padding: 14px 12px 14px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .tournament-card__banner {
-  width: 110px;
+  width: 90px;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -1165,13 +1220,14 @@ button:focus-visible,
   display: block;
 }
 
-.tournament-card__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px 12px;
-  border-top: 1px solid var(--border-light);
-  gap: 8px;
+.tournament-card__follow {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+}
+
+.tournament-card-wrapper--has-banner .tournament-card__follow {
+  right: 98px;
 }
 
 .tournament-card__header {
@@ -1181,14 +1237,22 @@ button:focus-visible,
   gap: 8px;
 }
 
+@media (max-width: 420px) {
+  .tournament-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
 .tournament-card__header h3 {
-  font-size: 17px;
+  font-size: 15px;
   margin: 0;
   flex: 1;
 }
 
 .tournament-card__location {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
   display: flex;
@@ -1248,18 +1312,35 @@ button:focus-visible,
 }
 
 .status.live {
-  background: var(--teal);
+  background: var(--pink);
   color: var(--text);
 }
 
+/* Ancienne pastille UPCOMING gardée pour compatibilité */
 .status.upcoming {
   background: var(--yellow);
   color: var(--text);
 }
 
+.status.reg-open {
+  background: var(--teal);
+  color: var(--text);
+}
+
+.status.reg-closed {
+  background: var(--orange);
+  color: var(--text);
+}
+
+.status.announced {
+  background: var(--yellow);
+  color: var(--text);
+}
+
 .status.completed {
-  background: var(--gray);
+  background: var(--surface-2);
   color: var(--text-muted);
+  border-color: var(--border-light);
 }
 
 .meta {
@@ -1329,8 +1410,8 @@ button:focus-visible,
   display: flex;
   flex-direction: column;
   align-items: center;
-  border-right: 2px solid var(--border);
   padding-right: 16px;
+  gap: 0;
 }
 
 .agenda-row__day {
@@ -1341,6 +1422,30 @@ button:focus-visible,
 }
 
 .agenda-row__month-short {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.agenda-row__date-arrow {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+.agenda-row__day-end {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.agenda-row__month-end {
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
@@ -4495,7 +4600,7 @@ textarea {
   display: flex;
   gap: 16px;
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding: 20px 5px;
   /* Centre les cartes quand elles tiennent dans la largeur */
   justify-content: flex-start;
 }
