@@ -48,8 +48,8 @@ export default async function MessagesPage() {
     <div>
       <div className="section-header" style={{ marginBottom: 24 }}>
         <div>
-          <h1>Messages</h1>
-          <p>Tes conversations privées</p>
+          <h1>{t("page_title")}</h1>
+          <p>{t("page_subtitle")}</p>
         </div>
       </div>
       <MessagesClient conversations={data} currentPlayerId={playerId} charterAccepted={charterAccepted} />

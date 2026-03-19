@@ -693,7 +693,11 @@
     "error_invalid": "Données invalides."
   },
   "footer": {
-    "copyright": "Poloperator © {year}"
+    "copyright": "Poloperator © {year}",
+    "legal_mentions": "Mentions légales",
+    "privacy": "Confidentialité",
+    "terms": "CGU",
+    "charter": "Charte"
   },
   "player": {
     "page_title": "Profil joueur",
@@ -942,11 +946,26 @@
   "messages": {
     "page_title": "Messages",
     "page_subtitle": "Tes conversations privées",
-    "empty": "Aucune conversation.",
-    "input_placeholder": "Écris ton message…",
+    "empty": "Aucune conversation pour l'instant.",
+    "empty_hint": "Tu peux contacter des free agents depuis la page d'un tournoi.",
+    "input_placeholder": "Ton message… (Entrée pour envoyer)",
     "btn_send": "Envoyer",
     "new_conversation": "Nouvelle conversation",
-    "login_required": "Connecte-toi pour accéder à tes messages."
+    "login_required": "Connecte-toi pour accéder à tes messages.",
+    "loading": "Chargement…",
+    "you_prefix": "Toi : ",
+    "just_now": "à l'instant",
+    "minutes_ago": "il y a {count} min",
+    "hours_ago": "il y a {count}h",
+    "click_marker": "Cliquez sur un marqueur pour voir les détails.",
+    "delete_message": "Supprimer",
+    "edit_message": "Modifier",
+    "delete_conversation": "Supprimer la conversation",
+    "delete_conversation_confirm": "Supprimer cette conversation et tous les messages ?",
+    "message_deleted": "Message supprimé",
+    "message_edited": "modifié",
+    "save": "OK",
+    "cancel": "Annuler"
   },
   "referee": {
     "page_title": "Console arbitrage",

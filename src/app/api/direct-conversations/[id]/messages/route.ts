@@ -76,3 +76,45 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   return NextResponse.json(message);
 }
+
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  const ctx = await getConvAndPlayer(params.id);
+  if ("error" in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+
+  const body = await req.json();
+  const parsed = z.object({ messageId: z.string() }).safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+
+  // Only the author can delete their own message
+  const message = await prisma.directMessage.findUnique({ where: { id: parsed.data.messageId } });
+  if (!message || message.conversationId !== params.id)
+    return NextResponse.json({ error: "Message introuvable" }, { status: 404 });
+  if (message.authorId !== ctx.playerId)
+    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+
+  await prisma.directMessage.delete({ where: { id: parsed.data.messageId } });
+  return NextResponse.json({ ok: true });
+}
+
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+  const ctx = await getConvAndPlayer(params.id);
+  if ("error" in ctx) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+
+  const body = await req.json();
+  const parsed = z.object({ messageId: z.string(), content: z.string().min(1).max(2000) }).safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+
+  const message = await prisma.directMessage.findUnique({ where: { id: parsed.data.messageId } });
+  if (!message || message.conversationId !== params.id)
+    return NextResponse.json({ error: "Message introuvable" }, { status: 404 });
+  if (message.authorId !== ctx.playerId)
+    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+
+  const updated = await prisma.directMessage.update({
+    where: { id: parsed.data.messageId },
+    data: { content: parsed.data.content, editedAt: new Date() },
+    include: { author: { select: { id: true, name: true, photoPath: true } } },
+  });
+
+  return NextResponse.json(updated);
+}

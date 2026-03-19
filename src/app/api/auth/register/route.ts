@@ -4,6 +4,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { PlayerStatus } from "@prisma/client";
 import { computeCareerBadges } from "@/lib/achievements";
+import { toSlug } from "@/lib/utils";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -35,11 +36,19 @@ export async function POST(req: Request) {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
+  const base = toSlug(name);
+  let slug = base;
+  let si = 2;
+  while (await prisma.player.findUnique({ where: { slug } })) {
+    slug = `${base}-${si++}`;
+  }
+
   const player = await prisma.player.create({
     data: {
       name,
       country,
       city: city ?? null,
+      slug,
       status: PlayerStatus.ACTIVE,
       badges: [],
       account: {

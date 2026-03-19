@@ -693,7 +693,11 @@
     "error_invalid": "Invalid data."
   },
   "footer": {
-    "copyright": "Poloperator © {year}"
+    "copyright": "Poloperator © {year}",
+    "legal_mentions": "Legal notices",
+    "privacy": "Privacy",
+    "terms": "Terms of use",
+    "charter": "Charter"
   },
   "player": {
     "page_title": "Player profile",
@@ -942,11 +946,25 @@
   "messages": {
     "page_title": "Messages",
     "page_subtitle": "Your private conversations",
-    "empty": "No conversations.",
-    "input_placeholder": "Write your message…",
+    "empty": "No conversations yet.",
+    "empty_hint": "You can contact free agents from a tournament page.",
+    "input_placeholder": "Your message… (Enter to send)",
     "btn_send": "Send",
     "new_conversation": "New conversation",
-    "login_required": "Log in to access your messages."
+    "login_required": "Log in to access your messages.",
+    "loading": "Loading…",
+    "you_prefix": "You: ",
+    "just_now": "just now",
+    "minutes_ago": "{count} min ago",
+    "hours_ago": "{count}h ago",
+    "delete_message": "Delete",
+    "edit_message": "Edit",
+    "delete_conversation": "Delete conversation",
+    "delete_conversation_confirm": "Delete this conversation and all messages?",
+    "message_deleted": "Message deleted",
+    "message_edited": "edited",
+    "save": "OK",
+    "cancel": "Cancel"
   },
   "referee": {
     "page_title": "Referee console",

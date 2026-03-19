@@ -855,6 +855,16 @@ a {
 .notif-panel--closing {
   animation: notif-slide-up 0.15s ease-in forwards;
 }
+@media (max-width: 480px) {
+  .notif-panel {
+    position: fixed !important;
+    top: 60px !important;
+    right: 8px !important;
+    left: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+}
 
 .burger-btn {
   display: none;
@@ -3280,9 +3290,25 @@ button:focus-visible,
   color: inherit;
   transition: background var(--transition);
   width: 100%;
+  position: relative;
 }
 .messages-conv-item:hover { background: var(--surface-hover, color-mix(in srgb, var(--accent) 6%, transparent)); }
 .messages-conv-item--active { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.messages-conv-item__delete {
+  display: none;
+  position: absolute;
+  bottom: 8px; right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 2px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.messages-conv-item:hover .messages-conv-item__delete { display: block; }
+.messages-conv-item__delete:hover { color: var(--text); }
 
 .messages-conv-item__avatar {
   position: relative;
@@ -3359,6 +3385,7 @@ button:focus-visible,
   border-radius: 12px 12px 12px 2px;
   padding: 10px 14px;
   align-self: flex-start;
+  position: relative;
 }
 .message-bubble p { margin: 0 0 4px; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
 .message-bubble--mine {
@@ -3367,6 +3394,23 @@ button:focus-visible,
   border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
   border-radius: 12px 12px 2px 12px;
 }
+.message-actions {
+  display: none;
+  gap: 8px;
+  margin-top: 4px;
+}
+.message-bubble:hover .message-actions { display: flex; }
+.message-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font-display);
+  color: var(--text-muted);
+  padding: 0;
+  transition: color 0.15s;
+}
+.message-actions button:hover { color: var(--text); }
 
 @media (max-width: 768px) {
   .messages-layout { grid-template-columns: 1fr; height: auto; }

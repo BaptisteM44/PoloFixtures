@@ -7,8 +7,7 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import SessionProvider from "@/components/SessionProvider";
 import { Header } from "@/components/Header";
-import { ContactAdminModal } from "@/components/ContactAdminModal";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { SiteFooter } from "@/components/SiteFooter";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 
@@ -55,25 +54,7 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
           <SessionProvider>
             <Header />
             <main className="page">{children}</main>
-            <footer className="site-footer">
-              <div className="site-footer__links">
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  Poloperator © {new Date().getFullYear()}
-                </span>
-                <span className="site-footer__sep">·</span>
-                <a href="/legal/mentions" style={{ fontSize: 12, color: "var(--text-muted)" }}>Mentions légales</a>
-                <span className="site-footer__sep">·</span>
-                <a href="/legal/privacy" style={{ fontSize: 12, color: "var(--text-muted)" }}>Confidentialité</a>
-                <span className="site-footer__sep">·</span>
-                <a href="/legal/terms" style={{ fontSize: 12, color: "var(--text-muted)" }}>CGU</a>
-                <span className="site-footer__sep">·</span>
-                <a href="/legal/charter" style={{ fontSize: 12, color: "var(--text-muted)" }}>Charte</a>
-                <span className="site-footer__sep">·</span>
-                <LanguageSwitcher />
-                <span className="site-footer__sep">·</span>
-                <ContactAdminModal />
-              </div>
-            </footer>
+            <SiteFooter />
           </SessionProvider>
         </NextIntlClientProvider>
         <SpeedInsights />

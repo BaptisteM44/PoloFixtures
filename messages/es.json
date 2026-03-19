@@ -578,7 +578,11 @@
     "error_invalid": "Invalid data."
   },
   "footer": {
-    "copyright": "Poloperator © {year}"
+    "copyright": "Poloperator © {year}",
+    "legal_mentions": "Aviso legal",
+    "privacy": "Privacidad",
+    "terms": "Condiciones de uso",
+    "charter": "Carta"
   },
   "player": {
     "page_title": "Player profile",
@@ -723,12 +727,27 @@
     "clubs_title": "Clubs"
   },
   "messages": {
-    "page_title": "Messages",
-    "empty": "No conversations.",
-    "input_placeholder": "Write your message…",
-    "btn_send": "Send",
-    "new_conversation": "New conversation",
-    "login_required": "Inicia sesión para acceder a tus mensajes."
+    "page_title": "Mensajes",
+    "page_subtitle": "Tus conversaciones privadas",
+    "empty": "Aún no hay conversaciones.",
+    "empty_hint": "Puedes contactar agentes libres desde la página de un torneo.",
+    "input_placeholder": "Tu mensaje… (Enter para enviar)",
+    "btn_send": "Enviar",
+    "new_conversation": "Nueva conversación",
+    "login_required": "Inicia sesión para acceder a tus mensajes.",
+    "loading": "Cargando…",
+    "you_prefix": "Tú: ",
+    "just_now": "ahora mismo",
+    "minutes_ago": "hace {count} min",
+    "hours_ago": "hace {count}h",
+    "delete_message": "Eliminar",
+    "edit_message": "Editar",
+    "delete_conversation": "Eliminar conversación",
+    "delete_conversation_confirm": "¿Eliminar esta conversación y todos los mensajes?",
+    "message_deleted": "Mensaje eliminado",
+    "message_edited": "editado",
+    "save": "OK",
+    "cancel": "Cancelar"
   },
   "referee": {
     "page_title": "Referee console",
