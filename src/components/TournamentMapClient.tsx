@@ -11,13 +11,27 @@ const CONTINENTS = [
   { code: "EU", label: "Europe" },
   { code: "NA", label: "N. America" },
   { code: "SA", label: "S. America" },
-  { code: "AP", label: "Asia/Pacific" },
+  { code: "AS", label: "Asia" },
+  { code: "OC", label: "Oceania" },
   { code: "AF", label: "Africa" },
 ];
 
 const FORMATS = ["2v2", "3v3", "4v4", "5v5", "ABC", "ABC Chapeau"];
 
-type Props = { tournaments: MapTournament[]; stats?: { players: number; tournaments: number; countries: number; labels: { players: string; tournaments: string; countries: string } } };
+type Props = {
+  tournaments: MapTournament[];
+  stats?: { players: number; tournaments: number; countries: number; labels: { players: string; tournaments: string; countries: string } };
+  userContinent?: string;
+};
+
+const CONTINENT_VIEW: Record<string, { center: [number, number]; zoom: number }> = {
+  EU: { center: [50, 10], zoom: 4 },
+  NA: { center: [40, -100], zoom: 3 },
+  SA: { center: [-15, -60], zoom: 3 },
+  AS: { center: [30, 100], zoom: 3 },
+  OC: { center: [-30, 155], zoom: 3 },
+  AF: { center: [5, 20], zoom: 3 },
+};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -84,17 +98,20 @@ function getStatusCode(t: MapTournament): StatusFilter {
   return "announced";
 }
 
-export default function TournamentMapClient({ tournaments, stats }: Props) {
+export default function TournamentMapClient({ tournaments, stats, userContinent }: Props) {
   const [selectedTournament, setSelectedTournament] = useState<MapTournament | null>(null);
-  const [continent, setContinent] = useState("");
+  const [continent, setContinent] = useState(userContinent ?? "");
   const [format, setFormat] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
 
-  const filtered = tournaments.filter((t) =>
-    (!continent || t.continentCode === continent) &&
-    (!format || t.format === format) &&
-    (!statusFilter || getStatusCode(t) === statusFilter)
-  );
+  const filtered = tournaments.filter((t) => {
+    const continentMatch = !continent
+      || t.continentCode === continent
+      || ((continent === "AS" || continent === "OC") && t.continentCode === "AP");
+    return continentMatch &&
+      (!format || t.format === format) &&
+      (!statusFilter || getStatusCode(t) === statusFilter);
+  });
 
   return (
     <section>
@@ -104,6 +121,7 @@ export default function TournamentMapClient({ tournaments, stats }: Props) {
           <TournamentMap
             tournaments={filtered}
             onSelect={setSelectedTournament}
+            {...(continent && CONTINENT_VIEW[continent] ? { center: CONTINENT_VIEW[continent].center, zoom: CONTINENT_VIEW[continent].zoom } : {})}
           />
         </div>
 

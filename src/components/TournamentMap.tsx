@@ -25,6 +25,8 @@ export type MapTournament = {
 type Props = {
   tournaments: MapTournament[];
   onSelect?: (tournament: MapTournament) => void;
+  center?: [number, number];
+  zoom?: number;
 };
 
 function getMarkerColor(t: MapTournament): string {
@@ -65,16 +67,26 @@ function MapInvalidator() {
   return null;
 }
 
-export default function TournamentMap({ tournaments, onSelect }: Props) {
+// Fly to new center/zoom when props change
+function MapFlyTo({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo(center, zoom, { duration: 0.8 });
+  }, [map, center[0], center[1], zoom]);
+  return null;
+}
+
+export default function TournamentMap({ tournaments, onSelect, center = [25, 20], zoom = 2 }: Props) {
   return (
     <MapContainer
-      center={[30, 10]}
-      zoom={2}
+      center={center}
+      zoom={zoom}
       style={{ width: "100%", height: "100%" }}
       scrollWheelZoom={false}
       worldCopyJump
     >
       <MapInvalidator />
+      <MapFlyTo center={center} zoom={zoom} />
       <TileLayer
         url="https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png"
         attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://stamen.com">Stamen Design</a>'

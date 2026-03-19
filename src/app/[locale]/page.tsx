@@ -40,6 +40,13 @@ export default async function HomePage() {
   const session = await auth();
   const currentPlayerId = (session?.user as any)?.playerId ?? null;
 
+  // Get player country for map auto-focus
+  let playerContinent: string | null = null;
+  if (currentPlayerId) {
+    const player = await prisma.player.findUnique({ where: { id: currentPlayerId }, select: { country: true } });
+    if (player) playerContinent = countryToContinent[player.country] ?? null;
+  }
+
   // Fetch upcoming tournaments for logged-in player
   let myUpcomingTournaments: { id: string; slug: string | null; name: string; city: string; country: string; dateStart: Date; dateEnd: Date; format: string }[] = [];
   if (currentPlayerId) {
@@ -211,6 +218,7 @@ export default async function HomePage() {
             lng: t.lng as number,
           }))}
           stats={{ players: totalPlayers, tournaments: totalTournamentsSeason, countries: countryCount, labels: { players: t("stats_players"), tournaments: t("stats_tournaments"), countries: t("stats_countries") } }}
+          userContinent={playerContinent ?? undefined}
         />
       )}
 
