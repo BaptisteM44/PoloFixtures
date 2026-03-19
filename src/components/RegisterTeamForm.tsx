@@ -129,12 +129,12 @@ export function RegisterTeamForm({
 
     // Validation ABC
     if (isABC) {
-      if (filledSlots.length !== 3) { setError("Le format ABC requiert exactement 3 joueurs."); return; }
+      if (filledSlots.length !== 3) { setError(t("error_abc_3_players")); return; }
       if (playerAIdx === null || playerBIdx === null || playerCIdx === null) {
-        setError("Veuillez désigner un joueur A, B et C."); return;
+        setError(t("error_abc_assign")); return;
       }
       if (new Set([playerAIdx, playerBIdx, playerCIdx]).size !== 3) {
-        setError("Chaque joueur doit avoir un niveau différent (A, B, C)."); return;
+        setError(t("error_abc_unique")); return;
       }
     }
 
@@ -200,8 +200,8 @@ export function RegisterTeamForm({
     return (
       <div className="panel" style={{ textAlign: "center", padding: 32, marginTop: 24 }}>
         <div style={{ fontSize: 32, marginBottom: 8 }}>{waitlisted ? "⏳" : "🎉"}</div>
-        <h3>{waitlisted ? "Inscription en liste d'attente" : t("success_title")}</h3>
-        <p className="meta">{waitlisted ? "Le tournoi est complet. Votre équipe est en liste d'attente — vous serez notifié si une place se libère." : t("success_desc")}</p>
+        <h3>{waitlisted ? t("waitlist_title") : t("success_title")}</h3>
+        <p className="meta">{waitlisted ? t("waitlist_desc") : t("success_desc")}</p>
         <button className="ghost" style={{ marginTop: 16 }} onClick={() => { setSuccess(false); setOpen(false); reset(); }}>
           {t("success_register_another")}
         </button>
@@ -325,13 +325,13 @@ export function RegisterTeamForm({
           const getPlayerName = (idx: number) => {
             const s = slots[idx];
             if (s.type === "existing") return s.player.name;
-            if (s.type === "manual") return s.name || `Joueur ${idx + 1}`;
-            return `Joueur ${idx + 1}`;
+            if (s.type === "manual") return s.name || t("player_slot", { num: idx + 1 });
+            return t("player_slot", { num: idx + 1 });
           };
           return (
             <div style={{ padding: "14px 16px", background: "color-mix(in srgb, var(--yellow) 20%, var(--surface))", borderRadius: 8, border: "2px solid var(--border)" }}>
               <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 12, fontSize: 13 }}>
-                Assignation des niveaux ABC
+                {t("abc_assignment")}
               </p>
               <div style={{ display: "grid", gap: 8 }}>
                 {(["A", "B", "C"] as const).map((lvl) => {
@@ -346,7 +346,7 @@ export function RegisterTeamForm({
                         style={{ flex: 1 }}
                         required
                       >
-                        <option value="">— Sélectionner un joueur</option>
+                        <option value="">{t("abc_select_player")}</option>
                         {filledSlots.map(({ idx }) => (
                           <option key={idx} value={idx}>{getPlayerName(idx)}</option>
                         ))}

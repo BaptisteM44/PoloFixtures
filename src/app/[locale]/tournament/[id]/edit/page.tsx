@@ -11,6 +11,7 @@ import { RefereeManager } from "@/components/RefereeManager";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
+import { CreatedToast } from "@/components/CreatedToast";
 
 export default async function TournamentEditPage({ params }: { params: { id: string } }) {
   const session = await auth();
@@ -100,6 +101,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
 
   return (
     <div className="page">
+      <CreatedToast />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <h1 style={{ marginBottom: 4 }}>{t("edit_dashboard_title")}</h1>

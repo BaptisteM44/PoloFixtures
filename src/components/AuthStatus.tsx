@@ -56,6 +56,7 @@ export function AuthStatus({ onNavigate, inDrawer }: { onNavigate?: () => void; 
           <Link href="/account" onClick={onNavigate}>{t("account")}</Link>
           <Link href="/my-tournaments" onClick={onNavigate}>{t("my_tournaments")}</Link>
           <Link href="/my-teams" onClick={onNavigate}>{t("my_teams")}</Link>
+          <Link href="/messages" onClick={onNavigate}>{t("messages")}</Link>
           <Link href="/settings/notifications" onClick={onNavigate}>{t("settings")}</Link>
           <button onClick={() => { onNavigate?.(); signOut({ callbackUrl: "/" }); }}>{t("logout")}</button>
         </div>
@@ -102,6 +103,12 @@ export function AuthStatus({ onNavigate, inDrawer }: { onNavigate?: () => void; 
               onClick={() => { closeDropdown(); onNavigate?.(); }}
             >
               {t("my_teams")}
+            </Link>
+            <Link
+              href="/messages"
+              onClick={() => { closeDropdown(); onNavigate?.(); }}
+            >
+              {t("messages")}
             </Link>
             <Link
               href="/settings/notifications"

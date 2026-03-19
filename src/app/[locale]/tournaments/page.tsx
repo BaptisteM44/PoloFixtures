@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import { TournamentBrowser } from "@/components/TournamentBrowser";
 
-export default async function TournamentsPage() {
+export default async function TournamentsPage({ searchParams }: { searchParams: { continent?: string } }) {
   const t = await getTranslations("tournaments");
 
   const session = await auth();
@@ -64,7 +64,7 @@ export default async function TournamentsPage() {
           <p>{t("page_subtitle")}</p>
         </div>
       </div>
-      <TournamentBrowser tournaments={data} defaultContinent={playerContinent} isLoggedIn={!!playerId} followedIds={followedTournamentIds} />
+      <TournamentBrowser tournaments={data} defaultContinent={searchParams.continent ?? playerContinent} isLoggedIn={!!playerId} followedIds={followedTournamentIds} />
     </div>
   );
 }

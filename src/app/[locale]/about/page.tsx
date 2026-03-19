@@ -16,6 +16,10 @@ export default async function AboutPage() {
     { key: "squads", icon: "👥" },
     { key: "clubs", icon: "🏙️" },
     { key: "orga", icon: "🎯" },
+    { key: "map", icon: "🗺️" },
+    { key: "calendar", icon: "📆" },
+    { key: "formats", icon: "🔀" },
+    { key: "notifications", icon: "🔔" },
   ] as const;
 
   const steps = [
@@ -36,6 +40,7 @@ export default async function AboutPage() {
       {/* ── HERO ── */}
       <section className="about-hero">
         <div className="about-hero__content">
+          <span className="about-eyebrow">{t("hero_eyebrow")}</span>
           <h1 className="about-hero__title">
             {t("hero_title").split("\n").map((line, i) => (
               <span key={i}>{line}{i === 0 && <br />}</span>
@@ -74,8 +79,8 @@ export default async function AboutPage() {
                 <strong>— — —</strong>
               </div>
               <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-                <div className="about-mockup__badge" style={{ background: "var(--yellow)" }}>16 équipes</div>
-                <div className="about-mockup__badge" style={{ background: "var(--pink)" }}>48 joueurs</div>
+                <div className="about-mockup__badge" style={{ background: "var(--yellow)" }}>16 teams</div>
+                <div className="about-mockup__badge" style={{ background: "var(--pink)" }}>48 players</div>
                 <div className="about-mockup__badge" style={{ background: "var(--teal)" }}>S.E Format</div>
               </div>
             </div>
@@ -97,7 +102,42 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ── PHOTOS QUINCONCE ── */}
+      {/* ── SHOWCASE: CARTE INTERACTIVE ── */}
+      <section className="about-showcase about-showcase--teal">
+        <div className="about-showcase__text">
+          <span className="about-showcase__tag" style={{ borderColor: "var(--teal)", color: "var(--teal)" }}>{t("showcase_map_tag")}</span>
+          <h2>{t("showcase_map_title")}</h2>
+          <p>{t("showcase_map_desc")}</p>
+          <Link className="primary" href="/" style={{ alignSelf: "flex-start" }}>
+            {t("showcase_map_cta")}
+          </Link>
+        </div>
+        <div className="about-showcase__visual">
+          <div className="about-showcase__mockup">
+            <div className="about-mockup__bar"><span /><span /><span /></div>
+            <div style={{ padding: 2, background: "var(--surface-2)" }}>
+              <div style={{ width: "100%", aspectRatio: "16/10", background: "var(--bg)", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+                <div style={{ position: "absolute", inset: 0, opacity: 0.08, background: "repeating-linear-gradient(0deg, var(--border) 0px, var(--border) 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, var(--border) 0px, var(--border) 1px, transparent 1px, transparent 40px)" }} />
+                {[
+                  { top: "20%", left: "15%", color: "var(--pink)" },
+                  { top: "35%", left: "45%", color: "var(--teal)" },
+                  { top: "25%", left: "52%", color: "var(--teal)" },
+                  { top: "40%", left: "48%", color: "var(--yellow)" },
+                  { top: "30%", left: "55%", color: "var(--teal)" },
+                  { top: "60%", left: "30%", color: "var(--pink)" },
+                  { top: "45%", left: "70%", color: "var(--yellow)" },
+                  { top: "50%", left: "80%", color: "var(--teal)" },
+                  { top: "70%", left: "85%", color: "var(--pink)" },
+                ].map((pin, i) => (
+                  <div key={i} style={{ position: "absolute", top: pin.top, left: pin.left, width: 10, height: 10, borderRadius: "50%", background: pin.color, border: "2px solid var(--bg)", boxShadow: `0 0 8px ${pin.color}` }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PHOTOS QUINCONCE 1 ── */}
       <section className="about-stagger">
         <div className="about-stagger-item about-stagger-item--left">
           <div className="about-stagger-img-wrap">
@@ -131,6 +171,47 @@ export default async function AboutPage() {
         </div>
       </section>
 
+      {/* ── SHOWCASE: CALENDRIER ── */}
+      <section className="about-showcase about-showcase--yellow">
+        <div className="about-showcase__visual">
+          <div className="about-showcase__mockup">
+            <div className="about-mockup__bar"><span /><span /><span /></div>
+            <div style={{ padding: 16, background: "var(--surface)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 8 }}>
+                {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
+                  <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", fontFamily: "var(--font-display)" }}>{d}</div>
+                ))}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 3 }}>
+                {Array.from({ length: 28 }, (_, i) => {
+                  const hasEvent = [5, 6, 12, 13, 14, 20, 21].includes(i);
+                  const colors = ["var(--pink)", "var(--teal)", "var(--yellow)"];
+                  return (
+                    <div key={i} style={{
+                      aspectRatio: "1", borderRadius: 4, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center",
+                      background: hasEvent ? colors[i % 3] : "var(--surface-2)",
+                      color: hasEvent ? "#fff" : "var(--text-muted)",
+                      fontWeight: hasEvent ? 700 : 400,
+                      border: `1px solid ${hasEvent ? "transparent" : "var(--border-light)"}`,
+                    }}>
+                      {i + 1}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="about-showcase__text">
+          <span className="about-showcase__tag" style={{ borderColor: "var(--teal)", color: "var(--teal)" }}>{t("showcase_calendar_tag")}</span>
+          <h2>{t("showcase_calendar_title")}</h2>
+          <p>{t("showcase_calendar_desc")}</p>
+          <Link className="primary" href="/calendar" style={{ alignSelf: "flex-start" }}>
+            {t("showcase_calendar_cta")}
+          </Link>
+        </div>
+      </section>
+
       {/* ── FONCTIONNALITÉS ── */}
       <section className="about-section about-section--dark">
         <h2 className="about-section__title">{t("features_title")}</h2>
@@ -145,7 +226,7 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      {/* ── SCREENSHOTS QUINCONCE ── */}
+      {/* ── SCREENSHOTS QUINCONCE 2 ── */}
       <section className="about-stagger">
         <div className="about-stagger-item about-stagger-item--right">
           <div className="about-stagger-img-wrap">
@@ -179,6 +260,31 @@ export default async function AboutPage() {
         </div>
       </section>
 
+      {/* ── SHOWCASE: CLUBS ── */}
+      <section className="about-showcase about-showcase--pink">
+        <div className="about-showcase__text">
+          <span className="about-showcase__tag" style={{ borderColor: "var(--pink)", color: "var(--pink)" }}>{t("showcase_clubs_tag")}</span>
+          <h2>{t("showcase_clubs_title")}</h2>
+          <p>{t("showcase_clubs_desc")}</p>
+          <Link className="primary" href="/clubs" style={{ alignSelf: "flex-start" }}>
+            {t("showcase_clubs_cta")}
+          </Link>
+        </div>
+        <div className="about-showcase__visual">
+          <div className="about-showcase__clubs-grid">
+            {["Paris Bike Polo", "Berlin Hardcourt", "NYC Polo", "Tokyo BPC", "Melbourne HBC", "Barcelona Polo"].map((name, i) => (
+              <div key={i} className="about-showcase__club-card">
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: ["var(--pink)", "var(--teal)", "var(--yellow)"][i % 3], border: "2px solid var(--border)", flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-display)" }}>{name}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-muted)" }}>{[12, 8, 15, 6, 10, 9][i]} members</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── COMMENT ÇA MARCHE ── */}
       <section className="about-section about-section--dark">
         <h2 className="about-section__title">{t("how_title")}</h2>
@@ -207,7 +313,7 @@ export default async function AboutPage() {
           <p>{t("card_section_desc")}</p>
           <div className="about-card-stars">
             {"★★★★★".split("").map((s, i) => (
-              <span key={i} style={{ color: "var(--yellow)", fontSize: 24 }}>{s}</span>
+              <span key={i} style={{ color: "var(--pink)", fontSize: 24 }}>{s}</span>
             ))}
           </div>
         </div>

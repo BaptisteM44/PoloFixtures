@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/db";
 import { PokemonCard } from "@/components/PokemonCard";
+import { ContactModal } from "@/components/ContactModal";
+import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 
 export default async function PlayerPage({ params }: { params: { slug: string } }) {
@@ -8,6 +10,10 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
     (await prisma.player.findUnique({ where: { slug: params.slug } })) ??
     (await prisma.player.findFirst({ where: { id: params.slug } }));
   if (!player) return <div>{t("not_found")}</div>;
+
+  const session = await auth();
+  const currentPlayerId = (session?.user as any)?.playerId ?? null;
+  const canContact = currentPlayerId && currentPlayerId !== player.id;
 
   return (
     <div className="player-profile">
@@ -35,7 +41,10 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
             {player.city ? `${player.city}, ` : ""}{player.country}
           </p>
           {player.bio && (
-            <p style={{ fontSize: 14, lineHeight: 1.7, margin: 0 }}>{player.bio}</p>
+            <p style={{ fontSize: 14, lineHeight: 1.7, margin: "0 0 16px" }}>{player.bio}</p>
+          )}
+          {canContact && (
+            <ContactModal recipientId={player.id} recipientName={player.name} />
           )}
         </div>
       </div>

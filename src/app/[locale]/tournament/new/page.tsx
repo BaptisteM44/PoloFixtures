@@ -166,7 +166,7 @@ export default function NewTournamentPage() {
 
     if (res.ok) {
       const data = await res.json();
-      router.push(`/tournament/${data.slug ?? data.id}/edit`);
+      router.push(`/tournament/${data.slug ?? data.id}/edit?created=true`);
     } else {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? t("error_create"));
@@ -342,18 +342,18 @@ export default function NewTournamentPage() {
               onChange={(e) => setForm((f) => ({ ...f, rushRegistration: e.target.checked }))}
             />
             <span>
-              <strong>Inscription au rush</strong>
-              <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>— premier arrivé, premier servi. Les inscriptions au-delà du max seront en liste d&apos;attente.</span>
+              <strong>{t("rush_registration_label")}</strong>
+              <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>{t("rush_registration_desc")}</span>
             </span>
           </label>
           <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", marginTop: -8 }}>
-            Si décoché, toutes les inscriptions sont admises et le départ / tirage se fait après la clôture des inscriptions.
+            {t("rush_registration_unchecked")}
           </p>
 
           {/* Max solo players for ABC Chapeau */}
           {form.format === "ABC Chapeau" && (
             <label className="field-row">
-              Nombre max de joueurs <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}>(laisser vide = pas de limite)</span>
+              {t("max_solo_players_label")} <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}>{t("max_solo_players_hint")}</span>
               <input
                 type="number"
                 min={3}

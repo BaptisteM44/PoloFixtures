@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 type Props = {
   recipientId: string;
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export function ContactModal({ recipientId, recipientName, freeAgentId }: Props) {
+  const t = useTranslations("contact_modal");
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
@@ -36,7 +38,7 @@ export function ContactModal({ recipientId, recipientName, freeAgentId }: Props)
         style={{ fontSize: 12, padding: "4px 10px" }}
         onClick={() => setOpen(true)}
       >
-        Contacter
+        {t("btn_contact")}
       </button>
     );
   }
@@ -56,13 +58,13 @@ export function ContactModal({ recipientId, recipientName, freeAgentId }: Props)
           {status === "ok" ? (
             <div style={{ textAlign: "center", padding: "24px 0" }}>
               <p style={{ fontSize: 24, marginBottom: 8 }}>✅</p>
-              <p style={{ fontWeight: 700, marginBottom: 4 }}>Message envoyé !</p>
+              <p style={{ fontWeight: 700, marginBottom: 4 }}>{t("sent_title")}</p>
               <p className="meta" style={{ marginBottom: 20 }}>
-                {recipientName} recevra une notification. Tu peux suivre la conversation dans tes messages.
+                {t("sent_desc", { name: recipientName })}
               </p>
               <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
                 <a href="/messages" className="primary" style={{ fontSize: 14 }}>
-                  Voir mes messages →
+                  {t("view_messages")}
                 </a>
                 <button
                   type="button"
@@ -70,29 +72,29 @@ export function ContactModal({ recipientId, recipientName, freeAgentId }: Props)
                   style={{ fontSize: 14 }}
                   onClick={() => { setOpen(false); setStatus("idle"); setMessage(""); }}
                 >
-                  Fermer
+                  {t("btn_close")}
                 </button>
               </div>
             </div>
           ) : (
             <>
-              <h3 style={{ marginBottom: 4 }}>Contacter {recipientName}</h3>
+              <h3 style={{ marginBottom: 4 }}>{t("title", { name: recipientName })}</h3>
               <p className="meta" style={{ marginBottom: 16 }}>
-                Ton message sera envoyé en privé. L&apos;autre joueur·se pourra te répondre via la messagerie.
+                {t("desc")}
               </p>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={4}
                 maxLength={2000}
-                placeholder={`Bonjour ${recipientName}, je cherche une équipe pour ce tournoi…`}
+                placeholder={t("placeholder", { name: recipientName })}
                 style={{ width: "100%", resize: "vertical" }}
                 autoFocus
               />
               <div style={{ display: "flex", gap: 8, marginTop: 12, justifyContent: "flex-end", alignItems: "center" }}>
                 {status === "error" && (
                   <span className="meta" style={{ color: "var(--error)", flex: 1 }}>
-                    Erreur — es-tu connecté·e ?
+                    {t("error_auth")}
                   </span>
                 )}
                 <button
@@ -100,7 +102,7 @@ export function ContactModal({ recipientId, recipientName, freeAgentId }: Props)
                   className="ghost"
                   onClick={() => { setOpen(false); setStatus("idle"); setMessage(""); }}
                 >
-                  Annuler
+                  {t("btn_cancel")}
                 </button>
                 <button
                   type="button"
@@ -108,7 +110,7 @@ export function ContactModal({ recipientId, recipientName, freeAgentId }: Props)
                   disabled={status === "sending" || !message.trim()}
                   onClick={send}
                 >
-                  {status === "sending" ? "Envoi…" : "Envoyer"}
+                  {status === "sending" ? t("btn_sending") : t("btn_send")}
                 </button>
               </div>
             </>

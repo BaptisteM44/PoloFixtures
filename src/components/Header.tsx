@@ -31,9 +31,9 @@ export function Header() {
     <>
     {isSuspended && (
       <div style={{ background: "var(--pink)", color: "#fff", textAlign: "center", padding: "10px 16px", fontSize: 13, fontWeight: 700, fontFamily: "var(--font-display)", letterSpacing: "0.02em" }}>
-        ⚠️ Votre compte est suspendu.
+        {t("nav.account_suspended")}
         {(session?.user as any)?.suspendedReason && (
-          <span style={{ fontWeight: 400, marginLeft: 8 }}>Raison : {(session?.user as any).suspendedReason}</span>
+          <span style={{ fontWeight: 400, marginLeft: 8 }}>{t("nav.reason_prefix")}{(session?.user as any).suspendedReason}</span>
         )}
       </div>
     )}
@@ -49,8 +49,8 @@ export function Header() {
       {/* Navigation desktop */}
       <nav className="nav nav--desktop">
         <Link href="/tournaments">{t("nav.tournaments")}</Link>
-        <Link href="/clubs">{t("nav.clubs")}</Link>
         <Link href="/calendar">{t("nav.calendar")}</Link>
+        <Link href="/clubs">{t("nav.clubs")}</Link>
         <Link href="/about">{t("nav.about")}</Link>
         {isAdmin && <Link href="/admin">{t("nav.admin")}</Link>}
       </nav>
@@ -66,7 +66,7 @@ export function Header() {
         {hasPlayer && <NotificationBell />}
         <button
           className="burger-btn"
-          aria-label={menuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+          aria-label={menuOpen ? t("nav.close_menu") : t("nav.open_menu")}
           aria-expanded={menuOpen}
           onClick={() => setMenuOpen((v) => !v)}
         >
@@ -89,8 +89,8 @@ export function Header() {
             </div>
             <div className="nav-drawer__links">
               <Link href="/tournaments" onClick={() => setMenuOpen(false)}>{t("nav.tournaments")}</Link>
-              <Link href="/clubs" onClick={() => setMenuOpen(false)}>{t("nav.clubs")}</Link>
               <Link href="/calendar" onClick={() => setMenuOpen(false)}>{t("nav.calendar")}</Link>
+              <Link href="/clubs" onClick={() => setMenuOpen(false)}>{t("nav.clubs")}</Link>
               <Link href="/about" onClick={() => setMenuOpen(false)}>{t("nav.about")}</Link>
               {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)}>{t("nav.admin")}</Link>}
             </div>

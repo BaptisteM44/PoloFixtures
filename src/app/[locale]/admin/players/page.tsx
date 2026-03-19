@@ -66,22 +66,22 @@ export default function AdminPlayersPage() {
       {suspendModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div className="panel" style={{ width: "min(480px, 92vw)", padding: 28, display: "grid", gap: 16 }}>
-            <h3 style={{ margin: 0 }}>Suspendre {suspendModal.name}</h3>
+            <h3 style={{ margin: 0 }}>{t("suspend_title", { name: suspendModal.name })}</h3>
             <label className="field-row">
-              Raison de la suspension <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}>(visible par l&apos;admin, optionnel)</span>
+              {t("suspend_reason_label")} <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}>{t("suspend_reason_hint")}</span>
               <textarea
                 value={suspendReason}
                 onChange={(e) => setSuspendReason(e.target.value)}
                 rows={3}
                 maxLength={500}
-                placeholder="Ex: comportement inapproprié lors du tournoi Paris Open 2025…"
+                placeholder={t("suspend_reason_placeholder")}
                 style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }}
               />
             </label>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button className="ghost" onClick={() => { setSuspendModal(null); setSuspendReason(""); }}>Annuler</button>
+              <button className="ghost" onClick={() => { setSuspendModal(null); setSuspendReason(""); }}>{t("btn_cancel")}</button>
               <button className="primary" style={{ borderColor: "var(--pink)", background: "var(--pink)" }} onClick={handleSuspendConfirm}>
-                Confirmer la suspension
+                {t("btn_confirm_suspend")}
               </button>
             </div>
           </div>
@@ -114,7 +114,7 @@ export default function AdminPlayersPage() {
               {player.account?.email && <p className="meta" style={{ fontSize: 11 }}>{player.account.email}</p>}
               {filter === "REJECTED" && player.suspendedReason && (
                 <p className="meta" style={{ fontSize: 11, color: "var(--pink)", marginTop: 2 }}>
-                  Raison : {player.suspendedReason}
+                  {t("reason_prefix")}{player.suspendedReason}
                 </p>
               )}
             </div>

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { PokemonCard } from "./PokemonCard";
 
 type Member = {
@@ -67,6 +68,7 @@ function Avatar({ name, photoPath, size = 36 }: { name: string; photoPath: strin
 }
 
 export function SquadDashboard({ squad, members: initialMembers, pendingInvitations: initialInvitations, messages: initialMessages, currentPlayerId, isCaptain: initialIsCaptain }: Props) {
+  const t = useTranslations("squad");
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<"membres" | "chat" | "invitations">("membres");
@@ -138,7 +140,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
         setPendingInvitations((prev) => [...prev, {
           id: inv.id,
           invitedPlayer: { id: player.id, name: player.name, photoPath: player.photoPath, country: player.country, city: player.city },
-          invitedBy: { id: currentPlayerId, name: "Vous" },
+          invitedBy: { id: currentPlayerId, name: t("you") },
           createdAt: new Date().toISOString(),
         }]);
         setSearchResults((prev) => prev.filter((p) => p.id !== playerId));
@@ -165,7 +167,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
   };
 
   const handleKick = async (targetPlayerId: string) => {
-    if (!confirm("Exclure ce membre ?")) return;
+    if (!confirm(t("confirm_kick"))) return;
     const res = await fetch(`/api/squads/${squad.id}/members`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -186,12 +188,12 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
       startTransition(() => router.push("/my-teams"));
     } else {
       const data = await res.json().catch(() => ({}));
-      alert(data.error ?? "Erreur");
+      alert(data.error ?? t("error"));
     }
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Supprimer définitivement "${squad.name}" ? Cette action est irréversible.`)) return;
+    if (!confirm(t("confirm_delete", { name: squad.name }))) return;
     const res = await fetch(`/api/squads/${squad.id}`, { method: "DELETE" });
     if (res.ok) {
       startTransition(() => router.push("/my-teams"));
@@ -242,9 +244,9 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
   };
 
   const tabs: { key: typeof activeTab; label: string }[] = [
-    { key: "membres", label: `Membres (${members.length})` },
-    { key: "chat", label: `Chat (${messages.length})` },
-    { key: "invitations", label: `Invitations${pendingInvitations.length > 0 ? ` (${pendingInvitations.length})` : ""}` },
+    { key: "membres", label: `${t("tab_members")} (${members.length})` },
+    { key: "chat", label: `${t("tab_chat")} (${messages.length})` },
+    { key: "invitations", label: `${t("tab_invitations")}${pendingInvitations.length > 0 ? ` (${pendingInvitations.length})` : ""}` },
   ];
 
   return (
@@ -254,7 +256,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
         {editing ? (
           <div style={{ display: "grid", gap: 12 }}>
             <div className="field-row">
-              Logo
+              {t("logo")}
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div
                   onClick={() => logoInputRef.current?.click()}
@@ -263,30 +265,30 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                   {logoUploading ? <span style={{ fontSize: 11 }}>…</span> : editLogoPath ? <img src={editLogoPath} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 22 }}>🏑</span>}
                 </div>
                 <input ref={logoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); }} />
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Clique sur le logo pour changer</span>
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("logo_hint")}</span>
                 {editLogoPath && (
-                  <button type="button" className="ghost" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => setEditLogoPath(null)}>Supprimer</button>
+                  <button type="button" className="ghost" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => setEditLogoPath(null)}>{t("remove")}</button>
                 )}
               </div>
             </div>
             <label className="field-row">
-              Nom
+              {t("name")}
               <input value={editName} onChange={(e) => setEditName(e.target.value)} maxLength={60} />
             </label>
             <label className="field-row">
-              Couleur
+              {t("color")}
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <input type="color" value={editColor} onChange={(e) => setEditColor(e.target.value)} style={{ width: 40, height: 34, padding: 2, border: "2px solid var(--border)", borderRadius: 6 }} />
                 <span className="meta">{editColor}</span>
               </div>
             </label>
             <label className="field-row">
-              Description
+              {t("description")}
               <textarea value={editBio} onChange={(e) => setEditBio(e.target.value)} rows={3} maxLength={500} style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }} />
             </label>
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="primary" onClick={handleSaveEdit} disabled={editSaving || logoUploading}>{editSaving ? "Sauvegarde…" : "Sauvegarder"}</button>
-              <button className="ghost" onClick={() => setEditing(false)}>Annuler</button>
+              <button className="primary" onClick={handleSaveEdit} disabled={editSaving || logoUploading}>{editSaving ? t("saving") : t("save")}</button>
+              <button className="ghost" onClick={() => setEditing(false)}>{t("cancel")}</button>
             </div>
           </div>
         ) : (
@@ -300,12 +302,12 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
               <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
                 {isCaptain && (
                   <>
-                    <button className="ghost" style={{ fontSize: 12 }} onClick={() => setEditing(true)}>✏️ Modifier</button>
-                    <button className="ghost" style={{ fontSize: 12, borderColor: "var(--pink)", color: "var(--pink)" }} onClick={handleDelete}>Supprimer</button>
+                    <button className="ghost" style={{ fontSize: 12 }} onClick={() => setEditing(true)}>{t("edit")}</button>
+                    <button className="ghost" style={{ fontSize: 12, borderColor: "var(--pink)", color: "var(--pink)" }} onClick={handleDelete}>{t("delete")}</button>
                   </>
                 )}
                 {!isCaptain && (
-                  <button className="ghost" style={{ fontSize: 12, color: "var(--text-muted)" }} onClick={handleLeave}>Quitter</button>
+                  <button className="ghost" style={{ fontSize: 12, color: "var(--text-muted)" }} onClick={handleLeave}>{t("leave")}</button>
                 )}
               </div>
             </div>
@@ -315,19 +317,19 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 4, marginBottom: 16, borderBottom: "2px solid var(--border)", paddingBottom: 0 }}>
-        {tabs.map((t) => (
+        {tabs.map((tab) => (
           <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
             style={{
               padding: "8px 16px", fontSize: 13, fontWeight: 700, fontFamily: "var(--font-display)",
               border: "none", background: "none", cursor: "pointer",
-              borderBottom: activeTab === t.key ? "2px solid var(--pink)" : "2px solid transparent",
-              color: activeTab === t.key ? "var(--pink)" : "var(--text-muted)",
+              borderBottom: activeTab === tab.key ? "2px solid var(--pink)" : "2px solid transparent",
+              color: activeTab === tab.key ? "var(--pink)" : "var(--text-muted)",
               marginBottom: -2,
             }}
           >
-            {t.label}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -395,7 +397,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                       <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 4, background: "var(--yellow)", border: "1.5px solid var(--border)" }}>CAP</span>
                     )}
                     {m.playerId === currentPlayerId && (
-                      <span style={{ fontSize: 10, color: "var(--text-muted)" }}>(moi)</span>
+                      <span style={{ fontSize: 10, color: "var(--text-muted)" }}>({t("me")})</span>
                     )}
                   </div>
                   {(m.city || m.country) && <p className="meta" style={{ margin: "2px 0 0" }}>{[m.city, m.country].filter(Boolean).join(", ")}</p>}
@@ -404,17 +406,17 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                   <div style={{ display: "flex", gap: 6 }}>
                     {m.role === "MEMBER" && (
                       <button className="ghost" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => handleRoleChange(m.playerId, "CAPTAIN")}>
-                        → Cap
+                        {t("promote_captain")}
                       </button>
                     )}
                     <button className="ghost" style={{ fontSize: 11, padding: "4px 10px", color: "var(--pink)", borderColor: "var(--pink)" }} onClick={() => handleKick(m.playerId)}>
-                      Exclure
+                      {t("kick")}
                     </button>
                   </div>
                 )}
                 {!isCaptain && m.playerId === currentPlayerId && (
                   <button className="ghost" style={{ fontSize: 11, padding: "4px 10px", color: "var(--text-muted)" }} onClick={handleLeave}>
-                    Quitter
+                    {t("leave")}
                   </button>
                 )}
               </div>
@@ -429,7 +431,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
         <div className="panel" style={{ display: "flex", flexDirection: "column", height: 520 }}>
           <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, padding: "4px 0" }}>
             {messages.length === 0 && (
-              <p className="meta" style={{ textAlign: "center", margin: "auto" }}>Pas encore de message. Soyez les premiers !</p>
+              <p className="meta" style={{ textAlign: "center", margin: "auto" }}>{t("no_messages")}</p>
             )}
             {messages.map((msg) => {
               const isMe = msg.author.id === currentPlayerId;
@@ -448,7 +450,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                       {msg.content}
                     </div>
                     <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--text-muted)", textAlign: isMe ? "right" : "left" }}>
-                      {new Date(msg.createdAt).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      {new Date(msg.createdAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
                 </div>
@@ -460,12 +462,12 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
             <input
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              placeholder="Écris un message…"
+              placeholder={t("chat_placeholder")}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
               style={{ flex: 1 }}
             />
             <button className="primary" onClick={handleSendMessage} disabled={chatSending || !chatInput.trim()}>
-              {chatSending ? "…" : "Envoyer"}
+              {chatSending ? "…" : t("send")}
             </button>
           </div>
         </div>
@@ -478,14 +480,14 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
           {/* ── Invite panel (captain only) ── */}
           {isCaptain && (
             <div className="panel">
-              <h4 style={{ margin: "0 0 12px" }}>Inviter un joueur</h4>
+              <h4 style={{ margin: "0 0 12px" }}>{t("invite_player")}</h4>
               <input
-                placeholder="Rechercher par nom…"
+                placeholder={t("search_by_name")}
                 value={searchQ}
                 onChange={(e) => setSearchQ(e.target.value)}
                 style={{ marginBottom: 10 }}
               />
-              {searchLoading && <p className="meta" style={{ fontSize: 12 }}>Recherche…</p>}
+              {searchLoading && <p className="meta" style={{ fontSize: 12 }}>{t("searching")}</p>}
               {searchResults.length > 0 && (
                 <div style={{ display: "grid", gap: 8 }}>
                   {searchResults.slice(0, 6).map((p) => (
@@ -496,22 +498,22 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                         {(p.city || p.country) && <p className="meta" style={{ margin: 0, fontSize: 11 }}>{[p.city, p.country].filter(Boolean).join(", ")}</p>}
                       </div>
                       <button className="primary" style={{ fontSize: 11, padding: "4px 10px" }} onClick={() => handleInvite(p.id)}>
-                        Inviter
+                        {t("invite")}
                       </button>
                     </div>
                   ))}
                 </div>
               )}
               {searchQ.trim().length >= 2 && !searchLoading && searchResults.length === 0 && (
-                <p className="meta" style={{ fontSize: 12 }}>Aucun résultat.</p>
+                <p className="meta" style={{ fontSize: 12 }}>{t("no_results")}</p>
               )}
             </div>
           )}
 
           {pendingInvitations.length === 0 ? (
             <div className="panel" style={{ textAlign: "center", padding: 32 }}>
-              <p className="meta">Aucune invitation en attente.</p>
-              <p className="meta" style={{ fontSize: 12 }}>Invite des joueurs depuis l&apos;onglet Membres.</p>
+              <p className="meta">{t("no_pending_invitations")}</p>
+              <p className="meta" style={{ fontSize: 12 }}>{t("invite_from_members_tab")}</p>
             </div>
           ) : (
             pendingInvitations.map((inv) => (
@@ -522,14 +524,14 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                   {(inv.invitedPlayer.city || inv.invitedPlayer.country) && (
                     <p className="meta" style={{ margin: "2px 0 0" }}>{[inv.invitedPlayer.city, inv.invitedPlayer.country].filter(Boolean).join(", ")}</p>
                   )}
-                  <p className="meta" style={{ margin: "2px 0 0", fontSize: 11 }}>Invité·e par {inv.invitedBy.name} · {new Date(inv.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}</p>
+                  <p className="meta" style={{ margin: "2px 0 0", fontSize: 11 }}>{t("invited_by", { name: inv.invitedBy.name })} · {new Date(inv.createdAt).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</p>
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 4, background: "color-mix(in srgb, var(--yellow) 20%, var(--surface))", border: "1.5px solid var(--yellow)" }}>
-                  En attente
+                  {t("pending")}
                 </span>
                 {isCaptain && (
                   <button className="ghost" style={{ fontSize: 11, padding: "3px 10px", borderColor: "var(--pink)", color: "var(--pink)" }} onClick={() => handleCancelInvite(inv.id)}>
-                    Annuler
+                    {t("cancel")}
                   </button>
                 )}
               </div>

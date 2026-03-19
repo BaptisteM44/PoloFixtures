@@ -2,6 +2,7 @@
 
 import { useTransition, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ISO_COUNTRIES } from "@/lib/iso-countries";
 
 type MealDay = { day: number; breakfast: boolean; lunch: boolean; dinner: boolean };
@@ -75,12 +76,12 @@ function computeDays(dateStart: string, dateEnd: string): number {
   return Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 }
 
-function dayLabel(dayIndex: number, totalDays: number, dateStart: string): string {
+function dayLabel(dayIndex: number, totalDays: number, dateStart: string, dayText: string): string {
   const d = new Date(dateStart);
   d.setDate(d.getDate() + dayIndex);
   const weekday = d.toLocaleDateString("fr-FR", { weekday: "long" });
   const date = d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  return `Jour ${dayIndex + 1} · ${weekday} ${date}`;
+  return `${dayText} ${dayIndex + 1} · ${weekday} ${date}`;
 }
 
 function initMeals(tournament: Tournament): MealDay[] {
@@ -96,6 +97,7 @@ const sectionTitleStyle = { fontFamily: "var(--font-display)", fontSize: 11, fon
 const subTitleStyle = { fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)", margin: 0, textTransform: "uppercase" as const, letterSpacing: "0.05em" };
 
 export function TournamentEditForm({ tournament, action, toggleLockAction }: Props) {
+  const t = useTranslations("tournament_edit");
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -161,10 +163,10 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         setBannerPath(data.path);
       } else {
         const text = await res.text();
-        setBannerError(`Erreur upload : ${text || res.status}`);
+        setBannerError(`${t("error_upload")} : ${text || res.status}`);
       }
     } catch {
-      setBannerError("Erreur réseau lors de l'upload.");
+      setBannerError(t("error_network"));
     }
     setBannerUploading(false);
     // Reset input so the same file can be re-selected after an error
@@ -185,7 +187,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         setError(
           typeof result?.error === "string"
             ? result.error
-            : "Une erreur est survenue."
+            : t("error_generic")
         );
       }
     });
@@ -195,14 +197,14 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const router = useRouter();
 
   const handleDelete = async () => {
-    if (!window.confirm("Supprimer ce tournoi ? Cette action est irréversible.")) return;
+    if (!window.confirm(t("confirm_delete"))) return;
     setDeletePending(true);
     const res = await fetch(`/api/tournaments/${tournament.id}`, { method: "DELETE" });
     if (res.ok) {
       router.push("/tournaments");
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Erreur lors de la suppression.");
+      setError(data.error ?? t("error_delete"));
       setDeletePending(false);
     }
   };
@@ -230,19 +232,19 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   return (
     <div className="panel" style={{ marginBottom: 24 }}>
       <div className="edit-header">
-        <h2 style={{ margin: 0 }}>Modifier les informations du tournoi</h2>
+        <h2 style={{ margin: 0 }}>{t("title")}</h2>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button
             type="button"
             className="ghost"
             style={{ fontSize: 12, whiteSpace: "nowrap", padding: "6px 12px", color: "var(--pink)", borderColor: "var(--pink)" }}
             onClick={() => {
-              if (!window.confirm("Clôturer les inscriptions maintenant ? Les équipes ne pourront plus s'inscrire. Cette action sera effective après avoir sauvegardé.")) return;
+              if (!window.confirm(t("confirm_close_registrations"))) return;
               const input = document.getElementById("registrationEnd") as HTMLInputElement;
               if (input) input.value = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
             }}
           >
-            Clôturer inscriptions
+            {t("close_registrations")}
           </button>
           <button
             type="button"
@@ -251,7 +253,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             disabled={lockPending}
             style={{ fontSize: 13, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}
           >
-            {lockPending ? "…" : isLocked ? "🔒 Verrouillé" : "🔓 Déverrouillé"}
+            {lockPending ? "…" : isLocked ? t("locked") : t("unlocked")}
           </button>
           <button
             type="button"
@@ -260,19 +262,19 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             disabled={deletePending}
             style={{ fontSize: 12, padding: "6px 12px", color: "var(--pink)", borderColor: "var(--pink)" }}
           >
-            {deletePending ? "…" : "Supprimer"}
+            {deletePending ? "…" : t("delete")}
           </button>
         </div>
       </div>
       {isLocked && (
         <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
-          Les champs structurels (format, max équipes, terrains, format samedi/dimanche) sont verrouillés.
+          {t("locked_fields_notice")}
         </p>
       )}
 
       {saved && (
         <div style={{ background: "var(--teal)", border: "2px solid var(--border)", borderRadius: 8, padding: "10px 16px", marginBottom: 16, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-          Sauvegardé avec succès !
+          {t("saved_success")}
         </div>
       )}
 
@@ -314,22 +316,22 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         {/* ── Infos générales ── */}
         <div className="form-grid">
           <label className="field-row">
-            Nom
+            {t("field_name")}
             <input name="name" defaultValue={tournament.name} required />
           </label>
           <label className="field-row">
-            Continent
+            {t("field_continent")}
             <select name="continentCode" defaultValue={tournament.continentCode} required>
-              <option value="EU">Europe (EU)</option>
-              <option value="NA">Amérique du Nord (NA)</option>
-              <option value="SA">Amérique du Sud (SA)</option>
-              <option value="AF">Afrique (AF)</option>
-              <option value="AS">Asie (AS)</option>
-              <option value="OC">Océanie (OC)</option>
+              <option value="EU">{t("continent_eu")}</option>
+              <option value="NA">{t("continent_na")}</option>
+              <option value="SA">{t("continent_sa")}</option>
+              <option value="AF">{t("continent_af")}</option>
+              <option value="AS">{t("continent_as")}</option>
+              <option value="OC">{t("continent_oc")}</option>
             </select>
           </label>
           <label className="field-row">
-            Pays
+            {t("field_country")}
             <select name="country" defaultValue={tournament.country}>
               {ISO_COUNTRIES.map((c) => (
                 <option key={c.code} value={c.name}>{c.name}</option>
@@ -337,23 +339,23 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             </select>
           </label>
           <label className="field-row">
-            Ville
+            {t("field_city")}
             <input name="city" defaultValue={tournament.city} required />
           </label>
           <label className="field-row">
-            Date début
+            {t("field_date_start")}
             <input type="date" name="dateStart" defaultValue={new Date(tournament.dateStart).toISOString().slice(0, 10)} />
           </label>
           <label className="field-row">
-            Date fin
+            {t("field_date_end")}
             <input type="date" name="dateEnd" defaultValue={new Date(tournament.dateEnd).toISOString().slice(0, 10)} />
           </label>
           <label className="field-row">
-            Début inscriptions
+            {t("field_registration_start")}
             <input type="datetime-local" name="registrationStart" defaultValue={tournament.registrationStart ? new Date(tournament.registrationStart).toISOString().slice(0, 16) : ""} />
           </label>
           <label className="field-row">
-            Fin inscriptions
+            {t("field_registration_end")}
             <input
               type="datetime-local"
               name="registrationEnd"
@@ -362,7 +364,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             />
           </label>
           <label className="field-row">
-            Format
+            {t("field_format")}
             <select name="format" value={currentFormat} onChange={(e) => setCurrentFormat(e.target.value)} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
               <option value="2v2">2v2</option>
               <option value="3v3">3v3</option>
@@ -373,12 +375,12 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             </select>
           </label>
           <label className="field-row">
-            Durée match (min)
+            {t("field_game_duration")}
             <input type="number" name="gameDurationMin" defaultValue={tournament.gameDurationMin} />
           </label>
           {currentFormat === "ABC Chapeau" && (
             <label className="field-row">
-              Nombre max de joueurs solo <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}>(laisser vide = pas de limite)</span>
+              {t("field_max_solo_players")} <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}>{t("field_max_solo_players_hint")}</span>
               <input
                 type="number"
                 min={3}
@@ -389,19 +391,19 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             </label>
           )}
           <label className="field-row">
-            Max équipes
+            {t("field_max_teams")}
             <input type="number" name="maxTeams" defaultValue={tournament.maxTeams} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
           </label>
           <label className="field-row">
-            Terrains
+            {t("field_courts")}
             <input type="number" name="courtsCount" defaultValue={tournament.courtsCount} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
           </label>
           <label className="field-row">
-            Frais d&apos;inscription
+            {t("field_registration_fee")}
             <input type="number" name="registrationFeePerTeam" defaultValue={tournament.registrationFeePerTeam} />
           </label>
           <label className="field-row">
-            Devise
+            {t("field_currency")}
             <select name="registrationFeeCurrency" defaultValue={tournament.registrationFeeCurrency ?? "EUR"}>
               <option value="EUR">EUR</option>
               <option value="USD">USD</option>
@@ -420,7 +422,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             </select>
           </label>
           <label className="field-row">
-            Email contact
+            {t("field_contact_email")}
             <input name="contactEmail" defaultValue={tournament.contactEmail} />
           </label>
 
@@ -433,87 +435,87 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
               style={{ marginTop: 2, flexShrink: 0 }}
             />
             <span>
-              <strong>Inscription au rush</strong>
-              <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>— premier arrivé, premier servi. Les inscriptions au-delà du max seront en liste d&apos;attente.</span>
+              <strong>{t("rush_registration")}</strong>
+              <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>— {t("rush_registration_desc")}</span>
               <br />
               <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                Si décoché, toutes les inscriptions sont admises et le départ / tirage se fait après la clôture.
+                {t("rush_registration_hint")}
               </span>
             </span>
           </label>
 
           <label className="field-row">
-            Format samedi
+            {t("field_saturday_format")}
             <select name="saturdayFormat" defaultValue={tournament.saturdayFormat} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
-              <option value="ALL_DAY">Journée complète (poules)</option>
-              <option value="SPLIT_POOLS">Poules séparées</option>
-              <option value="SWISS">Swiss</option>
+              <option value="ALL_DAY">{t("saturday_all_day")}</option>
+              <option value="SPLIT_POOLS">{t("saturday_split_pools")}</option>
+              <option value="SWISS">{t("saturday_swiss")}</option>
             </select>
           </label>
           <label className="field-row">
-            Nombre de tours Swiss
+            {t("field_swiss_rounds")}
             <input type="number" name="swissRounds" defaultValue={tournament.swissRounds ?? 5} min={1} max={20} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
           </label>
           <label className="field-row">
-            Équipes qualifiées pour le bracket
+            {t("field_bracket_size")}
             <input type="number" name="bracketSize" defaultValue={tournament.bracketSize ?? 16} min={2} max={64} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
           </label>
           <label className="field-row">
-            Format dimanche
+            {t("field_sunday_format")}
             <select name="sundayFormat" defaultValue={tournament.sundayFormat} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
-              <option value="SE">Élim. simple</option>
-              <option value="DE">Élim. double</option>
+              <option value="SE">{t("sunday_single_elim")}</option>
+              <option value="DE">{t("sunday_double_elim")}</option>
             </select>
           </label>
           <label className="field-row">
-            Statut
+            {t("field_status")}
             <select name="status" defaultValue={tournament.status}>
-              <option value="UPCOMING">À venir</option>
-              <option value="LIVE">En cours</option>
-              <option value="COMPLETED">Terminé</option>
+              <option value="UPCOMING">{t("status_upcoming")}</option>
+              <option value="LIVE">{t("status_live")}</option>
+              <option value="COMPLETED">{t("status_completed")}</option>
             </select>
           </label>
           <label className="field-row">
-            Stream YouTube
+            {t("field_stream_youtube")}
             <input name="streamYoutubeUrl" defaultValue={tournament.streamYoutubeUrl ?? ""} />
           </label>
           <label className="field-row">
-            Groupe Telegram (t.me/...)
+            {t("field_telegram")}
             <input name="telegramUrl" defaultValue={tournament.telegramUrl ?? ""} placeholder="https://t.me/mongroupe" />
           </label>
           <label className="field-row">
-            Discussion / Chat
+            {t("field_chat")}
             <select name="chatMode" defaultValue={tournament.chatMode ?? "DISABLED"}>
-              <option value="DISABLED">Désactivé</option>
-              <option value="OPEN">Ouvert à tous (connectés)</option>
-              <option value="ORG_ONLY">Annonces orga uniquement</option>
+              <option value="DISABLED">{t("chat_disabled")}</option>
+              <option value="OPEN">{t("chat_open")}</option>
+              <option value="ORG_ONLY">{t("chat_org_only")}</option>
             </select>
           </label>
         </div>
 
         {/* ── Affiche / Bannière ── */}
         <div>
-          <p style={sectionTitleStyle}>AFFICHE / BANNIÈRE</p>
+          <p style={sectionTitleStyle}>{t("section_banner")}</p>
           <input type="hidden" name="bannerPath" value={bannerPath} />
           {/* Note: the hidden field above must stay inside <form> */}
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
             {bannerPath && (
               <div style={{ position: "relative", display: "inline-block" }}>
-                <img src={bannerPath} alt="Affiche" style={{ height: 100, borderRadius: 8, border: "2px solid var(--border)", objectFit: "cover" }} />
+                <img src={bannerPath} alt={t("banner_alt")} style={{ height: 100, borderRadius: 8, border: "2px solid var(--border)", objectFit: "cover" }} />
                 <button type="button" onClick={() => setBannerPath("")} style={{ position: "absolute", top: -8, right: -8, background: "var(--danger)", color: "#fff", border: "none", borderRadius: "50%", width: 22, height: 22, minWidth: 22, minHeight: 22, padding: 0, cursor: "pointer", fontSize: 12, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
               </div>
             )}
             <div>
               <input ref={bannerInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleBannerUpload} />
               <button type="button" className="ghost" style={{ fontSize: 12 }} onClick={() => bannerInputRef.current?.click()} disabled={bannerUploading}>
-                {bannerUploading ? "Upload en cours…" : bannerPath ? "Changer l'affiche" : "Uploader une affiche"}
+                {bannerUploading ? t("banner_uploading") : bannerPath ? t("banner_change") : t("banner_upload")}
               </button>
               {bannerError && (
                 <p style={{ color: "var(--danger)", fontSize: 12, marginTop: 6 }}>{bannerError}</p>
               )}
               {!bannerPath && (
                 <div style={{ marginTop: 8 }}>
-                  <input placeholder="…ou coller une URL" value={bannerPath} onChange={(e) => setBannerPath(e.target.value)} style={{ fontSize: 12 }} />
+                  <input placeholder={t("banner_paste_url")} value={bannerPath} onChange={(e) => setBannerPath(e.target.value)} style={{ fontSize: 12 }} />
                 </div>
               )}
             </div>
@@ -522,22 +524,22 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
         {/* ── Lieux ── */}
         <div>
-          <p style={sectionTitleStyle}>LIEUX</p>
+          <p style={sectionTitleStyle}>{t("section_venues")}</p>
           <div style={{ display: "grid", gap: 16 }}>
             {/* Adresse du terrain */}
             <div style={{ display: "grid", gap: 8 }}>
-              <p style={subTitleStyle}>Adresse du terrain</p>
+              <p style={subTitleStyle}>{t("venue_court_address")}</p>
               <div className="edit-grid-3">
                 <label className="field-row">
-                  Nom du lieu
-                  <input name="venueName" defaultValue={tournament.venueName ?? ""} placeholder="Ex: Skatepark Central" />
+                  {t("venue_name")}
+                  <input name="venueName" defaultValue={tournament.venueName ?? ""} placeholder={t("venue_name_placeholder")} />
                 </label>
                 <label className="field-row">
-                  Adresse
-                  <input name="venueAddress" defaultValue={tournament.venueAddress ?? ""} placeholder="5 avenue Gambetta, Lyon" />
+                  {t("venue_address")}
+                  <input name="venueAddress" defaultValue={tournament.venueAddress ?? ""} placeholder={t("venue_address_placeholder")} />
                 </label>
                 <label className="field-row">
-                  Lien Maps
+                  {t("venue_maps_link")}
                   <input name="venueMapsUrl" defaultValue={tournament.venueMapsUrl ?? ""} placeholder="https://maps.google.com/..." />
                 </label>
               </div>
@@ -551,14 +553,14 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             <div className="edit-grid-2">
               {/* Accueil vendredi */}
               <div style={{ display: "grid", gap: 8 }}>
-                <p style={subTitleStyle}>Accueil vendredi soir <span style={{ fontWeight: 400 }}>(opt.)</span></p>
+                <p style={subTitleStyle}>{t("venue_friday_welcome")} <span style={{ fontWeight: 400 }}>({t("optional")})</span></p>
                 <label className="field-row">
-                  Nom
-                  <input name="fridayWelcomeName" defaultValue={tournament.fridayWelcomeName ?? ""} placeholder="Salle des fêtes..." />
+                  {t("venue_name")}
+                  <input name="fridayWelcomeName" defaultValue={tournament.fridayWelcomeName ?? ""} placeholder={t("venue_friday_name_placeholder")} />
                 </label>
                 <label className="field-row">
-                  Adresse
-                  <input name="fridayWelcomeAddress" defaultValue={tournament.fridayWelcomeAddress ?? ""} placeholder="12 rue du sport" />
+                  {t("venue_address")}
+                  <input name="fridayWelcomeAddress" defaultValue={tournament.fridayWelcomeAddress ?? ""} placeholder={t("venue_friday_address_placeholder")} />
                 </label>
                 <label className="field-row">
                   Maps
@@ -568,13 +570,13 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
               {/* Soirée samedi */}
               <div style={{ display: "grid", gap: 8 }}>
-                <p style={subTitleStyle}>Soirée samedi <span style={{ fontWeight: 400 }}>(opt.)</span></p>
+                <p style={subTitleStyle}>{t("venue_saturday_evening")} <span style={{ fontWeight: 400 }}>({t("optional")})</span></p>
                 <label className="field-row">
-                  Nom
-                  <input name="saturdayEveningName" defaultValue={tournament.saturdayEveningName ?? ""} placeholder="Bar, salle..." />
+                  {t("venue_name")}
+                  <input name="saturdayEveningName" defaultValue={tournament.saturdayEveningName ?? ""} placeholder={t("venue_saturday_name_placeholder")} />
                 </label>
                 <label className="field-row">
-                  Adresse
+                  {t("venue_address")}
                   <input name="saturdayEveningAddress" defaultValue={tournament.saturdayEveningAddress ?? ""} />
                 </label>
                 <label className="field-row">
@@ -588,20 +590,20 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
         {/* ── Hébergement ── */}
         <div>
-          <p style={sectionTitleStyle}>HÉBERGEMENT</p>
+          <p style={sectionTitleStyle}>{t("section_accommodation")}</p>
           <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "8px 12px", borderRadius: 8, border: `2px solid ${accommodation ? "var(--teal)" : "var(--border)"}`, background: accommodation ? "color-mix(in srgb, var(--teal) 8%, var(--surface))" : "var(--surface)", fontSize: 13, transition: "border-color 0.15s, background 0.15s", marginBottom: 10 }}>
             <input type="checkbox" checked={accommodation} onChange={(e) => setAccommodation(e.target.checked)} style={{ accentColor: "var(--teal)", width: 15, height: 15 }} />
-            <span style={{ fontWeight: accommodation ? 700 : 400 }}>Hébergement proposé</span>
+            <span style={{ fontWeight: accommodation ? 700 : 400 }}>{t("accommodation_available")}</span>
           </label>
           {accommodation && (
             <div className="edit-grid-2" style={{ paddingLeft: 4 }}>
               <label className="field-row">
-                Type (gymnase, camping, chez l&apos;habitant...)
-                <input value={accommodationType} onChange={(e) => setAccommodationType(e.target.value)} placeholder="Ex: Gymnase à côté du terrain" />
+                {t("accommodation_type")}
+                <input value={accommodationType} onChange={(e) => setAccommodationType(e.target.value)} placeholder={t("accommodation_type_placeholder")} />
               </label>
               <label className="field-row">
-                Capacité (nombre de places)
-                <input type="number" value={accommodationCapacity} onChange={(e) => setAccommodationCapacity(e.target.value)} placeholder="Ex: 50" />
+                {t("accommodation_capacity")}
+                <input type="number" value={accommodationCapacity} onChange={(e) => setAccommodationCapacity(e.target.value)} placeholder={t("accommodation_capacity_placeholder")} />
               </label>
             </div>
           )}
@@ -609,16 +611,16 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
         {/* ── Repas dynamiques ── */}
         <div>
-          <p style={sectionTitleStyle}>REPAS ({days} jour{days > 1 ? "s" : ""})</p>
+          <p style={sectionTitleStyle}>{t("section_meals", { count: days })}</p>
           <div style={{ display: "grid", gap: 8 }}>
             {meals.slice(0, days).map((m, i) => (
               <div key={i} className="meal-row">
                 <span className="meal-row-label">
-                  {dayLabel(i, days, tournament.dateStart)}
+                  {dayLabel(i, days, tournament.dateStart, t("day"))}
                 </span>
                 <div className="meal-row-checks">
                   {(["breakfast", "lunch", "dinner"] as const).map((meal) => {
-                    const labels = { breakfast: "Petit-déj", lunch: "Déjeuner", dinner: "Dîner" };
+                    const labels = { breakfast: t("meal_breakfast"), lunch: t("meal_lunch"), dinner: t("meal_dinner") };
                     const active = m[meal];
                     return (
                       <label key={meal} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 12, fontWeight: active ? 700 : 400, color: active ? "var(--text)" : "var(--text-muted)" }}>
@@ -635,33 +637,33 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
         {/* ── Kit list ── */}
         <div>
-          <p style={sectionTitleStyle}>KIT LIST — CE QU&apos;IL FAUT APPORTER</p>
+          <p style={sectionTitleStyle}>{t("section_kit_list")}</p>
           <textarea
             value={kitList}
             onChange={(e) => setKitList(e.target.value)}
             rows={3}
             maxLength={1000}
-            placeholder="Ex: Assiette, couverts, gobelet/tasse, sac de couchage, maillot de couleur..."
+            placeholder={t("kit_list_placeholder")}
             style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13, width: "100%" }}
           />
         </div>
 
         {/* ── Informations complémentaires ── */}
         <div>
-          <p style={sectionTitleStyle}>INFORMATIONS COMPLÉMENTAIRES</p>
+          <p style={sectionTitleStyle}>{t("section_additional_info")}</p>
           <textarea
             value={additionalInfo}
             onChange={(e) => setAdditionalInfo(e.target.value)}
             rows={4}
             maxLength={2000}
-            placeholder="Infos pratiques, consignes, comment venir, parking vélo, ce qu'il faut savoir..."
+            placeholder={t("additional_info_placeholder")}
             style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13, width: "100%" }}
           />
         </div>
 
         {/* ── FAQ ── */}
         <div>
-          <p style={sectionTitleStyle}>FAQ</p>
+          <p style={sectionTitleStyle}>{t("section_faq")}</p>
           <div style={{ display: "grid", gap: 10 }}>
             {faq.map((item, i) => (
               <div key={i} style={{ display: "grid", gap: 6, padding: "10px 12px", borderRadius: 8, border: "2px solid var(--border)", background: "var(--surface)", position: "relative" }}>
@@ -669,13 +671,13 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                 <input
                   value={item.question}
                   onChange={(e) => updateFaq(i, "question", e.target.value)}
-                  placeholder="Question..."
+                  placeholder={t("faq_question_placeholder")}
                   style={{ fontWeight: 700, fontSize: 13 }}
                 />
                 <textarea
                   value={item.answer}
                   onChange={(e) => updateFaq(i, "answer", e.target.value)}
-                  placeholder="Réponse..."
+                  placeholder={t("faq_answer_placeholder")}
                   rows={2}
                   style={{ resize: "vertical", fontFamily: "inherit", fontSize: 13 }}
                 />
@@ -683,7 +685,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             ))}
           </div>
           <button type="button" className="ghost" style={{ fontSize: 12, marginTop: 8 }} onClick={addFaq}>
-            + Ajouter une question
+            {t("faq_add")}
           </button>
         </div>
 
@@ -693,7 +695,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           disabled={isPending}
           style={{ width: "fit-content" }}
         >
-          {isPending ? "Sauvegarde…" : "Sauvegarder"}
+          {isPending ? t("saving") : t("save")}
         </button>
       </form>
     </div>

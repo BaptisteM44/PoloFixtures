@@ -576,6 +576,114 @@ a {
   text-align: left;
 }
 
+/* ── Numbers band ── */
+.about-numbers {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  max-width: 100%;
+  border-top: 2px solid var(--border);
+  border-bottom: 2px solid var(--border);
+  background: var(--surface-2);
+}
+.about-numbers__item {
+  text-align: center;
+  padding: 36px 16px;
+  border-right: 1px solid var(--border-light);
+}
+.about-numbers__item:last-child { border-right: none; }
+.about-numbers__value {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.about-numbers__label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Showcase sections ── */
+.about-showcase {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 6vw;
+}
+.about-showcase__text {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.about-showcase__text h2 {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 3vw, 36px);
+  font-weight: 900;
+  margin: 0;
+  line-height: 1.15;
+}
+.about-showcase__text p {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--text-muted);
+  margin: 0;
+}
+.about-showcase__tag {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border: 1.5px solid;
+  border-radius: 4px;
+  padding: 3px 10px;
+  width: fit-content;
+}
+.about-showcase__visual {
+  display: flex;
+  justify-content: center;
+}
+.about-showcase__mockup {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+/* Clubs grid mockup */
+.about-showcase__clubs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: 380px;
+  width: 100%;
+}
+.about-showcase__club-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.about-showcase__club-card:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--shadow-lg);
+}
+
 /* Responsive */
 @media (max-width: 1100px) {
   .about-hero {
@@ -592,6 +700,9 @@ a {
   .about-cta { padding: 56px 5vw; }
   .about-free { padding: 44px 5vw; }
   .about-stagger { padding-left: 24px; padding-right: 24px; }
+  .about-showcase { grid-template-columns: 1fr; gap: 32px; padding: 48px 5vw; }
+  .about-showcase__visual { order: -1; }
+  .about-showcase__clubs-grid { max-width: 100%; }
 }
 
 @media (max-width: 768px) {
@@ -614,10 +725,39 @@ a {
   .about-cta { padding: 36px 4vw; }
   .about-free { padding: 28px 4vw; }
   .about-stagger { padding-left: 12px; padding-right: 12px; padding-top: 28px; padding-bottom: 28px; }
-  /* Scale la carte pokémon pour qu'elle rentre sur les très petits écrans */
   .about-card-section__card { transform: scale(0.88); transform-origin: top center; overflow: visible; }
   .about-audience-card { padding: 20px 16px; }
   .about-hero__subtitle { font-size: 15px; }
+  .about-numbers { grid-template-columns: repeat(2, 1fr); }
+  .about-numbers__item { padding: 24px 12px; }
+  .about-numbers__item:nth-child(2) { border-right: none; }
+  .about-numbers__item:nth-child(1),
+  .about-numbers__item:nth-child(2) { border-bottom: 1px solid var(--border-light); }
+  .about-showcase { padding: 32px 4vw; }
+  .about-showcase__clubs-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Created toast ── */
+.created-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: var(--surface);
+  border: 2px solid var(--teal);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  animation: toast-in 0.3s ease-out;
+  max-width: 380px;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ========================
@@ -953,11 +1093,11 @@ button:focus-visible,
 
 .home .hero {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 380px;
   gap: 24px;
   align-items: center;
-  margin-bottom: 56px;
-  padding: 40px 0;
+  margin-bottom: 64px;
+  padding: 64px 0 0;
 }
 
 .hero h1 {
@@ -987,28 +1127,28 @@ button:focus-visible,
   background: var(--yellow);
   border: 2px solid var(--border);
   border-radius: var(--radius);
-  padding: 24px;
+  padding: 18px 20px;
   box-shadow: var(--shadow-lg);
 }
 
 .hero-feature-card h3 {
-  font-size: 14px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   opacity: 0.8;
 }
 
 .hero-feature-card ul {
   margin: 0;
   padding-left: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
 }
 
 .hero-feature-card li {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -1019,12 +1159,100 @@ button:focus-visible,
   flex-wrap: wrap;
 }
 
+/* ---- Home stats ---- */
+.home-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 0;
+}
+.home-stats strong {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+.home-stats__dot {
+  opacity: 0.4;
+}
+
+/* ---- Recent players ---- */
+.recent-players {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.recent-player-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  min-width: 90px;
+  flex-shrink: 0;
+  gap: 6px;
+}
+.recent-player-card:hover .recent-player-card__avatar img,
+.recent-player-card:hover .recent-player-card__avatar span {
+  transform: scale(1.1);
+}
+.recent-player-card__avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+}
+.recent-player-card__avatar img,
+.recent-player-card__avatar span {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.15s;
+}
+.recent-player-card__avatar span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  object-fit: unset;
+}
+.recent-player-card__name {
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+  line-height: 1.2;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-player-card__location {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ========================
    SECTIONS
    ======================== */
 
 .section {
-  margin-top: 56px;
+  margin-top: 64px;
 }
 
 .section-header {
@@ -1118,7 +1346,7 @@ button:focus-visible,
 
 .tournament-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(390px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(390px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -7570,14 +7798,14 @@ details[open] .my-tournaments__section-title--summary::after {
   display: grid;
   grid-template-columns: 3fr 2fr;
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
   height: 520px;
 }
 
 .map-container-wrap {
   border-radius: var(--radius);
   overflow: hidden;
-  height: 520px;
+  height: 100%;
   border: 2px solid var(--border);
   position: relative;
   z-index: 0;
@@ -7585,7 +7813,7 @@ details[open] .my-tournaments__section-title--summary::after {
 
 /* Leaflet needs explicit height on its root element */
 .map-container-wrap .leaflet-container {
-  height: 520px !important;
+  height: 100% !important;
   width: 100% !important;
   z-index: 0;
 }
@@ -7604,8 +7832,10 @@ details[open] .my-tournaments__section-title--summary::after {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-height: 520px;
   overflow-y: auto;
+  padding-right: 4px;
+  min-height: 0;
+  max-height: 520px;
 }
 
 @media (max-width: 768px) {

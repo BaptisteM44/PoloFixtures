@@ -17,7 +17,7 @@ const CONTINENTS = [
 
 const FORMATS = ["2v2", "3v3", "4v4", "5v5", "ABC", "ABC Chapeau"];
 
-type Props = { tournaments: MapTournament[] };
+type Props = { tournaments: MapTournament[]; stats?: { players: number; tournaments: number; countries: number; labels: { players: string; tournaments: string; countries: string } } };
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -84,7 +84,7 @@ function getStatusCode(t: MapTournament): StatusFilter {
   return "announced";
 }
 
-export default function TournamentMapClient({ tournaments }: Props) {
+export default function TournamentMapClient({ tournaments, stats }: Props) {
   const [selectedTournament, setSelectedTournament] = useState<MapTournament | null>(null);
   const [continent, setContinent] = useState("");
   const [format, setFormat] = useState("");
@@ -97,7 +97,7 @@ export default function TournamentMapClient({ tournaments }: Props) {
   );
 
   return (
-    <section className="section">
+    <section>
       <div className="map-section-layout">
         {/* Map */}
         <div className="map-container-wrap">
@@ -194,9 +194,15 @@ export default function TournamentMapClient({ tournaments }: Props) {
             </div>
           )}
 
-          <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
-            {filtered.length} tournament{filtered.length !== 1 ? "s" : ""} on the map
-          </div>
+          {stats && (
+            <div className="home-stats" style={{ justifyContent: "center" }}>
+              <span><strong>{stats.players}</strong> {stats.labels.players}</span>
+              <span className="home-stats__dot">·</span>
+              <span><strong>{stats.tournaments}</strong> {stats.labels.tournaments}</span>
+              <span className="home-stats__dot">·</span>
+              <span><strong>{stats.countries}</strong> {stats.labels.countries}</span>
+            </div>
+          )}
         </div>
       </div>
     </section>

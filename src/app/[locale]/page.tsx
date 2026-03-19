@@ -40,7 +40,28 @@ export default async function HomePage() {
   const session = await auth();
   const currentPlayerId = (session?.user as any)?.playerId ?? null;
 
-  const [activeTournaments, allTournaments, countryCounts, mapTournaments] = await Promise.all([
+  // Fetch upcoming tournaments for logged-in player
+  let myUpcomingTournaments: { id: string; slug: string | null; name: string; city: string; country: string; dateStart: Date; dateEnd: Date; format: string }[] = [];
+  if (currentPlayerId) {
+    const entries = await prisma.teamPlayer.findMany({
+      where: { playerId: currentPlayerId, team: { tournament: { status: "UPCOMING", approved: true } } },
+      include: { team: { include: { tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true } } } } },
+    });
+    const soloEntries = await prisma.tournamentSoloEntry.findMany({
+      where: { playerId: currentPlayerId, tournament: { status: "UPCOMING", approved: true }, waitlisted: false },
+      include: { tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true } } },
+    });
+    const seen = new Set<string>();
+    for (const e of entries) {
+      if (!seen.has(e.team.tournament.id)) { seen.add(e.team.tournament.id); myUpcomingTournaments.push(e.team.tournament); }
+    }
+    for (const e of soloEntries) {
+      if (!seen.has(e.tournament.id)) { seen.add(e.tournament.id); myUpcomingTournaments.push(e.tournament); }
+    }
+    myUpcomingTournaments.sort((a, b) => a.dateStart.getTime() - b.dateStart.getTime());
+  }
+
+  const [activeTournaments, allTournaments, countryCounts, mapTournaments, recentPlayers, totalPlayers, totalCountries] = await Promise.all([
     prisma.tournament.findMany({
       where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true },
       include: { teams: { where: { selected: true } } },
@@ -62,13 +83,19 @@ export default async function HomePage() {
       select: { id: true, slug: true, name: true, city: true, country: true, continentCode: true, format: true, dateStart: true, dateEnd: true, status: true, registrationStart: true, registrationEnd: true, lat: true, lng: true },
       orderBy: [{ status: "asc" }, { dateStart: "asc" }],
     }),
+    prisma.player.findMany({
+      where: { status: "ACTIVE" },
+      select: { id: true, slug: true, name: true, photoPath: true, city: true, country: true },
+      orderBy: { createdAt: "desc" },
+      take: 12,
+    }),
+    prisma.player.count({ where: { status: "ACTIVE" } }),
+    prisma.player.findMany({
+      where: { status: "ACTIVE" },
+      select: { country: true },
+      distinct: ["country"],
+    }),
   ]);
-
-  // Sort: LIVE first, then UPCOMING by dateStart asc, cap at 8
-  const sortedActiveTournaments = [...activeTournaments].sort((a, b) => {
-    if (a.status === b.status) return new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime();
-    return a.status === "LIVE" ? -1 : 1;
-  }).slice(0, 8);
 
   // Fetch followed tournament IDs for current player
   let followedTournamentIds = new Set<string>();
@@ -79,6 +106,28 @@ export default async function HomePage() {
     });
     followedTournamentIds = new Set(follows.map((f: any) => f.tournamentId));
   }
+
+  // Merge followed tournaments into active list
+  const activeIds = new Set(activeTournaments.map((t) => t.id));
+  let followedExtra: typeof activeTournaments = [];
+  if (followedTournamentIds.size > 0) {
+    const followedNotInActive = [...followedTournamentIds].filter((id) => !activeIds.has(id));
+    if (followedNotInActive.length > 0) {
+      followedExtra = await prisma.tournament.findMany({
+        where: { id: { in: followedNotInActive }, approved: true, status: { in: ["LIVE", "UPCOMING"] } },
+        include: { teams: { where: { selected: true } } },
+      });
+    }
+  }
+
+  // Sort: LIVE first, then UPCOMING by dateStart asc, cap at 12
+  const sortedActiveTournaments = [...activeTournaments, ...followedExtra].sort((a, b) => {
+    if (a.status === b.status) return new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime();
+    return a.status === "LIVE" ? -1 : 1;
+  }).slice(0, 12);
+
+  const totalTournamentsSeason = allTournaments.length;
+  const countryCount = totalCountries.length;
 
   const playerCountByContinent: Record<string, number> = {};
   for (const row of countryCounts) {
@@ -91,7 +140,7 @@ export default async function HomePage() {
       {/* ---- HERO ---- */}
       <section className="hero">
         <div>
-          <h1>Bike Polo platform.</h1>
+          <h1>{t("hero_title")}</h1>
           <p>{t("hero_subtitle")}</p>
           <div className="hero-actions">
             <Link className="primary" href="/tournament/new">{t("hero_create")}</Link>
@@ -103,12 +152,44 @@ export default async function HomePage() {
           <ul>
             <li>{t("feature_pools")}</li>
             <li>{t("feature_referee")}</li>
-            <li>{t("feature_bracket")}</li>
             <li>{t("feature_live")}</li>
             <li>{t("feature_players")}</li>
+            <li>{t("feature_clubs")}</li>
+            <li>{t("feature_map")}</li>
+            <li>{t("feature_calendar")}</li>
+            <li>{t("feature_notifications")}</li>
           </ul>
         </div>
       </section>
+
+      {/* ---- MY UPCOMING TOURNAMENTS (logged in only) ---- */}
+      {currentPlayerId && myUpcomingTournaments.length > 0 && (
+        <section className="section" style={{ paddingBottom: 0 }}>
+          <div className="section-header">
+            <h2>{t("hero_upcoming_title")}</h2>
+            <Link className="ghost" href="/my-tournaments">{t("hero_upcoming_see_all")}</Link>
+          </div>
+          <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
+            {myUpcomingTournaments.slice(0, 5).map((tour) => {
+              const ds = tour.dateStart;
+              return (
+                <Link
+                  key={tour.id}
+                  href={`/tournament/${tour.slug ?? tour.id}`}
+                  className="panel"
+                  style={{ minWidth: 220, padding: "14px 18px", textDecoration: "none", flexShrink: 0, display: "block" }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--teal)", fontFamily: "var(--font-display)", marginBottom: 4 }}>
+                    {ds.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{tour.name}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{tour.city}, {tour.country}</div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ---- MAP SECTION (WIP) ---- */}
       {process.env.NEXT_PUBLIC_MAP_ENABLED === "true" && mapTournaments.length > 0 && (
@@ -129,6 +210,7 @@ export default async function HomePage() {
             lat: t.lat as number,
             lng: t.lng as number,
           }))}
+          stats={{ players: totalPlayers, tournaments: totalTournamentsSeason, countries: countryCount, labels: { players: t("stats_players"), tournaments: t("stats_tournaments"), countries: t("stats_countries") } }}
         />
       )}
 
@@ -138,7 +220,7 @@ export default async function HomePage() {
       <section className="section home-reorder__continents" style={{ paddingBottom: 0 }}>
         <div className="continent-grid">
           {continents.map((c) => (
-            <Link key={c.code} className="continent-card" href={`/clubs?continent=${c.code}`}>
+            <Link key={c.code} className="continent-card" href={`/tournaments?continent=${c.code}`}>
               <h3>{c.name}</h3>
               {playerCountByContinent[c.code] ? (
                 <span className="continent-stat">
@@ -204,6 +286,29 @@ export default async function HomePage() {
           }))}
         />
       </section>
+
+      {/* ---- RECENT PLAYERS ---- */}
+      {recentPlayers.length > 0 && (
+        <section className="section">
+          <div className="section-header">
+            <h2>{t("section_recent_players")}</h2>
+          </div>
+          <div className="recent-players">
+            {recentPlayers.map((p) => (
+              <Link key={p.id} href={`/player/${p.slug ?? p.id}`} className="recent-player-card">
+                <div className="recent-player-card__avatar">
+                  {p.photoPath
+                    ? <img src={p.photoPath} alt={p.name} />
+                    : <span>{p.name[0]?.toUpperCase()}</span>
+                  }
+                </div>
+                <div className="recent-player-card__name">{p.name}</div>
+                <div className="recent-player-card__location">{p.city ? `${p.city}, ` : ""}{p.country}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
     </div>
   );
