@@ -102,7 +102,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
   return (
     <div className="page">
       <CreatedToast />
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+      <div className="edit-header">
         <div>
           <h1 style={{ marginBottom: 4 }}>{t("edit_dashboard_title")}</h1>
           <p className="meta">{t_.name} · {t_.city}, {t_.country}</p>

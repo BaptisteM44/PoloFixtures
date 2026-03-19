@@ -78,6 +78,7 @@ a {
 
 .page {
   padding: 32px 6vw 80px;
+  overflow-x: hidden;
 }
 
 /* ========================
@@ -1085,6 +1086,14 @@ button:focus-visible,
   padding: 24px;
   border: 2px solid var(--border);
   box-shadow: var(--shadow);
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+}
+@media (max-width: 768px) {
+  .panel {
+    padding: 16px;
+  }
 }
 
 /* ========================
@@ -1849,6 +1858,21 @@ button:focus-visible,
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .orga-task-row {
+    flex-wrap: wrap;
+  }
+  .orga-task-board,
+  .orga-note-board,
+  .orga-link-board {
+    padding: 12px;
+  }
+  .orga-link-pill {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
 }
 
 /* ========================
@@ -3098,7 +3122,7 @@ button:focus-visible,
 .sponsor-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
 }
 
 .sponsor-card {
@@ -3362,7 +3386,7 @@ button:focus-visible,
 .referee-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
 }
 
 .clock {
@@ -3453,7 +3477,7 @@ button:focus-visible,
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 12px;
 }
 
@@ -3539,13 +3563,18 @@ textarea {
   grid-template-columns: 280px 1fr;
   gap: 24px;
   align-items: start;
+  min-width: 0;
 }
-@media (max-width: 768px) {
+.edit-page-layout > * {
+  min-width: 0;
+}
+@media (max-width: 1024px) {
   .edit-page-layout {
     grid-template-columns: 1fr;
   }
   .edit-page-sidebar {
-    display: none;
+    position: static !important;
+    top: unset !important;
   }
 }
 

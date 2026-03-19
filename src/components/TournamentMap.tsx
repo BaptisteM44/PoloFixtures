@@ -58,11 +58,16 @@ function createCircleIcon(color: string) {
   });
 }
 
-// Force Leaflet to recalculate tile layout after mount
+// Force Leaflet to recalculate tile layout after mount + fit world on small screens
 function MapInvalidator() {
   const map = useMap();
   useEffect(() => {
-    setTimeout(() => map.invalidateSize(), 0);
+    setTimeout(() => {
+      map.invalidateSize();
+      if (map.getContainer().clientWidth < 600) {
+        map.setZoom(1, { animate: false });
+      }
+    }, 0);
   }, [map]);
   return null;
 }
@@ -84,6 +89,7 @@ export default function TournamentMap({ tournaments, onSelect, center = [25, 20]
       style={{ width: "100%", height: "100%" }}
       scrollWheelZoom={false}
       worldCopyJump
+      minZoom={1}
     >
       <MapInvalidator />
       <MapFlyTo center={center} zoom={zoom} />
