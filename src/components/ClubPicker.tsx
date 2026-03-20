@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslations } from "next-intl";
+import { COUNTRIES } from "@/lib/countries";
 
 type Club = {
   id: string;
@@ -21,6 +22,17 @@ type Props = {
 
 export function ClubPicker({ country, onJoin, onCreate, namespace = "account" }: Props) {
   const t = useTranslations(namespace);
+
+  // Normalize country: accept code ("FR") or full name ("France")
+  const countryName = useMemo(() => {
+    if (!country) return "";
+    // If it's a 2-letter code, resolve to full name
+    if (country.length === 2) {
+      return COUNTRIES.find((c) => c.code === country.toUpperCase())?.name ?? country;
+    }
+    return country;
+  }, [country]);
+
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<Club[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,21 +46,21 @@ export function ClubPicker({ country, onJoin, onCreate, namespace = "account" }:
 
   // Load clubs for this country on mount + when country changes
   useEffect(() => {
-    if (!country) { setResults([]); return; }
+    if (!countryName) { setResults([]); return; }
     setLoading(true);
-    fetch(`/api/clubs?country=${encodeURIComponent(country)}`)
+    fetch(`/api/clubs?country=${encodeURIComponent(countryName)}`)
       .then((r) => r.json())
       .then((data) => setResults(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));
-  }, [country]);
+  }, [countryName]);
 
   // Search with debounce
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!country) return;
+    if (!countryName) return;
     debounceRef.current = setTimeout(() => {
       setLoading(true);
-      const params = new URLSearchParams({ country });
+      const params = new URLSearchParams({ country: countryName });
       if (search.trim()) params.set("search", search.trim());
       fetch(`/api/clubs?${params.toString()}`)
         .then((r) => r.json())
@@ -56,7 +68,7 @@ export function ClubPicker({ country, onJoin, onCreate, namespace = "account" }:
         .finally(() => setLoading(false));
     }, 300);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [search, country]);
+  }, [search, countryName]);
 
   const handleJoin = async (clubId: string) => {
     setJoining(clubId);
@@ -69,7 +81,7 @@ export function ClubPicker({ country, onJoin, onCreate, namespace = "account" }:
     e.preventDefault();
     if (!createForm.name.trim() || !createForm.city.trim()) return;
     setCreating(true);
-    await onCreate({ name: createForm.name.trim(), city: createForm.city.trim(), country });
+    await onCreate({ name: createForm.name.trim(), city: createForm.city.trim(), country: countryName });
     setCreating(false);
     setCreateSuccess(true);
   };

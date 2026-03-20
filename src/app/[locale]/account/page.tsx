@@ -447,13 +447,9 @@ export default function AccountPage() {
             </form>
           )}
 
-          {/* Badges & Emblème */}
-          <div className="panel">
-            <h3 style={{ marginBottom: 16 }}>{t("section_badges")}</h3>
-
-            {/* Section Mon Club */}
-            <div style={{ marginBottom: 16 }}>
-              <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t("club_section")}</p>
+          {/* Section Mon Club */}
+          <div id="club-section" className="panel">
+            <h3 style={{ marginBottom: 16 }}>{t("club_section")}</h3>
 
               {/* Clubs dont le joueur est MEMBER */}
               {clubMemberships.filter(m => m.status === "MEMBER").map(m => (
@@ -518,7 +514,7 @@ export default function AccountPage() {
 
               {/* Pas encore dans un club — ClubPicker filtré par pays */}
               {clubMemberships.filter(m => m.status === "MEMBER").length === 0 && clubMemberships.filter(m => m.status === "PENDING_BY_MANAGER").length === 0 && (
-                <div id="club-section" style={{ marginTop: 8 }}>
+                <div style={{ marginTop: 8 }}>
                   <ClubPicker
                     country={player.country}
                     onJoin={async (clubId) => {
@@ -541,7 +537,10 @@ export default function AccountPage() {
                   />
                 </div>
               )}
-            </div>
+          </div>
+
+          {/* Badges & Emblème */}
+          <div className="panel">
 
             {/* Logo position picker */}
             {player.clubLogoPath && (
