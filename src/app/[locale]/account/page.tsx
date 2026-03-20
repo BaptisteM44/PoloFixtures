@@ -304,17 +304,12 @@ export default function AccountPage() {
               <button type="button" onClick={() => setOnboardingDismissed(true)} style={{ position: "absolute", top: 8, right: 10, background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "var(--text-muted)" }}>✕</button>
               <p style={{ margin: "0 0 6px", fontWeight: 700, fontSize: 14, fontFamily: "var(--font-display)" }}>{t("onboarding_title")}</p>
               <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--text-muted)" }}>{t("onboarding_hint")}</p>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {!player.photoPath && (
-                  <label style={{ cursor: "pointer" }}>
-                    <span className="primary" style={{ fontSize: 12, display: "inline-block", cursor: "pointer" }}>{t("onboarding_add_photo")}</span>
-                    <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} style={{ display: "none" }} />
-                  </label>
-                )}
-                {clubMemberships.filter(m => m.status === "MEMBER").length === 0 && (
-                  <a href="#club-section" className="ghost" style={{ fontSize: 12 }}>{t("onboarding_join_club")}</a>
-                )}
-              </div>
+              {!player.photoPath && (
+                <label style={{ cursor: "pointer" }}>
+                  <span className="primary" style={{ fontSize: 12, display: "inline-block", cursor: "pointer" }}>{t("onboarding_add_photo")}</span>
+                  <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} style={{ display: "none" }} />
+                </label>
+              )}
             </div>
           )}
 
