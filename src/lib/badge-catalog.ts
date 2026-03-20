@@ -210,7 +210,6 @@ const RARITY_RANK: Record<BadgeRarity, number> = {
 
 export function getCardRarity(badgeIds: string[]): CardRarity {
   const total = badgeIds.length;
-  if (total === 0) return "common";
 
   const counts = { rare: 0, epic: 0, mythic: 0, legendary: 0 };
   for (const id of badgeIds) {
@@ -223,9 +222,10 @@ export function getCardRarity(badgeIds: string[]): CardRarity {
     if (rank >= 5) counts.legendary++;
   }
 
-  if (total >= 30 && counts.legendary >= 3) return "legendary";
-  if (total >= 20 && counts.mythic    >= 5) return "mythic";
-  if (total >= 12 && counts.epic      >= 5) return "epic";
-  if (total >= 5  && counts.rare      >= 5) return "rare";
-  return "uncommon";
+  if (total >= 25 && counts.legendary >= 3) return "legendary";
+  if (total >= 15 && counts.mythic    >= 4) return "mythic";
+  if (total >= 8  && counts.epic      >= 3) return "epic";
+  if (total >= 3  && counts.rare      >= 2) return "rare";
+  if (total >= 1)                            return "uncommon";
+  return "common";
 }

@@ -10,7 +10,7 @@ const PLAYERS = {
     city: "Lyon",
     startYear: 2025,
     hand: "RIGHT" as const,
-    badges: [] as string[],
+    badges: ["welcome"],
     photoPath: "/uploads/AddvmWVW.jpeg",
   },
   rising: {
@@ -19,7 +19,7 @@ const PLAYERS = {
     city: "Berlin",
     startYear: 2024,
     hand: "LEFT" as const,
-    badges: ["team_player", "welcome", "say_cheese"],
+    badges: ["team_player", "welcome", "say_cheese", "first_blood"],
     photoPath: "/uploads/NN-4CYaU.jpeg",
   },
   solid: {
@@ -30,7 +30,7 @@ const PLAYERS = {
     hand: "RIGHT" as const,
     gender: "NON_BINARY" as const,
     showGender: true,
-    badges: ["first_blood", "hat_trick", "sniper", "team_player", "squad_up", "welcome", "say_cheese"],
+    badges: ["first_blood", "hat_trick", "sniper", "champion", "team_player", "squad_up", "welcome", "say_cheese", "host"],
     photoPath: "/uploads/AddvmWVW.jpeg",
   },
   veteran: {
@@ -42,7 +42,23 @@ const PLAYERS = {
     badges: [
       "first_blood", "hat_trick", "sniper", "goal_machine", "champion",
       "team_player", "squad_up", "veteran", "road_warrior",
-      "host", "welcome", "say_cheese",
+      "host", "welcome", "og", "regular", "say_cheese", "chatterbox", "captain",
+    ],
+    photoPath: "/uploads/NN-4CYaU.jpeg",
+  },
+  mythic: {
+    name: "Casey Venom",
+    country: "Australia",
+    city: "Melbourne",
+    startYear: 2018,
+    hand: "LEFT" as const,
+    badges: [
+      "first_blood", "hat_trick", "sniper", "goal_machine", "century_club",
+      "champion", "back_to_back", "unbeaten",
+      "team_player", "squad_up", "veteran", "road_warrior", "globe_trotter",
+      "host", "serial_organizer",
+      "welcome", "og", "regular", "addict", "profile_complete", "say_cheese",
+      "chatterbox", "captain",
     ],
     photoPath: "/uploads/NN-4CYaU.jpeg",
   },
@@ -66,11 +82,11 @@ const PLAYERS = {
 };
 
 const TIERS = [
-  { key: "rookie", tier: "COMMON", color: "#888", desc: "0 badge — carte sobre, aucun effet holographique." },
-  { key: "rising", tier: "UNCOMMON", color: "#60c9cf", desc: "1-4 badges — léger reflet brillant au survol." },
-  { key: "solid", tier: "RARE", color: "#ffa2af", desc: "5-9 badges — holo visible avec paillettes sur la photo." },
-  { key: "veteran", tier: "EPIC", color: "#a855f7", desc: "10-14 badges — holo intense, diffraction colorée." },
-  { key: "legend", tier: "LEGENDARY", color: "#fffc8a", desc: "15+ badges — full holo, paillettes maximum, reflets arc-en-ciel." },
+  { key: "rookie", tier: "UNCOMMON", color: "#60c9cf", desc: "1-2 badges — léger reflet brillant au survol." },
+  { key: "rising", tier: "RARE", color: "#ffa2af", desc: "3+ badges — holo visible avec paillettes sur la photo." },
+  { key: "solid", tier: "EPIC", color: "#a855f7", desc: "8+ badges — holo intense, diffraction colorée." },
+  { key: "veteran", tier: "MYTHIC", color: "#c77dff", desc: "15+ badges — sparkle intense, shimmer violet." },
+  { key: "legend", tier: "LEGENDARY", color: "#fffc8a", desc: "25+ badges — full WebGL holo, paillettes maximum." },
 ] as const;
 
 function TierBadge({ tier, color }: { tier: string; color: string }) {
