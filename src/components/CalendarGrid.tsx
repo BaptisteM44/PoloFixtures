@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useMemo, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export type CalendarTournament = {
@@ -73,38 +73,45 @@ function fmtFR(d: Date) {
   return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** Label to display in the calendar event chip for a given day index within the tournament span. */
+function eventDayLabel(t: CalendarTournament, dayDate: Date): string {
+  const start = new Date(t.dateStart);
+  start.setHours(0, 0, 0, 0);
+  const diff = Math.round((dayDate.getTime() - start.getTime()) / 86400000);
+  const end = new Date(t.dateEnd);
+  end.setHours(0, 0, 0, 0);
+  const totalDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+
+  if (totalDays <= 1) return t.city;           // 1 jour → ville
+  if (totalDays === 2) {
+    return diff === 0 ? t.city : t.name;       // jour 1 → ville, jour 2 → nom
+  }
+  // 3+ jours: jour 1 → ville, jour 2 → nom, reste → format ou rien
+  if (diff === 0) return t.city;
+  if (diff === 1) return t.name;
+  return t.format ?? "";
+}
+
 export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = false }: Props) {
   const now = new Date();
   const router = useRouter();
   const [month, setMonth] = useState(initialMonth ?? now.getMonth());
   const [year, setYear] = useState(initialYear ?? now.getFullYear());
 
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
-  const expandedIds = useMemo(() => {
-    const raw = searchParams.get("open");
-    return new Set(raw ? raw.split(",").filter(Boolean) : []);
-  }, [searchParams]);
-
-  const toggle = (id: string, slug?: string) => {
+  const toggle = useCallback((id: string, slug?: string) => {
     if (mini) { router.push(`/tournament/${slug ?? id}`); return; }
-    const next = new Set(expandedIds);
-    next.has(id) ? next.delete(id) : next.add(id);
-    const params = new URLSearchParams(searchParams.toString());
-    if (next.size > 0) {
-      params.set("open", Array.from(next).join(","));
-    } else {
-      params.delete("open");
-    }
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  };
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, [mini, router]);
 
-  const clearAll = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("open");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  };
+  const clearAll = useCallback(() => {
+    setExpandedIds(new Set());
+  }, []);
 
   const days = useMemo(() => getCalendarDays(year, month), [year, month]);
 
@@ -190,7 +197,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
                   title={`${t.name} — ${t.city}, ${t.country}`}
                   onClick={() => toggle(t.id, t.slug ?? undefined)}
                 >
-                  {t.city}
+                  {eventDayLabel(t, date)}
                 </button>
               ))}
             </div>

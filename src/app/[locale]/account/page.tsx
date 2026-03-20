@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { PokemonCard } from "@/components/PokemonCard";
 import { COUNTRIES } from "@/lib/countries";
 import { BadgeShowcase } from "@/components/BadgeShowcase";
+import { ClubPicker } from "@/components/ClubPicker";
 import type { BadgeInfo } from "@/lib/badge-catalog";
 
 type Player = {
@@ -49,8 +50,6 @@ type ClubMembership = {
   club: ClubInfo;
 };
 
-type ClubResult = ClubInfo & { _count?: { members: number } };
-
 
 export default function AccountPage() {
   const t = useTranslations("account");
@@ -63,14 +62,14 @@ export default function AccountPage() {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  // Cities autocomplete
+  const [availableCities, setAvailableCities] = useState<Array<{ city: string; country: string; label: string }>>([]);
+  const [cityClubSuggestions, setCityClubSuggestions] = useState<ClubInfo[]>([]);
+  const [loadingCityClubs, setLoadingCityClubs] = useState(false);
+  const [joiningClubId, setJoiningClubId] = useState<string | null>(null);
+
   // Club
   const [clubMemberships, setClubMemberships] = useState<ClubMembership[]>([]);
-  const [clubSearch, setClubSearch] = useState("");
-  const [clubResults, setClubResults] = useState<ClubResult[] | null>(null);
-  const [clubSearching, setClubSearching] = useState(false);
-  const [showCreateClub, setShowCreateClub] = useState(false);
-  const [createClubForm, setCreateClubForm] = useState({ name: "", city: "", country: "" });
-  const [clubCreating, setClubCreating] = useState(false);
 
   // Changement de mot de passe
   const [pwOpen, setPwOpen] = useState(false);
@@ -83,6 +82,7 @@ export default function AccountPage() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
   const handleDeleteAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,31 +147,28 @@ export default function AccountPage() {
     if (res.ok) setClubMemberships(await res.json());
   }, []);
 
-  const searchClubs = async () => {
-    if (!clubSearch.trim()) return;
-    setClubSearching(true);
-    const res = await fetch(`/api/clubs?search=${encodeURIComponent(clubSearch)}`);
-    if (res.ok) setClubResults(await res.json());
-    setClubSearching(false);
-  };
-
-  const handleCreateClub = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setClubCreating(true);
-    const res = await fetch("/api/clubs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(createClubForm),
-    });
-    if (res.ok) {
-      await fetchClubMemberships();
-      setShowCreateClub(false);
-      setCreateClubForm({ name: "", city: "", country: "" });
-      setSaveMsg(t("club_create_success"));
-      setTimeout(() => setSaveMsg(null), 4000);
+  const fetchCityClubSuggestions = useCallback(async (city?: string | null, country?: string | null) => {
+    if (!city || !country) {
+      setCityClubSuggestions([]);
+      return;
     }
-    setClubCreating(false);
-  };
+
+    setLoadingCityClubs(true);
+    try {
+      const params = new URLSearchParams({ city, country });
+      const res = await fetch(`/api/clubs/by-city?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCityClubSuggestions(data.clubs ?? []);
+      } else {
+        setCityClubSuggestions([]);
+      }
+    } catch {
+      setCityClubSuggestions([]);
+    } finally {
+      setLoadingCityClubs(false);
+    }
+  }, []);
 
   const fetchPlayer = useCallback(async () => {
     const res = await fetch("/api/account/profile");
@@ -193,7 +190,22 @@ export default function AccountPage() {
     if (status === "unauthenticated") { router.push("/login"); return; }
     if (status === "authenticated" && !session.user.playerId) { router.push("/"); return; }
     if (status === "authenticated") { fetchPlayer(); fetchClubMemberships(); }
+    
+    // Load available cities for autocomplete
+    const loadCities = async () => {
+      try {
+        const res = await fetch("/api/clubs/cities");
+        if (res.ok) setAvailableCities(await res.json());
+      } catch (e) {
+        console.error("Failed to load cities:", e);
+      }
+    };
+    loadCities();
   }, [status, session, router, fetchPlayer, fetchClubMemberships]);
+
+  useEffect(() => {
+    fetchCityClubSuggestions(player?.city, player?.country);
+  }, [player?.city, player?.country, fetchCityClubSuggestions]);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -286,6 +298,26 @@ export default function AccountPage() {
             </div>
           )}
 
+          {/* Onboarding banner */}
+          {!onboardingDismissed && (!player.photoPath || clubMemberships.filter(m => m.status === "MEMBER").length === 0) && (
+            <div style={{ background: "color-mix(in srgb, var(--teal) 8%, var(--surface))", border: "2px solid var(--teal)", borderRadius: 8, padding: "16px 20px", position: "relative" }}>
+              <button type="button" onClick={() => setOnboardingDismissed(true)} style={{ position: "absolute", top: 8, right: 10, background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "var(--text-muted)" }}>✕</button>
+              <p style={{ margin: "0 0 6px", fontWeight: 700, fontSize: 14, fontFamily: "var(--font-display)" }}>{t("onboarding_title")}</p>
+              <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--text-muted)" }}>{t("onboarding_hint")}</p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                {!player.photoPath && (
+                  <label style={{ cursor: "pointer" }}>
+                    <span className="primary" style={{ fontSize: 12, display: "inline-block", cursor: "pointer" }}>{t("onboarding_add_photo")}</span>
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} style={{ display: "none" }} />
+                  </label>
+                )}
+                {clubMemberships.filter(m => m.status === "MEMBER").length === 0 && (
+                  <a href="#club-section" className="ghost" style={{ fontSize: 12 }}>{t("onboarding_join_club")}</a>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Edit form */}
           {editing && (
             <form className="panel" onSubmit={save} style={{ display: "grid", gap: 14 }}>
@@ -297,13 +329,41 @@ export default function AccountPage() {
                 </label>
                 <label className="field-row">
                   {t("field_city")}
-                  <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))} placeholder="Paris" />
+                  <input
+                    list="city-list"
+                    value={form.city}
+                    onChange={(e) => {
+                      const newCity = e.target.value;
+                      setForm((f) => ({ ...f, city: newCity }));
+                      if (newCity && form.country) {
+                        fetchCityClubSuggestions(newCity, form.country);
+                      }
+                    }}
+                    placeholder="Paris"
+                  />
+                  <datalist id="city-list">
+                    {availableCities
+                      .filter((c) => !form.country || c.country === form.country)
+                      .map((c) => (
+                        <option key={`${c.city}-${c.country}`} value={c.city} label={c.label} />
+                      ))
+                    }
+                  </datalist>
                 </label>
               </div>
               <label className="field-row">
                 {t("field_country")}
-                <select value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}>
-                  {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+                <select
+                  value={form.country}
+                  onChange={(e) => {
+                    const newCountry = e.target.value;
+                    setForm((f) => ({ ...f, country: newCountry }));
+                    if (form.city && newCountry) {
+                      fetchCityClubSuggestions(form.city, newCountry);
+                    }
+                  }}
+                >
+                  {COUNTRIES.map((c) => <option key={c.code} value={c.name}>{c.name}</option>)}
                 </select>
               </label>
               <label className="field-row">
@@ -419,6 +479,9 @@ export default function AccountPage() {
                       {player.clubLogoPath === m.club.logoPath ? `✓ ${t("club_logo_used")}` : t("club_use_logo")}
                     </button>
                   )}
+                  <Link href={`/club/${m.clubId}/edit`} className="ghost" style={{ fontSize: 11, padding: "4px 10px" }}>
+                    ✏️ {t("club_edit_btn")}
+                  </Link>
                   <button
                     className="ghost"
                     style={{ fontSize: 11, color: "var(--danger)" }}
@@ -453,80 +516,29 @@ export default function AccountPage() {
                 </div>
               ))}
 
-              {/* Pas encore dans un club → recherche + création */}
-              {clubMemberships.filter(m => m.status === "MEMBER").length === 0 && (
-                <div style={{ marginTop: 8 }}>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
-                    <input
-                      value={clubSearch}
-                      onChange={(e) => setClubSearch(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && searchClubs()}
-                      placeholder={t("club_search_placeholder")}
-                      style={{ flex: 1, fontSize: 13 }}
-                    />
-                    <button className="ghost" style={{ fontSize: 12 }} onClick={searchClubs} disabled={clubSearching}>{t("club_search_btn")}</button>
-                  </div>
-
-                  {clubResults !== null && clubResults.length === 0 && (
-                    <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "4px 0 8px" }}>{t("club_no_results")}</p>
-                  )}
-
-                  {clubResults && clubResults.length > 0 && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
-                      {clubResults.map(club => {
-                        const isPending = clubMemberships.some(m => m.clubId === club.id && m.status === "PENDING_BY_PLAYER");
-                        return (
-                          <div key={club.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 10px", border: "1px solid var(--border)", borderRadius: 8 }}>
-                            {club.logoPath && <img src={club.logoPath} alt={club.name} style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>{club.name}</p>
-                              <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>{club.city}, {club.country}</p>
-                            </div>
-                            <button
-                              className="ghost"
-                              style={{ fontSize: 11, padding: "4px 10px" }}
-                              disabled={isPending}
-                              onClick={async () => {
-                                await fetch(`/api/clubs/${club.id}/members`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "request" }) });
-                                await fetchClubMemberships();
-                                setClubResults(null);
-                                setClubSearch("");
-                              }}
-                            >{isPending ? t("club_join_sent") : t("club_join")}</button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  <button className="ghost" style={{ fontSize: 12, width: "100%" }} onClick={() => setShowCreateClub(v => !v)}>
-                    {showCreateClub ? "▲" : "▼"} {t("club_create_title")}
-                  </button>
-
-                  {showCreateClub && (
-                    <form style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12, padding: "12px", border: "1px solid var(--border)", borderRadius: 8 }} onSubmit={handleCreateClub}>
-                      <div className="form-grid">
-                        <label className="field-row">
-                          {t("club_create_name")}
-                          <input required value={createClubForm.name} onChange={(e) => setCreateClubForm(f => ({ ...f, name: e.target.value }))} />
-                        </label>
-                        <label className="field-row">
-                          {t("club_create_city")}
-                          <input required value={createClubForm.city} onChange={(e) => setCreateClubForm(f => ({ ...f, city: e.target.value }))} />
-                        </label>
-                      </div>
-                      <label className="field-row">
-                        {t("club_create_country")}
-                        <select required value={createClubForm.country} onChange={(e) => setCreateClubForm(f => ({ ...f, country: e.target.value }))}>
-                          <option value="">{t("field_unset")}</option>
-                          {COUNTRIES.map(c => <option key={c.code} value={c.name}>{c.name}</option>)}
-                        </select>
-                      </label>
-                      <button type="submit" className="primary" disabled={clubCreating} style={{ fontSize: 13 }}>
-                        {clubCreating ? "..." : t("club_create_btn")}
-                      </button>
-                    </form>
-                  )}
+              {/* Pas encore dans un club — ClubPicker filtré par pays */}
+              {clubMemberships.filter(m => m.status === "MEMBER").length === 0 && clubMemberships.filter(m => m.status === "PENDING_BY_MANAGER").length === 0 && (
+                <div id="club-section" style={{ marginTop: 8 }}>
+                  <ClubPicker
+                    country={player.country}
+                    onJoin={async (clubId) => {
+                      await fetch("/api/clubs/by-city", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ clubId }),
+                      });
+                      await fetchClubMemberships();
+                      await fetchPlayer();
+                    }}
+                    onCreate={async (data) => {
+                      await fetch("/api/clubs", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(data),
+                      });
+                      await fetchClubMemberships();
+                    }}
+                  />
                 </div>
               )}
             </div>

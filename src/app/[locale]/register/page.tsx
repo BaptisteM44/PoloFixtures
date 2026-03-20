@@ -5,18 +5,24 @@ import { signIn } from "next-auth/react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { COUNTRIES } from "@/lib/countries";
+import { ClubPicker } from "@/components/ClubPicker";
 
 export default function RegisterPage() {
   const t = useTranslations("auth");
+  const ta = useTranslations("account");
   const tc = useTranslations("common");
   const [form, setForm] = useState({ name: "", email: "", password: "", country: "FR", city: "" });
   const [charterAccepted, setCharterAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [charterError, setCharterError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<"register" | "club">("register");
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  // Resolve country name from code for the ClubPicker
+  const countryName = COUNTRIES.find((c) => c.code === form.country)?.name ?? form.country;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,11 +55,61 @@ export default function RegisterPage() {
         return;
       }
 
-      window.location.href = "/account";
+      // Go to club step instead of redirecting
+      setStep("club");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleJoinClub = async (clubId: string) => {
+    await fetch("/api/clubs/by-city", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clubId }),
+    });
+  };
+
+  const handleCreateClub = async (data: { name: string; city: string; country: string }) => {
+    await fetch("/api/clubs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+  };
+
+  const goToAccount = () => {
+    window.location.href = "/account";
+  };
+
+  if (step === "club") {
+    return (
+      <div className="login-page">
+        <div style={{ width: "100%", maxWidth: 480 }}>
+          <div style={{ marginBottom: 24 }}>
+            <h1>{t("section_club")}</h1>
+            <p style={{ color: "var(--text-muted)", fontSize: 14 }}>{t("section_club_hint")}</p>
+          </div>
+          <div className="panel" style={{ padding: "20px 24px", display: "grid", gap: 16 }}>
+            <ClubPicker
+              country={countryName}
+              onJoin={handleJoinClub}
+              onCreate={handleCreateClub}
+              namespace="account"
+            />
+            <button
+              type="button"
+              className="primary"
+              onClick={goToAccount}
+              style={{ width: "100%", justifyContent: "center" }}
+            >
+              {t("skip_club")} →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">

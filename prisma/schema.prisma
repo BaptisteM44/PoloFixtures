@@ -123,6 +123,7 @@ enum NotificationType {
   TEAM_MESSAGE_RECEIVED  // nouveau message dans le chat d'équipe
   TASK_ASSIGNED          // tâche orga assignée
   TASK_DEADLINE_APPROACHING // deadline tâche orga proche
+  CLUB_JOIN_REQUEST      // un joueur a rejoint le club (notif au manager)
 }
 
 enum TaskPriority {

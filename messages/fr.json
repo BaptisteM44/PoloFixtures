@@ -111,7 +111,10 @@
     "charter_accept_privacy": "Politique de confidentialité",
     "charter_accept_label_post": "et la charte de bonne conduite.",
     "charter_accept_charter_link": "Voir la charte",
-    "charter_required": "Vous devez accepter la charte pour créer un compte."
+    "charter_required": "Vous devez accepter la charte pour créer un compte.",
+    "section_club": "Rejoins ton club",
+    "section_club_hint": "Optionnel — tu pourras aussi le faire plus tard.",
+    "skip_club": "Passer cette étape"
   },
   "about": {
     "page_title": "Poloperator",
@@ -668,6 +671,8 @@
     "badge_unlocked": "Badge débloqué : {badgeName}",
     "badge_unlocked_sub": "Consulte ton profil",
     "team_message": "Nouveau message dans {teamName}",
+    "club_join_request": "{name} a rejoint ton club",
+    "club_join_request_sub": "Club : {clubName}",
     "section_pending_invites": "Invitations en attente",
     "btn_accept": "Accepter",
     "btn_decline": "Refuser",
@@ -1051,6 +1056,11 @@
     "club_create_country": "Pays",
     "club_create_btn": "Créer le club",
     "club_create_success": "Club créé ! En attente d'approbation par les admins.",
+    "onboarding_title": "Complete ton profil",
+    "onboarding_hint": "Ajoute une photo et rejoins un club pour que les autres joueur·euses te reconnaissent !",
+    "onboarding_add_photo": "Ajouter une photo",
+    "onboarding_join_club": "Rejoindre un club",
+    "onboarding_dismiss": "Fermer",
     "logo_team": "Logo d'équipe",
     "logo_team_hint": "optionnel, en plus du logo de club",
     "logo_change": "🔄 Changer le logo",

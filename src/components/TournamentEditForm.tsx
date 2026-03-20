@@ -427,22 +427,24 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </label>
 
           {/* Rush registration */}
-          <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontSize: 13, gridColumn: "1 / -1" }}>
-            <input
-              type="checkbox"
-              checked={rushRegistration}
-              onChange={(e) => setRushRegistration(e.target.checked)}
-              style={{ marginTop: 2, flexShrink: 0 }}
-            />
-            <span>
-              <strong>{t("rush_registration")}</strong>
-              <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>— {t("rush_registration_desc")}</span>
-              <br />
-              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                {t("rush_registration_hint")}
+          <div style={{ gridColumn: "1 / -1" }}>
+            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontSize: 13 }}>
+              <input
+                type="checkbox"
+                checked={rushRegistration}
+                onChange={(e) => setRushRegistration(e.target.checked)}
+                style={{ marginTop: 2, flexShrink: 0, width: "auto" }}
+              />
+              <span>
+                <strong>{t("rush_registration")}</strong>
+                <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>— {t("rush_registration_desc")}</span>
+                <br />
+                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  {t("rush_registration_hint")}
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
+          </div>
 
           <label className="field-row">
             {t("field_saturday_format")}

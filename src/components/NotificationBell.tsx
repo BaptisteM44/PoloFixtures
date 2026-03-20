@@ -40,6 +40,8 @@ function useNotifLabel() {
         return { title: t("badge_unlocked", { badgeName: p.badgeName }), sub: t("badge_unlocked_sub"), href: "/account" };
       case "TEAM_MESSAGE_RECEIVED":
         return { title: t("team_message", { teamName: p.teamName }), sub: p.preview ?? "", href: "/my-tournaments" };
+      case "CLUB_JOIN_REQUEST":
+        return { title: t("club_join_request", { name: p.playerName }), sub: t("club_join_request_sub", { clubName: p.clubName }), href: `/player/${p.playerSlug}` };
       default:
         return { title: t("default"), sub: "", href: "/my-teams" };
     }

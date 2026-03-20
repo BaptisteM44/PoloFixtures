@@ -3525,10 +3525,10 @@ button:focus-visible,
   gap: 12px;
 }
 
-.form-grid input,
+.form-grid input:not([type="checkbox"]):not([type="radio"]),
 .form-grid textarea,
 .form-grid select,
-.field-row input,
+.field-row input:not([type="checkbox"]):not([type="radio"]),
 .field-row textarea,
 .field-row select {
   width: 100%;

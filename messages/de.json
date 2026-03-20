@@ -111,7 +111,10 @@
     "charter_accept_privacy": "Datenschutzerklärung",
     "charter_accept_label_post": "und die Verhaltenscharta gelesen und akzeptiere sie.",
     "charter_accept_charter_link": "Kodex ansehen",
-    "charter_required": "Sie müssen die Charta akzeptieren, um ein Konto zu erstellen."
+    "charter_required": "Sie müssen die Charta akzeptieren, um ein Konto zu erstellen.",
+    "section_club": "Tritt deinem Verein bei",
+    "section_club_hint": "Optional — du kannst das auch später machen.",
+    "skip_club": "Diesen Schritt überspringen"
   },
   "about": {
     "page_title": "Poloperator",
@@ -553,8 +556,10 @@
     "team_waitlisted_sub": "{tournamentName}",
     "badge_unlocked": "Badge unlocked: {badgeName}",
     "badge_unlocked_sub": "Check your profile",
-    "team_message": "New message in {teamName}",
-    "section_pending_invites": "Pending invitations",
+    "team_message": "Neue Nachricht in {teamName}",
+    "club_join_request": "{name} ist deinem Club beigetreten",
+    "club_join_request_sub": "Club: {clubName}",
+    "section_pending_invites": "Ausstehende Einladungen",
     "btn_accept": "Accept",
     "btn_decline": "Decline"
   },
@@ -833,6 +838,11 @@
     "club_create_country": "Land",
     "club_create_btn": "Verein erstellen",
     "club_create_success": "Verein erstellt! Warte auf Admin-Genehmigung.",
+    "onboarding_title": "Vervollständige dein Profil",
+    "onboarding_hint": "Füge ein Foto hinzu und tritt einem Verein bei, damit andere Spieler dich erkennen!",
+    "onboarding_add_photo": "Foto hinzufügen",
+    "onboarding_join_club": "Verein beitreten",
+    "onboarding_dismiss": "Schließen",
     "logo_team": "Teamlogo",
     "logo_team_hint": "optional, zusätzlich zum Vereinslogo",
     "logo_change": "🔄 Logo ändern",
