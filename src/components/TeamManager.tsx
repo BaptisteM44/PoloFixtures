@@ -37,6 +37,7 @@ type Props = {
   deleteTeamAction: (teamId: string, tournamentId: string) => Promise<{ ok?: boolean; error?: string }>;
   removePlayerAction: (teamPlayerId: string, tournamentId: string) => Promise<{ ok?: boolean; error?: string }>;
   addPlayerAction: (teamId: string, tournamentId: string, playerData: AddPlayerData) => Promise<{ ok?: boolean; error?: string }>;
+  createTeamAction?: (tournamentId: string, name: string) => Promise<{ ok?: boolean; error?: string }>;
   tournamentId: string;
 };
 
@@ -46,11 +47,23 @@ function maxPlayersFromFormat(format?: string): number {
   return m ? parseInt(m[1], 10) : 3;
 }
 
-export function TeamManager({ teams, locked, format, renameAction, deleteTeamAction, removePlayerAction, addPlayerAction, tournamentId }: Props) {
+export function TeamManager({ teams, locked, format, renameAction, deleteTeamAction, removePlayerAction, addPlayerAction, createTeamAction, tournamentId }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newTeamName, setNewTeamName] = useState("");
   const maxPlayers = maxPlayersFromFormat(format);
+
+  const handleCreateTeam = () => {
+    if (!newTeamName.trim() || !createTeamAction) return;
+    setGlobalError(null);
+    startTransition(async () => {
+      const result = await createTeamAction(tournamentId, newTeamName.trim());
+      if (result.ok) { setNewTeamName(""); setShowCreateForm(false); }
+      else setGlobalError(result.error ?? "Erreur");
+    });
+  };
 
   const handleDeleteTeam = (teamId: string, teamName: string) => {
     if (!confirm(`Supprimer l'équipe "${teamName}" ? Cette action est irréversible.`)) return;
@@ -65,8 +78,6 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
       await removePlayerAction(teamPlayerId, tournamentId);
     });
   };
-
-  if (teams.length === 0) return null;
 
   const selected = [...teams].filter((t) => t.selected !== false).sort((a, b) => a.seed - b.seed);
   const waitlist = [...teams].filter((t) => t.selected === false).sort((a, b) => (a.waitlistPosition ?? 999) - (b.waitlistPosition ?? 999));
@@ -105,6 +116,27 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
           </>
         )}
       </div>
+      {/* Create team */}
+      {!locked && createTeamAction && (
+        <div style={{ marginTop: 16 }}>
+          {showCreateForm ? (
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                placeholder="Nom de l'équipe"
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleCreateTeam(); if (e.key === "Escape") { setShowCreateForm(false); setNewTeamName(""); } }}
+                autoFocus
+                style={{ flex: 1 }}
+              />
+              <button className="primary" onClick={handleCreateTeam} disabled={isPending || !newTeamName.trim()} style={{ fontSize: 13 }}>Créer</button>
+              <button className="ghost" onClick={() => { setShowCreateForm(false); setNewTeamName(""); }} style={{ fontSize: 13 }}>Annuler</button>
+            </div>
+          ) : (
+            <button className="ghost" onClick={() => setShowCreateForm(true)} style={{ fontSize: 13 }}>+ Ajouter une équipe</button>
+          )}
+        </div>
+      )}
       {globalError && <p className="error" style={{ marginTop: 8 }}>{globalError}</p>}
       {locked && (
         <p className="meta" style={{ marginTop: 10, fontSize: 12 }}>

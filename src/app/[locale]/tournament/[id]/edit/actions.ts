@@ -786,6 +786,28 @@ export async function addPlayerToTeamAction(
   return { ok: true };
 }
 
+export async function createTeamAction(
+  tournamentId: string,
+  name: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const trimmed = name.trim();
+  if (!trimmed) return { error: "Le nom ne peut pas être vide." };
+
+  const maxSeed = await prisma.team.aggregate({
+    where: { tournamentId },
+    _max: { seed: true },
+  });
+  const nextSeed = (maxSeed._max.seed ?? 0) + 1;
+
+  await prisma.team.create({
+    data: { tournamentId, name: trimmed, seed: nextSeed },
+  });
+
+  revalidatePath(`/tournament/${tournamentId}/edit`);
+  revalidatePath(`/tournament/${tournamentId}`);
+  return { ok: true };
+}
+
 const layoutItemSchema = z.object({
   i: z.enum(INFO_TILE_KEYS),
   x: z.number().int().min(0).max(2),

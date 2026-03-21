@@ -369,6 +369,7 @@
     "orga_stats_matches_label": "matches played",
     "orga_stats_accommodation_label": "accommodation(s)",
     "orga_selection_title": "Selection / Draw",
+    "orga_teams_title": "Team management",
     "orga_tasks_title": "Tasks",
     "orga_tasks_empty": "No tasks yet. Add one!",
     "orga_tasks_add_placeholder": "New task…",

@@ -13,7 +13,8 @@ import { FreeAgentForm } from "@/components/FreeAgentForm";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { RegisterTeamForm } from "@/components/RegisterTeamForm";
 import { computeStandings } from "@/lib/standings";
-import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, generateBracketAction } from "./edit/actions";
+import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, generateBracketAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, createTeamAction } from "./edit/actions";
+import { TeamManager } from "@/components/TeamManager";
 import { SelectionManager } from "@/components/SelectionManager";
 import { TournamentChat } from "@/components/TournamentChat";
 import { TelegramWidget } from "@/components/TelegramWidget";
@@ -228,6 +229,31 @@ export default async function TournamentPage({
   const removeFromWaitlist = async (tId: string, teamId: string) => {
     "use server";
     return await removeFromWaitlistAction(tId, teamId);
+  };
+
+  const renameTeam = async (teamId: string, name: string, tId: string) => {
+    "use server";
+    return await renameTeamAction(teamId, name, tId);
+  };
+
+  const deleteTeam = async (teamId: string, tId: string) => {
+    "use server";
+    return await deleteTeamAction(teamId, tId);
+  };
+
+  const removePlayer = async (teamPlayerId: string, tId: string) => {
+    "use server";
+    return await removePlayerFromTeamAction(teamPlayerId, tId);
+  };
+
+  const addPlayer = async (teamId: string, tId: string, playerData: { type: "existing"; playerId: string } | { type: "manual"; name: string; city?: string | null; country: string }) => {
+    "use server";
+    return await addPlayerToTeamAction(teamId, tId, playerData);
+  };
+
+  const createTeam = async (tId: string, name: string) => {
+    "use server";
+    return await createTeamAction(tId, name);
   };
 
   // Info tab: tiles content
@@ -686,8 +712,8 @@ export default async function TournamentPage({
                   await generateBracketAction(tournament.id);
                   const { redirect } = await import("next/navigation");
                   const { revalidatePath } = await import("next/cache");
-                  revalidatePath(`/tournament/${tournament.id}`);
-                  redirect(`/tournament/${tournament.id}?tab=bracket`);
+                  revalidatePath(`/tournament/${tournament.slug ?? tournament.id}`);
+                  redirect(`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`);
                 }}>
                   <button type="submit" className="primary" style={{ fontSize: 16, padding: "12px 32px" }}>
                     🏆 Lancer le bracket
@@ -1203,6 +1229,34 @@ export default async function TournamentPage({
                 />
               </div>
             )}
+
+            {/* Gestion des équipes — ajout/modification/suppression */}
+            <div className="panel">
+              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 12 }}>{t("orga_teams_title")}</h3>
+              <TeamManager
+                teams={tournament.teams.map((t) => ({
+                  id: t.id,
+                  name: t.name,
+                  seed: t.seed,
+                  city: t.city,
+                  country: t.country,
+                  players: t.players.map((tp) => ({
+                    id: tp.id,
+                    player: { id: tp.player.id, name: tp.player.name, country: tp.player.country },
+                  })),
+                  selected: t.selected,
+                  waitlistPosition: t.waitlistPosition,
+                }))}
+                locked={tournament.locked}
+                format={tournament.format}
+                renameAction={renameTeam}
+                deleteTeamAction={deleteTeam}
+                removePlayerAction={removePlayer}
+                addPlayerAction={addPlayer}
+                createTeamAction={createTeam}
+                tournamentId={tournament.id}
+              />
+            </div>
 
             {/* Récap par équipe — régimes, logement, notes */}
             {selected.length > 0 && (
