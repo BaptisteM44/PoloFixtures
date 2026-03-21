@@ -58,14 +58,25 @@ const updateSchema = z.object({
   additionalInfo: z.string().optional().nullable(),
   faq: z.string().optional().nullable(),
   telegramUrl: z.string().optional().nullable(),
-  maxSoloPlayers: z.coerce.number().int().min(1).optional().nullable().transform((v) => (isNaN(v as number) ? null : v)),
+  maxSoloPlayers: z.preprocess(
+    (v) => (v === "" || v === undefined || v === null ? undefined : v),
+    z.coerce.number().int().min(1).optional().nullable()
+  ),
+  rushRegistration: z.preprocess(
+    (v) => v === "true" || v === true,
+    z.boolean().default(false)
+  ),
 });
 
 export async function updateTournamentAction(formData: FormData) {
   const payload = Object.fromEntries(formData.entries());
   const parsed = updateSchema.safeParse(payload);
   if (!parsed.success) {
-    return { error: parsed.error.flatten() };
+    const flat = parsed.error.flatten();
+    const fieldErrors = Object.entries(flat.fieldErrors)
+      .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`)
+      .join("; ");
+    return { error: fieldErrors || "Validation error" };
   }
 
   const data = parsed.data;
