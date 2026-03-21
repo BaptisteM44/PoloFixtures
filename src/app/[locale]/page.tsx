@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { prisma } from "@/lib/db";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { TournamentCard } from "@/components/TournamentCard";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import type { CalendarTournament } from "@/components/CalendarGrid";
@@ -8,18 +8,12 @@ import { auth } from "@/lib/auth";
 import TournamentMapClient from "@/components/TournamentMapClient";
 import type { MapTournament } from "@/components/TournamentMap";
 
-const continents = [
-  { code: "NA", name: "North America" },
-  { code: "SA", name: "South America" },
-  { code: "EU", name: "Europe" },
-  { code: "AF", name: "Africa" },
-  { code: "AS", name: "Asia" },
-  { code: "OC", name: "Oceania" },
-];
+const CONTINENT_CODES = ["NA", "SA", "EU", "AF", "AS", "OC"] as const;
 
 export default async function HomePage() {
   const t = await getTranslations("home");
   const tc = await getTranslations("common");
+  const locale = await getLocale();
   const countryToContinent: Record<string, string> = {
     France: "EU", Germany: "EU", "United Kingdom": "EU", Spain: "EU", Italy: "EU",
     Netherlands: "EU", Belgium: "EU", Portugal: "EU", Switzerland: "EU", Austria: "EU",
@@ -187,7 +181,7 @@ export default async function HomePage() {
                   style={{ minWidth: 220, padding: "14px 18px", textDecoration: "none", flexShrink: 0, display: "block" }}
                 >
                   <div style={{ fontSize: 12, fontWeight: 700, color: "var(--teal)", fontFamily: "var(--font-display)", marginBottom: 4 }}>
-                    {ds.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                    {ds.toLocaleDateString(locale, { day: "numeric", month: "short" })}
                   </div>
                   <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{tour.name}</div>
                   <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{tour.city}, {tour.country}</div>
@@ -227,12 +221,12 @@ export default async function HomePage() {
       {/* ---- CONTINENTS ---- */}
       <section className="section home-reorder__continents" style={{ paddingBottom: 0 }}>
         <div className="continent-grid">
-          {continents.map((c) => (
-            <Link key={c.code} className="continent-card" href={`/tournaments?continent=${c.code}`}>
-              <h3>{c.name}</h3>
-              {playerCountByContinent[c.code] ? (
+          {CONTINENT_CODES.map((code) => (
+            <Link key={code} className="continent-card" href={`/tournaments?continent=${code}`}>
+              <h3>{t(`continent_${code.toLowerCase()}`)}</h3>
+              {playerCountByContinent[code] ? (
                 <span className="continent-stat">
-                  {playerCountByContinent[c.code]} player{playerCountByContinent[c.code] > 1 ? "s" : ""}
+                  {playerCountByContinent[code]} {tc("players")}
                 </span>
               ) : null}
             </Link>

@@ -17,6 +17,7 @@
     "error_server": "Unable to reach the server.",
     "error_unknown": "An error occurred.",
     "see_all": "See all →",
+    "players": "players",
     "optional": "(optional)",
     "required": "required",
     "and": "and",
@@ -257,7 +258,13 @@
     "stats_players": "players",
     "stats_tournaments": "tournaments",
     "stats_countries": "countries",
-    "section_recent_players": "New players"
+    "section_recent_players": "New players",
+    "continent_na": "North America",
+    "continent_sa": "South America",
+    "continent_eu": "Europe",
+    "continent_af": "Africa",
+    "continent_as": "Asia",
+    "continent_oc": "Oceania"
   },
   "tournaments": {
     "page_title": "All tournaments",
@@ -270,6 +277,9 @@
     "status_live": "Live",
     "status_upcoming": "Upcoming",
     "status_completed": "Completed",
+    "status_reg_open": "Registration open",
+    "status_reg_closed": "Registration closed",
+    "status_announced": "Announced",
     "empty_no_match": "No tournament matches these filters.",
     "count_singular": "tournament",
     "count_plural": "tournaments",

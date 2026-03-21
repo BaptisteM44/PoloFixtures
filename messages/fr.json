@@ -17,6 +17,7 @@
     "error_server": "Impossible de contacter le serveur.",
     "error_unknown": "Une erreur est survenue.",
     "see_all": "Voir tout →",
+    "players": "joueur·euses",
     "optional": "(optionnel)",
     "required": "requis",
     "and": "et",
@@ -257,7 +258,13 @@
     "stats_players": "joueurs",
     "stats_tournaments": "tournois",
     "stats_countries": "pays",
-    "section_recent_players": "Nouveaux·elles joueur·euses"
+    "section_recent_players": "Nouveaux·elles joueur·euses",
+    "continent_na": "Amérique du Nord",
+    "continent_sa": "Amérique du Sud",
+    "continent_eu": "Europe",
+    "continent_af": "Afrique",
+    "continent_as": "Asie",
+    "continent_oc": "Océanie"
   },
   "tournaments": {
     "page_title": "Tous les tournois",
@@ -270,6 +277,9 @@
     "status_live": "En cours",
     "status_upcoming": "À venir",
     "status_completed": "Terminés",
+    "status_reg_open": "Inscriptions ouvertes",
+    "status_reg_closed": "Inscriptions fermées",
+    "status_announced": "Annoncé",
     "empty_no_match": "Aucun tournoi ne correspond à ces filtres.",
     "count_singular": "tournoi",
     "count_plural": "tournois",

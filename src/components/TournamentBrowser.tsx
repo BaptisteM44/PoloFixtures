@@ -95,6 +95,13 @@ export function TournamentBrowser({
   const t = useTranslations("tournaments");
   const r = useTranslations("registration");
   const locale = useLocale();
+  const statusLabels = {
+    live: t("status_live"),
+    completed: t("status_completed"),
+    reg_open: t("status_reg_open"),
+    reg_closed: t("status_reg_closed"),
+    announced: t("status_announced"),
+  };
 
   const CONTINENTS = [
     { code: "", label: t("filter_all_continents") },
@@ -286,7 +293,7 @@ export function TournamentBrowser({
               const dayEnd = dEnd.getDate();
               const monthEnd = dEnd.toLocaleString(locale, { month: "short" });
               const sameDay = dayStart === dayEnd && monthStart === monthEnd;
-              const { label: statusLabel, cls: statusCls } = getTournamentStatusBadge(tour.status, tour.registrationStart, tour.registrationEnd);
+              const { label: statusLabel, cls: statusCls } = getTournamentStatusBadge(tour.status, tour.registrationStart, tour.registrationEnd, statusLabels);
 
               return (
                 <div key={tour.id} className={`tournament-card-wrapper${tour.bannerPath ? " tournament-card-wrapper--has-banner" : ""}`}>

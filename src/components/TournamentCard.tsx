@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
+import { getLocale } from "next-intl/server";
 import { Tournament } from "@prisma/client";
 import { FollowButton } from "@/components/FollowButton";
 
@@ -7,16 +8,18 @@ import { FollowButton } from "@/components/FollowButton";
 export function getTournamentStatusBadge(
   dbStatus: string,
   registrationStart: Date | string | null,
-  registrationEnd: Date | string | null
+  registrationEnd: Date | string | null,
+  labels?: { live: string; completed: string; reg_open: string; reg_closed: string; announced: string }
 ): { label: string; cls: string } {
-  if (dbStatus === "LIVE") return { label: "En cours", cls: "live" };
-  if (dbStatus === "COMPLETED") return { label: "Terminé", cls: "completed" };
+  const l = labels ?? { live: "En cours", completed: "Terminé", reg_open: "Inscriptions ouvertes", reg_closed: "Inscriptions fermées", announced: "Annoncé" };
+  if (dbStatus === "LIVE") return { label: l.live, cls: "live" };
+  if (dbStatus === "COMPLETED") return { label: l.completed, cls: "completed" };
   const now = new Date();
   const start = registrationStart ? new Date(registrationStart) : null;
   const end = registrationEnd ? new Date(registrationEnd) : null;
-  if (start && end && start <= now && end >= now) return { label: "Inscriptions ouvertes", cls: "reg-open" };
-  if (end && end < now) return { label: "Inscriptions fermées", cls: "reg-closed" };
-  return { label: "Annoncé", cls: "announced" };
+  if (start && end && start <= now && end >= now) return { label: l.reg_open, cls: "reg-open" };
+  if (end && end < now) return { label: l.reg_closed, cls: "reg-closed" };
+  return { label: l.announced, cls: "announced" };
 }
 
 export async function TournamentCard({
@@ -31,20 +34,28 @@ export async function TournamentCard({
   isLoggedIn?: boolean;
 }) {
   const t = await getTranslations("tournaments");
+  const locale = await getLocale();
 
   const { label, cls } = getTournamentStatusBadge(
     tournament.status,
     tournament.registrationStart,
-    tournament.registrationEnd
+    tournament.registrationEnd,
+    {
+      live: t("status_live"),
+      completed: t("status_completed"),
+      reg_open: t("status_reg_open"),
+      reg_closed: t("status_reg_closed"),
+      announced: t("status_announced"),
+    }
   );
 
   const dateStart = new Date(tournament.dateStart);
   const dateEnd = new Date(tournament.dateEnd);
 
   const dayStart = dateStart.getDate();
-  const monthStart = dateStart.toLocaleString("fr-FR", { month: "short" });
+  const monthStart = dateStart.toLocaleString(locale, { month: "short" });
   const dayEnd = dateEnd.getDate();
-  const monthEnd = dateEnd.toLocaleString("fr-FR", { month: "short" });
+  const monthEnd = dateEnd.toLocaleString(locale, { month: "short" });
   const sameDay = dayStart === dayEnd && monthStart === monthEnd;
 
   return (
