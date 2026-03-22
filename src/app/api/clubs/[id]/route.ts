@@ -46,6 +46,7 @@ const updateSchema = z.object({
   description: z.string().max(500).optional().nullable(),
   website: z.string().optional().nullable(),
   logoPath: z.string().optional().nullable(),
+  trainingMapLink: z.string().url().optional().nullable().or(z.literal("")),
 });
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
@@ -54,7 +55,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
   const club = await prisma.club.findUnique({ where: { id: params.id } });
   if (!club) return new Response("Introuvable", { status: 404 });
-  if (club.managerId !== session.user.playerId && session.user.role !== "ADMIN") {
+  // Tout membre actif du club peut modifier (pas seulement le manager)
+  const membership = await prisma.clubMember.findUnique({
+    where: { clubId_playerId: { clubId: params.id, playerId: session.user.playerId } },
+  });
+  const isMember = membership?.status === "MEMBER";
+  const isAdmin = session.user.role === "ADMIN";
+  if (!isMember && !isAdmin) {
     return new Response("Non autorisé", { status: 403 });
   }
 
@@ -65,6 +72,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const updateData: Record<string, unknown> = { ...data.data };
   if (data.data.country) {
     updateData.continentCode = COUNTRY_TO_CONTINENT[data.data.country] ?? "EU";
+  }
+  if (data.data.trainingMapLink === "") {
+    updateData.trainingMapLink = null;
   }
 
   const updated = await prisma.club.update({ where: { id: params.id }, data: updateData });

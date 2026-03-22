@@ -9,7 +9,7 @@ type Props = {
   totalPages: number;
   /** Client-side mode: called on page change */
   onPageChange?: (page: number) => void;
-  /** Server-side mode: base path for Link hrefs (e.g. "/continent/EU") */
+  /** Server-side mode: base path for Link hrefs (e.g. "/admin/players") */
   basePath?: string;
   /** Extra searchParams to preserve when in server-side mode */
   extraParams?: Record<string, string>;

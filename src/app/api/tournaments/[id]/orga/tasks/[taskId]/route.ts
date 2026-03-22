@@ -42,11 +42,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string; ta
 
   // Notify if newly assigned
   if (parsed.data.assignedToId && parsed.data.assignedToId !== existing.assignedToId && parsed.data.assignedToId !== playerId) {
-    const tournament = await prisma.tournament.findUnique({ where: { id: params.id }, select: { name: true } });
+    const tournament = await prisma.tournament.findUnique({ where: { id: params.id }, select: { name: true, slug: true } });
     const assigner = await prisma.player.findUnique({ where: { id: playerId }, select: { name: true } });
     await createNotification(parsed.data.assignedToId, "TASK_ASSIGNED", {
       taskTitle: updated.title,
       tournamentId: params.id,
+      tournamentSlug: tournament?.slug ?? "",
       tournamentName: tournament?.name ?? "",
       assignedByName: assigner?.name ?? "",
     });

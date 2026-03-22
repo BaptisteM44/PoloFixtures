@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { createNotification } from "@/lib/notify";
 import { z } from "zod";
 
 const postSchema = z.object({
@@ -74,7 +75,9 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
   if (!entry) return Response.json({ error: "Inscription introuvable" }, { status: 404 });
 
   const wasActive = !entry.waitlisted;
-  const tournament = await prisma.tournament.findUnique({ where: { id: params.id }, select: { rushRegistration: true } });
+  const tournament = await prisma.tournament.findUnique({ where: { id: params.id }, select: { rushRegistration: true, name: true, slug: true } });
+
+  let promotedPlayerId: string | null = null;
 
   await prisma.$transaction(async (tx) => {
     await tx.tournamentSoloEntry.delete({
@@ -93,9 +96,20 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
           where: { id: firstWaiting.id },
           data: { waitlisted: false },
         });
+        promotedPlayerId = firstWaiting.playerId;
       }
     }
   });
+
+  // Notifier le joueur promu hors de la liste d'attente
+  if (promotedPlayerId && tournament) {
+    await createNotification(promotedPlayerId, "TEAM_SELECTED", {
+      teamName: "",
+      tournamentName: tournament.name,
+      tournamentId: params.id,
+      tournamentSlug: tournament.slug ?? "",
+    });
+  }
 
   return Response.json({ ok: true });
 }

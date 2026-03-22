@@ -124,7 +124,21 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   const isSelf = playerId === session.user.playerId;
 
   if (!isManager && !isSelf) return new Response("Non autorisé", { status: 403 });
-  if (playerId === club.managerId) return new Response("Le manager ne peut pas quitter son club", { status: 400 });
+
+  // Si le manager quitte, transférer le managership au prochain membre
+  if (playerId === club.managerId) {
+    const nextManager = await prisma.clubMember.findFirst({
+      where: { clubId: params.id, playerId: { not: playerId }, status: "MEMBER" },
+      orderBy: { joinedAt: "asc" },
+    });
+    if (nextManager) {
+      await prisma.club.update({
+        where: { id: params.id },
+        data: { managerId: nextManager.playerId },
+      });
+    }
+    // S'il est le seul membre, le club reste (la ville sera reprise plus tard)
+  }
 
   await prisma.clubMember.deleteMany({ where: { clubId: params.id, playerId } });
   return new Response(null, { status: 204 });

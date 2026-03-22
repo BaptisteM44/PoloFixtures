@@ -16,7 +16,7 @@ export default function EditClubPage() {
   const { data: session, status } = useSession();
 
   const [form, setForm] = useState({
-    name: "", city: "", country: "France", description: "", website: "",
+    name: "", city: "", country: "France", description: "", website: "", trainingMapLink: "",
   });
   const [logoPath, setLogoPath] = useState("");
   const [logoUploading, setLogoUploading] = useState(false);
@@ -35,6 +35,7 @@ export default function EditClubPage() {
           country: club.country ?? "France",
           description: club.description ?? "",
           website: club.website ?? "",
+          trainingMapLink: club.trainingMapLink ?? "",
         });
         setLogoPath(club.logoPath ?? "");
         setFetching(false);
@@ -125,6 +126,10 @@ export default function EditClubPage() {
           <label className="field-row">
             {t("field_website")}
             <input type="url" value={form.website} onChange={set("website")} placeholder="https://…" />
+          </label>
+          <label className="field-row">
+            {t("field_training_map")}
+            <input type="url" value={form.trainingMapLink} onChange={set("trainingMapLink")} placeholder="https://maps.google.com/…" />
           </label>
 
           {/* Logo */}

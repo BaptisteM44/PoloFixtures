@@ -54,11 +54,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   });
 
   if (assignedToId && assignedToId !== playerId) {
-    const tournament = await prisma.tournament.findUnique({ where: { id: params.id }, select: { name: true } });
+    const tournament = await prisma.tournament.findUnique({ where: { id: params.id }, select: { name: true, slug: true } });
     const creator = await prisma.player.findUnique({ where: { id: playerId }, select: { name: true } });
     await createNotification(assignedToId, "TASK_ASSIGNED", {
       taskTitle: title,
       tournamentId: params.id,
+      tournamentSlug: tournament?.slug ?? "",
       tournamentName: tournament?.name ?? "",
       assignedByName: creator?.name ?? "",
     });

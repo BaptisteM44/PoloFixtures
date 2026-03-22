@@ -45,6 +45,7 @@ export default async function ClubPage({
   const isManager = currentPlayerId === club.managerId;
   const canSee = club.approved || isManager || isAdmin;
   if (!canSee) notFound();
+  const isMember = club.members.some((m) => m.playerId === currentPlayerId && m.status === "MEMBER");
 
   const t = await getTranslations("club");
   const ta = await getTranslations("admin");
@@ -97,15 +98,20 @@ export default async function ClubPage({
               {t("website_link")}
             </a>
           )}
+          {club.trainingMapLink && (
+            <a href={club.trainingMapLink} target="_blank" rel="noopener noreferrer" className="ghost" style={{ marginTop: 8, display: "inline-flex", fontSize: 13 }}>
+              🗺️ {t("training_map_link")}
+            </a>
+          )}
           <p className="meta" style={{ marginTop: 8 }}>
             {t("manager_label")} : <Link href={`/player/${club.manager.slug ?? club.manager.id}`}>{club.manager.name}</Link>
           </p>
         </div>
         <div className="club-hero__actions">
-          <Link href={`/continent/${club.continentCode}/${encodeURIComponent(club.country)}`} className="ghost">
+          <Link href={`/clubs?continent=${club.continentCode}`} className="ghost">
             {t("btn_back_country", { country: club.country })}
           </Link>
-          {isManager && (
+          {(isMember || isAdmin) && (
             <Link href={`/club/${club.id}/edit`} className="ghost" style={{ fontSize: 13 }}>
               ✏️ {t("btn_edit")}
             </Link>

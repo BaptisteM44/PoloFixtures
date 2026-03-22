@@ -16,7 +16,7 @@ export function ContinentGrid() {
         <Link
           key={continent.code}
           className="continent-card"
-          href={`/continent/${continent.code}`}
+          href={`/clubs?continent=${continent.code}`}
         >
           <h3>{continent.name}</h3>
           <p>{continent.subtitle}</p>
