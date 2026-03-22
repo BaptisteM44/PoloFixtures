@@ -16,6 +16,7 @@ const playerSchema = z.object({
 });
 
 export const authConfig = {
+  trustHost: true,
   providers: [
     // ---------- Codes admin/arbitre/orga ----------
     Credentials({
