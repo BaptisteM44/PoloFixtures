@@ -265,7 +265,9 @@ export function TournamentRefereePanel({
   };
 
   const onGoalConfirmed = (teamId: string, delta: number, playerId: string | null) => {
-    setGoalModal(null);
+    // Defer modal close so the DOM node isn't removed while the click event is still bubbling
+    // (prevents "removeChild" error)
+    setTimeout(() => setGoalModal(null), 0);
     setMatchMap((prev) => {
       const cur = prev.get(selectedMatchId);
       if (!cur) return prev;
@@ -281,12 +283,12 @@ export function TournamentRefereePanel({
   };
 
   const onPenaltyConfirmed = (teamId: string, playerId: string, delta: number) => {
-    setPenaltyModal(null);
+    setTimeout(() => setPenaltyModal(null), 0);
     postEvent("PENALTY", { teamId, playerId, delta });
   };
 
   const onTimeoutConfirmed = (teamId: string, type: "normal" | "mechanical") => {
-    setTimeoutModal(null);
+    setTimeout(() => setTimeoutModal(null), 0);
     // Pause locale du chrono (match reste LIVE côté serveur)
     setRunning(false);
     const dur = type === "mechanical" ? 150 : 120;
@@ -298,7 +300,7 @@ export function TournamentRefereePanel({
   const onEndMatch = () => postEvent("END");
 
   const onGoldenGoalConfirmed = (teamId: string, playerId: string | null) => {
-    setGoldenGoalModal(null);
+    setTimeout(() => setGoldenGoalModal(null), 0);
     setMatchMap((prev) => {
       const cur = prev.get(selectedMatchId);
       if (!cur) return prev;
@@ -396,7 +398,7 @@ export function TournamentRefereePanel({
                 </button>
               </div>
             )}
-            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setGoalModal(null)}>Annuler</button>
+            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setGoalModal(null), 0)}>Annuler</button>
           </div>
         </div>
       )}
@@ -418,7 +420,7 @@ export function TournamentRefereePanel({
                 Sans attribution
               </button>
             </div>
-            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setGoldenGoalModal(null)}>Annuler</button>
+            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setGoldenGoalModal(null), 0)}>Annuler</button>
           </div>
         </div>
       )}
@@ -439,7 +441,7 @@ export function TournamentRefereePanel({
                 </button>
               ))}
             </div>
-            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setPenaltyModal(null)}>Annuler</button>
+            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setPenaltyModal(null), 0)}>Annuler</button>
           </div>
         </div>
       )}
@@ -462,7 +464,7 @@ export function TournamentRefereePanel({
                 <span className="ref-badge">{timeoutMech[timeoutModal.teamId] ?? 0}</span>
               </button>
             </div>
-            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeoutModal(null)}>Annuler</button>
+            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setTimeoutModal(null), 0)}>Annuler</button>
           </div>
         </div>
       )}
