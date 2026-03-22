@@ -8,7 +8,9 @@ import { z } from "zod";
 const schema = z.object({
   status: z.enum(["SCHEDULED", "LIVE", "FINISHED"]).optional(),
   scoreA: z.number().optional(),
-  scoreB: z.number().optional()
+  scoreB: z.number().optional(),
+  teamAId: z.string().nullable().optional(),
+  teamBId: z.string().nullable().optional(),
 });
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
@@ -38,6 +40,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
   if (!hasRole && !isOrganizer) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  // Team assignment changes only allowed on SCHEDULED matches
+  if ((parsed.data.teamAId !== undefined || parsed.data.teamBId !== undefined) && existing.status !== "SCHEDULED") {
+    return Response.json({ error: "Impossible de changer les équipes d'un match déjà commencé ou terminé." }, { status: 422 });
   }
 
   const scoreA = parsed.data.scoreA ?? existing.scoreA ?? 0;

@@ -98,6 +98,8 @@ export function ScheduleBoard({
     setSelectedId(match.id);
     setEditMatch({
       id: match.id,
+      teamAId: match.teamAId,
+      teamBId: match.teamBId,
       teamAName: teamName(match.teamAId),
       teamBName: teamName(match.teamBId),
       scoreA: match.scoreA,
@@ -114,13 +116,21 @@ export function ScheduleBoard({
     setEditMatch(null);
   };
 
-  const handleSaved = (updated: { id: string; scoreA: number; scoreB: number; status: string }) => {
+  const handleSaved = (updated: { id: string; scoreA: number; scoreB: number; status: string; teamAId?: string | null; teamBId?: string | null }) => {
     setMatches((prev) =>
-      prev.map((m) =>
-        m.id === updated.id
-          ? { ...m, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status as Match["status"] }
-          : m
-      )
+      prev.map((m) => {
+        if (m.id !== updated.id) return m;
+        const patched: MatchWithTeams = { ...m, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status as Match["status"] };
+        if (updated.teamAId !== undefined) {
+          patched.teamAId = updated.teamAId;
+          patched.teamA = teams.find((t) => t.id === updated.teamAId) ?? null;
+        }
+        if (updated.teamBId !== undefined) {
+          patched.teamBId = updated.teamBId;
+          patched.teamB = teams.find((t) => t.id === updated.teamBId) ?? null;
+        }
+        return patched;
+      })
     );
     closePanel();
   };
@@ -328,6 +338,7 @@ export function ScheduleBoard({
         onClose={closePanel}
         onSaved={handleSaved}
         isOrganizer={isOrganizer}
+        teams={teams.map((t) => ({ id: t.id, name: t.name }))}
       />
     </div>
   );

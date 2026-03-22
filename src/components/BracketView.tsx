@@ -140,6 +140,7 @@ export function BracketView({
     setSelectedId(m.id);
     setEditMatch({
       id: m.id,
+      teamAId: m.teamAId, teamBId: m.teamBId,
       teamAName: m.teamA?.name ?? (m.teamAId ? "???" : "TBD"),
       teamBName: m.teamB?.name ?? (m.teamBId ? "???" : "TBD"),
       scoreA: m.scoreA, scoreB: m.scoreB, status: m.status,
