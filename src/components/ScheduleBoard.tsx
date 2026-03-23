@@ -183,9 +183,15 @@ export function ScheduleBoard({
   }, [filtered]);
 
   // Global match ordering for numbering (based on ALL matches, not filtered)
+  // Sort by: phase order (POOL→SWISS→BRACKET), then roundIndex, then startAt, then court
   const globalOrder = useMemo(() => {
+    const phaseOrder: Record<string, number> = { POOL: 0, SWISS: 1, BRACKET: 2 };
     const sorted = [...matches].sort(
-      (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+      (a, b) =>
+        (phaseOrder[a.phase] ?? 9) - (phaseOrder[b.phase] ?? 9)
+        || a.roundIndex - b.roundIndex
+        || new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+        || (a.positionInRound ?? 0) - (b.positionInRound ?? 0)
         || a.courtName.localeCompare(b.courtName)
     );
     const map = new Map<string, number>();

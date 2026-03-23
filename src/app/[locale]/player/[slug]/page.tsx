@@ -46,6 +46,7 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
   const session = await auth();
   const currentPlayerId = (session?.user as any)?.playerId ?? null;
   const canContact = currentPlayerId && currentPlayerId !== player.id;
+  const isOwnProfile = currentPlayerId === player.id;
 
   return (
     <div className="player-profile">
@@ -63,6 +64,7 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
           hand={player.hand}
           gender={player.gender ?? undefined}
           showGender={player.showGender}
+          canShare={isOwnProfile}
         />
 
         <div style={{ flex: 1, minWidth: 220, paddingTop: 8 }}>

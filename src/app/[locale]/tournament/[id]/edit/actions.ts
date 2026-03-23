@@ -289,23 +289,20 @@ export async function generateBracketAction(id: string) {
     }
 
     if (tournament.sundayFormat === "DE") {
-      // DE linking structure (Challonge-style):
+      // ── DE Linking (Challonge-style) ─────────────────────────────────
       //
-      // Lower bracket rounds (1-indexed):
-      //   LR1: receives UR1 losers (slot B) AND UR2 losers (slot A)
-      //         → both UR1 and UR2 losers go to LR1 when BYEs exist
-      //   LR2: LR1 survivors pair off
-      //   LR3: UR3 losers (slot B) vs LR2 survivors (slot A)
-      //   LR4: LR3 survivors pair off
-      //   ...
-      //   LR(2k-1) for k≥2: UR(k+1) losers (slot B) vs LR(2k-2) survivors (slot A)
-      //   LR(2k):   LR(2k-1) survivors pair off
-      //   Lower Final (last LR): winner → Grand Final slot B
+      // LB round types:
+      //   Odd  (R1, R3, R5…) = Consolidation (LB survivors pair off)
+      //   Even (R2, R4, R6…) = Injection (LB survivors slot A vs WB losers slot B)
       //
-      // Upper loser routing:
-      //   UR1 → LR1 slot B
-      //   UR2 → LR1 slot A
-      //   UR(k) for k≥3 → LR(2k-3) slot B
+      // WB loser routing:
+      //   WB R1 losers → LB R1 (consolidation: pair off, slots A+B)
+      //   WB R(n≥2) losers → LB R(2n-2) slot B (injection round)
+      //
+      // LB winner routing:
+      //   Consolidation (odd): winners pair off → next round (even), slot by i%2
+      //   Injection (even): winners keep position → next round (odd), slot A
+      //   Last LB round winner → Grand Final slot B
 
       const maxUR = Math.max(...created.filter(m => m.bracketSide === "W").map(m => m.roundIndex), 0);
       const maxLR = Math.max(...created.filter(m => m.bracketSide === "L").map(m => m.roundIndex), 0);
@@ -326,113 +323,107 @@ export async function generateBracketAction(id: string) {
         arr.sort((a, b) => a.positionInRound - b.positionInRound);
       }
 
-      // Determine if this bracket has BYEs (some UR1 matches don't exist)
-      const ur1Matches = upperByRound.get(1) ?? [];
-      // For size=2^n bracket, UR1 should have size/2 matches if no BYEs
-      // Detect BYEs by checking if UR1 has fewer matches than UR2
-      const ur2Matches = upperByRound.get(2) ?? [];
-      const hasByes = ur1Matches.length < ur2Matches.length;
-
-      // ── Upper rounds ────────────────────────────────────────────────────
+      // ── Upper bracket linking ──────────────────────────────────────────
       for (let ur = 1; ur <= maxUR; ur++) {
         const uMatches = upperByRound.get(ur) ?? [];
         const uNext = upperByRound.get(ur + 1) ?? [];
         const isLastUpper = ur === maxUR;
 
-        // Loser routing (depends on BYE presence):
-        //
-        // WITH BYEs:
-        //   ur=1 → LR1 slot B (UR1 losers, lower seeds)
-        //   ur=2 → LR1 slot A (UR2 losers = BYE seeds who just lost)
-        //   ur≥3 → LR(2*ur-3) slot B
-        //
-        // WITHOUT BYEs:
-        //   ur=1 → LR1 (both slots, losers pair off; 2 losers per LR1 match)
-        //   ur≥2 → LR(2*ur-2) slot B
+        // Determine which LB round receives losers from this WB round
         let lrForLosers: number;
-        let loserSlot: "A" | "B";
-
-        if (hasByes) {
-          if (ur === 1) { lrForLosers = 1; loserSlot = "B"; }
-          else if (ur === 2) { lrForLosers = 1; loserSlot = "A"; }
-          else { lrForLosers = 2 * ur - 3; loserSlot = "B"; }
+        if (ur === 1) {
+          lrForLosers = 1; // Consolidation: WB R1 losers pair off
         } else {
-          if (ur === 1) { lrForLosers = 1; loserSlot = "B"; } // will fill both A and B
-          else { lrForLosers = 2 * ur - 2; loserSlot = "B"; }
+          lrForLosers = 2 * ur - 2; // Injection round
         }
         const lMatches = lowerByRound.get(lrForLosers) ?? [];
 
         for (let i = 0; i < uMatches.length; i++) {
-          const nextUpperPos = Math.floor(uMatches[i].positionInRound / 2);
-          const nextUpperMatch = uNext.find(m => m.positionInRound === nextUpperPos);
+          const data: Record<string, unknown> = {};
 
-          // For no-BYEs ur=1: 2 losers pair into each LR1 match → lowerPos = floor(i/2)
-          // For all other cases: 1 loser per LR match → lowerPos = i
-          const lowerPos = (!hasByes && ur === 1) ? Math.floor(i / 2) : i;
-          const lowerMatch = lMatches.find(m => m.positionInRound === lowerPos);
-
-          // For no-BYEs ur=1: slot alternates A/B based on i%2
-          const effectiveLoserSlot: "A" | "B" = (!hasByes && ur === 1)
-            ? (i % 2 === 0 ? "A" : "B")
-            : loserSlot;
-
-          const data: Record<string, unknown> = {
-            nextMatchWinId: isLastUpper ? (grandFinal?.id ?? null) : (nextUpperMatch?.id ?? null),
-            nextSlotWin: isLastUpper ? "A" : (uMatches[i].positionInRound % 2 === 0 ? "A" : "B"),
-          };
-          if (lowerMatch && !isLastUpper) {
-            data.nextMatchLoseId = lowerMatch.id;
-            data.nextSlotLose = effectiveLoserSlot;
+          // Winner routing
+          if (isLastUpper) {
+            data.nextMatchWinId = grandFinal?.id ?? null;
+            data.nextSlotWin = "A";
+          } else {
+            const nextPos = Math.floor(uMatches[i].positionInRound / 2);
+            const nextMatch = uNext.find(m => m.positionInRound === nextPos);
+            data.nextMatchWinId = nextMatch?.id ?? null;
+            data.nextSlotWin = uMatches[i].positionInRound % 2 === 0 ? "A" : "B";
           }
+
+          // Loser routing (not for last upper — that loser goes to LB via its own path)
+          if (!isLastUpper && lMatches.length > 0) {
+            if (ur === 1) {
+              // WB R1 losers pair off into LB R1: 2 per match
+              const lowerPos = Math.floor(i / 2);
+              const lowerMatch = lMatches.find(m => m.positionInRound === lowerPos);
+              if (lowerMatch) {
+                data.nextMatchLoseId = lowerMatch.id;
+                data.nextSlotLose = i % 2 === 0 ? "A" : "B";
+              }
+            } else {
+              // WB R(n≥2) losers → LB R(2n-2) injection slot B
+              const lowerMatch = lMatches[i];
+              if (lowerMatch) {
+                data.nextMatchLoseId = lowerMatch.id;
+                data.nextSlotLose = "B";
+              }
+            }
+          }
+
+          // Special: last upper round loser → LB final injection slot B
+          if (isLastUpper) {
+            const lbFinalMatches = lowerByRound.get(maxLR) ?? [];
+            const lbFinal = lbFinalMatches[0];
+            if (lbFinal) {
+              data.nextMatchLoseId = lbFinal.id;
+              data.nextSlotLose = "B";
+            }
+          }
+
           await tx.match.update({ where: { id: uMatches[i].id }, data });
         }
       }
 
-      // ── Lower rounds ────────────────────────────────────────────────────
-      // With BYEs:
-      //   Odd LR (LR1, LR3...): receive upper losers (slot B). Winners pair off → next even LR
-      //   Even LR (LR2, LR4...): pure survivor round. Winners → same pos in next odd LR, slot A
-      //   Last LR (always odd = Lower Final): winner → Grand Final slot B
+      // ── Lower bracket linking ──────────────────────────────────────────
       //
-      // Without BYEs:
-      //   Odd LR (LR1, LR3...): pure survivor round (UR1 losers pair off). Winners → same pos in next even LR
-      //   Even LR (LR2, LR4...): receive upper losers (slot B). Winners → pair off → next odd LR
-      //   Last LR (always even = Lower Final): winner → Grand Final slot B
+      // Consolidation (odd LR): LB survivors pair off. These produce winners that
+      //   go 1:1 into the NEXT injection round (slot A). Same position, not paired.
+      //
+      // Injection (even LR): LB cons winner (slot A) vs WB loser (slot B).
+      //   Winners pair off into the NEXT consolidation round: pos=floor(i/2), slot by i%2.
+      //
+      // Exception: the very last LB round winner → Grand Final slot B.
       for (let lr = 1; lr <= maxLR; lr++) {
         const lMatches = lowerByRound.get(lr) ?? [];
         const isLastLower = lr === maxLR;
 
         for (let i = 0; i < lMatches.length; i++) {
-          let nextMatchId: string | null = null;
-          let nextSlot: "A" | "B" = "A";
+          const data: Record<string, unknown> = {};
 
           if (isLastLower) {
-            nextMatchId = grandFinal?.id ?? null;
-            nextSlot = "B";
+            data.nextMatchWinId = grandFinal?.id ?? null;
+            data.nextSlotWin = "B";
           } else {
             const lNext = lowerByRound.get(lr + 1) ?? [];
-            // "pure" round = survivors pair off (winners pair off into next round)
-            // "injection" round = receives upper loser (winners go to same pos, slot A in next)
-            const isPureRound = hasByes ? (lr % 2 === 0) : (lr % 2 === 1);
+            const isConsolidation = lr % 2 === 1;
 
-            if (isPureRound) {
-              // Winners pair off into next round
+            if (isConsolidation) {
+              // Consolidation winners → next injection round, same position, slot A
+              const nextMatch = lNext.find(m => m.positionInRound === lMatches[i].positionInRound);
+              data.nextMatchWinId = nextMatch?.id ?? null;
+              data.nextSlotWin = "A";
+            } else {
+              // Injection winners pair off → next consolidation round
               const nextPos = Math.floor(i / 2);
               const nextMatch = lNext.find(m => m.positionInRound === nextPos);
-              nextMatchId = nextMatch?.id ?? null;
-              nextSlot = i % 2 === 0 ? "A" : "B";
-            } else {
-              // Injection round: winners go to same position in next round, slot A
-              const nextMatch = lNext.find(m => m.positionInRound === lMatches[i].positionInRound);
-              nextMatchId = nextMatch?.id ?? null;
-              nextSlot = "A";
+              data.nextMatchWinId = nextMatch?.id ?? null;
+              data.nextSlotWin = i % 2 === 0 ? "A" : "B";
             }
           }
 
-          await tx.match.update({
-            where: { id: lMatches[i].id },
-            data: { nextMatchWinId: nextMatchId, nextSlotWin: nextSlot }
-          });
+          await tx.match.update({ where: { id: lMatches[i].id }, data });
         }
       }
     }

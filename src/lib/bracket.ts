@@ -341,6 +341,30 @@ function generateSingleElim(
   return allMatches;
 }
 
+/**
+ * Double Elimination bracket — Challonge-style with interleaved scheduling.
+ *
+ * Structure (for size = 2^m with N actual teams):
+ *   Upper Bracket: m rounds (WB R1..Rm)
+ *   Lower Bracket: 2*(m-1) rounds (LB R1..R(2m-2))
+ *     - Odd LB rounds (R1, R3, R5…) = Consolidation (LB survivors pair off)
+ *     - Even LB rounds (R2, R4, R6…) = Injection (LB survivors vs WB losers)
+ *   Grand Final: 1 match
+ *
+ * Play order (interleaved):
+ *   WB R1 → WB R2 → LB R1 → LB R2 → WB R3 → LB R3 → LB R4 → WB R4 → LB R5 → LB R6 → … → GF
+ *   Pattern after the first 4 rounds: [WB Rk, LB R(2k-3), LB R(2k-2)] for k=3..m
+ *
+ * Losers routing:
+ *   WB R1 losers → LB R1 (consolidation: they pair off)
+ *   WB R(n≥2) losers → LB R(2n-2) slot B (injection round)
+ *
+ * BYE handling:
+ *   Top seeds skip WB R1. BYEs produce NO losers → LB R1 is smaller.
+ *   WB R1 has (size/2 - byeCount) actual matches.
+ *   LB R1 has ceil(wbR1Losers/2) matches (wbR1Losers pair off).
+ *   If wbR1Losers is odd, one gets a LB R1 BYE.
+ */
 function generateDoubleElim(
   teams: Team[],
   courtNames: string[],
@@ -349,8 +373,8 @@ function generateDoubleElim(
 ): GeneratedMatch[] {
   const sorted = [...teams];
   const size = nextPowerOf2(sorted.length);
-  const upperRounds = Math.log2(size); // e.g. 4 for size=16
-  const byeCount = size - sorted.length; // e.g. 4 for 12 teams in size=16
+  const upperRounds = Math.log2(size); // m: e.g. 4 for size=16
+  const byeCount = size - sorted.length;
   const seedOrder = bracketSeeding(size);
   const slots: (Team | null)[] = seedOrder.map((s) => sorted[s - 1] ?? null);
 
@@ -359,114 +383,170 @@ function generateDoubleElim(
   const matches: GeneratedMatch[] = [];
   let baseTime = new Date(startAt);
 
-  // upperGrid[r][pos] = match (sparse — BYEs skipped), r is 0-indexed
-  const upperGrid: Map<number, GeneratedMatch>[] = [];
+  // Track which WB R1 positions are real matches vs BYEs
+  const wbR1Real = new Map<number, GeneratedMatch>(); // pos → match
 
-  // ── Upper Bracket — all rounds ─────────────────────────────────────────
-  for (let r = 0; r < upperRounds; r++) {
-    const matchesInRound = size / Math.pow(2, r + 1);
-    const roundMap = new Map<number, GeneratedMatch>();
+  // Helper: advance baseTime after a set of matches
+  function advanceTime(matchCount: number) {
+    if (matchCount > 0) {
+      baseTime = addMinutes(baseTime, Math.ceil(matchCount / courtNames.length) * slotMin + roundBreak);
+    }
+  }
+
+  // Helper: create matches for one round
+  function createRound(
+    side: "W" | "L" | "G",
+    roundIndex: number,
+    count: number,
+    teamSlots?: Array<{ a: string | null; b: string | null }>,
+  ): GeneratedMatch[] {
+    const roundMatches: GeneratedMatch[] = [];
     let courtIdx = 0;
-
-    for (let m = 0; m < matchesInRound; m++) {
-      let teamAId: string | null = null;
-      let teamBId: string | null = null;
-
-      if (r === 0) {
-        const a = slots[m * 2]?.id ?? null;
-        const b = slots[m * 2 + 1]?.id ?? null;
-        // Skip BYE matches in R1
-        if (!a || !b) continue;
-        teamAId = a;
-        teamBId = b;
-      } else if (r === 1) {
-        // Upper R2: pre-populate BYE advances from R1
-        // Each R2 match at pos m is fed by R1 matches at pos m*2 and m*2+1
-        // If R1 was skipped (BYE), the BYE seed goes directly into R2
-        const prevMap = upperGrid[r - 1];
-        const posA = m * 2;
-        const posB = m * 2 + 1;
-        if (!prevMap?.has(posA)) {
-          teamAId = slots[posA * 2]?.id ?? slots[posA * 2 + 1]?.id ?? null;
-        }
-        if (!prevMap?.has(posB)) {
-          teamBId = slots[posB * 2]?.id ?? slots[posB * 2 + 1]?.id ?? null;
-        }
-      }
-      // r >= 2: both slots filled at runtime by previous winners
-
+    for (let m = 0; m < count; m++) {
       const match: GeneratedMatch = {
         phase: "BRACKET",
-        bracketSide: "W", // All upper rounds are "W"; Grand Final is separate with "G"
-        roundIndex: r + 1,
+        bracketSide: side,
+        roundIndex,
         positionInRound: m,
         courtName: courtNames[courtIdx % courtNames.length],
         startAt: addMinutes(baseTime, Math.floor(courtIdx / courtNames.length) * slotMin),
-        dayIndex: "SUN", status: "SCHEDULED",
-        teamAId, teamBId,
+        dayIndex: "SUN",
+        status: "SCHEDULED",
+        teamAId: teamSlots?.[m]?.a ?? null,
+        teamBId: teamSlots?.[m]?.b ?? null,
       };
       courtIdx++;
-      roundMap.set(m, match);
+      roundMatches.push(match);
       matches.push(match);
     }
-
-    upperGrid.push(roundMap);
-
-    const roundMatchCount = roundMap.size;
-    baseTime = addMinutes(baseTime, Math.ceil(Math.max(1, roundMatchCount) / courtNames.length) * slotMin + roundBreak);
+    return roundMatches;
   }
 
-  // ── Lower Bracket ──────────────────────────────────────────────────────
-  // Lower bracket structure depends on whether BYEs exist:
-  //
-  // WITH BYEs (byeCount > 0): UR1 and UR2 losers merge into LR1 (Challonge style).
-  //   Total lower rounds = 2*(upperRounds-1) - 1
-  //   Size formula (0-indexed lr): (size/4) / 2^floor((lr+1)/2)
-  //     LR1: size/4, LR2: size/8, LR3: size/8, LR4: size/16, LR5: size/16 ...
-  //
-  // WITHOUT BYEs: UR1 losers pair off in LR1, then alternating injection/pure rounds.
-  //   Total lower rounds = 2*(upperRounds-1)
-  //   Size formula (0-indexed lr): (size/4) / 2^floor(lr/2)
-  //     LR1: size/4, LR2: size/4, LR3: size/8, LR4: size/8, LR5: size/16 ...
-  const hasByes = byeCount > 0;
-  const totalLowerRounds = hasByes
-    ? 2 * (upperRounds - 1) - 1
-    : 2 * (upperRounds - 1);
+  // ═══════════════════════════════════════════════════════════════════════
+  // WB R1 — skip BYE matches, advance BYE teams to WB R2
+  // ═══════════════════════════════════════════════════════════════════════
+  const wbR1Slots: Array<{ a: string | null; b: string | null }> = [];
+  const wbR1Positions: number[] = []; // actual positions of real matches
+  const byeAdvances = new Map<number, string>(); // WB R2 pos → teamId from BYE
 
-  for (let lr = 0; lr < totalLowerRounds; lr++) {
-    const lowerSize = hasByes
-      ? (size / 4) / Math.pow(2, Math.floor((lr + 1) / 2))
-      : (size / 4) / Math.pow(2, Math.floor(lr / 2));
-    let courtIdx = 0;
-
-    for (let m = 0; m < lowerSize; m++) {
-      const match: GeneratedMatch = {
-        phase: "BRACKET", bracketSide: "L",
-        roundIndex: lr + 1,
-        positionInRound: m,
-        courtName: courtNames[courtIdx % courtNames.length],
-        startAt: addMinutes(baseTime, Math.floor(courtIdx / courtNames.length) * slotMin),
-        dayIndex: "SUN", status: "SCHEDULED",
-        teamAId: null, teamBId: null,
-      };
-      courtIdx++;
-      matches.push(match);
+  const r1Count = size / 2;
+  for (let m = 0; m < r1Count; m++) {
+    const a = slots[m * 2]?.id ?? null;
+    const b = slots[m * 2 + 1]?.id ?? null;
+    if (a && b) {
+      wbR1Slots.push({ a, b });
+      wbR1Positions.push(m);
+    } else {
+      // BYE: advance the real team to WB R2
+      const advancing = a ?? b;
+      if (advancing) {
+        const r2Pos = Math.floor(m / 2);
+        byeAdvances.set(r2Pos * 10 + (m % 2), advancing); // encode pos+slot
+      }
     }
-
-    const roundMatchCount = lowerSize;
-    baseTime = addMinutes(baseTime, Math.ceil(Math.max(1, roundMatchCount) / courtNames.length) * slotMin + roundBreak);
   }
 
-  // ── Grand Final ────────────────────────────────────────────────────────
-  const grandFinal: GeneratedMatch = {
-    phase: "BRACKET", bracketSide: "G",
-    roundIndex: totalLowerRounds + 2,
-    positionInRound: 0,
-    courtName: courtNames[0],
-    startAt: new Date(baseTime), dayIndex: "SUN", status: "SCHEDULED",
-    teamAId: null, teamBId: null,
-  };
-  matches.push(grandFinal);
+  // Create WB R1 matches with correct positionInRound
+  let courtIdx = 0;
+  const wbR1Matches: GeneratedMatch[] = [];
+  for (let i = 0; i < wbR1Slots.length; i++) {
+    const match: GeneratedMatch = {
+      phase: "BRACKET",
+      bracketSide: "W",
+      roundIndex: 1,
+      positionInRound: wbR1Positions[i],
+      courtName: courtNames[courtIdx % courtNames.length],
+      startAt: addMinutes(baseTime, Math.floor(courtIdx / courtNames.length) * slotMin),
+      dayIndex: "SUN",
+      status: "SCHEDULED",
+      teamAId: wbR1Slots[i].a,
+      teamBId: wbR1Slots[i].b,
+    };
+    courtIdx++;
+    wbR1Matches.push(match);
+    matches.push(match);
+    wbR1Real.set(wbR1Positions[i], match);
+  }
+  advanceTime(wbR1Matches.length);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // WB R2 — pre-fill BYE advances
+  // ═══════════════════════════════════════════════════════════════════════
+  const r2Count = size / 4;
+  const wbR2Slots: Array<{ a: string | null; b: string | null }> = [];
+  for (let m = 0; m < r2Count; m++) {
+    let a: string | null = null;
+    let b: string | null = null;
+    // Check if WB R1 at pos m*2 was a BYE → feed slot A
+    const byeA = byeAdvances.get(m * 10 + 0);
+    if (byeA) a = byeA;
+    // Check if WB R1 at pos m*2+1 was a BYE → feed slot B
+    const byeB = byeAdvances.get(m * 10 + 1);
+    if (byeB) b = byeB;
+    wbR2Slots.push({ a, b });
+  }
+  const wbR2Matches = createRound("W", 2, r2Count, wbR2Slots);
+  advanceTime(wbR2Matches.length);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // LB R1 (Consolidation) — WB R1 losers pair off
+  // ═══════════════════════════════════════════════════════════════════════
+  const wbR1LoserCount = wbR1Matches.length; // only real matches produce losers
+  const lbR1Count = Math.floor(wbR1LoserCount / 2);
+  const lbR1Matches = createRound("L", 1, lbR1Count);
+  advanceTime(lbR1Matches.length);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // LB R2 (Injection) — LB R1 survivors vs WB R2 losers
+  // ═══════════════════════════════════════════════════════════════════════
+  // LB R2 size = same as LB R1 survivors count (= lbR1Count)
+  // BUT if wbR1LoserCount was odd, there's one extra LB survivor (BYE in LB R1)
+  const lbR1Survivors = lbR1Count + (wbR1LoserCount % 2); // +1 if odd loser got LB BYE
+  // WB R2 produces r2Count losers. LB R2 matches = max of the two.
+  // In standard brackets, lbR1Survivors should equal wbR2Losers count.
+  // For uneven cases, take the max to accommodate all teams.
+  const lbR2Count = Math.max(lbR1Survivors, r2Count);
+  const lbR2Matches = createRound("L", 2, lbR2Count);
+  advanceTime(lbR2Matches.length);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Remaining rounds: WB R3..Rm interleaved with LB R3..R(2m-2)
+  // Pattern: WB Rk → LB R(2k-3) consolidation → LB R(2k-2) injection
+  // ═══════════════════════════════════════════════════════════════════════
+  const allWbRounds: GeneratedMatch[][] = [wbR1Matches, wbR2Matches];
+  const allLbRounds: GeneratedMatch[][] = [lbR1Matches, lbR2Matches];
+
+  // Track LB survivors count for sizing
+  let lbSurvivors = lbR2Count; // after LB R2
+
+  for (let k = 3; k <= upperRounds; k++) {
+    // WB Rk
+    const wbCount = size / Math.pow(2, k);
+    const wbMatches = createRound("W", k, wbCount);
+    allWbRounds.push(wbMatches);
+    advanceTime(wbMatches.length);
+
+    // LB R(2k-3) — Consolidation: LB survivors pair off
+    const lbConsCount = Math.floor(lbSurvivors / 2);
+    const lbConsRound = 2 * k - 3;
+    const lbConsMatches = createRound("L", lbConsRound, lbConsCount);
+    allLbRounds.push(lbConsMatches);
+    advanceTime(lbConsMatches.length);
+
+    // LB R(2k-2) — Injection: LB cons survivors vs WB Rk losers
+    const lbInjCount = lbConsCount; // same count: each cons winner meets one WB loser
+    const lbInjRound = 2 * k - 2;
+    const lbInjMatches = createRound("L", lbInjRound, lbInjCount);
+    allLbRounds.push(lbInjMatches);
+    advanceTime(lbInjMatches.length);
+
+    lbSurvivors = lbInjCount; // after injection round
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Grand Final
+  // ═══════════════════════════════════════════════════════════════════════
+  createRound("G", 1, 1);
 
   return matches;
 }
