@@ -52,7 +52,7 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   five_continents: { id: "five_continents", name: "Five Continents", emoji: "🌐", description: "Jouer sur les 5 continents",                          category: "team", rarity: "legendary" },
   wild_card:       { id: "wild_card",       name: "Wild Card",       emoji: "🃏", description: "Rejoindre comme agent libre et finir top 3",           category: "team", rarity: "epic" },
   circus_act:      { id: "circus_act",      name: "Circus Act",      emoji: "🎪", description: "Participer à 3+ tournois dans le même mois",          category: "team", rarity: "mythic" },
-  united_nations:  { id: "united_nations",  name: "United Nations",  emoji: "🇺🇳", description: "Jouer dans une équipe avec 3 nationalités différentes", category: "team", rarity: "epic" },
+  united_nations:  { id: "united_nations",  name: "United Nations",  emoji: "🇺🇳", description: "Jouer dans une équipe avec 3 nationalités différentes", category: "team", rarity: "rare" },
 
   // ─────────────────────────────────────────────────────
   // 🏗️ Organisation
@@ -89,7 +89,7 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   // ─────────────────────────────────────────────────────
   early_bird:    { id: "early_bird",    name: "Early Bird",    emoji: "🐦", description: "Premier message d'un chat tournoi",                     category: "secret", rarity: "common" },
   pit_stop:      { id: "pit_stop",      name: "Pit Stop",      emoji: "🍕", description: "Mentionner la nourriture dans un chat pendant un match", category: "secret", rarity: "common" },
-  time_traveler: { id: "time_traveler", name: "Time Traveler", emoji: "📖", description: "Renseigner une année de début avant 2015",              category: "secret", rarity: "rare" },
+  time_traveler: { id: "time_traveler", name: "Time Traveler", emoji: "📖", description: "Renseigner une année de début avant 2012",              category: "secret", rarity: "rare" },
   night_owl:     { id: "night_owl",     name: "Night Owl",     emoji: "🦩", description: "Envoyer un message entre 4h55 et 5h05",                  category: "secret", rarity: "rare" },
   night_ride:    { id: "night_ride",    name: "Night Ride",    emoji: "🌙", description: "Jouer un match commençant après 22h",                    category: "secret", rarity: "rare" },
   collector:     { id: "collector",     name: "Collector",     emoji: "🃏", description: "Débloquer 20+ badges",                                  category: "secret", rarity: "epic" },
@@ -196,11 +196,11 @@ export function getBadgeInfo(badgeIdOrName: string): BadgeInfo {
  * (legendary counts as mythic, epic, rare, common too)
  *
  * Tier thresholds:
- *   ★     (uncommon)  =  1+ badge total
- *   ★★    (rare)      =  5+ badges total  AND  5+ rare-or-above
- *   ★★★   (epic)      = 12+ badges total  AND  5+ epic-or-above
- *   ★★★★  (mythic)    = 20+ badges total  AND  5+ mythic-or-above
- *   ★★★★★ (legendary) = 30+ badges total  AND  3+ legendary
+ *   ★     (uncommon)  =  2+ badges total
+ *   ★★    (rare)      =  6+ badges total  AND  3+ rare-or-above
+ *   ★★★   (epic)      = 12+ badges total  AND  4+ epic-or-above
+ *   ★★★★  (mythic)    = 24+ badges total  AND  5+ mythic-or-above
+ *   ★★★★★ (legendary) = 35+ badges total  AND  4+ legendary
  */
 export type CardRarity = "common" | "uncommon" | "rare" | "epic" | "mythic" | "legendary";
 
@@ -222,10 +222,10 @@ export function getCardRarity(badgeIds: string[]): CardRarity {
     if (rank >= 5) counts.legendary++;
   }
 
-  if (total >= 25 && counts.legendary >= 3) return "legendary";
-  if (total >= 15 && counts.mythic    >= 4) return "mythic";
-  if (total >= 8  && counts.epic      >= 3) return "epic";
-  if (total >= 3  && counts.rare      >= 2) return "rare";
-  if (total >= 1)                            return "uncommon";
+  if (total >= 35 && counts.legendary >= 4) return "legendary";
+  if (total >= 24 && counts.mythic    >= 5) return "mythic";
+  if (total >= 12 && counts.epic      >= 4) return "epic";
+  if (total >= 6  && counts.rare      >= 3) return "rare";
+  if (total >= 2)                            return "uncommon";
   return "common";
 }

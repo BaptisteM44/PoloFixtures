@@ -494,8 +494,8 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   });
   if ((playerFull?.pinnedBadges ?? []).length >= 5) badges.add("bookmarked");
 
-  // time_traveler: startYear before 2015
-  if (playerFull?.startYear && playerFull.startYear < 2015) badges.add("time_traveler");
+  // time_traveler: startYear before 2012
+  if (playerFull?.startYear && playerFull.startYear < 2012) badges.add("time_traveler");
 
   // birthday_ride: no birthdate field on Player model — skip
   // addict / regular / no_days_off / full_year: no login-day tracking in DB — skip
