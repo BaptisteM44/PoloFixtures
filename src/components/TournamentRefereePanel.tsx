@@ -100,6 +100,7 @@ export function TournamentRefereePanel({
   const [editScoreB, setEditScoreB] = useState(0);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const openEdit = () => {
     const m = matchMap.get(selectedMatchId);
@@ -185,6 +186,7 @@ export function TournamentRefereePanel({
     setRunning(m.status === "LIVE" ? restoredRunning : false);
     setBuzzerPlayed(false);
     setMatchEnded(m.status === "FINISHED");
+    setActionError(null);
   }, [selectedMatchId, matchMap]);
 
   // Timer principal
@@ -222,12 +224,25 @@ export function TournamentRefereePanel({
   // ── API helper ────────────────────────────────────────────────────────────
   const postEvent = useCallback(async (type: string, extra: Record<string, unknown> = {}) => {
     if (!selectedMatchId) return;
+    setActionError(null);
     const res = await fetch(`/api/matches/${selectedMatchId}/events`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, matchClockSec: clockSec, ...extra }),
     });
-    if (!res.ok) return;
+    if (!res.ok) {
+      let message = "Action arbitrage refusée";
+      try {
+        const errorData = await res.json() as { error?: string | { formErrors?: string[] } };
+        if (typeof errorData?.error === "string") {
+          message = errorData.error;
+        } else if (errorData?.error && "formErrors" in errorData.error && errorData.error.formErrors?.length) {
+          message = errorData.error.formErrors[0] ?? message;
+        }
+      } catch {}
+      setActionError(message);
+      return;
+    }
     const data = await res.json() as { event?: MatchEvent; match?: Partial<MatchInfo> };
     setMatchMap((prev) => {
       const cur = prev.get(selectedMatchId);
@@ -348,6 +363,7 @@ export function TournamentRefereePanel({
   const teamA = tournament.teams.find((t) => t.id === selectedMatch?.teamAId);
   const teamB = tournament.teams.find((t) => t.id === selectedMatch?.teamBId);
   const clockColor = displaySec <= 60 ? "var(--red)" : displaySec <= 120 ? "#f59e0b" : "var(--teal)";
+  const cannotEndBracketDraw = !!selectedMatch && selectedMatch.phase === "BRACKET" && selectedMatch.scoreA === selectedMatch.scoreB;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -716,9 +732,19 @@ export function TournamentRefereePanel({
           {/* ── Fin du match ───────────────────────────────────────────── */}
           {!matchEnded && (
             <div className="ref-end-section">
-              <button className="danger ref-endbtn" onClick={onEndMatch}>
+              <button className="danger ref-endbtn" onClick={onEndMatch} disabled={cannotEndBracketDraw}>
                 🏁 Terminer le match
               </button>
+              {cannotEndBracketDraw && (
+                <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 8, textAlign: "center" }}>
+                  Un match de bracket ne peut pas se terminer sur une égalité. Utilise Golden Goal pour désigner un vainqueur.
+                </p>
+              )}
+              {actionError && (
+                <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 8, textAlign: "center" }}>
+                  {actionError}
+                </p>
+              )}
             </div>
           )}
         </>

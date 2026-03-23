@@ -49,15 +49,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
     timeoutType: parsed.data.timeoutType ?? undefined
   };
 
-  const event = await prisma.matchEvent.create({
-    data: {
-      matchId: match.id,
-      type: parsed.data.type,
-      matchClockSec: parsed.data.matchClockSec,
-      payload
-    }
-  });
-
   let scoreA = match.scoreA;
   let scoreB = match.scoreB;
   let status = match.status;
@@ -91,6 +82,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
       if (scoreB > scoreA) winnerTeamId = match.teamBId;
     }
   }
+
+  const event = await prisma.matchEvent.create({
+    data: {
+      matchId: match.id,
+      type: parsed.data.type,
+      matchClockSec: parsed.data.matchClockSec,
+      payload
+    }
+  });
 
   const updated = await prisma.match.update({
     where: { id: match.id },
