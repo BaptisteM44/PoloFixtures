@@ -4715,12 +4715,12 @@ textarea {
 }
 
 /* Country flag / club logo emblem — centered on corner of photo */
-/* Stack : drapeau + logo équipe empilés en colonne, top-left du frame */
+/* Stack : drapeau → club logo → team logo, centrés sur le coin top-left du frame */
+/* top: -14px = moitié de la hauteur du drapeau (28px), pour le centrer sur le coin */
 .pkmn-card__emblem-stack {
   position: absolute;
-  top: 0;
-  left: 0;
-  transform: translate(-50%, -50%); /* même positionnement que l'ancien drapeau seul */
+  top: -14px;
+  left: -14px;
   display: flex;
   flex-direction: column;
   align-items: center;
