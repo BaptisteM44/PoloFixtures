@@ -2,8 +2,11 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { generateTournamentSlug } from "@/lib/slug";
+import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 
 export async function GET() {
+  await syncLiveTournamentsCompletion();
+
   const tournaments = await prisma.tournament.findMany({
     where: { approved: true },
     include: {

@@ -29,6 +29,7 @@ import { TournamentRecap } from "@/components/TournamentRecap";
 import { FollowButton } from "@/components/FollowButton";
 import { SoloRegisterForm } from "@/components/SoloRegisterForm";
 import { DrawPanel } from "@/components/DrawPanel";
+import { syncTournamentCompletionById } from "@/lib/tournament-status";
 
 function summarizeCities(players: { player: { city: string | null } }[]): string {
   const counts = new Map<string, number>();
@@ -92,6 +93,11 @@ export default async function TournamentPage({
 
   if (!tournament) {
     return <div>Tournament not found</div>;
+  }
+
+  const syncedStatus = await syncTournamentCompletionById(tournament.id);
+  if (syncedStatus && tournament.status !== syncedStatus) {
+    tournament.status = syncedStatus;
   }
 
   const t = await getTranslations("tournament");

@@ -2,8 +2,11 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import { TournamentBrowser } from "@/components/TournamentBrowser";
+import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 
 export default async function TournamentsPage({ searchParams }: { searchParams: { continent?: string } }) {
+  await syncLiveTournamentsCompletion();
+
   const t = await getTranslations("tournaments");
 
   const session = await auth();

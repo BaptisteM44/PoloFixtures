@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { publishMatchUpdate, publishNewMatches } from "@/lib/sse";
+import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { z } from "zod";
 
@@ -181,6 +182,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
       data: adv
     });
   }
+
+  await syncTournamentCompletionById(match.tournamentId);
 
   return Response.json({ event, match: updated, advancedMatches });
 }

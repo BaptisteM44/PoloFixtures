@@ -7,10 +7,13 @@ import type { CalendarTournament } from "@/components/CalendarGrid";
 import { auth } from "@/lib/auth";
 import TournamentMapClient from "@/components/TournamentMapClient";
 import type { MapTournament } from "@/components/TournamentMap";
+import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 
 const CONTINENT_CODES = ["NA", "SA", "EU", "AF", "AS", "OC"] as const;
 
 export default async function HomePage() {
+  await syncLiveTournamentsCompletion();
+
   const t = await getTranslations("home");
   const tc = await getTranslations("common");
   const locale = await getLocale();

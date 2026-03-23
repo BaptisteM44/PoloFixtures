@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 
 export async function GET() {
   const session = await auth();
@@ -8,6 +9,8 @@ export async function GET() {
   if (!playerId) {
     return NextResponse.json({ error: "Non connecté" }, { status: 401 });
   }
+
+  await syncLiveTournamentsCompletion();
 
   // Get all teams the player belongs to, with tournament + teammates
   const teamPlayers = await prisma.teamPlayer.findMany({
