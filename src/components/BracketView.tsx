@@ -10,11 +10,19 @@ const SE_ROUND_NAMES: Record<number, string> = {
   1: "Quarts", 2: "Demies", 3: "Finale", 4: "Finale",
 };
 
-const DE_ROUND_NAMES: Record<string, string> = {
-  "W1": "UB Quarts", "W2": "UB Demies", "W3": "UB Finale",
-  "L1": "LB R1", "L2": "LB R2", "L3": "LB Finale",
-  "G4": "Grande Finale", "G3": "Grande Finale",
-};
+function getDERoundLabel(side: string, roundIndex: number, maxUpperRound: number, maxLowerRound: number): string {
+  if (side === "G") return "Grande Finale";
+  if (side === "W") {
+    if (roundIndex === maxUpperRound) return "UB Finale";
+    if (roundIndex === maxUpperRound - 1) return "UB Demies";
+    if (roundIndex === maxUpperRound - 2) return "UB Quarts";
+    return `UB R${roundIndex}`;
+  }
+  // Lower bracket
+  if (roundIndex === maxLowerRound) return "LB Finale";
+  if (roundIndex === maxLowerRound - 1) return "LB Demies";
+  return `LB R${roundIndex}`;
+}
 
 // ── Single match card ─────────────────────────────────────────────────────
 
@@ -275,6 +283,9 @@ function DEBracket({ matches, onEdit, selectedId }: {
   const lower = matches.filter((m) => m.bracketSide === "L");
   const grand = matches.filter((m) => m.bracketSide === "G");
 
+  const maxUpperRound = upper.length > 0 ? Math.max(...upper.map((m) => m.roundIndex)) : 1;
+  const maxLowerRound = lower.length > 0 ? Math.max(...lower.map((m) => m.roundIndex)) : 1;
+
   let matchCounter = 1;
   const matchNumbers = new Map<string, number>();
   for (const group of [upper, lower, grand]) {
@@ -294,14 +305,14 @@ function DEBracket({ matches, onEdit, selectedId }: {
     // Height based on max positionInRound across all rounds (handles skipped BYEs)
     const maxPos = Math.max(...sectionMatches.map((m) => (m.positionInRound ?? 0) + 1));
     const totalH = maxPos * CELL_BASE;
+    const side = sectionMatches[0]?.bracketSide ?? "W";
 
     return (
       <div className={`de-section ${accentClass}`}>
         <h4 className="de-section-title">{title}</h4>
         <div className="bracket-tree">
           {sortedR.map(([roundIdx, roundMatches]) => {
-            const rKey = `${sectionMatches[0]?.bracketSide ?? ""}${roundIdx}`;
-            const label = DE_ROUND_NAMES[rKey] ?? `R${roundIdx}`;
+            const label = getDERoundLabel(side, roundIdx, maxUpperRound, maxLowerRound);
             const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
 
             return (

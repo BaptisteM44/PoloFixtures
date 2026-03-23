@@ -289,71 +289,107 @@ export async function generateBracketAction(id: string) {
     }
 
     if (tournament.sundayFormat === "DE") {
-      // Upper R1 → winner: Upper R2, loser: Lower R1
-      // Upper R2 → winner: Upper Final (W R3), loser: Lower R2
-      // Lower R1 + Upper R2 losers → Lower R2
-      // Upper Final + Lower R2 → Lower Final + Grand Final
-      const upper1 = created.filter((m) => m.bracketSide === "W" && m.roundIndex === 1).sort((a, b) => a.positionInRound - b.positionInRound);
-      const upper2 = created.filter((m) => m.bracketSide === "W" && m.roundIndex === 2).sort((a, b) => a.positionInRound - b.positionInRound);
-      const upperFinal = created.find((m) => m.bracketSide === "W" && m.roundIndex === 3);
-      const lower1 = created.filter((m) => m.bracketSide === "L" && m.roundIndex === 1).sort((a, b) => a.positionInRound - b.positionInRound);
-      const lower2 = created.filter((m) => m.bracketSide === "L" && m.roundIndex === 2).sort((a, b) => a.positionInRound - b.positionInRound);
-      const lowerFinal = created.find((m) => m.bracketSide === "L" && m.roundIndex === 3);
-      const grandFinal = created.find((m) => m.bracketSide === "G");
+      // Generic DE linking for any bracket size
+      // Upper rounds: W1..W(maxUR) — winner advances, loser drops to lower
+      // Lower rounds: L1..L(maxLR) — winner advances, loser eliminated
+      // Grand Final: G (single match)
+      //
+      // Lower bracket structure (for size=2^n, upperRounds=n):
+      //   LR(2k-1) [k=1..n-1]: receives losers from Upper R(k), plays vs each other
+      //   LR(2k)   [k=1..n-1]: survivors play vs losers from Upper R(k+1)
+      // Lower Final: LR(2n-2+1) = LR(2n-1) — single match, winner to Grand Final
 
-      // Upper R1: winners advance to Upper R2, losers drop to Lower R1
-      for (let i = 0; i < upper1.length; i++) {
-        const nextUpperPos = Math.floor(i / 2);
-        const nextLowerPos = Math.floor(i / 2);
-        await tx.match.update({
-          where: { id: upper1[i].id },
-          data: {
-            nextMatchWinId: upper2[nextUpperPos]?.id ?? null,
-            nextSlotWin: i % 2 === 0 ? "A" : "B",
-            nextMatchLoseId: lower1[nextLowerPos]?.id ?? null,
-            nextSlotLose: i % 2 === 0 ? "A" : "B",
+      const maxUR = Math.max(...created.filter(m => m.bracketSide === "W").map(m => m.roundIndex), 0);
+      const maxLR = Math.max(...created.filter(m => m.bracketSide === "L").map(m => m.roundIndex), 0);
+      const grandFinal = created.find(m => m.bracketSide === "G");
+
+      const upperByRound = new Map<number, typeof created>();
+      const lowerByRound = new Map<number, typeof created>();
+      for (const m of created) {
+        if (m.bracketSide === "W") {
+          if (!upperByRound.has(m.roundIndex)) upperByRound.set(m.roundIndex, []);
+          upperByRound.get(m.roundIndex)!.push(m);
+        } else if (m.bracketSide === "L") {
+          if (!lowerByRound.has(m.roundIndex)) lowerByRound.set(m.roundIndex, []);
+          lowerByRound.get(m.roundIndex)!.push(m);
+        }
+      }
+      // Sort all round arrays by positionInRound
+      for (const arr of [...upperByRound.values(), ...lowerByRound.values()]) {
+        arr.sort((a, b) => a.positionInRound - b.positionInRound);
+      }
+
+      // ── Upper rounds ────────────────────────────────────────────────────
+      for (let ur = 1; ur <= maxUR; ur++) {
+        const uMatches = upperByRound.get(ur) ?? [];
+        const uNext = upperByRound.get(ur + 1) ?? [];
+        // Upper losers go to Lower round: lr = 2*(ur-1)+1 for ur=1 → lr=1, ur=2 → lr=3, etc.
+        const lrForLosers = 2 * ur - 1;
+        const lMatches = lowerByRound.get(lrForLosers) ?? [];
+
+        for (let i = 0; i < uMatches.length; i++) {
+          const nextUpperPos = Math.floor(uMatches[i].positionInRound / 2);
+          const nextUpperMatch = uNext.find(m => m.positionInRound === nextUpperPos);
+
+          // Loser slot: in LR(2k-1) each lower match gets 2 losers from upper
+          // Lower match position = floor(i/2), loser is slot A (i%2==0) or B (i%2==1)
+          const lowerPos = Math.floor(i / 2);
+          const lowerMatch = lMatches.find(m => m.positionInRound === lowerPos);
+
+          const isLastUpper = ur === maxUR;
+          const data: Record<string, unknown> = {
+            nextMatchWinId: isLastUpper ? (grandFinal?.id ?? null) : (nextUpperMatch?.id ?? null),
+            nextSlotWin: isLastUpper ? "A" : (uMatches[i].positionInRound % 2 === 0 ? "A" : "B"),
+          };
+          if (lowerMatch && !isLastUpper) {
+            data.nextMatchLoseId = lowerMatch.id;
+            data.nextSlotLose = i % 2 === 0 ? "A" : "B";
           }
-        });
+          await tx.match.update({ where: { id: uMatches[i].id }, data });
+        }
       }
 
-      // Upper R2 (if exists) → Upper Final (W), Lower R2 (L)
-      for (let i = 0; i < upper2.length; i++) {
-        await tx.match.update({
-          where: { id: upper2[i].id },
-          data: {
-            nextMatchWinId: upperFinal?.id ?? null,
-            nextSlotWin: i % 2 === 0 ? "A" : "B",
-            nextMatchLoseId: lower2[i]?.id ?? null,
-            nextSlotLose: "B",
+      // ── Lower rounds ────────────────────────────────────────────────────
+      for (let lr = 1; lr <= maxLR; lr++) {
+        const lMatches = lowerByRound.get(lr) ?? [];
+        const isLastLower = lr === maxLR;
+        const lNext = isLastLower ? null : lowerByRound.get(lr + 1) ?? [];
+
+        for (let i = 0; i < lMatches.length; i++) {
+          let nextMatchId: string | null = null;
+          let nextSlot: "A" | "B" = "A";
+
+          if (isLastLower) {
+            // Lower Final → Grand Final slot B
+            nextMatchId = grandFinal?.id ?? null;
+            nextSlot = "B";
+          } else if (lNext) {
+            // Even lower rounds (lr=2,4,6...): matches pair off, winner goes to next
+            // Odd lower rounds (lr=1,3,5...): survivors advance, paired in next even round
+            if (lr % 2 === 1) {
+              // Odd: each match winner goes to next round (even), position matches
+              const nextPos = lMatches[i].positionInRound;
+              const nextMatch = lNext.find(m => m.positionInRound === nextPos);
+              nextMatchId = nextMatch?.id ?? null;
+              nextSlot = "A"; // lower survivor fills slot A
+            } else {
+              // Even: winners pair off in next round
+              const nextPos = Math.floor(i / 2);
+              const nextMatch = lNext.find(m => m.positionInRound === nextPos);
+              nextMatchId = nextMatch?.id ?? null;
+              nextSlot = i % 2 === 0 ? "A" : "B";
+            }
           }
-        });
+
+          await tx.match.update({
+            where: { id: lMatches[i].id },
+            data: { nextMatchWinId: nextMatchId, nextSlotWin: nextSlot }
+          });
+        }
       }
 
-      // Lower R1 → Lower R2
-      for (let i = 0; i < lower1.length; i++) {
-        await tx.match.update({
-          where: { id: lower1[i].id },
-          data: {
-            nextMatchWinId: lower2[i]?.id ?? null,
-            nextSlotWin: "A",
-          }
-        });
-      }
-
-      // Upper Final → Grand Final (A), Lower Final → Grand Final (B)
-      if (upperFinal && grandFinal) {
-        await tx.match.update({ where: { id: upperFinal.id }, data: { nextMatchWinId: grandFinal.id, nextSlotWin: "A" } });
-      }
-      // Lower R2 → Lower Final
-      for (let i = 0; i < lower2.length; i++) {
-        await tx.match.update({
-          where: { id: lower2[i].id },
-          data: { nextMatchWinId: lowerFinal?.id ?? null, nextSlotWin: i === 0 ? "A" : "B" }
-        });
-      }
-      if (lowerFinal && grandFinal) {
-        await tx.match.update({ where: { id: lowerFinal.id }, data: { nextMatchWinId: grandFinal.id, nextSlotWin: "B" } });
-      }
+      // Lower Final → Grand Final B (already handled above in the loop, but ensure GF exists)
+      // Grand Final has no next match — done
     }
   });
 
