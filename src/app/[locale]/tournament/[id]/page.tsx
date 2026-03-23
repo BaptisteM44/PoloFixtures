@@ -662,7 +662,7 @@ export default async function TournamentPage({
       )}
 
       {tab === "pools" && (
-        <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} />
+        <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} scoringSystem={tournament.scoringSystem} />
       )}
 
       {tab === "bracket" && (() => {
@@ -689,7 +689,7 @@ export default async function TournamentPage({
                   </span>
                 </div>
               )}
-              <BracketView matches={bracketMatches} tournamentId={tournament.id} />
+              <BracketView matches={bracketMatches} tournamentId={tournament.id} teams={tournament.teams.filter(t => t.selected).map(t => ({ id: t.id, name: t.name }))} />
             </>
           );
         }
@@ -736,7 +736,7 @@ export default async function TournamentPage({
               <p className="meta">{t("swiss_empty")}</p>
             </div>
           ) : (() => {
-            const standings = computeStandings(tournament.teams.filter(t => t.selected), swissMatches);
+            const standings = computeStandings(tournament.teams.filter(t => t.selected), swissMatches, tournament.scoringSystem);
             const maxRound = Math.max(...swissMatches.map((m) => m.roundIndex));
             return (
               <>
@@ -779,6 +779,7 @@ export default async function TournamentPage({
                         <th>{t("swiss_col_draws")}</th>
                         <th>{t("swiss_col_losses")}</th>
                         <th>{t("swiss_col_diff")}</th>
+                        <th title="Buchholz (force adversaires)">Buch.</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -794,6 +795,7 @@ export default async function TournamentPage({
                           <td style={{ color: row.goalDiff >= 0 ? "var(--success)" : "var(--danger)" }}>
                             {row.goalDiff >= 0 ? "+" : ""}{row.goalDiff}
                           </td>
+                          <td style={{ color: "var(--text-muted)" }}>{row.buchholz}</td>
                         </tr>
                       ))}
                     </tbody>

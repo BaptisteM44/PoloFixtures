@@ -213,6 +213,7 @@ model Tournament {
   swissRounds             Int              @default(5)
   bracketSize             Int              @default(16)
   sundayFormat            SundayFormat
+  scoringSystem           String           @default("3/1")  // "3/1" = V3 N1 D0, "1/0.5" = V1 N0.5 D0
   status                  TournamentStatus
   locked                  Boolean          @default(false)
   approved                Boolean          @default(false)

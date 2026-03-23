@@ -48,6 +48,7 @@ const updateSchema = z.object({
   swissRounds: z.coerce.number().int().min(1).max(20).default(5),
   bracketSize: z.coerce.number().int().min(2).max(64).default(16),
   sundayFormat: z.enum(["SE", "DE"]),
+  scoringSystem: z.string().default("3/1"),
   status: z.enum(["UPCOMING", "LIVE", "COMPLETED"]),
   locked: z.coerce.boolean(),
   accommodationAvailable: z.coerce.boolean().default(false),
@@ -104,7 +105,7 @@ export async function updateTournamentAction(formData: FormData) {
   try { faqJson = data.faq ? JSON.parse(data.faq) : null; } catch { /* ignore */ }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, ...rest } = data;
+  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, ...rest } = data;
 
   const dateStart = new Date(data.dateStart);
   // Regenerate slug if name or city changed (only if tournament has no slug yet, or name/city changed)
@@ -139,6 +140,7 @@ export async function updateTournamentAction(formData: FormData) {
         chatMode: data.chatMode,
         saturdayFormat: data.saturdayFormat,
         sundayFormat: data.sundayFormat,
+        scoringSystem: data.scoringSystem,
       }
     });
   } catch (err) {
@@ -221,7 +223,7 @@ export async function generateBracketAction(id: string) {
   );
   let seededTeams = tournament.teams;
   if (qualifyingMatches.length > 0) {
-    const standings = computeStandings(tournament.teams, qualifyingMatches);
+    const standings = computeStandings(tournament.teams, qualifyingMatches, tournament.scoringSystem);
     seededTeams = standings
       .map((row) => tournament.teams.find((t) => t.id === row.teamId))
       .filter((t): t is NonNullable<typeof t> => t !== undefined);
@@ -252,11 +254,12 @@ export async function generateBracketAction(id: string) {
           startAt: match.startAt,
           dayIndex: "SUN",
           status: "SCHEDULED",
+          positionInRound: match.positionInRound ?? 0,
           teamAId: match.teamAId,
           teamBId: match.teamBId,
         }
       });
-      created.push({ id: m.id, roundIndex: m.roundIndex, bracketSide: m.bracketSide, positionInRound: match.positionInRound ?? 0 });
+      created.push({ id: m.id, roundIndex: m.roundIndex, bracketSide: m.bracketSide, positionInRound: m.positionInRound });
     }
 
     // Helper: find a match by side+round+position
@@ -410,7 +413,7 @@ export async function generateSwissRoundAction(id: string) {
     return { error: `Tous les ${maxRounds} tours Swiss sont terminés.` };
   }
 
-  const standings = computeStandings(tournament.teams, swissMatches);
+  const standings = computeStandings(tournament.teams, swissMatches, tournament.scoringSystem);
   const nextRound = existingRounds + 1;
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
 

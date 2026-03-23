@@ -11,11 +11,13 @@ type MatchWithTeams = Match & { teamA?: Team | null; teamB?: Team | null };
 export function PoolTables({
   pools,
   matches: initialMatches,
-  tournamentId
+  tournamentId,
+  scoringSystem
 }: {
   pools: PoolWithTeams[];
   matches: MatchWithTeams[];
   tournamentId: string;
+  scoringSystem?: string | null;
 }) {
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
 
@@ -35,7 +37,7 @@ export function PoolTables({
         const poolTeamIds = pool.teams.map((pt) => pt.teamId);
         const poolTeams = pool.teams.map((pt) => pt.team);
         const poolMatches = matches.filter((m) => m.poolId === pool.id);
-        const standings = computeStandings(poolTeams, poolMatches as Match[]);
+        const standings = computeStandings(poolTeams, poolMatches as Match[], scoringSystem);
 
         return (
           <div key={pool.id} className="pool-card">
@@ -50,6 +52,7 @@ export function PoolTables({
                   <th>GF</th>
                   <th>GA</th>
                   <th>Pts</th>
+                  <th title="Buchholz (force adversaires)">Buch.</th>
                 </tr>
               </thead>
               <tbody>
@@ -64,6 +67,7 @@ export function PoolTables({
                       <td>{row.goalsFor}</td>
                       <td>{row.goalsAgainst}</td>
                       <td>{row.points}</td>
+                      <td>{row.buchholz}</td>
                     </tr>
                   ))}
               </tbody>

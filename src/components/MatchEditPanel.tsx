@@ -67,7 +67,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
     try {
       // Auto-set status to FINISHED when scores have been entered
       const finalStatus = (scoreA > 0 || scoreB > 0) && status !== "FINISHED" ? "FINISHED" : status;
-      const teamChanged = match.status === "SCHEDULED" && (teamAId !== match.teamAId || teamBId !== match.teamBId);
+      const teamChanged = teamAId !== match.teamAId || teamBId !== match.teamBId;
       const body: Record<string, unknown> = { scoreA, scoreB, status: finalStatus };
       if (teamChanged) {
         body.teamAId = teamAId || null;
@@ -115,8 +115,8 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
 
         {/* Score editor */}
         <div className="match-edit-panel__body">
-          {/* Team assignment (only for SCHEDULED matches when organizer) */}
-          {canEdit && match.status === "SCHEDULED" && teams && teams.length > 0 && (
+          {/* Team assignment (for bracket matches, always available to organizers) */}
+          {canEdit && teams && teams.length > 0 && (
             <div className="match-team-selectors">
               <div className="match-team-select-row">
                 <label>Équipe A</label>

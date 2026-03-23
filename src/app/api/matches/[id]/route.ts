@@ -42,10 +42,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     return new Response("Unauthorized", { status: 401 });
   }
 
-  // Team assignment changes only allowed on SCHEDULED matches
-  if ((parsed.data.teamAId !== undefined || parsed.data.teamBId !== undefined) && existing.status !== "SCHEDULED") {
-    return Response.json({ error: "Impossible de changer les équipes d'un match déjà commencé ou terminé." }, { status: 422 });
-  }
+  // Team assignment: allowed on any match (for bracket corrections / manual overrides)
 
   const scoreA = parsed.data.scoreA ?? existing.scoreA ?? 0;
   const scoreB = parsed.data.scoreB ?? existing.scoreB ?? 0;

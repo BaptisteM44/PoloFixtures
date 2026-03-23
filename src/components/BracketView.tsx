@@ -104,12 +104,16 @@ function ScrollWrapper({ children }: { children: React.ReactNode }) {
 
 // ── Main component ─────────────────────────────────────────────────────────
 
+type TeamOption = { id: string; name: string };
+
 export function BracketView({
   matches: initialMatches,
   tournamentId,
+  teams,
 }: {
   matches: MatchWithTeams[];
   tournamentId: string;
+  teams?: TeamOption[];
 }) {
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
   const [editMatch, setEditMatch] = useState<MatchForEdit | null>(null);
@@ -148,11 +152,21 @@ export function BracketView({
     });
   };
 
-  const handleSaved = (updated: { id: string; scoreA: number; scoreB: number; status: string }) => {
+  const handleSaved = (updated: { id: string; scoreA: number; scoreB: number; status: string; teamAId?: string | null; teamBId?: string | null }) => {
     setMatches((prev) =>
-      prev.map((m) => m.id === updated.id
-        ? { ...m, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status as Match["status"] }
-        : m)
+      prev.map((m) => {
+        if (m.id !== updated.id) return m;
+        const patched: MatchWithTeams = { ...m, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status as Match["status"] };
+        if (updated.teamAId !== undefined) {
+          patched.teamAId = updated.teamAId;
+          patched.teamA = teams?.find((t) => t.id === updated.teamAId) as Team | undefined ?? null;
+        }
+        if (updated.teamBId !== undefined) {
+          patched.teamBId = updated.teamBId;
+          patched.teamB = teams?.find((t) => t.id === updated.teamBId) as Team | undefined ?? null;
+        }
+        return patched;
+      })
     );
     setEditMatch((prev) =>
       prev?.id === updated.id ? { ...prev, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status } : prev
@@ -163,7 +177,7 @@ export function BracketView({
     return <div className="empty-state"><p>Bracket non encore généré.</p></div>;
   }
 
-  const panel = <MatchEditPanel match={editMatch} onClose={() => { setSelectedId(null); setEditMatch(null); }} onSaved={handleSaved} />;
+  const panel = <MatchEditPanel match={editMatch} onClose={() => { setSelectedId(null); setEditMatch(null); }} onSaved={handleSaved} teams={teams} />;
 
   return (
     <div>
@@ -194,8 +208,9 @@ function SEBracket({ matches, onEdit, selectedId }: {
 
   const sortedRounds = Array.from(rounds.entries()).sort(([a], [b]) => a - b);
   const maxRound = Math.max(...rounds.keys());
-  const r1Count = rounds.get(sortedRounds[0]?.[0] ?? 1)?.length ?? 1;
-  const totalHeight = r1Count * CELL_BASE;
+  // Total height based on the full bracket size (2^(maxRound-1) slots in R1)
+  const fullR1Slots = Math.pow(2, maxRound - 1);
+  const totalHeight = fullR1Slots * CELL_BASE;
 
   // Numérotation séquentielle des matchs R1→finale
   let matchCounter = 1;
@@ -226,9 +241,10 @@ function SEBracket({ matches, onEdit, selectedId }: {
           <div key={roundIdx} className="bracket-col">
             <div className="bracket-round-header">{label}</div>
             <div className="bracket-col-body" style={{ height: totalHeight, position: "relative" }}>
-              {sorted.map((m, i) => {
-                // Centre la carte dans son slot naturel
-                const top = i * cellH + (cellH - CARD_H) / 2;
+              {sorted.map((m) => {
+                // Use positionInRound for placement (not index) to handle skipped BYEs
+                const pos = m.positionInRound ?? 0;
+                const top = pos * cellH + (cellH - CARD_H) / 2;
                 return (
                   <div key={m.id} style={{ position: "absolute", top, left: CARD_OFFSET_X, width: CARD_W }}>
                     <BracketCard
@@ -275,9 +291,9 @@ function DEBracket({ matches, onEdit, selectedId }: {
     });
     if (rounds.size === 0) return null;
     const sortedR = Array.from(rounds.entries()).sort(([a], [b]) => a - b);
-    // Hauteur fixe = max matchs dans un round × CELL_BASE (pas d'exponentiel)
-    const maxMatchesPerRound = Math.max(...Array.from(rounds.values()).map((r) => r.length));
-    const totalH = maxMatchesPerRound * CELL_BASE;
+    // Height based on max positionInRound across all rounds (handles skipped BYEs)
+    const maxPos = Math.max(...sectionMatches.map((m) => (m.positionInRound ?? 0) + 1));
+    const totalH = maxPos * CELL_BASE;
 
     return (
       <div className={`de-section ${accentClass}`}>
@@ -293,8 +309,9 @@ function DEBracket({ matches, onEdit, selectedId }: {
                 <div className="bracket-round-header">{label}</div>
                 {/* Position absolue : chaque carte centrée dans son slot CELL_BASE */}
                 <div className="bracket-col-body" style={{ height: totalH, position: "relative" }}>
-                  {sorted.map((m, i) => {
-                    const top = i * CELL_BASE + (CELL_BASE - CARD_H) / 2;
+                  {sorted.map((m) => {
+                    const pos = m.positionInRound ?? 0;
+                    const top = pos * CELL_BASE + (CELL_BASE - CARD_H) / 2;
                     return (
                       <div key={m.id} style={{ position: "absolute", top, left: CARD_OFFSET_X, width: CARD_W }}>
                         <BracketCard

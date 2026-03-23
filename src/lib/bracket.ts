@@ -28,7 +28,7 @@ export type GeneratedMatch = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function nextPowerOf2(n: number): number {
+export function nextPowerOf2(n: number): number {
   if (n <= 1) return 1;
   return Math.pow(2, Math.ceil(Math.log2(n)));
 }
@@ -253,51 +253,88 @@ function generateSingleElim(
   startAt: Date,
   gameDurationMin: number
 ): GeneratedMatch[] {
-  // teams is already sorted by standings (1st = best), don't re-sort by inscription seed
   const sorted = [...teams];
   const size = nextPowerOf2(sorted.length);
   const totalRounds = Math.log2(size);
   const slotMin = gameDurationMin + 5;
   const roundBreak = gameDurationMin + 15;
 
-  // Place seeds into bracket slots using Challonge-style seeding
   const seedOrder = bracketSeeding(size);
   const slots: (Team | null)[] = seedOrder.map((s) => sorted[s - 1] ?? null);
 
   const allMatches: GeneratedMatch[] = [];
-  const matchGrid: GeneratedMatch[][] = [];
+  // matchGrid[r][positionInRound] — sparse: BYE matches are skipped
+  const matchGrid: Map<number, GeneratedMatch>[] = [];
 
   for (let r = 0; r < totalRounds; r++) {
     const matchesInRound = size / Math.pow(2, r + 1);
     const roundStart = addMinutes(startAt, r * roundBreak);
-    const roundMatches: GeneratedMatch[] = [];
+    const roundMap = new Map<number, GeneratedMatch>();
+    let courtIdx = 0;
 
     for (let m = 0; m < matchesInRound; m++) {
+      let teamAId: string | null = null;
+      let teamBId: string | null = null;
+
+      if (r === 0) {
+        const a = slots[m * 2]?.id ?? null;
+        const b = slots[m * 2 + 1]?.id ?? null;
+
+        // Skip BYE matches: if one team is null, advance the real team directly
+        if (a && !b) {
+          // Team A gets a BYE — will be placed in R2 below
+          continue;
+        }
+        if (b && !a) {
+          // Team B gets a BYE — will be placed in R2 below
+          continue;
+        }
+        if (!a && !b) {
+          // Both null — skip entirely
+          continue;
+        }
+        teamAId = a;
+        teamBId = b;
+      }
+
       const match: GeneratedMatch = {
         phase: "BRACKET",
         bracketSide: r === totalRounds - 1 ? "G" : "W",
         roundIndex: r + 1,
         positionInRound: m,
-        courtName: courtNames[m % courtNames.length],
-        startAt: addMinutes(roundStart, Math.floor(m / courtNames.length) * slotMin),
+        courtName: courtNames[courtIdx % courtNames.length],
+        startAt: addMinutes(roundStart, Math.floor(courtIdx / courtNames.length) * slotMin),
         dayIndex: "SUN",
         status: "SCHEDULED",
-        teamAId: r === 0 ? (slots[m * 2]?.id ?? null) : null,
-        teamBId: r === 0 ? (slots[m * 2 + 1]?.id ?? null) : null,
+        teamAId,
+        teamBId,
       };
-      roundMatches.push(match);
+      courtIdx++;
+      roundMap.set(m, match);
       allMatches.push(match);
     }
-    matchGrid.push(roundMatches);
+    matchGrid.push(roundMap);
   }
 
-  // Propagate BYE auto-advances (slot == null means BYE → opponent advances)
-  for (let m = 0; m < (matchGrid[0]?.length ?? 0); m++) {
-    const match = matchGrid[0][m];
-    if (match.teamAId && !match.teamBId && matchGrid[1]) {
-      const next = matchGrid[1][Math.floor(m / 2)];
-      if (m % 2 === 0) next.teamAId = match.teamAId;
-      else next.teamBId = match.teamAId;
+  // Propagate BYE auto-advances: place BYE winners directly into R2
+  if (matchGrid.length >= 2) {
+    const r1Count = size / 2;
+    for (let m = 0; m < r1Count; m++) {
+      const a = slots[m * 2]?.id ?? null;
+      const b = slots[m * 2 + 1]?.id ?? null;
+
+      // If this R1 match was skipped (BYE), place the real team into R2
+      if (!matchGrid[0].has(m)) {
+        const advancingTeam = a ?? b;
+        if (advancingTeam) {
+          const r2Pos = Math.floor(m / 2);
+          const r2Match = matchGrid[1].get(r2Pos);
+          if (r2Match) {
+            if (m % 2 === 0) r2Match.teamAId = advancingTeam;
+            else r2Match.teamBId = advancingTeam;
+          }
+        }
+      }
     }
   }
 
@@ -310,7 +347,6 @@ function generateDoubleElim(
   startAt: Date,
   gameDurationMin: number
 ): GeneratedMatch[] {
-  // teams is already sorted by standings (1st = best), don't re-sort by inscription seed
   const sorted = [...teams];
   const size = nextPowerOf2(sorted.length);
   const seedOrder = bracketSeeding(size);
@@ -319,47 +355,83 @@ function generateDoubleElim(
   const slotMin = gameDurationMin + 5;
   const matches: GeneratedMatch[] = [];
 
-  // Time helpers
   let baseTime = new Date(startAt);
-  const slot = (round: GeneratedMatch[], idx: number) =>
-    addMinutes(baseTime, Math.floor(idx / courtNames.length) * slotMin);
 
-  // Upper R1
-  const upper1: GeneratedMatch[] = [];
+  // ── Upper R1 — skip BYE matches ──────────────────────────────────────────
+  const upper1: Map<number, GeneratedMatch> = new Map();
+  let courtIdx = 0;
+
   for (let m = 0; m < size / 2; m++) {
-    upper1.push({
+    const a = slots[m * 2]?.id ?? null;
+    const b = slots[m * 2 + 1]?.id ?? null;
+
+    // Skip BYE matches
+    if (!a || !b) continue;
+
+    const match: GeneratedMatch = {
       phase: "BRACKET", bracketSide: "W", roundIndex: 1, positionInRound: m,
-      courtName: courtNames[m % courtNames.length],
-      startAt: slot(upper1, m), dayIndex: "SUN", status: "SCHEDULED",
-      teamAId: slots[m * 2]?.id ?? null, teamBId: slots[m * 2 + 1]?.id ?? null,
-    });
+      courtName: courtNames[courtIdx % courtNames.length],
+      startAt: addMinutes(baseTime, Math.floor(courtIdx / courtNames.length) * slotMin),
+      dayIndex: "SUN", status: "SCHEDULED",
+      teamAId: a, teamBId: b,
+    };
+    courtIdx++;
+    upper1.set(m, match);
+    matches.push(match);
   }
-  matches.push(...upper1);
 
-  baseTime = addMinutes(baseTime, Math.ceil((size / 2) / courtNames.length) * slotMin + 10);
+  baseTime = addMinutes(baseTime, Math.ceil(Math.max(1, upper1.size) / courtNames.length) * slotMin + 10);
 
-  // Upper R2 + Lower R1 (run in parallel)
+  // ── Upper R2 + Lower R1 ─────────────────────────────────────────────────
   const upper2: GeneratedMatch[] = [];
   const lower1: GeneratedMatch[] = [];
+  courtIdx = 0;
+
   for (let m = 0; m < size / 4; m++) {
-    upper2.push({
+    const r1posA = m * 2; // Upper R1 match feeding slot A
+    const r1posB = m * 2 + 1; // Upper R1 match feeding slot B
+
+    const u2: GeneratedMatch = {
       phase: "BRACKET", bracketSide: "W", roundIndex: 2, positionInRound: m,
-      courtName: courtNames[(m * 2) % courtNames.length],
-      startAt: slot(upper2, m * 2), dayIndex: "SUN", status: "SCHEDULED",
+      courtName: courtNames[courtIdx % courtNames.length],
+      startAt: addMinutes(baseTime, Math.floor(courtIdx / courtNames.length) * slotMin),
+      dayIndex: "SUN", status: "SCHEDULED",
       teamAId: null, teamBId: null,
-    });
-    lower1.push({
+    };
+
+    // Place BYE advances: if R1 match was skipped, place the real team directly
+    if (!upper1.has(r1posA)) {
+      u2.teamAId = slots[r1posA * 2]?.id ?? slots[r1posA * 2 + 1]?.id ?? null;
+    }
+    if (!upper1.has(r1posB)) {
+      u2.teamBId = slots[r1posB * 2]?.id ?? slots[r1posB * 2 + 1]?.id ?? null;
+    }
+
+    courtIdx++;
+    upper2.push(u2);
+
+    // Lower R1: receives losers from Upper R1
+    // If both feeder Upper R1 matches were BYEs, skip this Lower R1 match
+    const feederA = upper1.has(r1posA);
+    const feederB = upper1.has(r1posB);
+
+    if (!feederA && !feederB) continue;
+
+    const l1: GeneratedMatch = {
       phase: "BRACKET", bracketSide: "L", roundIndex: 1, positionInRound: m,
-      courtName: courtNames[(m * 2 + 1) % courtNames.length],
-      startAt: slot(lower1, m * 2 + 1), dayIndex: "SUN", status: "SCHEDULED",
+      courtName: courtNames[courtIdx % courtNames.length],
+      startAt: addMinutes(baseTime, Math.floor(courtIdx / courtNames.length) * slotMin),
+      dayIndex: "SUN", status: "SCHEDULED",
       teamAId: null, teamBId: null,
-    });
+    };
+    courtIdx++;
+    lower1.push(l1);
   }
   matches.push(...upper2, ...lower1);
 
-  baseTime = addMinutes(baseTime, Math.ceil((size / 2) / courtNames.length) * slotMin + 10);
+  baseTime = addMinutes(baseTime, Math.ceil(Math.max(1, courtIdx) / courtNames.length) * slotMin + 10);
 
-  // Upper Final + Lower R2
+  // ── Upper Final + Lower R2 ──────────────────────────────────────────────
   const upperFinal: GeneratedMatch = {
     phase: "BRACKET", bracketSide: "W", roundIndex: 3, positionInRound: 0,
     courtName: courtNames[0],

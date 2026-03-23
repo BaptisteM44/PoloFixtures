@@ -140,7 +140,7 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
       {globalError && <p className="error" style={{ marginTop: 8 }}>{globalError}</p>}
       {locked && (
         <p className="meta" style={{ marginTop: 10, fontSize: 12 }}>
-          Le tournoi est verrouillé — déverrouillez-le pour modifier les équipes.
+          Tournoi verrouillé — les joueurs peuvent être ajoutés/retirés, mais pas les équipes créées ou supprimées.
         </p>
       )}
     </div>
@@ -241,14 +241,18 @@ function TeamRow({
 
         {isEditing ? (
           <div style={{ display: "flex", gap: 8, flex: 1, alignItems: "center" }}>
-            <input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleRename(); if (e.key === "Escape") onCancelEdit(); }}
-              autoFocus
-              style={{ flex: 1, padding: "6px 10px", fontSize: 15, fontFamily: "var(--font-display)", fontWeight: 700 }}
-            />
-            <button className="primary" onClick={handleRename} disabled={isPending} style={{ padding: "6px 14px", fontSize: 13 }}>✓ Sauver</button>
+            {locked ? (
+              <strong style={{ fontFamily: "var(--font-display)", fontSize: 16, flex: 1 }}>{team.name}</strong>
+            ) : (
+              <input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleRename(); if (e.key === "Escape") onCancelEdit(); }}
+                autoFocus
+                style={{ flex: 1, padding: "6px 10px", fontSize: 15, fontFamily: "var(--font-display)", fontWeight: 700 }}
+              />
+            )}
+            {!locked && <button className="primary" onClick={handleRename} disabled={isPending} style={{ padding: "6px 14px", fontSize: 13 }}>✓ Sauver</button>}
             <button className="ghost" onClick={onCancelEdit} disabled={isPending} style={{ padding: "6px 14px", fontSize: 13 }}>Fermer</button>
           </div>
         ) : (
@@ -257,12 +261,12 @@ function TeamRow({
             {(team.city || team.country) && (
               <span className="meta" style={{ fontSize: 12 }}>{team.city ? `${team.city}, ` : ""}{team.country}</span>
             )}
-            {!locked && (
-              <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                <button className="ghost" onClick={onStartEdit} style={{ padding: "4px 10px", fontSize: 12 }}>✏️ Modifier</button>
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              <button className="ghost" onClick={onStartEdit} style={{ padding: "4px 10px", fontSize: 12 }}>✏️ Modifier</button>
+              {!locked && (
                 <button onClick={onDelete} disabled={isPending} style={{ background: "none", border: "1.5px solid var(--border)", borderRadius: 6, cursor: "pointer", color: "var(--danger, #e53e3e)", padding: "4px 10px", fontSize: 12 }}>🗑 Supprimer</button>
-              </div>
-            )}
+              )}
+            </div>
           </>
         )}
       </div>
@@ -277,7 +281,7 @@ function TeamRow({
               <span>👤</span>
               <span style={{ fontWeight: 600 }}>{tp.player.name}</span>
               <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{tp.player.country}</span>
-              {isEditing && !locked && (
+              {isEditing && (
                 <button onClick={() => onRemovePlayer(tp.id, tp.player.name)} disabled={isPending} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger, #e53e3e)", fontSize: 14, padding: "0 2px", marginLeft: 2, lineHeight: 1 }}>✕</button>
               )}
             </div>
@@ -285,8 +289,8 @@ function TeamRow({
         </div>
       )}
 
-      {/* Add player section — only in edit mode */}
-      {isEditing && !locked && (
+      {/* Add player section — only in edit mode (allowed even when locked) */}
+      {isEditing && (
         <div style={{ borderTop: "1px solid var(--border-light)", paddingTop: 12 }}>
           {canAddPlayer ? (
             <>

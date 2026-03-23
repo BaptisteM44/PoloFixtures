@@ -11,26 +11,44 @@ export type StandingRow = {
   goalsAgainst: number;
   goalDiff: number;
   points: number;
+  buchholz: number;
+  sonnebornBerger: number;
 };
 
-export function computeStandings(teams: Team[], matches: Match[]) {
+export type ScoringConfig = {
+  win: number;
+  draw: number;
+  loss: number;
+};
+
+const SCORING_SYSTEMS: Record<string, ScoringConfig> = {
+  "3/1": { win: 3, draw: 1, loss: 0 },
+  "1/0.5": { win: 1, draw: 0.5, loss: 0 },
+};
+
+export function getScoringConfig(scoringSystem?: string | null): ScoringConfig {
+  return SCORING_SYSTEMS[scoringSystem ?? "3/1"] ?? SCORING_SYSTEMS["3/1"];
+}
+
+export function computeStandings(teams: Team[], matches: Match[], scoringSystem?: string | null) {
+  const scoring = getScoringConfig(scoringSystem);
   const rows = new Map<string, StandingRow>();
+  const opponents = new Map<string, string[]>();
+  const defeated = new Map<string, string[]>();
 
   teams.forEach((team) => {
     rows.set(team.id, {
       teamId: team.id,
       name: team.name,
-      played: 0,
-      wins: 0,
-      draws: 0,
-      losses: 0,
-      goalsFor: 0,
-      goalsAgainst: 0,
-      goalDiff: 0,
-      points: 0
+      played: 0, wins: 0, draws: 0, losses: 0,
+      goalsFor: 0, goalsAgainst: 0, goalDiff: 0,
+      points: 0, buchholz: 0, sonnebornBerger: 0,
     });
+    opponents.set(team.id, []);
+    defeated.set(team.id, []);
   });
 
+  // Pass 1: compute points/goals and track opponents
   matches
     .filter((m) => m.status === "FINISHED")
     .forEach((match) => {
@@ -46,19 +64,24 @@ export function computeStandings(teams: Team[], matches: Match[]) {
       rowB.goalsFor += match.scoreB;
       rowB.goalsAgainst += match.scoreA;
 
+      opponents.get(match.teamAId)!.push(match.teamBId);
+      opponents.get(match.teamBId)!.push(match.teamAId);
+
       if (match.scoreA > match.scoreB) {
         rowA.wins += 1;
         rowB.losses += 1;
-        rowA.points += 3;
+        rowA.points += scoring.win;
+        defeated.get(match.teamAId)!.push(match.teamBId);
       } else if (match.scoreB > match.scoreA) {
         rowB.wins += 1;
         rowA.losses += 1;
-        rowB.points += 3;
+        rowB.points += scoring.win;
+        defeated.get(match.teamBId)!.push(match.teamAId);
       } else {
         rowA.draws += 1;
         rowB.draws += 1;
-        rowA.points += 1;
-        rowB.points += 1;
+        rowA.points += scoring.draw;
+        rowB.points += scoring.draw;
       }
     });
 
@@ -66,8 +89,18 @@ export function computeStandings(teams: Team[], matches: Match[]) {
     row.goalDiff = row.goalsFor - row.goalsAgainst;
   });
 
+  // Pass 2: Buchholz (sum of opponents' points) + Sonneborn-Berger (sum of defeated opponents' points)
+  rows.forEach((row) => {
+    row.buchholz = (opponents.get(row.teamId) ?? [])
+      .reduce((sum, oppId) => sum + (rows.get(oppId)?.points ?? 0), 0);
+    row.sonnebornBerger = (defeated.get(row.teamId) ?? [])
+      .reduce((sum, oppId) => sum + (rows.get(oppId)?.points ?? 0), 0);
+  });
+
   return Array.from(rows.values()).sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
+    if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
+    if (b.sonnebornBerger !== a.sonnebornBerger) return b.sonnebornBerger - a.sonnebornBerger;
     if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
     return b.goalsFor - a.goalsFor;
   });

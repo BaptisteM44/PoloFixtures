@@ -47,6 +47,7 @@ type Tournament = {
   swissRounds?: number | null;
   bracketSize?: number | null;
   sundayFormat: string;
+  scoringSystem?: string | null;
   status: string;
   locked: boolean;
   accommodationAvailable?: boolean;
@@ -295,6 +296,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           <input type="hidden" name="swissRounds" value={tournament.swissRounds ?? 5} />
           <input type="hidden" name="bracketSize" value={tournament.bracketSize ?? 16} />
           <input type="hidden" name="sundayFormat" value={tournament.sundayFormat} />
+          <input type="hidden" name="scoringSystem" value={tournament.scoringSystem ?? "3/1"} />
         </>}
         <input type="hidden" name="region" value={tournament.region ?? ""} />
         <input type="hidden" name="links" value={tournament.links.join("\n")} />
@@ -467,6 +469,13 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             <select name="sundayFormat" defaultValue={tournament.sundayFormat} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
               <option value="SE">{t("sunday_single_elim")}</option>
               <option value="DE">{t("sunday_double_elim")}</option>
+            </select>
+          </label>
+          <label className="field-row">
+            Système de points
+            <select name="scoringSystem" defaultValue={tournament.scoringSystem ?? "3/1"}>
+              <option value="3/1">Classique (V=3, N=1, D=0)</option>
+              <option value="1/0.5">Challonge (V=1, N=0.5, D=0)</option>
             </select>
           </label>
           <label className="field-row">

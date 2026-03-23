@@ -97,6 +97,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
             startAt: match.startAt,
             dayIndex: match.dayIndex,
             status: match.status,
+            positionInRound: match.positionInRound ?? 0,
             teamAId: match.teamAId,
             teamBId: match.teamBId,
             scoreA: 0,
