@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useCallback, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 type PlayerResult = {
   id: string;
@@ -54,13 +55,14 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
   const maxPlayers = maxPlayersFromFormat(format);
+  const router = useRouter();
 
   const handleCreateTeam = () => {
     if (!newTeamName.trim() || !createTeamAction) return;
     setGlobalError(null);
     startTransition(async () => {
       const result = await createTeamAction(tournamentId, newTeamName.trim());
-      if (result.ok) { setNewTeamName(""); setShowCreateForm(false); }
+      if (result.ok) { setNewTeamName(""); setShowCreateForm(false); router.refresh(); }
       else setGlobalError(result.error ?? "Erreur");
     });
   };
@@ -69,6 +71,7 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
     if (!confirm(`Supprimer l'équipe "${teamName}" ? Cette action est irréversible.`)) return;
     startTransition(async () => {
       await deleteTeamAction(teamId, tournamentId);
+      router.refresh();
     });
   };
 
@@ -76,6 +79,7 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
     if (!confirm(`Retirer ${playerName} de l'équipe ?`)) return;
     startTransition(async () => {
       await removePlayerAction(teamPlayerId, tournamentId);
+      router.refresh();
     });
   };
 
@@ -99,6 +103,7 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
       addPlayerAction={addPlayerAction}
       startTransition={startTransition}
       setEditingId={setEditingId}
+      onPlayerChanged={() => router.refresh()}
     />
   );
 
@@ -150,7 +155,7 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
 function TeamRow({
   team, locked, maxPlayers, tournamentId,
   isEditing, onStartEdit, onCancelEdit, onDelete, onRemovePlayer,
-  isPending, renameAction, addPlayerAction, startTransition, setEditingId,
+  isPending, renameAction, addPlayerAction, startTransition, setEditingId, onPlayerChanged,
 }: {
   team: Team;
   locked: boolean;
@@ -166,6 +171,7 @@ function TeamRow({
   addPlayerAction: Props["addPlayerAction"];
   startTransition: (fn: () => Promise<void>) => void;
   setEditingId: (id: string | null) => void;
+  onPlayerChanged: () => void;
 }) {
   const [editName, setEditName] = useState(team.name);
   const [rowError, setRowError] = useState<string | null>(null);
@@ -214,7 +220,7 @@ function TeamRow({
     setShowResults(false); setQuery(""); setRowError(null);
     startTransition(async () => {
       const result = await addPlayerAction(team.id, tournamentId, { type: "existing", playerId: player.id });
-      if (result.ok) setAddMode(null);
+      if (result.ok) { setAddMode(null); onPlayerChanged(); }
       else setRowError(result.error ?? "Erreur");
     });
   };
@@ -224,7 +230,7 @@ function TeamRow({
     setRowError(null);
     startTransition(async () => {
       const result = await addPlayerAction(team.id, tournamentId, { type: "manual", name: manualName.trim(), city: manualCity || null, country: manualCountry.trim() });
-      if (result.ok) { setAddMode(null); setManualName(""); setManualCity(""); setManualCountry(""); }
+      if (result.ok) { setAddMode(null); setManualName(""); setManualCity(""); setManualCountry(""); onPlayerChanged(); }
       else setRowError(result.error ?? "Erreur");
     });
   };
