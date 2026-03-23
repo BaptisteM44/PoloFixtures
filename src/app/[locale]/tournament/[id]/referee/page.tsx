@@ -13,8 +13,8 @@ export default async function RefereeMatchPage({ params }: { params: { id: strin
     redirect(`/login?next=/tournament/${params.id}/referee`);
   }
 
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: params.id },
+  const tournament = await prisma.tournament.findFirst({
+    where: { OR: [{ id: params.id }, { slug: params.id }] },
     include: {
       teams: {
         where: { selected: true },
