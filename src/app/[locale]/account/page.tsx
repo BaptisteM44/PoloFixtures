@@ -248,7 +248,6 @@ export default function AccountPage() {
             clubLogoPath={player.clubLogoPath}
             emblemPosition={(player.emblemPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "top-right"}
             teamLogoPath={player.teamLogoPath}
-            teamLogoPosition={(player.teamLogoPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "bottom-right"}
             badges={player.badges}
             pinnedBadges={player.pinnedBadges}
             startYear={player.startYear}
@@ -617,39 +616,6 @@ export default function AccountPage() {
               </div>
             </div>
 
-            {/* Team logo position picker */}
-            {player.teamLogoPath && (
-              <div style={{ marginBottom: 16 }}>
-                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t("logo_position_team")} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({t("logo_position_team_hint")})</span></p>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {(["top-right", "bottom-left", "bottom-right"] as const).map((pos) => {
-                    const clubPos = player.emblemPosition && player.emblemPosition !== "top-left" ? player.emblemPosition : "top-right";
-                    const currentTeam = player.teamLogoPosition ?? "bottom-right";
-                    const isBlocked = pos === clubPos;
-                    return (
-                      <button
-                        key={pos}
-                        disabled={isBlocked}
-                        className={currentTeam === pos ? "primary" : "ghost"}
-                        style={{ fontSize: 11, padding: "6px 12px", opacity: isBlocked ? 0.35 : 1 }}
-                        onClick={async () => {
-                          if (isBlocked) return;
-                          await fetch("/api/account/profile", {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ teamLogoPosition: pos }),
-                          });
-                          await fetchPlayer();
-                        }}
-                      >
-                        {pos === "top-right" ? t("pos_top_right") : pos === "bottom-left" ? t("pos_bottom_left") : t("pos_bottom_right")}
-                        {isBlocked && " 🔒"}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {/* Badge list with catalogue + pin toggles */}
 

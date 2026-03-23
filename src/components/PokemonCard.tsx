@@ -13,7 +13,6 @@ type Props = {
   clubLogoPath?: string | null;
   emblemPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | null;
   teamLogoPath?: string | null;
-  teamLogoPosition?: "top-left" | "top-right" | "bottom-left" | "bottom-right" | null;
   badges?: string[];
   pinnedBadges?: string[];
   startYear?: number | null;
@@ -35,7 +34,7 @@ function getCountryCode(name: string): string | null {
   return entry ? entry.code.toLowerCase() : null;
 }
 
-export function PokemonCard({ name, country, city, photoPath, clubLogoPath, emblemPosition = "top-left", teamLogoPath, teamLogoPosition, badges = [], pinnedBadges, startYear, hand, gender, showGender = false, theme = "default", variant = "classic", metalBorder, holoVariant, cardFx }: Props) {
+export function PokemonCard({ name, country, city, photoPath, clubLogoPath, emblemPosition = "top-left", teamLogoPath, badges = [], pinnedBadges, startYear, hand, gender, showGender = false, theme = "default", variant = "classic", metalBorder, holoVariant, cardFx }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [cardStyle, setCardStyle] = useState<React.CSSProperties>({});
   const [isHovered, setIsHovered] = useState(false);
@@ -105,14 +104,8 @@ export function PokemonCard({ name, country, city, photoPath, clubLogoPath, embl
   const countryCode = getCountryCode(country);
   const flagSrc = countryCode ? `https://flagcdn.com/w80/${countryCode}.png` : null;
 
-  // Club logo corner (flag always top-left)
+  // Club logo corner (flag always top-left, so club goes elsewhere)
   const clubCorner = (emblemPosition && emblemPosition !== "top-left") ? emblemPosition : "top-right";
-  // Team logo corner — auto-shift if same as club
-  const ALL_CORNERS = ["top-right", "bottom-right", "bottom-left"] as const;
-  const rawTeamCorner = (teamLogoPosition ?? "bottom-right") as string;
-  const teamCorner = rawTeamCorner === clubCorner
-    ? (ALL_CORNERS.find(c => c !== clubCorner) ?? "bottom-left")
-    : rawTeamCorner;
 
   if (variant === "fullart") {
     return (
@@ -140,15 +133,17 @@ export function PokemonCard({ name, country, city, photoPath, clubLogoPath, embl
             {rarity !== "legendary" && <div className="pkmn-card__glare" />}
           </div>
 
-          {/* Emblems — flag always top-left, club + team in chosen corners */}
-          {flagSrc && (
-            <img src={flagSrc} alt={country} className="pkmn-card__emblem pkmn-card__emblem--top-left pkmn-card__emblem--flag" style={{ position: "absolute", top: 18, left: 18, transform: "none" }} />
-          )}
+          {/* Flag + team logo stacked top-left; club logo in its corner */}
+          <div className="pkmn-card__emblem-stack" style={{ position: "absolute", top: 18, left: 18, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            {flagSrc && (
+              <img src={flagSrc} alt={country} className="pkmn-card__emblem pkmn-card__emblem--flag" style={{ position: "static", transform: "none" }} />
+            )}
+            {teamLogoPath && (
+              <img src={teamLogoPath} alt="Team" className="pkmn-card__emblem pkmn-card__emblem--team" style={{ position: "static", transform: "none" }} />
+            )}
+          </div>
           {clubLogoPath && (
             <img src={clubLogoPath} alt="Club" className="pkmn-card__emblem pkmn-card__emblem--club" style={{ position: "absolute", transform: "none", ...(clubCorner.startsWith("top") ? { top: 18 } : { bottom: 18 }), ...(clubCorner.endsWith("right") ? { right: 18 } : { left: 18 }) }} />
-          )}
-          {teamLogoPath && (
-            <img src={teamLogoPath} alt="Team" className="pkmn-card__emblem pkmn-card__emblem--team" style={{ position: "absolute", transform: "none", ...(teamCorner.startsWith("top") ? { top: 18 } : { bottom: 18 }), ...(teamCorner.endsWith("right") ? { right: 18 } : { left: 18 }) }} />
           )}
 
           {/* Overlay info at bottom */}
@@ -234,28 +229,21 @@ export function PokemonCard({ name, country, city, photoPath, clubLogoPath, embl
           {rarity !== "legendary" && <div className="pkmn-card__sparkle" />}
           {rarity !== "legendary" && <div className="pkmn-card__holo" />}
           {rarity !== "legendary" && <div className="pkmn-card__glare" />}
-          {/* Flag — always top-left */}
-          {flagSrc && (
-            <img
-              src={flagSrc}
-              alt={country}
-              className="pkmn-card__emblem pkmn-card__emblem--top-left pkmn-card__emblem--flag"
-            />
-          )}
+          {/* Flag + team logo stacked top-left */}
+          <div className="pkmn-card__emblem-stack pkmn-card__emblem--top-left">
+            {flagSrc && (
+              <img src={flagSrc} alt={country} className="pkmn-card__emblem pkmn-card__emblem--flag" />
+            )}
+            {teamLogoPath && (
+              <img src={teamLogoPath} alt="Team" className="pkmn-card__emblem pkmn-card__emblem--team" />
+            )}
+          </div>
           {/* Club logo */}
           {clubLogoPath && (
             <img
               src={clubLogoPath}
               alt="Club"
               className={`pkmn-card__emblem pkmn-card__emblem--${clubCorner} pkmn-card__emblem--club`}
-            />
-          )}
-          {/* Team logo */}
-          {teamLogoPath && (
-            <img
-              src={teamLogoPath}
-              alt="Team"
-              className={`pkmn-card__emblem pkmn-card__emblem--${teamCorner} pkmn-card__emblem--team`}
             />
           )}
         </div>

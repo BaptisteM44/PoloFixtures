@@ -30,7 +30,7 @@ export default async function ClubPage({
               id: true, name: true, slug: true, country: true, city: true,
               photoPath: true, badges: true, pinnedBadges: true,
               clubLogoPath: true, emblemPosition: true,
-              teamLogoPath: true, teamLogoPosition: true,
+              teamLogoPath: true,
               startYear: true, hand: true, gender: true, showGender: true,
             },
           },

@@ -26,7 +26,6 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
           clubLogoPath={player.clubLogoPath}
           emblemPosition={(player.emblemPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "top-right"}
           teamLogoPath={player.teamLogoPath}
-          teamLogoPosition={(player.teamLogoPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "bottom-right"}
           badges={player.badges}
           pinnedBadges={player.pinnedBadges}
           startYear={player.startYear}

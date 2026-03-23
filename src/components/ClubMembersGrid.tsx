@@ -16,7 +16,6 @@ type Member = {
     clubLogoPath: string | null;
     emblemPosition: string | null;
     teamLogoPath: string | null;
-    teamLogoPosition: string | null;
     badges: string[];
     pinnedBadges: string[];
     startYear: number | null;
@@ -58,7 +57,6 @@ export function ClubMembersGrid({ members, emptyLabel }: { members: Member[]; em
             clubLogoPath={m.player.clubLogoPath}
             emblemPosition={(m.player.emblemPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "top-right"}
             teamLogoPath={m.player.teamLogoPath}
-            teamLogoPosition={(m.player.teamLogoPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "bottom-right"}
             badges={m.player.badges}
             pinnedBadges={m.player.pinnedBadges}
             startYear={m.player.startYear}
