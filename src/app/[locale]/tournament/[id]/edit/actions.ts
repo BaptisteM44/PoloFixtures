@@ -289,15 +289,23 @@ export async function generateBracketAction(id: string) {
     }
 
     if (tournament.sundayFormat === "DE") {
-      // Generic DE linking for any bracket size
-      // Upper rounds: W1..W(maxUR) — winner advances, loser drops to lower
-      // Lower rounds: L1..L(maxLR) — winner advances, loser eliminated
-      // Grand Final: G (single match)
+      // DE linking structure (Challonge-style):
       //
-      // Lower bracket structure (for size=2^n, upperRounds=n):
-      //   LR(2k-1) [k=1..n-1]: receives losers from Upper R(k), plays vs each other
-      //   LR(2k)   [k=1..n-1]: survivors play vs losers from Upper R(k+1)
-      // Lower Final: LR(2n-2+1) = LR(2n-1) — single match, winner to Grand Final
+      // Lower bracket rounds (1-indexed):
+      //   LR1: receives UR1 losers (slot B) AND UR2 losers (slot A)
+      //         → both UR1 and UR2 losers go to LR1 when BYEs exist
+      //   LR2: LR1 survivors pair off
+      //   LR3: UR3 losers (slot B) vs LR2 survivors (slot A)
+      //   LR4: LR3 survivors pair off
+      //   ...
+      //   LR(2k-1) for k≥2: UR(k+1) losers (slot B) vs LR(2k-2) survivors (slot A)
+      //   LR(2k):   LR(2k-1) survivors pair off
+      //   Lower Final (last LR): winner → Grand Final slot B
+      //
+      // Upper loser routing:
+      //   UR1 → LR1 slot B
+      //   UR2 → LR1 slot A
+      //   UR(k) for k≥3 → LR(2k-3) slot B
 
       const maxUR = Math.max(...created.filter(m => m.bracketSide === "W").map(m => m.roundIndex), 0);
       const maxLR = Math.max(...created.filter(m => m.bracketSide === "L").map(m => m.roundIndex), 0);
@@ -314,70 +322,110 @@ export async function generateBracketAction(id: string) {
           lowerByRound.get(m.roundIndex)!.push(m);
         }
       }
-      // Sort all round arrays by positionInRound
       for (const arr of [...upperByRound.values(), ...lowerByRound.values()]) {
         arr.sort((a, b) => a.positionInRound - b.positionInRound);
       }
+
+      // Determine if this bracket has BYEs (some UR1 matches don't exist)
+      const ur1Matches = upperByRound.get(1) ?? [];
+      // For size=2^n bracket, UR1 should have size/2 matches if no BYEs
+      // Detect BYEs by checking if UR1 has fewer matches than UR2
+      const ur2Matches = upperByRound.get(2) ?? [];
+      const hasByes = ur1Matches.length < ur2Matches.length;
 
       // ── Upper rounds ────────────────────────────────────────────────────
       for (let ur = 1; ur <= maxUR; ur++) {
         const uMatches = upperByRound.get(ur) ?? [];
         const uNext = upperByRound.get(ur + 1) ?? [];
-        // Upper losers go to Lower round: lr = 2*(ur-1)+1 for ur=1 → lr=1, ur=2 → lr=3, etc.
-        const lrForLosers = 2 * ur - 1;
+        const isLastUpper = ur === maxUR;
+
+        // Loser routing (depends on BYE presence):
+        //
+        // WITH BYEs:
+        //   ur=1 → LR1 slot B (UR1 losers, lower seeds)
+        //   ur=2 → LR1 slot A (UR2 losers = BYE seeds who just lost)
+        //   ur≥3 → LR(2*ur-3) slot B
+        //
+        // WITHOUT BYEs:
+        //   ur=1 → LR1 (both slots, losers pair off; 2 losers per LR1 match)
+        //   ur≥2 → LR(2*ur-2) slot B
+        let lrForLosers: number;
+        let loserSlot: "A" | "B";
+
+        if (hasByes) {
+          if (ur === 1) { lrForLosers = 1; loserSlot = "B"; }
+          else if (ur === 2) { lrForLosers = 1; loserSlot = "A"; }
+          else { lrForLosers = 2 * ur - 3; loserSlot = "B"; }
+        } else {
+          if (ur === 1) { lrForLosers = 1; loserSlot = "B"; } // will fill both A and B
+          else { lrForLosers = 2 * ur - 2; loserSlot = "B"; }
+        }
         const lMatches = lowerByRound.get(lrForLosers) ?? [];
 
         for (let i = 0; i < uMatches.length; i++) {
           const nextUpperPos = Math.floor(uMatches[i].positionInRound / 2);
           const nextUpperMatch = uNext.find(m => m.positionInRound === nextUpperPos);
 
-          // Loser slot: in LR(2k-1) each lower match gets 2 losers from upper
-          // Lower match position = floor(i/2), loser is slot A (i%2==0) or B (i%2==1)
-          const lowerPos = Math.floor(i / 2);
+          // For no-BYEs ur=1: 2 losers pair into each LR1 match → lowerPos = floor(i/2)
+          // For all other cases: 1 loser per LR match → lowerPos = i
+          const lowerPos = (!hasByes && ur === 1) ? Math.floor(i / 2) : i;
           const lowerMatch = lMatches.find(m => m.positionInRound === lowerPos);
 
-          const isLastUpper = ur === maxUR;
+          // For no-BYEs ur=1: slot alternates A/B based on i%2
+          const effectiveLoserSlot: "A" | "B" = (!hasByes && ur === 1)
+            ? (i % 2 === 0 ? "A" : "B")
+            : loserSlot;
+
           const data: Record<string, unknown> = {
             nextMatchWinId: isLastUpper ? (grandFinal?.id ?? null) : (nextUpperMatch?.id ?? null),
             nextSlotWin: isLastUpper ? "A" : (uMatches[i].positionInRound % 2 === 0 ? "A" : "B"),
           };
           if (lowerMatch && !isLastUpper) {
             data.nextMatchLoseId = lowerMatch.id;
-            data.nextSlotLose = i % 2 === 0 ? "A" : "B";
+            data.nextSlotLose = effectiveLoserSlot;
           }
           await tx.match.update({ where: { id: uMatches[i].id }, data });
         }
       }
 
       // ── Lower rounds ────────────────────────────────────────────────────
+      // With BYEs:
+      //   Odd LR (LR1, LR3...): receive upper losers (slot B). Winners pair off → next even LR
+      //   Even LR (LR2, LR4...): pure survivor round. Winners → same pos in next odd LR, slot A
+      //   Last LR (always odd = Lower Final): winner → Grand Final slot B
+      //
+      // Without BYEs:
+      //   Odd LR (LR1, LR3...): pure survivor round (UR1 losers pair off). Winners → same pos in next even LR
+      //   Even LR (LR2, LR4...): receive upper losers (slot B). Winners → pair off → next odd LR
+      //   Last LR (always even = Lower Final): winner → Grand Final slot B
       for (let lr = 1; lr <= maxLR; lr++) {
         const lMatches = lowerByRound.get(lr) ?? [];
         const isLastLower = lr === maxLR;
-        const lNext = isLastLower ? null : lowerByRound.get(lr + 1) ?? [];
 
         for (let i = 0; i < lMatches.length; i++) {
           let nextMatchId: string | null = null;
           let nextSlot: "A" | "B" = "A";
 
           if (isLastLower) {
-            // Lower Final → Grand Final slot B
             nextMatchId = grandFinal?.id ?? null;
             nextSlot = "B";
-          } else if (lNext) {
-            // Even lower rounds (lr=2,4,6...): matches pair off, winner goes to next
-            // Odd lower rounds (lr=1,3,5...): survivors advance, paired in next even round
-            if (lr % 2 === 1) {
-              // Odd: each match winner goes to next round (even), position matches
-              const nextPos = lMatches[i].positionInRound;
-              const nextMatch = lNext.find(m => m.positionInRound === nextPos);
-              nextMatchId = nextMatch?.id ?? null;
-              nextSlot = "A"; // lower survivor fills slot A
-            } else {
-              // Even: winners pair off in next round
+          } else {
+            const lNext = lowerByRound.get(lr + 1) ?? [];
+            // "pure" round = survivors pair off (winners pair off into next round)
+            // "injection" round = receives upper loser (winners go to same pos, slot A in next)
+            const isPureRound = hasByes ? (lr % 2 === 0) : (lr % 2 === 1);
+
+            if (isPureRound) {
+              // Winners pair off into next round
               const nextPos = Math.floor(i / 2);
               const nextMatch = lNext.find(m => m.positionInRound === nextPos);
               nextMatchId = nextMatch?.id ?? null;
               nextSlot = i % 2 === 0 ? "A" : "B";
+            } else {
+              // Injection round: winners go to same position in next round, slot A
+              const nextMatch = lNext.find(m => m.positionInRound === lMatches[i].positionInRound);
+              nextMatchId = nextMatch?.id ?? null;
+              nextSlot = "A";
             }
           }
 
@@ -387,9 +435,6 @@ export async function generateBracketAction(id: string) {
           });
         }
       }
-
-      // Lower Final → Grand Final B (already handled above in the loop, but ensure GF exists)
-      // Grand Final has no next match — done
     }
   });
 

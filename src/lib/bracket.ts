@@ -350,6 +350,7 @@ function generateDoubleElim(
   const sorted = [...teams];
   const size = nextPowerOf2(sorted.length);
   const upperRounds = Math.log2(size); // e.g. 4 for size=16
+  const byeCount = size - sorted.length; // e.g. 4 for 12 teams in size=16
   const seedOrder = bracketSeeding(size);
   const slots: (Team | null)[] = seedOrder.map((s) => sorted[s - 1] ?? null);
 
@@ -358,7 +359,7 @@ function generateDoubleElim(
   const matches: GeneratedMatch[] = [];
   let baseTime = new Date(startAt);
 
-  // upperGrid[r][pos] = match (sparse — BYEs skipped)
+  // upperGrid[r][pos] = match (sparse — BYEs skipped), r is 0-indexed
   const upperGrid: Map<number, GeneratedMatch>[] = [];
 
   // ── Upper Bracket — all rounds ─────────────────────────────────────────
@@ -378,29 +379,25 @@ function generateDoubleElim(
         if (!a || !b) continue;
         teamAId = a;
         teamBId = b;
-      } else {
-        // Place BYE advances from previous round
+      } else if (r === 1) {
+        // Upper R2: pre-populate BYE advances from R1
+        // Each R2 match at pos m is fed by R1 matches at pos m*2 and m*2+1
+        // If R1 was skipped (BYE), the BYE seed goes directly into R2
         const prevMap = upperGrid[r - 1];
-        const prevMatchesInRound = size / Math.pow(2, r);
         const posA = m * 2;
         const posB = m * 2 + 1;
-        if (r === 1) {
-          // BYE advance from R1: use slot data
-          if (!prevMap?.has(posA)) {
-            teamAId = slots[posA * 2]?.id ?? slots[posA * 2 + 1]?.id ?? null;
-          }
-          if (!prevMap?.has(posB)) {
-            teamBId = slots[posB * 2]?.id ?? slots[posB * 2 + 1]?.id ?? null;
-          }
+        if (!prevMap?.has(posA)) {
+          teamAId = slots[posA * 2]?.id ?? slots[posA * 2 + 1]?.id ?? null;
         }
-        // For r >= 2 the teams come from previous match winners (set at runtime)
-        // Only pre-populate if both slots in prev round were missing (both BYE-advanced)
-        void prevMatchesInRound; // used for documentation only
+        if (!prevMap?.has(posB)) {
+          teamBId = slots[posB * 2]?.id ?? slots[posB * 2 + 1]?.id ?? null;
+        }
       }
+      // r >= 2: both slots filled at runtime by previous winners
 
       const match: GeneratedMatch = {
         phase: "BRACKET",
-        bracketSide: r === upperRounds - 1 ? "G" : "W",
+        bracketSide: "W", // All upper rounds are "W"; Grand Final is separate with "G"
         roundIndex: r + 1,
         positionInRound: m,
         courtName: courtNames[courtIdx % courtNames.length],
@@ -419,32 +416,30 @@ function generateDoubleElim(
     baseTime = addMinutes(baseTime, Math.ceil(Math.max(1, roundMatchCount) / courtNames.length) * slotMin + roundBreak);
   }
 
-  // ── Lower Bracket — 2*(upperRounds-1) rounds ──────────────────────────
-  // Lower R(2k-1): receives losers from Upper R(k), plays them off
-  // Lower R(2k):   survivors play against losers from Upper R(k+1)
-  // Total lower rounds = 2*(upperRounds-1), then Lower Final
-  const lowerRounds = 2 * (upperRounds - 1);
-  const lowerGrid: Map<number, GeneratedMatch>[] = [];
+  // ── Lower Bracket ──────────────────────────────────────────────────────
+  // Lower bracket structure depends on whether BYEs exist:
+  //
+  // WITH BYEs (byeCount > 0): UR1 and UR2 losers merge into LR1 (Challonge style).
+  //   Total lower rounds = 2*(upperRounds-1) - 1
+  //   Size formula (0-indexed lr): (size/4) / 2^floor((lr+1)/2)
+  //     LR1: size/4, LR2: size/8, LR3: size/8, LR4: size/16, LR5: size/16 ...
+  //
+  // WITHOUT BYEs: UR1 losers pair off in LR1, then alternating injection/pure rounds.
+  //   Total lower rounds = 2*(upperRounds-1)
+  //   Size formula (0-indexed lr): (size/4) / 2^floor(lr/2)
+  //     LR1: size/4, LR2: size/4, LR3: size/8, LR4: size/8, LR5: size/16 ...
+  const hasByes = byeCount > 0;
+  const totalLowerRounds = hasByes
+    ? 2 * (upperRounds - 1) - 1
+    : 2 * (upperRounds - 1);
 
-  for (let lr = 0; lr < lowerRounds; lr++) {
-    // Number of matches in this lower round
-    // Lower bracket starts with size/4 matches and halves every 2 rounds
-    const lowerSize = (size / 4) / Math.pow(2, Math.floor(lr / 2));
-    const roundMap = new Map<number, GeneratedMatch>();
+  for (let lr = 0; lr < totalLowerRounds; lr++) {
+    const lowerSize = hasByes
+      ? (size / 4) / Math.pow(2, Math.floor((lr + 1) / 2))
+      : (size / 4) / Math.pow(2, Math.floor(lr / 2));
     let courtIdx = 0;
 
     for (let m = 0; m < lowerSize; m++) {
-      // On odd lower rounds (lr=0,2,4...), check if this match has any feeders
-      // lr=0 (Lower R1): fed by losers from Upper R1
-      // Skip if both feeding Upper R1 matches were BYEs (no losers)
-      if (lr === 0) {
-        const upperR1Map = upperGrid[0];
-        // Each Lower R1 match at pos m is fed by Upper R1 matches at pos m*2 and m*2+1
-        const feederA = upperR1Map?.has(m * 2);
-        const feederB = upperR1Map?.has(m * 2 + 1);
-        if (!feederA && !feederB) continue;
-      }
-
       const match: GeneratedMatch = {
         phase: "BRACKET", bracketSide: "L",
         roundIndex: lr + 1,
@@ -455,32 +450,17 @@ function generateDoubleElim(
         teamAId: null, teamBId: null,
       };
       courtIdx++;
-      roundMap.set(m, match);
       matches.push(match);
     }
 
-    lowerGrid.push(roundMap);
-
-    const roundMatchCount = roundMap.size;
+    const roundMatchCount = lowerSize;
     baseTime = addMinutes(baseTime, Math.ceil(Math.max(1, roundMatchCount) / courtNames.length) * slotMin + roundBreak);
   }
-
-  // ── Lower Final ────────────────────────────────────────────────────────
-  const lowerFinal: GeneratedMatch = {
-    phase: "BRACKET", bracketSide: "L",
-    roundIndex: lowerRounds + 1,
-    positionInRound: 0,
-    courtName: courtNames[0],
-    startAt: new Date(baseTime), dayIndex: "SUN", status: "SCHEDULED",
-    teamAId: null, teamBId: null,
-  };
-  matches.push(lowerFinal);
-  baseTime = addMinutes(baseTime, slotMin + roundBreak);
 
   // ── Grand Final ────────────────────────────────────────────────────────
   const grandFinal: GeneratedMatch = {
     phase: "BRACKET", bracketSide: "G",
-    roundIndex: lowerRounds + 2,
+    roundIndex: totalLowerRounds + 2,
     positionInRound: 0,
     courtName: courtNames[0],
     startAt: new Date(baseTime), dayIndex: "SUN", status: "SCHEDULED",
