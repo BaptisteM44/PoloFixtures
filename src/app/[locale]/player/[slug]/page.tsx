@@ -1,8 +1,40 @@
 import { prisma } from "@/lib/db";
-import { PokemonCard } from "@/components/PokemonCard";
+import { PlayerCardWithShare } from "@/components/PlayerCardWithShare";
 import { ContactModal } from "@/components/ContactModal";
 import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
+import type { Metadata } from "next";
+
+export const revalidate = 60;
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const player =
+    (await prisma.player.findUnique({ where: { slug: params.slug } })) ??
+    (await prisma.player.findFirst({ where: { id: params.slug } }));
+  if (!player) return { title: "Player not found" };
+
+  const title = `${player.name} — Poloperator`;
+  const description = player.city
+    ? `${player.name} from ${player.city}, ${player.country} — Bike Polo player on Poloperator`
+    : `${player.name} — Bike Polo player on Poloperator`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+      ...(player.photoPath ? { images: [{ url: player.photoPath, width: 400, height: 400 }] } : {}),
+    },
+    twitter: {
+      card: player.photoPath ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(player.photoPath ? { images: [player.photoPath] } : {}),
+    },
+  };
+}
 
 export default async function PlayerPage({ params }: { params: { slug: string } }) {
   const t = await getTranslations("player");
@@ -18,9 +50,9 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
   return (
     <div className="player-profile">
       <div style={{ display: "flex", gap: 40, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <PokemonCard
+        <PlayerCardWithShare
           name={player.name}
-          country={player.country}
+          country={player.country ?? ""}
           city={player.city}
           photoPath={player.photoPath}
           clubLogoPath={player.clubLogoPath}

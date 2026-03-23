@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { PokemonCard } from "@/components/PokemonCard";
+import { ShareCardButton } from "@/components/ShareCardButton";
 import { COUNTRIES } from "@/lib/countries";
 import { BadgeShowcase } from "@/components/BadgeShowcase";
 import { ClubPicker } from "@/components/ClubPicker";
@@ -55,6 +56,7 @@ export default function AccountPage() {
   const t = useTranslations("account");
   const { data: session, status } = useSession();
   const router = useRouter();
+  const cardRef = useRef<HTMLDivElement>(null);
   const [player, setPlayer] = useState<Player | null>(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: "", city: "", country: "", bio: "", startYear: "", hand: "", gender: "" as "" | "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY", showGender: false, diets: [] as string[] });
@@ -241,6 +243,7 @@ export default function AccountPage() {
         {/* Pokemon card + photo upload */}
         <div className="account-sidebar">
           <PokemonCard
+            ref={cardRef}
             name={player.name}
             country={player.country}
             city={player.city}
@@ -254,7 +257,8 @@ export default function AccountPage() {
             gender={player.gender}
             showGender={player.showGender}
           />
-          <div style={{ marginTop: 12, textAlign: "center" }}>
+          <div style={{ marginTop: 12, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <ShareCardButton cardRef={cardRef} playerName={player.name} />
             <label style={{ cursor: "pointer", display: "inline-block" }}>
               <span className="ghost" style={{ fontSize: 12, display: "inline-block", cursor: "pointer" }}>
                 {uploading ? t("photo_uploading") : t("photo_change")}

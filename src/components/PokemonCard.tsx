@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
 import { getBadgeInfo, getCardRarity } from "@/lib/badge-catalog";
 import { COUNTRIES } from "@/lib/countries";
 import { HoloEffect } from "./HoloEffect";
@@ -33,8 +33,9 @@ function getCountryCode(name: string): string | null {
   return entry ? entry.code.toLowerCase() : null;
 }
 
-export function PokemonCard({ name, country, city, photoPath, clubLogoPath, teamLogoPath, badges = [], pinnedBadges, startYear, hand, gender, showGender = false, theme = "default", variant = "classic", metalBorder, holoVariant, cardFx }: Props) {
+export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCard({ name, country, city, photoPath, clubLogoPath, teamLogoPath, badges = [], pinnedBadges, startYear, hand, gender, showGender = false, theme = "default", variant = "classic", metalBorder, holoVariant, cardFx }, externalRef) {
   const cardRef = useRef<HTMLDivElement>(null);
+  useImperativeHandle(externalRef, () => cardRef.current!, []);
   const [cardStyle, setCardStyle] = useState<React.CSSProperties>({});
   const [isHovered, setIsHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -275,4 +276,4 @@ export function PokemonCard({ name, country, city, photoPath, clubLogoPath, team
       </div>
     </div>
   );
-}
+});
