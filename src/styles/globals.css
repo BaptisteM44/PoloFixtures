@@ -5337,68 +5337,20 @@ textarea {
    ======================== */
 
 /* ── Scroll wrapper with fade indicators ── */
-.bracket-scroll-wrapper {
+.bracket-fit-frame {
   position: relative;
+  width: 100%;
   overflow: hidden;
 }
 
-.bracket-scroll-inner {
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 0 0 16px;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  cursor: grab;
-}
-
-.bracket-scroll-inner:active { cursor: grabbing; }
-
-/* Fade dégradé gauche/droite pour indiquer le scroll */
-.bracket-scroll-fade {
-  position: absolute;
-  top: 0;
-  bottom: 16px;
-  width: 48px;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.bracket-scroll-fade--left {
-  left: 0;
-  background: linear-gradient(to right, var(--surface), transparent);
-}
-
-.bracket-scroll-fade--right {
-  right: 0;
-  background: linear-gradient(to left, var(--surface), transparent);
-}
-
-/* Flèche scroll visible quand on peut scroller à droite */
-.bracket-scroll-fade--right::after {
-  content: "›";
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 22px;
-  font-weight: 900;
-  color: var(--text-muted);
-  animation: pulseRight 1.5s ease-in-out infinite;
-}
-
-@keyframes pulseRight {
-  0%, 100% { opacity: 0.4; transform: translateY(-50%) translateX(0); }
-  50% { opacity: 1; transform: translateY(-50%) translateX(4px); }
-}
-
-.bracket-scroll {
-  overflow-x: auto;
-  padding-bottom: 16px;
+.bracket-fit-content {
+  width: max-content;
+  transform-origin: top left;
+  will-change: transform;
 }
 
 .bracket-tree {
   position: relative;
-  min-width: max-content;
   padding: 8px 8px 16px;
 }
 
@@ -5422,6 +5374,10 @@ textarea {
   text-align: left;
 }
 
+.bracket-match-btn--compact {
+  width: 146px;
+}
+
 .bracket-match-btn:hover .bracket-match-card {
   border-color: var(--teal);
 }
@@ -5434,6 +5390,24 @@ textarea {
   background: var(--surface);
   position: relative;
   transition: border-color var(--transition);
+}
+
+.bracket-match-card--compact {
+  width: 146px;
+}
+
+.bracket-match-card--compact .bracket-team {
+  padding: 4px 6px;
+  font-size: 10px;
+}
+
+.bracket-match-card--compact .bracket-score {
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.bracket-match-card--compact .bracket-match-number {
+  padding-inline: 4px;
 }
 
 .bracket-match-card--live {
@@ -5523,8 +5497,8 @@ textarea {
 }
 
 .de-section {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
+  min-width: 0;
 }
 
 .de-section-title {
