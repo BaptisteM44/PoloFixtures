@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { TournamentRefereePanel } from "@/components/TournamentRefereePanel";
+import { TournamentRefereePanel } from "@/components/TournamentRefereePanelLoader";
 
 export default async function RefereeMatchPage({ params }: { params: { id: string } }) {
   const session = await auth();
