@@ -352,7 +352,6 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                         city={m.city}
                         photoPath={m.photoPath}
                         clubLogoPath={m.clubLogoPath}
-                        emblemPosition={(m.emblemPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "top-left"}
                         badges={m.badges}
                         pinnedBadges={m.pinnedBadges}
                         startYear={m.startYear}
@@ -368,7 +367,6 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                       city={m.city}
                       photoPath={m.photoPath}
                       clubLogoPath={m.clubLogoPath}
-                      emblemPosition={(m.emblemPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "top-left"}
                       badges={m.badges}
                       pinnedBadges={m.pinnedBadges}
                       startYear={m.startYear}

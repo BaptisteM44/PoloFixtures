@@ -246,7 +246,6 @@ export default function AccountPage() {
             city={player.city}
             photoPath={player.photoPath}
             clubLogoPath={player.clubLogoPath}
-            emblemPosition={(player.emblemPosition as "top-left" | "top-right" | "bottom-left" | "bottom-right") ?? "top-right"}
             teamLogoPath={player.teamLogoPath}
             badges={player.badges}
             pinnedBadges={player.pinnedBadges}
@@ -536,34 +535,6 @@ export default function AccountPage() {
           {/* Badges & Emblème */}
           <div className="panel">
 
-            {/* Logo position picker */}
-            {player.clubLogoPath && (
-              <div style={{ marginBottom: 16 }}>
-                <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t("logo_position")} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({t("logo_position_hint")})</span></p>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {(["top-right", "bottom-left", "bottom-right"] as const).map((pos) => {
-                    const current = player.emblemPosition && player.emblemPosition !== "top-left" ? player.emblemPosition : "top-right";
-                    return (
-                      <button
-                        key={pos}
-                        className={current === pos ? "primary" : "ghost"}
-                        style={{ fontSize: 11, padding: "6px 12px" }}
-                        onClick={async () => {
-                          await fetch("/api/account/profile", {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ emblemPosition: pos }),
-                          });
-                          await fetchPlayer();
-                        }}
-                      >
-                        {pos === "top-right" ? t("pos_top_right") : pos === "bottom-left" ? t("pos_bottom_left") : t("pos_bottom_right")}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {/* ── Team logo upload ── */}
             <div style={{ marginBottom: 16, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
