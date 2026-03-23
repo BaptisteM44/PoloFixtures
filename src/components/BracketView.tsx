@@ -6,31 +6,28 @@ import { MatchEditPanel, type MatchForEdit } from "./MatchEditPanel";
 
 export type MatchWithTeams = Match & { teamA?: Team | null; teamB?: Team | null };
 
-const SE_ROUND_NAMES: Record<number, string> = {
-  1: "Quarts", 2: "Demies", 3: "Finale", 4: "Finale",
-};
-
 function getDERoundLabel(side: string, roundIndex: number, maxUpperRound: number, maxLowerRound: number): string {
   if (side === "G") return "Grande Finale";
   if (side === "W") {
-    if (roundIndex === maxUpperRound) return "UB Finale";
-    if (roundIndex === maxUpperRound - 1) return "UB Demies";
-    if (roundIndex === maxUpperRound - 2) return "UB Quarts";
-    return `UB R${roundIndex}`;
+    if (roundIndex === maxUpperRound) return "WB Finale";
+    if (roundIndex === maxUpperRound - 1) return "WB Demies";
+    if (roundIndex === maxUpperRound - 2) return "WB Quarts";
+    return `WB R${roundIndex}`;
   }
-  // Lower bracket
   if (roundIndex === maxLowerRound) return "LB Finale";
-  if (roundIndex === maxLowerRound - 1) return "LB Demies";
   return `LB R${roundIndex}`;
 }
 
-// ── Single match card ─────────────────────────────────────────────────────
+// ── Layout constants ────────────────────────────────────────────────────
 
-const CARD_W = 180;
-const COL_W = 220;
-const CELL_BASE = 96;
-const CARD_H = 72;
-const CARD_OFFSET_X = (COL_W - CARD_W) / 2; // 20px centré dans la colonne
+const CARD_W = 170;
+const CARD_H = 64;
+const COL_GAP = 48;    // horizontal gap between round columns (space for lines)
+const COL_W = CARD_W + COL_GAP;
+const CELL_BASE = 76;  // vertical slot height per match in R1
+const CARD_OFFSET_X = 0;
+
+// ── Single match card ─────────────────────────────────────────────────────
 
 function BracketCard({
   match,
@@ -51,11 +48,7 @@ function BracketCard({
   const winB = isFinished && match.scoreB > match.scoreA;
 
   return (
-    <button
-      type="button"
-      className={`bracket-match-btn`}
-      onClick={onEdit}
-    >
+    <button type="button" className="bracket-match-btn" onClick={onEdit}>
       <div className={[
         "bracket-match-card",
         isLive ? "bracket-match-card--live" : "",
@@ -131,8 +124,6 @@ export function BracketView({
     const es = new EventSource(`/api/sse?tournamentId=${tournamentId}`);
     es.addEventListener("match", (event) => {
       const payload = JSON.parse((event as MessageEvent).data);
-      // Match update depuis events route: payload.data.match
-      // Match update depuis PUT route: payload.data directement
       const updated: Partial<MatchWithTeams> =
         payload?.data?.match ?? (payload?.data?.id ? payload.data : null);
       if (updated?.id) {
@@ -216,55 +207,98 @@ function SEBracket({ matches, onEdit, selectedId }: {
 
   const sortedRounds = Array.from(rounds.entries()).sort(([a], [b]) => a - b);
   const maxRound = Math.max(...rounds.keys());
-  // Total height based on the full bracket size (2^(maxRound-1) slots in R1)
   const fullR1Slots = Math.pow(2, maxRound - 1);
   const totalHeight = fullR1Slots * CELL_BASE;
+  const headerOffset = 28;
 
-  // Numérotation séquentielle des matchs R1→finale
+  // Numbering
   let matchCounter = 1;
   const matchNumbers = new Map<string, number>();
   for (const [, roundMatches] of sortedRounds) {
     const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
-    for (const m of sorted) {
-      matchNumbers.set(m.id, matchCounter++);
-    }
+    for (const m of sorted) matchNumbers.set(m.id, matchCounter++);
   }
 
-  return (
-    <div className="bracket-tree">
-      {sortedRounds.map(([roundIdx, roundMatches]) => {
-        const r = roundIdx - sortedRounds[0][0];
-        // Taille de slot : chaque match "représente" 2^r matchs du premier round
-        const slotsPerMatch = Math.pow(2, r);
-        const cellH = CELL_BASE * slotsPerMatch;
+  // Compute positions
+  const matchPositions = new Map<string, { colIdx: number; y: number }>();
+  sortedRounds.forEach(([roundIdx, roundMatches], colIdx) => {
+    const r = roundIdx - sortedRounds[0][0];
+    const cellH = CELL_BASE * Math.pow(2, r);
+    const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
+    sorted.forEach((m) => {
+      const pos = m.positionInRound ?? 0;
+      const top = pos * cellH + (cellH - CARD_H) / 2;
+      matchPositions.set(m.id, { colIdx, y: top });
+    });
+  });
 
-        const label = roundIdx === maxRound ? "🏆 Finale"
-          : roundIdx === maxRound - 1 ? "Demi-finales"
+  // Build SVG lines using nextMatchWinId
+  const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+  matches.forEach((m) => {
+    if (!m.nextMatchWinId) return;
+    const src = matchPositions.get(m.id);
+    const dst = matchPositions.get(m.nextMatchWinId);
+    if (!src || !dst) return;
+    lines.push({
+      x1: src.colIdx * COL_W + CARD_W,
+      y1: src.y + CARD_H / 2 + headerOffset,
+      x2: dst.colIdx * COL_W,
+      y2: dst.y + CARD_H / 2 + headerOffset,
+    });
+  });
+
+  const totalWidth = sortedRounds.length * COL_W;
+
+  return (
+    <div className="bracket-tree" style={{ position: "relative", width: totalWidth, minHeight: totalHeight + headerOffset }}>
+      <svg
+        width={totalWidth}
+        height={totalHeight + headerOffset}
+        style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none" }}
+      >
+        {lines.map((l, i) => {
+          const midX = (l.x1 + l.x2) / 2;
+          return (
+            <path
+              key={i}
+              d={`M ${l.x1} ${l.y1} H ${midX} V ${l.y2} H ${l.x2}`}
+              fill="none"
+              stroke="var(--border-light)"
+              strokeWidth="1.5"
+            />
+          );
+        })}
+      </svg>
+
+      {sortedRounds.map(([roundIdx, roundMatches], colIdx) => {
+        const r = roundIdx - sortedRounds[0][0];
+        const cellH = CELL_BASE * Math.pow(2, r);
+        const x = colIdx * COL_W;
+
+        const label = roundIdx === maxRound ? "Finale"
+          : roundIdx === maxRound - 1 ? "Demies"
           : roundIdx === maxRound - 2 ? "Quarts"
-          : `Round ${roundIdx}`;
+          : `R${roundIdx}`;
 
         const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
 
         return (
-          <div key={roundIdx} className="bracket-col">
+          <div key={roundIdx} style={{ position: "absolute", left: x, top: 0, width: CARD_W }}>
             <div className="bracket-round-header">{label}</div>
-            <div className="bracket-col-body" style={{ height: totalHeight, position: "relative" }}>
-              {sorted.map((m) => {
-                // Use positionInRound for placement (not index) to handle skipped BYEs
-                const pos = m.positionInRound ?? 0;
-                const top = pos * cellH + (cellH - CARD_H) / 2;
-                return (
-                  <div key={m.id} style={{ position: "absolute", top, left: CARD_OFFSET_X, width: CARD_W }}>
-                    <BracketCard
-                      match={m}
-                      onEdit={() => onEdit(m)}
-                      isSelected={selectedId === m.id}
-                      matchNumber={matchNumbers.get(m.id)}
-                    />
-                  </div>
-                );
-              })}
-            </div>
+            {sorted.map((m) => {
+              const pos = m.positionInRound ?? 0;
+              const top = pos * cellH + (cellH - CARD_H) / 2 + headerOffset;
+              return (
+                <div key={m.id} style={{ position: "absolute", top, left: CARD_OFFSET_X, width: CARD_W }}>
+                  <BracketCard
+                    match={m}
+                    onEdit={() => onEdit(m)}
+                    isSelected={selectedId === m.id}
+                    matchNumber={matchNumbers.get(m.id)}
+                  />
+                </div>
+              );
+            })}
           </div>
         );
       })}
@@ -286,8 +320,7 @@ function DEBracket({ matches, onEdit, selectedId }: {
   const maxUpperRound = upper.length > 0 ? Math.max(...upper.map((m) => m.roundIndex)) : 1;
   const maxLowerRound = lower.length > 0 ? Math.max(...lower.map((m) => m.roundIndex)) : 1;
 
-  // Number matches in Challonge play order (interleaved WB/LB):
-  // WB R1 → WB R2 → LB R1 → LB R2 → [WB Rk → LB R(2k-3) → LB R(2k-2)]… → GF
+  // Interleaved match numbering
   let matchCounter = 1;
   const matchNumbers = new Map<string, number>();
   {
@@ -305,29 +338,30 @@ function DEBracket({ matches, onEdit, selectedId }: {
       arr.sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
     }
 
-    const numUpper = (upperByRound.size > 0 ? Math.max(...upperByRound.keys()) : 0);
-
-    const numberRound = (matches: MatchWithTeams[]) => {
-      for (const m of matches) matchNumbers.set(m.id, matchCounter++);
+    const numUpper = upperByRound.size > 0 ? Math.max(...upperByRound.keys()) : 0;
+    const numberRound = (ms: MatchWithTeams[]) => {
+      for (const m of ms) matchNumbers.set(m.id, matchCounter++);
     };
 
-    // WB R1, WB R2
     numberRound(upperByRound.get(1) ?? []);
     numberRound(upperByRound.get(2) ?? []);
-    // LB R1, LB R2
     numberRound(lowerByRound.get(1) ?? []);
     numberRound(lowerByRound.get(2) ?? []);
-    // For k=3..maxUpper: WB Rk → LB R(2k-3) → LB R(2k-2)
     for (let k = 3; k <= numUpper; k++) {
       numberRound(upperByRound.get(k) ?? []);
       numberRound(lowerByRound.get(2 * k - 3) ?? []);
       numberRound(lowerByRound.get(2 * k - 2) ?? []);
     }
-    // Grand final
     for (const m of grand) matchNumbers.set(m.id, matchCounter++);
   }
 
-  const renderSection = (title: string, sectionMatches: MatchWithTeams[], accentClass: string) => {
+  // Render a bracket section (UB / LB / GF) with connector lines
+  const renderTreeSection = (
+    title: string,
+    sectionMatches: MatchWithTeams[],
+    accentClass: string,
+    useTreeSpacing: boolean, // true for UB (exponential), false for LB (flat)
+  ) => {
     const rounds = new Map<number, MatchWithTeams[]>();
     sectionMatches.forEach((m) => {
       const list = rounds.get(m.roundIndex) ?? [];
@@ -338,53 +372,115 @@ function DEBracket({ matches, onEdit, selectedId }: {
     const sortedR = Array.from(rounds.entries()).sort(([a], [b]) => a - b);
     const side = sectionMatches[0]?.bracketSide ?? "W";
 
-    // For upper bracket, use exponential spacing (like SE) so lines align.
-    // For lower/grand, use flat CELL_BASE spacing.
-    const isUpper = side === "W";
-    const firstRoundMaxPos = Math.max(
-      ...sectionMatches.filter(m => m.roundIndex === sortedR[0][0]).map(m => (m.positionInRound ?? 0) + 1),
-      1
-    );
-    const totalH = isUpper
-      ? firstRoundMaxPos * CELL_BASE * Math.pow(2, sortedR.length - 1) // exponential height for UB
-      : Math.max(...sectionMatches.map(m => (m.positionInRound ?? 0) + 1)) * CELL_BASE;
+    // Compute positions
+    const firstRoundCount = (rounds.get(sortedR[0][0]) ?? []).length;
+    const sectionHeight = useTreeSpacing
+      ? firstRoundCount * CELL_BASE * Math.pow(2, sortedR.length - 1)
+      : (Math.max(...sectionMatches.map(m => (m.positionInRound ?? 0) + 1)) * CELL_BASE);
+    const cappedH = Math.min(sectionHeight, firstRoundCount * CELL_BASE * 4);
+    const effectiveH = useTreeSpacing ? cappedH : sectionHeight;
 
-    // For upper bracket, limit height to be reasonable
-    const cappedH = Math.min(totalH, firstRoundMaxPos * CELL_BASE * 4);
+    const matchPositions = new Map<string, { colIdx: number; y: number }>();
+    const roundCols: Array<{ x: number; matches: Array<{ y: number; nextY: number | null; nextCol: number | null }> }> = [];
+
+    sortedR.forEach(([roundIdx, roundMatches], colIdx) => {
+      const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
+      const x = colIdx * COL_W;
+      const colData: typeof roundCols[0] = { x, matches: [] };
+
+      if (useTreeSpacing) {
+        const cellH = effectiveH / Math.max(sorted.length, 1);
+        sorted.forEach((m, i) => {
+          const top = i * cellH + (cellH - CARD_H) / 2;
+          matchPositions.set(m.id, { colIdx, y: top });
+          colData.matches.push({ y: top, nextY: null, nextCol: null });
+        });
+      } else {
+        sorted.forEach((m) => {
+          const pos = m.positionInRound ?? 0;
+          const top = pos * CELL_BASE + (CELL_BASE - CARD_H) / 2;
+          matchPositions.set(m.id, { colIdx, y: top });
+          colData.matches.push({ y: top, nextY: null, nextCol: null });
+        });
+      }
+
+      roundCols.push(colData);
+    });
+
+    // Compute lines: connect via nextMatchWinId
+    sectionMatches.forEach((m) => {
+      if (!m.nextMatchWinId) return;
+      const srcPos = matchPositions.get(m.id);
+      const dstPos = matchPositions.get(m.nextMatchWinId);
+      if (!srcPos || !dstPos) return;
+
+      const colMatch = roundCols[srcPos.colIdx]?.matches.find(cm => Math.abs(cm.y - srcPos.y) < 1);
+      if (colMatch) {
+        colMatch.nextY = dstPos.y;
+        colMatch.nextCol = dstPos.colIdx;
+      }
+    });
+
+    const totalWidth = sortedR.length * COL_W;
+    const headerOffset = 28;
 
     return (
       <div className={`de-section ${accentClass}`}>
         <h4 className="de-section-title">{title}</h4>
-        <div className="bracket-tree">
+        <div style={{ position: "relative", width: totalWidth, minHeight: effectiveH + headerOffset }}>
+          <svg
+            width={totalWidth}
+            height={effectiveH + headerOffset}
+            style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none" }}
+          >
+            {roundCols.map((col, colIdx) =>
+              col.matches.map((cm, mIdx) => {
+                if (cm.nextY === null || cm.nextCol === null) return null;
+                const nextCol = roundCols[cm.nextCol];
+                if (!nextCol) return null;
+
+                const x1 = col.x + CARD_W;
+                const y1 = cm.y + CARD_H / 2 + headerOffset;
+                const x2 = nextCol.x;
+                const y2 = cm.nextY + CARD_H / 2 + headerOffset;
+                const midX = (x1 + x2) / 2;
+
+                return (
+                  <path
+                    key={`${colIdx}-${mIdx}`}
+                    d={`M ${x1} ${y1} H ${midX} V ${y2} H ${x2}`}
+                    fill="none"
+                    stroke="var(--border-light)"
+                    strokeWidth="1.5"
+                  />
+                );
+              })
+            )}
+          </svg>
+
           {sortedR.map(([roundIdx, roundMatches], colIdx) => {
             const label = getDERoundLabel(side, roundIdx, maxUpperRound, maxLowerRound);
             const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
-
-            // Upper bracket: space matches proportionally within the total height
-            const cellH = isUpper
-              ? cappedH / Math.max(sorted.length, 1)
-              : CELL_BASE;
+            const x = colIdx * COL_W;
 
             return (
-              <div key={roundIdx} className="bracket-col">
+              <div key={roundIdx} style={{ position: "absolute", left: x, top: 0, width: CARD_W }}>
                 <div className="bracket-round-header">{label}</div>
-                <div className="bracket-col-body" style={{ height: isUpper ? cappedH : (Math.max(...sorted.map(m => (m.positionInRound ?? 0))) + 1) * CELL_BASE, position: "relative" }}>
-                  {sorted.map((m, i) => {
-                    const top = isUpper
-                      ? i * cellH + (cellH - CARD_H) / 2
-                      : (m.positionInRound ?? 0) * CELL_BASE + (CELL_BASE - CARD_H) / 2;
-                    return (
-                      <div key={m.id} style={{ position: "absolute", top, left: CARD_OFFSET_X, width: CARD_W }}>
-                        <BracketCard
-                          match={m}
-                          onEdit={() => onEdit(m)}
-                          isSelected={selectedId === m.id}
-                          matchNumber={matchNumbers.get(m.id)}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
+                {sorted.map((m) => {
+                  const pos = matchPositions.get(m.id);
+                  if (!pos) return null;
+                  const top = pos.y + headerOffset;
+                  return (
+                    <div key={m.id} style={{ position: "absolute", top, left: CARD_OFFSET_X, width: CARD_W }}>
+                      <BracketCard
+                        match={m}
+                        onEdit={() => onEdit(m)}
+                        isSelected={selectedId === m.id}
+                        matchNumber={matchNumbers.get(m.id)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             );
           })}
@@ -395,9 +491,9 @@ function DEBracket({ matches, onEdit, selectedId }: {
 
   return (
     <div className="de-bracket">
-      {renderSection("🏅 Upper Bracket", upper, "de-section--upper")}
-      {renderSection("🔁 Lower Bracket", lower, "de-section--lower")}
-      {renderSection("🏆 Grande Finale", grand, "de-section--grand")}
+      {renderTreeSection("Upper Bracket", upper, "de-section--upper", true)}
+      {renderTreeSection("Lower Bracket", lower, "de-section--lower", false)}
+      {renderTreeSection("Grande Finale", grand, "de-section--grand", false)}
     </div>
   );
 }

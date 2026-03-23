@@ -5370,41 +5370,19 @@ textarea {
 }
 
 .bracket-tree {
-  display: flex;
-  align-items: stretch;
-  gap: 0;
+  position: relative;
   min-width: max-content;
-  padding: 16px 16px 24px;
+  padding: 8px 8px 16px;
 }
 
-.bracket-col {
-  display: flex;
-  flex-direction: column;
-  width: 220px;
-  flex-shrink: 0;
-}
-
-.bracket-round-label,
 .bracket-round-header {
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 0 22px 10px;
+  padding: 0 0 8px;
   color: var(--text-muted);
   white-space: nowrap;
-}
-
-.bracket-col-body {
-  position: relative;
-  width: 220px;
-}
-
-.bracket-slot {
-  display: flex;
-  align-items: center;
-  position: relative;
-  box-sizing: border-box;
 }
 
 .bracket-match-btn {
@@ -5412,7 +5390,7 @@ textarea {
   border: none;
   padding: 0;
   cursor: pointer;
-  width: 180px;
+  width: 170px;
   flex-shrink: 0;
   text-align: left;
 }
@@ -5422,9 +5400,9 @@ textarea {
 }
 
 .bracket-match-card {
-  width: 180px;
-  border: 2px solid var(--border-light);
-  border-radius: 8px;
+  width: 170px;
+  border: 1.5px solid var(--border-light);
+  border-radius: 6px;
   overflow: hidden;
   background: var(--surface);
   position: relative;
@@ -5447,23 +5425,21 @@ textarea {
   pointer-events: none;
 }
 
-/* Numéro de match (ordre chronologique) */
 .bracket-match-number {
-  font-size: 9px;
+  font-size: 8px;
   font-family: var(--font-display);
   font-weight: 800;
   color: var(--text-muted);
-  padding: 2px 8px;
+  padding: 1px 6px;
   border-bottom: 1px solid var(--border-light);
   letter-spacing: 0.05em;
 }
 
-/* Indicateur LIVE */
 .bracket-live-indicator {
   position: absolute;
-  top: 4px;
-  right: 6px;
-  font-size: 9px;
+  top: 2px;
+  right: 4px;
+  font-size: 8px;
   font-family: var(--font-display);
   font-weight: 800;
   color: var(--pink);
@@ -5476,13 +5452,12 @@ textarea {
   to { opacity: 0.4; }
 }
 
-/* Rangée équipe dans la carte */
 .bracket-team {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 10px;
-  font-size: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
   border-top: 1px solid var(--border-light);
 }
 
@@ -5504,53 +5479,35 @@ textarea {
 .bracket-score {
   font-family: var(--font-display);
   font-weight: 900;
-  font-size: 14px;
-  margin-left: 8px;
+  font-size: 13px;
+  margin-left: 6px;
   flex-shrink: 0;
-}
-
-/* Connectors */
-.bracket-connector-right {
-  flex-shrink: 0;
-  width: 20px;
-  height: 2px;
-  background: var(--border-light);
-  align-self: center;
-}
-
-.bracket-connector-left {
-  flex-shrink: 0;
-  width: 20px;
-  height: 2px;
-  background: var(--border-light);
-  align-self: center;
-}
-
-.bracket-connectors-left {
-  flex-shrink: 0;
-  width: 20px;
-  position: relative;
-  align-self: stretch;
 }
 
 /* ========================
    DOUBLE ELIMINATION SECTIONS
    ======================== */
 
-.de-layout {
+.de-bracket {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
+  padding: 8px;
+}
+
+.de-section {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .de-section-title {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-bottom: 12px;
-  padding: 6px 14px;
+  margin-bottom: 8px;
+  padding: 4px 12px;
   display: inline-block;
   border-radius: 4px;
 }
@@ -5572,7 +5529,7 @@ textarea {
 
 .de-section--upper .bracket-match-card { border-color: color-mix(in srgb, var(--teal) 40%, var(--border-light)); }
 .de-section--lower .bracket-match-card { border-color: color-mix(in srgb, var(--yellow) 60%, var(--border-light)); }
-.de-section--grand .bracket-match-card { border: 3px solid var(--pink); }
+.de-section--grand .bracket-match-card { border: 2px solid var(--pink); }
 
 /* ========================
    SWISS STANDINGS TABLE
