@@ -70,7 +70,8 @@ export function TournamentRecap({ tournament, podium, isOrga }: Props) {
       {/* ── Bannière hero ── */}
       {tournament.bannerPath && (
         <div className="recap-hero">
-          <img src={tournament.bannerPath} alt={tournament.name} />
+          <img className="recap-hero__bg" src={tournament.bannerPath} alt="" aria-hidden="true" />
+          <img className="recap-hero__poster" src={tournament.bannerPath} alt={tournament.name} />
           <div className="recap-hero__overlay">
             <h2 className="recap-hero__title">{tournament.name}</h2>
           </div>
