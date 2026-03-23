@@ -134,16 +134,16 @@ export function PokemonCard({ name, country, city, photoPath, clubLogoPath, embl
           </div>
 
           {/* Flag + team logo stacked top-left; club logo in its corner */}
-          <div className="pkmn-card__emblem-stack" style={{ position: "absolute", top: 18, left: 18, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <div className="pkmn-card__emblem-stack">
             {flagSrc && (
-              <img src={flagSrc} alt={country} className="pkmn-card__emblem pkmn-card__emblem--flag" style={{ position: "static", transform: "none" }} />
+              <img src={flagSrc} alt={country} className="pkmn-card__emblem pkmn-card__emblem--flag" />
             )}
             {teamLogoPath && (
-              <img src={teamLogoPath} alt="Team" className="pkmn-card__emblem pkmn-card__emblem--team" style={{ position: "static", transform: "none" }} />
+              <img src={teamLogoPath} alt="Team" className="pkmn-card__emblem pkmn-card__emblem--team" />
             )}
           </div>
           {clubLogoPath && (
-            <img src={clubLogoPath} alt="Club" className="pkmn-card__emblem pkmn-card__emblem--club" style={{ position: "absolute", transform: "none", ...(clubCorner.startsWith("top") ? { top: 18 } : { bottom: 18 }), ...(clubCorner.endsWith("right") ? { right: 18 } : { left: 18 }) }} />
+            <img src={clubLogoPath} alt="Club" className={`pkmn-card__emblem pkmn-card__emblem--${clubCorner} pkmn-card__emblem--club`} />
           )}
 
           {/* Overlay info at bottom */}
@@ -230,7 +230,7 @@ export function PokemonCard({ name, country, city, photoPath, clubLogoPath, embl
           {rarity !== "legendary" && <div className="pkmn-card__holo" />}
           {rarity !== "legendary" && <div className="pkmn-card__glare" />}
           {/* Flag + team logo stacked top-left */}
-          <div className="pkmn-card__emblem-stack pkmn-card__emblem--top-left">
+          <div className="pkmn-card__emblem-stack">
             {flagSrc && (
               <img src={flagSrc} alt={country} className="pkmn-card__emblem pkmn-card__emblem--flag" />
             )}

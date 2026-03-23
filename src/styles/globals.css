@@ -4715,47 +4715,49 @@ textarea {
 }
 
 /* Country flag / club logo emblem — centered on corner of photo */
-/* Stack de flag + team logo (top-left du frame) */
+/* Stack : drapeau + logo équipe empilés en colonne, top-left du frame */
 .pkmn-card__emblem-stack {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%); /* même positionnement que l'ancien drapeau seul */
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   z-index: 2;
   pointer-events: none;
 }
+/* Les emblems dans le stack sont en flux normal (pas absolus) */
+.pkmn-card__emblem-stack .pkmn-card__emblem {
+  position: static !important;
+  transform: none !important;
+}
 .pkmn-card__emblem {
+  position: absolute;
   width: 28px;
   height: auto;
   border-radius: 3px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  z-index: 2;
   object-fit: contain;
   pointer-events: none;
-  /* position statique dans le stack — pas de translate */
-  position: static;
-  transform: none;
+  transform: translate(-50%, -50%);
 }
-/* Club logo reste positionné en absolu dans son coin */
+.pkmn-card__emblem--top-left     { top: 0; left: 0; }
+.pkmn-card__emblem--top-right    { top: 0; right: 0; transform: translate(50%, -50%); }
+.pkmn-card__emblem--bottom-left  { bottom: 0; left: 0; transform: translate(-50%, 50%); }
+.pkmn-card__emblem--bottom-right { bottom: 0; right: 0; transform: translate(50%, 50%); }
+.pkmn-card__emblem--flag {
+  border-radius: 3px;
+}
 .pkmn-card__emblem--club {
-  position: absolute;
   width: 28px;
   height: 28px;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid rgba(255,255,255,0.8);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-  z-index: 2;
-  pointer-events: none;
-}
-.pkmn-card__emblem--top-right    { top: 8px; right: 8px; transform: none; }
-.pkmn-card__emblem--bottom-left  { bottom: 8px; left: 8px; transform: none; }
-.pkmn-card__emblem--bottom-right { bottom: 8px; right: 8px; transform: none; }
-.pkmn-card__emblem--flag {
-  border-radius: 3px;
 }
 .pkmn-card__emblem--team {
   width: 28px;
