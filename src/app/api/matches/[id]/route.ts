@@ -33,10 +33,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   if (!hasRole && playerId) {
     const tournament = await prisma.tournament.findUnique({
       where: { id: existing.tournamentId },
-      select: { creatorId: true, coOrganizers: { select: { id: true } } },
+      select: { creatorId: true, coOrganizers: { select: { playerId: true } } },
     });
     isOrganizer = tournament?.creatorId === playerId ||
-      tournament?.coOrganizers.some((co) => co.id === playerId) || false;
+      tournament?.coOrganizers.some((co) => co.playerId === playerId) || false;
   }
   if (!hasRole && !isOrganizer) {
     return new Response("Unauthorized", { status: 401 });
