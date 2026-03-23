@@ -521,7 +521,7 @@ function DEBracket({ matches, onEdit, selectedId }: {
 
   return (
     <div className="de-bracket">
-      {renderTreeSection("Upper Bracket", upper, "de-section--upper", true)}
+      {renderTreeSection("Upper Bracket", upper, "de-section--upper", false)}
       {renderTreeSection("Lower Bracket", lower, "de-section--lower", false)}
       {renderTreeSection("Grande Finale", grand, "de-section--grand", false)}
     </div>
