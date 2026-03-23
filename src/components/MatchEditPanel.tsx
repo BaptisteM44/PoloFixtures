@@ -15,6 +15,22 @@ export type MatchForEdit = {
   phase: string;
   roundIndex: number;
   courtName: string;
+  nextMatchWinId?: string | null;
+  nextSlotWin?: string | null;
+};
+
+type SavePayload = {
+  id: string;
+  scoreA: number;
+  scoreB: number;
+  status: string;
+  teamAId?: string | null;
+  teamBId?: string | null;
+  advance?: {
+    nextMatchId: string;
+    slot: "A" | "B";
+    winnerTeamId: string;
+  };
 };
 
 const PHASE_LABEL: Record<string, string> = {
@@ -26,7 +42,7 @@ type TeamOption = { id: string; name: string };
 type Props = {
   match: MatchForEdit | null;
   onClose: () => void;
-  onSaved: (updated: { id: string; scoreA: number; scoreB: number; status: string; teamAId?: string | null; teamBId?: string | null }) => void;
+  onSaved: (updated: SavePayload) => void;
   isOrganizer?: boolean;
   teams?: TeamOption[];
 };
@@ -40,6 +56,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
   const [teamBId, setTeamBId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   // Sync scores when selected match changes
   useEffect(() => {
@@ -50,6 +67,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
       setTeamAId(match.teamAId);
       setTeamBId(match.teamBId);
       setError(null);
+      setSuccess(null);
     }
   }, [match?.id]);
 
@@ -64,6 +82,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
   const handleSave = async () => {
     setSaving(true);
     setError(null);
+    setSuccess(null);
     try {
       // Auto-set status to FINISHED when scores have been entered
       const finalStatus = (scoreA > 0 || scoreB > 0) && status !== "FINISHED" ? "FINISHED" : status;
@@ -84,10 +103,27 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
         return;
       }
       const updated = await res.json();
-      onSaved({
+      const winnerTeamId =
+        finalStatus === "FINISHED" && scoreA !== scoreB
+          ? (scoreA > scoreB ? teamAId : teamBId)
+          : null;
+
+      const savePayload: SavePayload = {
         id: match.id, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status,
         ...(teamChanged ? { teamAId: updated.teamAId, teamBId: updated.teamBId } : {}),
-      });
+        ...(winnerTeamId && match.phase === "BRACKET" && match.nextMatchWinId && (match.nextSlotWin === "A" || match.nextSlotWin === "B")
+          ? {
+              advance: {
+                nextMatchId: match.nextMatchWinId,
+                slot: match.nextSlotWin,
+                winnerTeamId,
+              }
+            }
+          : {}),
+      };
+
+      onSaved(savePayload);
+      setSuccess("Match sauvegardé");
     } catch {
       setError("Erreur réseau");
     } finally {
@@ -184,6 +220,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
                   </select>
                 </div>
                 {error && <p className="error" style={{ margin: 0 }}>{error}</p>}
+                {success && <p style={{ margin: 0, color: "var(--teal)", fontSize: 13, fontWeight: 700 }}>{success}</p>}
                 <button className="primary" onClick={handleSave} disabled={saving}>
                   {saving ? "Sauvegarde…" : "Sauvegarder"}
                 </button>

@@ -148,12 +148,22 @@ export function BracketView({
       teamBName: m.teamB?.name ?? (m.teamBId ? "???" : "TBD"),
       scoreA: m.scoreA, scoreB: m.scoreB, status: m.status,
       phase: m.phase, roundIndex: m.roundIndex, courtName: m.courtName,
+      nextMatchWinId: m.nextMatchWinId,
+      nextSlotWin: m.nextSlotWin,
     });
   };
 
-  const handleSaved = (updated: { id: string; scoreA: number; scoreB: number; status: string; teamAId?: string | null; teamBId?: string | null }) => {
-    setMatches((prev) =>
-      prev.map((m) => {
+  const handleSaved = (updated: {
+    id: string;
+    scoreA: number;
+    scoreB: number;
+    status: string;
+    teamAId?: string | null;
+    teamBId?: string | null;
+    advance?: { nextMatchId: string; slot: "A" | "B"; winnerTeamId: string };
+  }) => {
+    setMatches((prev) => {
+      const next = prev.map((m) => {
         if (m.id !== updated.id) return m;
         const patched: MatchWithTeams = { ...m, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status as Match["status"] };
         if (updated.teamAId !== undefined) {
@@ -165,8 +175,28 @@ export function BracketView({
           patched.teamB = teams?.find((t) => t.id === updated.teamBId) as Team | undefined ?? null;
         }
         return patched;
-      })
-    );
+      });
+
+      if (updated.advance) {
+        const source = next.find((m) => m.id === updated.id);
+        const winnerTeam = source
+          ? (updated.advance.winnerTeamId === source.teamAId ? source.teamA : updated.advance.winnerTeamId === source.teamBId ? source.teamB : null)
+          : null;
+
+        const target = next.find((m) => m.id === updated.advance?.nextMatchId);
+        if (target) {
+          if (updated.advance.slot === "A") {
+            target.teamAId = updated.advance.winnerTeamId;
+            target.teamA = (teams?.find((t) => t.id === updated.advance?.winnerTeamId) as Team | undefined) ?? winnerTeam ?? target.teamA;
+          } else {
+            target.teamBId = updated.advance.winnerTeamId;
+            target.teamB = (teams?.find((t) => t.id === updated.advance?.winnerTeamId) as Team | undefined) ?? winnerTeam ?? target.teamB;
+          }
+        }
+      }
+
+      return next;
+    });
     setEditMatch((prev) =>
       prev?.id === updated.id ? { ...prev, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status } : prev
     );
