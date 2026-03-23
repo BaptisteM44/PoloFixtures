@@ -547,7 +547,7 @@ function PlayerSlotInput({
             style={{ width: "100%" }}
           />
           {showResults && results.length > 0 && (
-            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 50, maxHeight: 200, overflowY: "auto", boxShadow: "var(--shadow-lg)" }}>
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 200, maxHeight: 200, overflowY: "auto", boxShadow: "var(--shadow-lg)" }}>
               {results.map((p) => (
                 <button
                   key={p.id}
@@ -562,7 +562,7 @@ function PlayerSlotInput({
             </div>
           )}
           {showResults && results.length === 0 && query.length >= 2 && (
-            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 50, padding: "10px 12px" }}>
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 200, padding: "10px 12px" }}>
               <span className="meta">{t("slot_not_found")} </span>
               <button type="button" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--teal)", fontWeight: 700, fontSize: 13, padding: 0 }} onClick={() => { setMode("manual"); setManualName(query); onChange({ type: "manual", name: query, city: "", country: "", diets: [] }); setShowResults(false); }}>
                 {t("slot_add_manual")}

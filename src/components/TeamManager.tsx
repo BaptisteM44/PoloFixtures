@@ -318,7 +318,7 @@ function TeamRow({
                     <button className="ghost" style={{ fontSize: 12 }} onClick={() => { setAddMode(null); setQuery(""); setResults([]); }}>Annuler</button>
                   </div>
                   {showResults && results.length > 0 && (
-                    <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 50, maxHeight: 180, overflowY: "auto", boxShadow: "var(--shadow-lg)" }}>
+                    <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 200, maxHeight: 180, overflowY: "auto", boxShadow: "var(--shadow-lg)" }}>
                       {results.map((p) => (
                         <button key={p.id} type="button" style={{ width: "100%", textAlign: "left", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", borderBottom: "1px solid var(--border-light)" }} onMouseDown={() => handleAddExisting(p)}>
                           <strong style={{ fontSize: 13 }}>{p.name}</strong>

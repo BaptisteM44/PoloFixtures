@@ -1098,7 +1098,7 @@ button:focus-visible,
   box-shadow: var(--shadow);
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: auto;
+  overflow: visible;
 }
 @media (max-width: 768px) {
   .panel {

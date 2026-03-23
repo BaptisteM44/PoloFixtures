@@ -131,7 +131,7 @@ export function CoOrganizerManager({
             style={{ width: "100%" }}
           />
           {showResults && results.length > 0 && (
-            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 50, maxHeight: 200, overflowY: "auto", boxShadow: "var(--shadow-lg)" }}>
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 200, maxHeight: 200, overflowY: "auto", boxShadow: "var(--shadow-lg)" }}>
               {results
                 .filter((r) => !organizers.some((o) => o.id === r.id))
                 .map((p) => (

@@ -154,7 +154,7 @@ export function RefereeManager({
 
           {showResults && results.length > 0 && (
             <div style={{
-              position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50,
+              position: "absolute", top: "100%", left: 0, right: 0, zIndex: 200,
               background: "var(--surface)", border: "2px solid var(--border)",
               borderRadius: "var(--radius-sm)", boxShadow: "var(--shadow)",
               marginTop: 4, maxHeight: 200, overflowY: "auto",
