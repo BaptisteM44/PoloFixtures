@@ -6,7 +6,7 @@ import { MatchEditPanel, type MatchForEdit } from "./MatchEditPanel";
 
 export type MatchWithTeams = Match & { teamA?: Team | null; teamB?: Team | null };
 
-type TeamOption = { id: string; name: string };
+type TeamOption = { id: string; name: string; bracketNumber?: number };
 
 const CARD_W = 170;
 const FIRST_COL_CARD_W = 146;
@@ -17,15 +17,14 @@ const CELL_BASE = 76;
 const CARD_OFFSET_X = 0;
 
 function getDERoundLabel(side: string, roundIndex: number, maxUpperRound: number, maxLowerRound: number): string {
-  if (side === "G") return "Grande Finale";
+  if (side === "G") return roundIndex === 2 ? "Bracket Reset" : "Finale";
   if (side === "W") {
-    if (roundIndex === maxUpperRound) return "WB Finale";
-    if (roundIndex === maxUpperRound - 1) return "WB Demies";
-    if (roundIndex === maxUpperRound - 2) return "WB Quarts";
-    return `WB R${roundIndex}`;
+    if (roundIndex === maxUpperRound) return "Finale WB";
+    if (roundIndex === maxUpperRound - 1) return "Demi-Finales";
+    return `Tour ${roundIndex}`;
   }
-  if (roundIndex === maxLowerRound) return "LB Finale";
-  return `LB R${roundIndex}`;
+  if (maxLowerRound <= 1) return "Manche des perdants";
+  return `Manche des perdants ${roundIndex}`;
 }
 
 function getColumnMetrics(count: number) {
@@ -51,12 +50,16 @@ function BracketCard({
   onEdit,
   isSelected,
   matchNumber,
+  teamANumber,
+  teamBNumber,
   compact = false,
 }: {
   match: MatchWithTeams;
   onEdit: () => void;
   isSelected?: boolean;
   matchNumber?: number;
+  teamANumber?: number;
+  teamBNumber?: number;
   compact?: boolean;
 }) {
   const teamA = match.teamA?.name ?? (match.teamAId ? "???" : "TBD");
@@ -84,10 +87,12 @@ function BracketCard({
         {matchNumber !== undefined && <div className="bracket-match-number">#{matchNumber}</div>}
         {isLive && <span className="bracket-live-indicator">LIVE</span>}
         <div className={`bracket-team ${winA ? "bracket-team-row--winner" : ""}`}>
+          <span className="bracket-team-seed">{teamANumber ?? ""}</span>
           <span className="bracket-team-name">{teamA}</span>
           <strong className="bracket-score">{isFinished || isLive ? match.scoreA : "–"}</strong>
         </div>
         <div className={`bracket-team ${winB ? "bracket-team-row--winner" : ""}`}>
+          <span className="bracket-team-seed">{teamBNumber ?? ""}</span>
           <span className="bracket-team-name">{teamB}</span>
           <strong className="bracket-score">{isFinished || isLive ? match.scoreB : "–"}</strong>
         </div>
@@ -142,10 +147,12 @@ export function BracketView({
   matches: initialMatches,
   tournamentId,
   teams,
+  isOrganizer,
 }: {
   matches: MatchWithTeams[];
   tournamentId: string;
   teams?: TeamOption[];
+  isOrganizer?: boolean;
 }) {
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
   const [editMatch, setEditMatch] = useState<MatchForEdit | null>(null);
@@ -165,7 +172,11 @@ export function BracketView({
   }, [tournamentId]);
 
   const bracketMatches = matches.filter((m) => m.phase === "BRACKET");
-  const isDE = bracketMatches.some((m) => m.bracketSide === "L");
+  // DE has multiple L matches; SE 3rd place has exactly one L match
+  const lMatches = bracketMatches.filter((m) => m.bracketSide === "L");
+  const isDE = lMatches.length > 1;
+  const has3rdPlace = !isDE && lMatches.length === 1;
+  const teamNumberById = new Map((teams ?? []).map((team) => [team.id, team.bracketNumber]));
 
   const openEdit = (m: MatchWithTeams) => {
     if (selectedId === m.id) {
@@ -259,23 +270,25 @@ export function BracketView({
     <div>
       <FitWrapper>
         {isDE
-          ? <DEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} />
-          : <SEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} />}
+          ? <DEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} teamNumberById={teamNumberById} />
+          : <SEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} teamNumberById={teamNumberById} />}
       </FitWrapper>
       <MatchEditPanel
         match={editMatch}
         onClose={() => { setSelectedId(null); setEditMatch(null); }}
         onSaved={handleSaved}
+        isOrganizer={isOrganizer}
         teams={teams}
       />
     </div>
   );
 }
 
-function SEBracket({ matches, onEdit, selectedId }: {
+function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
   matches: MatchWithTeams[];
   onEdit: (m: MatchWithTeams) => void;
   selectedId: string | null;
+  teamNumberById: Map<string, number | undefined>;
 }) {
   const rounds = new Map<number, MatchWithTeams[]>();
   matches.forEach((m) => {
@@ -300,7 +313,8 @@ function SEBracket({ matches, onEdit, selectedId }: {
 
   const matchPositions = new Map<string, { colIdx: number; y: number }>();
   sortedRounds.forEach(([roundIdx, roundMatches], colIdx) => {
-    const r = roundIdx - sortedRounds[0][0];
+    // Always relative to round 1 so spacing is correct even when R1 is absent (BYEs)
+    const r = roundIdx - 1;
     const cellH = CELL_BASE * Math.pow(2, r);
     const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
     sorted.forEach((m) => {
@@ -328,25 +342,25 @@ function SEBracket({ matches, onEdit, selectedId }: {
     <div className="bracket-tree" style={{ position: "relative", width: totalWidth, minHeight: totalHeight + headerOffset }}>
       <svg width={totalWidth} height={totalHeight + headerOffset} style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none" }}>
         {lines.map((line, index) => {
-          const midX = (line.x1 + line.x2) / 2;
+          const elbowX = line.x1 + 14;
           return (
             <path
               key={index}
-              d={`M ${line.x1} ${line.y1} H ${midX} V ${line.y2} H ${line.x2}`}
+              d={`M ${line.x1} ${line.y1} H ${elbowX} V ${line.y2} H ${line.x2}`}
               fill="none"
-              stroke="var(--border-light)"
-              strokeWidth="1.5"
+              stroke="var(--text-muted)"
+              strokeWidth="1.8"
             />
           );
         })}
       </svg>
 
       {sortedRounds.map(([roundIdx, roundMatches], colIdx) => {
-        const r = roundIdx - sortedRounds[0][0];
+        const r = roundIdx - 1;
         const cellH = CELL_BASE * Math.pow(2, r);
         const x = colMetrics[colIdx].x;
         const cardWidth = colMetrics[colIdx].cardWidth;
-        const label = roundIdx === maxRound ? "Finale" : roundIdx === maxRound - 1 ? "Demies" : roundIdx === maxRound - 2 ? "Quarts" : `R${roundIdx}`;
+        const label = roundIdx === maxRound ? "Finales" : roundIdx === maxRound - 1 ? "Demi-Finales" : `Tour ${roundIdx}`;
         const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
 
         return (
@@ -362,6 +376,8 @@ function SEBracket({ matches, onEdit, selectedId }: {
                     onEdit={() => onEdit(m)}
                     isSelected={selectedId === m.id}
                     matchNumber={matchNumbers.get(m.id)}
+                    teamANumber={m.teamAId ? teamNumberById.get(m.teamAId) : undefined}
+                    teamBNumber={m.teamBId ? teamNumberById.get(m.teamBId) : undefined}
                     compact={colIdx === 0}
                   />
                 </div>
@@ -374,10 +390,11 @@ function SEBracket({ matches, onEdit, selectedId }: {
   );
 }
 
-function DEBracket({ matches, onEdit, selectedId }: {
+function DEBracket({ matches, onEdit, selectedId, teamNumberById }: {
   matches: MatchWithTeams[];
   onEdit: (m: MatchWithTeams) => void;
   selectedId: string | null;
+  teamNumberById: Map<string, number | undefined>;
 }) {
   const upper = matches.filter((m) => m.bracketSide === "W");
   const lower = matches.filter((m) => m.bracketSide === "L");
@@ -500,15 +517,15 @@ function DEBracket({ matches, onEdit, selectedId }: {
                 const y1 = matchCol.y + CARD_H / 2 + headerOffset;
                 const x2 = nextCol.x;
                 const y2 = matchCol.nextY + CARD_H / 2 + headerOffset;
-                const midX = (x1 + x2) / 2;
+                const elbowX = x1 + 14;
 
                 return (
                   <path
                     key={`${colIdx}-${matchIdx}`}
-                    d={`M ${x1} ${y1} H ${midX} V ${y2} H ${x2}`}
+                    d={`M ${x1} ${y1} H ${elbowX} V ${y2} H ${x2}`}
                     fill="none"
-                    stroke="var(--border-light)"
-                    strokeWidth="1.5"
+                    stroke="var(--text-muted)"
+                    strokeWidth="1.8"
                   />
                 );
               })
@@ -534,6 +551,8 @@ function DEBracket({ matches, onEdit, selectedId }: {
                         onEdit={() => onEdit(m)}
                         isSelected={selectedId === m.id}
                         matchNumber={matchNumbers.get(m.id)}
+                        teamANumber={m.teamAId ? teamNumberById.get(m.teamAId) : undefined}
+                        teamBNumber={m.teamBId ? teamNumberById.get(m.teamBId) : undefined}
                         compact={colIdx === 0}
                       />
                     </div>
@@ -549,9 +568,9 @@ function DEBracket({ matches, onEdit, selectedId }: {
 
   return (
     <div className="de-bracket">
-      {renderTreeSection("Upper Bracket", upper, "de-section--upper", false)}
-      {renderTreeSection("Lower Bracket", lower, "de-section--lower", false)}
-      {renderTreeSection("Grande Finale", grand, "de-section--grand", false)}
+      {renderTreeSection("Tableau principal", upper, "de-section--upper", false)}
+      {renderTreeSection("Tableau repêchage", lower, "de-section--lower", false)}
+      {renderTreeSection("Finale", grand, "de-section--grand", false)}
     </div>
   );
 }

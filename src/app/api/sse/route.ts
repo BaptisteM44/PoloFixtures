@@ -7,25 +7,33 @@ export async function GET(request: Request) {
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();
-      const send = (payload: unknown) => {
-        controller.enqueue(encoder.encode(`event: match\ndata: ${JSON.stringify(payload)}\n\n`));
+
+      const sendEvent = (event: string, payload: unknown) => {
+        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`));
       };
 
-      const handler = (payload: { tournamentId: string }) => {
+      const matchHandler = (payload: { tournamentId: string }) => {
         if (tournamentId && payload.tournamentId !== tournamentId) return;
-        send(payload);
+        sendEvent("match", payload);
+      };
+
+      const tournamentHandler = (payload: { tournamentId: string }) => {
+        if (tournamentId && payload.tournamentId !== tournamentId) return;
+        sendEvent("tournament", payload);
       };
 
       const keepAlive = setInterval(() => {
         controller.enqueue(encoder.encode(`: ping\n\n`));
       }, 15000);
 
-      sseEmitter.on("match", handler);
+      sseEmitter.on("match", matchHandler);
+      sseEmitter.on("tournament", tournamentHandler);
       controller.enqueue(encoder.encode(`: connected\n\n`));
 
       const close = () => {
         clearInterval(keepAlive);
-        sseEmitter.off("match", handler);
+        sseEmitter.off("match", matchHandler);
+        sseEmitter.off("tournament", tournamentHandler);
         controller.close();
       };
 

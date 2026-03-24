@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { optimizeSeeds } from "@/lib/optimizer";
+import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { z } from "zod";
 
 const schema = z.object({
@@ -13,9 +14,6 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.user?.role || !hasAtLeastRole(session.user.role, "ORGA")) {
-    return new Response("Unauthorized", { status: 401 });
-  }
 
   const body = await request.json();
   const parsed = schema.safeParse(body);
@@ -24,6 +22,11 @@ export async function POST(request: Request) {
   }
 
   const { tournamentId, apply, avoidSameCity, avoidSameCountry } = parsed.data;
+  const isAdmin = !!session?.user?.role && hasAtLeastRole(session.user.role, "ADMIN");
+  const orgaPlayerId = await getOrgaPlayerId(tournamentId);
+  if (!isAdmin && !orgaPlayerId) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },

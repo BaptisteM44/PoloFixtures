@@ -45,6 +45,7 @@ enum SaturdayFormat {
 enum SundayFormat {
   SE
   DE
+  RR
 }
 
 enum MatchPhase {
@@ -214,6 +215,8 @@ model Tournament {
   bracketSize             Int              @default(16)
   sundayFormat            SundayFormat
   scoringSystem           String           @default("3/1")  // "3/1" = V3 N1 D0, "1/0.5" = V1 N0.5 D0
+  thirdPlaceMatch         Boolean          @default(false)  // SE only: add 3rd place match
+  gfReset                 Boolean          @default(false)  // DE only: grand final bracket reset
   status                  TournamentStatus
   locked                  Boolean          @default(false)
   approved                Boolean          @default(false)

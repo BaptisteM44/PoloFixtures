@@ -292,6 +292,7 @@ export default function NewTournamentPage() {
               <select value={form.sundayFormat} onChange={set("sundayFormat")}>
                 <option value="SE">{t("sunday_se")}</option>
                 <option value="DE">{t("sunday_de")}</option>
+                <option value="RR">{t("sunday_rr")}</option>
               </select>
             </label>
           </div>

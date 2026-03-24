@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
-import { publishMatchUpdate, publishNewMatches } from "@/lib/sse";
+import { publishMatchUpdate, publishNewMatches, publishTournamentUpdate } from "@/lib/sse";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { z } from "zod";
@@ -193,7 +193,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     });
   }
 
-  await syncTournamentCompletionById(match.tournamentId);
+  const newStatus = await syncTournamentCompletionById(match.tournamentId);
+  if (newStatus === "COMPLETED") {
+    publishTournamentUpdate({
+      tournamentId: match.tournamentId,
+      type: "tournament_completed",
+      status: "COMPLETED",
+    });
+  }
 
   return Response.json(match);
 }

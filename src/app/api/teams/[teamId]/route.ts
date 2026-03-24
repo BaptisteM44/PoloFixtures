@@ -18,7 +18,8 @@ export async function PATCH(req: Request, { params }: { params: { teamId: string
   if (!team) return new Response("Not found", { status: 404 });
 
   const isOrga =
-    session.user.role === "ADMIN" ||
+    (session.user.role != null && hasAtLeastRole(session.user.role, "ADMIN")) ||
+    team.tournament.creatorId === session.user.playerId ||
     team.tournament.coOrganizers.some((o) => o.playerId === session.user.playerId);
   if (!isOrga) return new Response("Forbidden", { status: 403 });
 
@@ -40,7 +41,7 @@ export async function DELETE(_req: Request, { params }: { params: { teamId: stri
 
   const team = await prisma.team.findUnique({
     where: { id: params.teamId },
-    include: { tournament: { select: { id: true, creatorId: true, rushRegistration: true, maxTeams: true } } },
+    include: { tournament: { include: { coOrganizers: true } } },
   });
   if (!team) return new Response("Not found", { status: 404 });
 
@@ -48,7 +49,8 @@ export async function DELETE(_req: Request, { params }: { params: { teamId: stri
   const role = session.user.role;
   const isOrga =
     (role != null && hasAtLeastRole(role, "ADMIN")) ||
-    team.tournament.creatorId === playerId;
+    team.tournament.creatorId === playerId ||
+    team.tournament.coOrganizers.some((o) => o.playerId === playerId);
   if (!isOrga) return new Response("Forbidden", { status: 403 });
 
   const wasSelected = team.selected;

@@ -14,7 +14,7 @@ import { FreeAgentForm } from "@/components/FreeAgentForm";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { RegisterTeamForm } from "@/components/RegisterTeamForm";
 import { computeStandings } from "@/lib/standings";
-import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, generateBracketAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, createTeamAction } from "./edit/actions";
+import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, generateBracketAction, applySeedingAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, createTeamAction } from "./edit/actions";
 import { TeamManager } from "@/components/TeamManager";
 import { SelectionManager } from "@/components/SelectionManager";
 import { TournamentChat } from "@/components/TournamentChat";
@@ -30,6 +30,7 @@ import { FollowButton } from "@/components/FollowButton";
 import { SoloRegisterForm } from "@/components/SoloRegisterForm";
 import { DrawPanel } from "@/components/DrawPanel";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
+import { TournamentCompletionWatcher } from "@/components/TournamentCompletionWatcher";
 
 function summarizeCities(players: { player: { city: string | null } }[]): string {
   const counts = new Map<string, number>();
@@ -294,6 +295,9 @@ export default async function TournamentPage({
 
   return (
     <div className="tournament-page">
+      {tournament.status === "LIVE" && (
+        <TournamentCompletionWatcher tournamentId={tournament.id} />
+      )}
       {/* ── Barre retour + actions ── */}
       <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <Link href="/tournaments" style={{ fontSize: 13, color: "var(--text-muted)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "var(--font-display)" }}>
@@ -690,56 +694,147 @@ export default async function TournamentPage({
 
       {tab === "bracket" && (() => {
         const bracketMatches = tournament.matches.filter((m) => m.phase === "BRACKET");
+        const swissAll = tournament.matches.filter((m) => m.phase === "SWISS");
+        const bracketTeams = (() => {
+          const selectedTeams = tournament.teams.filter((t) => t.selected);
+          if (tournament.saturdayFormat === "SWISS" && swissAll.length > 0) {
+            const standings = computeStandings(selectedTeams, swissAll, tournament.scoringSystem);
+            const rankByTeamId = new Map(standings.map((row, index) => [row.teamId, index + 1]));
+            return selectedTeams.map((team) => ({
+              id: team.id,
+              name: team.name,
+              bracketNumber: rankByTeamId.get(team.id) ?? team.seed,
+            }));
+          }
+
+          return selectedTeams.map((team) => ({
+            id: team.id,
+            name: team.name,
+            bracketNumber: team.seed,
+          }));
+        })();
+
+        const isRR = tournament.sundayFormat === "RR";
+        const formatLabel = tournament.sundayFormat === "DE" ? "Double élimination" : tournament.sundayFormat === "RR" ? "Round Robin" : "Simple élimination";
+        const hasQualifyingMatches = [...tournament.matches.filter((m: any) => m.phase === "POOL" || m.phase === "SWISS")].length > 0;
+
+        const regenerateAction = async () => {
+          "use server";
+          await generateBracketAction(tournament.id);
+          const { redirect } = await import("next/navigation");
+          const { revalidatePath } = await import("next/cache");
+          revalidatePath(`/tournament/${tournament.slug ?? tournament.id}`);
+          redirect(`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`);
+        };
+
+        const seedingAction = async () => {
+          "use server";
+          await applySeedingAction(tournament.id);
+          const { redirect } = await import("next/navigation");
+          const { revalidatePath } = await import("next/cache");
+          revalidatePath(`/tournament/${tournament.slug ?? tournament.id}`);
+          redirect(`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`);
+        };
+
         if (bracketMatches.length > 0) {
+          // RR: show standings table instead of bracket tree
+          if (isRR) {
+            const rrStandings = computeStandings(
+              tournament.teams.filter((t: any) => t.selected),
+              bracketMatches,
+              tournament.scoringSystem
+            );
+            return (
+              <div>
+                {isOrga && (
+                  <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+                    <form action={regenerateAction}>
+                      <button type="submit" className="ghost" style={{ fontSize: 12, padding: "5px 14px", color: "var(--danger)" }}>
+                        Régénérer le Round Robin
+                      </button>
+                    </form>
+                    {hasQualifyingMatches && (
+                      <form action={seedingAction}>
+                        <button type="submit" className="ghost" style={{ fontSize: 12, padding: "5px 14px" }}>
+                          Appliquer le seeding
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                )}
+                <div className="panel" style={{ overflowX: "auto" }}>
+                  <table className="standings-table" style={{ width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Équipe</th>
+                        <th>J</th><th>V</th><th>N</th><th>D</th>
+                        <th>BP</th><th>BC</th><th>Diff</th><th>Pts</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rrStandings.map((row: any, i: number) => (
+                        <tr key={row.teamId}>
+                          <td style={{ fontWeight: 700, color: "var(--text-muted)", width: 28 }}>{i + 1}</td>
+                          <td style={{ fontWeight: 600 }}>{row.name}</td>
+                          <td>{row.played}</td>
+                          <td style={{ color: "var(--teal)" }}>{row.wins}</td>
+                          <td>{row.draws}</td>
+                          <td style={{ color: "var(--danger)" }}>{row.losses}</td>
+                          <td>{row.goalsFor}</td>
+                          <td>{row.goalsAgainst}</td>
+                          <td style={{ color: row.goalDiff > 0 ? "var(--teal)" : row.goalDiff < 0 ? "var(--danger)" : undefined }}>
+                            {row.goalDiff > 0 ? `+${row.goalDiff}` : row.goalDiff}
+                          </td>
+                          <td style={{ fontWeight: 700 }}>{row.points}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          }
+
           return (
             <>
               {isOrga && (
-                <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
-                  <form action={async () => {
-                    "use server";
-                    await generateBracketAction(tournament.id);
-                    const { redirect } = await import("next/navigation");
-                    const { revalidatePath } = await import("next/cache");
-                    revalidatePath(`/tournament/${tournament.slug}`);
-                    redirect(`/tournament/${tournament.slug}?tab=bracket`);
-                  }}>
+                <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+                  <form action={regenerateAction}>
                     <button type="submit" className="ghost" style={{ fontSize: 12, padding: "5px 14px", color: "var(--danger)" }}>
                       Régénérer le bracket
                     </button>
                   </form>
+                  {hasQualifyingMatches && (
+                    <form action={seedingAction}>
+                      <button type="submit" className="ghost" style={{ fontSize: 12, padding: "5px 14px" }}>
+                        Appliquer le seeding
+                      </button>
+                    </form>
+                  )}
                   <span className="meta" style={{ fontSize: 11 }}>
                     Recalcule le seeding depuis les standings actuels
                   </span>
                 </div>
               )}
-              <BracketView matches={bracketMatches} tournamentId={tournament.id} teams={tournament.teams.filter(t => t.selected).map(t => ({ id: t.id, name: t.name }))} />
+              <BracketView matches={bracketMatches} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} />
             </>
           );
         }
-        const swissAll = tournament.matches.filter((m) => m.phase === "SWISS");
-        const maxSwissRound = swissAll.length > 0 ? Math.max(...swissAll.map((m) => m.roundIndex)) : 0;
-        const swissDone = maxSwissRound >= (t_.swissRounds ?? 5) && swissAll.every((m) => m.status === "FINISHED");
+        const maxSwissRound = swissAll.length > 0 ? Math.max(...swissAll.map((m: any) => m.roundIndex)) : 0;
+        const swissDone = maxSwissRound >= (t_.swissRounds ?? 5) && swissAll.every((m: any) => m.status === "FINISHED");
         const canLaunch = isOrga && isLaunched && (swissDone || tournament.saturdayFormat !== "SWISS");
         return (
           <div className="panel" style={{ textAlign: "center", padding: 48, marginTop: 16 }}>
             {canLaunch ? (
               <>
                 <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 8, fontSize: 18 }}>
-                  Top {t_.bracketSize ?? 16} qualifiés
+                  {isRR ? "Round Robin" : `Top ${t_.bracketSize ?? 16} qualifiés`}
                 </p>
-                <p className="meta" style={{ marginBottom: 20 }}>
-                  {tournament.sundayFormat === "DE" ? "Double élimination" : "Simple élimination"}
-                </p>
-                <form action={async () => {
-                  "use server";
-                  await generateBracketAction(tournament.id);
-                  const { redirect } = await import("next/navigation");
-                  const { revalidatePath } = await import("next/cache");
-                  revalidatePath(`/tournament/${tournament.slug ?? tournament.id}`);
-                  redirect(`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`);
-                }}>
+                <p className="meta" style={{ marginBottom: 20 }}>{formatLabel}</p>
+                <form action={regenerateAction}>
                   <button type="submit" className="primary" style={{ fontSize: 16, padding: "12px 32px" }}>
-                    🏆 Lancer le bracket
+                    {isRR ? "🔄 Lancer le Round Robin" : "🏆 Lancer le bracket"}
                   </button>
                 </form>
               </>

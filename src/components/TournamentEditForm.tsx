@@ -48,6 +48,8 @@ type Tournament = {
   bracketSize?: number | null;
   sundayFormat: string;
   scoringSystem?: string | null;
+  thirdPlaceMatch?: boolean;
+  gfReset?: boolean;
   status: string;
   locked: boolean;
   accommodationAvailable?: boolean;
@@ -297,6 +299,8 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           <input type="hidden" name="bracketSize" value={tournament.bracketSize ?? 16} />
           <input type="hidden" name="sundayFormat" value={tournament.sundayFormat} />
           <input type="hidden" name="scoringSystem" value={tournament.scoringSystem ?? "3/1"} />
+          <input type="hidden" name="thirdPlaceMatch" value={String(tournament.thirdPlaceMatch ?? false)} />
+          <input type="hidden" name="gfReset" value={String(tournament.gfReset ?? false)} />
         </>}
         <input type="hidden" name="region" value={tournament.region ?? ""} />
         <input type="hidden" name="links" value={tournament.links.join("\n")} />
@@ -469,7 +473,16 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             <select name="sundayFormat" defaultValue={tournament.sundayFormat} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
               <option value="SE">{t("sunday_single_elim")}</option>
               <option value="DE">{t("sunday_double_elim")}</option>
+              <option value="RR">{t("sunday_rr")}</option>
             </select>
+          </label>
+          <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
+            <input type="checkbox" name="thirdPlaceMatch" value="true" defaultChecked={tournament.thirdPlaceMatch ?? false} />
+            {t("option_third_place")}
+          </label>
+          <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
+            <input type="checkbox" name="gfReset" value="true" defaultChecked={tournament.gfReset ?? false} />
+            {t("option_gf_reset")}
           </label>
           <label className="field-row">
             Système de points

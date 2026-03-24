@@ -13,6 +13,12 @@ export type NewMatchesPayload = {
   matches: Record<string, unknown>[];
 };
 
+export type TournamentUpdatePayload = {
+  tournamentId: string;
+  type: "tournament_completed";
+  status: string;
+};
+
 const globalForSse = globalThis as unknown as { sseEmitter?: EventEmitter };
 
 export const sseEmitter = globalForSse.sseEmitter ?? new EventEmitter();
@@ -27,4 +33,8 @@ export function publishMatchUpdate(payload: MatchUpdatePayload) {
 
 export function publishNewMatches(payload: NewMatchesPayload) {
   sseEmitter.emit("match", payload);
+}
+
+export function publishTournamentUpdate(payload: TournamentUpdatePayload) {
+  sseEmitter.emit("tournament", payload);
 }

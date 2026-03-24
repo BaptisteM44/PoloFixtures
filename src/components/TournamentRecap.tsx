@@ -66,31 +66,68 @@ export function TournamentRecap({ tournament, podium, isOrga }: Props) {
 
   return (
     <div className="recap-page">
+      <header className="recap-head">
+        <h2 className="recap-page__title">{tournament.name}</h2>
+      </header>
 
-      {/* ── Bannière hero ── */}
-      {tournament.bannerPath && (
-        <div className="recap-hero">
-          <img className="recap-hero__bg" src={tournament.bannerPath} alt="" aria-hidden="true" />
-          <img className="recap-hero__poster" src={tournament.bannerPath} alt={tournament.name} />
-          <div className="recap-hero__overlay">
-            <h2 className="recap-hero__title">{tournament.name}</h2>
+      <section className="recap-media-grid recap-section">
+        {tournament.bannerPath && (
+          <article className="recap-media-card recap-media-card--poster">
+            <div className="recap-media-card__header">
+              <h3 className="recap-section__title" style={{ margin: 0, borderBottom: 0, paddingBottom: 0 }}>Affiche</h3>
+            </div>
+            <div className="recap-poster-frame">
+              <img className="recap-poster" src={tournament.bannerPath} alt={tournament.name} />
+            </div>
+          </article>
+        )}
+
+        <article className="recap-media-card recap-media-card--finish">
+          <div className="recap-media-card__header">
+            <h3 className="recap-section__title" style={{ margin: 0, borderBottom: 0, paddingBottom: 0 }}>{t("recap_photo_finish")}</h3>
           </div>
-        </div>
-      )}
+          {photoFinish ? (
+            <div className="recap-photo-finish recap-photo-finish--framed">
+              <img src={photoFinish} alt="Photo finish" />
+              {isOrga && (
+                <label className="ghost recap-edit-btn" style={{ marginTop: 8, display: "inline-block", cursor: "pointer" }}>
+                  {uploadingPhoto ? "…" : t("recap_photo_add")}
+                  <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: "none" }} />
+                </label>
+              )}
+            </div>
+          ) : isOrga ? (
+            <label className="recap-photo-placeholder" style={{ cursor: "pointer" }}>
+              <span style={{ fontSize: 36 }}>📸</span>
+              <span>{uploadingPhoto ? "Upload en cours…" : t("recap_photo_add")}</span>
+              <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: "none" }} />
+            </label>
+          ) : (
+            <div className="recap-photo-placeholder recap-photo-placeholder--static">
+              <span style={{ fontSize: 36 }}>📸</span>
+              <span>{t("recap_photo_add")}</span>
+            </div>
+          )}
+        </article>
+      </section>
 
-      {/* ── Podium ── */}
       <section className="recap-section">
         <h3 className="recap-section__title">{t("recap_podium_title")}</h3>
         {!podium.first && !podium.second ? (
           <p className="meta" style={{ textAlign: "center", padding: 20 }}>{t("recap_no_podium")}</p>
         ) : (
-          <div className="recap-podium">
+          <div className="recap-podium recap-podium--cards">
             {medals.map(({ place, medal, team, label }) => (
-              <div key={place} className={`recap-podium__card recap-podium__card--${place}`}>
-                <span className="recap-podium__medal">{medal}</span>
-                <span className="recap-podium__label">{label}</span>
-                <strong className="recap-podium__team">{team?.name ?? "—"}</strong>
-              </div>
+              <article key={place} className={`recap-podium__card recap-podium__card--${place}`}>
+                <div className="recap-podium__card-top">
+                  <span className="recap-podium__medal">{medal}</span>
+                  <span className="recap-podium__label">{label}</span>
+                </div>
+                <div className="recap-podium__face">
+                  <span className="recap-podium__rank">{place === "first" ? "#1" : place === "second" ? "#2" : "#3"}</span>
+                  <strong className="recap-podium__team">{team?.name ?? "—"}</strong>
+                </div>
+              </article>
             ))}
           </div>
         )}
@@ -132,28 +169,6 @@ export function TournamentRecap({ tournament, podium, isOrga }: Props) {
             )}
           </div>
         )}
-      </section>
-
-      {/* ── Photo finish ── */}
-      <section className="recap-section">
-        <h3 className="recap-section__title">{t("recap_photo_finish")}</h3>
-        {photoFinish ? (
-          <div className="recap-photo-finish">
-            <img src={photoFinish} alt="Photo finish" />
-            {isOrga && (
-              <label className="ghost recap-edit-btn" style={{ marginTop: 8, display: "inline-block", cursor: "pointer" }}>
-                {uploadingPhoto ? "…" : t("recap_photo_add")}
-                <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: "none" }} />
-              </label>
-            )}
-          </div>
-        ) : isOrga ? (
-          <label className="recap-photo-placeholder" style={{ cursor: "pointer" }}>
-            <span style={{ fontSize: 36 }}>📸</span>
-            <span>{uploadingPhoto ? "Upload en cours…" : t("recap_photo_add")}</span>
-            <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: "none" }} />
-          </label>
-        ) : null}
       </section>
 
       {/* ── Texte récap markdown ── */}

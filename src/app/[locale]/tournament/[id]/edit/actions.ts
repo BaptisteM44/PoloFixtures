@@ -8,6 +8,13 @@ import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
 import { generatePools, generatePoolMatches, generateBracket, generateSwissRound } from "@/lib/bracket";
 import { computeStandings } from "@/lib/standings";
+import { getOrgaPlayerId } from "@/lib/orga-auth";
+
+async function requireTournamentOrgaAccess(tournamentId: string): Promise<{ error: string } | null> {
+  const playerId = await getOrgaPlayerId(tournamentId);
+  if (!playerId) return { error: "Accès refusé." };
+  return null;
+}
 
 const updateSchema = z.object({
   id: z.string(),
@@ -47,8 +54,10 @@ const updateSchema = z.object({
   saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS"]),
   swissRounds: z.coerce.number().int().min(1).max(20).default(5),
   bracketSize: z.coerce.number().int().min(2).max(64).default(16),
-  sundayFormat: z.enum(["SE", "DE"]),
+  sundayFormat: z.enum(["SE", "DE", "RR"]),
   scoringSystem: z.string().default("3/1"),
+  thirdPlaceMatch: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
+  gfReset: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   status: z.enum(["UPCOMING", "LIVE", "COMPLETED"]),
   locked: z.coerce.boolean(),
   accommodationAvailable: z.coerce.boolean().default(false),
@@ -81,6 +90,9 @@ export async function updateTournamentAction(formData: FormData) {
   }
 
   const data = parsed.data;
+  const denied = await requireTournamentOrgaAccess(data.id);
+  if (denied) return denied;
+
   const tournament = await prisma.tournament.findUnique({ where: { id: data.id } });
   if (!tournament) return { error: "Not found" };
 
@@ -105,7 +117,7 @@ export async function updateTournamentAction(formData: FormData) {
   try { faqJson = data.faq ? JSON.parse(data.faq) : null; } catch { /* ignore */ }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, ...rest } = data;
+  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, ...rest } = data;
 
   const dateStart = new Date(data.dateStart);
   // Regenerate slug if name or city changed (only if tournament has no slug yet, or name/city changed)
@@ -141,6 +153,8 @@ export async function updateTournamentAction(formData: FormData) {
         saturdayFormat: data.saturdayFormat,
         sundayFormat: data.sundayFormat,
         scoringSystem: data.scoringSystem,
+        thirdPlaceMatch: data.thirdPlaceMatch,
+        gfReset: data.gfReset,
       }
     });
   } catch (err) {
@@ -153,6 +167,9 @@ export async function updateTournamentAction(formData: FormData) {
 }
 
 export async function generatePoolsAction(id: string) {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
   const tournament = await prisma.tournament.findUnique({
     where: { id },
     include: { teams: { where: { selected: true } } }
@@ -211,6 +228,9 @@ export async function generatePoolsAction(id: string) {
 }
 
 export async function generateBracketAction(id: string) {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
   const tournament = await prisma.tournament.findUnique({
     where: { id },
     include: { teams: { where: { selected: true } }, matches: true }
@@ -236,7 +256,11 @@ export async function generateBracketAction(id: string) {
   }
 
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
-  const matches = generateBracket(seededTeams, tournament.sundayFormat, courtNames, new Date(tournament.dateEnd), tournament.gameDurationMin);
+  const bracketOptions = {
+    thirdPlaceMatch: (tournament as any).thirdPlaceMatch ?? false,
+    gfReset: (tournament as any).gfReset ?? false,
+  };
+  const matches = generateBracket(seededTeams, tournament.sundayFormat, courtNames, new Date(tournament.dateEnd), tournament.gameDurationMin, bracketOptions);
 
   await prisma.$transaction(async (tx) => {
     await tx.match.deleteMany({ where: { tournamentId: id, phase: "BRACKET" } });
@@ -269,20 +293,27 @@ export async function generateBracketAction(id: string) {
     if (tournament.sundayFormat === "SE") {
       // Round r, position p → feeds Round r+1, position floor(p/2), slot A if p%2==0, B if p%2==1
       const maxRound = Math.max(...created.map((m) => m.roundIndex));
+      const thirdPlaceMatch = created.find((m) => m.bracketSide === "L" && m.roundIndex === maxRound);
+
       for (const m of created) {
+        if (m.bracketSide === "L") continue; // 3rd place match itself — no links needed
         if (m.roundIndex < maxRound) {
           const nextPos = Math.floor(m.positionInRound / 2);
           const nextRound = m.roundIndex + 1;
           const nextSide = nextRound === maxRound ? "G" : "W";
           const nextMatch = findMatch(nextSide, nextRound, nextPos);
+          const data: Record<string, unknown> = {};
           if (nextMatch) {
-            await tx.match.update({
-              where: { id: m.id },
-              data: {
-                nextMatchWinId: nextMatch.id,
-                nextSlotWin: m.positionInRound % 2 === 0 ? "A" : "B",
-              }
-            });
+            data.nextMatchWinId = nextMatch.id;
+            data.nextSlotWin = m.positionInRound % 2 === 0 ? "A" : "B";
+          }
+          // Semi-final losers → 3rd place match
+          if (thirdPlaceMatch && m.roundIndex === maxRound - 1) {
+            data.nextMatchLoseId = thirdPlaceMatch.id;
+            data.nextSlotLose = m.positionInRound % 2 === 0 ? "A" : "B";
+          }
+          if (Object.keys(data).length > 0) {
+            await tx.match.update({ where: { id: m.id }, data });
           }
         }
       }
@@ -356,11 +387,12 @@ export async function generateBracketAction(id: string) {
           if (!isLastUpper && lMatches.length > 0) {
             if (ur === 1) {
               // WB R1 losers pair off into LB R1: 2 per match
-              const lowerPos = Math.floor(i / 2);
+              const sourcePos = uMatches[i].positionInRound;
+              const lowerPos = Math.floor(sourcePos / 2);
               const lowerMatch = lMatches.find(m => m.positionInRound === lowerPos);
               if (lowerMatch) {
                 data.nextMatchLoseId = lowerMatch.id;
-                data.nextSlotLose = i % 2 === 0 ? "A" : "B";
+                data.nextSlotLose = sourcePos % 2 === 0 ? "A" : "B";
               }
             } else {
               // WB R(n≥2) losers → LB R(2n-2) injection slot B
@@ -433,7 +465,42 @@ export async function generateBracketAction(id: string) {
   return { ok: true };
 }
 
+/**
+ * Re-apply seeding from Pool/Swiss standings to the existing bracket teams.
+ * Updates each team's `seed` field so BracketView shows correct seed numbers.
+ * Does NOT regenerate matches.
+ */
+export async function applySeedingAction(id: string) {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: { teams: { where: { selected: true } }, matches: true }
+  });
+  if (!tournament) return { error: "Not found" };
+
+  const qualifyingMatches = tournament.matches.filter(
+    (m) => m.phase === "POOL" || m.phase === "SWISS"
+  );
+  if (qualifyingMatches.length === 0) return { error: "Aucun match qualificatif disponible pour le seeding." };
+
+  const standings = computeStandings(tournament.teams, qualifyingMatches, tournament.scoringSystem);
+
+  await prisma.$transaction(
+    standings.map((row, index) =>
+      prisma.team.update({ where: { id: row.teamId }, data: { seed: index + 1 } })
+    )
+  );
+
+  revalidatePath(`/tournament/${id}`);
+  return { ok: true };
+}
+
 export async function importTeamsAction(id: string, raw: string) {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
   const lines = raw
     .split("\n")
     .map((line) => line.trim())
@@ -459,6 +526,9 @@ export async function importTeamsAction(id: string, raw: string) {
  * - Génère les pairings du tour suivant (évite les rematches)
  */
 export async function generateSwissRoundAction(id: string) {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
   const tournament = await prisma.tournament.findUnique({
     where: { id },
     include: { teams: { where: { selected: true } }, matches: true }
@@ -534,6 +604,9 @@ export async function generateSwissRoundAction(id: string) {
  * Réinitialise tous les matchs Swiss.
  */
 export async function resetSwissAction(id: string) {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
   await prisma.match.deleteMany({ where: { tournamentId: id, phase: "SWISS" } });
   revalidatePath(`/tournament/${id}`);
   return { ok: true };
@@ -545,6 +618,9 @@ export async function resetSwissAction(id: string) {
  * (pools, brackets, swiss) + les pools associées.
  */
 export async function toggleLockAction(id: string, confirmReset: boolean = false) {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
   const tournament = await prisma.tournament.findUnique({
     where: { id },
     include: { matches: { select: { id: true } } }
@@ -558,22 +634,8 @@ export async function toggleLockAction(id: string, confirmReset: boolean = false
     return { ok: true, locked: true };
   }
 
-  // On déverrouille → vérifier s'il y a des matchs
-  if (tournament.matches.length > 0 && !confirmReset) {
-    return {
-      confirm: true,
-      matchCount: tournament.matches.length,
-      message: `Ce tournoi a ${tournament.matches.length} match(es). Déverrouiller supprimera tous les matchs et les poules. Confirmer ?`
-    };
-  }
-
-  // Reset tout si confirmé
-  await prisma.$transaction(async (tx) => {
-    await tx.match.deleteMany({ where: { tournamentId: id } });
-    await tx.poolTeam.deleteMany({ where: { pool: { tournamentId: id } } });
-    await tx.pool.deleteMany({ where: { tournamentId: id } });
-    await tx.tournament.update({ where: { id }, data: { locked: false } });
-  });
+  // Déverrouiller sans toucher aux matchs — la régénération se fait via les boutons dédiés
+  await prisma.tournament.update({ where: { id }, data: { locked: false } });
 
   revalidatePath(`/tournament/${id}`);
   return { ok: true, locked: false };
@@ -585,6 +647,9 @@ export async function addSponsorAction(
   url: string | null,
   logoPath: string | null
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   if (!name.trim()) return { error: "Le nom est requis." };
   await prisma.sponsor.create({
     data: { tournamentId, name: name.trim(), url: url || null, logoPath: logoPath || null }
@@ -598,6 +663,9 @@ export async function deleteSponsorAction(
   sponsorId: string,
   tournamentId: string
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   await prisma.sponsor.delete({ where: { id: sponsorId } });
   revalidatePath(`/tournament/${tournamentId}`);
   revalidatePath(`/tournament/${tournamentId}/edit`);
@@ -608,6 +676,9 @@ export async function deleteFreeAgentAction(
   freeAgentId: string,
   tournamentId: string
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   await prisma.freeAgent.delete({ where: { id: freeAgentId } });
   revalidatePath(`/tournament/${tournamentId}`);
   revalidatePath(`/tournament/${tournamentId}/edit`);
@@ -619,6 +690,9 @@ export async function renameTeamAction(
   name: string,
   tournamentId: string
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   const trimmed = name.trim();
   if (!trimmed) return { error: "Le nom ne peut pas être vide." };
   await prisma.team.update({ where: { id: teamId }, data: { name: trimmed } });
@@ -631,6 +705,9 @@ export async function deleteTeamAction(
   teamId: string,
   tournamentId: string
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   const team = await prisma.team.findUnique({
     where: { id: teamId },
     select: { selected: true, waitlistPosition: true },
@@ -659,6 +736,9 @@ export async function removePlayerFromTeamAction(
   teamPlayerId: string,
   tournamentId: string
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   await prisma.teamPlayer.delete({ where: { id: teamPlayerId } });
   revalidatePath(`/tournament/${tournamentId}/edit`);
   revalidatePath(`/tournament/${tournamentId}`);
@@ -670,6 +750,9 @@ export async function toggleTeamSelectedAction(
   tournamentId: string,
   selected: boolean
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   await prisma.team.update({ where: { id: teamId }, data: { selected } });
   return { ok: true };
 }
@@ -680,6 +763,9 @@ export async function toggleTeamGuaranteedAction(
   guaranteed: boolean
 ): Promise<{ ok?: boolean; error?: string }> {
   "use server";
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   await prisma.team.update({
     where: { id: teamId },
     data: { guaranteed, ...(guaranteed ? { selected: true } : {}) },
@@ -699,6 +785,9 @@ export async function drawTeamsAction(
   count: number,
   preDrawnIds?: string[]
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   const teams = await prisma.team.findMany({ where: { tournamentId }, select: { id: true, guaranteed: true } });
 
   const guaranteed = teams.filter((t) => t.guaranteed);
@@ -736,6 +825,9 @@ export async function drawOneTeamAction(
   tournamentId: string,
   candidateIds: string[]
 ): Promise<{ ok?: boolean; winnerId?: string; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   if (candidateIds.length === 0) return { error: "Aucune équipe candidate." };
 
   // Vérifie que ces équipes appartiennent bien au tournoi et ne sont pas déjà garanties
@@ -771,6 +863,9 @@ export async function drawOneWaitlistAction(
   tournamentId: string,
   candidateIds: string[]
 ): Promise<{ ok?: boolean; winnerId?: string; waitlistPosition?: number; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   if (candidateIds.length === 0) return { error: "Aucune équipe candidate." };
 
   const valid = await prisma.team.findMany({
@@ -813,6 +908,9 @@ export async function removeFromWaitlistAction(
   tournamentId: string,
   teamId: string
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   const team = await prisma.team.findUnique({ where: { id: teamId }, select: { waitlistPosition: true } });
   if (!team || team.waitlistPosition === null) return { error: "Équipe introuvable ou pas en WL." };
 
@@ -837,6 +935,9 @@ export async function addPlayerToTeamAction(
   tournamentId: string,
   playerData: { type: "existing"; playerId: string } | { type: "manual"; name: string; city?: string | null; country: string }
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   if (playerData.type === "existing") {
     const player = await prisma.player.findUnique({ where: { id: playerData.playerId } });
     if (!player) return { error: "Joueur introuvable." };
@@ -865,6 +966,9 @@ export async function createTeamAction(
   tournamentId: string,
   name: string
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   const trimmed = name.trim();
   if (!trimmed) return { error: "Le nom ne peut pas être vide." };
 
@@ -894,6 +998,9 @@ const layoutItemSchema = z.object({
 const infoTilesLayoutSchema = z.array(layoutItemSchema).min(1).max(5);
 
 export async function resubmitTournamentAction(id: string): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
   const tournament = await prisma.tournament.findUnique({ where: { id } });
   if (!tournament) return { error: "Tournoi introuvable" };
   if (tournament.submissionStatus !== "REJECTED") return { error: "Ce tournoi n'est pas dans l'état REJECTED." };
@@ -913,6 +1020,9 @@ export async function resubmitTournamentAction(id: string): Promise<{ ok?: boole
 export async function launchTournamentAction(
   id: string
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
   const tournament = await prisma.tournament.findUnique({
     where: { id },
     include: { teams: { where: { selected: true } }, matches: { select: { id: true } } },
@@ -933,10 +1043,10 @@ export async function launchTournamentAction(
   // Générer les matchs du samedi selon le format choisi
   if (tournament.saturdayFormat === "SWISS") {
     const res = await generateSwissRoundAction(id);
-    if (res.error) return { error: `Lancement OK mais erreur Swiss : ${res.error}` };
+    if ("error" in res && res.error) return { error: `Lancement OK mais erreur Swiss : ${res.error}` };
   } else {
     const res = await generatePoolsAction(id);
-    if (res.error) return { error: `Lancement OK mais erreur Poules : ${res.error}` };
+    if ("error" in res && res.error) return { error: `Lancement OK mais erreur Poules : ${res.error}` };
   }
 
   revalidatePath(`/tournament/${id}`);
@@ -948,6 +1058,9 @@ export async function saveInfoTilesLayoutAction(
   tournamentId: string,
   layout: unknown
 ): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
   const parsed = infoTilesLayoutSchema.safeParse(layout);
   if (!parsed.success) {
     return { error: "Données de layout invalides." };

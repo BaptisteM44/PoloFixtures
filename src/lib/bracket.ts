@@ -239,19 +239,71 @@ export function generateBracket(
   format: SundayFormat,
   courtNames: string[],
   startAt: Date,
+  gameDurationMin: number,
+  options?: { thirdPlaceMatch?: boolean; gfReset?: boolean }
+): GeneratedMatch[] {
+  if (format === "RR") {
+    return generateRoundRobin(teams, courtNames, startAt, gameDurationMin);
+  }
+  if (format === "DE" && teams.length >= 4) {
+    return generateDoubleElim(teams, courtNames, startAt, gameDurationMin, options?.gfReset ?? false);
+  }
+  return generateSingleElim(teams, courtNames, startAt, gameDurationMin, options?.thirdPlaceMatch ?? false);
+}
+
+/**
+ * Round Robin bracket — every team plays every other team once.
+ * Uses the circle method for scheduling. Phase = BRACKET, bracketSide = null.
+ */
+function generateRoundRobin(
+  teams: Team[],
+  courtNames: string[],
+  startAt: Date,
   gameDurationMin: number
 ): GeneratedMatch[] {
-  if (format === "DE" && teams.length >= 4) {
-    return generateDoubleElim(teams, courtNames, startAt, gameDurationMin);
-  }
-  return generateSingleElim(teams, courtNames, startAt, gameDurationMin);
+  const rounds = circleMethodRounds(teams);
+  const slotMin = gameDurationMin + 5;
+  const roundBreak = 10;
+  const matches: GeneratedMatch[] = [];
+  let courtFree: Date[] = courtNames.map(() => new Date(startAt));
+
+  rounds.forEach((round, r) => {
+    // After each round, all courts advance past the previous round
+    const roundStart = new Date(Math.max(...courtFree.map((d) => d.getTime())));
+    if (r > 0) {
+      courtFree = courtNames.map(() => addMinutes(roundStart, roundBreak));
+    }
+
+    for (const [teamA, teamB] of round) {
+      let bestIdx = 0;
+      for (let c = 1; c < courtNames.length; c++) {
+        if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
+      }
+      matches.push({
+        phase: "BRACKET",
+        bracketSide: null,
+        roundIndex: r + 1,
+        positionInRound: matches.filter((m) => m.roundIndex === r + 1).length,
+        courtName: courtNames[bestIdx],
+        startAt: new Date(courtFree[bestIdx]),
+        dayIndex: "SUN",
+        status: "SCHEDULED",
+        teamAId: teamA.id,
+        teamBId: teamB.id,
+      });
+      courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
+    }
+  });
+
+  return matches;
 }
 
 function generateSingleElim(
   teams: Team[],
   courtNames: string[],
   startAt: Date,
-  gameDurationMin: number
+  gameDurationMin: number,
+  thirdPlaceMatch = false
 ): GeneratedMatch[] {
   const sorted = [...teams];
   const size = nextPowerOf2(sorted.length);
@@ -338,6 +390,31 @@ function generateSingleElim(
     }
   }
 
+  // 3rd place match: losers of the semi-finals play each other
+  // Semi-finals = round totalRounds-1 (the round just before the final)
+  if (thirdPlaceMatch && totalRounds >= 2) {
+    const semiFinalRound = totalRounds - 1;
+    const semiMatches = matchGrid[semiFinalRound - 1]; // 0-indexed
+    if (semiMatches && semiMatches.size >= 2) {
+      // Schedule 3rd place match at the same time as the final
+      const finalRoundStart = addMinutes(startAt, (totalRounds - 1) * roundBreak);
+      const thirdPlaceStartAt = addMinutes(finalRoundStart, slotMin); // after final on court 2
+      const thirdCourtIdx = Math.min(1, courtNames.length - 1);
+      allMatches.push({
+        phase: "BRACKET",
+        bracketSide: "L", // use "L" to distinguish from final ("G")
+        roundIndex: totalRounds,
+        positionInRound: 1,
+        courtName: courtNames[thirdCourtIdx],
+        startAt: courtNames.length > 1 ? finalRoundStart : thirdPlaceStartAt,
+        dayIndex: "SUN",
+        status: "SCHEDULED",
+        teamAId: null,
+        teamBId: null,
+      });
+    }
+  }
+
   return allMatches;
 }
 
@@ -369,12 +446,12 @@ function generateDoubleElim(
   teams: Team[],
   courtNames: string[],
   startAt: Date,
-  gameDurationMin: number
+  gameDurationMin: number,
+  gfReset = false
 ): GeneratedMatch[] {
   const sorted = [...teams];
   const size = nextPowerOf2(sorted.length);
   const upperRounds = Math.log2(size); // m: e.g. 4 for size=16
-  const byeCount = size - sorted.length;
   const seedOrder = bracketSeeding(size);
   const slots: (Team | null)[] = seedOrder.map((s) => sorted[s - 1] ?? null);
 
@@ -544,9 +621,15 @@ function generateDoubleElim(
   }
 
   // ═══════════════════════════════════════════════════════════════════════
-  // Grand Final
+  // Grand Final (GF1)
   // ═══════════════════════════════════════════════════════════════════════
   createRound("G", 1, 1);
+  advanceTime(1);
+
+  // GF Reset (GF2) — only played if LB winner beats WB winner in GF1
+  if (gfReset) {
+    createRound("G", 2, 1);
+  }
 
   return matches;
 }

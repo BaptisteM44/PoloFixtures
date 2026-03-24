@@ -65,7 +65,9 @@ const updateSchema = z.object({
   bannerPath: z.string().optional().nullable(),
   streamYoutubeUrl: z.string().optional().nullable(),
   saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS"]),
-  sundayFormat: z.enum(["SE", "DE"]),
+  sundayFormat: z.enum(["SE", "DE", "RR"]),
+  thirdPlaceMatch: z.boolean().optional(),
+  gfReset: z.boolean().optional(),
   status: z.enum(["UPCOMING", "LIVE", "COMPLETED"]),
   locked: z.boolean(),
   maxSoloPlayers: z.number().int().min(1).optional().nullable(),
@@ -74,12 +76,24 @@ const updateSchema = z.object({
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.role || !hasAtLeastRole(session.user.role, "ORGA")) {
+  const playerId = session?.user?.playerId;
+  const role = session?.user?.role;
+  if (!playerId && !(role && hasAtLeastRole(role, "ADMIN"))) {
     return new Response("Forbidden", { status: 403 });
   }
 
   const tournament = await prisma.tournament.findUnique({ where: { id: params.id } });
   if (!tournament) return new Response("Not found", { status: 404 });
+
+  const isAdmin = role ? hasAtLeastRole(role, "ADMIN") : false;
+  const isCreator = !!playerId && tournament.creatorId === playerId;
+  const isCoOrga = !!playerId && (await prisma.tournamentOrganizer.findUnique({
+    where: { tournamentId_playerId: { tournamentId: params.id, playerId } },
+    select: { tournamentId: true },
+  }));
+  if (!isAdmin && !isCreator && !isCoOrga) {
+    return new Response("Forbidden", { status: 403 });
+  }
 
   const json = await request.json();
   const parsed = updateSchema.safeParse(json);

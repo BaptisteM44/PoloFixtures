@@ -1894,56 +1894,70 @@ button:focus-visible,
   gap: 0;
 }
 
-.recap-hero {
-  position: relative;
-  width: 100%;
-  min-height: 260px;
-  max-height: 420px;
-  height: clamp(260px, 48vw, 420px);
-  overflow: hidden;
-  border: 2px solid var(--border);
-  border-radius: var(--radius);
-  margin-bottom: 32px;
+.recap-head {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #0f172a;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 24px;
 }
-.recap-hero__bg {
-  position: absolute;
-  inset: -8%;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: blur(16px) saturate(1.1) brightness(0.65);
-  transform: scale(1.08);
+
+.recap-kicker {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teal);
+  font-weight: 700;
 }
-.recap-hero__poster {
-  position: relative;
-  z-index: 1;
-  width: auto;
-  max-width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-.recap-hero__overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  background: linear-gradient(to top, rgba(0,0,0,0.7) 20%, transparent 55%);
-  display: flex;
-  align-items: flex-end;
-  padding: 24px;
-  pointer-events: none;
-}
-.recap-hero__title {
+
+.recap-page__title {
   font-family: var(--font-display);
   font-size: clamp(22px, 4vw, 40px);
   font-weight: 900;
-  color: #fff;
   margin: 0;
-  text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+}
+
+.recap-media-grid {
+  display: grid;
+  --recap-media-height: clamp(180px, 22vw, 300px);
+  grid-template-columns: minmax(160px, 0.5fr) minmax(340px, 1.5fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.recap-media-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.recap-media-card--poster {
+  justify-self: start;
+  width: fit-content;
+  max-width: 90%;
+}
+
+.recap-media-card__header {
+  margin-bottom: 14px;
+}
+
+.recap-poster-frame {
+  width: min(100%, calc(var(--recap-media-height) * 0.6));
+  aspect-ratio: 2 / 3;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.recap-poster {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 .recap-section {
@@ -1966,38 +1980,75 @@ button:focus-visible,
   justify-content: center;
   margin-bottom: 16px;
 }
+.recap-podium--cards {
+  align-items: stretch;
+}
 .recap-podium__card {
   flex: 1;
-  max-width: 200px;
+  max-width: 240px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 20px 12px;
+  align-items: stretch;
+  gap: 12px;
+  padding: 18px 14px;
   background: var(--surface);
   border: 2px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   text-align: center;
 }
+.recap-podium__card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.recap-podium__face {
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-radius: calc(var(--radius) - 4px);
+  border: 2px solid var(--border-light);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0) 45%),
+    var(--surface-2);
+}
+.recap-podium__rank {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
 .recap-podium__card--first {
-  padding-top: 32px;
-  padding-bottom: 32px;
+  transform: translateY(-10px);
   border-color: var(--yellow);
   box-shadow: 4px 4px 0 var(--yellow);
   background: color-mix(in srgb, var(--yellow) 8%, var(--surface));
+}
+.recap-podium__card--first .recap-podium__face {
+  border-color: color-mix(in srgb, var(--yellow) 50%, var(--border-light));
 }
 .recap-podium__card--second {
   border-color: #aaa;
   box-shadow: 3px 3px 0 #aaa;
 }
+.recap-podium__card--second .recap-podium__face {
+  border-color: color-mix(in srgb, #aaa 50%, var(--border-light));
+}
 .recap-podium__card--third {
   border-color: #cd7f32;
   box-shadow: 3px 3px 0 #cd7f32;
 }
+.recap-podium__card--third .recap-podium__face {
+  border-color: color-mix(in srgb, #cd7f32 50%, var(--border-light));
+}
 .recap-podium__medal { font-size: 32px; }
 .recap-podium__label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
-.recap-podium__team  { font-size: 15px; font-weight: 800; font-family: var(--font-display); }
+.recap-podium__team  { font-size: 18px; font-weight: 800; font-family: var(--font-display); }
 
 .recap-podium-note {
   background: var(--surface-2);
@@ -2014,10 +2065,13 @@ button:focus-visible,
   align-items: flex-start;
   gap: 8px;
 }
+.recap-photo-finish--framed {
+  width: 100%;
+}
 .recap-photo-finish img {
   width: 100%;
-  max-height: 480px;
-  object-fit: contain;
+  height: var(--recap-media-height);
+  object-fit: cover;
   border: 2px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -2039,6 +2093,7 @@ button:focus-visible,
   transition: background 0.15s;
 }
 .recap-photo-placeholder:hover { background: var(--surface-3); }
+.recap-photo-placeholder--static { cursor: default; }
 
 /* Texte markdown */
 .recap-text {
@@ -2126,14 +2181,12 @@ button:focus-visible,
 }
 
 @media (max-width: 768px) {
-  .recap-podium { flex-direction: column; align-items: stretch; }
-  .recap-podium__card--first { padding-top: 20px; padding-bottom: 20px; }
-  .recap-hero {
-    min-height: 220px;
-    height: clamp(220px, 55vw, 320px);
+  .recap-media-grid {
+    grid-template-columns: 1fr;
   }
-  .recap-hero__overlay {
-    padding: 16px;
+  .recap-podium { flex-direction: column; align-items: stretch; }
+  .recap-podium__card--first {
+    transform: none;
   }
 }
 
@@ -5464,10 +5517,25 @@ textarea {
 
 .bracket-team:first-of-type { border-top: none; }
 
+.bracket-team-seed {
+  width: 18px;
+  margin-right: 6px;
+  flex-shrink: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
 .bracket-team-row--winner {
   background: var(--teal);
   color: var(--border);
   font-weight: 700;
+}
+
+.bracket-team-row--winner .bracket-team-seed {
+  color: color-mix(in srgb, var(--border) 82%, transparent);
 }
 
 .bracket-team-name {

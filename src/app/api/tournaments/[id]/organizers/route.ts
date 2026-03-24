@@ -1,9 +1,10 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { hasAtLeastRole } from "@/lib/rbac";
 import { z } from "zod";
 
 async function isCreatorOrAdmin(tournamentId: string, role: string | null | undefined, playerId: string | undefined | null) {
-  if (role === "ADMIN") return true;
+  if (role && hasAtLeastRole(role as never, "ADMIN")) return true;
   if (!playerId) return false;
   const t = await prisma.tournament.findUnique({ where: { id: tournamentId }, select: { creatorId: true } });
   return t?.creatorId === playerId;

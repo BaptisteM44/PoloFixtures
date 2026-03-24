@@ -227,6 +227,8 @@ export default async function TournamentEditPage({ params }: { params: { id: str
           swissRounds: t_.swissRounds,
           bracketSize: t_.bracketSize,
           sundayFormat: t_.sundayFormat,
+          thirdPlaceMatch: (t_ as any).thirdPlaceMatch ?? false,
+          gfReset: (t_ as any).gfReset ?? false,
           status: t_.status,
           locked: t_.locked,
           accommodationAvailable: t_.accommodationAvailable,

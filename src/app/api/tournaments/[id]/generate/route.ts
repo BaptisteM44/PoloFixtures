@@ -10,9 +10,9 @@ const schema = z.object({
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.role || !hasAtLeastRole(session.user.role, "ORGA")) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  const playerId = session?.user?.playerId;
+  const role = session?.user?.role;
+  const isAdmin = !!role && hasAtLeastRole(role, "ADMIN");
 
   const body = await request.json();
   const parsed = schema.safeParse(body);
@@ -22,10 +22,17 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   const tournament = await prisma.tournament.findUnique({
     where: { id: params.id },
-    include: { teams: true, pools: true }
+    include: { teams: true, pools: true, coOrganizers: { select: { playerId: true } } }
   });
 
   if (!tournament) return new Response("Not found", { status: 404 });
+
+  const isCreator = !!playerId && tournament.creatorId === playerId;
+  const isCoOrga = !!playerId && tournament.coOrganizers.some((co) => co.playerId === playerId);
+  const isScopedOrga = !!role && role === "ORGA" && session?.user?.tournamentId === params.id;
+  if (!isAdmin && !isCreator && !isCoOrga && !isScopedOrga) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
   if (parsed.data.type === "pools") {
     const pools = generatePools(tournament.teams, tournament.saturdayFormat);
@@ -126,13 +133,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
         if (upperFinal && lowerFinal && grandFinal) {
           for (let i = 0; i < upper1.length; i += 1) {
+            const sourcePos = i;
             await tx.match.update({
               where: { id: upper1[i].id },
               data: {
                 nextMatchWinId: upperFinal.id,
-                nextSlotWin: i === 0 ? "A" : "B",
+                nextSlotWin: sourcePos % 2 === 0 ? "A" : "B",
                 nextMatchLoseId: lowerFinal.id,
-                nextSlotLose: i === 0 ? "A" : "B"
+                nextSlotLose: sourcePos % 2 === 0 ? "A" : "B"
               }
             });
           }
