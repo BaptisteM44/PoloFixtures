@@ -31,6 +31,22 @@ export function ShareCardButton({ cardRef, playerName }: Props) {
 
     el.style.cssText = originalStyle;
 
+    // Watermark poloperator.com en bas de la carte
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      const pad = 10 * 2; // scale 2
+      const fontSize = 13 * 2;
+      ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+      ctx.textAlign = "right";
+      ctx.textBaseline = "bottom";
+      // Halo blanc pour lisibilité sur fond sombre ou clair
+      ctx.shadowColor = "rgba(0,0,0,0.55)";
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = "rgba(255,255,255,0.82)";
+      ctx.fillText("poloperator.com", canvas.width - pad, canvas.height - pad);
+      ctx.shadowBlur = 0;
+    }
+
     return new Promise((resolve) =>
       canvas.toBlob((blob) => resolve(blob), "image/png")
     );
