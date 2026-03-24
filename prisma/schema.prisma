@@ -240,6 +240,10 @@ model Tournament {
   recapText               String?   // markdown
   photoFinishPath         String?   // URL upload photo finish
   podiumNote              String?   // mention spéciale, MVP…
+  recapAnecdote           String?   // anecdote / remerciement
+  bannerCredit            String?   // crédit photographe
+  mvpPlayerId             String?   // joueur·euse du tournoi
+  mvpTitle                String?   // intitulé ex: "MVP", "Meilleur gardien"
   // Legacy meal booleans (kept for migration compatibility)
   breakfastProvided       Boolean          @default(false)
   lunchProvided           Boolean          @default(false)

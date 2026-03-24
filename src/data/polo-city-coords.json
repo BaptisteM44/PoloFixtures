@@ -20,6 +20,7 @@
   "Annecy": { "lat": 45.8992, "lng": 6.1294, "country": "FR", "continent": "EU" },
   "Blois": { "lat": 47.5861, "lng": 1.3359, "country": "FR", "continent": "EU" },
   "Bordeaux": { "lat": 44.8378, "lng": -0.5792, "country": "FR", "continent": "EU" },
+  "Caen": { "lat": 49.1829, "lng": -0.3707, "country": "FR", "continent": "EU" },
   "Carcassonne": { "lat": 43.2130, "lng": 2.3491, "country": "FR", "continent": "EU" },
   "Clermont-Ferrand": { "lat": 45.7797, "lng": 3.0863, "country": "FR", "continent": "EU" },
   "La Rochelle": { "lat": 46.1591, "lng": -1.1520, "country": "FR", "continent": "EU" },

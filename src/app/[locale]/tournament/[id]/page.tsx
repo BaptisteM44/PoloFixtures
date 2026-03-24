@@ -14,7 +14,7 @@ import { FreeAgentForm } from "@/components/FreeAgentForm";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { RegisterTeamForm } from "@/components/RegisterTeamForm";
 import { computeStandings } from "@/lib/standings";
-import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, generateBracketAction, applySeedingAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, createTeamAction } from "./edit/actions";
+import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, createTeamAction } from "./edit/actions";
 import { TeamManager } from "@/components/TeamManager";
 import { SelectionManager } from "@/components/SelectionManager";
 import { TournamentChat } from "@/components/TournamentChat";
@@ -31,6 +31,7 @@ import { SoloRegisterForm } from "@/components/SoloRegisterForm";
 import { DrawPanel } from "@/components/DrawPanel";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { TournamentCompletionWatcher } from "@/components/TournamentCompletionWatcher";
+import { BracketActions } from "@/components/BracketActions";
 
 function summarizeCities(players: { player: { city: string | null } }[]): string {
   const counts = new Map<string, number>();
@@ -57,8 +58,8 @@ export default async function TournamentPage({
   // ne charger les données lourdes (players, events) que si nécessaire.
   const activeTab = searchParams.tab;
 
-  // Les onglets "equipes" et "orga" ont besoin des joueurs complets.
-  const needsPlayers = activeTab === "equipes" || activeTab === "orga";
+  // Les onglets "equipes", "orga" et "recap" ont besoin des joueurs complets.
+  const needsPlayers = activeTab === "equipes" || activeTab === "orga" || activeTab === "recap";
   // L'onglet "equipes" a besoin des events pour les badges.
   const needsEvents = activeTab === "equipes";
   // Les onglets sans matches : info, inscription, recap, communaute, equipes (matches via events)
@@ -378,20 +379,43 @@ export default async function TournamentPage({
       />
 
       {/* ── RECAP TAB ── */}
-      {tab === "recap" && isCompleted && (
-        <TournamentRecap
-          tournament={{
-            id: tournament.id,
-            name: tournament.name,
-            bannerPath: tournament.bannerPath,
-            recapText: tournament.recapText ?? null,
-            photoFinishPath: tournament.photoFinishPath ?? null,
-            podiumNote: tournament.podiumNote ?? null,
-          }}
-          podium={podium}
-          isOrga={isOrga}
-        />
-      )}
+      {tab === "recap" && isCompleted && (() => {
+        const allPlayers = (tournament.teams as any[])
+          .filter((team: any) => team.selected)
+          .flatMap((team: any) => (team.players ?? []).map((tp: any) => ({
+            id: tp.player.id,
+            name: tp.player.name,
+            teamName: team.name,
+            country: tp.player.country ?? "",
+            city: tp.player.city ?? null,
+            photoPath: tp.player.photoPath ?? null,
+            badges: tp.player.badges ?? [],
+            startYear: tp.player.startYear ?? null,
+            hand: tp.player.hand ?? null,
+            gender: tp.player.gender ?? null,
+            showGender: tp.player.showGender ?? false,
+            slug: tp.player.slug ?? null,
+          })));
+        return (
+          <TournamentRecap
+            tournament={{
+              id: tournament.id,
+              name: tournament.name,
+              bannerPath: tournament.bannerPath,
+              recapText: tournament.recapText ?? null,
+              photoFinishPath: tournament.photoFinishPath ?? null,
+              podiumNote: tournament.podiumNote ?? null,
+              recapAnecdote: (tournament as any).recapAnecdote ?? null,
+              bannerCredit: (tournament as any).bannerCredit ?? null,
+              mvpPlayerId: (tournament as any).mvpPlayerId ?? null,
+              mvpTitle: (tournament as any).mvpTitle ?? null,
+            }}
+            podium={podium}
+            players={allPlayers}
+            isOrga={isOrga}
+          />
+        );
+      })()}
 
       {/* ── INFO TAB — 12-column flexible grid ── */}
       {tab === "info" && (
@@ -718,23 +742,7 @@ export default async function TournamentPage({
         const formatLabel = tournament.sundayFormat === "DE" ? "Double élimination" : tournament.sundayFormat === "RR" ? "Round Robin" : "Simple élimination";
         const hasQualifyingMatches = [...tournament.matches.filter((m: any) => m.phase === "POOL" || m.phase === "SWISS")].length > 0;
 
-        const regenerateAction = async () => {
-          "use server";
-          await generateBracketAction(tournament.id);
-          const { redirect } = await import("next/navigation");
-          const { revalidatePath } = await import("next/cache");
-          revalidatePath(`/tournament/${tournament.slug ?? tournament.id}`);
-          redirect(`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`);
-        };
-
-        const seedingAction = async () => {
-          "use server";
-          await applySeedingAction(tournament.id);
-          const { redirect } = await import("next/navigation");
-          const { revalidatePath } = await import("next/cache");
-          revalidatePath(`/tournament/${tournament.slug ?? tournament.id}`);
-          redirect(`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`);
-        };
+        const bracketReturnPath = `/tournament/${tournament.slug ?? tournament.id}?tab=bracket`;
 
         if (bracketMatches.length > 0) {
           // RR: show standings table instead of bracket tree
@@ -747,20 +755,13 @@ export default async function TournamentPage({
             return (
               <div>
                 {isOrga && (
-                  <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
-                    <form action={regenerateAction}>
-                      <button type="submit" className="ghost" style={{ fontSize: 12, padding: "5px 14px", color: "var(--danger)" }}>
-                        Régénérer le Round Robin
-                      </button>
-                    </form>
-                    {hasQualifyingMatches && (
-                      <form action={seedingAction}>
-                        <button type="submit" className="ghost" style={{ fontSize: 12, padding: "5px 14px" }}>
-                          Appliquer le seeding
-                        </button>
-                      </form>
-                    )}
-                  </div>
+                  <BracketActions
+                    tournamentId={tournament.id}
+                    returnPath={bracketReturnPath}
+                    hasQualifyingMatches={hasQualifyingMatches}
+                    isRR
+                    mode="buttons"
+                  />
                 )}
                 <div className="panel" style={{ overflowX: "auto" }}>
                   <table className="standings-table" style={{ width: "100%" }}>
@@ -799,23 +800,12 @@ export default async function TournamentPage({
           return (
             <>
               {isOrga && (
-                <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
-                  <form action={regenerateAction}>
-                    <button type="submit" className="ghost" style={{ fontSize: 12, padding: "5px 14px", color: "var(--danger)" }}>
-                      Régénérer le bracket
-                    </button>
-                  </form>
-                  {hasQualifyingMatches && (
-                    <form action={seedingAction}>
-                      <button type="submit" className="ghost" style={{ fontSize: 12, padding: "5px 14px" }}>
-                        Appliquer le seeding
-                      </button>
-                    </form>
-                  )}
-                  <span className="meta" style={{ fontSize: 11 }}>
-                    Recalcule le seeding depuis les standings actuels
-                  </span>
-                </div>
+                <BracketActions
+                  tournamentId={tournament.id}
+                  returnPath={bracketReturnPath}
+                  hasQualifyingMatches={hasQualifyingMatches}
+                  mode="buttons"
+                />
               )}
               <BracketView matches={bracketMatches} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} />
             </>
@@ -832,11 +822,13 @@ export default async function TournamentPage({
                   {isRR ? "Round Robin" : `Top ${t_.bracketSize ?? 16} qualifiés`}
                 </p>
                 <p className="meta" style={{ marginBottom: 20 }}>{formatLabel}</p>
-                <form action={regenerateAction}>
-                  <button type="submit" className="primary" style={{ fontSize: 16, padding: "12px 32px" }}>
-                    {isRR ? "🔄 Lancer le Round Robin" : "🏆 Lancer le bracket"}
-                  </button>
-                </form>
+                <BracketActions
+                  tournamentId={tournament.id}
+                  returnPath={bracketReturnPath}
+                  hasQualifyingMatches={false}
+                  isRR={isRR}
+                  mode="launch"
+                />
               </>
             ) : (
               <p className="meta">

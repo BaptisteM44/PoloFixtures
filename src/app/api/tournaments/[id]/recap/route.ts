@@ -6,6 +6,10 @@ const recapSchema = z.object({
   recapText:       z.string().max(5000).optional().nullable(),
   photoFinishPath: z.string().max(500).optional().nullable(),
   podiumNote:      z.string().max(500).optional().nullable(),
+  recapAnecdote:   z.string().max(2000).optional().nullable(),
+  bannerCredit:    z.string().max(200).optional().nullable(),
+  mvpPlayerId:     z.string().optional().nullable(),
+  mvpTitle:        z.string().max(100).optional().nullable(),
 });
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
@@ -36,7 +40,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const updated = await prisma.tournament.update({
     where: { id: params.id },
     data: parsed.data,
-    select: { recapText: true, photoFinishPath: true, podiumNote: true },
+    select: { recapText: true, photoFinishPath: true, podiumNote: true, recapAnecdote: true, bannerCredit: true, mvpPlayerId: true, mvpTitle: true },
   });
 
   return Response.json(updated);
