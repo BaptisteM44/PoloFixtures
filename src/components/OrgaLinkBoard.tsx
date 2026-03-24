@@ -23,6 +23,12 @@ export function OrgaLinkBoard({
   const [isPending, startTransition] = useTransition();
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+
+  const flashSaved = () => {
+    setSavedMsg("Lien ajouté ✓");
+    setTimeout(() => setSavedMsg(null), 2000);
+  };
 
   const api = `/api/tournaments/${tournamentId}/orga/links`;
 
@@ -39,6 +45,7 @@ export function OrgaLinkBoard({
         setLinks((prev) => [link, ...prev]);
         setLabel("");
         setUrl("");
+        flashSaved();
       }
     });
   };
@@ -74,6 +81,7 @@ export function OrgaLinkBoard({
         <button className="primary" onClick={addLink} disabled={!label.trim() || !url.trim() || isPending} style={{ fontSize: 12, padding: "6px 14px" }}>
           {t("orga_links_add_btn")}
         </button>
+        {savedMsg && <span style={{ fontSize: 12, color: "var(--teal)", alignSelf: "center" }}>{savedMsg}</span>}
       </div>
 
       {/* Links list */}

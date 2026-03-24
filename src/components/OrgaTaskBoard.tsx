@@ -69,6 +69,12 @@ export function OrgaTaskBoard({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+
+  const flashSaved = (msg = "✓") => {
+    setSavedMsg(msg);
+    setTimeout(() => setSavedMsg(null), 2000);
+  };
 
   const api = `/api/tournaments/${tournamentId}/orga/tasks`;
 
@@ -93,6 +99,7 @@ export function OrgaTaskBoard({
         setPriority("MEDIUM");
         setAssignee("");
         setDeadline("");
+        flashSaved("Tâche ajoutée ✓");
       } else {
         const text = await res.text();
         setError(`Erreur ${res.status}: ${text}`);
@@ -172,6 +179,7 @@ export function OrgaTaskBoard({
         )}
         <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} style={{ fontSize: 12, width: "auto" }} />
         <button className="primary" onClick={addTask} disabled={!title.trim() || isPending} style={{ fontSize: 12, padding: "6px 14px" }}>+</button>
+        {savedMsg && <span style={{ fontSize: 12, color: "var(--teal)", alignSelf: "center" }}>{savedMsg}</span>}
       </div>
       {error && <p style={{ color: "var(--danger)", fontSize: 12, margin: "-8px 0 12px" }}>{error}</p>}
 

@@ -38,6 +38,12 @@ export function OrgaNoteBoard({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
+
+  const flashSaved = () => {
+    setSavedMsg("Note ajoutée ✓");
+    setTimeout(() => setSavedMsg(null), 2000);
+  };
 
   const api = `/api/tournaments/${tournamentId}/orga/notes`;
 
@@ -54,6 +60,7 @@ export function OrgaNoteBoard({
         const note = await res.json();
         setNotes((prev) => [note, ...prev]);
         setContent("");
+        flashSaved();
       } else {
         const text = await res.text();
         setError(`Erreur ${res.status}: ${text}`);
@@ -94,7 +101,10 @@ export function OrgaNoteBoard({
           rows={2}
           style={{ flex: 1, fontSize: 13, resize: "vertical" }}
         />
-        <button className="primary" onClick={addNote} disabled={!content.trim() || isPending} style={{ fontSize: 12, padding: "6px 14px", alignSelf: "flex-end" }}>+</button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, alignSelf: "flex-end" }}>
+          <button className="primary" onClick={addNote} disabled={!content.trim() || isPending} style={{ fontSize: 12, padding: "6px 14px" }}>+</button>
+          {savedMsg && <span style={{ fontSize: 11, color: "var(--teal)", textAlign: "center" }}>{savedMsg}</span>}
+        </div>
       </div>
       {error && <p style={{ color: "var(--danger)", fontSize: 12, margin: "-8px 0 12px" }}>{error}</p>}
 
