@@ -15,7 +15,10 @@ export async function GET(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const [players, tournaments, teams, matches, pools, freeAgents, sponsors] = await Promise.all([
+  const [
+    players, tournaments, teams, matches, pools, freeAgents, sponsors,
+    teamMessages, tournamentMessages, squadMessages, directConversations, directMessages,
+  ] = await Promise.all([
     prisma.player.findMany(),
     prisma.tournament.findMany(),
     prisma.team.findMany({ include: { players: true } }),
@@ -23,7 +26,17 @@ export async function GET(request: Request) {
     prisma.pool.findMany({ include: { teams: true } }),
     prisma.freeAgent.findMany(),
     prisma.sponsor.findMany(),
+    prisma.teamMessage.findMany(),
+    prisma.tournamentMessage.findMany(),
+    prisma.squadMessage.findMany(),
+    prisma.directConversation.findMany(),
+    prisma.directMessage.findMany(),
   ]);
+
+  // List all files in uploads bucket (images, photos, banners, etc.)
+  const { data: uploadedFiles } = await supabase.storage
+    .from("uploads")
+    .list("", { limit: 10000 });
 
   const backup = {
     exportedAt: new Date().toISOString(),
@@ -34,6 +47,12 @@ export async function GET(request: Request) {
     pools,
     freeAgents,
     sponsors,
+    teamMessages,
+    tournamentMessages,
+    squadMessages,
+    directConversations,
+    directMessages,
+    uploadedFiles: uploadedFiles || [],
   };
 
   const json = JSON.stringify(backup, null, 2);
@@ -59,6 +78,12 @@ export async function GET(request: Request) {
       tournaments: tournaments.length,
       teams: teams.length,
       matches: matches.length,
+      teamMessages: teamMessages.length,
+      tournamentMessages: tournamentMessages.length,
+      squadMessages: squadMessages.length,
+      directConversations: directConversations.length,
+      directMessages: directMessages.length,
+      uploadedFiles: uploadedFiles?.length || 0,
     },
   });
 }
