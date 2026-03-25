@@ -184,7 +184,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
       {/* Inviter un joueur (manager) */}
       {isManager && (
         <div className="club-members__section" style={{ marginBottom: 16 }}>
-          <h4>Inviter un joueur</h4>
+          <h4 style={{ paddingTop: 16 }}>Inviter un joueur</h4>
           <div ref={searchRef} style={{ position: "relative" }}>
             <input
               placeholder="Commence à taper un nom…"

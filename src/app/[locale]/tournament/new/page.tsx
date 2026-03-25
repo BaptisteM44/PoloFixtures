@@ -42,7 +42,7 @@ export default function NewTournamentPage() {
     gameDurationMin: 12,
     maxTeams: 12,
     maxSoloPlayers: "" as string | number,
-    courtsCount: 2,
+    courtsCount: 1,
     registrationFeePerTeam: 0,
     registrationFeeCurrency: "EUR",
     saturdayFormat: "ALL_DAY",

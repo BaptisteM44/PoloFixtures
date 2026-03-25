@@ -275,12 +275,6 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         </p>
       )}
 
-      {saved && (
-        <div style={{ background: "var(--teal)", border: "2px solid var(--border)", borderRadius: 8, padding: "10px 16px", marginBottom: 16, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-          {t("saved_success")}
-        </div>
-      )}
-
       {error && (
         <div style={{ background: "var(--orange)", border: "2px solid var(--border)", borderRadius: 8, padding: "10px 16px", marginBottom: 16, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14 }}>
           {error}
@@ -713,14 +707,21 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </button>
         </div>
 
-        <button
-          className="primary"
-          type="submit"
-          disabled={isPending}
-          style={{ width: "fit-content" }}
-        >
-          {isPending ? t("saving") : t("save")}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button
+            className="primary"
+            type="submit"
+            disabled={isPending}
+            style={{ width: "fit-content" }}
+          >
+            {isPending ? t("saving") : t("save")}
+          </button>
+          {saved && (
+            <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13, color: "var(--teal)" }}>
+              ✓ {t("saved_success")}
+            </span>
+          )}
+        </div>
       </form>
     </div>
   );
