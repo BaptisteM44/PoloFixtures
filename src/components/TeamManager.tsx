@@ -12,7 +12,7 @@ type PlayerResult = {
 
 type TeamPlayer = {
   id: string;
-  player: { id: string; name: string; country: string };
+  player: { id: string; name: string; country: string; user?: { id: string } | null };
 };
 
 type Team = {
@@ -152,6 +152,74 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
   );
 }
 
+function PlayerChip({ tp, isEditing, isPending, onRemove }: {
+  tp: TeamPlayer;
+  isEditing: boolean;
+  isPending: boolean;
+  onRemove: () => void;
+}) {
+  const hasAccount = !!tp.player.user;
+  const [linking, setLinking] = useState(false);
+  const [email, setEmail] = useState("");
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const [linkSuccess, setLinkSuccess] = useState<string | null>(null);
+  const [linkPending, setLinkPending] = useState(false);
+
+  const handleLink = async () => {
+    if (!email.trim()) return;
+    setLinkError(null); setLinkSuccess(null); setLinkPending(true);
+    const res = await fetch(`/api/players/${tp.player.id}/link-account`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim() }),
+    });
+    const data = await res.json();
+    setLinkPending(false);
+    if (res.ok) { setLinkSuccess(`✓ Lié à ${data.userName}`); setLinking(false); setEmail(""); }
+    else setLinkError(data.error ?? "Erreur");
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-2)", border: `1.5px solid ${hasAccount || linkSuccess ? "var(--teal)" : "var(--border-light)"}`, borderRadius: 20, padding: "4px 12px 4px 10px", fontSize: 13 }}>
+        <span>{hasAccount || linkSuccess ? "🔗" : "👤"}</span>
+        <span style={{ fontWeight: 600 }}>{tp.player.name}</span>
+        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{tp.player.country}</span>
+        {isEditing && !hasAccount && !linkSuccess && (
+          <button
+            onClick={() => { setLinking((l) => !l); setLinkError(null); }}
+            disabled={isPending}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", padding: "0 2px", marginLeft: 2, lineHeight: 1, textDecoration: "underline" }}
+          >
+            {linking ? "annuler" : "lier compte"}
+          </button>
+        )}
+        {isEditing && (
+          <button onClick={onRemove} disabled={isPending} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger, #e53e3e)", fontSize: 14, padding: "0 2px", marginLeft: 2, lineHeight: 1 }}>✕</button>
+        )}
+      </div>
+      {linkSuccess && <span style={{ fontSize: 11, color: "var(--teal)", paddingLeft: 12 }}>{linkSuccess}</span>}
+      {linking && (
+        <div style={{ display: "flex", gap: 6, alignItems: "center", paddingLeft: 4 }}>
+          <input
+            type="email"
+            placeholder="Email du compte…"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleLink(); if (e.key === "Escape") { setLinking(false); setEmail(""); } }}
+            autoFocus
+            style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1.5px solid var(--border)", flex: 1 }}
+          />
+          <button className="primary" style={{ fontSize: 11, padding: "4px 10px" }} onClick={handleLink} disabled={linkPending || !email.trim()}>
+            {linkPending ? "…" : "Lier"}
+          </button>
+        </div>
+      )}
+      {linkError && <span style={{ fontSize: 11, color: "var(--danger)", paddingLeft: 12 }}>{linkError}</span>}
+    </div>
+  );
+}
+
 function TeamRow({
   team, locked, maxPlayers, tournamentId,
   isEditing, onStartEdit, onCancelEdit, onDelete, onRemovePlayer,
@@ -283,14 +351,13 @@ function TeamRow({
       {team.players.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: isEditing ? 12 : 0 }}>
           {team.players.map((tp) => (
-            <div key={tp.id} style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-2)", border: "1.5px solid var(--border-light)", borderRadius: 20, padding: "4px 12px 4px 10px", fontSize: 13 }}>
-              <span>👤</span>
-              <span style={{ fontWeight: 600 }}>{tp.player.name}</span>
-              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{tp.player.country}</span>
-              {isEditing && (
-                <button onClick={() => onRemovePlayer(tp.id, tp.player.name)} disabled={isPending} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger, #e53e3e)", fontSize: 14, padding: "0 2px", marginLeft: 2, lineHeight: 1 }}>✕</button>
-              )}
-            </div>
+            <PlayerChip
+              key={tp.id}
+              tp={tp}
+              isEditing={isEditing}
+              isPending={isPending}
+              onRemove={() => onRemovePlayer(tp.id, tp.player.name)}
+            />
           ))}
         </div>
       )}

@@ -166,35 +166,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ---- MY UPCOMING TOURNAMENTS (logged in only) ---- */}
-      {currentPlayerId && myUpcomingTournaments.length > 0 && (
-        <section className="section" style={{ paddingBottom: 0 }}>
-          <div className="section-header">
-            <h2>{t("hero_upcoming_title")}</h2>
-            <Link className="ghost" href="/my-tournaments">{t("hero_upcoming_see_all")}</Link>
-          </div>
-          <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
-            {myUpcomingTournaments.slice(0, 5).map((tour) => {
-              const ds = tour.dateStart;
-              return (
-                <Link
-                  key={tour.id}
-                  href={`/tournament/${tour.slug ?? tour.id}`}
-                  className="panel"
-                  style={{ minWidth: 220, padding: "14px 18px", textDecoration: "none", flexShrink: 0, display: "block" }}
-                >
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--teal)", fontFamily: "var(--font-display)", marginBottom: 4 }}>
-                    {ds.toLocaleDateString(locale, { day: "numeric", month: "short" })}
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{tour.name}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{tour.city}, {tour.country}</div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
       {/* ---- MAP SECTION (WIP) ---- */}
       {process.env.NEXT_PUBLIC_MAP_ENABLED === "true" && mapTournaments.length > 0 && (
         <TournamentMapClient
@@ -220,6 +191,35 @@ export default async function HomePage() {
       )}
 
       <div className="home-reorder">
+
+      {/* ---- MY UPCOMING TOURNAMENTS (logged in only) ---- */}
+      {currentPlayerId && myUpcomingTournaments.length > 0 && (
+        <section className="section home-reorder__upcoming" style={{ paddingBottom: 0 }}>
+          <div className="section-header">
+            <h2>{t("hero_upcoming_title")}</h2>
+            <Link className="ghost" href="/my-tournaments">{t("hero_upcoming_see_all")}</Link>
+          </div>
+          <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
+            {myUpcomingTournaments.slice(0, 5).map((tour) => {
+              const ds = tour.dateStart;
+              return (
+                <Link
+                  key={tour.id}
+                  href={`/tournament/${tour.slug ?? tour.id}`}
+                  className="panel"
+                  style={{ minWidth: 220, padding: "14px 18px", textDecoration: "none", flexShrink: 0, display: "block" }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--teal)", fontFamily: "var(--font-display)", marginBottom: 4 }}>
+                    {ds.toLocaleDateString(locale, { day: "numeric", month: "short" })}
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{tour.name}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{tour.city}, {tour.country}</div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ---- CONTINENTS ---- */}
       <section className="section home-reorder__continents" style={{ paddingBottom: 0 }}>

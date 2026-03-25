@@ -72,7 +72,7 @@ export default async function TournamentPage({
       sponsors: true,
       coOrganizers: { include: { player: { select: { id: true, name: true } } } },
       teams: needsPlayers
-        ? { include: { players: { include: { player: true } } } }
+        ? { include: { players: { include: { player: { include: { user: { select: { id: true } } } } } } } }
         : { select: { id: true, name: true, seed: true, selected: true, guaranteed: true, waitlistPosition: true, city: true, country: true, registrationNote: true, orgaNote: true, tournamentId: true, color: true, playerALevel: true, playerBLevel: true, playerCLevel: true } },
       pools: activeTab === "pools"
         ? { include: { teams: { include: { team: true } } } }
