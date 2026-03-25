@@ -59,7 +59,8 @@ export default async function TournamentPage({
   const activeTab = searchParams.tab;
 
   // Les onglets "equipes", "orga" et "recap" ont besoin des joueurs complets.
-  const needsPlayers = activeTab === "equipes" || activeTab === "orga" || activeTab === "recap";
+  // Pas de tab = page chargée sans ?tab= : on charge les players par précaution (recap default pour COMPLETED).
+  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "orga" || activeTab === "recap";
   // L'onglet "equipes" a besoin des events pour les badges.
   const needsEvents = activeTab === "equipes";
   // Les onglets sans matches : info, inscription, recap, communaute, equipes (matches via events)
@@ -178,17 +179,17 @@ export default async function TournamentPage({
   if (isOrga && tab === "orga") {
     const [tasks, notes, links] = await Promise.all([
       prisma.orgaTask.findMany({
-        where: { tournamentId: params.id },
+        where: { tournamentId: tournament.id },
         include: { assignedTo: { select: { id: true, name: true } }, createdBy: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
       }),
       prisma.orgaNote.findMany({
-        where: { tournamentId: params.id },
+        where: { tournamentId: tournament.id },
         include: { author: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
       }),
       prisma.orgaLink.findMany({
-        where: { tournamentId: params.id },
+        where: { tournamentId: tournament.id },
         include: { addedBy: { select: { id: true, name: true } } },
         orderBy: { createdAt: "desc" },
       }),
@@ -199,25 +200,35 @@ export default async function TournamentPage({
   }
 
   // Podium (extrait du bracket si tournoi terminé)
-  type PodiumTeam = { id: string; name: string } | null;
+  type PodiumPlayer = { id: string; name: string; country: string; city?: string | null; photoPath?: string | null; badges?: string[]; startYear?: number | null; hand?: string | null; gender?: string | null; slug?: string | null };
+  type PodiumTeam = { id: string; name: string; players?: PodiumPlayer[] } | null;
   let podium: { first: PodiumTeam; second: PodiumTeam; third: PodiumTeam } = { first: null, second: null, third: null };
 
   if (isCompleted) {
     const bracketMatches = await prisma.match.findMany({
-      where: { tournamentId: params.id, phase: "BRACKET", status: "FINISHED" },
-      include: { teamA: { select: { id: true, name: true } }, teamB: { select: { id: true, name: true } } },
+      where: { tournamentId: tournament.id, phase: "BRACKET", status: "FINISHED" },
+      include: {
+        teamA: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
+        teamB: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
+      },
       orderBy: { roundIndex: "desc" },
     });
-    const grandFinal = bracketMatches.find((m) => m.bracketSide === "G");
+    const extractPlayers = (team: any): PodiumPlayer[] =>
+      (team?.players ?? []).map((tp: any) => ({ id: tp.player.id, name: tp.player.name, country: tp.player.country ?? "", city: tp.player.city ?? null, photoPath: tp.player.photoPath ?? null, badges: tp.player.badges ?? [], startYear: tp.player.startYear ?? null, hand: tp.player.hand ?? null, gender: tp.player.gender ?? null, slug: tp.player.slug ?? null }));
+    const toTeam = (t: any): PodiumTeam => t ? { id: t.id, name: t.name, players: extractPlayers(t) } : null;
+    // GF : en cas de reset (plusieurs matchs G), prendre celui avec le roundIndex le plus élevé
+    const gfMatches = bracketMatches.filter((m) => m.bracketSide === "G");
+    const grandFinal = gfMatches[0]; // déjà trié par roundIndex desc
     if (grandFinal) {
       const isAWinner = grandFinal.winnerTeamId === grandFinal.teamAId;
-      podium.first  = isAWinner ? grandFinal.teamA : grandFinal.teamB;
-      podium.second = isAWinner ? grandFinal.teamB : grandFinal.teamA;
+      podium.first  = toTeam(isAWinner ? grandFinal.teamA : grandFinal.teamB);
+      podium.second = toTeam(isAWinner ? grandFinal.teamB : grandFinal.teamA);
     }
-    // 3ème : gagnant du Lower Final (DE) — bracketSide "L", roundIndex le plus élevé
+    // 3ème : perdant du Lower Final — bracketSide "L", roundIndex le plus élevé
     const lowerFinal = bracketMatches.filter((m) => m.bracketSide === "L")[0];
     if (lowerFinal) {
-      podium.third = lowerFinal.winnerTeamId === lowerFinal.teamAId ? lowerFinal.teamA : lowerFinal.teamB;
+      const isAWinner = lowerFinal.winnerTeamId === lowerFinal.teamAId;
+      podium.third = toTeam(isAWinner ? lowerFinal.teamB : lowerFinal.teamA);
     }
   }
 
@@ -404,6 +415,7 @@ export default async function TournamentPage({
               bannerPath: tournament.bannerPath,
               recapText: tournament.recapText ?? null,
               photoFinishPath: tournament.photoFinishPath ?? null,
+              photoFinishCredit: (tournament as any).photoFinishCredit ?? null,
               podiumNote: tournament.podiumNote ?? null,
               recapAnecdote: (tournament as any).recapAnecdote ?? null,
               bannerCredit: (tournament as any).bannerCredit ?? null,

@@ -239,6 +239,7 @@ model Tournament {
   // Récap post-tournoi
   recapText               String?   // markdown
   photoFinishPath         String?   // URL upload photo finish
+  photoFinishCredit       String?   // crédit photographe photo finish
   podiumNote              String?   // mention spéciale, MVP…
   recapAnecdote           String?   // anecdote / remerciement
   bannerCredit            String?   // crédit photographe

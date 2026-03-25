@@ -1,10 +1,24 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import { PokemonCard } from "@/components/PokemonCard";
 
-type Team = { id: string; name: string } | null;
+type PodiumPlayer = {
+  id: string;
+  name: string;
+  country: string;
+  city?: string | null;
+  photoPath?: string | null;
+  badges?: string[];
+  startYear?: number | null;
+  hand?: string | null;
+  gender?: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY" | null;
+  slug?: string | null;
+};
+
+type Team = { id: string; name: string; players?: PodiumPlayer[] } | null;
 
 type Player = {
   id: string;
@@ -29,6 +43,7 @@ type Props = {
     bannerCredit?: string | null;
     recapText: string | null;
     photoFinishPath: string | null;
+    photoFinishCredit?: string | null;
     podiumNote: string | null;
     recapAnecdote?: string | null;
     mvpPlayerId?: string | null;
@@ -46,10 +61,18 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
   const [podiumNote, setPodiumNote]       = useState(tournament.podiumNote ?? "");
   const [bannerCredit, setBannerCredit]   = useState(tournament.bannerCredit ?? "");
   const [recapAnecdote, setRecapAnecdote] = useState(tournament.recapAnecdote ?? "");
-  const [mvpPlayerId, setMvpPlayerId]     = useState(tournament.mvpPlayerId ?? "");
+  // mvpPlayerId stocke une liste CSV d'IDs ("id1,id2,id3") pour supporter plusieurs MVPs
+  const parseIds = (s: string | null | undefined) => (s ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  const [mvpPlayerIds, setMvpPlayerIds]   = useState<string[]>(parseIds(tournament.mvpPlayerId));
+  const [mvpOpen, setMvpOpen]             = useState(false);
   const [mvpTitle, setMvpTitle]           = useState(tournament.mvpTitle ?? "");
   const [editingMvpTitle, setEditingMvpTitle] = useState(false);
   const [mvpTitleDraft, setMvpTitleDraft] = useState(tournament.mvpTitle ?? "");
+
+  const [photoFinishPath, setPhotoFinishPath]     = useState(tournament.photoFinishPath ?? "");
+  const [photoFinishCredit, setPhotoFinishCredit] = useState(tournament.photoFinishCredit ?? "");
+  const [editingPhotoCredit, setEditingPhotoCredit] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto]       = useState(false);
 
   const [editingText, setEditingText]         = useState(false);
   const [editingNote, setEditingNote]         = useState(false);
@@ -68,193 +91,115 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
     });
   };
 
-  const mvpPlayer = players.find((p) => p.id === mvpPlayerId) ?? null;
+  const mvpPlayers = mvpPlayerIds.map((id) => players.find((p) => p.id === id)).filter(Boolean) as Player[];
 
-  // Podium order: 2nd left, 1st center (elevated), 3rd right
+  // Podium order: 1st top, 2nd middle, 3rd bottom — with increasing left indent
   const podiumSlots = [
-    { place: "second" as const, medal: "🥈", rank: "#2", team: podium.second, height: 80 },
-    { place: "first"  as const, medal: "🥇", rank: "#1", team: podium.first,  height: 110 },
-    { place: "third"  as const, medal: "🥉", rank: "#3", team: podium.third,  height: 60 },
+    { place: "first"  as const, medal: "🥇", rank: "#1", team: podium.first  },
+    { place: "second" as const, medal: "🥈", rank: "#2", team: podium.second },
+    { place: "third"  as const, medal: "🥉", rank: "#3", team: podium.third  },
   ];
 
   return (
     <div className="recap-layout">
 
-      {/* ═══ COLONNE GAUCHE : Podium + MVP ═══ */}
-      <div className="recap-left">
+      {/* ═══ LIGNE 1 : Podium (compact) + Affiche portrait ═══ */}
+      <div className="recap-top-row">
+      <div className="panel recap-podium-panel">
+        <h3 className="recap-section__title">Podium</h3>
 
-        {/* Podium */}
-        <div className="panel recap-podium-panel">
-          <h3 className="recap-section__title">Podium</h3>
-
-          {!podium.first && !podium.second ? (
-            <p className="meta" style={{ textAlign: "center", padding: "24px 0" }}>Résultats non disponibles</p>
-          ) : (
-            <div className="recap-podium-stage">
-              {podiumSlots.map(({ place, medal, rank, team, height }) => (
-                <div key={place} className={`recap-stage-slot recap-stage-slot--${place}`}>
-                  <div className="recap-stage-card">
-                    <span className="recap-stage-medal">{medal}</span>
-                    <strong className="recap-stage-team">{team?.name ?? "—"}</strong>
-                  </div>
-                  <div className="recap-stage-block" style={{ height }} />
-                  <span className="recap-stage-rank">{rank}</span>
+        {!podium.first && !podium.second ? (
+          <p className="meta" style={{ textAlign: "center", padding: "24px 0" }}>Résultats non disponibles</p>
+        ) : (
+          <div className="recap-podium-stage">
+            {podiumSlots.map(({ place, medal, team }) => (
+              <div key={place} className={`recap-stage-slot recap-stage-slot--${place}`}>
+                {/* Cartes flottant au-dessus de la marche */}
+                <div className="recap-podium-cards">
+                  {team?.players?.map((p) => (
+                    <div key={p.id} className="recap-mini-card-wrap">
+                      <Link href={`/player/${p.slug ?? p.id}`} style={{ textDecoration: "none" }}>
+                        <PokemonCard
+                          name={p.name}
+                          country={p.country}
+                          city={p.city}
+                          photoPath={p.photoPath}
+                          badges={p.badges ?? []}
+                          startYear={p.startYear}
+                          hand={p.hand}
+                          gender={p.gender ?? undefined}
+                          metalBorder={place === "first" ? "gold" : place === "second" ? "silver" : "bronze"}
+                        />
+                      </Link>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-
-          {/* Note podium */}
-          {(podiumNote || isOrga) && (
-            <div className="recap-podium-note">
-              {editingNote ? (
-                <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                  <textarea
-                    value={podiumNote}
-                    onChange={(e) => setPodiumNote(e.target.value)}
-                    placeholder="Mention spéciale, remarque…"
-                    rows={2}
-                    autoFocus
-                    style={{ flex: 1, fontSize: 13, resize: "vertical" }}
-                  />
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <button className="primary" style={{ fontSize: 11, padding: "4px 10px" }}
-                      onClick={() => { setEditingNote(false); save({ podiumNote }); }}
-                      disabled={isPending}
-                    >OK</button>
-                    <button className="ghost" style={{ fontSize: 11, padding: "4px 10px" }}
-                      onClick={() => setEditingNote(false)}
-                    >✕</button>
-                  </div>
+                {/* Marche colorée avec le nom de l'équipe */}
+                <div className="recap-stage-step">
+                  <strong className="recap-stage-team">{team?.name ?? "—"}</strong>
                 </div>
-              ) : (
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <p className="meta" style={{ flex: 1, fontStyle: "italic", margin: 0 }}>
-                    {podiumNote || (isOrga && <span style={{ opacity: 0.4 }}>Ajouter une mention spéciale…</span>)}
-                  </p>
-                  {isOrga && (
-                    <button className="ghost recap-edit-btn" onClick={() => setEditingNote(true)}>✎</button>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-        {/* Joueur·euse du tournoi */}
-        <div className="panel" style={{ marginTop: 16 }}>
-          {/* Intitulé */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-            {editingMvpTitle ? (
-              <>
-                <input
-                  type="text"
-                  value={mvpTitleDraft}
-                  onChange={(e) => setMvpTitleDraft(e.target.value)}
-                  placeholder="Ex: MVP, Meilleur gardien…"
+        {/* Note podium */}
+        {(podiumNote || isOrga) && (
+          <div className="recap-podium-note">
+            {editingNote ? (
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                <textarea
+                  value={podiumNote}
+                  onChange={(e) => setPodiumNote(e.target.value)}
+                  placeholder="Mention spéciale, remarque…"
+                  rows={2}
                   autoFocus
-                  style={{ fontSize: 15, fontWeight: 700, flex: 1, fontFamily: "var(--font-display)" }}
+                  style={{ flex: 1, fontSize: 13, resize: "vertical" }}
                 />
-                <button className="primary" style={{ fontSize: 11, padding: "3px 10px" }}
-                  onClick={() => {
-                    setMvpTitle(mvpTitleDraft);
-                    setEditingMvpTitle(false);
-                    save({ mvpTitle: mvpTitleDraft || null });
-                  }}
-                  disabled={isPending}
-                >OK</button>
-                <button className="ghost" style={{ fontSize: 11, padding: "3px 10px" }}
-                  onClick={() => { setEditingMvpTitle(false); setMvpTitleDraft(mvpTitle); }}
-                >✕</button>
-              </>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <button className="primary" style={{ fontSize: 11, padding: "4px 10px" }}
+                    onClick={() => { setEditingNote(false); save({ podiumNote }); }}
+                    disabled={isPending}
+                  >OK</button>
+                  <button className="ghost" style={{ fontSize: 11, padding: "4px 10px" }}
+                    onClick={() => setEditingNote(false)}
+                  >✕</button>
+                </div>
+              </div>
             ) : (
-              <>
-                <h3 className="recap-section__title" style={{ margin: 0, borderBottom: "none", paddingBottom: 0, flex: 1 }}>
-                  ⭐ {mvpTitle || "Joueur·euse du tournoi"}
-                </h3>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <p className="meta" style={{ flex: 1, fontStyle: "italic", margin: 0 }}>
+                  {podiumNote || (isOrga && <span style={{ opacity: 0.4 }}>Ajouter une mention spéciale…</span>)}
+                </p>
                 {isOrga && (
-                  <button className="ghost recap-edit-btn"
-                    onClick={() => { setMvpTitleDraft(mvpTitle); setEditingMvpTitle(true); }}
-                  >✎</button>
+                  <button className="ghost recap-edit-btn" onClick={() => setEditingNote(true)}>✎</button>
                 )}
-              </>
+              </div>
             )}
           </div>
-          <div style={{ borderBottom: "2px solid var(--border)", marginBottom: 16 }} />
-
-          {/* Sélecteur orga */}
-          {isOrga && (
-            <div style={{ marginBottom: mvpPlayer ? 16 : 0 }}>
-              <select
-                value={mvpPlayerId}
-                onChange={(e) => {
-                  setMvpPlayerId(e.target.value);
-                  save({ mvpPlayerId: e.target.value || null });
-                }}
-                style={{ width: "100%", fontSize: 14, padding: "6px 10px" }}
-                disabled={isPending}
-              >
-                <option value="">— Aucun sélectionné —</option>
-                {players.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.teamName})</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Carte Pokémon du MVP */}
-          {mvpPlayer ? (
-            <div className="recap-mvp-card-wrap">
-              <PokemonCard
-                name={mvpPlayer.name}
-                country={mvpPlayer.country}
-                city={mvpPlayer.city}
-                photoPath={mvpPlayer.photoPath}
-                badges={mvpPlayer.badges ?? []}
-                startYear={mvpPlayer.startYear}
-                hand={mvpPlayer.hand}
-                gender={mvpPlayer.gender ?? undefined}
-                showGender={mvpPlayer.showGender}
-                metalBorder="gold"
-              />
-              <p className="meta" style={{ textAlign: "center", marginTop: 8, fontSize: 12 }}>
-                {mvpPlayer.teamName}
-              </p>
-            </div>
-          ) : !isOrga ? (
-            <p className="meta" style={{ textAlign: "center", padding: "12px 0" }}>—</p>
-          ) : null}
-        </div>
-
+        )}
       </div>
 
-      {/* ═══ COLONNE DROITE : Affiche + Anecdote + Résumé ═══ */}
-      <div className="recap-right">
-
-        {/* Affiche */}
+        {/* Affiche portrait */}
         {tournament.bannerPath && (
-          <div className="panel recap-banner-panel">
-            <img
-              src={tournament.bannerPath}
-              alt={tournament.name}
-              className="recap-banner-img"
-            />
-            <div style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)", textAlign: "right" }}>
+          <div className="recap-banner-panel panel">
+            <img src={tournament.bannerPath} alt={tournament.name} className="recap-banner-img" />
+            <div className="recap-banner-credit">
               {editingCredit ? (
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                   <input
                     type="text"
                     value={bannerCredit}
                     onChange={(e) => setBannerCredit(e.target.value)}
-                    placeholder="Crédit photo (ex: @pseudo)"
-                    style={{ fontSize: 12, flex: 1 }}
+                    placeholder="@pseudo ou URL"
+                    style={{ fontSize: 11, flex: 1 }}
                     autoFocus
                   />
-                  <button className="primary" style={{ fontSize: 11, padding: "3px 8px" }}
+                  <button className="primary" style={{ fontSize: 10, padding: "2px 7px" }}
                     onClick={() => { setEditingCredit(false); save({ bannerCredit }); }}
                     disabled={isPending}
                   >OK</button>
-                  <button className="ghost" style={{ fontSize: 11, padding: "3px 8px" }}
+                  <button className="ghost" style={{ fontSize: 10, padding: "2px 7px" }}
                     onClick={() => setEditingCredit(false)}
                   >✕</button>
                 </div>
@@ -267,18 +212,222 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                     <a href={`https://instagram.com/${bannerCredit.slice(1)}`} target="_blank" rel="noopener noreferrer">{bannerCredit}</a>
                   ) : bannerCredit}
                   {isOrga && (
-                    <button className="ghost recap-edit-btn" style={{ marginLeft: 6 }} onClick={() => setEditingCredit(true)}>✎</button>
+                    <button className="ghost recap-edit-btn" style={{ marginLeft: 4 }} onClick={() => setEditingCredit(true)}>✎</button>
                   )}
                 </span>
               ) : isOrga ? (
-                <button className="ghost recap-edit-btn" onClick={() => setEditingCredit(true)}>+ Crédit photo</button>
+                <button className="ghost recap-edit-btn" onClick={() => setEditingCredit(true)}>+ Crédit</button>
               ) : null}
             </div>
           </div>
         )}
 
+      </div>{/* fin recap-top-row */}
+
+      {/* ═══ LIGNE 2 : MVP (compact) + Photo finish (large) ═══ */}
+      <div className="recap-middle-row">
+
+        {/* MVP */}
+        <div className="panel recap-mvp-panel">
+          {/* Titre + bouton edit titre (orga) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            {editingMvpTitle ? (
+              <>
+                <input
+                  type="text"
+                  value={mvpTitleDraft}
+                  onChange={(e) => setMvpTitleDraft(e.target.value)}
+                  placeholder="Ex: MVP, Meilleur gardien…"
+                  autoFocus
+                  style={{ fontSize: 14, fontWeight: 700, flex: 1, fontFamily: "var(--font-display)" }}
+                />
+                <button className="primary" style={{ fontSize: 11, padding: "3px 10px" }}
+                  onClick={() => { setMvpTitle(mvpTitleDraft); setEditingMvpTitle(false); save({ mvpTitle: mvpTitleDraft || null }); }}
+                  disabled={isPending}
+                >OK</button>
+                <button className="ghost" style={{ fontSize: 11, padding: "3px 10px" }}
+                  onClick={() => { setEditingMvpTitle(false); setMvpTitleDraft(mvpTitle); }}
+                >✕</button>
+              </>
+            ) : (
+              <>
+                <h3 className="recap-section__title" style={{ margin: 0, flex: 1 }}>
+                  ⭐ {mvpTitle || "Joueur·euse du tournoi"}
+                </h3>
+                {isOrga && (
+                  <button className="ghost recap-edit-btn"
+                    onClick={() => { setMvpTitleDraft(mvpTitle); setEditingMvpTitle(true); }}
+                  >✎</button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Sélecteur orga : accordéon */}
+          {isOrga && (
+            <div style={{ marginBottom: 12 }}>
+              <button
+                className="recap-mvp-toggle"
+                onClick={() => setMvpOpen((o) => !o)}
+              >
+                {mvpOpen ? "▲ Fermer la sélection" : "▼ Sélectionner les MVPs"}
+              </button>
+            </div>
+          )}
+
+          {mvpOpen && isOrga && (
+            <div style={{ marginBottom: 12 }}>
+              <div className="recap-mvp-selector">
+                {Object.entries(
+                  players.reduce<Record<string, Player[]>>((acc, p) => {
+                    (acc[p.teamName] ??= []).push(p);
+                    return acc;
+                  }, {})
+                ).map(([teamName, teamPlayers]) => (
+                  <div key={teamName} className="recap-mvp-selector__team">
+                    <span className="recap-mvp-selector__team-name">{teamName}</span>
+                    <div className="recap-mvp-selector__players">
+                      {teamPlayers.map((p) => {
+                        const checked = mvpPlayerIds.includes(p.id);
+                        return (
+                          <label key={p.id} className={`recap-mvp-selector__pill${checked ? " recap-mvp-selector__pill--on" : ""}`}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={isPending}
+                              onChange={() => {
+                                const next = checked
+                                  ? mvpPlayerIds.filter((id) => id !== p.id)
+                                  : [...mvpPlayerIds, p.id];
+                                setMvpPlayerIds(next);
+                                save({ mvpPlayerId: next.join(",") || null });
+                              }}
+                            />
+                            {p.name}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Cartes Pokémon des MVPs — toujours visibles */}
+          {mvpPlayers.length > 0 ? (
+            <div className="recap-mvp-cards-row">
+              {mvpPlayers.map((p) => (
+                <div key={p.id} className="recap-mvp-mini-wrap">
+                  <Link href={`/player/${p.slug ?? p.id}`} style={{ textDecoration: "none" }}>
+                    <PokemonCard
+                      name={p.name}
+                      country={p.country}
+                      city={p.city}
+                      photoPath={p.photoPath}
+                      badges={p.badges ?? []}
+                      startYear={p.startYear}
+                      hand={p.hand}
+                      gender={p.gender ?? undefined}
+                      showGender={p.showGender}
+                      metalBorder="gold"
+                    />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          ) : !isOrga ? (
+            <p className="meta" style={{ textAlign: "center", padding: "12px 0" }}>—</p>
+          ) : null}
+        </div>
+
+        {/* Photo finish */}
+        <div className="panel recap-photo-panel">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <h3 className="recap-section__title" style={{ margin: 0 }}>📸 Photo finish</h3>
+            {isOrga && photoFinishPath && (
+              <label className="ghost recap-edit-btn" style={{ cursor: "pointer" }}>
+                ✎
+                <input type="file" accept="image/*" style={{ display: "none" }} disabled={uploadingPhoto}
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0]; if (!f) return;
+                    setUploadingPhoto(true);
+                    const fd = new FormData(); fd.append("file", f); fd.append("folder", "photo-finish");
+                    const res = await fetch("/api/upload", { method: "POST", body: fd });
+                    const { path } = await res.json();
+                    setPhotoFinishPath(path);
+                    save({ photoFinishPath: path });
+                    setUploadingPhoto(false);
+                  }}
+                />
+              </label>
+            )}
+          </div>
+          {photoFinishPath ? (
+            <>
+              <img src={photoFinishPath} alt="Photo finish" className="recap-photo-img" />
+              <div className="recap-banner-credit">
+                {editingPhotoCredit ? (
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input
+                      type="text"
+                      value={photoFinishCredit}
+                      onChange={(e) => setPhotoFinishCredit(e.target.value)}
+                      placeholder="@pseudo ou URL"
+                      style={{ fontSize: 11, flex: 1 }}
+                      autoFocus
+                    />
+                    <button className="primary" style={{ fontSize: 10, padding: "2px 7px" }}
+                      onClick={() => { setEditingPhotoCredit(false); save({ photoFinishCredit }); }}
+                      disabled={isPending}
+                    >OK</button>
+                    <button className="ghost" style={{ fontSize: 10, padding: "2px 7px" }}
+                      onClick={() => setEditingPhotoCredit(false)}
+                    >✕</button>
+                  </div>
+                ) : photoFinishCredit ? (
+                  <span>
+                    📷{" "}
+                    {photoFinishCredit.startsWith("http") ? (
+                      <a href={photoFinishCredit} target="_blank" rel="noopener noreferrer">{photoFinishCredit}</a>
+                    ) : photoFinishCredit.startsWith("@") ? (
+                      <a href={`https://instagram.com/${photoFinishCredit.slice(1)}`} target="_blank" rel="noopener noreferrer">{photoFinishCredit}</a>
+                    ) : photoFinishCredit}
+                    {isOrga && (
+                      <button className="ghost recap-edit-btn" style={{ marginLeft: 4 }} onClick={() => setEditingPhotoCredit(true)}>✎</button>
+                    )}
+                  </span>
+                ) : isOrga ? (
+                  <button className="ghost recap-edit-btn" onClick={() => setEditingPhotoCredit(true)}>+ Crédit</button>
+                ) : null}
+              </div>
+            </>
+          ) : isOrga ? (
+            <label className="recap-upload-zone">
+              {uploadingPhoto ? "Upload en cours…" : "+ Ajouter une photo finish"}
+              <input type="file" accept="image/*" style={{ display: "none" }} disabled={uploadingPhoto}
+                onChange={async (e) => {
+                  const f = e.target.files?.[0]; if (!f) return;
+                  setUploadingPhoto(true);
+                  const fd = new FormData(); fd.append("file", f); fd.append("folder", "photo-finish");
+                  const res = await fetch("/api/upload", { method: "POST", body: fd });
+                  const { path } = await res.json();
+                  setPhotoFinishPath(path);
+                  save({ photoFinishPath: path });
+                  setUploadingPhoto(false);
+                }}
+              />
+            </label>
+          ) : null}
+        </div>
+
+      </div>
+
+      {/* ═══ LIGNE 3 : Anecdote + Résumé full width ═══ */}
+      <div className="recap-bottom-row">
+
         {/* Anecdote / Remerciement */}
-        <div className="panel" style={{ marginTop: 16 }}>
+        <div className="panel">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <h3 className="recap-section__title" style={{ margin: 0 }}>Anecdote / Remerciement</h3>
             {isOrga && !editingAnecdote && (

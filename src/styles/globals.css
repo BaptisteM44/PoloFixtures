@@ -1894,14 +1894,68 @@ button:focus-visible,
    ======================== */
 
 .recap-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Ligne 1 : Podium (compact) + Affiche portrait (fixe) ── */
+.recap-top-row {
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 24px;
+  grid-template-columns: 1fr 200px;
+  gap: 20px;
   align-items: start;
 }
 
-.recap-left,
-.recap-right {
+/* Affiche : ratio portrait 792×1120, largeur fixe, hauteur auto */
+.recap-banner-panel {
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+
+.recap-banner-img {
+  width: 100%;
+  aspect-ratio: 792 / 1120;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius);
+}
+
+.recap-banner-credit {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* ── Ligne 2 : MVP (2 cartes) + Photo finish ── */
+/* --mvp-card-w = largeur d'une mini carte MVP (scale 0.5 → 170px) */
+.recap-middle-row {
+  display: grid;
+  grid-template-columns: calc(2 * 170px + 10px + 32px) 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.recap-mvp-panel {
+  min-width: 0;
+}
+
+.recap-photo-panel {
+  min-width: 0;
+}
+
+.recap-photo-img {
+  width: 100%;
+  border-radius: var(--radius);
+  display: block;
+  object-fit: cover;
+  max-height: 480px;
+}
+
+/* ── Ligne 3 : Anecdote + Résumé full width ── */
+.recap-bottom-row {
   display: flex;
   flex-direction: column;
 }
@@ -1918,97 +1972,110 @@ button:focus-visible,
   letter-spacing: 0.06em;
 }
 
-/* ── Podium stage ── */
+/* ── Podium stage — escalier physique ── */
 .recap-podium-panel { padding: 20px; }
 
+/*
+  Layout : 3 colonnes côte à côte, alignées en bas.
+  Chaque colonne = cartes flottantes + marche en-dessous.
+  La hauteur de la marche crée l'effet escalier (1er = plus haute).
+*/
 .recap-podium-stage {
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
+  flex-direction: row;
+  align-items: flex-end;   /* tout s'aligne par le bas */
+  gap: 0;
   margin-bottom: 16px;
+  overflow: visible;
 }
 
+/* Chaque slot est une colonne verticale */
 .recap-stage-slot {
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-width: 0;
   flex: 1;
-  max-width: 130px;
 }
 
-.recap-stage-card {
+/* Les marches ont des hauteurs différentes pour l'effet escalier */
+.recap-stage-slot--first  .recap-stage-step { height: 60px; }
+.recap-stage-slot--second .recap-stage-step { height: 46px; }
+.recap-stage-slot--third  .recap-stage-step { height: 34px; }
+
+/* Ordre visuel : 2nd | 1er | 3ème */
+.recap-stage-slot--first  { order: 2; }
+.recap-stage-slot--second { order: 1; }
+.recap-stage-slot--third  { order: 3; }
+
+/* La marche : bloc coloré pleine largeur avec nom équipe */
+.recap-stage-step {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  margin-bottom: 6px;
-  padding: 8px 6px;
-  width: 100%;
-  text-align: center;
-  border-radius: var(--radius);
-  background: var(--surface-2);
+  justify-content: flex-start;
+  gap: 2px;
   border: 2px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 5px 6px 0;
+  overflow: visible; /* laisse le contenu déborder vers le haut si marche trop petite */
 }
 
-.recap-stage-medal { font-size: 22px; line-height: 1; }
+.recap-stage-medal { font-size: 16px; line-height: 1; }
 
 .recap-stage-team {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 9px;
   font-weight: 800;
-  word-break: break-word;
-  hyphens: auto;
-}
-
-.recap-stage-block {
-  width: 100%;
-  border-radius: var(--radius) var(--radius) 0 0;
-}
-
-.recap-stage-rank {
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-  padding: 4px 0;
-  width: 100%;
   text-align: center;
-  border-top: 2px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.2;
 }
 
-/* Colors per place */
-.recap-stage-slot--first .recap-stage-card {
+/* Cards flottant au-dessus de la marche */
+.recap-podium-cards {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 4px 6px;
+  overflow: visible;
+}
+
+/* Couleurs des marches */
+.recap-stage-slot--first .recap-stage-step {
   border-color: var(--yellow);
-  background: color-mix(in srgb, var(--yellow) 10%, var(--surface));
-  box-shadow: 3px 3px 0 var(--yellow);
+  background: color-mix(in srgb, var(--yellow) 25%, var(--surface));
+  box-shadow: 3px 0 0 var(--yellow), -3px 0 0 var(--yellow);
 }
-.recap-stage-slot--first .recap-stage-block {
-  background: color-mix(in srgb, var(--yellow) 40%, var(--surface-2));
-  border: 2px solid var(--yellow);
-  border-bottom: none;
-}
-.recap-stage-slot--second .recap-stage-card {
+.recap-stage-slot--second .recap-stage-step {
   border-color: #9e9e9e;
-  background: color-mix(in srgb, #9e9e9e 8%, var(--surface));
-  box-shadow: 3px 3px 0 #9e9e9e;
+  background: color-mix(in srgb, #9e9e9e 15%, var(--surface));
+  box-shadow: 3px 0 0 #9e9e9e, -3px 0 0 #9e9e9e;
 }
-.recap-stage-slot--second .recap-stage-block {
-  background: color-mix(in srgb, #9e9e9e 30%, var(--surface-2));
-  border: 2px solid #9e9e9e;
-  border-bottom: none;
-}
-.recap-stage-slot--third .recap-stage-card {
+.recap-stage-slot--third .recap-stage-step {
   border-color: #cd7f32;
-  background: color-mix(in srgb, #cd7f32 8%, var(--surface));
-  box-shadow: 3px 3px 0 #cd7f32;
+  background: color-mix(in srgb, #cd7f32 15%, var(--surface));
+  box-shadow: 3px 0 0 #cd7f32, -3px 0 0 #cd7f32;
 }
-.recap-stage-slot--third .recap-stage-block {
-  background: color-mix(in srgb, #cd7f32 30%, var(--surface-2));
-  border: 2px solid #cd7f32;
-  border-bottom: none;
+
+/* Ligne de sol commune sous toutes les marches */
+.recap-podium-stage::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--border);
 }
+.recap-podium-stage { position: relative; }
 
 .recap-podium-note {
   background: var(--surface-2);
@@ -2026,23 +2093,164 @@ button:focus-visible,
   padding-top: 8px;
 }
 
-/* ── Banner in right column ── */
-.recap-banner-panel {
-  padding: 0;
-  overflow: hidden;
+/* ── MVP toggle button (orga only) ── */
+.recap-mvp-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.recap-mvp-toggle:hover {
+  background: var(--yellow);
+  border-color: var(--border);
 }
 
-.recap-banner-img {
-  width: 100%;
+/* ── MVP selector ── */
+.recap-mvp-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.recap-mvp-selector__team {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recap-mvp-selector__team-name {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.recap-mvp-selector__players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recap-mvp-selector__pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  user-select: none;
+}
+
+.recap-mvp-selector__pill input {
+  display: none;
+}
+
+.recap-mvp-selector__pill--on {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #000;
+}
+
+/* ── MVP multi-cards row ── */
+.recap-mvp-cards-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.recap-mvp-mini-wrap {
+  --mini-scale: 0.5;
+  width: calc(340px * var(--mini-scale));
+  height: calc(520px * var(--mini-scale));
+  flex-shrink: 0;
+  overflow: visible;
+  position: relative;
+  z-index: 0;
+}
+
+.recap-mvp-mini-wrap:hover {
+  z-index: 10;
+}
+
+.recap-mvp-mini-wrap > a,
+.recap-mvp-mini-wrap > div:first-child {
   display: block;
-  object-fit: cover;
-  max-height: 480px;
-  border-radius: var(--radius) var(--radius) 0 0;
+  transform: scale(var(--mini-scale));
+  transform-origin: top left;
+  width: 340px;
+  height: 520px;
 }
 
-.recap-banner-panel > div {
-  padding: 10px 14px 12px;
+/* ── Photo finish upload zone ── */
+.recap-upload-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 32px 16px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
 }
+
+.recap-upload-zone:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+/* Mini card: scale 340×520 — centrée dans la colonne podium */
+.recap-mini-card-wrap {
+  --mini-scale: 0.36;
+  width: calc(340px * var(--mini-scale));
+  height: calc(520px * var(--mini-scale));
+  flex-shrink: 0;
+  overflow: visible;
+  position: relative;
+  z-index: 0;
+}
+
+.recap-mini-card-wrap:hover {
+  z-index: 10;
+}
+
+.recap-mini-card-wrap > a,
+.recap-mini-card-wrap > div {
+  display: block;
+  transform: scale(var(--mini-scale));
+  transform-origin: top center;
+  width: 340px;
+  height: 520px;
+  margin-left: calc(-340px * (1 - var(--mini-scale)) / 2);
+}
+
 
 /* ── Markdown text ── */
 .recap-text {
@@ -2071,11 +2279,16 @@ button:focus-visible,
 }
 
 @media (max-width: 900px) {
-  .recap-layout {
+  .recap-top-row {
     grid-template-columns: 1fr;
   }
-  /* On mobile: right column (banner + text) comes first */
-  .recap-right { order: -1; }
+  .recap-banner-panel {
+    max-width: 280px;
+    margin: 0 auto;
+  }
+  .recap-middle-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ========================
