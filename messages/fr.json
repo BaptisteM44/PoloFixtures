@@ -727,6 +727,7 @@
     "share_card": "Partager ma carte",
     "share_card_title": "Ma carte Bike Polo",
     "share_card_download": "Enregistrer l'image",
+    "share_card_error": "Impossible de générer l'image",
     "stats_title": "Statistiques",
     "tournaments_played": "tournoi(s) joué(s)",
     "goals_title": "Buts",

@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     data: {
       ...parsed.data,
       slug,
-      status: "PENDING",
+      status: "ACTIVE",
       badges: []
     }
   });
