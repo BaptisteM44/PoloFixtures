@@ -9,9 +9,11 @@ const supabase = createClient(
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
-  // Sécurité : vérifier le token Vercel Cron
+  // Sécurité : appel Vercel Cron ou token manuel
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const isVercelCron = request.headers.get("x-vercel-cron") === "1";
+  const isValidSecret = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+  if (!isVercelCron && !isValidSecret) {
     return new Response("Unauthorized", { status: 401 });
   }
 
