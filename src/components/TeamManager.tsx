@@ -12,7 +12,7 @@ type PlayerResult = {
 
 type TeamPlayer = {
   id: string;
-  player: { id: string; name: string; country: string; user?: { id: string } | null };
+  player: { id: string; name: string; country: string; account?: { id: string } | null };
 };
 
 type Team = {
@@ -152,70 +152,93 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
   );
 }
 
-function PlayerChip({ tp, isEditing, isPending, onRemove }: {
+function PlayerChip({ tp, isEditing, isPending, onRemove, onMerged }: {
   tp: TeamPlayer;
   isEditing: boolean;
   isPending: boolean;
   onRemove: () => void;
+  onMerged: () => void;
 }) {
-  const hasAccount = !!tp.player.user;
-  const [linking, setLinking] = useState(false);
-  const [email, setEmail] = useState("");
-  const [linkError, setLinkError] = useState<string | null>(null);
-  const [linkSuccess, setLinkSuccess] = useState<string | null>(null);
-  const [linkPending, setLinkPending] = useState(false);
+  const hasAccount = !!tp.player.account;
+  const [merging, setMerging] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<PlayerResult[]>([]);
+  const [mergeError, setMergeError] = useState<string | null>(null);
+  const [mergePending, setMergePending] = useState(false);
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleLink = async () => {
-    if (!email.trim()) return;
-    setLinkError(null); setLinkSuccess(null); setLinkPending(true);
-    const res = await fetch(`/api/players/${tp.player.id}/link-account`, {
+  const searchTarget = (q: string) => {
+    if (q.length < 2) { setResults([]); return; }
+    if (debounce.current) clearTimeout(debounce.current);
+    debounce.current = setTimeout(async () => {
+      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      // Exclude self and players without account (only merge into real accounts)
+      setResults((data as PlayerResult[]).filter((p: PlayerResult) => p.id !== tp.player.id));
+    }, 250);
+  };
+
+  const handleMerge = async (targetId: string, targetName: string) => {
+    if (!confirm(`Fusionner "${tp.player.name}" → "${targetName}" ?\n\nToutes les stats de "${tp.player.name}" seront transférées à "${targetName}". Le profil fictif sera supprimé.`)) return;
+    setMergeError(null); setMergePending(true);
+    const res = await fetch(`/api/players/${tp.player.id}/merge`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim() }),
+      body: JSON.stringify({ targetPlayerId: targetId }),
     });
     const data = await res.json();
-    setLinkPending(false);
-    if (res.ok) { setLinkSuccess(`✓ Lié à ${data.userName}`); setLinking(false); setEmail(""); }
-    else setLinkError(data.error ?? "Erreur");
+    setMergePending(false);
+    if (res.ok) { setMerging(false); onMerged(); }
+    else setMergeError(data.error ?? "Erreur");
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-2)", border: `1.5px solid ${hasAccount || linkSuccess ? "var(--teal)" : "var(--border-light)"}`, borderRadius: 20, padding: "4px 12px 4px 10px", fontSize: 13 }}>
-        <span>{hasAccount || linkSuccess ? "🔗" : "👤"}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-2)", border: `1.5px solid ${hasAccount ? "var(--teal)" : "var(--border-light)"}`, borderRadius: 20, padding: "4px 12px 4px 10px", fontSize: 13 }}>
+        <span>{hasAccount ? "🔗" : "👤"}</span>
         <span style={{ fontWeight: 600 }}>{tp.player.name}</span>
         <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{tp.player.country}</span>
-        {isEditing && !hasAccount && !linkSuccess && (
+        {isEditing && !hasAccount && (
           <button
-            onClick={() => { setLinking((l) => !l); setLinkError(null); }}
-            disabled={isPending}
+            onClick={() => { setMerging((m) => !m); setMergeError(null); setQuery(""); setResults([]); }}
+            disabled={isPending || mergePending}
             style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", padding: "0 2px", marginLeft: 2, lineHeight: 1, textDecoration: "underline" }}
           >
-            {linking ? "annuler" : "lier compte"}
+            {merging ? "annuler" : "fusionner"}
           </button>
         )}
         {isEditing && (
           <button onClick={onRemove} disabled={isPending} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger, #e53e3e)", fontSize: 14, padding: "0 2px", marginLeft: 2, lineHeight: 1 }}>✕</button>
         )}
       </div>
-      {linkSuccess && <span style={{ fontSize: 11, color: "var(--teal)", paddingLeft: 12 }}>{linkSuccess}</span>}
-      {linking && (
-        <div style={{ display: "flex", gap: 6, alignItems: "center", paddingLeft: 4 }}>
+      {merging && (
+        <div style={{ paddingLeft: 4, display: "flex", flexDirection: "column", gap: 4 }}>
           <input
-            type="email"
-            placeholder="Email du compte…"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleLink(); if (e.key === "Escape") { setLinking(false); setEmail(""); } }}
+            placeholder="Chercher le vrai profil…"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); searchTarget(e.target.value); }}
             autoFocus
-            style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1.5px solid var(--border)", flex: 1 }}
+            style={{ fontSize: 12, padding: "4px 8px", borderRadius: 6, border: "1.5px solid var(--border)" }}
           />
-          <button className="primary" style={{ fontSize: 11, padding: "4px 10px" }} onClick={handleLink} disabled={linkPending || !email.trim()}>
-            {linkPending ? "…" : "Lier"}
-          </button>
+          {results.length > 0 && (
+            <div style={{ background: "var(--surface)", border: "1.5px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+              {results.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handleMerge(p.id, p.name)}
+                  disabled={mergePending}
+                  style={{ width: "100%", textAlign: "left", padding: "7px 12px", background: "none", border: "none", borderBottom: "1px solid var(--border-light)", cursor: "pointer", fontSize: 12 }}
+                >
+                  <strong>{p.name}</strong>
+                  <span style={{ marginLeft: 8, color: "var(--text-muted)", fontSize: 11 }}>{p.city ? `${p.city}, ` : ""}{p.country}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
-      {linkError && <span style={{ fontSize: 11, color: "var(--danger)", paddingLeft: 12 }}>{linkError}</span>}
+      {mergeError && <span style={{ fontSize: 11, color: "var(--danger)", paddingLeft: 12 }}>{mergeError}</span>}
     </div>
   );
 }
@@ -357,6 +380,7 @@ function TeamRow({
               isEditing={isEditing}
               isPending={isPending}
               onRemove={() => onRemovePlayer(tp.id, tp.player.name)}
+              onMerged={onPlayerChanged}
             />
           ))}
         </div>
