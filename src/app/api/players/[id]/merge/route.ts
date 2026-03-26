@@ -4,7 +4,6 @@ import { auth } from "@/lib/auth";
 // POST /api/players/:id/merge
 // Body: { targetPlayerId: string }
 // Merges the fictitious player (:id) into targetPlayer, then deletes :id.
-// All TeamPlayer, MatchEvent, TournamentSoloEntry, etc. are reassigned.
 // Only orga (of a tournament containing :id) or admin can do this.
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -35,7 +34,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return Response.json({ error: "targetPlayerId invalide" }, { status: 400 });
   }
 
-  // Verify both players exist
   const [source, target] = await Promise.all([
     prisma.player.findUnique({ where: { id: params.id } }),
     prisma.player.findUnique({ where: { id: targetPlayerId } }),
@@ -43,49 +41,32 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (!source) return Response.json({ error: "Joueur source introuvable" }, { status: 404 });
   if (!target) return Response.json({ error: "Joueur cible introuvable" }, { status: 404 });
 
-  // Check source has no account (only fictitious players should be merged)
   const sourceAccount = await prisma.playerAccount.findUnique({ where: { playerId: params.id } });
   if (sourceAccount) {
     return Response.json({ error: "Ce joueur possède un compte — fusion non autorisée" }, { status: 409 });
   }
 
-  // Run everything in a transaction
   await prisma.$transaction(async (tx) => {
-    // Reassign TeamPlayer — skip duplicates (same player already in same team)
-    const targetTeamPlayers = await tx.teamPlayer.findMany({
-      where: { playerId: targetPlayerId },
-      select: { teamId: true },
-    });
-    const targetTeamIds = new Set(targetTeamPlayers.map((tp) => tp.teamId));
-
-    const sourceTeamPlayers = await tx.teamPlayer.findMany({
-      where: { playerId: params.id },
-      select: { id: true, teamId: true },
-    });
-
+    // TeamPlayer — skip if target already in same team
+    const targetTeamIds = new Set(
+      (await tx.teamPlayer.findMany({ where: { playerId: targetPlayerId }, select: { teamId: true } }))
+        .map((tp) => tp.teamId)
+    );
+    const sourceTeamPlayers = await tx.teamPlayer.findMany({ where: { playerId: params.id }, select: { id: true, teamId: true } });
     for (const tp of sourceTeamPlayers) {
       if (targetTeamIds.has(tp.teamId)) {
-        // Target already in this team — just delete the duplicate
         await tx.teamPlayer.delete({ where: { id: tp.id } });
       } else {
         await tx.teamPlayer.update({ where: { id: tp.id }, data: { playerId: targetPlayerId } });
       }
     }
 
-    // Reassign MatchEvents
-    await tx.matchEvent.updateMany({ where: { playerId: params.id }, data: { playerId: targetPlayerId } });
-
-    // Reassign TournamentSoloEntry — skip duplicates
-    const targetSoloEntries = await tx.tournamentSoloEntry.findMany({
-      where: { playerId: targetPlayerId },
-      select: { tournamentId: true },
-    });
-    const targetSoloTournamentIds = new Set(targetSoloEntries.map((e) => e.tournamentId));
-
-    const sourceSoloEntries = await tx.tournamentSoloEntry.findMany({
-      where: { playerId: params.id },
-      select: { id: true, tournamentId: true },
-    });
+    // TournamentSoloEntry — skip duplicates
+    const targetSoloTournamentIds = new Set(
+      (await tx.tournamentSoloEntry.findMany({ where: { playerId: targetPlayerId }, select: { tournamentId: true } }))
+        .map((e) => e.tournamentId)
+    );
+    const sourceSoloEntries = await tx.tournamentSoloEntry.findMany({ where: { playerId: params.id }, select: { id: true, tournamentId: true } });
     for (const e of sourceSoloEntries) {
       if (targetSoloTournamentIds.has(e.tournamentId)) {
         await tx.tournamentSoloEntry.delete({ where: { id: e.id } });
@@ -94,25 +75,26 @@ export async function POST(request: Request, { params }: { params: { id: string 
       }
     }
 
-    // Reassign FreeAgent entries
+    // FreeAgent
     await tx.freeAgent.updateMany({ where: { playerId: params.id }, data: { playerId: targetPlayerId } });
 
-    // Reassign SquadMember
+    // SquadMember
     await tx.squadMember.updateMany({ where: { playerId: params.id }, data: { playerId: targetPlayerId } });
 
-    // Reassign SquadInvitation
-    await tx.squadInvitation.updateMany({ where: { playerId: params.id }, data: { inviteeId: targetPlayerId } });
+    // SquadInvitation (invitedPlayerId and invitedById are separate fields)
+    await tx.squadInvitation.updateMany({ where: { invitedPlayerId: params.id }, data: { invitedPlayerId: targetPlayerId } });
+    await tx.squadInvitation.updateMany({ where: { invitedById: params.id }, data: { invitedById: targetPlayerId } });
 
-    // Reassign ClubMember
+    // ClubMember
     await tx.clubMember.updateMany({ where: { playerId: params.id }, data: { playerId: targetPlayerId } });
 
-    // Reassign TournamentFollow
+    // TournamentFollow
     await tx.tournamentFollow.updateMany({ where: { playerId: params.id }, data: { playerId: targetPlayerId } });
 
-    // Reassign Notifications
+    // Notification
     await tx.notification.updateMany({ where: { playerId: params.id }, data: { playerId: targetPlayerId } });
 
-    // Reassign NotificationPreference
+    // NotificationPreference (unique on playerId)
     const existingPref = await tx.notificationPreference.findUnique({ where: { playerId: targetPlayerId } });
     if (!existingPref) {
       await tx.notificationPreference.updateMany({ where: { playerId: params.id }, data: { playerId: targetPlayerId } });
@@ -120,14 +102,16 @@ export async function POST(request: Request, { params }: { params: { id: string 
       await tx.notificationPreference.deleteMany({ where: { playerId: params.id } });
     }
 
-    // Reassign tournament creator/co-organizer references
+    // Tournament creator
     await tx.tournament.updateMany({ where: { creatorId: params.id }, data: { creatorId: targetPlayerId } });
+
+    // TournamentOrganizer (co-organizer)
     await tx.tournamentOrganizer.updateMany({ where: { playerId: params.id }, data: { playerId: targetPlayerId } });
 
-    // Reassign OrgaTask/Note/Link assigned to this player
+    // OrgaTask assigned
     await tx.orgaTask.updateMany({ where: { assignedToId: params.id }, data: { assignedToId: targetPlayerId } });
 
-    // Delete the fictitious player
+    // Delete fictitious player
     await tx.player.delete({ where: { id: params.id } });
   });
 
