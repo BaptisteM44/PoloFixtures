@@ -1,17 +1,20 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction } from "./actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction } from "./actions";
 import { TournamentEditForm } from "@/components/TournamentEditForm";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { SponsorManager } from "@/components/SponsorManager";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { TeamManager } from "@/components/TeamManager";
+import { PoolAssignment } from "@/components/PoolAssignment";
+import { CrossPoolActions } from "@/components/CrossPoolActions";
 import { CoOrganizerManager } from "@/components/CoOrganizerManager";
 import { RefereeManager } from "@/components/RefereeManager";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { CreatedToast } from "@/components/CreatedToast";
+import ConfirmFormButton from "@/components/ConfirmFormButton";
 
 export default async function TournamentEditPage({ params }: { params: { id: string } }) {
   const session = await auth();
@@ -21,7 +24,8 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       teams: { include: { players: { include: { player: true } } } },
       freeAgents: true,
       creator: true,
-      matches: { select: { id: true, phase: true, roundIndex: true } },
+      pools: { include: { teams: { include: { team: { select: { id: true, name: true, seed: true } } } } } },
+      matches: { select: { id: true, phase: true, roundIndex: true, status: true, winnerTeamId: true } },
       sponsors: { orderBy: { name: "asc" } },
       coOrganizers: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true } } }, orderBy: { addedAt: "asc" } }
     }
@@ -156,15 +160,34 @@ export default async function TournamentEditPage({ params }: { params: { id: str
 
           {/* Launch tournament button */}
           {(t_.status === "UPCOMING" || (t_.status === "LIVE" && t_.matches.length === 0)) && t_.teams.some((t: any) => t.selected === true) && (
-            <form action={async () => {
-              "use server";
-              const res = await launchTournamentAction(t_.id);
-              if (res.error) throw new Error(res.error);
-            }}>
-              <button className="primary" type="submit" style={{ width: "100%", padding: "16px 24px", fontSize: 16, fontFamily: "var(--font-display)", fontWeight: 700, justifyContent: "center", display: "flex", alignItems: "center", gap: 10 }}>
-                {t("edit_launch_tournament")}
-              </button>
-            </form>
+            <ConfirmFormButton
+              action={async () => {
+                "use server";
+                const res = await launchTournamentAction(t_.id);
+                if (res.error) throw new Error(res.error);
+              }}
+              confirmMessage={t("edit_launch_confirm")}
+              className="primary"
+              style={{ width: "100%", padding: "16px 24px", fontSize: 16, fontFamily: "var(--font-display)", fontWeight: 700, justifyContent: "center", display: "flex", alignItems: "center", gap: 10 }}
+            >
+              {t("edit_launch_tournament")}
+            </ConfirmFormButton>
+          )}
+
+          {/* Reset tournament button — visible when LIVE */}
+          {t_.status === "LIVE" && (
+            <ConfirmFormButton
+              action={async () => {
+                "use server";
+                const res = await resetTournamentAction(t_.id);
+                if (res.error) throw new Error(res.error);
+              }}
+              confirmMessage={t("edit_reset_confirm")}
+              className="ghost"
+              style={{ fontSize: 12, padding: "6px 14px", color: "var(--danger)" }}
+            >
+              {t("edit_reset_tournament")}
+            </ConfirmFormButton>
           )}
 
           {/* KPI bar */}
@@ -224,6 +247,8 @@ export default async function TournamentEditPage({ params }: { params: { id: str
           streamYoutubeUrl: t_.streamYoutubeUrl,
           chatMode: t_.chatMode,
           saturdayFormat: t_.saturdayFormat,
+          poolCount: t_.poolCount,
+          crossPool: t_.crossPool,
           swissRounds: t_.swissRounds,
           bracketSize: t_.bracketSize,
           sundayFormat: t_.sundayFormat,
@@ -243,6 +268,48 @@ export default async function TournamentEditPage({ params }: { params: { id: str
         action={updateAction}
         toggleLockAction={toggleLock}
       />
+
+      {/* Pool Assignment — visible when poolCount > 1 */}
+      {(t_.poolCount ?? 1) > 1 && (
+        <div className="panel">
+          <PoolAssignment
+            tournamentId={t_.id}
+            teams={t_.teams.filter((t: any) => t.selected).map((t: any) => ({ id: t.id, name: t.name, seed: t.seed }))}
+            pools={t_.pools}
+            poolCount={t_.poolCount ?? 1}
+            isLocked={t_.locked}
+          />
+        </div>
+      )}
+
+      {/* Cross-pool actions — visible when crossPool is enabled and tournament is LIVE */}
+      {t_.crossPool && t_.status === "LIVE" && (() => {
+        const poolMatches = t_.matches.filter((m: any) => m.phase === "POOL" || m.phase === "SWISS");
+        const poolMatchesFinished = poolMatches.length > 0 && poolMatches.every((m: any) => m.status === "FINISHED");
+        const crossPoolMatches = t_.matches.filter((m: any) => m.phase === "CROSS_POOL");
+        const crossPoolGenerated = crossPoolMatches.length > 0;
+        const crossPoolFinished = crossPoolGenerated && crossPoolMatches.every((m: any) => m.status === "FINISHED");
+        const bracketMatches = t_.matches.filter((m: any) => m.phase === "BRACKET");
+        const seGenerated = bracketMatches.length > 0;
+        const seRound1 = bracketMatches.filter((m: any) => m.roundIndex === 1);
+        const seRound1Finished = seRound1.length > 0 && seRound1.every((m: any) => m.status === "FINISHED");
+        // DE is generated when we have bracket matches with bracketSide "L" (lower bracket)
+        const deGenerated = bracketMatches.some((m: any) => m.bracketSide === "L");
+        return (
+          <div className="panel">
+            <CrossPoolActions
+              tournamentId={t_.id}
+              hasCrossPool={true}
+              poolMatchesFinished={poolMatchesFinished}
+              crossPoolGenerated={crossPoolGenerated}
+              crossPoolFinished={crossPoolFinished}
+              seGenerated={seGenerated}
+              seRound1Finished={seRound1Finished}
+              deGenerated={deGenerated}
+            />
+          </div>
+        );
+      })()}
 
       {/* Sponsors */}
       <SponsorManager

@@ -6,7 +6,7 @@ import { generateTournamentSlug } from "@/lib/slug";
 import { revalidatePath } from "next/cache";
 import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
-import { generatePools, generatePoolMatches, generateBracket, generateSwissRound } from "@/lib/bracket";
+import { generatePools, generatePoolMatches, generateBracket, generateSwissRound, generateCrossPoolMatches, nextPowerOf2 } from "@/lib/bracket";
 import { computeStandings } from "@/lib/standings";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
 
@@ -52,6 +52,8 @@ const updateSchema = z.object({
   streamYoutubeUrl: z.string().optional().nullable(),
   chatMode: z.enum(["OPEN", "ORG_ONLY", "DISABLED"]).default("DISABLED"),
   saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS"]),
+  poolCount: z.coerce.number().int().min(1).max(4).default(1),
+  crossPool: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   swissRounds: z.coerce.number().int().min(1).max(20).default(5),
   bracketSize: z.coerce.number().int().min(2).max(64).default(16),
   sundayFormat: z.enum(["SE", "DE", "RR"]),
@@ -97,7 +99,7 @@ export async function updateTournamentAction(formData: FormData) {
   if (!tournament) return { error: "Not found" };
 
   if (tournament.locked) {
-    const structuralFields = ["format", "maxTeams", "courtsCount", "saturdayFormat", "sundayFormat"] as const;
+    const structuralFields = ["format", "maxTeams", "courtsCount", "saturdayFormat", "sundayFormat", "poolCount", "crossPool"] as const;
     for (const field of structuralFields) {
       if ((data as Record<string, unknown>)[field] !== (tournament as Record<string, unknown>)[field]) {
         return { error: `${field} cannot be changed when locked` };
@@ -117,7 +119,7 @@ export async function updateTournamentAction(formData: FormData) {
   try { faqJson = data.faq ? JSON.parse(data.faq) : null; } catch { /* ignore */ }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, ...rest } = data;
+  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, ...rest } = data;
 
   const dateStart = new Date(data.dateStart);
   // Regenerate slug if name or city changed (only if tournament has no slug yet, or name/city changed)
@@ -151,6 +153,8 @@ export async function updateTournamentAction(formData: FormData) {
         bracketSize: data.bracketSize,
         chatMode: data.chatMode,
         saturdayFormat: data.saturdayFormat,
+        poolCount: data.poolCount,
+        crossPool: data.crossPool,
         sundayFormat: data.sundayFormat,
         scoringSystem: data.scoringSystem,
         thirdPlaceMatch: data.thirdPlaceMatch,
@@ -163,6 +167,47 @@ export async function updateTournamentAction(formData: FormData) {
   }
 
   revalidatePath(`/tournament/${data.id}`);
+  return { ok: true };
+}
+
+/**
+ * Save manual pool assignments: orga can drag/drop teams into groups before launch.
+ * Creates/updates Pool records and PoolTeam records.
+ * assignments: Array of { poolName: string, teamIds: string[] }
+ */
+export async function savePoolAssignmentAction(
+  id: string,
+  assignments: Array<{ poolName: string; teamIds: string[] }>
+) {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({ where: { id } });
+  if (!tournament) return { error: "Not found" };
+
+  await prisma.$transaction(async (tx) => {
+    // Clear existing pool assignments
+    await tx.poolTeam.deleteMany({ where: { pool: { tournamentId: id } } });
+    await tx.pool.deleteMany({ where: { tournamentId: id } });
+
+    for (const assignment of assignments) {
+      const pool = await tx.pool.create({
+        data: {
+          tournamentId: id,
+          name: assignment.poolName,
+          session: null,
+        }
+      });
+      if (assignment.teamIds.length > 0) {
+        await tx.poolTeam.createMany({
+          data: assignment.teamIds.map((teamId) => ({ poolId: pool.id, teamId }))
+        });
+      }
+    }
+  }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
   return { ok: true };
 }
 
@@ -181,7 +226,7 @@ export async function generatePoolsAction(id: string) {
     return { error: "Ce tournoi utilise le format Swiss. Utilisez \"Générer tour Swiss\" à la place." };
   }
 
-  const pools = generatePools(tournament.teams, tournament.saturdayFormat);
+  const pools = generatePools(tournament.teams, tournament.saturdayFormat, tournament.poolCount);
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
   const matches = generatePoolMatches(pools, courtNames, new Date(tournament.dateStart), tournament.gameDurationMin);
 
@@ -492,6 +537,345 @@ export async function applySeedingAction(id: string) {
       prisma.team.update({ where: { id: row.teamId }, data: { seed: index + 1 } })
     )
   );
+
+  revalidatePath(`/tournament/${id}`);
+  return { ok: true };
+}
+
+/**
+ * Generate cross-pool matches: pits teams from different pools against each other by rank.
+ * 1A vs 1B, 2A vs 2B, etc. No team is eliminated — results are used to re-seed for bracket.
+ */
+export async function generateCrossPoolAction(id: string) {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      pools: { include: { teams: { include: { team: true } } } },
+      matches: true,
+    }
+  });
+  if (!tournament) return { error: "Not found" };
+  if (!tournament.crossPool) return { error: "Cross-pool non activé pour ce tournoi." };
+  if (tournament.pools.length < 2) return { error: "Il faut au moins 2 groupes pour le cross-pool." };
+
+  // Compute standings per pool
+  const poolMatches = tournament.matches.filter((m) => m.phase === "POOL" || m.phase === "SWISS");
+  const poolStandings = tournament.pools.map((pool) => {
+    const poolTeams = pool.teams.map((pt) => pt.team);
+    const poolTeamIds = new Set(poolTeams.map((t) => t.id));
+    const relevantMatches = poolMatches.filter(
+      (m) => (m.teamAId && poolTeamIds.has(m.teamAId)) || (m.teamBId && poolTeamIds.has(m.teamBId))
+    );
+    const standings = computeStandings(poolTeams, relevantMatches, tournament.scoringSystem);
+    return {
+      poolName: pool.name,
+      teams: standings.map((row) => poolTeams.find((t) => t.id === row.teamId)!).filter(Boolean),
+    };
+  });
+
+  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const matches = generateCrossPoolMatches(poolStandings, courtNames, new Date(tournament.dateEnd), tournament.gameDurationMin);
+
+  await prisma.$transaction(async (tx) => {
+    // Remove any existing cross-pool matches
+    await tx.match.deleteMany({ where: { tournamentId: id, phase: "CROSS_POOL" } });
+
+    for (const match of matches) {
+      await tx.match.create({
+        data: {
+          tournamentId: id,
+          phase: "CROSS_POOL",
+          poolId: null,
+          bracketSide: null,
+          roundIndex: match.roundIndex,
+          positionInRound: match.positionInRound ?? 0,
+          courtName: match.courtName,
+          startAt: match.startAt,
+          dayIndex: "SUN",
+          status: "SCHEDULED",
+          teamAId: match.teamAId,
+          teamBId: match.teamBId,
+        }
+      });
+    }
+  }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  return { ok: true };
+}
+
+/**
+ * Generate the SE round after cross-pool: all teams enter a single-elimination round.
+ * Losers are OUT, winners continue to DE.
+ * Seeding comes from cross-pool results.
+ */
+export async function generateCrossPoolSEAction(id: string) {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: { teams: { where: { selected: true } }, matches: true }
+  });
+  if (!tournament) return { error: "Not found" };
+
+  // Seed from cross-pool results
+  const crossPoolMatches = tournament.matches.filter((m) => m.phase === "CROSS_POOL");
+  if (crossPoolMatches.length === 0) return { error: "Aucun match cross-pool trouvé. Générez d'abord les matchs cross-pool." };
+
+  // Check all cross-pool matches are finished
+  const unfinished = crossPoolMatches.filter((m) => m.status !== "FINISHED");
+  if (unfinished.length > 0) return { error: `${unfinished.length} match(s) cross-pool non terminé(s).` };
+
+  // Use all qualifying matches (pool + cross-pool) for seeding
+  const qualifyingMatches = tournament.matches.filter(
+    (m) => m.phase === "POOL" || m.phase === "SWISS" || m.phase === "CROSS_POOL"
+  );
+  const standings = computeStandings(tournament.teams, qualifyingMatches, tournament.scoringSystem);
+  const seededTeams = standings
+    .map((row) => tournament.teams.find((t) => t.id === row.teamId))
+    .filter((t): t is NonNullable<typeof t> => t !== undefined);
+
+  // Update seeds
+  await prisma.$transaction(
+    seededTeams.map((team, index) =>
+      prisma.team.update({ where: { id: team.id }, data: { seed: index + 1 } })
+    )
+  );
+
+  // SE elimination round:
+  // Top N/3 teams (rounded) get a BYE and go straight to DE.
+  // Remaining teams play: seed K vs seed (N+1-K), losers are OUT.
+  // With 12 teams: top 4 BYE, 8 others play (5v12, 6v11, 7v10, 8v9) → 4 winners join DE.
+  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const slotMin = tournament.gameDurationMin + 5;
+  const startAt = new Date(tournament.dateEnd);
+  const courtFree = courtNames.map(() => new Date(startAt));
+  const n = seededTeams.length;
+  const deSize = nextPowerOf2(Math.ceil(n * 2 / 3)); // target DE size (8 for 12 teams)
+  const byeCount = deSize - Math.floor(n / 2) > 0 ? n - deSize : 0;
+  // For 12: deSize=8, so byeCount = 12-8 = 4. The top 4 get BYE.
+  const actualByeCount = n - deSize;
+  const playingTeams = seededTeams.slice(actualByeCount); // seeds 5-12
+  const matchCount = Math.floor(playingTeams.length / 2);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.match.deleteMany({ where: { tournamentId: id, phase: "BRACKET" } });
+
+    for (let i = 0; i < matchCount; i++) {
+      const teamA = playingTeams[i];                          // seed 5, 6, 7, 8
+      const teamB = playingTeams[playingTeams.length - 1 - i]; // seed 12, 11, 10, 9
+
+      let bestIdx = 0;
+      for (let c = 1; c < courtNames.length; c++) {
+        if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
+      }
+
+      await tx.match.create({
+        data: {
+          tournamentId: id,
+          phase: "BRACKET",
+          bracketSide: "W",
+          roundIndex: 1,
+          positionInRound: i,
+          courtName: courtNames[bestIdx],
+          startAt: new Date(courtFree[bestIdx]),
+          dayIndex: "SUN",
+          status: "SCHEDULED",
+          teamAId: teamA.id,
+          teamBId: teamB.id,
+        }
+      });
+      courtFree[bestIdx] = new Date(courtFree[bestIdx].getTime() + slotMin * 60000);
+    }
+  }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  return { ok: true };
+}
+
+/**
+ * Generate DE bracket with winners from the SE round.
+ * Finds teams that won their last BRACKET match (SE survivors).
+ */
+export async function generateCrossPoolDEAction(id: string) {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: { teams: { where: { selected: true } }, matches: true }
+  });
+  if (!tournament) return { error: "Not found" };
+
+  const bracketMatches = tournament.matches.filter((m) => m.phase === "BRACKET");
+  if (bracketMatches.length === 0) return { error: "Aucun match SE trouvé. Générez d'abord le bracket SE." };
+
+  // Only round 1 of the SE bracket matters — those are the "SE elimination" matches
+  const seRound1 = bracketMatches.filter((m) => m.roundIndex === 1);
+  const unfinished = seRound1.filter((m) => m.status !== "FINISHED");
+  if (unfinished.length > 0) return { error: `${unfinished.length} match(s) SE non terminé(s).` };
+
+  // Teams that played in the SE round
+  const seTeamIds = new Set<string>();
+  for (const m of seRound1) {
+    if (m.teamAId) seTeamIds.add(m.teamAId);
+    if (m.teamBId) seTeamIds.add(m.teamBId);
+  }
+
+  // Collect winners from SE round 1
+  const winnerIds = new Set<string>();
+  for (const m of seRound1) {
+    if (m.winnerTeamId) winnerIds.add(m.winnerTeamId);
+  }
+
+  // BYE teams = teams that didn't play in SE (top seeds)
+  const byeTeams = tournament.teams
+    .filter((t) => !seTeamIds.has(t.id))
+    .sort((a, b) => a.seed - b.seed);
+
+  // SE winners
+  const seWinners = tournament.teams
+    .filter((t) => winnerIds.has(t.id))
+    .sort((a, b) => a.seed - b.seed);
+
+  // Survivors = BYE teams + SE winners, sorted by seed
+  const survivors = [...byeTeams, ...seWinners].sort((a, b) => a.seed - b.seed);
+
+  if (survivors.length < 4) return { error: `Seulement ${survivors.length} survivants — il en faut au moins 4 pour un bracket DE.` };
+
+  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const gfReset = (tournament as any).gfReset ?? false;
+  const deMatches = generateBracket(survivors, "DE", courtNames, new Date(tournament.dateEnd), tournament.gameDurationMin, { gfReset });
+
+  await prisma.$transaction(async (tx) => {
+    // Delete existing bracket matches (SE ones are done)
+    await tx.match.deleteMany({ where: { tournamentId: id, phase: "BRACKET" } });
+
+    const created: Array<{ id: string; roundIndex: number; bracketSide: string | null; positionInRound: number }> = [];
+    for (const match of deMatches) {
+      const m = await tx.match.create({
+        data: {
+          tournamentId: id,
+          phase: "BRACKET",
+          bracketSide: match.bracketSide ?? null,
+          roundIndex: match.roundIndex,
+          positionInRound: match.positionInRound ?? 0,
+          courtName: match.courtName,
+          startAt: match.startAt,
+          dayIndex: "SUN",
+          status: "SCHEDULED",
+          teamAId: match.teamAId,
+          teamBId: match.teamBId,
+        }
+      });
+      created.push({ id: m.id, roundIndex: m.roundIndex, bracketSide: m.bracketSide, positionInRound: m.positionInRound });
+    }
+
+    // DE linking (same as generateBracketAction DE section)
+    const findMatch = (side: string | null, round: number, pos: number) =>
+      created.find((m) => m.bracketSide === side && m.roundIndex === round && m.positionInRound === pos);
+
+    const maxUR = Math.max(...created.filter(m => m.bracketSide === "W").map(m => m.roundIndex), 0);
+    const maxLR = Math.max(...created.filter(m => m.bracketSide === "L").map(m => m.roundIndex), 0);
+    const grandFinal = created.find(m => m.bracketSide === "G");
+
+    const upperByRound = new Map<number, typeof created>();
+    const lowerByRound = new Map<number, typeof created>();
+    for (const m of created) {
+      if (m.bracketSide === "W") {
+        if (!upperByRound.has(m.roundIndex)) upperByRound.set(m.roundIndex, []);
+        upperByRound.get(m.roundIndex)!.push(m);
+      } else if (m.bracketSide === "L") {
+        if (!lowerByRound.has(m.roundIndex)) lowerByRound.set(m.roundIndex, []);
+        lowerByRound.get(m.roundIndex)!.push(m);
+      }
+    }
+    for (const arr of [...upperByRound.values(), ...lowerByRound.values()]) {
+      arr.sort((a, b) => a.positionInRound - b.positionInRound);
+    }
+
+    // Upper bracket linking
+    for (let ur = 1; ur <= maxUR; ur++) {
+      const uMatches = upperByRound.get(ur) ?? [];
+      const uNext = upperByRound.get(ur + 1) ?? [];
+      const isLastUpper = ur === maxUR;
+      let lrForLosers: number;
+      if (ur === 1) lrForLosers = 1;
+      else lrForLosers = 2 * ur - 2;
+      const lMatches = lowerByRound.get(lrForLosers) ?? [];
+
+      for (let i = 0; i < uMatches.length; i++) {
+        const data: Record<string, unknown> = {};
+        if (isLastUpper) {
+          data.nextMatchWinId = grandFinal?.id ?? null;
+          data.nextSlotWin = "A";
+        } else {
+          const nextPos = Math.floor(uMatches[i].positionInRound / 2);
+          const nextMatch = uNext.find(m => m.positionInRound === nextPos);
+          data.nextMatchWinId = nextMatch?.id ?? null;
+          data.nextSlotWin = uMatches[i].positionInRound % 2 === 0 ? "A" : "B";
+        }
+        if (!isLastUpper && lMatches.length > 0) {
+          if (ur === 1) {
+            const sourcePos = uMatches[i].positionInRound;
+            const lowerPos = Math.floor(sourcePos / 2);
+            const lowerMatch = lMatches.find(m => m.positionInRound === lowerPos);
+            if (lowerMatch) {
+              data.nextMatchLoseId = lowerMatch.id;
+              data.nextSlotLose = sourcePos % 2 === 0 ? "A" : "B";
+            }
+          } else {
+            const lowerMatch = lMatches[i];
+            if (lowerMatch) {
+              data.nextMatchLoseId = lowerMatch.id;
+              data.nextSlotLose = "B";
+            }
+          }
+        }
+        if (isLastUpper) {
+          const lbFinalMatches = lowerByRound.get(maxLR) ?? [];
+          const lbFinal = lbFinalMatches[0];
+          if (lbFinal) {
+            data.nextMatchLoseId = lbFinal.id;
+            data.nextSlotLose = "B";
+          }
+        }
+        await tx.match.update({ where: { id: uMatches[i].id }, data });
+      }
+    }
+
+    // Lower bracket linking
+    for (let lr = 1; lr <= maxLR; lr++) {
+      const lMatches = lowerByRound.get(lr) ?? [];
+      const isLastLower = lr === maxLR;
+      for (let i = 0; i < lMatches.length; i++) {
+        const data: Record<string, unknown> = {};
+        if (isLastLower) {
+          data.nextMatchWinId = grandFinal?.id ?? null;
+          data.nextSlotWin = "B";
+        } else {
+          const lNext = lowerByRound.get(lr + 1) ?? [];
+          const isConsolidation = lr % 2 === 1;
+          if (isConsolidation) {
+            const nextMatch = lNext.find(m => m.positionInRound === lMatches[i].positionInRound);
+            data.nextMatchWinId = nextMatch?.id ?? null;
+            data.nextSlotWin = "A";
+          } else {
+            const nextPos = Math.floor(i / 2);
+            const nextMatch = lNext.find(m => m.positionInRound === nextPos);
+            data.nextMatchWinId = nextMatch?.id ?? null;
+            data.nextSlotWin = i % 2 === 0 ? "A" : "B";
+          }
+        }
+        await tx.match.update({ where: { id: lMatches[i].id }, data });
+      }
+    }
+  }, { timeout: 15000 });
 
   revalidatePath(`/tournament/${id}`);
   return { ok: true };
@@ -1048,6 +1432,35 @@ export async function launchTournamentAction(
     const res = await generatePoolsAction(id);
     if ("error" in res && res.error) return { error: `Lancement OK mais erreur Poules : ${res.error}` };
   }
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+/**
+ * Reset tournament: delete all matches/pools, unlock, revert to UPCOMING.
+ */
+export async function resetTournamentAction(
+  id: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({ where: { id } });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if (tournament.status === "COMPLETED") return { error: "Impossible de reset un tournoi terminé." };
+
+  await prisma.$transaction(async (tx) => {
+    await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id } } });
+    await tx.match.deleteMany({ where: { tournamentId: id } });
+    await tx.poolTeam.deleteMany({ where: { pool: { tournamentId: id } } });
+    await tx.pool.deleteMany({ where: { tournamentId: id } });
+    await tx.tournament.update({
+      where: { id },
+      data: { status: "UPCOMING", locked: false },
+    });
+  }, { timeout: 15000 });
 
   revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);

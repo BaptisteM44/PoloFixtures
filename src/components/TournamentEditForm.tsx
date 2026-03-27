@@ -44,6 +44,8 @@ type Tournament = {
   streamYoutubeUrl: string | null;
   chatMode: string;
   saturdayFormat: string;
+  poolCount?: number | null;
+  crossPool?: boolean;
   swissRounds?: number | null;
   bracketSize?: number | null;
   sundayFormat: string;
@@ -455,6 +457,15 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             </select>
           </label>
           <label className="field-row">
+            {t("field_pool_count")}
+            <select name="poolCount" defaultValue={String(tournament.poolCount ?? 1)} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </label>
+          <label className="field-row">
             {t("field_swiss_rounds")}
             <input type="number" name="swissRounds" defaultValue={tournament.swissRounds ?? 5} min={1} max={20} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
           </label>
@@ -469,6 +480,11 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
               <option value="DE">{t("sunday_double_elim")}</option>
               <option value="RR">{t("sunday_rr")}</option>
             </select>
+          </label>
+          <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
+            <input type="checkbox" name="crossPool" value="true" defaultChecked={tournament.crossPool ?? false} disabled={isLocked} />
+            {t("option_cross_pool")}
+            <span style={{ color: "var(--text-muted)", fontSize: 12 }}>— {t("option_cross_pool_desc")}</span>
           </label>
           <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
             <input type="checkbox" name="thirdPlaceMatch" value="true" defaultChecked={tournament.thirdPlaceMatch ?? false} />

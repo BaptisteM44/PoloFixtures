@@ -51,6 +51,7 @@ enum SundayFormat {
 enum MatchPhase {
   POOL
   SWISS
+  CROSS_POOL
   BRACKET
 }
 
@@ -180,7 +181,7 @@ model Tournament {
   format                  String
   gameDurationMin         Int
   maxTeams                Int
-  courtsCount             Int
+  courtsCount             Int              @default(1)
   registrationFeePerTeam  Int
   registrationFeeCurrency String
   contactEmail            String
@@ -211,6 +212,8 @@ model Tournament {
   chatMode                ChatMode         @default(DISABLED)
   infoTilesLayout         Json?
   saturdayFormat          SaturdayFormat
+  poolCount               Int              @default(1)   // 1, 2, 3, 4 groupes
+  crossPool               Boolean          @default(false) // dimanche matin cross-pool avant bracket
   swissRounds             Int              @default(5)
   bracketSize             Int              @default(16)
   sundayFormat            SundayFormat

@@ -12,7 +12,7 @@ export type MatchWithTeams = Match & {
 };
 
 const PHASE_LABEL: Record<string, string> = {
-  POOL: "Poule", SWISS: "Swiss", BRACKET: "Tableau",
+  POOL: "Poule", SWISS: "Swiss", CROSS_POOL: "Cross-pool", BRACKET: "Tableau",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -161,7 +161,7 @@ export function ScheduleBoard({
       groups.get(key)!.matches.push(match);
     }
 
-    // Sort groups: active first, then scheduled, then finished
+    // Sort groups: active first, then recently finished (newest first), then scheduled
     const entries = [...groups.values()];
     entries.sort((a, b) => {
       const aActive = isRoundActive(a.matches);
@@ -172,10 +172,15 @@ export function ScheduleBoard({
       // Active rounds first
       if (aActive && !bActive) return -1;
       if (!aActive && bActive) return 1;
-      // Then scheduled (not finished, not active)
-      if (!aFinished && bFinished) return -1;
-      if (aFinished && !bFinished) return 1;
-      // Within same category, sort by round index
+      // Then finished rounds (most recently played first)
+      if (aFinished && bFinished) {
+        const aLatest = Math.max(...a.matches.map(m => new Date(m.startAt).getTime()));
+        const bLatest = Math.max(...b.matches.map(m => new Date(m.startAt).getTime()));
+        return bLatest - aLatest;
+      }
+      if (aFinished && !bFinished) return -1;
+      if (!aFinished && bFinished) return 1;
+      // Scheduled: by round index ascending
       return a.roundIndex - b.roundIndex;
     });
 
@@ -185,7 +190,7 @@ export function ScheduleBoard({
   // Global match ordering for numbering (based on ALL matches, not filtered)
   // Sort by: phase order (POOL→SWISS→BRACKET), then roundIndex, then startAt, then court
   const globalOrder = useMemo(() => {
-    const phaseOrder: Record<string, number> = { POOL: 0, SWISS: 1, BRACKET: 2 };
+    const phaseOrder: Record<string, number> = { POOL: 0, SWISS: 1, CROSS_POOL: 2, BRACKET: 3 };
     const sorted = [...matches].sort(
       (a, b) =>
         (phaseOrder[a.phase] ?? 9) - (phaseOrder[b.phase] ?? 9)

@@ -76,10 +76,10 @@ function circleMethodRounds(teams: Team[]): Array<Array<[Team, Team]>> {
 
 // ─── Pools ────────────────────────────────────────────────────────────────────
 
-export function generatePools(teams: Team[], saturdayFormat: SaturdayFormat): PoolSeed[] {
+export function generatePools(teams: Team[], saturdayFormat: SaturdayFormat, poolCountOverride?: number): PoolSeed[] {
   if (saturdayFormat === "SWISS") return []; // Swiss uses rounds, not fixed pools
 
-  const poolCount = teams.length <= 6 ? 1 : 2;
+  const poolCount = poolCountOverride ?? (teams.length <= 6 ? 1 : 2);
   const pools: PoolSeed[] = [];
   for (let i = 0; i < poolCount; i++) {
     pools.push({
@@ -88,9 +88,16 @@ export function generatePools(teams: Team[], saturdayFormat: SaturdayFormat): Po
       teams: [],
     });
   }
+  // Serpentin: distribute teams by seed across pools for balanced groups
   [...teams]
     .sort((a, b) => a.seed - b.seed)
-    .forEach((team, idx) => pools[idx % poolCount].teams.push(team));
+    .forEach((team, idx) => {
+      const round = Math.floor(idx / poolCount);
+      const posInRound = idx % poolCount;
+      // Even rounds: left-to-right, odd rounds: right-to-left (snake draft)
+      const poolIdx = round % 2 === 0 ? posInRound : poolCount - 1 - posInRound;
+      pools[poolIdx].teams.push(team);
+    });
 
   return pools;
 }
@@ -230,6 +237,90 @@ export function generateSwissRound(
       teamBId: teamB.id,
     };
   });
+}
+
+// ─── Cross-Pool ──────────────────────────────────────────────────────────────
+
+/**
+ * Generate cross-pool matches: team ranked Nth in pool A vs team ranked Nth in pool B.
+ * With 3+ pools, pairs are made between pool A-B, C-D, etc. (or A-B, A-C for 3 pools).
+ * For 2 pools: 1A vs 1B, 2A vs 2B, ...
+ */
+export function generateCrossPoolMatches(
+  poolStandings: Array<{ poolName: string; teams: Team[] }>,
+  courtNames: string[],
+  startAt: Date,
+  gameDurationMin: number
+): GeneratedMatch[] {
+  const matches: GeneratedMatch[] = [];
+  const slotMin = gameDurationMin + 5;
+  const courtFree: Date[] = courtNames.map(() => new Date(startAt));
+
+  if (poolStandings.length === 2) {
+    // Standard 2-pool cross: 1A vs 1B, 2A vs 2B, etc.
+    const poolA = poolStandings[0].teams;
+    const poolB = poolStandings[1].teams;
+    const count = Math.min(poolA.length, poolB.length);
+    for (let i = 0; i < count; i++) {
+      let bestIdx = 0;
+      for (let c = 1; c < courtNames.length; c++) {
+        if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
+      }
+      matches.push({
+        phase: "CROSS_POOL" as MatchPhase,
+        poolName: null,
+        bracketSide: null,
+        roundIndex: 1,
+        positionInRound: i,
+        courtName: courtNames[bestIdx],
+        startAt: new Date(courtFree[bestIdx]),
+        dayIndex: "SUN",
+        status: "SCHEDULED",
+        teamAId: poolA[i].id,
+        teamBId: poolB[i].id,
+      });
+      courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
+    }
+  } else {
+    // 3+ pools: pair pools (A-B, C-D, ...) and cross-match by rank
+    // If odd number of pools, last pool gets paired with first pool for extra matches
+    const pairs: [number, number][] = [];
+    for (let i = 0; i < poolStandings.length; i += 2) {
+      if (i + 1 < poolStandings.length) {
+        pairs.push([i, i + 1]);
+      } else {
+        pairs.push([i, 0]); // last pool paired with first
+      }
+    }
+    let pos = 0;
+    for (const [pA, pB] of pairs) {
+      const teamsA = poolStandings[pA].teams;
+      const teamsB = poolStandings[pB].teams;
+      const count = Math.min(teamsA.length, teamsB.length);
+      for (let i = 0; i < count; i++) {
+        let bestIdx = 0;
+        for (let c = 1; c < courtNames.length; c++) {
+          if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
+        }
+        matches.push({
+          phase: "CROSS_POOL" as MatchPhase,
+          poolName: null,
+          bracketSide: null,
+          roundIndex: 1,
+          positionInRound: pos++,
+          courtName: courtNames[bestIdx],
+          startAt: new Date(courtFree[bestIdx]),
+          dayIndex: "SUN",
+          status: "SCHEDULED",
+          teamAId: teamsA[i].id,
+          teamBId: teamsB[i].id,
+        });
+        courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
+      }
+    }
+  }
+
+  return matches;
 }
 
 // ─── Bracket ──────────────────────────────────────────────────────────────────
