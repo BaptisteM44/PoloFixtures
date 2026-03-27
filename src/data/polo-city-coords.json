@@ -35,6 +35,7 @@
   "Perpignan": { "lat": 42.6987, "lng": 2.8956, "country": "FR", "continent": "EU" },
   "Rouen": { "lat": 49.4432, "lng": 1.0993, "country": "FR", "continent": "EU" },
   "Saint-Etienne": { "lat": 45.4397, "lng": 4.3872, "country": "FR", "continent": "EU" },
+  "Salies-du-Salat": { "lat": 43.1014, "lng": 0.9328, "country": "FR", "continent": "EU" },
   "Strasbourg": { "lat": 48.5734, "lng": 7.7521, "country": "FR", "continent": "EU" },
   "Toulouse": { "lat": 43.6047, "lng": 1.4442, "country": "FR", "continent": "EU" },
   "Tours": { "lat": 47.3941, "lng": 0.6848, "country": "FR", "continent": "EU" },
