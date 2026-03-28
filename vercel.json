@@ -2,6 +2,6 @@
   "regions": ["dub1"],
   "crons": [
     { "path": "/api/cron/notify-tournaments", "schedule": "0 8 * * *" },
-    { "path": "/api/cron/backup", "schedule": "0 2,14 * * *" }
+    { "path": "/api/cron/backup", "schedule": "0 2 * * *" }
   ]
 }
