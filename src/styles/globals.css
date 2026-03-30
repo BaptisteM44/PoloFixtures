@@ -2283,11 +2283,64 @@ button:focus-visible,
     grid-template-columns: 1fr;
   }
   .recap-banner-panel {
-    max-width: 280px;
+    max-width: 260px;
     margin: 0 auto;
   }
   .recap-middle-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .recap-layout {
+    gap: 14px;
+  }
+
+  /* Podium : cartes plus petites sur mobile */
+  .recap-mini-card-wrap {
+    --mini-scale: 0.28;
+  }
+
+  /* Podium stage : noms d'équipe plus petits */
+  .recap-stage-team {
+    font-size: 8px;
+  }
+  .recap-stage-slot--first  .recap-stage-step { height: 50px; }
+  .recap-stage-slot--second .recap-stage-step { height: 38px; }
+  .recap-stage-slot--third  .recap-stage-step { height: 28px; }
+
+  /* Banner : encore plus petite */
+  .recap-banner-panel {
+    max-width: 180px;
+  }
+
+  /* MVP cards : une seule colonne, cartes plus petites */
+  .recap-mvp-mini-wrap {
+    --mini-scale: 0.42;
+    width: calc(340px * var(--mini-scale));
+    height: calc(520px * var(--mini-scale));
+  }
+  .recap-mvp-mini-wrap > a,
+  .recap-mvp-mini-wrap > div:first-child {
+    width: 340px;
+    height: 520px;
+    transform: scale(var(--mini-scale));
+  }
+
+  .recap-mvp-cards-row {
+    justify-content: center;
+  }
+
+  /* Photo finish : hauteur max réduite */
+  .recap-photo-img {
+    max-height: 280px;
+  }
+
+  /* Section title plus compact */
+  .recap-section__title {
+    font-size: 13px;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
   }
 }
 
