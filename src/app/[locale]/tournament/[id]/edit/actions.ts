@@ -119,7 +119,17 @@ export async function updateTournamentAction(formData: FormData) {
   try { faqJson = data.faq ? JSON.parse(data.faq) : null; } catch { /* ignore */ }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, ...rest } = data;
+  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, status: _statusFromForm, ...rest } = data;
+
+  // Status changes via edit form: only UPCOMING ↔ LIVE allowed.
+  // COMPLETED can only be set by syncLiveTournamentsCompletion, never by the edit form.
+  let statusUpdate: "UPCOMING" | "LIVE" | "COMPLETED" | undefined;
+  if (data.status === "UPCOMING" || data.status === "LIVE") {
+    statusUpdate = data.status;
+  } else {
+    // data.status === "COMPLETED" — keep current status, don't downgrade
+    statusUpdate = tournament.status as "UPCOMING" | "LIVE" | "COMPLETED";
+  }
 
   const dateStart = new Date(data.dateStart);
   // Regenerate slug if name or city changed (only if tournament has no slug yet, or name/city changed)
@@ -135,6 +145,7 @@ export async function updateTournamentAction(formData: FormData) {
       where: { id: data.id },
       data: {
         ...rest,
+        status: statusUpdate,
         slug,
         dateStart,
         dateEnd: new Date(data.dateEnd),

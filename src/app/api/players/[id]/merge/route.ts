@@ -111,6 +111,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
     // OrgaTask assigned
     await tx.orgaTask.updateMany({ where: { assignedToId: params.id }, data: { assignedToId: targetPlayerId } });
 
+    // MatchEvent payload — JSON field containing playerId
+    // Raw SQL needed since Prisma can't filter/update inside JSON
+    await tx.$executeRaw`
+      UPDATE "MatchEvent"
+      SET payload = jsonb_set(payload, '{playerId}', to_jsonb(${targetPlayerId}::text))
+      WHERE payload->>'playerId' = ${params.id}
+    `;
+
     // Delete fictitious player
     await tx.player.delete({ where: { id: params.id } });
   });
