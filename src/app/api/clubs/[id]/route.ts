@@ -77,6 +77,23 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     updateData.trainingMapLink = null;
   }
 
+  // Re-geocode if city or country changed
+  if (data.data.city || data.data.country) {
+    const city = data.data.city ?? club.city;
+    const country = data.data.country ?? club.country;
+    try {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(city + ", " + country)}`,
+        { headers: { "User-Agent": "poloperator.com" } }
+      );
+      const geoData = await geoRes.json();
+      if (geoData.length > 0) {
+        updateData.lat = parseFloat(geoData[0].lat);
+        updateData.lng = parseFloat(geoData[0].lon);
+      }
+    } catch { /* geocoding is best-effort */ }
+  }
+
   const updated = await prisma.club.update({ where: { id: params.id }, data: updateData });
   return Response.json(updated);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
+import { fixImageOrientation } from "@/lib/fix-orientation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -219,7 +220,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
   const handleLogoUpload = async (file: File) => {
     setLogoUploading(true);
     const form = new FormData();
-    form.append("file", file);
+    form.append("file", await fixImageOrientation(file));
     form.append("folder", "squads");
     const res = await fetch("/api/upload", { method: "POST", body: form });
     if (res.ok) {

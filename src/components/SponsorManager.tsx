@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { fixImageOrientation } from "@/lib/fix-orientation";
 
 type Sponsor = {
   id: string;
@@ -47,7 +48,7 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
       setLogoPreview(preview);
 
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", await fixImageOrientation(file));
 
       const resp = await fetch("/api/upload", { method: "POST", body: fd });
       if (!resp.ok) {

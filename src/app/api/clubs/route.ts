@@ -66,6 +66,21 @@ export async function POST(request: NextRequest) {
 
   const continentCode = COUNTRY_TO_CONTINENT[data.data.country] ?? "EU";
 
+  // Auto-geocode city+country via Nominatim
+  let lat: number | null = null;
+  let lng: number | null = null;
+  try {
+    const geoRes = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(data.data.city + ", " + data.data.country)}`,
+      { headers: { "User-Agent": "poloperator.com" } }
+    );
+    const geoData = await geoRes.json();
+    if (geoData.length > 0) {
+      lat = parseFloat(geoData[0].lat);
+      lng = parseFloat(geoData[0].lon);
+    }
+  } catch { /* geocoding is best-effort */ }
+
   const club = await prisma.club.create({
     data: {
       name: data.data.name,
@@ -75,6 +90,8 @@ export async function POST(request: NextRequest) {
       description: data.data.description ?? null,
       website: data.data.website || null,
       logoPath: data.data.logoPath ?? null,
+      lat,
+      lng,
       approved: false,
       managerId: session.user.playerId,
     },

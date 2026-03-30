@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { ClubsBrowser } from "@/components/ClubsBrowser";
+import { ClubMapClient } from "@/components/ClubMapClient";
+import type { MapClub } from "@/components/ClubMapClient";
 
 export default async function ClubsPage() {
   const t = await getTranslations("clubs");
@@ -28,6 +30,20 @@ export default async function ClubsPage() {
     memberCount: c._count.members,
   }));
 
+  const mapClubs: MapClub[] = clubs
+    .filter((c) => c.lat != null && c.lng != null)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      city: c.city,
+      country: c.country,
+      continentCode: c.continentCode,
+      logoPath: c.logoPath,
+      memberCount: c._count.members,
+      lat: c.lat as number,
+      lng: c.lng as number,
+    }));
+
   return (
     <div className="clubs-page">
       <div className="clubs-page__hero">
@@ -39,6 +55,12 @@ export default async function ClubsPage() {
           <Link className="primary" href="/club/new">{t("create_club")}</Link>
         )}
       </div>
+
+      {mapClubs.length > 0 && (
+        <section>
+          <ClubMapClient clubs={mapClubs} />
+        </section>
+      )}
 
       <ClubsBrowser clubs={mapped} />
     </div>

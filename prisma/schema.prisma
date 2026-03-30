@@ -675,6 +675,8 @@ model Club {
   description     String?
   website         String?
   trainingMapLink String?
+  lat             Float?
+  lng             Float?
   approved        Boolean  @default(false)
   managerId       String
   createdAt       DateTime @default(now())

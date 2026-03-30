@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { fixImageOrientation } from "@/lib/fix-orientation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
@@ -20,7 +21,7 @@ export function CreateSquadForm() {
     if (!file) return;
     setLogoUploading(true);
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("file", await fixImageOrientation(file));
     const res = await fetch("/api/upload", { method: "POST", body: fd });
     if (res.ok) {
       const data = await res.json();

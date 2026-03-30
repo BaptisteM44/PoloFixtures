@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter, Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { COUNTRIES } from "@/lib/countries";
+import { fixImageOrientation } from "@/lib/fix-orientation";
 
 export default function NewClubPage() {
   const t = useTranslations("club");
@@ -43,7 +44,7 @@ export default function NewClubPage() {
     if (!file) return;
     setLogoUploading(true);
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("file", await fixImageOrientation(file));
     const res = await fetch("/api/upload", { method: "POST", body: fd });
     const data = await res.json();
     setLogoPath(data.path ?? "");

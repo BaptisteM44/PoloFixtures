@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { PokemonCard } from "@/components/PokemonCard";
 import { ShareCardButton } from "@/components/ShareCardButton";
 import { COUNTRIES } from "@/lib/countries";
+import { fixImageOrientation } from "@/lib/fix-orientation";
 import { BadgeShowcase } from "@/components/BadgeShowcase";
 import { ClubPicker } from "@/components/ClubPicker";
 import type { BadgeInfo } from "@/lib/badge-catalog";
@@ -122,7 +123,7 @@ export default function AccountPage() {
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", await fixImageOrientation(file));
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       if (!res.ok) {
         setSaveMsg(t("photo_error"));
@@ -559,7 +560,7 @@ export default function AccountPage() {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       const fd = new FormData();
-                      fd.append("file", file);
+                      fd.append("file", await fixImageOrientation(file));
                       const res = await fetch("/api/upload", { method: "POST", body: fd });
                       if (!res.ok) return;
                       const { path } = await res.json();

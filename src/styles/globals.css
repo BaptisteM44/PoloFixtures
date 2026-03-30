@@ -7469,6 +7469,9 @@ details[open] .my-tournaments__section-title--summary::after {
    ======================== */
 .clubs-page {
   padding-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 .clubs-page__hero {

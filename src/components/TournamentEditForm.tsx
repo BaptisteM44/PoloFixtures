@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition, useState, useRef } from "react";
+import { fixImageOrientation } from "@/lib/fix-orientation";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ISO_COUNTRIES } from "@/lib/iso-countries";
@@ -159,7 +160,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     setBannerUploading(true);
     setBannerError(null);
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append("file", await fixImageOrientation(file));
     fd.append("folder", "banners");
     try {
       const res = await fetch("/api/upload", { method: "POST", body: fd });
