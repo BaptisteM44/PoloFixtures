@@ -23,7 +23,7 @@ export default async function HomePage() {
     Poland: "EU", Sweden: "EU", Norway: "EU", Denmark: "EU", Finland: "EU",
     "Czech Republic": "EU", Hungary: "EU", Romania: "EU", Slovakia: "EU", Croatia: "EU",
     Ireland: "EU", Greece: "EU", Serbia: "EU", Ukraine: "EU",
-    USA: "NA", Canada: "NA", Mexico: "NA",
+    USA: "NA", "United States": "NA", Canada: "NA", Mexico: "NA",
     Brazil: "SA", Argentina: "SA", Chile: "SA", Colombia: "SA", Peru: "SA",
     Uruguay: "SA", Ecuador: "SA", Bolivia: "SA", Venezuela: "SA",
     Japan: "AS", Singapore: "AS", "South Korea": "AS", China: "AS", India: "AS",

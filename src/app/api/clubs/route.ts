@@ -11,7 +11,7 @@ const COUNTRY_TO_CONTINENT: Record<string, string> = {
   Ireland: "EU", Greece: "EU", Serbia: "EU", Ukraine: "EU", Turkey: "EU", Iceland: "EU",
   Luxembourg: "EU", Slovenia: "EU", Estonia: "EU", Latvia: "EU", Lithuania: "EU",
   Bulgaria: "EU",
-  USA: "NA", Canada: "NA", Mexico: "NA",
+  USA: "NA", "United States": "NA", Canada: "NA", Mexico: "NA",
   Brazil: "SA", Argentina: "SA", Chile: "SA", Colombia: "SA", Peru: "SA",
   Uruguay: "SA", Ecuador: "SA", Bolivia: "SA", Venezuela: "SA", Paraguay: "SA",
   Japan: "AS", Singapore: "AS", "South Korea": "AS", China: "AS", India: "AS",
