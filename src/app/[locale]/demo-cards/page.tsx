@@ -1,6 +1,7 @@
 "use client";
 
 import { PokemonCard } from "@/components/PokemonCard";
+import { ScrollTiltCard } from "@/components/ScrollTiltCard";
 
 /* ── Demo players with realistic data ── */
 const PLAYERS = {
@@ -122,6 +123,26 @@ export default function DemoCardsPage() {
           Passe ta souris dessus !
         </p>
       </div>
+
+      {/* SECTION MOBILE — Scroll tilt effect */}
+      <section style={{ marginBottom: 80, borderTop: "2px solid var(--border)", paddingTop: 48 }}>
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, marginBottom: 8, textAlign: "center" }}>
+          📱 Effet scroll mobile
+        </h2>
+        <p style={{ color: "var(--text-muted)", maxWidth: 560, margin: "0 auto 16px", lineHeight: 1.7, textAlign: "center" }}>
+          Sur téléphone, la carte s&apos;incline automatiquement en 3D au fil du scroll — comme si elle flottait.
+          Sur desktop, l&apos;effet souris classique reste actif.
+        </p>
+        <p style={{ color: "var(--text-muted)", fontSize: 12, textAlign: "center", marginBottom: 40 }}>
+          👆 Scrolle sur cette page depuis ton téléphone pour voir l&apos;effet.
+        </p>
+        <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
+          <ScrollTiltCard {...PLAYERS.mythic} />
+          <ScrollTiltCard {...PLAYERS.legend} />
+          <ScrollTiltCard {...PLAYERS.legend} variant="fullart" />
+          <ScrollTiltCard {...PLAYERS.veteran} theme="holofoil" />
+        </div>
+      </section>
 
       {/* SECTION 0 — Comparaison fonds de carte */}
       <section style={{ marginBottom: 80, borderTop: "2px solid var(--border)", paddingTop: 48 }}>

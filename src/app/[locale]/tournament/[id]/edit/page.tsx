@@ -1,20 +1,12 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction } from "./actions";
-import { TournamentEditForm } from "@/components/TournamentEditForm";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
-import { SponsorManager } from "@/components/SponsorManager";
-import { FreeAgentList } from "@/components/FreeAgentList";
-import { TeamManager } from "@/components/TeamManager";
-import { PoolAssignment } from "@/components/PoolAssignment";
-import { CrossPoolActions } from "@/components/CrossPoolActions";
-import { CoOrganizerManager } from "@/components/CoOrganizerManager";
-import { RefereeManager } from "@/components/RefereeManager";
+import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { CreatedToast } from "@/components/CreatedToast";
-import ConfirmFormButton from "@/components/ConfirmFormButton";
 
 export default async function TournamentEditPage({ params }: { params: { id: string } }) {
   const session = await auth();
@@ -156,199 +148,94 @@ export default async function TournamentEditPage({ params }: { params: { id: str
         </div>
 
         {/* Right: main content */}
-        <div style={{ display: "grid", gap: 24 }}>
-
-          {/* Launch tournament button */}
-          {(t_.status === "UPCOMING" || (t_.status === "LIVE" && t_.matches.length === 0)) && t_.teams.some((t: any) => t.selected === true) && (
-            <ConfirmFormButton
-              action={async () => {
-                "use server";
-                const res = await launchTournamentAction(t_.id);
-                if (res.error) throw new Error(res.error);
-              }}
-              confirmMessage={t("edit_launch_confirm")}
-              className="primary"
-              style={{ width: "100%", padding: "16px 24px", fontSize: 16, fontFamily: "var(--font-display)", fontWeight: 700, justifyContent: "center", display: "flex", alignItems: "center", gap: 10 }}
-            >
-              {t("edit_launch_tournament")}
-            </ConfirmFormButton>
-          )}
-
-          {/* Reset tournament button — visible when LIVE */}
-          {t_.status === "LIVE" && (
-            <ConfirmFormButton
-              action={async () => {
-                "use server";
-                const res = await resetTournamentAction(t_.id);
-                if (res.error) throw new Error(res.error);
-              }}
-              confirmMessage={t("edit_reset_confirm")}
-              className="ghost"
-              style={{ fontSize: 12, padding: "6px 14px", color: "var(--danger)" }}
-            >
-              {t("edit_reset_tournament")}
-            </ConfirmFormButton>
-          )}
-
-          {/* KPI bar */}
-          <div className="kpi-grid">
-            <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{(t_.status === "LIVE" || t_.status === "COMPLETED") && t_.teams.filter((t: any) => t.selected !== false).length > 0 ? t_.teams.filter((t: any) => t.selected !== false).length : t_.teams.length}<span style={{ fontSize: 14, color: "var(--text-muted)", marginLeft: 2 }}>/{t_.maxTeams}</span></div>
-              <p className="meta">{t("edit_kpi_teams")}</p>
-            </div>
-            <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{t_.freeAgents.length}</div>
-              <p className="meta">{t("edit_kpi_free_agents")}</p>
-            </div>
-            <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-              <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{t_.teams.reduce((acc: number, t: any) => acc + t.players.length, 0)}</div>
-              <p className="meta">{t("edit_kpi_players")}</p>
-            </div>
-            <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-              <span className={`status ${t_.status.toLowerCase()}`}>{t_.status}</span>
-            </div>
-          </div>
-
-      {/* Edit form — toujours visible, en haut */}
-      <TournamentEditForm
-        tournament={{
-          id: t_.id,
-          name: t_.name,
-          continentCode: t_.continentCode,
-          region: t_.region,
-          country: t_.country,
-          city: t_.city,
-          dateStart: t_.dateStart.toISOString(),
-          dateEnd: t_.dateEnd.toISOString(),
-          format: t_.format,
-          gameDurationMin: t_.gameDurationMin,
-          maxTeams: t_.maxTeams,
-          courtsCount: t_.courtsCount,
-          registrationFeePerTeam: t_.registrationFeePerTeam,
-          registrationFeeCurrency: t_.registrationFeeCurrency,
-          contactEmail: t_.contactEmail,
-          registrationStart: t_.registrationStart?.toISOString() ?? null,
-          registrationEnd: t_.registrationEnd?.toISOString() ?? null,
-          venueName: t_.venueName,
-          venueAddress: t_.venueAddress,
-          venueMapsUrl: t_.venueMapsUrl,
-          fridayWelcomeName: t_.fridayWelcomeName,
-          fridayWelcomeAddress: t_.fridayWelcomeAddress,
-          fridayWelcomeMapsUrl: t_.fridayWelcomeMapsUrl,
-          saturdayEventName: t_.saturdayEventName,
-          saturdayEventAddress: t_.saturdayEventAddress,
-          saturdayEventMapsUrl: t_.saturdayEventMapsUrl,
-          saturdayEveningName: t_.saturdayEveningName,
-          saturdayEveningAddress: t_.saturdayEveningAddress,
-          saturdayEveningMapsUrl: t_.saturdayEveningMapsUrl,
-          otherNotes: t_.otherNotes,
-          links: t_.links,
-          bannerPath: t_.bannerPath,
-          streamYoutubeUrl: t_.streamYoutubeUrl,
-          chatMode: t_.chatMode,
-          saturdayFormat: t_.saturdayFormat,
-          poolCount: t_.poolCount,
-          crossPool: t_.crossPool,
-          swissRounds: t_.swissRounds,
-          bracketSize: t_.bracketSize,
-          sundayFormat: t_.sundayFormat,
-          thirdPlaceMatch: (t_ as any).thirdPlaceMatch ?? false,
-          gfReset: (t_ as any).gfReset ?? false,
-          status: t_.status,
-          locked: t_.locked,
-          accommodationAvailable: t_.accommodationAvailable,
-          accommodationType: t_.accommodationType,
-          accommodationCapacity: t_.accommodationCapacity,
-          meals: t_.meals,
-          kitList: t_.kitList,
-          additionalInfo: t_.additionalInfo,
-          faq: t_.faq,
-          telegramUrl: t_.telegramUrl,
-        }}
-        action={updateAction}
-        toggleLockAction={toggleLock}
-      />
-
-      {/* Pool Assignment — visible when poolCount > 1 */}
-      {(t_.poolCount ?? 1) > 1 && (
-        <div className="panel">
-          <PoolAssignment
-            tournamentId={t_.id}
-            teams={t_.teams.filter((t: any) => t.selected).map((t: any) => ({ id: t.id, name: t.name, seed: t.seed }))}
+        <div>
+          <OrgaDashboard
+            tournament={{
+              id: t_.id,
+              name: t_.name,
+              slug: t_.slug,
+              continentCode: t_.continentCode,
+              region: t_.region,
+              country: t_.country,
+              city: t_.city,
+              dateStart: t_.dateStart.toISOString(),
+              dateEnd: t_.dateEnd.toISOString(),
+              format: t_.format,
+              gameDurationMin: t_.gameDurationMin,
+              maxTeams: t_.maxTeams,
+              courtsCount: t_.courtsCount,
+              registrationFeePerTeam: t_.registrationFeePerTeam,
+              registrationFeeCurrency: t_.registrationFeeCurrency,
+              contactEmail: t_.contactEmail,
+              registrationStart: t_.registrationStart?.toISOString() ?? null,
+              registrationEnd: t_.registrationEnd?.toISOString() ?? null,
+              venueName: t_.venueName,
+              venueAddress: t_.venueAddress,
+              venueMapsUrl: t_.venueMapsUrl,
+              fridayWelcomeName: t_.fridayWelcomeName,
+              fridayWelcomeAddress: t_.fridayWelcomeAddress,
+              fridayWelcomeMapsUrl: t_.fridayWelcomeMapsUrl,
+              saturdayEventName: t_.saturdayEventName,
+              saturdayEventAddress: t_.saturdayEventAddress,
+              saturdayEventMapsUrl: t_.saturdayEventMapsUrl,
+              saturdayEveningName: t_.saturdayEveningName,
+              saturdayEveningAddress: t_.saturdayEveningAddress,
+              saturdayEveningMapsUrl: t_.saturdayEveningMapsUrl,
+              otherNotes: t_.otherNotes,
+              links: t_.links,
+              bannerPath: t_.bannerPath,
+              streamYoutubeUrl: t_.streamYoutubeUrl,
+              chatMode: t_.chatMode,
+              saturdayFormat: t_.saturdayFormat,
+              poolCount: t_.poolCount,
+              crossPool: t_.crossPool,
+              swissRounds: t_.swissRounds,
+              bracketSize: t_.bracketSize,
+              sundayFormat: t_.sundayFormat,
+              thirdPlaceMatch: (t_ as any).thirdPlaceMatch ?? false,
+              gfReset: (t_ as any).gfReset ?? false,
+              status: t_.status,
+              locked: t_.locked,
+              accommodationAvailable: t_.accommodationAvailable,
+              accommodationType: t_.accommodationType,
+              accommodationCapacity: t_.accommodationCapacity,
+              meals: t_.meals,
+              kitList: t_.kitList,
+              additionalInfo: t_.additionalInfo,
+              faq: t_.faq,
+              telegramUrl: t_.telegramUrl,
+              scoringSystem: (t_ as any).scoringSystem,
+              rushRegistration: (t_ as any).rushRegistration,
+              maxSoloPlayers: (t_ as any).maxSoloPlayers,
+            }}
+            teams={t_.teams}
+            freeAgents={t_.freeAgents}
             pools={t_.pools}
-            poolCount={t_.poolCount ?? 1}
-            isLocked={t_.locked}
+            matches={t_.matches}
+            sponsors={t_.sponsors}
+            coOrganizers={t_.coOrganizers}
+            isCreator={isCreator}
+            isAdmin={isAdmin}
+            isOrgaForThis={isOrgaForThis}
+            updateAction={updateAction}
+            toggleLockAction={toggleLock}
+            importAction={importAction}
+            addSponsorAction={addSponsor}
+            deleteSponsorAction={deleteSponsor}
+            deleteFreeAgentAction={deleteFreeAgent}
+            renameTeamAction={renameTeam}
+            deleteTeamAction={deleteTeam}
+            removePlayerAction={removePlayer}
+            addPlayerAction={addPlayer}
+            launchAction={async () => {
+              "use server";
+              await launchTournamentAction(t_.id);
+            }}
+            resetAction={async () => {
+              "use server";
+              await resetTournamentAction(t_.id);
+            }}
           />
-        </div>
-      )}
-
-      {/* Cross-pool actions — visible when crossPool is enabled and tournament is LIVE */}
-      {t_.crossPool && t_.status === "LIVE" && (() => {
-        const poolMatches = t_.matches.filter((m: any) => m.phase === "POOL" || m.phase === "SWISS");
-        const poolMatchesFinished = poolMatches.length > 0 && poolMatches.every((m: any) => m.status === "FINISHED");
-        const crossPoolMatches = t_.matches.filter((m: any) => m.phase === "CROSS_POOL");
-        const crossPoolGenerated = crossPoolMatches.length > 0;
-        const crossPoolFinished = crossPoolGenerated && crossPoolMatches.every((m: any) => m.status === "FINISHED");
-        const bracketMatches = t_.matches.filter((m: any) => m.phase === "BRACKET");
-        const seGenerated = bracketMatches.length > 0;
-        const seRound1 = bracketMatches.filter((m: any) => m.roundIndex === 1);
-        const seRound1Finished = seRound1.length > 0 && seRound1.every((m: any) => m.status === "FINISHED");
-        // DE is generated when we have bracket matches with bracketSide "L" (lower bracket)
-        const deGenerated = bracketMatches.some((m: any) => m.bracketSide === "L");
-        return (
-          <div className="panel">
-            <CrossPoolActions
-              tournamentId={t_.id}
-              hasCrossPool={true}
-              poolMatchesFinished={poolMatchesFinished}
-              crossPoolGenerated={crossPoolGenerated}
-              crossPoolFinished={crossPoolFinished}
-              seGenerated={seGenerated}
-              seRound1Finished={seRound1Finished}
-              deGenerated={deGenerated}
-            />
-          </div>
-        );
-      })()}
-
-      {/* Sponsors */}
-      <SponsorManager
-        tournamentId={t_.id}
-        sponsors={t_.sponsors}
-        addAction={addSponsor}
-        deleteAction={deleteSponsor}
-      />
-
-      {/* Co-organisateurs */}
-      <CoOrganizerManager
-        tournamentId={t_.id}
-        coOrganizers={t_.coOrganizers.filter((co: any) => co.role !== "REF").map((co: any) => co.player)}
-        canManage={isCreator || isAdmin}
-      />
-
-      {/* Arbitres assignés */}
-      <RefereeManager
-        tournamentId={t_.id}
-        referees={t_.coOrganizers.filter((co: any) => co.role === "REF").map((co: any) => co.player)}
-        canManage={isCreator || isAdmin || isOrgaForThis}
-      />
-
-      {/* Free agents list */}
-      <div className="panel">
-        <h3 style={{ marginBottom: 12 }}>{t("edit_free_agents_title", { count: t_.freeAgents.length })}</h3>
-        {t_.freeAgents.length === 0 ? (
-          <p className="meta">{t("edit_free_agents_empty")}</p>
-        ) : (
-          <FreeAgentList
-            agents={t_.freeAgents}
-            canDelete
-            deleteAction={deleteFreeAgent}
-            title=""
-          />
-        )}
-      </div>
-
-
         </div>{/* end right column */}
       </div>{/* end 2-col grid */}
     </div>

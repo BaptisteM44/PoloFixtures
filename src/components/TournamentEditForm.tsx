@@ -117,6 +117,78 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   // Format
   const [currentFormat, setCurrentFormat] = useState(tournament.format);
 
+  // Format preset
+  type FormatPreset = "pool_de" | "pool_se" | "2pools_de" | "2pools_se" | "swiss_de" | "swiss_se" | "cross_pool_bcn" | "custom";
+  type PresetConfig = { saturdayFormat: string; poolCount: number; swissRounds: number; bracketSize: number; sundayFormat: string; crossPool: boolean; thirdPlaceMatch: boolean; gfReset: boolean };
+
+  const PRESETS: Record<Exclude<FormatPreset, "custom">, PresetConfig> = {
+    pool_de:        { saturdayFormat: "ALL_DAY",    poolCount: 1, swissRounds: 5, bracketSize: 16, sundayFormat: "DE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    pool_se:        { saturdayFormat: "ALL_DAY",    poolCount: 1, swissRounds: 5, bracketSize: 16, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    "2pools_de":    { saturdayFormat: "SPLIT_POOLS", poolCount: 2, swissRounds: 5, bracketSize: 16, sundayFormat: "DE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    "2pools_se":    { saturdayFormat: "SPLIT_POOLS", poolCount: 2, swissRounds: 5, bracketSize: 16, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    swiss_de:       { saturdayFormat: "SWISS",      poolCount: 1, swissRounds: 5, bracketSize: 8,  sundayFormat: "DE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    swiss_se:       { saturdayFormat: "SWISS",      poolCount: 1, swissRounds: 5, bracketSize: 8,  sundayFormat: "SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    cross_pool_bcn: { saturdayFormat: "SPLIT_POOLS", poolCount: 2, swissRounds: 5, bracketSize: 8,  sundayFormat: "DE", crossPool: true,  thirdPlaceMatch: false, gfReset: false },
+  };
+
+  function detectPreset(tn: Tournament): FormatPreset {
+    for (const [key, cfg] of Object.entries(PRESETS)) {
+      if (
+        tn.saturdayFormat === cfg.saturdayFormat &&
+        (tn.poolCount ?? 1) === cfg.poolCount &&
+        tn.sundayFormat === cfg.sundayFormat &&
+        (tn.crossPool ?? false) === cfg.crossPool
+      ) return key as FormatPreset;
+    }
+    return "custom";
+  }
+
+  const [formatPreset, setFormatPreset] = useState<FormatPreset>(() => detectPreset(tournament));
+  const [presetConfig, setPresetConfig] = useState<PresetConfig>(() =>
+    detectPreset(tournament) === "custom"
+      ? { saturdayFormat: tournament.saturdayFormat, poolCount: tournament.poolCount ?? 1, swissRounds: tournament.swissRounds ?? 5, bracketSize: tournament.bracketSize ?? 16, sundayFormat: tournament.sundayFormat, crossPool: tournament.crossPool ?? false, thirdPlaceMatch: tournament.thirdPlaceMatch ?? false, gfReset: tournament.gfReset ?? false }
+      : PRESETS[detectPreset(tournament) as Exclude<FormatPreset, "custom">]
+  );
+  const [showFormatInfo, setShowFormatInfo] = useState(true);
+  const [showFormatContact, setShowFormatContact] = useState(false);
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactMessage, setContactMessage] = useState("");
+  const [contactStatus, setContactStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [contactError, setContactError] = useState("");
+
+  const sendFormatContact = async () => {
+    setContactStatus("sending");
+    setContactError("");
+    try {
+      const res = await fetch("/api/contact-admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: contactName,
+          email: contactEmail,
+          subject: `Format personnalisé — ${tournament.name}`,
+          message: contactMessage,
+        }),
+      });
+      if (res.ok) {
+        setContactStatus("ok");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setContactError(data.error ?? t("error_generic"));
+        setContactStatus("error");
+      }
+    } catch {
+      setContactError(t("error_generic"));
+      setContactStatus("error");
+    }
+  };
+
+  function selectPreset(key: FormatPreset) {
+    setFormatPreset(key);
+    if (key !== "custom") setPresetConfig(PRESETS[key as Exclude<FormatPreset, "custom">]);
+  }
+
   // ABC Chapeau
   const [maxSoloPlayers, setMaxSoloPlayers] = useState<string>(
     tournament.maxSoloPlayers != null ? String(tournament.maxSoloPlayers) : ""
@@ -254,15 +326,6 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </button>
           <button
             type="button"
-            className={isLocked ? "ghost" : "primary"}
-            onClick={handleToggleLock}
-            disabled={lockPending}
-            style={{ fontSize: 13, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}
-          >
-            {lockPending ? "…" : isLocked ? t("locked") : t("unlocked")}
-          </button>
-          <button
-            type="button"
             className="ghost"
             onClick={handleDelete}
             disabled={deletePending}
@@ -272,11 +335,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </button>
         </div>
       </div>
-      {isLocked && (
-        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
-          {t("locked_fields_notice")}
-        </p>
-      )}
+
 
       {error && (
         <div style={{ background: "var(--orange)", border: "2px solid var(--border)", borderRadius: 8, padding: "10px 16px", marginBottom: 16, fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14 }}>
@@ -288,16 +347,18 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         <input type="hidden" name="id" value={tournament.id} />
         <input type="hidden" name="locked" value={isLocked ? "true" : "false"} />
         {isLocked && <>
-          <input type="hidden" name="format" value={tournament.format} />
+          <input type="hidden" name="format" value={currentFormat} />
           <input type="hidden" name="maxTeams" value={tournament.maxTeams} />
           <input type="hidden" name="courtsCount" value={tournament.courtsCount} />
-          <input type="hidden" name="saturdayFormat" value={tournament.saturdayFormat} />
-          <input type="hidden" name="swissRounds" value={tournament.swissRounds ?? 5} />
-          <input type="hidden" name="bracketSize" value={tournament.bracketSize ?? 16} />
-          <input type="hidden" name="sundayFormat" value={tournament.sundayFormat} />
+          <input type="hidden" name="saturdayFormat" value={presetConfig.saturdayFormat} />
+          <input type="hidden" name="swissRounds" value={presetConfig.swissRounds} />
+          <input type="hidden" name="bracketSize" value={presetConfig.bracketSize} />
+          <input type="hidden" name="sundayFormat" value={presetConfig.sundayFormat} />
           <input type="hidden" name="scoringSystem" value={tournament.scoringSystem ?? "3/1"} />
-          <input type="hidden" name="thirdPlaceMatch" value={String(tournament.thirdPlaceMatch ?? false)} />
-          <input type="hidden" name="gfReset" value={String(tournament.gfReset ?? false)} />
+          <input type="hidden" name="thirdPlaceMatch" value={String(presetConfig.thirdPlaceMatch)} />
+          <input type="hidden" name="gfReset" value={String(presetConfig.gfReset)} />
+          <input type="hidden" name="poolCount" value={presetConfig.poolCount} />
+          <input type="hidden" name="crossPool" value={presetConfig.crossPool ? "true" : ""} />
         </>}
         <input type="hidden" name="region" value={tournament.region ?? ""} />
         <input type="hidden" name="links" value={tournament.links.join("\n")} />
@@ -449,59 +510,297 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             </label>
           </div>
 
-          <label className="field-row">
-            {t("field_saturday_format")}
-            <select name="saturdayFormat" defaultValue={tournament.saturdayFormat} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
-              <option value="ALL_DAY">{t("saturday_all_day")}</option>
-              <option value="SPLIT_POOLS">{t("saturday_split_pools")}</option>
-              <option value="SWISS">{t("saturday_swiss")}</option>
-            </select>
-          </label>
-          <label className="field-row">
-            {t("field_pool_count")}
-            <select name="poolCount" defaultValue={String(tournament.poolCount ?? 1)} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-            </select>
-          </label>
-          <label className="field-row">
-            {t("field_swiss_rounds")}
-            <input type="number" name="swissRounds" defaultValue={tournament.swissRounds ?? 5} min={1} max={20} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
-          </label>
-          <label className="field-row">
-            {t("field_bracket_size")}
-            <input type="number" name="bracketSize" defaultValue={tournament.bracketSize ?? 16} min={2} max={64} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
-          </label>
-          <label className="field-row">
-            {t("field_sunday_format")}
-            <select name="sundayFormat" defaultValue={tournament.sundayFormat} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
-              <option value="SE">{t("sunday_single_elim")}</option>
-              <option value="DE">{t("sunday_double_elim")}</option>
-              <option value="RR">{t("sunday_rr")}</option>
-            </select>
-          </label>
-          <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
-            <input type="checkbox" name="crossPool" value="true" defaultChecked={tournament.crossPool ?? false} disabled={isLocked} />
-            {t("option_cross_pool")}
-            <span style={{ color: "var(--text-muted)", fontSize: 12 }}>— {t("option_cross_pool_desc")}</span>
-          </label>
-          <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
-            <input type="checkbox" name="thirdPlaceMatch" value="true" defaultChecked={tournament.thirdPlaceMatch ?? false} />
-            {t("option_third_place")}
-          </label>
-          <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
-            <input type="checkbox" name="gfReset" value="true" defaultChecked={tournament.gfReset ?? false} />
-            {t("option_gf_reset")}
-          </label>
-          <label className="field-row">
-            Système de points
-            <select name="scoringSystem" defaultValue={tournament.scoringSystem ?? "3/1"}>
-              <option value="3/1">Classique (V=3, N=1, D=0)</option>
-              <option value="1/0.5">Challonge (V=1, N=0.5, D=0)</option>
-            </select>
-          </label>
+          {/* ── Format section (presets + lock) ── */}
+          <div style={{ gridColumn: "1 / -1", border: "2px solid var(--border)", borderRadius: 10, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* Header row */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+              <p style={{ ...sectionTitleStyle, marginBottom: 0 }}>{t("format_section_title")}</p>
+              <button
+                type="button"
+                className={isLocked ? "ghost" : "primary"}
+                onClick={handleToggleLock}
+                disabled={lockPending}
+                style={{ fontSize: 12, padding: "5px 12px", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}
+              >
+                {lockPending ? "…" : isLocked ? "🔒 " + t("locked") : "🔓 " + t("unlocked")}
+              </button>
+            </div>
+
+            {/* Info panel */}
+            {showFormatInfo && (
+              <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px", fontSize: 12, color: "var(--text-muted)", display: "flex", flexDirection: "column", gap: 8 }}>
+                <p style={{ margin: 0, fontWeight: 700, color: "var(--text)", fontSize: 12 }}>{t("format_info_title")}</p>
+                <p style={{ margin: 0 }}>{t("format_info_body")}</p>
+                <p style={{ margin: 0 }}>🔒 {t("format_lock_info")}</p>
+              </div>
+            )}
+
+            {isLocked && (
+              <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
+                {t("locked_fields_notice")}
+              </p>
+            )}
+
+            {/* Standard presets — grille fixe 3 colonnes */}
+            <div>
+              <p style={{ ...subTitleStyle, marginBottom: 8 }}>{t("format_standard")}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                {([
+                  ["pool_de",   t("preset_pool_de"),   t("preset_pool_de_desc")],
+                  ["pool_se",   t("preset_pool_se"),   t("preset_pool_se_desc")],
+                  ["2pools_de", t("preset_2pools_de"), t("preset_2pools_de_desc")],
+                  ["2pools_se", t("preset_2pools_se"), t("preset_2pools_se_desc")],
+                  ["swiss_de",  t("preset_swiss_de"),  t("preset_swiss_de_desc")],
+                  ["swiss_se",  t("preset_swiss_se"),  t("preset_swiss_se_desc")],
+                ] as [FormatPreset, string, string][]).map(([key, label, sub]) => {
+                  const active = formatPreset === key;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => selectPreset(key)}
+                      style={{
+                        padding: "8px 10px", borderRadius: 8,
+                        border: "2px solid var(--border)",
+                        outline: active ? "2px solid var(--border)" : "none",
+                        outlineOffset: 0,
+                        background: active ? "color-mix(in srgb, var(--primary) 18%, var(--bg-panel))" : "var(--bg-panel)",
+                        color: "var(--text)",
+                        cursor: isLocked ? "not-allowed" : "pointer", opacity: isLocked ? 0.5 : 1,
+                        textAlign: "left", width: "100%",
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, fontSize: 12 }}>{label}</div>
+                      <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>{sub}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Special presets */}
+            <div>
+              <p style={{ ...subTitleStyle, marginBottom: 8 }}>{t("format_special")}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                {([
+                  ["cross_pool_bcn", t("preset_cross_pool_bcn"), t("preset_cross_pool_bcn_desc")],
+                  ["custom",         t("format_custom"),         t("format_custom_desc")],
+                ] as [FormatPreset, string, string][]).map(([key, label, sub]) => {
+                  const active = formatPreset === key;
+                  const isCustom = key === "custom";
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      disabled={isLocked}
+                      onClick={() => selectPreset(key)}
+                      style={{
+                        padding: "8px 12px", borderRadius: 8,
+                        border: "2px solid var(--border)",
+                        outline: active ? "2px solid var(--border)" : "none",
+                        outlineOffset: 0,
+                        background: active ? "color-mix(in srgb, var(--primary) 18%, var(--bg-panel))" : "var(--bg-panel)",
+                        color: "var(--text)",
+                        cursor: isLocked ? "not-allowed" : "pointer", opacity: isLocked ? 0.5 : 1,
+                        textAlign: "left", width: "100%",
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, fontSize: 12 }}>{label}</div>
+                      <div style={{ fontSize: 10, opacity: 0.8, marginTop: 2 }}>{sub}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Hidden inputs for preset values (when not locked — locked case handled above) */}
+            {!isLocked && formatPreset !== "custom" && <>
+              <input type="hidden" name="saturdayFormat" value={presetConfig.saturdayFormat} />
+              <input type="hidden" name="poolCount" value={presetConfig.poolCount} />
+              <input type="hidden" name="swissRounds" value={presetConfig.swissRounds} />
+              <input type="hidden" name="bracketSize" value={presetConfig.bracketSize} />
+              <input type="hidden" name="sundayFormat" value={presetConfig.sundayFormat} />
+              <input type="hidden" name="crossPool" value={presetConfig.crossPool ? "true" : ""} />
+              <input type="hidden" name="thirdPlaceMatch" value={String(presetConfig.thirdPlaceMatch)} />
+              <input type="hidden" name="gfReset" value={String(presetConfig.gfReset)} />
+            </>}
+
+            {/* Options supplémentaires pour les presets standards (3e place en SE, GF reset en DE) */}
+            {!isLocked && formatPreset !== "custom" && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 16, paddingTop: 2 }}>
+                {presetConfig.sundayFormat === "SE" && (
+                  <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={presetConfig.thirdPlaceMatch}
+                      onChange={(e) => setPresetConfig((p) => ({ ...p, thirdPlaceMatch: e.target.checked }))}
+                      style={{ width: "auto", flexShrink: 0 }}
+                    />
+                    {t("option_third_place")}
+                  </label>
+                )}
+                {presetConfig.sundayFormat === "DE" && (
+                  <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={presetConfig.gfReset}
+                      onChange={(e) => setPresetConfig((p) => ({ ...p, gfReset: e.target.checked }))}
+                      style={{ width: "auto", flexShrink: 0 }}
+                    />
+                    {t("option_gf_reset")}
+                  </label>
+                )}
+              </div>
+            )}
+
+            {/* Custom/advanced fields */}
+            {!isLocked && formatPreset === "custom" && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, paddingTop: 4 }}>
+                <label className="field-row">
+                  {t("field_day1_format")}
+                  <select name="saturdayFormat" value={presetConfig.saturdayFormat} onChange={(e) => setPresetConfig((p) => ({ ...p, saturdayFormat: e.target.value }))}>
+                    <option value="ALL_DAY">{t("saturday_all_day")}</option>
+                    <option value="SPLIT_POOLS">{t("saturday_split_pools")}</option>
+                    <option value="SWISS">{t("saturday_swiss")}</option>
+                  </select>
+                </label>
+                <label className="field-row">
+                  {t("field_pool_count")}
+                  <select name="poolCount" value={String(presetConfig.poolCount)} onChange={(e) => setPresetConfig((p) => ({ ...p, poolCount: Number(e.target.value) }))}>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                  </select>
+                </label>
+                <label className="field-row">
+                  {t("field_swiss_rounds")}
+                  <input type="number" name="swissRounds" value={presetConfig.swissRounds} min={1} max={20} onChange={(e) => setPresetConfig((p) => ({ ...p, swissRounds: Number(e.target.value) }))} />
+                </label>
+                <label className="field-row">
+                  {t("field_bracket_size")}
+                  <input type="number" name="bracketSize" value={presetConfig.bracketSize} min={2} max={64} onChange={(e) => setPresetConfig((p) => ({ ...p, bracketSize: Number(e.target.value) }))} />
+                </label>
+                <label className="field-row">
+                  {t("field_day2_format")}
+                  <select name="sundayFormat" value={presetConfig.sundayFormat} onChange={(e) => setPresetConfig((p) => ({ ...p, sundayFormat: e.target.value }))}>
+                    <option value="SE">{t("sunday_single_elim")}</option>
+                    <option value="DE">{t("sunday_double_elim")}</option>
+                  </select>
+                </label>
+                <label className="field-row">
+                  {t("field_scoring_system")}
+                  <select name="scoringSystem" defaultValue={tournament.scoringSystem ?? "3/1"}>
+                    <option value="3/1">{t("scoring_classic")}</option>
+                    <option value="1/0.5">{t("scoring_challonge")}</option>
+                  </select>
+                </label>
+                <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "flex-start", fontSize: 13, cursor: "pointer", gridColumn: "1 / -1" }}>
+                  <input type="checkbox" name="crossPool" value="true" checked={presetConfig.crossPool} onChange={(e) => setPresetConfig((p) => ({ ...p, crossPool: e.target.checked }))} style={{ marginTop: 3, flexShrink: 0, width: "auto" }} />
+                  <span>{t("option_cross_pool")} <span style={{ color: "var(--text-muted)", fontSize: 12 }}>— {t("option_cross_pool_desc")}</span></span>
+                </label>
+                <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
+                  <input type="checkbox" name="thirdPlaceMatch" value="true" checked={presetConfig.thirdPlaceMatch} onChange={(e) => setPresetConfig((p) => ({ ...p, thirdPlaceMatch: e.target.checked }))} style={{ width: "auto" }} />
+                  {t("option_third_place")}
+                </label>
+                <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
+                  <input type="checkbox" name="gfReset" value="true" checked={presetConfig.gfReset} onChange={(e) => setPresetConfig((p) => ({ ...p, gfReset: e.target.checked }))} style={{ width: "auto" }} />
+                  {t("option_gf_reset")}
+                </label>
+              </div>
+            )}
+
+            {/* Résumé + scoring (pour tous les modes) */}
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+              {formatPreset !== "custom" && (
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                  <strong>{t("format_summary_label")}</strong>{" "}
+                  {presetConfig.saturdayFormat === "ALL_DAY"
+                    ? t("format_summary_pool1")
+                    : presetConfig.saturdayFormat === "SPLIT_POOLS"
+                      ? `${presetConfig.poolCount} ${t("format_summary_pools")}`
+                      : `${t("format_summary_swiss")} (${presetConfig.swissRounds} ${t("format_summary_rounds")})`}
+                  {" → "}{presetConfig.crossPool ? `${t("format_summary_crosspool")} ` : ""}
+                  {presetConfig.sundayFormat === "DE" ? t("format_summary_de") : t("format_summary_se")}
+                  {presetConfig.thirdPlaceMatch ? ` · ${t("format_summary_3rd")}` : ""}
+                  {presetConfig.gfReset ? ` · ${t("format_summary_gf")}` : ""}
+                </div>
+              )}
+              {formatPreset !== "custom" && (
+                <label className="field-row" style={{ maxWidth: 280 }}>
+                  {t("field_scoring_system")}
+                  <select name="scoringSystem" defaultValue={tournament.scoringSystem ?? "3/1"}>
+                    <option value="3/1">{t("scoring_classic")}</option>
+                    <option value="1/0.5">{t("scoring_challonge")}</option>
+                  </select>
+                </label>
+              )}
+            </div>
+
+            {/* Request custom format */}
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+              {!showFormatContact ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)", flex: 1 }}>
+                    {t("format_request_custom_desc")}
+                  </span>
+                  <button
+                    type="button"
+                    className="ghost"
+                    onClick={() => { setShowFormatContact(true); setContactStatus("idle"); }}
+                    style={{ fontSize: 12, padding: "5px 12px", whiteSpace: "nowrap" }}
+                  >
+                    {t("format_request_custom_btn")} ✉
+                  </button>
+                </div>
+              ) : contactStatus === "ok" ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 13 }}>✅</span>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("format_contact_sent")}</span>
+                  <button type="button" className="ghost" onClick={() => { setShowFormatContact(false); setContactStatus("idle"); setContactName(""); setContactEmail(""); setContactMessage(""); }} style={{ fontSize: 11, padding: "3px 8px", marginLeft: "auto" }}>✕</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <p style={{ ...subTitleStyle, marginBottom: 0 }}>{t("format_request_custom")}</p>
+                    <button type="button" onClick={() => setShowFormatContact(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 15, lineHeight: 1 }}>✕</button>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <label className="field-row">
+                      {t("contact_name")}
+                      <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t("contact_name_placeholder")} required />
+                    </label>
+                    <label className="field-row">
+                      {t("contact_email")}
+                      <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="you@example.com" required />
+                    </label>
+                  </div>
+                  <label className="field-row">
+                    {t("contact_message")}
+                    <textarea value={contactMessage} onChange={(e) => setContactMessage(e.target.value)} rows={3} placeholder={t("contact_message_placeholder")} required style={{ resize: "vertical" }} />
+                  </label>
+                  {contactStatus === "error" && (
+                    <p style={{ color: "var(--danger)", fontSize: 12, margin: 0 }}>{contactError}</p>
+                  )}
+                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                    <button type="button" className="ghost" onClick={() => setShowFormatContact(false)} style={{ fontSize: 12 }}>{t("contact_cancel")}</button>
+                    <button
+                      type="button"
+                      className="primary"
+                      disabled={contactStatus === "sending" || !contactName || !contactEmail || !contactMessage}
+                      onClick={sendFormatContact}
+                      style={{ fontSize: 12 }}
+                    >
+                      {contactStatus === "sending" ? "…" : t("contact_send")}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
           <label className="field-row">
             {t("field_status")}
             <select name="status" defaultValue={tournament.status}>

@@ -73,6 +73,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
   const [photoFinishCredit, setPhotoFinishCredit] = useState(tournament.photoFinishCredit ?? "");
   const [editingPhotoCredit, setEditingPhotoCredit] = useState(false);
   const [uploadingPhoto, setUploadingPhoto]       = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [editingText, setEditingText]         = useState(false);
   const [editingNote, setEditingNote]         = useState(false);
@@ -352,12 +353,25 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                   onChange={async (e) => {
                     const f = e.target.files?.[0]; if (!f) return;
                     setUploadingPhoto(true);
-                    const fd = new FormData(); fd.append("file", f); fd.append("folder", "photo-finish");
-                    const res = await fetch("/api/upload", { method: "POST", body: fd });
-                    const { path } = await res.json();
-                    setPhotoFinishPath(path);
-                    save({ photoFinishPath: path });
-                    setUploadingPhoto(false);
+                    setUploadError(null);
+                    try {
+                      const fd = new FormData(); fd.append("file", f); fd.append("folder", "photo-finish");
+                      const res = await fetch("/api/upload", { method: "POST", body: fd });
+                      if (!res.ok) {
+                        const txt = await res.text();
+                        throw new Error(txt || `Upload échoué (${res.status})`);
+                      }
+                      const json = await res.json();
+                      const path = json?.path;
+                      if (!path) throw new Error("Réponse d'upload invalide");
+                      setPhotoFinishPath(path);
+                      save({ photoFinishPath: path });
+                    } catch (err: any) {
+                      console.error("Upload photo finish failed:", err);
+                      setUploadError(err?.message ?? "Erreur lors de l'upload");
+                    } finally {
+                      setUploadingPhoto(false);
+                    }
                   }}
                 />
               </label>
@@ -409,16 +423,32 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                 onChange={async (e) => {
                   const f = e.target.files?.[0]; if (!f) return;
                   setUploadingPhoto(true);
-                  const fd = new FormData(); fd.append("file", f); fd.append("folder", "photo-finish");
-                  const res = await fetch("/api/upload", { method: "POST", body: fd });
-                  const { path } = await res.json();
-                  setPhotoFinishPath(path);
-                  save({ photoFinishPath: path });
-                  setUploadingPhoto(false);
+                  setUploadError(null);
+                  try {
+                    const fd = new FormData(); fd.append("file", f); fd.append("folder", "photo-finish");
+                    const res = await fetch("/api/upload", { method: "POST", body: fd });
+                    if (!res.ok) {
+                      const txt = await res.text();
+                      throw new Error(txt || `Upload échoué (${res.status})`);
+                    }
+                    const json = await res.json();
+                    const path = json?.path;
+                    if (!path) throw new Error("Réponse d'upload invalide");
+                    setPhotoFinishPath(path);
+                    save({ photoFinishPath: path });
+                  } catch (err: any) {
+                    console.error("Upload photo finish failed:", err);
+                    setUploadError(err?.message ?? "Erreur lors de l'upload");
+                  } finally {
+                    setUploadingPhoto(false);
+                  }
                 }}
               />
             </label>
-          ) : null}
+              ) : null}
+              {uploadError && (
+                <p style={{ color: "var(--danger)", marginTop: 8, fontSize: 13 }}>Erreur d'upload : {uploadError}</p>
+              )}
         </div>
 
       </div>
