@@ -6050,6 +6050,8 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  overflow: hidden;
+  min-width: 0;
   transition: background var(--transition);
 }
 
@@ -6080,6 +6082,8 @@ textarea {
 
 .calendar-event {
   display: block;
+  width: 100%;
+  min-width: 0;
   font-size: 10px;
   font-weight: 700;
   font-family: var(--font-display);
