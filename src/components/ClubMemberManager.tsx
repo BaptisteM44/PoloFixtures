@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 
 type Member = {
   id: string;
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function ClubMemberManager({ clubId, managerId, members: initialMembers, currentPlayerId, isManager }: Props) {
+  const t = useTranslations("club");
   const [members, setMembers] = useState(initialMembers);
   const [searchSlug, setSearchSlug] = useState("");
   const [suggestions, setSuggestions] = useState<PlayerSuggestion[]>([]);
@@ -29,7 +31,6 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
   const [loading, setLoading] = useState<string | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Fermer le dropdown si clic dehors
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -40,7 +41,6 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Autocomplete en live
   useEffect(() => {
     if (searchSlug.trim().length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
     const timer = setTimeout(async () => {
@@ -48,7 +48,6 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
       try {
         const res = await fetch(`/api/players?search=${encodeURIComponent(searchSlug)}&status=ACTIVE`);
         const data: PlayerSuggestion[] = await res.json();
-        // Exclure ceux déjà membres ou avec invitation en cours
         const memberIds = new Set(members.map((m) => m.playerId));
         setSuggestions(data.filter((p) => !memberIds.has(p.id)).slice(0, 8));
         setShowSuggestions(true);
@@ -74,11 +73,11 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ playerId: player.id, action: "invite" }),
       });
-      if (!r.ok) { const e = await r.json(); setInviteError(e.error ?? "Erreur"); setLoading(null); return; }
+      if (!r.ok) { const e = await r.json(); setInviteError(e.error ?? t("invite_error_network")); setLoading(null); return; }
       const m = await r.json();
       setMembers((prev) => [...prev, { ...m, player: { id: player.id, name: player.name, slug: player.slug ?? null } }]);
       setSearchSlug("");
-    } catch { setInviteError("Erreur réseau"); }
+    } catch { setInviteError(t("invite_error_network")); }
     setLoading(null);
   }
 
@@ -91,7 +90,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
     });
     if (r.ok) {
       const m = await r.json();
-      setMembers((prev) => [...prev, { ...m, status: "MEMBER", player: { id: currentPlayerId!, name: "Vous", slug: null } }]);
+      setMembers((prev) => [...prev, { ...m, status: "MEMBER", player: { id: currentPlayerId!, name: "—", slug: null } }]);
     }
     setLoading(null);
   }
@@ -114,7 +113,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
   }
 
   async function removeMember(playerId: string) {
-    if (!confirm("Retirer ce membre ?")) return;
+    if (!confirm(t("confirm_remove"))) return;
     setLoading("remove" + playerId);
     await fetch(`/api/clubs/${clubId}/members?playerId=${playerId}`, { method: "DELETE" });
     setMembers((prev) => prev.filter((m) => m.playerId !== playerId));
@@ -130,7 +129,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
       {/* Demandes reçues (manager) */}
       {isManager && pendingByPlayer.length > 0 && (
         <div className="club-members__section">
-          <h4>Demandes à approuver ({pendingByPlayer.length})</h4>
+          <h4>{t("member_requests_title", { count: pendingByPlayer.length })}</h4>
           {pendingByPlayer.map((m) => (
             <div key={m.id} className="club-member-row club-member-row--pending">
               <span>{m.player.name}</span>
@@ -141,7 +140,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
                   disabled={loading === m.playerId + "accept"}
                   onClick={() => acceptOrReject(m.playerId, "accept")}
                 >
-                  Accepter
+                  {t("btn_accept")}
                 </button>
                 <button
                   className="ghost"
@@ -149,7 +148,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
                   disabled={loading === m.playerId + "reject"}
                   onClick={() => acceptOrReject(m.playerId, "reject")}
                 >
-                  Refuser
+                  {t("btn_reject")}
                 </button>
               </div>
             </div>
@@ -160,13 +159,13 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
       {/* Invitation en attente côté joueur connecté */}
       {hasPendingInvite && (
         <div className="club-members__section">
-          <p>Vous avez été invité(e) à rejoindre ce club !</p>
+          <p>{t("invited_notice")}</p>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <button className="primary" disabled={!!loading} onClick={() => acceptOrReject(currentPlayerId!, "accept")}>
-              Accepter l&apos;invitation
+              {t("btn_accept_invite")}
             </button>
             <button className="ghost" disabled={!!loading} onClick={() => acceptOrReject(currentPlayerId!, "reject")}>
-              Refuser
+              {t("btn_reject")}
             </button>
           </div>
         </div>
@@ -176,7 +175,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
       {currentPlayerId && !isManager && !isAlreadyMember && !hasPendingInvite && !hasPendingRequest && (
         <div className="club-members__section">
           <button className="primary" disabled={loading === "request"} onClick={joinDirectly}>
-            {loading === "request" ? "Envoi…" : "Rejoindre ce club"}
+            {loading === "request" ? t("btn_joining") : t("btn_join")}
           </button>
         </div>
       )}
@@ -184,10 +183,10 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
       {/* Inviter un joueur (manager) */}
       {isManager && (
         <div className="club-members__section" style={{ marginBottom: 16 }}>
-          <h4 style={{ paddingTop: 16 }}>Inviter un joueur</h4>
+          <h4 style={{ paddingTop: 16 }}>{t("invite_title")}</h4>
           <div ref={searchRef} style={{ position: "relative" }}>
             <input
-              placeholder="Commence à taper un nom…"
+              placeholder={t("invite_placeholder")}
               value={searchSlug}
               onChange={(e) => { setSearchSlug(e.target.value); setInviteError(null); }}
               onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
@@ -209,18 +208,18 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
             )}
             {showSuggestions && suggestions.length === 0 && searchSlug.trim().length >= 2 && !searching && (
               <div className="player-autocomplete">
-                <span className="player-autocomplete__empty">Aucun joueur trouvé</span>
+                <span className="player-autocomplete__empty">{t("invite_no_results")}</span>
               </div>
             )}
           </div>
           {inviteError && <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 6 }}>{inviteError}</p>}
           {pendingByManager.length > 0 && (
             <div style={{ marginTop: 12 }}>
-              <p className="meta">Invitations en attente :</p>
+              <p className="meta">{t("pending_invites_label")}</p>
               {pendingByManager.map((m) => (
                 <div key={m.id} className="club-member-row">
-                  <span>{m.player.name} <span className="meta">(invitation envoyée)</span></span>
-                  <button className="ghost" style={{ fontSize: 11 }} onClick={() => removeMember(m.playerId)}>Annuler</button>
+                  <span>{m.player.name} <span className="meta">{t("invite_sent_label")}</span></span>
+                  <button className="ghost" style={{ fontSize: 11 }} onClick={() => removeMember(m.playerId)}>{t("btn_cancel_invite")}</button>
                 </div>
               ))}
             </div>
@@ -230,9 +229,9 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
 
       {/* Liste des membres */}
       <div className="club-members__section">
-        <h4>Membres ({activeMembers.length})</h4>
+        <h4>{t("members_section_title", { count: activeMembers.length })}</h4>
         {activeMembers.length === 0 ? (
-          <p className="meta">Aucun membre pour l&apos;instant.</p>
+          <p className="meta">{t("members_section_empty")}</p>
         ) : (
           <div className="club-member-list">
             {activeMembers.map((m) => (
@@ -242,7 +241,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
                     {m.player.name}
                   </a>
                   {m.playerId === managerId && (
-                    <span className="club-manager-badge">Manager</span>
+                    <span className="club-manager-badge">{t("manager_badge")}</span>
                   )}
                 </div>
                 {isManager && m.playerId !== managerId && (
@@ -252,7 +251,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
                     disabled={loading === "remove" + m.playerId}
                     onClick={() => removeMember(m.playerId)}
                   >
-                    Retirer
+                    {t("btn_remove")}
                   </button>
                 )}
                 {!isManager && m.playerId === currentPlayerId && (
@@ -262,7 +261,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
                     disabled={loading === "remove" + m.playerId}
                     onClick={() => removeMember(m.playerId)}
                   >
-                    Quitter
+                    {t("btn_leave")}
                   </button>
                 )}
               </div>

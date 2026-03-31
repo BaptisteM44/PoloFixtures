@@ -153,7 +153,6 @@ export default async function TournamentPage({
   const dateStart = new Date(tournament.dateStart).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
   const dateEnd = new Date(tournament.dateEnd).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 
-  const hasCommunity = tournament.freeAgents.length > 0 || t_.chatMode !== "DISABLED";
   const youtubeEmbed = toYoutubeEmbed(t_.streamYoutubeUrl);
 
   const now = new Date();
@@ -161,6 +160,8 @@ export default async function TournamentPage({
     (!tournament.registrationStart || now >= new Date(tournament.registrationStart)) &&
     (!tournament.registrationEnd || now <= new Date(tournament.registrationEnd));
   const registrationClosed = !!tournament.registrationEnd && now > new Date(tournament.registrationEnd);
+
+  const hasCommunity = (!registrationClosed && tournament.freeAgents.length > 0) || t_.chatMode !== "DISABLED";
 
   const tabs = [
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
@@ -580,7 +581,7 @@ export default async function TournamentPage({
               </div>
             )}
 
-            {tournament.freeAgents.length > 0 && (
+            {!registrationClosed && tournament.freeAgents.length > 0 && (
               <div className="panel">
                 <h3 style={{ marginBottom: 4 }}>
                   {t("tab_free_agent")}{" "}
