@@ -18,9 +18,16 @@ export async function GET(request: Request) {
     excludedPlayerIds = teamPlayers.map((tp) => tp.playerId);
   }
 
+  // By default only return ACTIVE players (real accounts).
+  // Pass status=PENDING or status=all only for admin use cases.
+  const statusFilter =
+    status === "all" ? undefined
+    : status === "PENDING" || status === "REJECTED" ? { status: status as "PENDING" | "REJECTED" }
+    : { status: "ACTIVE" as const };
+
   const players = await prisma.player.findMany({
     where: {
-      ...(status ? { status: status as "ACTIVE" | "PENDING" | "REJECTED" } : {}),
+      ...statusFilter,
       ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
       ...(excludedPlayerIds.length > 0 ? { id: { notIn: excludedPlayerIds } } : {})
     },
