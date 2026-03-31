@@ -2,6 +2,7 @@
 
 import { useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { routing } from "@/i18n/routing";
 
 const LABELS: Record<string, string> = {
@@ -15,9 +16,12 @@ export function LanguageSwitcher() {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   function switchLocale(next: string) {
-    router.replace(pathname, { locale: next as "fr" | "en" | "de" | "es" });
+    const query = searchParams.toString();
+    const target = query ? `${pathname}?${query}` : pathname;
+    router.replace(target as Parameters<typeof router.replace>[0], { locale: next as "fr" | "en" | "de" | "es" });
   }
 
   return (

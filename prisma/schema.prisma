@@ -303,6 +303,7 @@ model Team {
   waitlistPosition   Int?
   registrationNote   String?
   orgaNote           String?
+  feePaid            Boolean   @default(false)
 
   playerALevel       String?   // "A" | "B" | "C" — format ABC
   playerBLevel       String?

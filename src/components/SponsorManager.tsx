@@ -52,12 +52,18 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
 
       const resp = await fetch("/api/upload", { method: "POST", body: fd });
       if (!resp.ok) {
-        setError("Erreur upload");
+        const txt = await resp.text().catch(() => null);
+        setError(txt || `Erreur upload (${resp.status})`);
         setLogoPreview(null);
         return;
       }
-      const json = await resp.json();
-      setLogoPath(json.path);
+      const json = await resp.json().catch(() => null);
+      if (!json || !json.path) {
+        setError("Réponse d'upload invalide");
+        setLogoPreview(null);
+      } else {
+        setLogoPath(json.path);
+      }
     } catch {
       setError("Erreur lors de la lecture du fichier");
       setLogoPreview(null);

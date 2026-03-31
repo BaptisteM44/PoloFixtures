@@ -12,6 +12,7 @@ import { SponsorManager } from "@/components/SponsorManager";
 import { CoOrganizerManager } from "@/components/CoOrganizerManager";
 import { RefereeManager } from "@/components/RefereeManager";
 import ConfirmFormButton from "@/components/ConfirmFormButton";
+import { PaymentTracker } from "@/components/PaymentTracker";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -165,6 +166,11 @@ export function OrgaDashboard({
       {/* ── Tab: Équipes ── */}
       {activeTab === "teams" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <PaymentTracker
+            teams={teams}
+            feePerTeam={tournament.registrationFeePerTeam ?? 0}
+            currency={tournament.registrationFeeCurrency ?? "EUR"}
+          />
           <TeamManager
             tournamentId={tournament.id}
             teams={teams}

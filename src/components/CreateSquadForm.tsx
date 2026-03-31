@@ -15,28 +15,50 @@ export function CreateSquadForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setLogoUploading(true);
-    const fd = new FormData();
-    fd.append("file", await fixImageOrientation(file));
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    if (res.ok) {
-      const data = await res.json();
-      setLogoPath(data.path);
+    setLogoUploadError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", await fixImageOrientation(file));
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.path) setLogoPath(data.path);
+        else setLogoUploadError("Réponse d'upload invalide");
+      } else {
+        // Fallback: essayer d'envoyer en base64
+        const reader = new FileReader();
+        await new Promise<void>((resolve, reject) => {
+          reader.onerror = () => reject(new Error("Lecture fichier échouée"));
+          reader.onload = async () => {
+            try {
+              const fd2 = new FormData();
+              fd2.append("base64", reader.result as string);
+              const res2 = await fetch("/api/upload", { method: "POST", body: fd2 });
+              if (res2.ok) {
+                const d = await res2.json().catch(() => null);
+                if (d?.path) setLogoPath(d.path);
+                else setLogoUploadError("Réponse d'upload invalide");
+              } else {
+                const txt = await res.text().catch(() => null);
+                setLogoUploadError(txt || `Upload échoué (${res.status})`);
+              }
+            } catch (err: any) {
+              setLogoUploadError(err?.message ?? "Erreur upload");
+            } finally { resolve(); }
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+    } catch (err: any) {
+      setLogoUploadError(err?.message ?? "Erreur lors de l'upload");
+    } finally {
       setLogoUploading(false);
-    } else {
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const fd2 = new FormData();
-        fd2.append("base64", reader.result as string);
-        const res2 = await fetch("/api/upload", { method: "POST", body: fd2 });
-        if (res2.ok) { const d = await res2.json(); setLogoPath(d.path); }
-        setLogoUploading(false);
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -89,6 +111,7 @@ export function CreateSquadForm() {
           </button>
         </div>
       </div>
+      {logoUploadError && <p className="error" style={{ marginTop: 8 }}>{logoUploadError}</p>}
 
       <label className="field-row">
         {t("field_bio")}

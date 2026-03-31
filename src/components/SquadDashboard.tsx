@@ -98,6 +98,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
   const [editLogoPath, setEditLogoPath] = useState(squad.logoPath);
   const [logoUploading, setLogoUploading] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -219,15 +220,25 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
 
   const handleLogoUpload = async (file: File) => {
     setLogoUploading(true);
-    const form = new FormData();
-    form.append("file", await fixImageOrientation(file));
-    form.append("folder", "squads");
-    const res = await fetch("/api/upload", { method: "POST", body: form });
-    if (res.ok) {
-      const data = await res.json();
+    setLogoUploadError(null);
+    try {
+      const form = new FormData();
+      form.append("file", await fixImageOrientation(file));
+      form.append("folder", "squads");
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => null);
+        throw new Error(txt || `Upload échoué (${res.status})`);
+      }
+      const data = await res.json().catch(() => null);
+      if (!data || !data.url) throw new Error("Réponse d'upload invalide");
       setEditLogoPath(data.url);
+    } catch (err: any) {
+      console.error("Logo upload failed:", err);
+      setLogoUploadError(err?.message ?? "Erreur lors de l'upload");
+    } finally {
+      setLogoUploading(false);
     }
-    setLogoUploading(false);
   };
 
   const handleSaveEdit = async () => {
