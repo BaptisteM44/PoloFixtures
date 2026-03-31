@@ -13,8 +13,9 @@ const LABELS: Record<string, string> = {
   es: "🇪🇸 ES",
 };
 
-/** inline=true → affiche les 4 boutons directement sans dropdown (pour le drawer mobile) */
-export function LanguageSwitcher({ inline = false }: { inline?: boolean }) {
+/** inline=true → affiche les 4 boutons directement sans dropdown (pour le drawer mobile)
+ *  drawerAlign="left" → ouvre le dropdown vers la gauche (pour éviter le débordement dans le drawer) */
+export function LanguageSwitcher({ inline = false, drawerAlign }: { inline?: boolean; drawerAlign?: "left" }) {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -100,7 +101,8 @@ export function LanguageSwitcher({ inline = false }: { inline?: boolean }) {
       {open && (
         <div
           style={{
-            position: "absolute", top: "calc(100% + 8px)", right: 0,
+            position: "absolute", top: "calc(100% + 8px)",
+            ...(drawerAlign === "left" ? { left: 0 } : { right: 0 }),
             width: 120, background: "var(--surface)", border: "2px solid var(--border)",
             borderRadius: "var(--radius)", boxShadow: "var(--shadow-lg)",
             zIndex: 1000, overflow: "hidden",

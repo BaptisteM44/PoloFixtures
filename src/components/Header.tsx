@@ -87,7 +87,10 @@ export function Header() {
                 <span className="brand-dot" />
                 {t("header.brand_name")}
               </span>
-              <button className="nav-drawer__close" onClick={() => setMenuOpen(false)}>✕</button>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <LanguageSwitcher drawerAlign="left" />
+                <button className="nav-drawer__close" onClick={() => setMenuOpen(false)}>✕</button>
+              </div>
             </div>
             <div className="nav-drawer__links">
               <Link href="/tournaments" onClick={() => setMenuOpen(false)}>{t("nav.tournaments")}</Link>
@@ -97,7 +100,6 @@ export function Header() {
               {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)}>{t("nav.admin")}</Link>}
             </div>
             <div className="nav-drawer__footer">
-              <LanguageSwitcher inline />
               <AuthStatus onNavigate={() => setMenuOpen(false)} inDrawer />
             </div>
           </nav>
