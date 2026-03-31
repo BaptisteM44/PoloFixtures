@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AuthStatus } from "@/components/AuthStatus";
 import { NotificationBell } from "@/components/NotificationBell";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export function Header() {
   const { data: session } = useSession();
@@ -57,6 +58,7 @@ export function Header() {
 
       {/* Actions desktop */}
       <div className="header-actions header-actions--desktop">
+        <LanguageSwitcher />
         {hasPlayer && <NotificationBell />}
         <AuthStatus />
       </div>
@@ -95,6 +97,7 @@ export function Header() {
               {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)}>{t("nav.admin")}</Link>}
             </div>
             <div className="nav-drawer__footer">
+              <LanguageSwitcher />
               <AuthStatus onNavigate={() => setMenuOpen(false)} inDrawer />
             </div>
           </nav>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ContactAdminModal } from "./ContactAdminModal";
 
 export function SiteFooter() {
@@ -21,8 +20,6 @@ export function SiteFooter() {
         <a href="/legal/terms" style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("terms")}</a>
         <span className="site-footer__sep">·</span>
         <a href="/legal/charter" style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("charter")}</a>
-        <span className="site-footer__sep">·</span>
-        <LanguageSwitcher />
         <span className="site-footer__sep">·</span>
         <ContactAdminModal />
       </div>

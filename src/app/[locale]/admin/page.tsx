@@ -3,6 +3,7 @@ import { AdminNav } from "@/components/AdminNav";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { RecomputeBadgesBtn } from "@/components/RecomputeBadgesBtn";
+import { FixBracketSidesBtn } from "@/components/FixBracketSidesBtn";
 import { AdminTournamentsPanel } from "@/components/AdminTournamentsPanel";
 
 export default async function AdminPage() {
@@ -59,6 +60,10 @@ export default async function AdminPage() {
         <div className="panel" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <p className="meta" style={{ marginBottom: 0 }}>{t("btn_recompute_badges")}</p>
           <RecomputeBadgesBtn />
+        </div>
+        <div className="panel" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <p className="meta" style={{ marginBottom: 0 }}>Corriger bracketSide des finales</p>
+          <FixBracketSidesBtn />
         </div>
       </div>
 
