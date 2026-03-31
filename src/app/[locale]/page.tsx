@@ -29,7 +29,7 @@ export default async function HomePage() {
     Japan: "AS", Singapore: "AS", "South Korea": "AS", China: "AS", India: "AS",
     Thailand: "AS", Taiwan: "AS", Philippines: "AS", Indonesia: "AS", Vietnam: "AS",
     Malaysia: "AS", Pakistan: "AS",
-    Australia: "OC", "New Zealand": "OC", Fiji: "OC",
+    Australia: "OC", Australie: "OC", "New Zealand": "OC", Fiji: "OC",
     "South Africa": "AF", Nigeria: "AF", Kenya: "AF", Morocco: "AF", Ghana: "AF",
     Egypt: "AF", Tanzania: "AF", Senegal: "AF",
   };

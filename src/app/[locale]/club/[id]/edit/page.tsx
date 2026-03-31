@@ -21,6 +21,7 @@ export default function EditClubPage() {
   });
   const [logoPath, setLogoPath] = useState("");
   const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -50,12 +51,24 @@ export default function EditClubPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setLogoUploading(true);
-    const fd = new FormData();
-    fd.append("file", await fixImageOrientation(file));
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const data = await res.json();
-    setLogoPath(data.path ?? "");
-    setLogoUploading(false);
+    setLogoUploadError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", await fixImageOrientation(file));
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => null);
+        throw new Error(txt || `Upload échoué (${res.status})`);
+      }
+      const data = await res.json().catch(() => null);
+      if (!data || !data.path) throw new Error("Réponse d'upload invalide");
+      setLogoPath(data.path);
+    } catch (err: any) {
+      console.error("Club logo upload failed:", err);
+      setLogoUploadError(err?.message ?? "Erreur lors de l'upload");
+    } finally {
+      setLogoUploading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -151,6 +164,7 @@ export default function EditClubPage() {
               <button type="button" className="ghost" style={{ fontSize: 12 }} onClick={() => fileRef.current?.click()} disabled={logoUploading}>
                 {logoUploading ? t("logo_uploading") : logoPath ? t("logo_change") : t("logo_upload")}
               </button>
+              {logoUploadError && <p style={{ color: "var(--danger)", marginTop: 6, fontSize: 13 }}>{logoUploadError}</p>}
               {!logoPath && (
                 <input placeholder={t("placeholder_logo_url")} value={logoPath} onChange={(e) => setLogoPath(e.target.value)} style={{ fontSize: 12 }} />
               )}
