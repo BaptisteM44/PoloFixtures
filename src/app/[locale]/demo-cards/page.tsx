@@ -5,6 +5,18 @@ import { ScrollTiltCard } from "@/components/ScrollTiltCard";
 
 /* ── Demo players with realistic data ── */
 const PLAYERS = {
+  berlin: {
+    name: "Berlin Special",
+    country: "Germany",
+    city: "Berlin",
+    startYear: 2026,
+    hand: "RIGHT" as const,
+    badges: ["road_warrior", "tournament_berlin", "say_cheese"],
+    photoPath: "/uploads/AddvmWVW.jpeg",
+    theme: "berlin" as any,
+    special: true,
+  },
+
   rookie: {
     name: "Alex Newbie",
     country: "France",
@@ -81,6 +93,29 @@ const PLAYERS = {
     photoPath: "/uploads/AddvmWVW.jpeg",
   },
 };
+
+const BERLIN_THEMES = [
+  {
+    key: "berlin_techno" as const,
+    label: "Techno",
+    desc: "Noir industriel · rouge sang · scanlines · Berghain vibes",
+  },
+  {
+    key: "berlin_bauhaus" as const,
+    label: "Bauhaus",
+    desc: "Blanc cassé · noir · rouge · typographie géométrique",
+  },
+  {
+    key: "berlin_street" as const,
+    label: "Street",
+    desc: "Béton gris · urban decay · graffiti · Mauerpark",
+  },
+  {
+    key: "berlin_ddr" as const,
+    label: "DDR",
+    desc: "Kaki usé · rouge délavé · texture vintage · est-allemand",
+  },
+];
 
 const TIERS = [
   { key: "rookie", tier: "UNCOMMON", color: "#60c9cf", desc: "1-2 badges — léger reflet brillant au survol." },
@@ -333,6 +368,60 @@ export default function DemoCardsPage() {
             "captain", "chatterbox", "collector"
           ]} />
         </div>
+      </section>
+
+      {/* SECTION BERLIN */}
+      <section style={{ marginBottom: 80, borderTop: "2px solid var(--border)", paddingTop: 48 }}>
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, marginBottom: 8, textAlign: "center" }}>
+          🐻 Berlin Cup — 4 thèmes
+        </h2>
+        <p style={{ color: "var(--text-muted)", textAlign: "center", marginBottom: 48, maxWidth: 580, margin: "0 auto 48px" }}>
+          Quatre ambiances inspirées de Berlin — chaque thème capture une facette différente de la ville.
+          Classic + Full Art, effet holo au survol.
+        </p>
+
+        {BERLIN_THEMES.map(({ key, label, desc }) => (
+          <div key={key} style={{ marginBottom: 48 }}>
+            <h3 style={{ fontFamily: "var(--font-display)", fontSize: 15, marginBottom: 6, textAlign: "center" }}>
+              {label}
+            </h3>
+            <p style={{ color: "var(--text-muted)", fontSize: 12, textAlign: "center", marginBottom: 20 }}>{desc}</p>
+            <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
+              <PokemonCard
+                name="Kurt Stahl"
+                country="Germany"
+                city="Berlin"
+                startYear={2019}
+                hand="RIGHT"
+                theme={key}
+                photoPath="/uploads/NN-4CYaU.jpeg"
+                badges={[
+                  "first_blood", "hat_trick", "sniper", "goal_machine", "champion",
+                  "team_player", "squad_up", "veteran", "road_warrior",
+                  "host", "welcome", "og", "say_cheese", "night_owl", "collector",
+                ]}
+              />
+              <PokemonCard
+                name="Anya Weiss"
+                country="Germany"
+                city="Berlin"
+                startYear={2021}
+                hand="LEFT"
+                theme={key}
+                variant="fullart"
+                photoPath="/uploads/AddvmWVW.jpeg"
+                badges={[
+                  "first_blood", "hat_trick", "sniper", "goal_machine", "century_club",
+                  "champion", "back_to_back", "unbeaten",
+                  "team_player", "squad_up", "veteran", "road_warrior", "globe_trotter",
+                  "host", "serial_organizer", "community_builder",
+                  "welcome", "og", "regular", "addict", "profile_complete", "say_cheese",
+                  "chatterbox", "hype_machine", "captain", "night_owl", "collector", "completionist",
+                ]}
+              />
+            </div>
+          </div>
+        ))}
       </section>
 
       {/* SECTION 4 — Tournament mockup */}

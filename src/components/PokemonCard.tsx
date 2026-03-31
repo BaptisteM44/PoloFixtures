@@ -4,6 +4,7 @@ import { useRef, useState, useCallback, useImperativeHandle, forwardRef } from "
 import { getBadgeInfo, getCardRarity } from "@/lib/badge-catalog";
 import { COUNTRIES } from "@/lib/countries";
 import { HoloEffect } from "./HoloEffect";
+import { BerlinOverlay } from "./BerlinOverlay";
 
 type Props = {
   name: string;
@@ -20,7 +21,8 @@ type Props = {
   showGender?: boolean;
   theme?: "default" | "black" | "green" | "holofoil" | "ivory" | "cream" | "pearl" | "anthracite" | "gradient"
        | "rose" | "lavender" | "sand" | "mint" | "amber"
-       | "midnight" | "forest" | "carbon" | "teal" | "burgundy";
+       | "midnight" | "forest" | "carbon" | "teal" | "burgundy"
+       | "berlin_techno" | "berlin_bauhaus" | "berlin_street" | "berlin_ddr";
   variant?: "classic" | "fullart";
   metalBorder?: "bronze" | "silver" | "gold" | "platinum" | "diamond";
   holoVariant?: "glitter" | "iris" | "constellation" | "chromatic";
@@ -116,6 +118,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
         onMouseLeave={handleMouseLeave}
       >
         <div className="pkmn-card__inner pkmn-card__inner--fullart">
+          {theme?.startsWith("berlin_") && <BerlinOverlay theme={theme} />}
           {/* Full bleed photo */}
           <div className="pkmn-card__fullart-img">
             {photoPath && !imgError ? (
@@ -203,6 +206,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
       onMouseLeave={handleMouseLeave}
     >
       <div className="pkmn-card__inner">
+        {theme?.startsWith("berlin_") && <BerlinOverlay theme={theme} />}
         {/* Foil glare for holofoil theme */}
         {theme === "holofoil" && <div className="pkmn-card__foil-glare" />}
         <div className="pkmn-card__top">

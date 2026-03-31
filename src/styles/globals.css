@@ -4662,6 +4662,131 @@ textarea {
   opacity: 0.4;
 }
 
+/* ──────── OVERLAY BERLIN — silhouettes SVG en fond de carte ──────── */
+.pkmn-card__inner > svg,
+.pkmn-card__inner--fullart > svg {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ──────── THÈMES BERLIN ──────── */
+
+/* BERLIN TECHNO — noir profond, rouge sang, industriel Berghain */
+.pkmn-card--berlin_techno {
+  --card-bg: #080608;
+  --card-text: #e0d0d8;
+  --card-border: #3a0010;
+  --card-muted: #884455;
+}
+.pkmn-card--berlin_techno .pkmn-card__inner {
+  background: linear-gradient(160deg, #080608 0%, #120008 50%, #080608 100%);
+  border-color: #3a0010;
+}
+.pkmn-card--berlin_techno .pkmn-card__name { color: #f0e0e8; letter-spacing: 0.08em; text-transform: uppercase; }
+.pkmn-card--berlin_techno .pkmn-card__hp,
+.pkmn-card--berlin_techno .pkmn-card__location,
+.pkmn-card--berlin_techno .pkmn-card__attack-name { color: #884455; }
+.pkmn-card--berlin_techno .pkmn-card__hp strong { color: #e3001b; }
+.pkmn-card--berlin_techno .pkmn-card__tag { background: #1a0008; border-color: #500018; color: #cc6677; }
+.pkmn-card--berlin_techno .pkmn-card__tag--gender { background: #180800; color: #ff9940; border-color: #401800; }
+.pkmn-card--berlin_techno .pkmn-card__frame { border-color: #3a0010; background: #04020a; }
+.pkmn-card--berlin_techno .pkmn-card__img-placeholder { background: #04020a; color: #e3001b; }
+.pkmn-card--berlin_techno .pkmn-card__inner::before {
+  background-image: repeating-linear-gradient(0deg, rgba(227,0,27,0.06) 0px, rgba(227,0,27,0.06) 1px, transparent 1px, transparent 4px);
+  opacity: 1;
+}
+.pkmn-card--berlin_techno .pkmn-card__sparkle { display: block !important; opacity: 0.05; }
+.pkmn-card--berlin_techno.pkmn-card--active .pkmn-card__sparkle { opacity: 0.7; }
+
+/* BERLIN BAUHAUS — blanc cassé, noir, rouge vif, géométrique */
+.pkmn-card--berlin_bauhaus {
+  --card-bg: #f5f0e8;
+  --card-text: #111010;
+  --card-border: #111010;
+  --card-muted: #555;
+}
+.pkmn-card--berlin_bauhaus .pkmn-card__inner {
+  background: linear-gradient(160deg, #f5f0e8 0%, #ece7dc 50%, #f5f0e8 100%);
+  border-color: #111010;
+  border-width: 2px;
+}
+.pkmn-card--berlin_bauhaus .pkmn-card__name { color: #111010; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 900; }
+.pkmn-card--berlin_bauhaus .pkmn-card__hp,
+.pkmn-card--berlin_bauhaus .pkmn-card__location,
+.pkmn-card--berlin_bauhaus .pkmn-card__attack-name { color: #444; }
+.pkmn-card--berlin_bauhaus .pkmn-card__hp strong { color: #e3001b; }
+.pkmn-card--berlin_bauhaus .pkmn-card__tag { background: #111010; border-color: #111010; color: #f5f0e8; }
+.pkmn-card--berlin_bauhaus .pkmn-card__tag--gender { background: #e3001b; color: #fff; border-color: #e3001b; }
+.pkmn-card--berlin_bauhaus .pkmn-card__frame { border-color: #111010; border-width: 3px; background: #d8d0c4; }
+.pkmn-card--berlin_bauhaus .pkmn-card__img-placeholder { background: #d8d0c4; color: #e3001b; }
+.pkmn-card--berlin_bauhaus .pkmn-card__inner::before {
+  background-image:
+    linear-gradient(90deg, rgba(17,16,16,0.06) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(17,16,16,0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 1;
+}
+
+/* BERLIN STREET — béton gris, graffiti, urban decay */
+.pkmn-card--berlin_street {
+  --card-bg: #1c1c1e;
+  --card-text: #d8d4cc;
+  --card-border: #404040;
+  --card-muted: #888;
+}
+.pkmn-card--berlin_street .pkmn-card__inner {
+  background: linear-gradient(145deg, #1c1c1e 0%, #242424 40%, #1a1a1c 70%, #1e1e20 100%);
+  border-color: #404040;
+}
+.pkmn-card--berlin_street .pkmn-card__name { color: #e8e4dc; letter-spacing: 0.04em; }
+.pkmn-card--berlin_street .pkmn-card__hp,
+.pkmn-card--berlin_street .pkmn-card__location,
+.pkmn-card--berlin_street .pkmn-card__attack-name { color: #888; }
+.pkmn-card--berlin_street .pkmn-card__hp strong { color: #f5c542; }
+.pkmn-card--berlin_street .pkmn-card__tag { background: #2c2c30; border-color: #505050; color: #b0a898; }
+.pkmn-card--berlin_street .pkmn-card__tag--gender { background: #1a1000; color: #f5c542; border-color: #382800; }
+.pkmn-card--berlin_street .pkmn-card__frame { border-color: #404040; background: #101010; }
+.pkmn-card--berlin_street .pkmn-card__img-placeholder { background: #101010; color: #f5c542; }
+.pkmn-card--berlin_street .pkmn-card__inner::before {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px),
+    radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 18px 18px, 9px 9px;
+  background-position: 0 0, 9px 9px;
+  opacity: 1;
+}
+.pkmn-card--berlin_street .pkmn-card__sparkle { display: block !important; opacity: 0.06; }
+.pkmn-card--berlin_street.pkmn-card--active .pkmn-card__sparkle { opacity: 0.6; }
+
+/* BERLIN DDR — kaki usé, rouge délavé, est-allemand vintage */
+.pkmn-card--berlin_ddr {
+  --card-bg: #2a2818;
+  --card-text: #d8c898;
+  --card-border: #4a4428;
+  --card-muted: #8a7a58;
+}
+.pkmn-card--berlin_ddr .pkmn-card__inner {
+  background: linear-gradient(160deg, #2a2818 0%, #322e1a 50%, #2a2818 100%);
+  border-color: #4a4428;
+}
+.pkmn-card--berlin_ddr .pkmn-card__name { color: #d8c898; letter-spacing: 0.06em; }
+.pkmn-card--berlin_ddr .pkmn-card__hp,
+.pkmn-card--berlin_ddr .pkmn-card__location,
+.pkmn-card--berlin_ddr .pkmn-card__attack-name { color: #8a7a58; }
+.pkmn-card--berlin_ddr .pkmn-card__hp strong { color: #c84820; }
+.pkmn-card--berlin_ddr .pkmn-card__tag { background: #3a3420; border-color: #5a5030; color: #b0a070; }
+.pkmn-card--berlin_ddr .pkmn-card__tag--gender { background: #1a0e00; color: #e8c050; border-color: #382800; }
+.pkmn-card--berlin_ddr .pkmn-card__frame { border-color: #4a4428; background: #1a1808; }
+.pkmn-card--berlin_ddr .pkmn-card__img-placeholder { background: #1a1808; color: #c84820; }
+.pkmn-card--berlin_ddr .pkmn-card__inner::before {
+  background-image: radial-gradient(circle, rgba(200,180,100,0.1) 0.5px, transparent 0.5px);
+  background-size: 12px 12px;
+  opacity: 1;
+}
+.pkmn-card--berlin_ddr .pkmn-card__sparkle { display: block !important; opacity: 0.08; }
+.pkmn-card--berlin_ddr.pkmn-card--active .pkmn-card__sparkle { opacity: 0.55; }
+
 /* ══════════════════════════════════════════════════════════════
    EFFETS EXPÉRIMENTAUX — foil / glow / scanlines
    ══════════════════════════════════════════════════════════════ */
