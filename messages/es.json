@@ -515,7 +515,7 @@
     "edit_view_public": "Ver página pública →",
     "edit_resubmit": "Corregir y reenviar",
     "edit_launch_tournament": "Lanzar torneo",
-    "edit_launch_confirm": "¿Lanzar el torneo? El formato se bloqueará y se generarán los partidos del sábado.",
+    "edit_launch_confirm": "¿Lanzar el torneo? El formato se bloqueará y se generarán los partidos del primer día.",
     "edit_reset_tournament": "Resetear torneo (eliminar partidos y grupos)",
     "edit_reset_confirm": "¿Resetear el torneo? Todos los partidos y grupos serán eliminados.",
     "edit_kpi_teams": "Equipos",

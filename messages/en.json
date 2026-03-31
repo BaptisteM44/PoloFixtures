@@ -510,7 +510,7 @@
     "edit_view_public": "View public page →",
     "edit_resubmit": "Fix and resubmit",
     "edit_launch_tournament": "Launch Tournament",
-    "edit_launch_confirm": "Launch the tournament? The format will be locked and Saturday matches will be generated.",
+    "edit_launch_confirm": "Launch the tournament? The format will be locked and first day matches will be generated.",
     "edit_reset_tournament": "Reset tournament (delete matches & pools)",
     "edit_reset_confirm": "Reset the tournament? All matches and pools will be deleted.",
     "edit_kpi_teams": "Teams",

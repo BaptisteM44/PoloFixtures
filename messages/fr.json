@@ -510,7 +510,7 @@
     "edit_view_public": "Voir la page publique →",
     "edit_resubmit": "Corriger et resoumettre",
     "edit_launch_tournament": "Lancer le tournoi",
-    "edit_launch_confirm": "Lancer le tournoi ? Le format sera verrouillé et les matchs du samedi seront générés.",
+    "edit_launch_confirm": "Lancer le tournoi ? Le format sera verrouillé et les matchs du premier jour seront générés.",
     "edit_reset_tournament": "Reset le tournoi (supprimer matchs & poules)",
     "edit_reset_confirm": "Reset le tournoi ? Tous les matchs et poules seront supprimés.",
     "edit_kpi_teams": "Équipes",
