@@ -133,8 +133,8 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
               country: true, registrationEnd: true,
             },
           },
-          matchesA: { select: { scoreA: true, scoreB: true, status: true, winnerTeamId: true } },
-          matchesB: { select: { scoreA: true, scoreB: true, status: true, winnerTeamId: true } },
+          matchesA: { select: { scoreA: true, scoreB: true, status: true, winnerTeamId: true, phase: true, bracketSide: true } },
+          matchesB: { select: { scoreA: true, scoreB: true, status: true, winnerTeamId: true, phase: true, bracketSide: true } },
         },
       },
     },
@@ -188,8 +188,8 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     const played      = allMatches.filter((m) => m.status === "FINISHED");
     if (played.length === 0) continue;
 
-    // Determine tournament champion by checking the final match (BRACKET, no nextMatchWinId)
-    const finalMatch = played.find((m) => m.phase === "BRACKET" && !m.nextMatchWinId);
+    // Determine tournament champion: the Grand Final (bracketSide === "G")
+    const finalMatch = played.find((m) => m.phase === "BRACKET" && m.bracketSide === "G");
     const isChampion = !!finalMatch && finalMatch.winnerTeamId === tp.teamId;
     if (isChampion) {
       badges.add("champion");
@@ -241,7 +241,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
           OR: [{ teamAId: { in: playerTeamIds } }, { teamBId: { in: playerTeamIds } }],
         },
         select: {
-          id: true, tournamentId: true, phase: true, startAt: true,
+          id: true, tournamentId: true, phase: true, bracketSide: true, startAt: true,
           teamAId: true, teamBId: true,
           scoreA: true, scoreB: true,
           winnerTeamId: true, goldenGoal: true, nextMatchWinId: true,
@@ -270,8 +270,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   }
 
   // poulidor: 3+ finals lost, never won one
-  // Final = BRACKET match with no nextMatchWinId (no further match after winning)
-  const finals = allTeamMatches.filter((m) => m.phase === "BRACKET" && !m.nextMatchWinId);
+  const finals = allTeamMatches.filter((m) => m.phase === "BRACKET" && m.bracketSide === "G");
   let finalsWon = 0, finalsLost = 0;
   for (const m of finals) {
     const teamId = playerTeamIdSet.has(m.teamAId ?? "") ? m.teamAId : m.teamBId;
@@ -372,7 +371,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
 
   // hype_train: 10+ messages in the 30 min before a tournament final
   const tournamentFinals = await prisma.match.findMany({
-    where: { status: "FINISHED", phase: "BRACKET", nextMatchWinId: null },
+    where: { status: "FINISHED", phase: "BRACKET", bracketSide: "G" },
     select: { tournamentId: true, startAt: true },
   });
   hype: for (const tf of tournamentFinals) {
@@ -441,7 +440,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
 
   // final_oracle: prédire le score exact de la finale avant qu'elle soit jouée
   const finalsForOracle = await prisma.match.findMany({
-    where: { status: "FINISHED", phase: "BRACKET", nextMatchWinId: null },
+    where: { status: "FINISHED", phase: "BRACKET", bracketSide: "G" },
     select: { tournamentId: true, startAt: true, scoreA: true, scoreB: true },
   });
   finalOracle: for (const final of finalsForOracle) {
@@ -623,7 +622,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     const tournamentWinners = new Map<string, string>();
     for (const ct of allCompletedTournaments) {
       const final = await prisma.match.findFirst({
-        where: { tournamentId: ct.id, phase: "BRACKET", nextMatchWinId: null, status: "FINISHED" },
+        where: { tournamentId: ct.id, phase: "BRACKET", bracketSide: "G", status: "FINISHED" },
         select: { winnerTeamId: true },
       });
       if (final?.winnerTeamId) tournamentWinners.set(ct.id, final.winnerTeamId);

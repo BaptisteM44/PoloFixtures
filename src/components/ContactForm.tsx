@@ -55,7 +55,7 @@ export function ContactForm() {
             type="text"
             value={form.name}
             onChange={set("name")}
-            placeholder="Baptiste"
+            placeholder="name"
             required
             style={{ width: "100%" }}
           />

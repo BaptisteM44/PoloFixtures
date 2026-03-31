@@ -35,7 +35,8 @@ function getCountryCode(name: string): string | null {
   return entry ? entry.code.toLowerCase() : null;
 }
 
-export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCard({ name, country, city, photoPath, clubLogoPath, teamLogoPath, badges = [], pinnedBadges, startYear, hand, gender, showGender = false, theme = "default", variant = "classic", metalBorder, holoVariant, cardFx }, externalRef) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCard({ name, country, city, photoPath, clubLogoPath, teamLogoPath, badges = [], pinnedBadges, startYear, hand: _hand, gender: _gender, showGender: _showGender, theme = "default", variant = "classic", metalBorder, holoVariant, cardFx }, externalRef) {
   const cardRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(externalRef, () => cardRef.current!, []);
   const [cardStyle, setCardStyle] = useState<React.CSSProperties>({});
@@ -159,19 +160,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
               </div>
             </div>
             <div className="pkmn-card__strip">
-              <span className="pkmn-card__location">{city ? `${city}, ${country}` : country}</span>
-              <div className="pkmn-card__tags">
-                {showGender && gender && gender !== "PREFER_NOT_SAY" && (
-                  <span className="pkmn-card__tag pkmn-card__tag--gender">
-                    {gender === "MALE" ? "Homme" : gender === "FEMALE" ? "Femme" : "Non-binaire"}
-                  </span>
-                )}
-                {hand && (
-                  <span className="pkmn-card__tag">
-                    {hand === "LEFT" ? "Gaucher·e" : "Droitier·e"}
-                  </span>
-                )}
-              </div>
+              <span className="pkmn-card__location" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{city ? `${city}, ${country}` : country}</span>
             </div>
             {displayedBadges.length > 0 && (
               <div className="pkmn-card__attacks">
@@ -246,19 +235,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
         </div>
 
         <div className="pkmn-card__strip">
-          <span className="pkmn-card__location">{city ? `${city}, ${country}` : country}</span>
-          <div className="pkmn-card__tags">
-            {showGender && gender && gender !== "PREFER_NOT_SAY" && (
-              <span className="pkmn-card__tag pkmn-card__tag--gender">
-                {gender === "MALE" ? "Homme" : gender === "FEMALE" ? "Femme" : "Non-binaire"}
-              </span>
-            )}
-            {hand && (
-              <span className="pkmn-card__tag">
-                {hand === "LEFT" ? "Gaucher·e" : "Droitier·e"}
-              </span>
-            )}
-          </div>
+          <span className="pkmn-card__location" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{city ? `${city}, ${country}` : country}</span>
         </div>
 
         {displayedBadges.length > 0 && (

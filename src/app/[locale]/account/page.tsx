@@ -268,9 +268,6 @@ export default function AccountPage() {
             badges={player.badges}
             pinnedBadges={player.pinnedBadges}
             startYear={player.startYear}
-            hand={player.hand}
-            gender={player.gender}
-            showGender={player.showGender}
           />
           <div style={{ marginTop: 12, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
             <ShareCardButton cardRef={cardRef} playerName={player.name} />
