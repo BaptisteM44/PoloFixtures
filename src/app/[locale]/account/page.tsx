@@ -11,6 +11,7 @@ import { COUNTRIES } from "@/lib/countries";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 import { BadgeShowcase } from "@/components/BadgeShowcase";
 import { ClubPicker } from "@/components/ClubPicker";
+import { ImageCropModal } from "@/components/ImageCropModal";
 import type { BadgeInfo } from "@/lib/badge-catalog";
 
 type Player = {
@@ -64,6 +65,7 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   // Cities autocomplete
   const [availableCities, setAvailableCities] = useState<Array<{ city: string; country: string; label: string }>>([]);
@@ -120,20 +122,25 @@ export default function AccountPage() {
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+    const oriented = await fixImageOrientation(file);
+    setCropFile(oriented);
+  };
+
+  const uploadCroppedBlob = async (blob: Blob) => {
+    setCropFile(null);
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append("file", await fixImageOrientation(file));
+      fd.append("file", new File([blob], "photo.webp", { type: "image/webp" }));
       const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (!res.ok) {
-        setSaveMsg(t("photo_error"));
-        return;
-      }
+      if (!res.ok) { setSaveMsg(t("photo_error")); return; }
       const { path } = await res.json();
       await fetch("/api/account/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ photoPath: path })
+        body: JSON.stringify({ photoPath: path }),
       });
       await fetchPlayer();
       setSaveMsg(t("photo_success"));
@@ -239,6 +246,13 @@ export default function AccountPage() {
 
   return (
     <div className="page">
+      {cropFile && (
+        <ImageCropModal
+          file={cropFile}
+          onConfirm={uploadCroppedBlob}
+          onCancel={() => setCropFile(null)}
+        />
+      )}
       <div className="account-layout">
 
         {/* Pokemon card + photo upload */}
