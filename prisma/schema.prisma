@@ -40,6 +40,7 @@ enum SaturdayFormat {
   ALL_DAY
   SPLIT_POOLS
   SWISS
+  BERLIN_MIXED
 }
 
 enum SundayFormat {
@@ -53,6 +54,13 @@ enum MatchPhase {
   SWISS
   CROSS_POOL
   BRACKET
+  FRIDAY_A
+  FRIDAY_B
+  SATURDAY_A
+  SATURDAY_B
+  SUNDAY_SWISS
+  TOP32
+  BOTTOM16
 }
 
 enum BracketSide {
@@ -84,6 +92,7 @@ enum PoolSession {
 }
 
 enum MatchDay {
+  FRI
   SAT
   SUN
 }
@@ -220,6 +229,10 @@ model Tournament {
   scoringSystem           String           @default("3/1")  // "3/1" = V3 N1 D0, "1/0.5" = V1 N0.5 D0
   thirdPlaceMatch         Boolean          @default(false)  // SE only: add 3rd place match
   gfReset                 Boolean          @default(false)  // DE only: grand final bracket reset
+  // Berlin Mixed format
+  fridayRounds            Int              @default(5)
+  saturdayRounds          Int              @default(5)
+  sundayRounds            Int              @default(2)      // 1 or 2
   status                  TournamentStatus
   locked                  Boolean          @default(false)
   approved                Boolean          @default(false)
@@ -304,6 +317,10 @@ model Team {
   registrationNote   String?
   orgaNote           String?
   feePaid            Boolean   @default(false)
+  // Berlin Mixed format
+  fridayGroup        String?   // "A" | "B"
+  saturdayGroup      String?   // "A" | "B"
+  globalRank         Int?      // consolidated rank after each day
 
   playerALevel       String?   // "A" | "B" | "C" — format ABC
   playerBLevel       String?

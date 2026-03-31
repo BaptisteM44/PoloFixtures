@@ -188,14 +188,20 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     const played      = allMatches.filter((m) => m.status === "FINISHED");
     if (played.length === 0) continue;
 
-    let losses = 0, isChampion = false;
-    for (const m of played) {
-      const isA = tp.team.matchesA.includes(m);
-      const won = isA ? m.scoreA > m.scoreB : m.scoreB > m.scoreA;
-      if (!won) losses++;
-      if (m.winnerTeamId === tp.teamId) isChampion = true;
+    // Determine tournament champion by checking the final match (BRACKET, no nextMatchWinId)
+    const finalMatch = played.find((m) => m.phase === "BRACKET" && !m.nextMatchWinId);
+    const isChampion = !!finalMatch && finalMatch.winnerTeamId === tp.teamId;
+    if (isChampion) {
+      badges.add("champion");
+      wonTournamentIds.push(tp.team.tournament.id);
     }
-    if (isChampion) { badges.add("champion"); wonTournamentIds.push(tp.team.tournament.id); }
+
+    // Compute losses/unbeaten using explicit teamId comparison
+    let losses = 0;
+    for (const m of played) {
+      const won = m.winnerTeamId === tp.teamId;
+      if (!won) losses++;
+    }
     if (losses === 0 && played.length > 0) badges.add("unbeaten");
   }
 

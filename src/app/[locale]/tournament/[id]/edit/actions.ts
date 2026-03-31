@@ -51,7 +51,7 @@ const updateSchema = z.object({
   bannerPath: z.string().optional().nullable(),
   streamYoutubeUrl: z.string().optional().nullable(),
   chatMode: z.enum(["OPEN", "ORG_ONLY", "DISABLED"]).default("DISABLED"),
-  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS"]),
+  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED"]),
   poolCount: z.coerce.number().int().min(1).max(4).default(1),
   crossPool: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   swissRounds: z.coerce.number().int().min(1).max(20).default(5),
@@ -1435,11 +1435,12 @@ export async function launchTournamentAction(
     data: { status: "LIVE", locked: true },
   });
 
-  // Générer les matchs du samedi selon le format choisi
+  // Générer les matchs selon le format choisi
+  // Berlin Mixed: pas de matchs auto-générés au lancement — l'orga gère manuellement via BerlinMixedActions
   if (tournament.saturdayFormat === "SWISS") {
     const res = await generateSwissRoundAction(id);
     if ("error" in res && res.error) return { error: `Lancement OK mais erreur Swiss : ${res.error}` };
-  } else {
+  } else if (tournament.saturdayFormat !== "BERLIN_MIXED") {
     const res = await generatePoolsAction(id);
     if ("error" in res && res.error) return { error: `Lancement OK mais erreur Poules : ${res.error}` };
   }

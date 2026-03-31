@@ -137,6 +137,12 @@ export default async function TournamentPage({
 
   const swissMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SWISS");
   const hasSwiss = swissMatches.length > 0 || tournament.saturdayFormat === "SWISS";
+  const isBerlinMixed = tournament.saturdayFormat === "BERLIN_MIXED";
+  const berlinFriMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "FRIDAY_A" || m.phase === "FRIDAY_B");
+  const berlinSatMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SATURDAY_A" || m.phase === "SATURDAY_B");
+  const berlinSunSwissMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SUNDAY_SWISS");
+  const berlinTop32Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "TOP32");
+  const berlinBottom16Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "BOTTOM16");
   const allEvents = (tournament.matches ?? []).flatMap((m: any) => m.events ?? []);
 
   // When tournament is launched (LIVE/COMPLETED), show selected teams count instead of total registered
@@ -161,9 +167,16 @@ export default async function TournamentPage({
     { label: t("tab_info"), value: "info", href: `/tournament/${params.id}?tab=info` },
     ...(!registrationClosed ? [{ label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` }] : []),
     ...(isLaunched ? [{ label: t("tab_schedule"), value: "schedule", href: `/tournament/${params.id}?tab=schedule` }] : []),
-    ...(isLaunched && tournament.saturdayFormat !== "SWISS" ? [{ label: t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
-    ...(isLaunched && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
-    ...(isLaunched ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : []),
+    // Berlin Mixed tabs
+    ...(isLaunched && isBerlinMixed && berlinFriMatches.length > 0 ? [{ label: "Vendredi", value: "berlin_fri", href: `/tournament/${params.id}?tab=berlin_fri` }] : []),
+    ...(isLaunched && isBerlinMixed && berlinSatMatches.length > 0 ? [{ label: "Samedi", value: "berlin_sat", href: `/tournament/${params.id}?tab=berlin_sat` }] : []),
+    ...(isLaunched && isBerlinMixed && berlinSunSwissMatches.length > 0 ? [{ label: "Dim. Swiss", value: "berlin_sun", href: `/tournament/${params.id}?tab=berlin_sun` }] : []),
+    ...(isLaunched && isBerlinMixed && berlinTop32Matches.length > 0 ? [{ label: "Top 32", value: "berlin_top32", href: `/tournament/${params.id}?tab=berlin_top32` }] : []),
+    ...(isLaunched && isBerlinMixed && berlinBottom16Matches.length > 0 ? [{ label: "Bottom 16", value: "berlin_bot16", href: `/tournament/${params.id}?tab=berlin_bot16` }] : []),
+    // Standard tabs (hidden for Berlin Mixed)
+    ...(isLaunched && !isBerlinMixed && tournament.saturdayFormat !== "SWISS" ? [{ label: t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
+    ...(isLaunched && !isBerlinMixed && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
+    ...(isLaunched && !isBerlinMixed ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : []),
     { label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
     ...(youtubeEmbed || t_.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
@@ -847,6 +860,121 @@ export default async function TournamentPage({
                 {swissDone ? "Le bracket sera lancé par l\u2019organisateur." : "Le bracket sera disponible une fois les rounds Swiss terminés."}
               </p>
             )}
+          </div>
+        );
+      })()}
+
+      {/* ── Berlin Mixed views ── */}
+      {(tab === "berlin_fri" || tab === "berlin_sat" || tab === "berlin_sun") && (() => {
+        const isFri = tab === "berlin_fri";
+        const isSat = tab === "berlin_sat";
+        const phases = isFri
+          ? ["FRIDAY_A", "FRIDAY_B"]
+          : isSat
+          ? ["SATURDAY_A", "SATURDAY_B"]
+          : ["SUNDAY_SWISS"];
+        const groupMatches = (tournament.matches ?? []).filter((m: any) => phases.includes(m.phase));
+        const selectedTeams = tournament.teams.filter((t: any) => t.selected);
+
+        if (groupMatches.length === 0) {
+          return (
+            <div className="panel" style={{ textAlign: "center", padding: 48 }}>
+              <p className="meta">Aucun match généré pour ce jour.</p>
+            </div>
+          );
+        }
+
+        const renderGroup = (phase: string, label: string) => {
+          const gm = groupMatches.filter((m: any) => m.phase === phase);
+          if (gm.length === 0) return null;
+          const gTeamIds = new Set([...gm.map((m: any) => m.teamAId), ...gm.map((m: any) => m.teamBId)].filter(Boolean));
+          const gTeams = selectedTeams.filter((t: any) => gTeamIds.has(t.id));
+          const standings = computeStandings(gTeams, gm, tournament.scoringSystem);
+          const maxRound = Math.max(...gm.map((m: any) => m.roundIndex));
+          return (
+            <div key={phase}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
+                {label}
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                {Array.from({ length: maxRound }, (_, i) => i + 1).map((r) => {
+                  const rMatches = gm.filter((m: any) => m.roundIndex === r);
+                  const done = rMatches.filter((m: any) => m.status === "FINISHED").length;
+                  return (
+                    <span key={r} style={{ fontFamily: "var(--font-display)", fontSize: 12, padding: "4px 12px", borderRadius: 20, background: done === rMatches.length ? "var(--teal)" : "var(--gray)", border: "1.5px solid var(--border)", fontWeight: 700 }}>
+                      Tour {r} — {done}/{rMatches.length}
+                    </span>
+                  );
+                })}
+              </div>
+              <div className="panel" style={{ marginBottom: 24, overflowX: "auto" }}>
+                <table className="swiss-standings" style={{ width: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th>#</th><th>Équipe</th><th>Pts</th><th>J</th><th>V</th><th>N</th><th>D</th><th>Diff</th><th title="Buchholz">Buch.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((row: any, i: number) => (
+                      <tr key={row.teamId}>
+                        <td className="swiss-standing-rank">{i + 1}</td>
+                        <td style={{ fontWeight: 600 }}>{row.name}</td>
+                        <td style={{ fontFamily: "var(--font-display)", fontWeight: 900 }}>{row.points}</td>
+                        <td>{row.played}</td>
+                        <td style={{ color: "var(--success)" }}>{row.wins}</td>
+                        <td style={{ color: "var(--text-muted)" }}>{row.draws}</td>
+                        <td style={{ color: "var(--danger)" }}>{row.losses}</td>
+                        <td style={{ color: row.goalDiff >= 0 ? "var(--success)" : "var(--danger)" }}>
+                          {row.goalDiff >= 0 ? "+" : ""}{row.goalDiff}
+                        </td>
+                        <td style={{ color: "var(--text-muted)" }}>{row.buchholz}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        };
+
+        return (
+          <div style={{ padding: "24px 0" }}>
+            {isFri && <>{renderGroup("FRIDAY_A", "Groupe A — Vendredi")}{renderGroup("FRIDAY_B", "Groupe B — Vendredi")}</>}
+            {isSat && <>{renderGroup("SATURDAY_A", "Groupe A — Samedi")}{renderGroup("SATURDAY_B", "Groupe B — Samedi")}</>}
+            {!isFri && !isSat && renderGroup("SUNDAY_SWISS", "Swiss Dimanche — Classement global")}
+          </div>
+        );
+      })()}
+
+      {(tab === "berlin_top32" || tab === "berlin_bot16") && (() => {
+        const isTop32 = tab === "berlin_top32";
+        const phase = isTop32 ? "TOP32" : "BOTTOM16";
+        const bracketMatches = (tournament.matches ?? []).filter((m: any) => m.phase === phase);
+        const selectedTeams = tournament.teams.filter((t: any) => t.selected);
+        // Build team list seeded by globalRank
+        const bracketTeams = [...selectedTeams]
+          .sort((a: any, b: any) => (a.globalRank ?? 999) - (b.globalRank ?? 999))
+          .map((team: any) => ({ id: team.id, name: team.name, bracketNumber: team.globalRank ?? team.seed }));
+
+        if (bracketMatches.length === 0) {
+          return (
+            <div className="panel" style={{ textAlign: "center", padding: 48 }}>
+              <p className="meta">Bracket pas encore généré.</p>
+            </div>
+          );
+        }
+
+        return (
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 16, paddingTop: 8 }}>
+              {isTop32 ? "Top 32 — Élimination simple" : "Bottom 16 — Élimination simple"}
+            </p>
+            <BracketView
+              matches={bracketMatches}
+              tournamentId={tournament.id}
+              teams={bracketTeams}
+              isOrganizer={isOrga}
+            />
           </div>
         );
       })()}

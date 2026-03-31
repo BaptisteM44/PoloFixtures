@@ -8,11 +8,111 @@ import { PoolAssignment } from "@/components/PoolAssignment";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { CrossPoolActions } from "@/components/CrossPoolActions";
 import { BracketActions } from "@/components/BracketActions";
+import { FridayGroupAssignment } from "@/components/FridayGroupAssignment";
+import { BerlinMixedActions } from "@/components/BerlinMixedActions";
 import { SponsorManager } from "@/components/SponsorManager";
 import { CoOrganizerManager } from "@/components/CoOrganizerManager";
 import { RefereeManager } from "@/components/RefereeManager";
 import ConfirmFormButton from "@/components/ConfirmFormButton";
 import { PaymentTracker } from "@/components/PaymentTracker";
+
+// ─── BerlinMixedPlanning ─────────────────────────────────────────────────────
+
+type BerlinTab = "groupes" | "vendredi" | "samedi" | "dimanche" | "brackets";
+
+const BERLIN_TABS: { value: BerlinTab; label: string }[] = [
+  { value: "groupes",   label: "Groupes Ven." },
+  { value: "vendredi",  label: "Vendredi" },
+  { value: "samedi",    label: "Samedi" },
+  { value: "dimanche",  label: "Dim. Swiss" },
+  { value: "brackets",  label: "Top32 / Bot16" },
+];
+
+function BerlinMixedPlanning({ tournament, teams, matches }: { tournament: any; teams: any[]; matches: any[] }) {
+  const [berlinTab, setBerlinTab] = useState<BerlinTab>("groupes");
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      {/* Onglets Berlin — mêmes classes CSS que les onglets de la page publique */}
+      <div className="tabs-bar" style={{ marginTop: 0 }}>
+        <div className="tabs">
+          {BERLIN_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setBerlinTab(tab.value)}
+              className={`tab${berlinTab === tab.value ? " active" : ""}`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Contenu */}
+      {berlinTab === "groupes" && (
+        <div className="panel">
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
+            Répartition Vendredi A / B
+          </p>
+          <FridayGroupAssignment
+            tournamentId={tournament.id}
+            teams={teams.map((t) => ({ id: t.id, name: t.name, seed: t.seed, fridayGroup: t.fridayGroup }))}
+            isLocked={tournament.locked}
+          />
+        </div>
+      )}
+
+      {berlinTab === "vendredi" && (
+        <div className="panel">
+          <BerlinMixedActions
+            tournamentId={tournament.id}
+            teams={teams}
+            matches={matches}
+            tournament={tournament}
+            phase="vendredi"
+          />
+        </div>
+      )}
+
+      {berlinTab === "samedi" && (
+        <div className="panel">
+          <BerlinMixedActions
+            tournamentId={tournament.id}
+            teams={teams}
+            matches={matches}
+            tournament={tournament}
+            phase="samedi"
+          />
+        </div>
+      )}
+
+      {berlinTab === "dimanche" && (
+        <div className="panel">
+          <BerlinMixedActions
+            tournamentId={tournament.id}
+            teams={teams}
+            matches={matches}
+            tournament={tournament}
+            phase="dimanche"
+          />
+        </div>
+      )}
+
+      {berlinTab === "brackets" && (
+        <div className="panel">
+          <BerlinMixedActions
+            tournamentId={tournament.id}
+            teams={teams}
+            matches={matches}
+            tournament={tournament}
+            phase="brackets"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -129,29 +229,19 @@ export function OrgaDashboard({
       </div>
 
       {/* ── Tab bar ── */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "2px solid var(--border)", paddingBottom: 0 }}>
-        {(["config", "teams", "planning", "orgateam"] as Tab[]).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            style={{
-              padding: "8px 16px",
-              fontSize: 13,
-              fontWeight: activeTab === tab ? 700 : 400,
-              fontFamily: "var(--font-display)",
-              background: "none",
-              border: "none",
-              borderBottom: activeTab === tab ? "3px solid var(--primary)" : "3px solid transparent",
-              color: activeTab === tab ? "var(--primary)" : "var(--text-muted)",
-              cursor: "pointer",
-              marginBottom: -2,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {TAB_LABELS[tab].icon} {TAB_LABELS[tab].fr}
-          </button>
-        ))}
+      <div className="tabs-bar" style={{ marginTop: 0 }}>
+        <div className="tabs">
+          {(["config", "teams", "planning", "orgateam"] as Tab[]).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`tab${activeTab === tab ? " active" : ""}`}
+            >
+              {TAB_LABELS[tab].icon} {TAB_LABELS[tab].fr}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Tab: Config ── */}
@@ -219,21 +309,36 @@ export function OrgaDashboard({
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
               Format configuré
             </p>
-            <p style={{ fontSize: 13, margin: 0 }}>
-              <strong>Jour 1 :</strong>{" "}
-              {tournament.saturdayFormat === "SWISS"
-                ? `Swiss (${tournament.swissRounds ?? 5} rondes)`
-                : tournament.saturdayFormat === "SPLIT_POOLS"
-                  ? `${tournament.poolCount ?? 2} groupes`
-                  : "Poule unique"}
-              {tournament.crossPool ? " → cross-pool" : ""}
-            </p>
-            <p style={{ fontSize: 13, margin: "4px 0 0" }}>
-              <strong>Jour 2 :</strong>{" "}
-              {tournament.sundayFormat === "DE" ? "Élimination double (DE)" : tournament.sundayFormat === "SE" ? "Élimination simple (SE)" : "Round Robin"}
-              {tournament.thirdPlaceMatch ? " · Petite finale" : ""}
-              {tournament.gfReset ? " · GF reset" : ""}
-            </p>
+            {tournament.saturdayFormat === "BERLIN_MIXED" ? (
+              <>
+                <p style={{ fontSize: 13, margin: 0 }}>
+                  <strong>Berlin Mixed Format</strong> — 3 jours
+                </p>
+                <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--text-muted)" }}>
+                  Vendredi : 2 groupes × {tournament.fridayRounds ?? 5} tours Swiss
+                  · Samedi : 2 groupes recomposés × {tournament.saturdayRounds ?? 5} tours Swiss
+                  · Dimanche : {tournament.sundayRounds ?? 2} tour(s) Swiss + Top 32 SE + Bottom 16 SE
+                </p>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, margin: 0 }}>
+                  <strong>Jour 1 :</strong>{" "}
+                  {tournament.saturdayFormat === "SWISS"
+                    ? `Swiss (${tournament.swissRounds ?? 5} rondes)`
+                    : tournament.saturdayFormat === "SPLIT_POOLS"
+                      ? `${tournament.poolCount ?? 2} groupes`
+                      : "Poule unique"}
+                  {tournament.crossPool ? " → cross-pool" : ""}
+                </p>
+                <p style={{ fontSize: 13, margin: "4px 0 0" }}>
+                  <strong>Jour 2 :</strong>{" "}
+                  {tournament.sundayFormat === "DE" ? "Élimination double (DE)" : tournament.sundayFormat === "SE" ? "Élimination simple (SE)" : "Round Robin"}
+                  {tournament.thirdPlaceMatch ? " · Petite finale" : ""}
+                  {tournament.gfReset ? " · GF reset" : ""}
+                </p>
+              </>
+            )}
             {!tournament.locked && (
               <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, marginBottom: 0 }}>
                 ⚠️ Le format n&apos;est pas encore verrouillé. Va dans <strong>Configuration</strong> pour le verrouiller avant de lancer.
@@ -264,53 +369,67 @@ export function OrgaDashboard({
             </ConfirmFormButton>
           )}
 
-          {/* Jour 1 — état des matchs */}
-          {hasAnyMatches && (
-            <div className="panel">
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
-                Jour 1 — {tournament.saturdayFormat === "SWISS" ? "Swiss" : "Poules"}
-              </p>
-              {poolMatches.length === 0 ? (
-                <p className="meta">Matchs pas encore générés.</p>
-              ) : (
-                <p style={{ fontSize: 13, margin: 0, color: poolMatchesFinished ? "var(--teal)" : "var(--text)" }}>
-                  {poolMatches.filter((m) => m.status === "FINISHED").length} / {poolMatches.length} matchs terminés
-                  {poolMatchesFinished ? " ✓" : ""}
-                </p>
+          {/* ── Berlin Mixed Format planning ── */}
+          {tournament.saturdayFormat === "BERLIN_MIXED" && isLive && (
+            <BerlinMixedPlanning
+              tournament={tournament}
+              teams={teams.filter((t) => t.selected !== false)}
+              matches={matches}
+            />
+          )}
+
+          {/* ── Planning standard (non-Berlin) ── */}
+          {tournament.saturdayFormat !== "BERLIN_MIXED" && (
+            <>
+              {/* Jour 1 — état des matchs */}
+              {hasAnyMatches && (
+                <div className="panel">
+                  <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
+                    Jour 1 — {tournament.saturdayFormat === "SWISS" ? "Swiss" : "Poules"}
+                  </p>
+                  {poolMatches.length === 0 ? (
+                    <p className="meta">Matchs pas encore générés.</p>
+                  ) : (
+                    <p style={{ fontSize: 13, margin: 0, color: poolMatchesFinished ? "var(--teal)" : "var(--text)" }}>
+                      {poolMatches.filter((m) => m.status === "FINISHED").length} / {poolMatches.length} matchs terminés
+                      {poolMatchesFinished ? " ✓" : ""}
+                    </p>
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
-          {/* Cross-pool (format Barcelona) */}
-          {tournament.crossPool && isLive && (
-            <div className="panel">
-              <CrossPoolActions
-                tournamentId={tournament.id}
-                hasCrossPool={true}
-                poolMatchesFinished={poolMatchesFinished}
-                crossPoolGenerated={crossPoolGenerated}
-                crossPoolFinished={crossPoolFinished}
-                seGenerated={seGenerated}
-                seRound1Finished={seRound1Finished}
-                deGenerated={deGenerated}
-              />
-            </div>
-          )}
+              {/* Cross-pool (format Barcelona) */}
+              {tournament.crossPool && isLive && (
+                <div className="panel">
+                  <CrossPoolActions
+                    tournamentId={tournament.id}
+                    hasCrossPool={true}
+                    poolMatchesFinished={poolMatchesFinished}
+                    crossPoolGenerated={crossPoolGenerated}
+                    crossPoolFinished={crossPoolFinished}
+                    seGenerated={seGenerated}
+                    seRound1Finished={seRound1Finished}
+                    deGenerated={deGenerated}
+                  />
+                </div>
+              )}
 
-          {/* Jour 2 — bracket standard */}
-          {!tournament.crossPool && isLive && poolMatchesFinished && (
-            <div className="panel">
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
-                Jour 2 — {tournament.sundayFormat === "DE" ? "Élimination double" : tournament.sundayFormat === "SE" ? "Élimination simple" : "Round Robin"}
-              </p>
-              <BracketActions
-                tournamentId={tournament.id}
-                returnPath={`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`}
-                hasQualifyingMatches={poolMatches.length > 0}
-                isRR={tournament.sundayFormat === "RR"}
-                mode={hasBracketMatches ? "buttons" : "launch"}
-              />
-            </div>
+              {/* Jour 2 — bracket standard */}
+              {!tournament.crossPool && isLive && poolMatchesFinished && (
+                <div className="panel">
+                  <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
+                    Jour 2 — {tournament.sundayFormat === "DE" ? "Élimination double" : tournament.sundayFormat === "SE" ? "Élimination simple" : "Round Robin"}
+                  </p>
+                  <BracketActions
+                    tournamentId={tournament.id}
+                    returnPath={`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`}
+                    hasQualifyingMatches={poolMatches.length > 0}
+                    isRR={tournament.sundayFormat === "RR"}
+                    mode={hasBracketMatches ? "buttons" : "launch"}
+                  />
+                </div>
+              )}
+            </>
           )}
 
           {/* État si pas encore lancé */}
