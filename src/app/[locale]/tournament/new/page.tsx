@@ -278,24 +278,9 @@ export default function NewTournamentPage() {
               <input type="number" min={1} max={60} value={form.gameDurationMin} onChange={setNum("gameDurationMin")} required />
             </label>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <label className="field-row">
-              {t("field_saturday_format")}
-              <select value={form.saturdayFormat} onChange={set("saturdayFormat")}>
-                <option value="ALL_DAY">{t("saturday_all_day")}</option>
-                <option value="SPLIT_POOLS">{t("saturday_split")}</option>
-                <option value="SWISS">{t("saturday_swiss")}</option>
-              </select>
-            </label>
-            <label className="field-row">
-              {t("field_sunday_format")}
-              <select value={form.sundayFormat} onChange={set("sundayFormat")}>
-                <option value="SE">{t("sunday_se")}</option>
-                <option value="DE">{t("sunday_de")}</option>
-                <option value="RR">{t("sunday_rr")}</option>
-              </select>
-            </label>
-          </div>
+          <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", padding: "10px 14px", background: "color-mix(in srgb, var(--accent) 8%, var(--surface))", borderRadius: "var(--radius-sm)", border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)" }}>
+            💡 Le format de compétition (pools, Swiss, bracket…) se configure dans le dashboard organisateur, à l'étape suivante.
+          </p>
         </section>
 
         {/* ── Section 3 : Inscriptions & frais ── */}
