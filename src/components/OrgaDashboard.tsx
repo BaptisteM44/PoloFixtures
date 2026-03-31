@@ -58,7 +58,7 @@ function BerlinMixedPlanning({ tournament, teams, matches }: { tournament: any; 
           <FridayGroupAssignment
             tournamentId={tournament.id}
             teams={teams.map((t) => ({ id: t.id, name: t.name, seed: t.seed, fridayGroup: t.fridayGroup }))}
-            isLocked={tournament.locked}
+            isLocked={false}
           />
         </div>
       )}
@@ -279,7 +279,7 @@ export function OrgaDashboard({
                 teams={teams.filter((t) => t.selected).map((t) => ({ id: t.id, name: t.name, seed: t.seed }))}
                 pools={pools}
                 poolCount={tournament.poolCount ?? 1}
-                isLocked={tournament.locked}
+                isLocked={false}
               />
             </div>
           )}
