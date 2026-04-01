@@ -20,15 +20,18 @@ import { PaymentTracker } from "@/components/PaymentTracker";
 
 type BerlinTab = "groupes" | "vendredi" | "samedi" | "dimanche" | "brackets";
 
-const BERLIN_TABS: { value: BerlinTab; label: string }[] = [
-  { value: "groupes",   label: "Groupes Ven." },
-  { value: "vendredi",  label: "Vendredi" },
-  { value: "samedi",    label: "Samedi" },
-  { value: "dimanche",  label: "Dim. Swiss" },
-  { value: "brackets",  label: "Top32 / Bot16" },
+type BerlinTabDef = { value: BerlinTab; key: string };
+
+const BERLIN_TABS: BerlinTabDef[] = [
+  { value: "groupes",   key: "berlin_tab_groupes" },
+  { value: "vendredi",  key: "berlin_tab_vendredi" },
+  { value: "samedi",    key: "berlin_tab_samedi" },
+  { value: "dimanche",  key: "berlin_tab_dimanche" },
+  { value: "brackets",  key: "berlin_tab_brackets" },
 ];
 
 function BerlinMixedPlanning({ tournament, teams, matches }: { tournament: any; teams: any[]; matches: any[] }) {
+  const t = useTranslations("tournament");
   const [berlinTab, setBerlinTab] = useState<BerlinTab>("groupes");
 
   return (
@@ -43,7 +46,7 @@ function BerlinMixedPlanning({ tournament, teams, matches }: { tournament: any; 
               onClick={() => setBerlinTab(tab.value)}
               className={`tab${berlinTab === tab.value ? " active" : ""}`}
             >
-              {tab.label}
+              {t(tab.key as any)}
             </button>
           ))}
         </div>
@@ -53,7 +56,7 @@ function BerlinMixedPlanning({ tournament, teams, matches }: { tournament: any; 
       {berlinTab === "groupes" && (
         <div className="panel">
           <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
-            Répartition Vendredi A / B
+            {t("berlin_friday_ab_label")}
           </p>
           <FridayGroupAssignment
             tournamentId={tournament.id}
@@ -147,11 +150,11 @@ type Tab = "config" | "teams" | "planning" | "orgateam";
 
 // ─── Tab label helper ─────────────────────────────────────────────────────────
 
-const TAB_LABELS: Record<Tab, { fr: string; icon: string }> = {
-  config:   { fr: "Configuration", icon: "⚙️" },
-  teams:    { fr: "Équipes",        icon: "👥" },
-  planning: { fr: "Planning",       icon: "📋" },
-  orgateam: { fr: "Équipe orga",    icon: "🛠️" },
+const TAB_KEYS: Record<Tab, string> = {
+  config:   "orga_tab_config",
+  teams:    "orga_tab_teams",
+  planning: "orga_tab_planning",
+  orgateam: "orga_tab_orgateam",
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -238,7 +241,7 @@ export function OrgaDashboard({
               onClick={() => setActiveTab(tab)}
               className={`tab${activeTab === tab ? " active" : ""}`}
             >
-              {TAB_LABELS[tab].icon} {TAB_LABELS[tab].fr}
+              {t(TAB_KEYS[tab] as any)}
             </button>
           ))}
         </div>
@@ -307,42 +310,42 @@ export function OrgaDashboard({
           {/* Explication du format actuel */}
           <div className="panel" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
-              Format configuré
+              {t("orga_planning_format_configured")}
             </p>
             {tournament.saturdayFormat === "BERLIN_MIXED" ? (
               <>
                 <p style={{ fontSize: 13, margin: 0 }}>
-                  <strong>Berlin Mixed Format</strong> — 3 jours
+                  <strong>{t("orga_format_berlin_mixed_title")}</strong> — {t("orga_format_berlin_mixed_days")}
                 </p>
                 <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--text-muted)" }}>
-                  Vendredi : 2 groupes × {tournament.fridayRounds ?? 5} tours Swiss
-                  · Samedi : 2 groupes recomposés × {tournament.saturdayRounds ?? 5} tours Swiss
-                  · Dimanche : {tournament.sundayRounds ?? 2} tour(s) Swiss + Top 32 SE + Bottom 16 SE
+                  {t("orga_format_berlin_mixed_friday", { fridayRounds: tournament.fridayRounds ?? 5 })}
+                  · {t("orga_format_berlin_mixed_saturday", { saturdayRounds: tournament.saturdayRounds ?? 5 })}
+                  · {t("orga_format_berlin_mixed_sunday", { sundayRounds: tournament.sundayRounds ?? 2 })}
                 </p>
               </>
             ) : (
               <>
                 <p style={{ fontSize: 13, margin: 0 }}>
-                  <strong>Jour 1 :</strong>{" "}
+                  <strong>{t("orga_day1_label")} :</strong>{" "}
                   {tournament.saturdayFormat === "SWISS"
-                    ? `Swiss (${tournament.swissRounds ?? 5} rondes)`
+                    ? t("orga_format_swiss", { rounds: tournament.swissRounds ?? 5 })
                     : tournament.saturdayFormat === "SPLIT_POOLS"
-                      ? `${tournament.poolCount ?? 2} groupes`
-                      : "Poule unique"}
-                  {tournament.crossPool ? " → cross-pool" : ""}
+                      ? t("orga_format_split_pools", { count: tournament.poolCount ?? 2 })
+                      : t("orga_format_single_pool")}
+                  {tournament.crossPool ? t("orga_format_cross_pool") : ""}
                 </p>
                 <p style={{ fontSize: 13, margin: "4px 0 0" }}>
-                  <strong>Jour 2 :</strong>{" "}
-                  {tournament.sundayFormat === "DE" ? "Élimination double (DE)" : tournament.sundayFormat === "SE" ? "Élimination simple (SE)" : "Round Robin"}
-                  {tournament.thirdPlaceMatch ? " · Petite finale" : ""}
-                  {tournament.gfReset ? " · GF reset" : ""}
+                  <strong>{t("orga_day2_label")} :</strong>{" "}
+                  {tournament.sundayFormat === "DE" ? t("orga_format_de") : tournament.sundayFormat === "SE" ? t("orga_format_se") : t("orga_format_rr")}
+                  {tournament.thirdPlaceMatch ? t("orga_format_3rd") : ""}
+                  {tournament.gfReset ? t("orga_format_gf_reset") : ""}
                 </p>
               </>
             )}
             {!tournament.locked && (
-              <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, marginBottom: 0 }}>
-                ⚠️ Le format n&apos;est pas encore verrouillé. Va dans <strong>Configuration</strong> pour le verrouiller avant de lancer.
-              </p>
+              <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, marginBottom: 0 }}
+                dangerouslySetInnerHTML={{ __html: t("orga_planning_format_locked_warning") }}
+              />
             )}
           </div>
 
@@ -385,13 +388,13 @@ export function OrgaDashboard({
               {hasAnyMatches && (
                 <div className="panel">
                   <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
-                    Jour 1 — {tournament.saturdayFormat === "SWISS" ? "Swiss" : "Poules"}
+                    {t("orga_day1_label")} — {tournament.saturdayFormat === "SWISS" ? "Swiss" : "Pools"}
                   </p>
                   {poolMatches.length === 0 ? (
-                    <p className="meta">Matchs pas encore générés.</p>
+                    <p className="meta">{t("orga_matches_not_generated")}</p>
                   ) : (
                     <p style={{ fontSize: 13, margin: 0, color: poolMatchesFinished ? "var(--teal)" : "var(--text)" }}>
-                      {poolMatches.filter((m) => m.status === "FINISHED").length} / {poolMatches.length} matchs terminés
+                      {t("orga_matches_finished_count", { done: poolMatches.filter((m) => m.status === "FINISHED").length, total: poolMatches.length })}
                       {poolMatchesFinished ? " ✓" : ""}
                     </p>
                   )}
@@ -418,7 +421,7 @@ export function OrgaDashboard({
               {!tournament.crossPool && isLive && poolMatchesFinished && (
                 <div className="panel">
                   <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
-                    Jour 2 — {tournament.sundayFormat === "DE" ? "Élimination double" : tournament.sundayFormat === "SE" ? "Élimination simple" : "Round Robin"}
+                    {t("orga_day2_label")} — {tournament.sundayFormat === "DE" ? t("orga_format_de") : tournament.sundayFormat === "SE" ? t("orga_format_se") : t("orga_format_rr")}
                   </p>
                   <BracketActions
                     tournamentId={tournament.id}
@@ -435,7 +438,7 @@ export function OrgaDashboard({
           {/* État si pas encore lancé */}
           {!hasAnyMatches && !canLaunch && (
             <div className="panel" style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>
-              <p style={{ fontSize: 13 }}>Inscris et sélectionne des équipes dans l&apos;onglet <strong>Équipes</strong> pour pouvoir lancer le tournoi.</p>
+              <p style={{ fontSize: 13 }} dangerouslySetInnerHTML={{ __html: t("orga_no_teams_hint") }} />
             </div>
           )}
 

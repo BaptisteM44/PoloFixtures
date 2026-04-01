@@ -7,10 +7,10 @@ import { useSearchParams } from "next/navigation";
 import { routing } from "@/i18n/routing";
 
 const LABELS: Record<string, string> = {
-  fr: "🇫🇷 FR",
-  en: "🇬🇧 EN",
-  de: "🇩🇪 DE",
-  es: "🇪🇸 ES",
+  fr: "FR",
+  en: "EN",
+  de: "DE",
+  es: "ES",
 };
 
 /** inline=true → affiche les 4 boutons directement sans dropdown (pour le drawer mobile)
