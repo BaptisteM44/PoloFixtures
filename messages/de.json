@@ -1202,6 +1202,7 @@
     "onboarding_dismiss": "Schließen",
     "logo_team": "Teamlogo",
     "logo_team_hint": "optional, zusätzlich zum Vereinslogo",
+    "logo_team_no_squads": "Kein Squad mit Logo — füge deinen Squads über die Teamseite ein Logo hinzu.",
     "logo_change": "🔄 Logo ändern",
     "logo_add": "⬆️ Logo hinzufügen",
     "logo_add_team": "⬆️ Teamlogo hinzufügen",

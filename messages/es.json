@@ -1201,6 +1201,7 @@
     "onboarding_dismiss": "Cerrar",
     "logo_team": "Logo del equipo",
     "logo_team_hint": "opcional, además del logo del club",
+    "logo_team_no_squads": "Ningún squad con logo — añade un logo a tus squads desde la página del equipo.",
     "logo_change": "🔄 Cambiar logo",
     "logo_add": "⬆️ Añadir un logo",
     "logo_add_team": "⬆️ Añadir un logo de equipo",

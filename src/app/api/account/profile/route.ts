@@ -17,6 +17,11 @@ export async function GET() {
           }
         }
       },
+      squads: {
+        include: {
+          squad: { select: { id: true, name: true, logoPath: true } }
+        }
+      },
       createdTournaments: {
         select: { id: true, name: true, status: true, approved: true, city: true, country: true },
         orderBy: { createdAt: "desc" }

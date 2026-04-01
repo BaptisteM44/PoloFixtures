@@ -14,6 +14,12 @@ import { ClubPicker } from "@/components/ClubPicker";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import type { BadgeInfo } from "@/lib/badge-catalog";
 
+type Squad = {
+  id: string;
+  name: string;
+  logoPath: string | null;
+};
+
 type Player = {
   id: string;
   slug: string | null;
@@ -35,6 +41,7 @@ type Player = {
   pinnedBadges: string[];
   badgeCatalog: Record<string, BadgeInfo>;
   status: string;
+  squads: { squad: Squad }[];
 };
 
 type ClubInfo = {
@@ -552,55 +559,50 @@ export default function AccountPage() {
           <div className="panel">
 
 
-            {/* ── Team logo upload ── */}
+            {/* ── Team logo — choisir parmi ses squads ── */}
             <div style={{ marginBottom: 16, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-              <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>{t("logo_team")} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({t("logo_team_hint")})</span></p>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                {player.teamLogoPath && (
-                  <img src={player.teamLogoPath} alt="Team" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border)" }} />
-                )}
-                <label style={{ cursor: "pointer", display: "inline-block" }}>
-                  <span className="ghost" style={{ fontSize: 12, display: "inline-block", cursor: "pointer" }}>
-                    {player.teamLogoPath ? t("logo_change") : t("logo_add_team")}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: "none" }}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const fd = new FormData();
-                      fd.append("file", await fixImageOrientation(file));
-                      const res = await fetch("/api/upload", { method: "POST", body: fd });
-                      if (!res.ok) return;
-                      const { path } = await res.json();
-                      await fetch("/api/account/profile", {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ teamLogoPath: path }),
-                      });
-                      await fetchPlayer();
-                    }}
-                  />
-                </label>
-                {player.teamLogoPath && (
-                  <button
-                    className="ghost"
-                    style={{ fontSize: 11, color: "var(--danger)" }}
-                    onClick={async () => {
-                      await fetch("/api/account/profile", {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ teamLogoPath: null }),
-                      });
-                      await fetchPlayer();
-                    }}
-                  >
-                    {t("logo_delete")}
-                  </button>
-                )}
-              </div>
+              <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
+                {t("logo_team")} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({t("logo_team_hint")})</span>
+              </p>
+              {(() => {
+                const squadsWithLogo = player.squads.map((s) => s.squad).filter((s) => !!s.logoPath);
+                if (squadsWithLogo.length === 0) {
+                  return <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("logo_team_no_squads")}</p>;
+                }
+                return (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                    {squadsWithLogo.map((squad) => {
+                      const isSelected = player.teamLogoPath === squad.logoPath;
+                      return (
+                        <button
+                          key={squad.id}
+                          type="button"
+                          onClick={async () => {
+                            const newPath = isSelected ? null : squad.logoPath;
+                            await fetch("/api/account/profile", {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ teamLogoPath: newPath }),
+                            });
+                            await fetchPlayer();
+                          }}
+                          style={{
+                            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                            background: isSelected ? "color-mix(in srgb, var(--accent) 12%, var(--surface))" : "var(--bg)",
+                            border: `2px solid ${isSelected ? "var(--accent)" : "var(--border)"}`,
+                            borderRadius: 8, padding: "8px 10px", cursor: "pointer",
+                          }}
+                        >
+                          <img src={squad.logoPath!} alt={squad.name} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
+                          <span style={{ fontSize: 11, fontWeight: isSelected ? 700 : 400, color: isSelected ? "var(--accent)" : "var(--text-muted)", maxWidth: 72, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {isSelected ? "✓ " : ""}{squad.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
 
