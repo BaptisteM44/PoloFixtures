@@ -64,7 +64,7 @@ export default async function TournamentPage({
   // L'onglet "equipes" a besoin des events pour les badges.
   const needsEvents = activeTab === "equipes";
   // Les onglets sans matches : info, inscription, recap, communaute, equipes (matches via events)
-  const noMatchesNeeded = ["inscription", "recap", "communaute"].includes(activeTab ?? "");
+  const noMatchesNeeded = ["inscription", "recap", "communaute", "chat"].includes(activeTab ?? "");
 
   const tournament = await prisma.tournament.findFirst({
     where: { OR: [{ id: params.id }, { slug: params.id }] },
@@ -161,7 +161,7 @@ export default async function TournamentPage({
     (!tournament.registrationEnd || now <= new Date(tournament.registrationEnd));
   const registrationClosed = !!tournament.registrationEnd && now > new Date(tournament.registrationEnd);
 
-  const hasCommunity = (!registrationClosed && tournament.freeAgents.length > 0) || t_.chatMode !== "DISABLED";
+  const hasCommunity = !registrationClosed && tournament.freeAgents.length > 0;
 
   const tabs = [
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
@@ -181,6 +181,7 @@ export default async function TournamentPage({
     { label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
     ...(youtubeEmbed || t_.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
+    ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
     ...(isOrga ? [{ label: t("tab_orga"), value: "orga", href: `/tournament/${params.id}?tab=orga` }] : []),
   ];
 
@@ -1328,54 +1329,46 @@ export default async function TournamentPage({
 
       {/* ── ONGLET ZONE FREE AGENT ── */}
       {tab === "communaute" && (
-        <div className="two-col-grid">
-          {/* Free agents publics */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div className="panel">
-              <h3 style={{ marginBottom: 4 }}>{t("tab_free_agent")}</h3>
-              <p className="meta" style={{ marginBottom: 16 }}>
-                {t("communaute_free_agents_desc")}
-              </p>
+        <div className="panel" style={{ maxWidth: 600 }}>
+          <h3 style={{ marginBottom: 4 }}>{t("tab_free_agent")}</h3>
+          <p className="meta" style={{ marginBottom: 16 }}>
+            {t("communaute_free_agents_desc")}
+          </p>
 
-              {registrationOpen && (
-                <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid var(--border-light)" }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{t("communaute_looking")}</p>
-                  <FreeAgentForm tournamentId={tournament.id} />
-                </div>
-              )}
-
-              {tournament.freeAgents.length === 0 ? (
-                <p className="meta">{fa("empty")}</p>
-              ) : (
-                <FreeAgentList
-                  agents={tournament.freeAgents}
-                  canDelete={isOrga}
-                  deleteAction={deleteFreeAgent}
-                  title=""
-                  publicView
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Chat */}
-          {t_.chatMode !== "DISABLED" ? (
-            <div className="panel" style={{ minHeight: 400 }}>
-              <TournamentChat
-                tournamentId={tournament.id}
-                chatMode={t_.chatMode}
-                currentPlayerId={currentPlayerId}
-                currentPlayerName={currentPlayerName}
-                isOrga={isOrga}
-                creatorId={tournament.creatorId}
-                fullPage
-              />
-            </div>
-          ) : (
-            <div className="panel" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200 }}>
-              <p className="meta" style={{ textAlign: "center" }}>{t("chat_disabled")}</p>
+          {registrationOpen && (
+            <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid var(--border-light)" }}>
+              <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{t("communaute_looking")}</p>
+              <FreeAgentForm tournamentId={tournament.id} />
             </div>
           )}
+
+          {tournament.freeAgents.length === 0 ? (
+            <p className="meta">{fa("empty")}</p>
+          ) : (
+            <FreeAgentList
+              agents={tournament.freeAgents}
+              canDelete={isOrga}
+              deleteAction={deleteFreeAgent}
+              title=""
+              publicView
+            />
+          )}
+        </div>
+      )}
+
+      {/* ── ONGLET CHAT ── */}
+      {tab === "chat" && t_.chatMode !== "DISABLED" && (
+        <div className="panel" style={{ minHeight: 500 }}>
+          <TournamentChat
+            tournamentId={tournament.id}
+            chatMode={t_.chatMode}
+            currentPlayerId={currentPlayerId}
+            currentPlayerName={currentPlayerName}
+            isOrga={isOrga}
+            creatorId={tournament.creatorId}
+            charterAccepted={charterAccepted}
+            fullPage
+          />
         </div>
       )}
 
