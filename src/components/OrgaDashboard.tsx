@@ -15,6 +15,7 @@ import { CoOrganizerManager } from "@/components/CoOrganizerManager";
 import { RefereeManager } from "@/components/RefereeManager";
 import ConfirmFormButton from "@/components/ConfirmFormButton";
 import { PaymentTracker } from "@/components/PaymentTracker";
+import { PoolScheduleEditor } from "@/components/PoolScheduleEditor";
 
 // ─── BerlinMixedPlanning ─────────────────────────────────────────────────────
 
@@ -294,6 +295,17 @@ export function OrgaDashboard({
       {/* ── Tab: Planning ── */}
       {activeTab === "planning" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* Pool Schedule Editor — éditer les horaires de chaque poule */}
+          {(tournament.poolCount ?? 1) > 1 && (
+            <PoolScheduleEditor
+              tournamentId={tournament.id}
+              gameDurationMin={tournament.gameDurationMin}
+              poolAStart={(tournament as any).saturdayPoolAStart}
+              poolBStart={(tournament as any).saturdayPoolBStart}
+              poolCount={tournament.poolCount ?? 1}
+            />
+          )}
 
           {/* Pool Assignment (pour cross-pool format) */}
           {(tournament.poolCount ?? 1) > 1 && !isLive && (

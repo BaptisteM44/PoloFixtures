@@ -115,7 +115,7 @@ export default function NewTournamentPage() {
     if (q.length < 2) { setCoOrgResults([]); setShowCoOrgResults(false); return; }
     if (coOrgDebounce.current) clearTimeout(coOrgDebounce.current);
     coOrgDebounce.current = setTimeout(async () => {
-      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}&hasAccount=true`);
       if (res.ok) {
         const data: PlayerResult[] = await res.json();
         const currentIds = new Set([session.user!.playerId!, ...coOrganizers.map((c) => c.id)]);

@@ -296,7 +296,7 @@ function TeamRow({
     if (q.length < 2) { setResults([]); setShowResults(false); return; }
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(async () => {
-      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}&excludeTournamentId=${tournamentId}`);
+      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}&excludeTournamentId=${tournamentId}&hasAccount=true`);
       const data = await res.json();
       setResults(data); setShowResults(true);
     }, 250);

@@ -46,7 +46,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
     const timer = setTimeout(async () => {
       setSearching(true);
       try {
-        const res = await fetch(`/api/players?search=${encodeURIComponent(searchSlug)}&status=ACTIVE`);
+        const res = await fetch(`/api/players?search=${encodeURIComponent(searchSlug)}&status=ACTIVE&hasAccount=true`);
         const data: PlayerSuggestion[] = await res.json();
         const memberIds = new Set(members.map((m) => m.playerId));
         setSuggestions(data.filter((p) => !memberIds.has(p.id)).slice(0, 8));

@@ -24,6 +24,7 @@ type Member = {
   gender: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY" | null;
   showGender: boolean;
   clubLogoPath: string | null;
+  teamLogoPath: string | null;
   emblemPosition: string | null;
 };
 
@@ -110,7 +111,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
     if (searchQ.trim().length < 2) { setSearchResults([]); return; }
     setSearchLoading(true);
     searchRef.current = setTimeout(async () => {
-      const res = await fetch(`/api/players?search=${encodeURIComponent(searchQ)}`);
+      const res = await fetch(`/api/players?search=${encodeURIComponent(searchQ)}&hasAccount=true`);
       if (res.ok) {
         const data = await res.json();
         // Exclure les membres déjà dans l'équipe et les invitations en attente
@@ -364,6 +365,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                         city={m.city}
                         photoPath={m.photoPath}
                         clubLogoPath={m.clubLogoPath}
+                        teamLogoPath={m.teamLogoPath}
                         badges={m.badges}
                         pinnedBadges={m.pinnedBadges}
                         startYear={m.startYear}
@@ -379,6 +381,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                       city={m.city}
                       photoPath={m.photoPath}
                       clubLogoPath={m.clubLogoPath}
+                      teamLogoPath={m.teamLogoPath}
                       badges={m.badges}
                       pinnedBadges={m.pinnedBadges}
                       startYear={m.startYear}

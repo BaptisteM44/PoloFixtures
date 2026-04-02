@@ -51,7 +51,7 @@ export function CoOrganizerManager({
     if (q.length < 2) { setResults([]); setShowResults(false); return; }
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(async () => {
-      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}&status=ACTIVE`);
+      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}&status=ACTIVE&hasAccount=true`);
       if (res.ok) { setResults(await res.json()); setShowResults(true); }
     }, 250);
   }, []);

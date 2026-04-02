@@ -235,6 +235,8 @@ model Tournament {
   sundayRounds            Int              @default(2)      // 1 or 2
   status                  TournamentStatus
   locked                  Boolean          @default(false)
+  saturdayPoolAStart      DateTime?        // Pool A session start time (for match scheduling)
+  saturdayPoolBStart      DateTime?        // Pool B session start time (for match scheduling)
   approved                Boolean          @default(false)
   submissionStatus        SubmissionStatus @default(PENDING)
   rejectionReason         String?
