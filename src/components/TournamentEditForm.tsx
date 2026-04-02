@@ -118,7 +118,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const [currentFormat, setCurrentFormat] = useState(tournament.format);
 
   // Format preset
-  type FormatPreset = "pool_de" | "pool_se" | "2pools_de" | "2pools_se" | "swiss_de" | "swiss_se" | "cross_pool_bcn" | "berlin_mixed" | "custom";
+  type FormatPreset = "pool_de" | "pool_se" | "2pools_de" | "2pools_se" | "swiss_de" | "swiss_se" | "swiss6_split_se" | "cross_pool_bcn" | "berlin_mixed" | "custom";
   type PresetConfig = { saturdayFormat: string; poolCount: number; swissRounds: number; bracketSize: number; sundayFormat: string; crossPool: boolean; thirdPlaceMatch: boolean; gfReset: boolean };
 
   const PRESETS: Record<Exclude<FormatPreset, "custom">, PresetConfig> = {
@@ -128,6 +128,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     "2pools_se":    { saturdayFormat: "SPLIT_POOLS",  poolCount: 2, swissRounds: 5, bracketSize: 16, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
     swiss_de:       { saturdayFormat: "SWISS",        poolCount: 1, swissRounds: 5, bracketSize: 8,  sundayFormat: "DE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
     swiss_se:       { saturdayFormat: "SWISS",        poolCount: 1, swissRounds: 5, bracketSize: 8,  sundayFormat: "SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    swiss6_split_se: { saturdayFormat: "SWISS",      poolCount: 1, swissRounds: 6, bracketSize: 18, sundayFormat: "SWISS_SPLIT_SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
     cross_pool_bcn: { saturdayFormat: "SPLIT_POOLS",  poolCount: 2, swissRounds: 5, bracketSize: 8,  sundayFormat: "DE", crossPool: true,  thirdPlaceMatch: false, gfReset: false },
     berlin_mixed:   { saturdayFormat: "BERLIN_MIXED", poolCount: 2, swissRounds: 5, bracketSize: 32, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
   };
@@ -554,6 +555,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                   ["2pools_se", t("preset_2pools_se"), t("preset_2pools_se_desc")],
                   ["swiss_de",  t("preset_swiss_de"),  t("preset_swiss_de_desc")],
                   ["swiss_se",  t("preset_swiss_se"),  t("preset_swiss_se_desc")],
+                  ["swiss6_split_se", t("preset_swiss6_split_se"), t("preset_swiss6_split_se_desc")],
                 ] as [FormatPreset, string, string][]).map(([key, label, sub]) => {
                   const active = formatPreset === key;
                   return (

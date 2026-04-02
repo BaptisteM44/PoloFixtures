@@ -143,6 +143,8 @@ export default async function TournamentPage({
   const berlinSunSwissMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SUNDAY_SWISS");
   const berlinTop32Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "TOP32");
   const berlinBottom16Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "BOTTOM16");
+  const swissSplitSeTop10 = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && m.bracketSide === "W" && tournament.sundayFormat === "SWISS_SPLIT_SE");
+  const swissSplitSeBottom8 = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && m.bracketSide === "L" && tournament.sundayFormat === "SWISS_SPLIT_SE");
   const allEvents = (tournament.matches ?? []).flatMap((m: any) => m.events ?? []);
 
   // When tournament is launched (LIVE/COMPLETED), show selected teams count instead of total registered
@@ -177,7 +179,9 @@ export default async function TournamentPage({
     // Standard tabs (hidden for Berlin Mixed)
     ...(isLaunched && !isBerlinMixed && tournament.saturdayFormat !== "SWISS" ? [{ label: t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
     ...(isLaunched && !isBerlinMixed && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
-    ...(isLaunched && !isBerlinMixed ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : []),
+    ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SWISS_SPLIT_SE" && swissSplitSeTop10.length > 0 ? [{ label: t("bracket_top10"), value: "top10", href: `/tournament/${params.id}?tab=top10` }] : []),
+    ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SWISS_SPLIT_SE" && swissSplitSeBottom8.length > 0 ? [{ label: t("bracket_bottom8"), value: "bottom8", href: `/tournament/${params.id}?tab=bottom8` }] : []),
+    ...(isLaunched && !isBerlinMixed && tournament.sundayFormat !== "SWISS_SPLIT_SE" ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : []),
     { label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
     ...(youtubeEmbed || t_.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
@@ -863,6 +867,74 @@ export default async function TournamentPage({
                 {swissDone ? "Le bracket sera lancé par l\u2019organisateur." : "Le bracket sera disponible une fois les rounds Swiss terminés."}
               </p>
             )}
+          </div>
+        );
+      })()}
+
+      {/* ── Swiss Split SE: TOP 10 ── */}
+      {tab === "top10" && (() => {
+        const bracketMatches = swissSplitSeTop10;
+        const swissAll = tournament.matches.filter((m) => m.phase === "SWISS");
+        const bracketTeams = (() => {
+          const selectedTeams = tournament.teams.filter((t) => t.selected);
+          if (swissAll.length > 0) {
+            const standings = computeStandings(selectedTeams, swissAll, tournament.scoringSystem);
+            const rankByTeamId = new Map(standings.map((row, index) => [row.teamId, index + 1]));
+            return selectedTeams.slice(0, 10).map((team) => ({
+              id: team.id,
+              name: team.name,
+              bracketNumber: rankByTeamId.get(team.id) ?? team.seed,
+            }));
+          }
+          return selectedTeams.slice(0, 10).map((team) => ({
+            id: team.id,
+            name: team.name,
+            bracketNumber: team.seed,
+          }));
+        })();
+
+        if (bracketMatches.length > 0) {
+          return (
+            <BracketView matches={bracketMatches} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />
+          );
+        }
+        return (
+          <div className="panel" style={{ textAlign: "center", padding: 48 }}>
+            <p className="meta">{t("no_matches_for_day")}</p>
+          </div>
+        );
+      })()}
+
+      {/* ── Swiss Split SE: Bottom 8 ── */}
+      {tab === "bottom8" && (() => {
+        const bracketMatches = swissSplitSeBottom8;
+        const swissAll = tournament.matches.filter((m) => m.phase === "SWISS");
+        const bracketTeams = (() => {
+          const selectedTeams = tournament.teams.filter((t) => t.selected);
+          if (swissAll.length > 0) {
+            const standings = computeStandings(selectedTeams, swissAll, tournament.scoringSystem);
+            const rankByTeamId = new Map(standings.map((row, index) => [row.teamId, index + 1]));
+            return selectedTeams.slice(10, 18).map((team) => ({
+              id: team.id,
+              name: team.name,
+              bracketNumber: rankByTeamId.get(team.id) ?? team.seed,
+            }));
+          }
+          return selectedTeams.slice(10, 18).map((team) => ({
+            id: team.id,
+            name: team.name,
+            bracketNumber: team.seed,
+          }));
+        })();
+
+        if (bracketMatches.length > 0) {
+          return (
+            <BracketView matches={bracketMatches} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />
+          );
+        }
+        return (
+          <div className="panel" style={{ textAlign: "center", padding: 48 }}>
+            <p className="meta">{t("no_matches_for_day")}</p>
           </div>
         );
       })()}

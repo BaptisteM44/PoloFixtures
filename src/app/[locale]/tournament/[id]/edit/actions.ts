@@ -381,30 +381,56 @@ export async function generateBracketAction(id: string) {
     const findMatch = (side: string | null, round: number, pos: number) =>
       created.find((m) => m.bracketSide === side && m.roundIndex === round && m.positionInRound === pos);
 
-    if (tournament.sundayFormat === "SE") {
-      // Round r, position p → feeds Round r+1, position floor(p/2), slot A if p%2==0, B if p%2==1
-      const maxRound = Math.max(...created.map((m) => m.roundIndex));
-      const thirdPlaceMatch = created.find((m) => m.bracketSide === "L" && m.roundIndex === maxRound);
+    if (tournament.sundayFormat === "SE" || tournament.sundayFormat === "SWISS_SPLIT_SE") {
+      // Single Elimination linking: Round r, position p → feeds Round r+1, position floor(p/2)
+      // bracketSide "W" = TOP 10 (winner bracket), "L" = Bottom 8 (loser bracket / consolante)
+      // Each bracket is independent, no linking between them
 
-      for (const m of created) {
-        if (m.bracketSide === "L") continue; // 3rd place match itself — no links needed
-        if (m.roundIndex < maxRound) {
-          const nextPos = Math.floor(m.positionInRound / 2);
-          const nextRound = m.roundIndex + 1;
-          const nextSide = nextRound === maxRound ? "G" : "W";
-          const nextMatch = findMatch(nextSide, nextRound, nextPos);
-          const data: Record<string, unknown> = {};
-          if (nextMatch) {
-            data.nextMatchWinId = nextMatch.id;
-            data.nextSlotWin = m.positionInRound % 2 === 0 ? "A" : "B";
+      const wMatches = created.filter(m => m.bracketSide === "W");
+      const lMatches = created.filter(m => m.bracketSide === "L");
+
+      // Link TOP 10 (W side)
+      if (wMatches.length > 0) {
+        const maxWRound = Math.max(...wMatches.map((m) => m.roundIndex));
+        for (const m of wMatches) {
+          if (m.roundIndex < maxWRound) {
+            const nextPos = Math.floor(m.positionInRound / 2);
+            const nextRound = m.roundIndex + 1;
+            const nextMatch = created.find(
+              (x) => x.bracketSide === "W" && x.roundIndex === nextRound && x.positionInRound === nextPos
+            );
+            if (nextMatch) {
+              await tx.match.update({
+                where: { id: m.id },
+                data: {
+                  nextMatchWinId: nextMatch.id,
+                  nextSlotWin: m.positionInRound % 2 === 0 ? "A" : "B",
+                }
+              });
+            }
           }
-          // Semi-final losers → 3rd place match
-          if (thirdPlaceMatch && m.roundIndex === maxRound - 1) {
-            data.nextMatchLoseId = thirdPlaceMatch.id;
-            data.nextSlotLose = m.positionInRound % 2 === 0 ? "A" : "B";
-          }
-          if (Object.keys(data).length > 0) {
-            await tx.match.update({ where: { id: m.id }, data });
+        }
+      }
+
+      // Link Bottom 8 (L side)
+      if (lMatches.length > 0) {
+        const maxLRound = Math.max(...lMatches.map((m) => m.roundIndex));
+        for (const m of lMatches) {
+          if (m.roundIndex < maxLRound) {
+            const nextPos = Math.floor(m.positionInRound / 2);
+            const nextRound = m.roundIndex + 1;
+            const nextMatch = created.find(
+              (x) => x.bracketSide === "L" && x.roundIndex === nextRound && x.positionInRound === nextPos
+            );
+            if (nextMatch) {
+              await tx.match.update({
+                where: { id: m.id },
+                data: {
+                  nextMatchWinId: nextMatch.id,
+                  nextSlotWin: m.positionInRound % 2 === 0 ? "A" : "B",
+                }
+              });
+            }
           }
         }
       }

@@ -320,6 +320,40 @@ export function generateCrossPoolMatches(
   return matches;
 }
 
+// ─── Split SE (Swiss 6 → TOP 10 SE + Bottom 8 Consolante) ──────────────────
+
+/**
+ * Generate two separate Single Elimination brackets:
+ * - TOP 10: Top 10 teams from standings
+ * - CONSOLANTE: Bottom 8 teams from standings
+ * Both start at the same time on different courts.
+ */
+function generateSplitSE(
+  teams: Team[],
+  courtNames: string[],
+  startAt: Date,
+  gameDurationMin: number
+): GeneratedMatch[] {
+  const sorted = [...teams];
+
+  // Split into TOP 10 and Bottom 8
+  const top10 = sorted.slice(0, 10);
+  const bottom8 = sorted.slice(10, 18);
+
+  // Generate SE for TOP 10 (uses first half of courts)
+  const topCourtCount = Math.ceil(courtNames.length / 2);
+  const topCourts = courtNames.slice(0, topCourtCount);
+  const topMatches = generateSingleElim(top10, topCourts, startAt, gameDurationMin, false)
+    .map((m) => ({ ...m, bracketSide: "W" as const })); // "W" side for top bracket
+
+  // Generate SE for Bottom 8 (uses second half of courts, same start time)
+  const bottomCourts = courtNames.slice(topCourtCount);
+  const bottomMatches = generateSingleElim(bottom8, bottomCourts.length > 0 ? bottomCourts : topCourts, startAt, gameDurationMin, false)
+    .map((m) => ({ ...m, bracketSide: "L" as const })); // "L" side for consolante bracket
+
+  return [...topMatches, ...bottomMatches];
+}
+
 // ─── Bracket ──────────────────────────────────────────────────────────────────
 
 export function generateBracket(
@@ -335,6 +369,9 @@ export function generateBracket(
   }
   if (format === "DE" && teams.length >= 4) {
     return generateDoubleElim(teams, courtNames, startAt, gameDurationMin, options?.gfReset ?? false);
+  }
+  if (format === "SWISS_SPLIT_SE") {
+    return generateSplitSE(teams, courtNames, startAt, gameDurationMin);
   }
   return generateSingleElim(teams, courtNames, startAt, gameDurationMin, options?.thirdPlaceMatch ?? false);
 }

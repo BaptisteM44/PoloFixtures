@@ -47,6 +47,7 @@ enum SundayFormat {
   SE
   DE
   RR
+  SWISS_SPLIT_SE
 }
 
 enum MatchPhase {
