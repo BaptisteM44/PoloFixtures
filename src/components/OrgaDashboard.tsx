@@ -428,7 +428,7 @@ export function OrgaDashboard({
           )}
 
           {/* ── Berlin Mixed Format planning ── */}
-          {tournament.saturdayFormat === "BERLIN_MIXED" && isLive && (
+          {tournament.saturdayFormat === "BERLIN_MIXED" && (isLive || tournament.status === "COMPLETED") && (
             <BerlinMixedPlanning
               tournament={tournament}
               teams={teams.filter((t) => t.selected !== false)}
@@ -457,7 +457,7 @@ export function OrgaDashboard({
               )}
 
               {/* Cross-pool (format Barcelona) */}
-              {tournament.crossPool && isLive && (
+              {tournament.crossPool && (isLive || tournament.status === "COMPLETED") && (
                 <div className="panel">
                   <CrossPoolActions
                     tournamentId={tournament.id}
@@ -473,7 +473,7 @@ export function OrgaDashboard({
               )}
 
               {/* Jour 2 — bracket standard */}
-              {!tournament.crossPool && isLive && poolMatchesFinished && (
+              {!tournament.crossPool && (isLive || tournament.status === "COMPLETED") && poolMatchesFinished && (
                 <div className="panel">
                   <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
                     {t("orga_day2_label")} — {tournament.sundayFormat === "DE" ? t("orga_format_de") : tournament.sundayFormat === "SE" ? t("orga_format_se") : t("orga_format_rr")}

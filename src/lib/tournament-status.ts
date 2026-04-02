@@ -20,13 +20,13 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 function shouldCompleteFromMatches(matches: MatchLite[]): boolean {
   if (matches.length === 0) return false;
 
+  // Only complete if there's a finished final match (BRACKET with no nextMatchWinId)
+  // This indicates the tournament actually reached its conclusion
   const hasFinishedFinal = matches.some(
     (m) => m.phase === "BRACKET" && !m.nextMatchWinId && m.status === "FINISHED" && !!m.winnerTeamId
   );
-  if (hasFinishedFinal) return true;
 
-  const hasUnfinished = matches.some((m) => m.status !== "FINISHED");
-  return !hasUnfinished;
+  return hasFinishedFinal;
 }
 
 function shouldCompleteByDate(dateEnd: Date, now: Date): boolean {
