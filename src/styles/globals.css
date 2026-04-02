@@ -1619,6 +1619,48 @@ button:focus-visible,
   z-index: 10;
 }
 
+.agenda-month__count {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.55;
+}
+
+/* ── Mois passés : déroulant grisé ── */
+details.agenda-month--past {
+  opacity: 0.55;
+  transition: opacity 0.2s;
+}
+details.agenda-month--past[open] {
+  opacity: 0.72;
+}
+details.agenda-month--past > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+details.agenda-month--past > summary::before {
+  content: "▶";
+  font-size: 11px;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+details.agenda-month--past[open] > summary::before {
+  transform: rotate(90deg);
+}
+details.agenda-month--past > summary::-webkit-details-marker {
+  display: none;
+}
+.agenda-month__heading--past {
+  color: var(--text-muted);
+  border-bottom-color: var(--border);
+  border-bottom-style: dashed;
+}
+
 .agenda-list {
   display: grid;
   grid-template-columns: 1fr 1fr;

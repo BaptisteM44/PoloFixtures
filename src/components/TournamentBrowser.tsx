@@ -188,6 +188,8 @@ export function TournamentBrowser({
 
   const groups = groupByMonth(sorted, locale);
 
+  const currentMonthKey = toMonthKey(new Date().toISOString());
+
   return (
     <div>
       {/* ── Filters ── */}
@@ -281,9 +283,15 @@ export function TournamentBrowser({
         </div>
       )}
 
-      {groups.map((group) => (
-        <section key={group.key} className="agenda-month">
-          <h2 className="agenda-month__heading">{group.label}</h2>
+      {groups.map((group) => {
+        const isPast = group.key < currentMonthKey;
+        const heading = (
+          <>
+            {group.label}
+            <span className="agenda-month__count"> · {group.tournaments.length} tournoi{group.tournaments.length > 1 ? "s" : ""}</span>
+          </>
+        );
+        const grid = (
           <div className="tournament-grid">
             {group.tournaments.map((tour) => {
               const dStart = new Date(tour.dateStart);
@@ -341,8 +349,26 @@ export function TournamentBrowser({
               );
             })}
           </div>
-        </section>
-      ))}
+        );
+
+        if (isPast) {
+          return (
+            <details key={group.key} className="agenda-month agenda-month--past">
+              <summary className="agenda-month__heading agenda-month__heading--past">
+                {heading}
+              </summary>
+              {grid}
+            </details>
+          );
+        }
+
+        return (
+          <section key={group.key} className="agenda-month">
+            <h2 className="agenda-month__heading">{heading}</h2>
+            {grid}
+          </section>
+        );
+      })}
       </div>
     </div>
   );
