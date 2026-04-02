@@ -202,11 +202,78 @@ const FRAG_CHROMATIC = `
   }
 `;
 
+/* ── 5) PLASMA — vagues organiques psychédéliques (alpha) ── */
+const FRAG_PLASMA = `
+  precision highp float;
+  varying vec2 v_uv;
+  uniform float u_time; uniform vec2 u_mouse; uniform float u_hover; uniform float u_aspect;
+  vec3 hsv2rgb(float h,float s,float v){vec3 c=clamp(abs(mod(h*6.0+vec3(0,4,2),6.0)-3.0)-1.0,0.0,1.0);return v*mix(vec3(1),c,s);}
+  void main(){
+    vec2 uv=v_uv; vec2 tilt=u_mouse-0.5; float t=u_time*0.35;
+    float px=uv.x*u_aspect; float py=uv.y;
+    float w1=sin(px*3.5+t+tilt.x*4.0);
+    float w2=sin(py*4.5+t*1.1+tilt.y*3.5);
+    float w3=sin((px+py)*3.0+t*0.8);
+    float cx=px-0.5*u_aspect+tilt.x*0.3; float cy=py-0.5+tilt.y*0.3;
+    float w4=sin(sqrt(cx*cx+cy*cy)*14.0-t*1.5);
+    float plasma=(w1+w2+w3+w4)*0.25;
+    float hue=fract(plasma*0.3+length(tilt)*0.2+t*0.04);
+    float sat=0.85+0.15*abs(plasma);
+    float val=0.55+0.45*(plasma*0.5+0.5);
+    vec3 col=hsv2rgb(hue,sat,val);
+    float alpha=mix(0.30,0.80,plasma*0.5+0.5)*mix(0.5,1.0,u_hover);
+    gl_FragColor=vec4(col,alpha);
+  }
+`;
+
+/* ── 6) PRISM — diffraction arc-en-ciel (alpha) ── */
+const FRAG_PRISM = `
+  precision highp float;
+  varying vec2 v_uv;
+  uniform float u_time; uniform vec2 u_mouse; uniform float u_hover; uniform float u_aspect;
+  vec3 hsv2rgb(float h,float s,float v){vec3 c=clamp(abs(mod(h*6.0+vec3(0,4,2),6.0)-3.0)-1.0,0.0,1.0);return v*mix(vec3(1),c,s);}
+  void main(){
+    vec2 uv=v_uv; vec2 tilt=u_mouse-0.5; vec2 asp=vec2(u_aspect,1.0);
+    vec2 light=tilt*0.55+0.5; vec2 d=(uv-light)*asp;
+    float dist=length(d); float angle=atan(d.y,d.x);
+    float hue=fract(angle/6.28318+dist*0.45+u_time*0.06+length(tilt)*0.4);
+    float rings=pow(max(0.0,sin(dist*mix(6.0,18.0,u_hover)*3.14159-u_time*0.4)),1.6);
+    float radial=smoothstep(1.4,0.0,dist);
+    vec3 col=hsv2rgb(hue,0.95,1.0)*rings;
+    float alpha=rings*radial*mix(0.20,0.90,u_hover);
+    gl_FragColor=vec4(col,alpha);
+  }
+`;
+
+/* ── 7) AURORA — aurore boréale ondulante (alpha) ── */
+const FRAG_AURORA = `
+  precision highp float;
+  varying vec2 v_uv;
+  uniform float u_time; uniform vec2 u_mouse; uniform float u_hover; uniform float u_aspect;
+  vec3 hsv2rgb(float h,float s,float v){vec3 c=clamp(abs(mod(h*6.0+vec3(0,4,2),6.0)-3.0)-1.0,0.0,1.0);return v*mix(vec3(1),c,s);}
+  void main(){
+    vec2 uv=v_uv; vec2 tilt=u_mouse-0.5; float t=u_time*0.25;
+    float w1=sin(uv.x*u_aspect*3.2+t+tilt.x*5.0)*0.5+0.5;
+    float w2=sin(uv.x*u_aspect*2.1-t*0.8+tilt.y*4.0)*0.5+0.5;
+    float w3=sin((uv.x*u_aspect+uv.y)*2.6+t*0.6)*0.5+0.5;
+    float aurora=w1*0.45+w2*0.35+w3*0.2;
+    float fady=smoothstep(0.0,0.2,uv.y)*smoothstep(1.0,0.8,uv.y);
+    float fadx=smoothstep(0.0,0.1,uv.x)*smoothstep(1.0,0.9,uv.x);
+    float hue=fract(aurora*0.55+length(tilt)*0.3+t*0.04+uv.x*0.12);
+    vec3 col=hsv2rgb(hue,0.85,0.65+0.35*aurora);
+    float alpha=pow(aurora,1.4)*fady*fadx*mix(0.40,0.92,u_hover);
+    gl_FragColor=vec4(col,alpha);
+  }
+`;
+
 const FRAGS: Record<string, string> = {
   glitter: FRAG_GLITTER,
   iris: FRAG_IRIS,
   constellation: FRAG_CONSTELLATION,
   chromatic: FRAG_CHROMATIC,
+  plasma: FRAG_PLASMA,
+  prism: FRAG_PRISM,
+  aurora: FRAG_AURORA,
 };
 
 /* ────── React component ────── */
@@ -215,10 +282,11 @@ type HoloEffectProps = {
   mx: number;
   my: number;
   active: boolean;
-  variant?: "glitter" | "iris" | "constellation" | "chromatic";
+  variant?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "prism" | "aurora";
+  alphaBlend?: boolean;
 };
 
-export function HoloEffect({ mx, my, active, variant = "glitter" }: HoloEffectProps) {
+export function HoloEffect({ mx, my, active, variant = "glitter", alphaBlend = false }: HoloEffectProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef     = useRef<WebGLRenderingContext | null>(null);
   const progRef   = useRef<WebGLProgram | null>(null);
@@ -226,13 +294,20 @@ export function HoloEffect({ mx, my, active, variant = "glitter" }: HoloEffectPr
   const t0Ref     = useRef<number>(Date.now());
   const hoverRef  = useRef(0);
   const propsRef  = useRef({ mx, my, active });
+  const alphaBlendRef = useRef(alphaBlend);
+  alphaBlendRef.current = alphaBlend;
   const [ready, setReady] = useState(false);
 
   propsRef.current = { mx, my, active };
 
   const initGL = useCallback((canvas: HTMLCanvasElement, frag: string) => {
-    const gl = canvas.getContext("webgl", { alpha: false, antialias: false });
+    const useAlpha = alphaBlendRef.current;
+    const gl = canvas.getContext("webgl", { alpha: useAlpha, antialias: false, premultipliedAlpha: false });
     if (!gl) return;
+    if (useAlpha) {
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    }
     glRef.current = gl;
     const mk = (type: number, src: string) => {
       const s = gl.createShader(type)!;
@@ -282,7 +357,7 @@ export function HoloEffect({ mx, my, active, variant = "glitter" }: HoloEffectPr
       hoverRef.current += ((pa ? 1 : 0) - hoverRef.current) * 0.08;
       const t = (Date.now() - t0Ref.current) / 1000;
       const aspect = canvas.width / (canvas.height || 1);
-      gl.clearColor(0, 0, 0, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.clearColor(0, 0, 0, alphaBlendRef.current ? 0 : 1); gl.clear(gl.COLOR_BUFFER_BIT);
       gl.uniform1f(gl.getUniformLocation(prog, "u_time"),   t);
       gl.uniform2f(gl.getUniformLocation(prog, "u_mouse"),  pmx, pmy);
       gl.uniform1f(gl.getUniformLocation(prog, "u_hover"),  hoverRef.current);
@@ -298,8 +373,10 @@ export function HoloEffect({ mx, my, active, variant = "glitter" }: HoloEffectPr
       ref={canvasRef}
       style={{
         position: "absolute", inset: 0, width: "100%", height: "100%",
-        borderRadius: "inherit", pointerEvents: "none", zIndex: 12,
-        mixBlendMode: "screen", visibility: ready ? "visible" : "hidden",
+        borderRadius: "inherit", pointerEvents: "none",
+        zIndex: alphaBlend ? 25 : 12,
+        mixBlendMode: alphaBlend ? "normal" : "screen",
+        visibility: ready ? "visible" : "hidden",
       }}
     />
   );

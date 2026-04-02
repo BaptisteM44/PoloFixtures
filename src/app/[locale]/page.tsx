@@ -79,7 +79,7 @@ export default async function HomePage() {
     }),
     prisma.player.groupBy({
       by: ["country"],
-      where: { status: "ACTIVE" },
+      where: { status: "ACTIVE", account: { isNot: null } },
       _count: { _all: true },
     }),
     prisma.tournament.findMany({
@@ -88,14 +88,14 @@ export default async function HomePage() {
       orderBy: [{ status: "asc" }, { dateStart: "asc" }],
     }),
     prisma.player.findMany({
-      where: { status: "ACTIVE" },
+      where: { status: "ACTIVE", account: { isNot: null } },
       select: { id: true, slug: true, name: true, photoPath: true, city: true, country: true },
       orderBy: { createdAt: "desc" },
       take: 12,
     }),
-    prisma.player.count({ where: { status: "ACTIVE" } }),
+    prisma.player.count({ where: { status: "ACTIVE", account: { isNot: null } } }),
     prisma.player.findMany({
-      where: { status: "ACTIVE" },
+      where: { status: "ACTIVE", account: { isNot: null } },
       select: { country: true },
       distinct: ["country"],
     }),

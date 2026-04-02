@@ -97,24 +97,9 @@ const PLAYERS = {
 
 const BERLIN_THEMES = [
   {
-    key: "berlin_techno" as const,
-    label: "Techno",
-    desc: "Noir industriel · rouge sang · scanlines · Berghain vibes",
-  },
-  {
     key: "berlin_bauhaus" as const,
     label: "Bauhaus",
     desc: "Blanc cassé · noir · rouge · typographie géométrique",
-  },
-  {
-    key: "berlin_street" as const,
-    label: "Street",
-    desc: "Béton gris · urban decay · graffiti · Mauerpark",
-  },
-  {
-    key: "berlin_ddr" as const,
-    label: "DDR",
-    desc: "Kaki usé · rouge délavé · texture vintage · est-allemand",
   },
 ];
 
@@ -180,66 +165,6 @@ export default function DemoCardsPage() {
         </div>
       </section>
 
-      {/* SECTION 0 — Comparaison fonds de carte */}
-      <section style={{ marginBottom: 80, borderTop: "2px solid var(--border)", paddingTop: 48 }}>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, marginBottom: 8, textAlign: "center" }}>
-          Choix du fond de carte
-        </h2>
-        <p style={{ color: "var(--text-muted)", marginBottom: 48, textAlign: "center", maxWidth: 580, margin: "0 auto 48px" }}>
-          17 fonds disponibles — carte <strong>épique</strong> utilisée ici (pas de WebGL = jamais de conflit).
-          Descends pour voir les paillettes holographiques sur les cartes légendaires.
-        </p>
-
-        {/* Fonds clairs */}
-        <h3 style={{ fontFamily: "var(--font-display)", fontSize: 14, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 24, textAlign: "center" }}>
-          ☀️ Fonds clairs
-        </h3>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center", alignItems: "flex-start", marginBottom: 48 }}>
-          {([
-            { t: "default",   label: "Blanc" },
-            { t: "ivory",     label: "Ivoire" },
-            { t: "cream",     label: "Crème" },
-            { t: "pearl",     label: "Perle" },
-            { t: "gradient",  label: "Dégradé" },
-            { t: "rose",      label: "Rose" },
-            { t: "lavender",  label: "Lavande" },
-            { t: "sand",      label: "Sable" },
-            { t: "mint",      label: "Menthe" },
-            { t: "amber",     label: "Ambre" },
-          ] as const).map(({ t, label }) => (
-            <div key={t} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "var(--text-muted)", letterSpacing: 1, textTransform: "uppercase" }}>
-                {label}
-              </span>
-              <PokemonCard {...PLAYERS.veteran} theme={t} />
-            </div>
-          ))}
-        </div>
-
-        {/* Fonds sombres */}
-        <h3 style={{ fontFamily: "var(--font-display)", fontSize: 14, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 24, textAlign: "center" }}>
-          🌙 Fonds sombres
-        </h3>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center", alignItems: "flex-start" }}>
-          {([
-            { t: "anthracite", label: "Anthracite" },
-            { t: "midnight",   label: "Nuit" },
-            { t: "forest",     label: "Forêt" },
-            { t: "carbon",     label: "Carbone" },
-            { t: "teal",       label: "Teal" },
-            { t: "burgundy",   label: "Bordeaux" },
-            { t: "black",      label: "Noir" },
-          ] as const).map(({ t, label }) => (
-            <div key={t} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "var(--text-muted)", letterSpacing: 1, textTransform: "uppercase" }}>
-                {label}
-              </span>
-              <PokemonCard {...PLAYERS.veteran} theme={t} />
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* SECTION 1 — Rarity Tiers */}
       <section style={{ marginBottom: 80 }}>
         <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, marginBottom: 32, textAlign: "center" }}>
@@ -280,20 +205,6 @@ export default function DemoCardsPage() {
           </div>
         </div>
 
-        <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginTop: 48, marginBottom: 24, textAlign: "center", color: "var(--text-muted)" }}>
-          Full Art à chaque rareté
-        </h3>
-        <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
-          {TIERS.map(({ key, tier, color }) => {
-            const p = PLAYERS[key as keyof typeof PLAYERS];
-            return (
-              <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-                <PokemonCard {...p} variant="fullart" />
-                <TierBadge tier={tier} color={color} />
-              </div>
-            );
-          })}
-        </div>
       </section>
 
       {/* SECTION 3 — Thèmes */}
@@ -318,22 +229,6 @@ export default function DemoCardsPage() {
             "first_blood", "hat_trick", "sniper", "goal_machine", "champion", "unbeaten",
             "team_player", "squad_up", "veteran", "road_warrior",
             "host", "welcome", "og", "say_cheese", "night_owl", "collector"
-          ]} />
-        </div>
-
-        <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 20, textAlign: "center" }}>
-          💚 Émeraude
-        </h3>
-        <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>
-          <PokemonCard name="Ivy Strike" country="Brazil" city="São Paulo" startYear={2020} hand="RIGHT" theme="green" photoPath="/uploads/AddvmWVW.jpeg" badges={[
-            "first_blood", "hat_trick", "sniper", "goal_machine", "champion",
-            "team_player", "squad_up", "veteran", "road_warrior",
-            "host", "welcome", "say_cheese", "captain", "collector"
-          ]} />
-          <PokemonCard name="Ivy Strike" country="Brazil" city="São Paulo" startYear={2020} hand="RIGHT" theme="green" variant="fullart" photoPath="/uploads/NN-4CYaU.jpeg" badges={[
-            "first_blood", "hat_trick", "sniper", "goal_machine", "champion",
-            "team_player", "squad_up", "veteran", "road_warrior",
-            "host", "welcome", "say_cheese", "captain", "collector"
           ]} />
         </div>
 
@@ -374,11 +269,10 @@ export default function DemoCardsPage() {
       {/* SECTION BERLIN */}
       <section style={{ marginBottom: 80, borderTop: "2px solid var(--border)", paddingTop: 48 }}>
         <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, marginBottom: 8, textAlign: "center" }}>
-          🐻 Berlin Cup — 4 thèmes
+          🐻 Berlin Cup — Bauhaus
         </h2>
         <p style={{ color: "var(--text-muted)", textAlign: "center", marginBottom: 48, maxWidth: 580, margin: "0 auto 48px" }}>
-          Quatre ambiances inspirées de Berlin — chaque thème capture une facette différente de la ville.
-          Classic + Full Art, effet holo au survol.
+          Thème Bauhaus — blanc cassé, noir, rouge, typographie géométrique. Classic + Full Art, effet holo au survol.
         </p>
 
         {BERLIN_THEMES.map(({ key, label, desc }) => (
@@ -596,7 +490,7 @@ export default function DemoCardsPage() {
           4 variantes WebGL (sur photo, cartes légendaires) + 3 effets CSS (toute la carte).
         </p>
 
-        {/* ── WebGL variants ── */}
+        {/* ── WebGL photo variants ── */}
         <h3 style={{ fontSize: 17, fontWeight: 600, marginBottom: 20, color: "#e8c96a" }}>
           ✨ Variantes holographiques WebGL — cartes légendaires
         </h3>
@@ -605,49 +499,120 @@ export default function DemoCardsPage() {
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 13, color: "#bbb", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Paillettes</span>
             <PokemonCard {...PLAYERS.legend} holoVariant="glitter" />
-            <span style={{ fontSize: 12, color: "#888", maxWidth: 200, textAlign: "center" }}>Micro-paillettes denses permanentes + bandes holo au survol</span>
+            <span style={{ fontSize: 12, color: "#888", maxWidth: 200, textAlign: "center" }}>Micro-paillettes denses + bandes holo au survol</span>
           </div>
           {/* Iris */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 13, color: "#bbb", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Iris prismatique</span>
-            <PokemonCard {...PLAYERS.legend} holoVariant="iris" theme="midnight" />
+            <PokemonCard {...PLAYERS.legend} holoVariant="iris" />
             <span style={{ fontSize: 12, color: "#888", maxWidth: 200, textAlign: "center" }}>Anneaux arc-en-ciel centrés sur le curseur</span>
           </div>
           {/* Constellation */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 13, color: "#bbb", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Constellation</span>
-            <PokemonCard {...PLAYERS.legend} holoVariant="constellation" theme="black" />
+            <PokemonCard {...PLAYERS.legend} holoVariant="constellation" />
             <span style={{ fontSize: 12, color: "#888", maxWidth: 200, textAlign: "center" }}>Étoiles bleu-blanc avec flares en croix et parallaxe</span>
           </div>
           {/* Chromatic */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 13, color: "#bbb", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Aberration chromatique</span>
-            <PokemonCard {...PLAYERS.legend} holoVariant="chromatic" theme="carbon" />
+            <PokemonCard {...PLAYERS.legend} holoVariant="chromatic" />
             <span style={{ fontSize: 12, color: "#888", maxWidth: 200, textAlign: "center" }}>Décalage R/G/B amplifié par l'inclinaison</span>
+          </div>
+        </div>
+
+        {/* ── WebGL full-card NEW ── */}
+        <h3 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8, color: "#ff6b6b" }}>
+          🔥 WebGL Toute la Carte — Nouveaux Effets
+        </h3>
+        <p style={{ color: "#aaa", marginBottom: 28, fontSize: 13 }}>
+          Le shader recouvre la carte entière en alpha — survole pour l'activer à fond.
+        </p>
+
+        {/* PLASMA */}
+        <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "#c77dff", letterSpacing: "0.08em", textTransform: "uppercase" }}>Plasma — vagues organiques psychédéliques</h4>
+        <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 36 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.rookie} holoFull="plasma" />
+            <span style={{ fontSize: 11, color: "#888" }}>Rookie · classic</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.veteran} holoFull="plasma" />
+            <span style={{ fontSize: 11, color: "#888" }}>Veteran · classic</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.legend} holoFull="plasma" />
+            <span style={{ fontSize: 11, color: "#888" }}>Legend · classic</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.legend} variant="fullart" holoFull="plasma" />
+            <span style={{ fontSize: 11, color: "#888" }}>Legend · full art</span>
+          </div>
+        </div>
+
+        {/* PRISM */}
+        <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "#60c9cf", letterSpacing: "0.08em", textTransform: "uppercase" }}>Prisme — diffraction arc-en-ciel</h4>
+        <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 36 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.rising} holoFull="prism" />
+            <span style={{ fontSize: 11, color: "#888" }}>Rising · classic</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.mythic} holoFull="prism" />
+            <span style={{ fontSize: 11, color: "#888" }}>Mythic · classic</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.legend} holoFull="prism" />
+            <span style={{ fontSize: 11, color: "#888" }}>Legend · classic</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.legend} variant="fullart" holoFull="prism" />
+            <span style={{ fontSize: 11, color: "#888" }}>Legend · full art</span>
+          </div>
+        </div>
+
+        {/* AURORA */}
+        <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "#a0e9a0", letterSpacing: "0.08em", textTransform: "uppercase" }}>Aurora — aurore boréale ondulante</h4>
+        <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 52 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.solid} holoFull="aurora" />
+            <span style={{ fontSize: 11, color: "#888" }}>Solid · classic</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.veteran} holoFull="aurora" />
+            <span style={{ fontSize: 11, color: "#888" }}>Veteran · classic</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.legend} holoFull="aurora" />
+            <span style={{ fontSize: 11, color: "#888" }}>Legend · classic</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <PokemonCard {...PLAYERS.legend} variant="fullart" holoFull="aurora" />
+            <span style={{ fontSize: 11, color: "#888" }}>Legend · full art</span>
           </div>
         </div>
 
         {/* ── CSS effects ── */}
         <h3 style={{ fontSize: 17, fontWeight: 600, marginBottom: 20, color: "#7fc4e8" }}>
-          🎨 Effets CSS — toute la carte (non-legendary)
+          🎨 Effets CSS — toute la carte
         </h3>
         <div style={{ display: "flex", gap: 28, flexWrap: "wrap" }}>
           {/* Foil */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 13, color: "#bbb", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Foil métallique</span>
-            <PokemonCard {...PLAYERS.veteran} cardFx="foil" theme="pearl" />
+            <PokemonCard {...PLAYERS.veteran} cardFx="foil" />
             <span style={{ fontSize: 12, color: "#888", maxWidth: 200, textAlign: "center" }}>Balayage métallique animé sur la carte entière</span>
           </div>
           {/* Glow */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 13, color: "#bbb", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Glow pulsé</span>
-            <PokemonCard {...PLAYERS.veteran} cardFx="glow" theme="midnight" />
+            <PokemonCard {...PLAYERS.veteran} cardFx="glow" />
             <span style={{ fontSize: 12, color: "#888", maxWidth: 200, textAlign: "center" }}>Halo cyan-bleu qui pulse autour de la carte</span>
           </div>
           {/* Scanlines */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 13, color: "#bbb", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Scanlines rétro</span>
-            <PokemonCard {...PLAYERS.veteran} cardFx="scanlines" theme="carbon" />
+            <PokemonCard {...PLAYERS.veteran} cardFx="scanlines" />
             <span style={{ fontSize: 12, color: "#888", maxWidth: 200, textAlign: "center" }}>Lignes CRT horizontales sur toute la surface</span>
           </div>
         </div>

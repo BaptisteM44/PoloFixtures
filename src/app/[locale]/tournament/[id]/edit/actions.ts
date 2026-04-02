@@ -121,14 +121,18 @@ export async function updateTournamentAction(formData: FormData) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, status: _statusFromForm, ...rest } = data;
 
-  // Status changes via edit form: only UPCOMING ↔ LIVE allowed.
-  // COMPLETED can only be set by syncLiveTournamentsCompletion, never by the edit form.
+  // Status transitions allowed via edit form:
+  // UPCOMING → LIVE (launch tournament)
+  // LIVE → COMPLETED (finish tournament)
+  // COMPLETED → no downgrade (final state)
+  // UPCOMING → COMPLETED (finish without going live)
   let statusUpdate: "UPCOMING" | "LIVE" | "COMPLETED" | undefined;
-  if (data.status === "UPCOMING" || data.status === "LIVE") {
-    statusUpdate = data.status;
+  if (tournament.status === "COMPLETED") {
+    // Once completed, cannot change status
+    statusUpdate = "COMPLETED";
   } else {
-    // data.status === "COMPLETED" — keep current status, don't downgrade
-    statusUpdate = tournament.status as "UPCOMING" | "LIVE" | "COMPLETED";
+    // Allow any forward transition: UPCOMING can go to LIVE or COMPLETED, LIVE can go to COMPLETED
+    statusUpdate = data.status;
   }
 
   const dateStart = new Date(data.dateStart);
@@ -228,7 +232,10 @@ export async function generatePoolsAction(id: string) {
 
   const tournament = await prisma.tournament.findUnique({
     where: { id },
-    include: { teams: { where: { selected: true } } }
+    include: {
+      teams: { where: { selected: true } },
+      pools: { include: { teams: true } }
+    }
   });
   if (!tournament) return { error: "Not found" };
 
@@ -237,26 +244,52 @@ export async function generatePoolsAction(id: string) {
     return { error: "Ce tournoi utilise le format Swiss. Utilisez \"Générer tour Swiss\" à la place." };
   }
 
-  const pools = generatePools(tournament.teams, tournament.saturdayFormat, tournament.poolCount);
+  // If pools already exist (e.g., manually assigned), use them. Otherwise generate new ones.
+  type PoolType = { name: string; teams: typeof tournament.teams; session?: any | null };
+  let pools: PoolType[];
+
+  if (tournament.pools.length > 0) {
+    // Respect existing pool assignments (e.g., from PoolAssignment or cross-pool setup)
+    pools = tournament.pools.map((pool) => ({
+      name: pool.name,
+      teams: pool.teams.map((pt) => tournament.teams.find((t) => t.id === pt.teamId)!).filter(Boolean),
+      session: pool.session
+    }));
+  } else {
+    // Generate new pools if none exist
+    pools = generatePools(tournament.teams, tournament.saturdayFormat, tournament.poolCount);
+  }
+
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
   const matches = generatePoolMatches(pools, courtNames, new Date(tournament.dateStart), tournament.gameDurationMin);
 
   await prisma.$transaction(async (tx) => {
     await tx.match.deleteMany({ where: { tournamentId: id, phase: "POOL" } });
-    await tx.poolTeam.deleteMany({ where: { pool: { tournamentId: id } } });
-    await tx.pool.deleteMany({ where: { tournamentId: id } });
+    // Only clear pool assignments if we generated new pools
+    if (tournament.pools.length === 0) {
+      await tx.poolTeam.deleteMany({ where: { pool: { tournamentId: id } } });
+      await tx.pool.deleteMany({ where: { tournamentId: id } });
+    }
 
     for (const pool of pools) {
-      const createdPool = await tx.pool.create({
-        data: {
-          tournamentId: id,
-          name: pool.name,
-          session: pool.session ?? null
-        }
-      });
-      await tx.poolTeam.createMany({
-        data: pool.teams.map((team) => ({ poolId: createdPool.id, teamId: team.id }))
-      });
+      let poolId: string;
+      if (tournament.pools.length > 0) {
+        // Use existing pool
+        poolId = tournament.pools.find((p) => p.name === pool.name)!.id;
+      } else {
+        // Create new pool
+        const createdPool = await tx.pool.create({
+          data: {
+            tournamentId: id,
+            name: pool.name,
+            session: pool.session ?? null
+          }
+        });
+        poolId = createdPool.id;
+        await tx.poolTeam.createMany({
+          data: pool.teams.map((team) => ({ poolId: createdPool.id, teamId: team.id }))
+        });
+      }
 
       const poolMatches = matches.filter((m) => m.poolName === pool.name);
       if (poolMatches.length > 0) {
@@ -264,7 +297,7 @@ export async function generatePoolsAction(id: string) {
           data: poolMatches.map((match) => ({
             tournamentId: id,
             phase: "POOL" as const,
-            poolId: createdPool.id,
+            poolId: poolId,
             bracketSide: null,
             roundIndex: 1,
             courtName: match.courtName,

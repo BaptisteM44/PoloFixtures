@@ -149,11 +149,13 @@ export function BracketView({
   tournamentId,
   teams,
   isOrganizer,
+  isLive = false,
 }: {
   matches: MatchWithTeams[];
   tournamentId: string;
   teams?: TeamOption[];
   isOrganizer?: boolean;
+  isLive?: boolean;
 }) {
   const t = useTranslations("tournament");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
@@ -161,6 +163,7 @@ export function BracketView({
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isLive) return;
     const es = new EventSource(`/api/sse?tournamentId=${tournamentId}`);
     es.addEventListener("match", (event) => {
       const payload = JSON.parse((event as MessageEvent).data);
@@ -171,7 +174,7 @@ export function BracketView({
       }
     });
     return () => es.close();
-  }, [tournamentId]);
+  }, [tournamentId, isLive]);
 
   const bracketMatches = matches.filter((m) => m.phase === "BRACKET");
   // DE has multiple L matches; SE 3rd place has exactly one L match

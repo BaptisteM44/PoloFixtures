@@ -275,18 +275,6 @@ export function OrgaDashboard({
             addPlayerAction={addPlayerAction}
           />
 
-          {(tournament.poolCount ?? 1) > 1 && (
-            <div className="panel">
-              <PoolAssignment
-                tournamentId={tournament.id}
-                teams={teams.filter((t) => t.selected).map((t) => ({ id: t.id, name: t.name, seed: t.seed }))}
-                pools={pools}
-                poolCount={tournament.poolCount ?? 1}
-                isLocked={false}
-              />
-            </div>
-          )}
-
           <div className="panel">
             <h3 style={{ marginBottom: 12 }}>{t("edit_free_agents_title", { count: freeAgents.length })}</h3>
             {freeAgents.length === 0 ? (
@@ -306,6 +294,19 @@ export function OrgaDashboard({
       {/* ── Tab: Planning ── */}
       {activeTab === "planning" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* Pool Assignment (pour cross-pool format) */}
+          {(tournament.poolCount ?? 1) > 1 && !isLive && (
+            <div className="panel">
+              <PoolAssignment
+                tournamentId={tournament.id}
+                teams={teams.filter((t) => t.selected).map((t) => ({ id: t.id, name: t.name, seed: t.seed }))}
+                pools={pools}
+                poolCount={tournament.poolCount ?? 1}
+                isLocked={false}
+              />
+            </div>
+          )}
 
           {/* Explication du format actuel */}
           <div className="panel" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
@@ -348,6 +349,48 @@ export function OrgaDashboard({
               />
             )}
           </div>
+
+          {/* Jour 1 — matchs pool séparés par pool pour format multi-poule */}
+          {hasAnyMatches && (tournament.poolCount ?? 1) > 1 && (
+            <>
+              {pools.map((pool: any) => {
+                const poolTeamIds = new Set(pool.teams.map((pt: any) => pt.team.id));
+                const matchesInPool = poolMatches.filter((m) => poolTeamIds.has(m.teamAId) || poolTeamIds.has(m.teamBId));
+                return (
+                  <div key={pool.id} className="panel">
+                    <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
+                      {t("orga_day1_label")} — {pool.name}
+                    </p>
+                    {matchesInPool.length === 0 ? (
+                      <p className="meta">{t("orga_matches_not_generated")}</p>
+                    ) : (
+                      <p style={{ fontSize: 13, margin: 0, color: matchesInPool.every((m) => m.status === "FINISHED") ? "var(--teal)" : "var(--text)" }}>
+                        {t("orga_matches_finished_count", { done: matchesInPool.filter((m) => m.status === "FINISHED").length, total: matchesInPool.length })}
+                        {matchesInPool.every((m) => m.status === "FINISHED") ? " ✓" : ""}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {/* Jour 1 — matchs pool (format simple ou Swiss) */}
+          {hasAnyMatches && (tournament.poolCount ?? 1) === 1 && (
+            <div className="panel">
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
+                {t("orga_day1_label")} — {tournament.saturdayFormat === "SWISS" ? "Swiss" : "Pools"}
+              </p>
+              {poolMatches.length === 0 ? (
+                <p className="meta">{t("orga_matches_not_generated")}</p>
+              ) : (
+                <p style={{ fontSize: 13, margin: 0, color: poolMatchesFinished ? "var(--teal)" : "var(--text)" }}>
+                  {t("orga_matches_finished_count", { done: poolMatches.filter((m) => m.status === "FINISHED").length, total: poolMatches.length })}
+                  {poolMatchesFinished ? " ✓" : ""}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Lancer / Reset */}
           {canLaunch && (

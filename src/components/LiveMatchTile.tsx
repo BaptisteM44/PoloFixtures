@@ -206,10 +206,12 @@ export function LiveMatchTile({
   tournamentId,
   initialMatches,
   gameDurationMin = 12,
+  isLive = false,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
   gameDurationMin?: number;
+  isLive?: boolean;
 }) {
   const t = useTranslations("tournament");
   const [matches, setMatches] = useState<EnrichedMatch[]>(
@@ -231,6 +233,7 @@ export function LiveMatchTile({
 
   // SSE listener
   useEffect(() => {
+    if (!isLive) return;
     const es = new EventSource(`/api/sse?tournamentId=${tournamentId}`);
     es.addEventListener("match", (event) => {
       const payload = JSON.parse((event as MessageEvent).data);
@@ -264,7 +267,7 @@ export function LiveMatchTile({
       }
     });
     return () => es.close();
-  }, [tournamentId]);
+  }, [tournamentId, isLive]);
 
   const liveMatches = matches.filter((m) => m.status === "LIVE");
   const upcomingMatches = matches

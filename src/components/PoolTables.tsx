@@ -12,16 +12,19 @@ export function PoolTables({
   pools,
   matches: initialMatches,
   tournamentId,
-  scoringSystem
+  scoringSystem,
+  isLive = false,
 }: {
   pools: PoolWithTeams[];
   matches: MatchWithTeams[];
   tournamentId: string;
   scoringSystem?: string | null;
+  isLive?: boolean;
 }) {
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
 
   useEffect(() => {
+    if (!isLive) return;
     const es = new EventSource(`/api/sse?tournamentId=${tournamentId}`);
     es.addEventListener("match", (event) => {
       const payload = JSON.parse((event as MessageEvent).data);
@@ -30,7 +33,7 @@ export function PoolTables({
       }
     });
     return () => es.close();
-  }, [tournamentId]);
+  }, [tournamentId, isLive]);
   return (
     <div className="pool-tables">
       {pools.map((pool) => {

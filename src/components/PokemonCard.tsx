@@ -25,7 +25,8 @@ type Props = {
        | "berlin_techno" | "berlin_bauhaus" | "berlin_street" | "berlin_ddr";
   variant?: "classic" | "fullart";
   metalBorder?: "bronze" | "silver" | "gold" | "platinum" | "diamond";
-  holoVariant?: "glitter" | "iris" | "constellation" | "chromatic";
+  holoVariant?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "prism" | "aurora";
+  holoFull?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "prism" | "aurora";
   cardFx?: "foil" | "glow" | "scanlines";
 };
 
@@ -36,7 +37,7 @@ function getCountryCode(name: string): string | null {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCard({ name, country, city, photoPath, clubLogoPath, teamLogoPath, badges = [], pinnedBadges, startYear, hand: _hand, gender: _gender, showGender: _showGender, theme = "default", variant = "classic", metalBorder, holoVariant, cardFx }, externalRef) {
+export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCard({ name, country, city, photoPath, clubLogoPath, teamLogoPath, badges = [], pinnedBadges, startYear, hand: _hand, gender: _gender, showGender: _showGender, theme = "default", variant = "classic", metalBorder, holoVariant, holoFull, cardFx }, externalRef) {
   const cardRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(externalRef, () => cardRef.current!, []);
   const [cardStyle, setCardStyle] = useState<React.CSSProperties>({});
@@ -179,6 +180,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
             )}
           </div>
         </div>
+        {holoFull && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoFull} alphaBlend={true} />}
       </div>
     );
   }
@@ -252,6 +254,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
             })}
           </div>
         )}
+        {holoFull && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoFull} alphaBlend={true} />}
       </div>
     </div>
   );

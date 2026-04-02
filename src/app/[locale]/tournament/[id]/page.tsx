@@ -608,6 +608,7 @@ export default async function TournamentPage({
                   tournamentId={tournament.id}
                   initialMatches={tournament.matches}
                   gameDurationMin={tournament.gameDurationMin}
+                  isLive={tournament.status === "LIVE"}
                 />
               </div>
             )}
@@ -740,7 +741,7 @@ export default async function TournamentPage({
       )}
 
       {tab === "pools" && (
-        <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} scoringSystem={tournament.scoringSystem} />
+        <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} scoringSystem={tournament.scoringSystem} isLive={tournament.status === "LIVE"} />
       )}
 
       {tab === "bracket" && (() => {
@@ -834,7 +835,7 @@ export default async function TournamentPage({
                   mode="buttons"
                 />
               )}
-              <BracketView matches={bracketMatches} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} />
+              <BracketView matches={bracketMatches} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />
             </>
           );
         }
@@ -976,6 +977,7 @@ export default async function TournamentPage({
               tournamentId={tournament.id}
               teams={bracketTeams}
               isOrganizer={isOrga}
+              isLive={tournament.status === "LIVE"}
             />
           </div>
         );
@@ -1301,6 +1303,7 @@ export default async function TournamentPage({
                 tournamentId={tournament.id}
                 initialMatches={tournament.matches}
                 gameDurationMin={tournament.gameDurationMin}
+                isLive={tournament.status === "LIVE"}
               />
             </div>
 
