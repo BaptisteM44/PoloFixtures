@@ -96,11 +96,14 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
         { type: "PENALTY",     payload: { path: ["playerId"], equals: playerId } },
       ],
     },
-    include: { match: { select: { tournamentId: true, winnerTeamId: true, tournament: { select: { format: true } } } } },
+    include: { match: { select: { tournamentId: true, winnerTeamId: true, tournament: { select: { format: true, testMode: true } } } } },
   });
 
-  const totalGoals     = allEvents.filter((e) => e.type === "GOAL" || e.type === "GOLDEN_GOAL").length;
-  const totalPenalties = allEvents.filter((e) => e.type === "PENALTY").length;
+  // Filter out test tournaments
+  const filteredEvents = allEvents.filter((e) => !e.match.tournament.testMode);
+
+  const totalGoals     = filteredEvents.filter((e) => e.type === "GOAL" || e.type === "GOLDEN_GOAL").length;
+  const totalPenalties = filteredEvents.filter((e) => e.type === "PENALTY").length;
 
   if (totalGoals >= 1)   badges.add("first_blood");
   if (totalGoals >= 3)   badges.add("hat_trick");
@@ -112,7 +115,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   // clean_ride: a tournament where player scored ≥1 goal AND 0 penalties
   const tournamentGoals     = new Map<string, number>();
   const tournamentPenalties = new Map<string, number>();
-  for (const e of allEvents) {
+  for (const e of filteredEvents) {
     const tid = e.match.tournamentId;
     if (e.type === "GOAL" || e.type === "GOLDEN_GOAL") tournamentGoals.set(tid, (tournamentGoals.get(tid) ?? 0) + 1);
     if (e.type === "PENALTY") tournamentPenalties.set(tid, (tournamentPenalties.get(tid) ?? 0) + 1);
@@ -130,7 +133,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
           tournament: {
             select: {
               id: true, status: true, dateStart: true, dateEnd: true,
-              country: true, registrationEnd: true,
+              country: true, registrationEnd: true, testMode: true,
             },
           },
           matchesA: { select: { scoreA: true, scoreB: true, status: true, winnerTeamId: true, phase: true, bracketSide: true } },
@@ -150,16 +153,17 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   if (playerTeamIds.length > 0) {
     const ggWins = await prisma.match.findMany({
       where: { goldenGoal: true, winnerTeamId: { in: playerTeamIds } },
-      select: { tournamentId: true },
+      select: { tournamentId: true, tournament: { select: { testMode: true } } },
     });
-    if (ggWins.length >= 1) badges.add("dicey");
+    const nonTestGgWins = ggWins.filter((m) => !m.tournament.testMode);
+    if (nonTestGgWins.length >= 1) badges.add("dicey");
     // golden_double: 3+ golden goal wins dans un même tournoi
     const ggByTournament = new Map<string, number>();
-    for (const m of ggWins) ggByTournament.set(m.tournamentId, (ggByTournament.get(m.tournamentId) ?? 0) + 1);
+    for (const m of nonTestGgWins) ggByTournament.set(m.tournamentId, (ggByTournament.get(m.tournamentId) ?? 0) + 1);
     if ([...ggByTournament.values()].some(c => c >= 3)) badges.add("golden_double");
   }
 
-  const tournaments = teamPlayers.map((tp) => tp.team.tournament);
+  const tournaments = teamPlayers.map((tp) => tp.team.tournament).filter((t) => !t.testMode);
   const uniqueTournamentIds = new Set(tournaments.map((t) => t.id));
   if (uniqueTournamentIds.size >= 1)  badges.add("team_player");
   if (uniqueTournamentIds.size >= 5)  badges.add("squad_up");
@@ -180,7 +184,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   if (winterCount >= 5) badges.add("into_the_storm");
 
   // champion / unbeaten / back_to_back
-  const completedTournaments = teamPlayers.filter((tp) => tp.team.tournament.status === "COMPLETED");
+  const completedTournaments = teamPlayers.filter((tp) => tp.team.tournament.status === "COMPLETED" && !tp.team.tournament.testMode);
   const wonTournamentIds: string[] = [];
 
   for (const tp of completedTournaments) {

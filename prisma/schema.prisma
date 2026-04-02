@@ -238,6 +238,7 @@ model Tournament {
   locked                  Boolean          @default(false)
   saturdayPoolAStart      DateTime?        // Pool A session start time (for match scheduling)
   saturdayPoolBStart      DateTime?        // Pool B session start time (for match scheduling)
+  testMode                Boolean          @default(false)        // Test tournament: excluded from badge calculations
   approved                Boolean          @default(false)
   submissionStatus        SubmissionStatus @default(PENDING)
   rejectionReason         String?
