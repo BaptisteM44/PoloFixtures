@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 type Props = {
   dateStart: string;
@@ -22,6 +23,7 @@ function getCountdownLabel(target: Date): string | null {
 }
 
 export function HeroCountdown({ dateStart, dateEnd, registrationEnd, teamCount, maxTeams }: Props) {
+  const t = useTranslations("tournament");
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export function HeroCountdown({ dateStart, dateEnd, registrationEnd, teamCount, 
       {/* Team fill gauge */}
       <div className="hero-gauge">
         <div className="hero-gauge__label">
-          <span>{teamCount} / {maxTeams} équipes</span>
+          <span>{t("teams_count", { count: teamCount, max: maxTeams })}</span>
           {pct >= 100 && <span className="hero-gauge__full-badge">COMPLET</span>}
         </div>
         <div className="hero-gauge__track">
@@ -90,7 +92,7 @@ export function HeroCountdown({ dateStart, dateEnd, registrationEnd, teamCount, 
 
       {isFinished && (
         <div className="hero-countdown hero-countdown--done">
-          <span className="hero-countdown__value">TERMINÉ</span>
+          <span className="hero-countdown__value">{t("status_finished")}</span>
         </div>
       )}
     </div>

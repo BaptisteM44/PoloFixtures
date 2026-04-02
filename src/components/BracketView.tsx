@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Match, Team } from "@prisma/client";
 import { MatchEditPanel, type MatchForEdit } from "./MatchEditPanel";
 
@@ -154,6 +155,7 @@ export function BracketView({
   teams?: TeamOption[];
   isOrganizer?: boolean;
 }) {
+  const t = useTranslations("tournament");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
   const [editMatch, setEditMatch] = useState<MatchForEdit | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -263,7 +265,7 @@ export function BracketView({
   };
 
   if (bracketMatches.length === 0) {
-    return <div className="empty-state"><p>Bracket non encore généré.</p></div>;
+    return <div className="empty-state"><p>{t("bracket_not_generated")}</p></div>;
   }
 
   return (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import type { MapTournament } from "./TournamentMap";
 
 const TournamentMap = dynamic(() => import("./TournamentMap"), { ssr: false });
@@ -37,20 +38,16 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function getStatusLabel(t: MapTournament): { label: string; color: string } {
-  if (t.status === "LIVE") return { label: "En cours", color: "#ef4444" };
+// "live" | "reg_open" | "reg_closed" | "announced"
+type StatusFilter = "" | "live" | "reg_open" | "reg_closed" | "announced";
+
+function getStatusCode(t: MapTournament): StatusFilter {
+  if (t.status === "LIVE") return "live";
   const now = new Date();
-  // Inscriptions ouvertes
   if (t.registrationStart && t.registrationEnd &&
-    new Date(t.registrationStart) <= now && new Date(t.registrationEnd) >= now) {
-    return { label: "Inscriptions ouvertes", color: "#22c55e" };
-  }
-  // Inscriptions fermées (reg passée)
-  if (t.registrationEnd && new Date(t.registrationEnd) < now) {
-    return { label: "Inscriptions fermées", color: "#f97316" };
-  }
-  // Annoncé (pas encore ouvert aux inscriptions)
-  return { label: "Annoncé", color: "#3b82f6" };
+    new Date(t.registrationStart) <= now && new Date(t.registrationEnd) >= now) return "reg_open";
+  if (t.registrationEnd && new Date(t.registrationEnd) < now) return "reg_closed";
+  return "announced";
 }
 
 function FilterBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -78,39 +75,41 @@ function FilterBtn({ active, onClick, children }: { active: boolean; onClick: ()
   );
 }
 
-// "live" | "reg_open" | "reg_closed" | "announced"
-type StatusFilter = "" | "live" | "reg_open" | "reg_closed" | "announced";
-
-const STATUS_FILTERS: { code: StatusFilter; label: string; color: string }[] = [
-  { code: "", label: "Tous", color: "var(--teal)" },
-  { code: "live", label: "En cours", color: "#ef4444" },
-  { code: "reg_open", label: "Inscriptions ouvertes", color: "#22c55e" },
-  { code: "reg_closed", label: "Inscriptions fermées", color: "#f97316" },
-  { code: "announced", label: "Annoncé", color: "#3b82f6" },
-];
-
-function getStatusCode(t: MapTournament): StatusFilter {
-  if (t.status === "LIVE") return "live";
-  const now = new Date();
-  if (t.registrationStart && t.registrationEnd &&
-    new Date(t.registrationStart) <= now && new Date(t.registrationEnd) >= now) return "reg_open";
-  if (t.registrationEnd && new Date(t.registrationEnd) < now) return "reg_closed";
-  return "announced";
-}
-
 export default function TournamentMapClient({ tournaments, stats, userContinent }: Props) {
+  const t = useTranslations("tournament");
   const [selectedTournament, setSelectedTournament] = useState<MapTournament | null>(null);
   const [continent, setContinent] = useState(userContinent ?? "");
   const [format, setFormat] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("");
 
-  const filtered = tournaments.filter((t) => {
+  const STATUS_FILTERS: { code: StatusFilter; label: string; color: string }[] = [
+    { code: "", label: t("filter_all"), color: "var(--teal)" },
+    { code: "live", label: t("status_live"), color: "#ef4444" },
+    { code: "reg_open", label: t("status_reg_open"), color: "#22c55e" },
+    { code: "reg_closed", label: t("status_reg_closed"), color: "#f97316" },
+    { code: "announced", label: t("status_announced"), color: "#3b82f6" },
+  ];
+
+  function getStatusLabel(tournament: MapTournament): { label: string; color: string } {
+    if (tournament.status === "LIVE") return { label: t("status_live"), color: "#ef4444" };
+    const now = new Date();
+    if (tournament.registrationStart && tournament.registrationEnd &&
+      new Date(tournament.registrationStart) <= now && new Date(tournament.registrationEnd) >= now) {
+      return { label: t("status_reg_open"), color: "#22c55e" };
+    }
+    if (tournament.registrationEnd && new Date(tournament.registrationEnd) < now) {
+      return { label: t("status_reg_closed"), color: "#f97316" };
+    }
+    return { label: t("status_announced"), color: "#3b82f6" };
+  }
+
+  const filtered = tournaments.filter((tournament) => {
     const continentMatch = !continent
-      || t.continentCode === continent
-      || ((continent === "AS" || continent === "OC") && t.continentCode === "AP");
+      || tournament.continentCode === continent
+      || ((continent === "AS" || continent === "OC") && tournament.continentCode === "AP");
     return continentMatch &&
-      (!format || t.format === format) &&
-      (!statusFilter || getStatusCode(t) === statusFilter);
+      (!format || tournament.format === format) &&
+      (!statusFilter || getStatusCode(tournament) === statusFilter);
   });
 
   return (
@@ -146,7 +145,7 @@ export default function TournamentMapClient({ tournaments, stats, userContinent 
             <div>
               <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Format</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                <FilterBtn active={format === ""} onClick={() => { setFormat(""); setSelectedTournament(null); }}>Tous</FilterBtn>
+                <FilterBtn active={format === ""} onClick={() => { setFormat(""); setSelectedTournament(null); }}>{t("filter_all")}</FilterBtn>
                 {FORMATS.map((f) => (
                   <FilterBtn key={f} active={format === f} onClick={() => { setFormat(f); setSelectedTournament(null); }}>
                     {f}
@@ -202,12 +201,12 @@ export default function TournamentMapClient({ tournaments, stats, userContinent 
             </div>
           ) : (
             <div className="panel" style={{ padding: "20px", color: "var(--text-muted)", fontSize: 13, textAlign: "center" }}>
-              <p style={{ margin: 0 }}>Cliquez sur un marqueur pour voir les détails.</p>
+              <p style={{ margin: 0 }}>{t("click_marker")}</p>
               <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.8 }}>
-                <span style={{ color: "#ef4444" }}>●</span> En cours &nbsp;
-                <span style={{ color: "#22c55e" }}>●</span> Inscriptions ouvertes &nbsp;
-                <span style={{ color: "#f97316" }}>●</span> Inscriptions fermées &nbsp;
-                <span style={{ color: "#3b82f6" }}>●</span> Annoncé
+                <span style={{ color: "#ef4444" }}>●</span> {t("status_live")} &nbsp;
+                <span style={{ color: "#22c55e" }}>●</span> {t("status_reg_open")} &nbsp;
+                <span style={{ color: "#f97316" }}>●</span> {t("status_reg_closed")} &nbsp;
+                <span style={{ color: "#3b82f6" }}>●</span> {t("status_announced")}
               </p>
             </div>
           )}

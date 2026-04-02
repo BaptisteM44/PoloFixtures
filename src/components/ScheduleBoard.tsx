@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Match, MatchEvent, Team } from "@prisma/client";
+import { useTranslations } from "next-intl";
 import { formatTime } from "@/lib/utils";
 import { MatchEditPanel, type MatchForEdit } from "./MatchEditPanel";
 
@@ -13,10 +14,6 @@ export type MatchWithTeams = Match & {
 
 const PHASE_LABEL: Record<string, string> = {
   POOL: "Poule", SWISS: "Swiss", CROSS_POOL: "Cross-pool", BRACKET: "Tableau",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  SCHEDULED: "Planifié", LIVE: "🔴 En cours", FINISHED: "✓ Terminé",
 };
 
 function positionLabel(match: MatchWithTeams, courtMatches: MatchWithTeams[]) {
@@ -50,12 +47,19 @@ export function ScheduleBoard({
   teams: Team[];
   isOrganizer?: boolean;
 }) {
+  const t = useTranslations("tournament");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
   const [filterTeamId, setFilterTeamId] = useState("");
   const [filterDay, setFilterDay] = useState("ALL");
   const [filterPhase, setFilterPhase] = useState("ALL");
   const [editMatch, setEditMatch] = useState<MatchForEdit | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const STATUS_LABEL: Record<string, string> = {
+    SCHEDULED: t("status_scheduled"),
+    LIVE: t("status_live_icon"),
+    FINISHED: t("status_finished_icon"),
+  };
 
   useEffect(() => {
     const es = new EventSource(`/api/sse?tournamentId=${tournamentId}`);
@@ -87,7 +91,7 @@ export function ScheduleBoard({
   }, [tournamentId]);
 
   const teamName = (id?: string | null) =>
-    teams.find((t) => t.id === id)?.name ?? "TBD";
+    teams.find((tm) => tm.id === id)?.name ?? "TBD";
 
   const openEdit = (match: MatchWithTeams) => {
     if (selectedId === match.id) {
@@ -123,11 +127,11 @@ export function ScheduleBoard({
         const patched: MatchWithTeams = { ...m, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status as Match["status"] };
         if (updated.teamAId !== undefined) {
           patched.teamAId = updated.teamAId;
-          patched.teamA = teams.find((t) => t.id === updated.teamAId) ?? null;
+          patched.teamA = teams.find((tm) => tm.id === updated.teamAId) ?? null;
         }
         if (updated.teamBId !== undefined) {
           patched.teamBId = updated.teamBId;
-          patched.teamB = teams.find((t) => t.id === updated.teamBId) ?? null;
+          patched.teamB = teams.find((tm) => tm.id === updated.teamBId) ?? null;
         }
         return patched;
       })
@@ -261,10 +265,10 @@ export function ScheduleBoard({
       <div className="panel">
         <div className="form-grid">
           <label>
-            Équipe
+            {t("filter_team")}
             <select value={filterTeamId} onChange={(e) => setFilterTeamId(e.target.value)}>
               <option value="">Toutes</option>
-              {teams.filter((t) => (t as any).selected !== false).map((team) => (
+              {teams.filter((tm) => (tm as any).selected !== false).map((team) => (
                 <option key={team.id} value={team.id}>{team.name}</option>
               ))}
             </select>
@@ -288,7 +292,7 @@ export function ScheduleBoard({
           </label>
         </div>
         <p style={{ margin: "12px 0 0", fontSize: 13, color: "var(--text-muted)" }}>
-          Cliquez sur un match pour saisir le score.
+          {t("click_match")}
         </p>
       </div>
 
@@ -310,9 +314,9 @@ export function ScheduleBoard({
               <span className="schedule-round__label">
                 {PHASE_LABEL[group.phase] ?? group.phase} · Round {group.roundIndex}
               </span>
-              {finished && <span className="schedule-round__badge schedule-round__badge--done">Terminé</span>}
-              {active && <span className="schedule-round__badge schedule-round__badge--live">En cours</span>}
-              {!finished && !active && <span className="schedule-round__badge schedule-round__badge--scheduled">À venir</span>}
+              {finished && <span className="schedule-round__badge schedule-round__badge--done">{t("status_completed")}</span>}
+              {active && <span className="schedule-round__badge schedule-round__badge--live">{t("status_live")}</span>}
+              {!finished && !active && <span className="schedule-round__badge schedule-round__badge--scheduled">{t("status_upcoming")}</span>}
             </div>
 
             {courtCount > 1 ? (
@@ -349,7 +353,7 @@ export function ScheduleBoard({
         onClose={closePanel}
         onSaved={handleSaved}
         isOrganizer={isOrganizer}
-        teams={teams.map((t) => ({ id: t.id, name: t.name }))}
+        teams={teams.map((tm) => ({ id: tm.id, name: tm.name }))}
       />
     </div>
   );

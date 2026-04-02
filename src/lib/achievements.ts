@@ -96,7 +96,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
         { type: "PENALTY",     payload: { path: ["playerId"], equals: playerId } },
       ],
     },
-    include: { match: { select: { tournamentId: true, winnerTeamId: true } } },
+    include: { match: { select: { tournamentId: true, winnerTeamId: true, tournament: { select: { format: true } } } } },
   });
 
   const totalGoals     = allEvents.filter((e) => e.type === "GOAL" || e.type === "GOLDEN_GOAL").length;
@@ -547,11 +547,13 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   // night_ride: played a match starting after 22:00
   if (allTeamMatches.some((m) => m.startAt.getHours() >= 22)) badges.add("night_ride");
 
-  // eruption: 5+ goals by the player in a single match
+  // eruption: 5+ goals by the player in a single match (3v3 or 4v4 only)
   if (playerTeamIds.length > 0) {
     const goalEventsByMatch = new Map<string, number>();
     for (const e of allEvents) {
       if (e.type === "GOAL" || e.type === "GOLDEN_GOAL") {
+        const fmt = e.match?.tournament?.format ?? "";
+        if (fmt !== "3v3" && fmt !== "4v4") continue;
         const mid = e.matchId;
         goalEventsByMatch.set(mid, (goalEventsByMatch.get(mid) ?? 0) + 1);
       }

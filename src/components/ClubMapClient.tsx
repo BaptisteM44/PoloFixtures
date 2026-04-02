@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 
@@ -63,6 +64,7 @@ function FilterBtn({ active, onClick, children }: { active: boolean; onClick: ()
 }
 
 export function ClubMapClient({ clubs, userContinent }: { clubs: MapClub[]; userContinent?: string }) {
+  const t = useTranslations("tournament");
   const [selectedClub, setSelectedClub] = useState<MapClub | null>(null);
   const [continent, setContinent] = useState(userContinent ?? "");
 
@@ -123,7 +125,7 @@ export function ClubMapClient({ clubs, userContinent }: { clubs: MapClub[]; user
           </div>
         ) : (
           <div className="panel" style={{ padding: "20px", color: "var(--text-muted)", fontSize: 13, textAlign: "center" }}>
-            <p style={{ margin: 0 }}>Cliquez sur un marqueur pour voir les détails.</p>
+            <p style={{ margin: 0 }}>{t("click_marker")}</p>
             <p style={{ margin: "8px 0 0", fontSize: 20, lineHeight: 1.8 }}>
               <span style={{ color: "#8b5cf6" }}>●</span>
             </p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 
 type Sponsor = {
@@ -26,6 +27,7 @@ type Props = {
 };
 
 export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction }: Props) {
+  const t = useTranslations("sponsor");
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -53,19 +55,19 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
       const resp = await fetch("/api/upload", { method: "POST", body: fd });
       if (!resp.ok) {
         const txt = await resp.text().catch(() => null);
-        setError(txt || `Erreur upload (${resp.status})`);
+        setError(txt || `Upload error (${resp.status})`);
         setLogoPreview(null);
         return;
       }
       const json = await resp.json().catch(() => null);
       if (!json || !json.path) {
-        setError("Réponse d'upload invalide");
+        setError(t("error_upload_invalid"));
         setLogoPreview(null);
       } else {
         setLogoPath(json.path);
       }
     } catch {
-      setError("Erreur lors de la lecture du fichier");
+      setError(t("error_generic"));
       setLogoPreview(null);
     } finally {
       setUploading(false);
@@ -74,7 +76,7 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) { setError("Nom requis"); return; }
+    if (!name.trim()) { setError(t("error_name_required")); return; }
     setError(null);
     setSuccess(false);
     startTransition(async () => {
@@ -85,13 +87,13 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
       } else {
-        setError(typeof result.error === "string" ? result.error : "Erreur");
+        setError(typeof result.error === "string" ? result.error : t("error_generic"));
       }
     });
   };
 
   const handleDelete = (sponsorId: string) => {
-    if (!confirm("Supprimer ce sponsor ?")) return;
+    if (!confirm(t("confirm_delete"))) return;
     startTransition(async () => {
       await deleteAction(sponsorId, tournamentId);
     });
@@ -99,7 +101,7 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
 
   return (
     <div className="panel" style={{ marginBottom: 24 }}>
-      <h3 style={{ marginBottom: 16 }}>Sponsors</h3>
+      <h3 style={{ marginBottom: 16 }}>{t("title")}</h3>
 
       {/* List */}
       {sponsors.length > 0 && (
@@ -123,7 +125,7 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
                 onClick={() => handleDelete(s.id)}
                 disabled={isPending}
                 style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger)", fontSize: 16, padding: "4px 8px" }}
-                title="Supprimer"
+                title={t("btn_delete_title")}
               >
                 ✕
               </button>
@@ -133,27 +135,27 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
       )}
 
       {sponsors.length === 0 && (
-        <p className="meta" style={{ marginBottom: 16 }}>Aucun sponsor pour l&apos;instant.</p>
+        <p className="meta" style={{ marginBottom: 16 }}>{t("none")}</p>
       )}
 
       {/* Add form */}
       <form onSubmit={handleAdd} style={{ display: "grid", gap: 12 }}>
         <p style={{ fontSize: 12, fontFamily: "var(--font-display)", textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.05em", margin: 0, color: "var(--text-muted)" }}>
-          Ajouter un sponsor
+          {t("section_add")}
         </p>
 
         <label className="field-row" style={{ margin: 0 }}>
-          Nom *
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nom du sponsor" required />
+          {t("field_name_label")}
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("field_name_placeholder")} required />
         </label>
 
         <label className="field-row" style={{ margin: 0 }}>
-          Site web <span style={{ color: "var(--text-muted)", fontSize: 12 }}>(optionnel)</span>
+          {t("field_url_label")} <span style={{ color: "var(--text-muted)", fontSize: 12 }}>{t("field_url_optional")}</span>
           <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://exemple.com" />
         </label>
 
         <label className="field-row" style={{ margin: 0 }}>
-          Logo / Photo
+          {t("field_logo_label")}
           <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} />
         </label>
 
@@ -162,16 +164,16 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
             <img src={logoPreview} alt="preview" style={{ height: 48, width: "auto", maxWidth: 140, objectFit: "contain", borderRadius: 6, border: "1.5px solid var(--border-light)" }} />
             <button type="button" onClick={() => { setLogoPreview(null); setLogoPath(null); if (fileRef.current) fileRef.current.value = ""; }}
               style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 13 }}>
-              Retirer
+              {t("btn_remove_logo")}
             </button>
           </div>
         )}
 
         {error && <p className="error" style={{ margin: 0 }}>{error}</p>}
-        {success && <p style={{ margin: 0, color: "var(--success)", fontSize: 13, fontWeight: 700 }}>✅ Sponsor ajouté !</p>}
+        {success && <p style={{ margin: 0, color: "var(--success)", fontSize: 13, fontWeight: 700 }}>{t("added_success")}</p>}
 
         <button className="primary" type="submit" disabled={isPending || uploading} style={{ justifyContent: "center", alignSelf: "flex-start", justifySelf: "start" }}>
-          {uploading ? "Upload…" : isPending ? "Ajout…" : "Ajouter le sponsor"}
+          {uploading ? t("btn_uploading") : isPending ? t("btn_adding") : t("btn_add")}
         </button>
       </form>
     </div>

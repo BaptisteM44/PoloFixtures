@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 type OrgaPlayer = {
   id: string;
@@ -26,6 +27,7 @@ export function CoOrganizerManager({
   coOrganizers: OrgaPlayer[];
   canManage: boolean;
 }) {
+  const t = useTranslations("co_orga");
   const [organizers, setOrganizers] = useState<OrgaPlayer[]>(initial);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -69,7 +71,7 @@ export function CoOrganizerManager({
       setOrganizers((prev) => [...prev, data.player]);
     } else {
       const data = await res.json();
-      setError(data.error ?? "Erreur");
+      setError(data.error ?? t("error_generic"));
     }
     setAdding(false);
   };
@@ -87,13 +89,13 @@ export function CoOrganizerManager({
 
   return (
     <div className="panel" style={{ marginBottom: 24 }}>
-      <h3 style={{ marginBottom: 12 }}>Co-organisateurs</h3>
+      <h3 style={{ marginBottom: 12 }}>{t("title")}</h3>
       <p className="meta" style={{ marginBottom: 16 }}>
-        Les co-organisateurs ont accès aux mêmes fonctions que toi pour gérer ce tournoi et cumulent les badges d&apos;organisation.
+        {t("description")}
       </p>
 
       {organizers.length === 0 ? (
-        <p className="meta" style={{ marginBottom: 16 }}>Aucun co-organisateur pour l&apos;instant.</p>
+        <p className="meta" style={{ marginBottom: 16 }}>{t("empty")}</p>
       ) : (
         <div style={{ display: "grid", gap: 8, marginBottom: 16 }}>
           {organizers.map((o) => (
@@ -112,7 +114,7 @@ export function CoOrganizerManager({
                   style={{ fontSize: 12, color: "var(--danger)", padding: "3px 10px" }}
                   onClick={() => removeOrganizer(o.id)}
                 >
-                  Retirer
+                  {t("btn_remove")}
                 </button>
               )}
             </div>
@@ -123,7 +125,7 @@ export function CoOrganizerManager({
       {canManage && (
         <div ref={containerRef} style={{ position: "relative" }}>
           <input
-            placeholder="Rechercher un joueur à ajouter…"
+            placeholder={t("search_placeholder")}
             value={query}
             onChange={(e) => { setQuery(e.target.value); search(e.target.value); }}
             onFocus={() => results.length > 0 && setShowResults(true)}

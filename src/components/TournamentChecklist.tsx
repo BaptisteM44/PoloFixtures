@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 type ChecklistTournament = {
   name: string;
   country: string;
@@ -58,6 +60,7 @@ function Section({ title, items }: { title: string; items: CheckItem[] }) {
 }
 
 export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
+  const tl = useTranslations("checklist");
   const totalItems = 14;
   const doneItems = [
     !!t.name,
@@ -84,18 +87,18 @@ export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
     "var(--yellow)";
 
   const statusLabel =
-    t.submissionStatus === "APPROVED" ? "✓ Approuvé" :
-    t.submissionStatus === "REJECTED" ? "✗ Refusé" :
-    "⏳ En attente";
+    t.submissionStatus === "APPROVED" ? tl("status_approved") :
+    t.submissionStatus === "REJECTED" ? tl("status_rejected") :
+    tl("status_pending");
 
   return (
     <div className="panel" style={{ padding: "20px 24px" }}>
-      <h3 style={{ margin: "0 0 16px", fontFamily: "var(--font-display)", fontSize: 14 }}>État du tournoi</h3>
+      <h3 style={{ margin: "0 0 16px", fontFamily: "var(--font-display)", fontSize: 14 }}>{tl("title")}</h3>
 
       {/* Progress bar */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Complétion</span>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{tl("completion")}</span>
           <span style={{ fontSize: 13, fontWeight: 700, color: pct === 100 ? "var(--teal)" : "var(--text)" }}>{pct}%</span>
         </div>
         <div style={{ height: 6, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
@@ -107,51 +110,51 @@ export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, padding: "10px 14px", borderRadius: 8, border: `2px solid ${statusColor}`, background: `color-mix(in srgb, ${statusColor} 10%, var(--surface))` }}>
         <span style={{ fontWeight: 700, fontSize: 13, color: statusColor }}>{statusLabel}</span>
         {t.submissionStatus === "PENDING" && (
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Un admin va valider ton tournoi</span>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{tl("pending_desc")}</span>
         )}
         {t.submissionStatus === "APPROVED" && (
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Ton tournoi est visible publiquement</span>
+          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{tl("approved_desc")}</span>
         )}
       </div>
 
       {/* Rejection reason */}
       {t.submissionStatus === "REJECTED" && t.rejectionReason && (
         <div style={{ marginBottom: 20, padding: "12px 14px", borderRadius: 8, border: "2px solid var(--pink)", background: "color-mix(in srgb, var(--pink) 8%, var(--surface))" }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: "var(--pink)", margin: "0 0 4px" }}>Raison du refus :</p>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "var(--pink)", margin: "0 0 4px" }}>{tl("rejection_reason_label")}</p>
           <p style={{ fontSize: 13, margin: 0 }}>{t.rejectionReason}</p>
         </div>
       )}
 
       {/* Checklist sections */}
-      <Section title="Infos de base" items={[
-        { label: "Nom du tournoi", done: !!t.name },
-        { label: "Lieu (ville & pays)", done: !!t.country && !!t.city },
-        { label: "Dates du tournoi", done: !!t.dateStart && !!t.dateEnd },
-        { label: "Email de contact", done: !!t.contactEmail },
+      <Section title={tl("section_basics")} items={[
+        { label: tl("item_name"), done: !!t.name },
+        { label: tl("item_location"), done: !!t.country && !!t.city },
+        { label: tl("item_dates"), done: !!t.dateStart && !!t.dateEnd },
+        { label: tl("item_email"), done: !!t.contactEmail },
       ]} />
 
-      <Section title="Format & compétition" items={[
-        { label: "Nombre max d'équipes", done: t.maxTeams > 0 },
-        { label: "Nombre de terrains", done: t.courtsCount > 0 },
+      <Section title={tl("section_format")} items={[
+        { label: tl("item_max_teams"), done: t.maxTeams > 0 },
+        { label: tl("item_courts"), done: t.courtsCount > 0 },
       ]} />
 
-      <Section title="Inscriptions" items={[
-        { label: "Dates d'inscription", done: !!t.registrationStart && !!t.registrationEnd, hint: "Définir ouverture et fermeture" },
+      <Section title={tl("section_registration")} items={[
+        { label: tl("item_reg_dates"), done: !!t.registrationStart && !!t.registrationEnd, hint: tl("hint_reg_dates") },
       ]} />
 
-      <Section title="Logistique" items={[
-        { label: "Lieu principal (samedi)", done: !!t.saturdayEventName && !!t.saturdayEventAddress, hint: "Nom et adresse du terrain samedi" },
-        { label: "Accueil vendredi", done: !!t.fridayWelcomeName, hint: "Optionnel mais apprécié" },
+      <Section title={tl("section_logistics")} items={[
+        { label: tl("item_saturday_venue"), done: !!t.saturdayEventName && !!t.saturdayEventAddress, hint: tl("hint_saturday_venue") },
+        { label: tl("item_friday_welcome"), done: !!t.fridayWelcomeName, hint: tl("hint_friday_welcome") },
       ]} />
 
-      <Section title="Visuel & comms" items={[
-        { label: "Bannière / affiche", done: !!t.bannerPath, hint: "Image de couverture du tournoi" },
-        { label: "Sponsors", done: t.sponsorsCount > 0, hint: "Optionnel" },
-        { label: "Co-organisateurs", done: t.coOrganizersCount > 0, hint: "Optionnel" },
+      <Section title={tl("section_visual")} items={[
+        { label: tl("item_banner"), done: !!t.bannerPath, hint: tl("hint_banner") },
+        { label: tl("item_sponsors"), done: t.sponsorsCount > 0, hint: tl("hint_optional") },
+        { label: tl("item_co_orga"), done: t.coOrganizersCount > 0, hint: tl("hint_optional") },
       ]} />
 
-      <Section title="Publication" items={[
-        { label: "Approuvé par un admin", done: t.submissionStatus === "APPROVED", hint: "En attente de validation" },
+      <Section title={tl("section_publication")} items={[
+        { label: tl("item_approved"), done: t.submissionStatus === "APPROVED", hint: tl("hint_approved") },
       ]} />
     </div>
   );

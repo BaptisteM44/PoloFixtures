@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useSearchParams, useRouter } from "next/navigation";
 import { ClubCard } from "@/components/ClubCard";
 
@@ -34,6 +35,7 @@ const CONTINENT_LABELS: Record<string, string> = {
 };
 
 export function ClubsBrowser({ clubs }: { clubs: Club[] }) {
+  const t = useTranslations("club");
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -136,7 +138,7 @@ export function ClubsBrowser({ clubs }: { clubs: Club[] }) {
       {/* Groups */}
       {grouped.length === 0 ? (
         <div className="empty-state">
-          <p>Aucun club trouvé.</p>
+          <p>{t("no_clubs_found")}</p>
         </div>
       ) : (
         grouped.map((group) => (

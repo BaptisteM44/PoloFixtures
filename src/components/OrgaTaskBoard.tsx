@@ -99,7 +99,7 @@ export function OrgaTaskBoard({
         setPriority("MEDIUM");
         setAssignee("");
         setDeadline("");
-        flashSaved("Tâche ajoutée ✓");
+        flashSaved(t("orga_task_added"));
       } else {
         const text = await res.text();
         setError(`Erreur ${res.status}: ${text}`);

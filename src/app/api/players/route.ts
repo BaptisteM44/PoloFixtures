@@ -7,6 +7,7 @@ export async function GET(request: Request) {
   const status = searchParams.get("status");
   const search = searchParams.get("search");
   const excludeTournamentId = searchParams.get("excludeTournamentId");
+  const hasAccount = searchParams.get("hasAccount") === "true";
 
   // Get player IDs already in a team for this tournament
   let excludedPlayerIds: string[] = [];
@@ -29,7 +30,8 @@ export async function GET(request: Request) {
     where: {
       ...statusFilter,
       ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
-      ...(excludedPlayerIds.length > 0 ? { id: { notIn: excludedPlayerIds } } : {})
+      ...(excludedPlayerIds.length > 0 ? { id: { notIn: excludedPlayerIds } } : {}),
+      ...(hasAccount ? { account: { isNot: null } } : {}),
     },
     orderBy: { name: "asc" },
     take: search ? 10 : undefined,

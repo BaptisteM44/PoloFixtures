@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
+import { useTranslations } from "next-intl";
 import { PokemonCard } from "@/components/PokemonCard";
 
 type PodiumPlayer = {
@@ -55,6 +56,7 @@ type Props = {
 };
 
 export function TournamentRecap({ tournament, podium, players, isOrga }: Props) {
+  const t = useTranslations("recap");
   const [isPending, startTransition] = useTransition();
 
   const [recapText, setRecapText]         = useState(tournament.recapText ?? "");
@@ -110,7 +112,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
         <h3 className="recap-section__title">Podium</h3>
 
         {!podium.first && !podium.second ? (
-          <p className="meta" style={{ textAlign: "center", padding: "24px 0" }}>Résultats non disponibles</p>
+          <p className="meta" style={{ textAlign: "center", padding: "24px 0" }}>{t("no_results")}</p>
         ) : (
           <div className="recap-podium-stage">
             {podiumSlots.map(({ place, medal, team }) => (
@@ -152,7 +154,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                 <textarea
                   value={podiumNote}
                   onChange={(e) => setPodiumNote(e.target.value)}
-                  placeholder="Mention spéciale, remarque…"
+                  placeholder={t("special_mention_placeholder")}
                   rows={2}
                   autoFocus
                   style={{ flex: 1, fontSize: 13, resize: "vertical" }}
@@ -170,7 +172,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
             ) : (
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <p className="meta" style={{ flex: 1, fontStyle: "italic", margin: 0 }}>
-                  {podiumNote || (isOrga && <span style={{ opacity: 0.4 }}>Ajouter une mention spéciale…</span>)}
+                  {podiumNote || (isOrga && <span style={{ opacity: 0.4 }}>{t("add_special_mention")}</span>)}
                 </p>
                 {isOrga && (
                   <button className="ghost recap-edit-btn" onClick={() => setEditingNote(true)}>✎</button>
@@ -192,7 +194,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                     type="text"
                     value={bannerCredit}
                     onChange={(e) => setBannerCredit(e.target.value)}
-                    placeholder="@pseudo ou URL"
+                    placeholder={t("credit_placeholder")}
                     style={{ fontSize: 11, flex: 1 }}
                     autoFocus
                   />
@@ -217,7 +219,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                   )}
                 </span>
               ) : isOrga ? (
-                <button className="ghost recap-edit-btn" onClick={() => setEditingCredit(true)}>+ Crédit</button>
+                <button className="ghost recap-edit-btn" onClick={() => setEditingCredit(true)}>{t("add_credit")}</button>
               ) : null}
             </div>
           </div>
@@ -238,7 +240,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                   type="text"
                   value={mvpTitleDraft}
                   onChange={(e) => setMvpTitleDraft(e.target.value)}
-                  placeholder="Ex: MVP, Meilleur gardien…"
+                  placeholder={t("mvp_title_placeholder")}
                   autoFocus
                   style={{ fontSize: 14, fontWeight: 700, flex: 1, fontFamily: "var(--font-display)" }}
                 />
@@ -253,7 +255,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
             ) : (
               <>
                 <h3 className="recap-section__title" style={{ margin: 0, flex: 1 }}>
-                  ⭐ {mvpTitle || "Joueur·euse du tournoi"}
+                  ⭐ {mvpTitle || t("mvp_default_title")}
                 </h3>
                 {isOrga && (
                   <button className="ghost recap-edit-btn"
@@ -271,7 +273,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                 className="recap-mvp-toggle"
                 onClick={() => setMvpOpen((o) => !o)}
               >
-                {mvpOpen ? "▲ Fermer la sélection" : "▼ Sélectionner les MVPs"}
+                {mvpOpen ? t("mvp_close_selector") : t("mvp_open_selector")}
               </button>
             </div>
           )}
@@ -387,7 +389,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                       type="text"
                       value={photoFinishCredit}
                       onChange={(e) => setPhotoFinishCredit(e.target.value)}
-                      placeholder="@pseudo ou URL"
+                      placeholder={t("credit_placeholder")}
                       style={{ fontSize: 11, flex: 1 }}
                       autoFocus
                     />
@@ -412,13 +414,13 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                     )}
                   </span>
                 ) : isOrga ? (
-                  <button className="ghost recap-edit-btn" onClick={() => setEditingPhotoCredit(true)}>+ Crédit</button>
+                  <button className="ghost recap-edit-btn" onClick={() => setEditingPhotoCredit(true)}>{t("add_credit")}</button>
                 ) : null}
               </div>
             </>
           ) : isOrga ? (
             <label className="recap-upload-zone">
-              {uploadingPhoto ? "Upload en cours…" : "+ Ajouter une photo finish"}
+              {uploadingPhoto ? t("uploading") : t("add_photo_finish")}
               <input type="file" accept="image/*" style={{ display: "none" }} disabled={uploadingPhoto}
                 onChange={async (e) => {
                   const f = e.target.files?.[0]; if (!f) return;
@@ -447,7 +449,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
             </label>
               ) : null}
               {uploadError && (
-                <p style={{ color: "var(--danger)", marginTop: 8, fontSize: 13 }}>Erreur d'upload : {uploadError}</p>
+                <p style={{ color: "var(--danger)", marginTop: 8, fontSize: 13 }}>{t("upload_error", { error: uploadError })}</p>
               )}
         </div>
 
@@ -459,7 +461,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
         {/* Anecdote / Remerciement */}
         <div className="panel">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h3 className="recap-section__title" style={{ margin: 0 }}>Anecdote / Remerciement</h3>
+            <h3 className="recap-section__title" style={{ margin: 0 }}>{t("anecdote_title")}</h3>
             {isOrga && !editingAnecdote && (
               <button className="ghost recap-edit-btn" onClick={() => setEditingAnecdote(true)}>✎</button>
             )}
@@ -469,7 +471,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
               <textarea
                 value={recapAnecdote}
                 onChange={(e) => setRecapAnecdote(e.target.value)}
-                placeholder="Ajouter une anecdote, un remerciement…"
+                placeholder={t("anecdote_placeholder")}
                 rows={4}
                 autoFocus
                 style={{ width: "100%", fontSize: 14, resize: "vertical", fontFamily: "monospace" }}
@@ -478,10 +480,10 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                 <button className="primary" style={{ fontSize: 13, padding: "6px 16px" }}
                   onClick={() => { setEditingAnecdote(false); save({ recapAnecdote }); }}
                   disabled={isPending}
-                >Enregistrer</button>
+                >{t("btn_save")}</button>
                 <button className="ghost" style={{ fontSize: 13, padding: "6px 16px" }}
                   onClick={() => setEditingAnecdote(false)}
-                >Annuler</button>
+                >{t("btn_cancel")}</button>
               </div>
             </div>
           ) : recapAnecdote ? (
@@ -491,14 +493,14 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
           ) : isOrga ? (
             <button className="ghost" style={{ width: "100%", padding: "20px 0", fontSize: 13, color: "var(--text-muted)" }}
               onClick={() => setEditingAnecdote(true)}
-            >+ Ajouter une anecdote ou un remerciement</button>
+            >{t("add_anecdote")}</button>
           ) : null}
         </div>
 
         {/* Résumé du tournoi */}
         <div className="panel" style={{ marginTop: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <h3 className="recap-section__title" style={{ margin: 0 }}>Résumé du tournoi</h3>
+            <h3 className="recap-section__title" style={{ margin: 0 }}>{t("summary_title")}</h3>
             {isOrga && !editingText && (
               <button className="ghost recap-edit-btn" onClick={() => setEditingText(true)}>✎</button>
             )}
@@ -508,7 +510,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
               <textarea
                 value={recapText}
                 onChange={(e) => setRecapText(e.target.value)}
-                placeholder="Rédigez un résumé du tournoi (markdown supporté)…"
+                placeholder={t("summary_placeholder")}
                 rows={10}
                 autoFocus
                 style={{ width: "100%", fontSize: 14, resize: "vertical", fontFamily: "monospace" }}
@@ -517,10 +519,10 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                 <button className="primary" style={{ fontSize: 13, padding: "6px 16px" }}
                   onClick={() => { setEditingText(false); save({ recapText }); }}
                   disabled={isPending}
-                >Enregistrer</button>
+                >{t("btn_save")}</button>
                 <button className="ghost" style={{ fontSize: 13, padding: "6px 16px" }}
                   onClick={() => setEditingText(false)}
-                >Annuler</button>
+                >{t("btn_cancel")}</button>
               </div>
             </div>
           ) : recapText ? (
@@ -530,7 +532,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
           ) : isOrga ? (
             <button className="ghost" style={{ width: "100%", padding: "20px 0", fontSize: 13, color: "var(--text-muted)" }}
               onClick={() => setEditingText(true)}
-            >+ Rédiger un résumé du tournoi</button>
+            >{t("add_summary")}</button>
           ) : null}
         </div>
 

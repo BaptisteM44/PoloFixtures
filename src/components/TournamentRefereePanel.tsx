@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useWakeLock } from "@/lib/useWakeLock";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -26,8 +27,8 @@ type PenaltyModal = { teamId: string; teamName: string; players: PlayerInfo[] } 
 type TimeoutModal = { teamId: string; teamName: string; type: "normal" | "mechanical" } | null;
 type GoldenGoalModal = { teamId: string; teamName: string } | null;
 
-const PHASE_LABEL: Record<string, string> = { POOL: "Poule", SWISS: "Swiss", BRACKET: "Tableau" };
-const DAY_LABEL: Record<string, string> = { SAT: "Sam", SUN: "Dim" };
+const PHASE_KEYS: Record<string, string> = { POOL: "phase_pool", SWISS: "phase_swiss", BRACKET: "phase_bracket" };
+const DAY_KEYS: Record<string, string> = { SAT: "day_sat", SUN: "day_sun" };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,9 +69,11 @@ function fmtClock(sec: number) {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
-function matchLabel(m: MatchInfo) {
+function matchLabel(m: MatchInfo, t: (key: string) => string) {
   const a = m.teamAName ?? "TBD"; const b = m.teamBName ?? "TBD";
-  return `${DAY_LABEL[m.dayIndex] ?? m.dayIndex} · ${m.courtName} · ${PHASE_LABEL[m.phase] ?? m.phase} R${m.roundIndex + 1} — ${a} vs ${b}`;
+  const dayKey = DAY_KEYS[m.dayIndex];
+  const phaseKey = PHASE_KEYS[m.phase];
+  return `${dayKey ? t(dayKey) : m.dayIndex} · ${m.courtName} · ${phaseKey ? t(phaseKey) : m.phase} R${m.roundIndex + 1} — ${a} vs ${b}`;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -78,6 +81,7 @@ function matchLabel(m: MatchInfo) {
 export function TournamentRefereePanel({
   tournament, canManageRefs,
 }: { tournament: TournamentData; canManageRefs: boolean }) {
+  const t = useTranslations("referee_panel");
   const [matchMap, setMatchMap] = useState<Map<string, MatchInfo>>(() => new Map(tournament.matches.map((m) => [m.id, m])));
 
   // Matches triés depuis matchMap (réactif aux mises à jour SSE)
@@ -119,7 +123,7 @@ export function TournamentRefereePanel({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scoreA: editScoreA, scoreB: editScoreB, status: newStatus }),
     });
-    if (!res.ok) { setEditError("Erreur lors de la sauvegarde"); setEditSaving(false); return; }
+    if (!res.ok) { setEditError(t("save_error")); setEditSaving(false); return; }
     const updated = await res.json();
     setMatchMap((prev) => {
       const cur = prev.get(selectedMatchId);
@@ -231,7 +235,7 @@ export function TournamentRefereePanel({
       body: JSON.stringify({ type, matchClockSec: clockSec, ...extra }),
     });
     if (!res.ok) {
-      let message = "Action arbitrage refusée";
+      let message = t("action_refused");
       try {
         const errorData = await res.json() as { error?: string | { formErrors?: string[] } };
         if (typeof errorData?.error === "string") {
@@ -274,7 +278,7 @@ export function TournamentRefereePanel({
   // Pause locale uniquement — le match reste LIVE côté serveur
   const onPause = () => { setRunning(false); postEvent("PAUSE"); };
   const onReset = () => {
-    if (!window.confirm("Remettre le chrono à zéro ? Cette action ne peut pas être annulée.")) return;
+    if (!window.confirm(t("confirm_reset_timer"))) return;
     setClockSec(0);
     setBuzzerPlayed(false);
   };
@@ -307,7 +311,7 @@ export function TournamentRefereePanel({
     // Pause locale du chrono (match reste LIVE côté serveur)
     setRunning(false);
     const dur = type === "mechanical" ? 150 : 120;
-    setTimeoutTimer({ sec: dur, label: type === "mechanical" ? "Timeout technique (2:30)" : "Timeout équipe (2:00)" });
+    setTimeoutTimer({ sec: dur, label: type === "mechanical" ? t("timeout_technical") : t("timeout_team") });
     postEvent("TIMEOUT", { teamId, timeoutType: type, delta: 1 });
     // Pas d'event PAUSE — le match reste LIVE
   };
@@ -374,7 +378,7 @@ export function TournamentRefereePanel({
           <p className="ref-timeout-label">{timeoutTimer.label}</p>
           <div className="ref-timeout-clock">{fmtClock(timeoutTimer.sec)}</div>
           <button className="primary" onClick={() => { setTimeoutTimer(null); setRunning(true); }}>
-            Reprendre →
+            {t("btn_resume")}
           </button>
         </div>
       )}
@@ -383,7 +387,7 @@ export function TournamentRefereePanel({
       {goalModal && (
         <div className="ref-modal-backdrop">
           <div className="ref-modal">
-            <p className="ref-modal-title">{goalModal.delta > 0 ? "📣 Buteur ?" : "Annuler quel but ?"}</p>
+            <p className="ref-modal-title">{goalModal.delta > 0 ? t("scorer_question") : t("cancel_which_goal")}</p>
             <p className="ref-modal-sub">{goalModal.teamName}</p>
             {goalModal.delta > 0 && (
               <div className="ref-modal-list">
@@ -396,7 +400,7 @@ export function TournamentRefereePanel({
                 ))}
                 <button className="ghost ref-modal-item ref-modal-unknown"
                   onClick={() => onGoalConfirmed(goalModal.teamId, goalModal.delta, null)}>
-                  Sans attribution
+                  {t("no_attribution")}
                 </button>
               </div>
             )}
@@ -405,16 +409,16 @@ export function TournamentRefereePanel({
                 {(teamA?.id === goalModal.teamId ? teamA : teamB)?.players.filter((pl) => (goalsByPlayer.get(pl.id) ?? 0) > 0).map((pl) => (
                   <button key={pl.id} className="ghost ref-modal-item"
                     onClick={() => onGoalConfirmed(goalModal.teamId, goalModal.delta, pl.id)}>
-                    ↩ {pl.name} (−1 but)
+                    ↩ {pl.name} {t("minus_one_goal")}
                   </button>
                 ))}
                 <button className="ghost ref-modal-item ref-modal-unknown"
                   onClick={() => onGoalConfirmed(goalModal.teamId, goalModal.delta, null)}>
-                  But anonyme
+                  {t("anonymous_goal")}
                 </button>
               </div>
             )}
-            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setGoalModal(null), 0)}>Annuler</button>
+            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setGoalModal(null), 0)}>{t("btn_cancel")}</button>
           </div>
         </div>
       )}
@@ -422,7 +426,7 @@ export function TournamentRefereePanel({
       {goldenGoalModal && (
         <div className="ref-modal-backdrop">
           <div className="ref-modal">
-            <p className="ref-modal-title">⭐ Buteur golden goal ?</p>
+            <p className="ref-modal-title">{t("golden_goal_scorer_question")}</p>
             <p className="ref-modal-sub">{goldenGoalModal.teamName}</p>
             <div className="ref-modal-list">
               {(teamA?.id === goldenGoalModal.teamId ? teamA : teamB)?.players.map((pl) => (
@@ -433,10 +437,10 @@ export function TournamentRefereePanel({
               ))}
               <button className="ghost ref-modal-item ref-modal-unknown"
                 onClick={() => onGoldenGoalConfirmed(goldenGoalModal.teamId, null)}>
-                Sans attribution
+                {t("no_attribution")}
               </button>
             </div>
-            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setGoldenGoalModal(null), 0)}>Annuler</button>
+            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setGoldenGoalModal(null), 0)}>{t("btn_cancel")}</button>
           </div>
         </div>
       )}
@@ -444,7 +448,7 @@ export function TournamentRefereePanel({
       {penaltyModal && (
         <div className="ref-modal-backdrop">
           <div className="ref-modal">
-            <p className="ref-modal-title">🟨 Pénalité pour ?</p>
+            <p className="ref-modal-title">{t("penalty_for_question")}</p>
             <p className="ref-modal-sub">{penaltyModal.teamName}</p>
             <div className="ref-modal-list">
               {penaltyModal.players.map((pl) => (
@@ -457,7 +461,7 @@ export function TournamentRefereePanel({
                 </button>
               ))}
             </div>
-            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setPenaltyModal(null), 0)}>Annuler</button>
+            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setPenaltyModal(null), 0)}>{t("btn_cancel")}</button>
           </div>
         </div>
       )}
@@ -466,21 +470,21 @@ export function TournamentRefereePanel({
       {timeoutModal && (
         <div className="ref-modal-backdrop">
           <div className="ref-modal">
-            <p className="ref-modal-title">⏱ Type de timeout</p>
+            <p className="ref-modal-title">{t("timeout_type_question")}</p>
             <p className="ref-modal-sub">{timeoutModal.teamName}</p>
             <div className="ref-modal-list">
               <button className="ghost ref-modal-item"
                 onClick={() => onTimeoutConfirmed(timeoutModal.teamId, "normal")}>
-                🟢 Timeout équipe (2:00)
+                🟢 {t("timeout_team")}
                 <span className="ref-badge">{timeoutNormal[timeoutModal.teamId] ?? 0}/2</span>
               </button>
               <button className="ghost ref-modal-item"
                 onClick={() => onTimeoutConfirmed(timeoutModal.teamId, "mechanical")}>
-                🔧 Timeout technique (2:30)
+                🔧 {t("timeout_technical")}
                 <span className="ref-badge">{timeoutMech[timeoutModal.teamId] ?? 0}</span>
               </button>
             </div>
-            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setTimeoutModal(null), 0)}>Annuler</button>
+            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setTimeoutModal(null), 0)}>{t("btn_cancel")}</button>
           </div>
         </div>
       )}
@@ -488,11 +492,11 @@ export function TournamentRefereePanel({
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
       <div className="ref-topbar">
         <Link href={`/tournament/${tournament.slug ?? tournament.id}?tab=schedule`} className="ref-back">
-          ← Tournoi
+          {t("back_to_tournament")}
         </Link>
         <span className="ref-tourney-name">{tournament.name}</span>
         <button className="ghost" style={{ fontSize: 12, padding: "4px 10px" }}
-          onClick={() => setMuted((v) => !v)} title={muted ? "Activer buzzer" : "Couper buzzer"}>
+          onClick={() => setMuted((v) => !v)} title={muted ? t("buzzer_enable") : t("buzzer_mute")}>
           {muted ? "🔇" : "🔔"}
         </button>
       </div>
@@ -514,15 +518,15 @@ export function TournamentRefereePanel({
           {sortedMatches.map((m) => (
             <option key={m.id} value={m.id}>
               {m.status === "LIVE" ? "🔴 " : m.status === "FINISHED" ? "✅ " : "⏳ "}
-              {matchLabel(m)}
+              {matchLabel(m, t)}
             </option>
           ))}
         </select>
         {selectedMatch && (
           <p className="ref-match-meta">
-            {PHASE_LABEL[selectedMatch.phase] ?? selectedMatch.phase}
+            {PHASE_KEYS[selectedMatch.phase] ? t(PHASE_KEYS[selectedMatch.phase]) : selectedMatch.phase}
             {" · "}{selectedMatch.courtName}
-            {" · "}{selectedMatch.status === "LIVE" ? "🟢 En cours" : selectedMatch.status === "FINISHED" ? "✅ Terminé" : "⏳ Planifié"}
+            {" · "}{selectedMatch.status === "LIVE" ? t("status_live") : selectedMatch.status === "FINISHED" ? t("status_finished") : t("status_scheduled")}
           </p>
         )}
       </div>
@@ -533,7 +537,7 @@ export function TournamentRefereePanel({
           <div className="ref-clock-section">
             <div className="ref-clock" style={{ color: clockColor }}>{fmtClock(displaySec)}</div>
             {clockSec > 0 && displaySec === 0 && (
-              <div className="ref-overtime">⚠️ Temps supplémentaire</div>
+              <div className="ref-overtime">{t("overtime")}</div>
             )}
             <div className="ref-clock-controls">
               {!running && !matchEnded && (
@@ -578,7 +582,7 @@ export function TournamentRefereePanel({
                       ) : (
                         <button className="primary ref-bigbtn"
                           onClick={() => setGoalModal({ teamId: tid, teamName: team.name, delta: 1 })}>
-                          +1 But
+                          {t("btn_plus_one_goal")}
                         </button>
                       )}
                       <button className="ghost ref-smallbtn"
@@ -590,7 +594,7 @@ export function TournamentRefereePanel({
                     {/* Pénalité */}
                     <button className="ghost ref-penaltybtn"
                       onClick={() => setPenaltyModal({ teamId: tid, teamName: team.name, players: team.players })}>
-                      🟨 Pénalité
+                      🟨 {t("btn_penalty")}
                     </button>
 
                     {/* Timeout */}
@@ -611,7 +615,7 @@ export function TournamentRefereePanel({
           {matchEnded && (editMode ? (
             /* ── Édition du score ────────────────────────────────────── */
             <div className="ref-result">
-              <p className="ref-result-label">Corriger le score</p>
+              <p className="ref-result-label">{t("correct_score")}</p>
               <div className="ref-result-score" style={{ gap: 16 }}>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                   <span style={{ fontSize: 13, fontWeight: 700 }}>{selectedMatch.teamAName ?? "Team A"}</span>
@@ -634,20 +638,20 @@ export function TournamentRefereePanel({
               {editError && <p style={{ color: "var(--danger)", fontSize: 13, margin: 0 }}>{editError}</p>}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
                 <button className="primary" onClick={() => saveEdit(false)} disabled={editSaving}>
-                  {editSaving ? "…" : "✓ Sauvegarder"}
+                  {editSaving ? "…" : t("btn_save")}
                 </button>
                 <button className="ghost" style={{ color: "var(--danger)" }}
-                  onClick={() => { if (window.confirm("Rouvrir ce match ? Le chrono repartira de zéro.")) saveEdit(true); }}
+                  onClick={() => { if (window.confirm(t("confirm_reopen_match"))) saveEdit(true); }}
                   disabled={editSaving}>
-                  ↩ Rouvrir le match
+                  ↩ {t("btn_reopen_match")}
                 </button>
-                <button className="ghost" onClick={() => setEditMode(false)} disabled={editSaving}>Annuler</button>
+                <button className="ghost" onClick={() => setEditMode(false)} disabled={editSaving}>{t("btn_cancel")}</button>
               </div>
             </div>
           ) : (
             /* ── Résultat final ──────────────────────────────────────── */
             <div className="ref-result">
-              <p className="ref-result-label">Match terminé</p>
+              <p className="ref-result-label">{t("match_finished")}</p>
               <div className="ref-result-score">
                 <span>{selectedMatch.teamAName ?? "Team A"}</span>
                 <span className="ref-result-num">{selectedMatch.scoreA} — {selectedMatch.scoreB}</span>
@@ -657,7 +661,7 @@ export function TournamentRefereePanel({
                 ? <p className="ref-result-winner">🏆 {selectedMatch.teamAName}</p>
                 : selectedMatch.scoreB > selectedMatch.scoreA
                   ? <p className="ref-result-winner">🏆 {selectedMatch.teamBName}</p>
-                  : <p className="ref-result-winner">Égalité</p>
+                  : <p className="ref-result-winner">{t("draw_result")}</p>
               }
               <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
                 {nextScheduled && (
@@ -670,11 +674,11 @@ export function TournamentRefereePanel({
                       setMatchEnded(false);
                       setSelectedMatchId(nextScheduled.id);
                     }}>
-                    Prochain match →
+                    {t("btn_next_match")}
                   </button>
                 )}
                 <button className="ghost" style={{ fontSize: 13 }} onClick={openEdit}>
-                  ✏️ Corriger
+                  ✏️ {t("btn_correct")}
                 </button>
               </div>
             </div>
@@ -682,7 +686,7 @@ export function TournamentRefereePanel({
 
           {/* ── Pénalités détail ───────────────────────────────────────── */}
           <details className="ref-section">
-            <summary className="ref-section-title">🟨 Pénalités détail</summary>
+            <summary className="ref-section-title">{t("penalties_detail")}</summary>
             <div className="ref-penalties-grid">
               {[teamA, teamB].map((team) => team ? (
                 <div key={team.id}>
@@ -709,10 +713,10 @@ export function TournamentRefereePanel({
 
           {/* ── Log événements ─────────────────────────────────────────── */}
           <details className="ref-section">
-            <summary className="ref-section-title">📋 Log événements</summary>
+            <summary className="ref-section-title">{t("events_log")}</summary>
             <div className="ref-event-log">
               {selectedMatch.events.length === 0
-                ? <p className="ref-empty">Aucun événement.</p>
+                ? <p className="ref-empty">{t("no_events")}</p>
                 : [...selectedMatch.events].reverse().slice(0, 10).map((evt) => {
                     const pl = evt.payload.playerId
                       ? [...(teamA?.players ?? []), ...(teamB?.players ?? [])].find((p) => p.id === String(evt.payload.playerId))
@@ -733,11 +737,11 @@ export function TournamentRefereePanel({
           {!matchEnded && (
             <div className="ref-end-section">
               <button className="danger ref-endbtn" onClick={onEndMatch} disabled={cannotEndBracketDraw}>
-                🏁 Terminer le match
+                🏁 {t("btn_end_match")}
               </button>
               {cannotEndBracketDraw && (
                 <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 8, textAlign: "center" }}>
-                  Un match de bracket ne peut pas se terminer sur une égalité. Utilise Golden Goal pour désigner un vainqueur.
+                  {t("bracket_no_draw")}
                 </p>
               )}
               {actionError && (

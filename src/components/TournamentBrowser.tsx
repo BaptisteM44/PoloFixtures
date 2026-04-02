@@ -115,11 +115,11 @@ export function TournamentBrowser({
 
   const STATUSES = [
     { code: "", label: t("filter_all_statuses") },
-    { code: "live", label: "En cours" },
-    { code: "reg-open", label: "Inscriptions ouvertes" },
-    { code: "reg-closed", label: "Inscriptions fermées" },
-    { code: "announced", label: "Annoncé" },
-    { code: "completed", label: "Terminé" },
+    { code: "live", label: t("status_live") },
+    { code: "reg-open", label: t("status_reg_open") },
+    { code: "reg-closed", label: t("status_reg_closed") },
+    { code: "announced", label: t("status_announced") },
+    { code: "completed", label: t("status_completed") },
   ];
 
   const getRegLabel = (item: TournamentRow): string => {

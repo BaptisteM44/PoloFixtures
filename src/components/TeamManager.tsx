@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 type PlayerResult = {
   id: string;
@@ -49,6 +50,7 @@ function maxPlayersFromFormat(format?: string): number {
 }
 
 export function TeamManager({ teams, locked, format, renameAction, deleteTeamAction, removePlayerAction, addPlayerAction, createTeamAction, tournamentId }: Props) {
+  const t = useTranslations("team_manager");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -63,12 +65,12 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
     startTransition(async () => {
       const result = await createTeamAction(tournamentId, newTeamName.trim());
       if (result.ok) { setNewTeamName(""); setShowCreateForm(false); router.refresh(); }
-      else setGlobalError(result.error ?? "Erreur");
+      else setGlobalError(result.error ?? t("error_fallback"));
     });
   };
 
   const handleDeleteTeam = (teamId: string, teamName: string) => {
-    if (!confirm(`Supprimer l'équipe "${teamName}" ? Cette action est irréversible.`)) return;
+    if (!confirm(t("confirm_delete_team", { name: teamName }))) return;
     startTransition(async () => {
       await deleteTeamAction(teamId, tournamentId);
       router.refresh();
@@ -76,15 +78,15 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
   };
 
   const handleRemovePlayer = (teamPlayerId: string, playerName: string) => {
-    if (!confirm(`Retirer ${playerName} de l'équipe ?`)) return;
+    if (!confirm(t("confirm_remove_player", { name: playerName }))) return;
     startTransition(async () => {
       await removePlayerAction(teamPlayerId, tournamentId);
       router.refresh();
     });
   };
 
-  const selected = [...teams].filter((t) => t.selected !== false).sort((a, b) => a.seed - b.seed);
-  const waitlist = [...teams].filter((t) => t.selected === false).sort((a, b) => (a.waitlistPosition ?? 999) - (b.waitlistPosition ?? 999));
+  const selected = [...teams].filter((tm) => tm.selected !== false).sort((a, b) => a.seed - b.seed);
+  const waitlist = [...teams].filter((tm) => tm.selected === false).sort((a, b) => (a.waitlistPosition ?? 999) - (b.waitlistPosition ?? 999));
 
   const renderRow = (team: Team) => (
     <TeamRow
@@ -109,13 +111,13 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
 
   return (
     <div style={{ marginBottom: 24 }}>
-      <h3 style={{ marginBottom: 16 }}>Équipes inscrites ({teams.length})</h3>
+      <h3 style={{ marginBottom: 16 }}>{t("registered_teams", { count: teams.length })}</h3>
       <div style={{ display: "grid", gap: 12 }}>
         {selected.map(renderRow)}
         {waitlist.length > 0 && (
           <>
             <div style={{ padding: "6px 0", borderTop: "2px solid var(--border)", borderBottom: "1px solid var(--border-light)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-              Liste d&apos;attente ({waitlist.length})
+              {t("waitlist", { count: waitlist.length })}
             </div>
             {waitlist.map(renderRow)}
           </>
@@ -127,25 +129,25 @@ export function TeamManager({ teams, locked, format, renameAction, deleteTeamAct
           {showCreateForm ? (
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input
-                placeholder="Nom de l'équipe"
+                placeholder={t("team_name_placeholder")}
                 value={newTeamName}
                 onChange={(e) => setNewTeamName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleCreateTeam(); if (e.key === "Escape") { setShowCreateForm(false); setNewTeamName(""); } }}
                 autoFocus
                 style={{ flex: 1 }}
               />
-              <button className="primary" onClick={handleCreateTeam} disabled={isPending || !newTeamName.trim()} style={{ fontSize: 13 }}>Créer</button>
-              <button className="ghost" onClick={() => { setShowCreateForm(false); setNewTeamName(""); }} style={{ fontSize: 13 }}>Annuler</button>
+              <button className="primary" onClick={handleCreateTeam} disabled={isPending || !newTeamName.trim()} style={{ fontSize: 13 }}>{t("create")}</button>
+              <button className="ghost" onClick={() => { setShowCreateForm(false); setNewTeamName(""); }} style={{ fontSize: 13 }}>{t("cancel")}</button>
             </div>
           ) : (
-            <button className="ghost" onClick={() => setShowCreateForm(true)} style={{ fontSize: 13 }}>+ Ajouter une équipe</button>
+            <button className="ghost" onClick={() => setShowCreateForm(true)} style={{ fontSize: 13 }}>{t("add_team")}</button>
           )}
         </div>
       )}
       {globalError && <p className="error" style={{ marginTop: 8 }}>{globalError}</p>}
       {locked && (
         <p className="meta" style={{ marginTop: 10, fontSize: 12 }}>
-          Tournoi verrouillé — les joueurs peuvent être ajoutés/retirés, mais pas les équipes créées ou supprimées.
+          {t("locked_notice")}
         </p>
       )}
     </div>
@@ -159,6 +161,7 @@ function PlayerChip({ tp, isEditing, isPending, onRemove, onMerged }: {
   onRemove: () => void;
   onMerged: () => void;
 }) {
+  const t = useTranslations("team_manager");
   const hasAccount = !!tp.player.account;
   const [merging, setMerging] = useState(false);
   const [query, setQuery] = useState("");
@@ -171,15 +174,15 @@ function PlayerChip({ tp, isEditing, isPending, onRemove, onMerged }: {
     if (q.length < 2) { setResults([]); return; }
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(async () => {
-      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}&hasAccount=true`);
       const data = await res.json();
-      // Exclude self and players without account (only merge into real accounts)
+      // Exclude self (API already filters to real accounts only)
       setResults((data as PlayerResult[]).filter((p: PlayerResult) => p.id !== tp.player.id));
     }, 250);
   };
 
   const handleMerge = async (targetId: string, targetName: string) => {
-    if (!confirm(`Fusionner "${tp.player.name}" → "${targetName}" ?\n\nToutes les stats de "${tp.player.name}" seront transférées à "${targetName}". Le profil fictif sera supprimé.`)) return;
+    if (!confirm(t("confirm_merge", { source: tp.player.name, target: targetName }))) return;
     setMergeError(null); setMergePending(true);
     const res = await fetch(`/api/players/${tp.player.id}/merge`, {
       method: "POST",
@@ -189,7 +192,7 @@ function PlayerChip({ tp, isEditing, isPending, onRemove, onMerged }: {
     const data = await res.json();
     setMergePending(false);
     if (res.ok) { setMerging(false); onMerged(); }
-    else setMergeError(data.error ?? "Erreur");
+    else setMergeError(data.error ?? t("error_fallback"));
   };
 
   return (
@@ -204,7 +207,7 @@ function PlayerChip({ tp, isEditing, isPending, onRemove, onMerged }: {
             disabled={isPending || mergePending}
             style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--text-muted)", padding: "0 2px", marginLeft: 2, lineHeight: 1, textDecoration: "underline" }}
           >
-            {merging ? "annuler" : "fusionner"}
+            {merging ? t("merge_cancel") : t("merge")}
           </button>
         )}
         {isEditing && (
@@ -214,7 +217,7 @@ function PlayerChip({ tp, isEditing, isPending, onRemove, onMerged }: {
       {merging && (
         <div style={{ paddingLeft: 4, display: "flex", flexDirection: "column", gap: 4 }}>
           <input
-            placeholder="Chercher le vrai profil…"
+            placeholder={t("merge_search_placeholder")}
             value={query}
             onChange={(e) => { setQuery(e.target.value); searchTarget(e.target.value); }}
             autoFocus
@@ -264,6 +267,7 @@ function TeamRow({
   setEditingId: (id: string | null) => void;
   onPlayerChanged: () => void;
 }) {
+  const t = useTranslations("team_manager");
   const [editName, setEditName] = useState(team.name);
   const [rowError, setRowError] = useState<string | null>(null);
   const [addMode, setAddMode] = useState<"search" | "manual" | null>(null);
@@ -303,7 +307,7 @@ function TeamRow({
     startTransition(async () => {
       const result = await renameAction(team.id, editName, tournamentId);
       if (result.ok) setEditingId(null);
-      else setRowError(result.error ?? "Erreur");
+      else setRowError(result.error ?? t("error_fallback"));
     });
   };
 
@@ -312,17 +316,17 @@ function TeamRow({
     startTransition(async () => {
       const result = await addPlayerAction(team.id, tournamentId, { type: "existing", playerId: player.id });
       if (result.ok) { setAddMode(null); onPlayerChanged(); }
-      else setRowError(result.error ?? "Erreur");
+      else setRowError(result.error ?? t("error_fallback"));
     });
   };
 
   const handleAddManual = () => {
-    if (!manualName.trim() || !manualCountry.trim()) { setRowError("Nom et pays requis."); return; }
+    if (!manualName.trim() || !manualCountry.trim()) { setRowError(t("manual_name_country_required")); return; }
     setRowError(null);
     startTransition(async () => {
       const result = await addPlayerAction(team.id, tournamentId, { type: "manual", name: manualName.trim(), city: manualCity || null, country: manualCountry.trim() });
       if (result.ok) { setAddMode(null); setManualName(""); setManualCity(""); setManualCountry(""); onPlayerChanged(); }
-      else setRowError(result.error ?? "Erreur");
+      else setRowError(result.error ?? t("error_fallback"));
     });
   };
 
@@ -349,8 +353,8 @@ function TeamRow({
                 style={{ flex: 1, padding: "6px 10px", fontSize: 15, fontFamily: "var(--font-display)", fontWeight: 700 }}
               />
             )}
-            {!locked && <button className="primary" onClick={handleRename} disabled={isPending} style={{ padding: "6px 14px", fontSize: 13 }}>✓ Sauver</button>}
-            <button className="ghost" onClick={onCancelEdit} disabled={isPending} style={{ padding: "6px 14px", fontSize: 13 }}>Fermer</button>
+            {!locked && <button className="primary" onClick={handleRename} disabled={isPending} style={{ padding: "6px 14px", fontSize: 13 }}>{t("save")}</button>}
+            <button className="ghost" onClick={onCancelEdit} disabled={isPending} style={{ padding: "6px 14px", fontSize: 13 }}>{t("close")}</button>
           </div>
         ) : (
           <>
@@ -359,9 +363,9 @@ function TeamRow({
               <span className="meta" style={{ fontSize: 12 }}>{team.city ? `${team.city}, ` : ""}{team.country}</span>
             )}
             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-              <button className="ghost" onClick={onStartEdit} style={{ padding: "4px 10px", fontSize: 12 }}>✏️ Modifier</button>
+              <button className="ghost" onClick={onStartEdit} style={{ padding: "4px 10px", fontSize: 12 }}>{t("edit")}</button>
               {!locked && (
-                <button onClick={onDelete} disabled={isPending} style={{ background: "none", border: "1.5px solid var(--border)", borderRadius: 6, cursor: "pointer", color: "var(--danger, #e53e3e)", padding: "4px 10px", fontSize: 12 }}>🗑 Supprimer</button>
+                <button onClick={onDelete} disabled={isPending} style={{ background: "none", border: "1.5px solid var(--border)", borderRadius: 6, cursor: "pointer", color: "var(--danger, #e53e3e)", padding: "4px 10px", fontSize: 12 }}>{t("delete")}</button>
               )}
             </div>
           </>
@@ -396,8 +400,8 @@ function TeamRow({
               </p>
               {addMode === null && (
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button className="ghost" style={{ fontSize: 12 }} onClick={() => setAddMode("search")}>🔍 Rechercher un joueur</button>
-                  <button className="ghost" style={{ fontSize: 12 }} onClick={() => setAddMode("manual")}>✍️ Saisie manuelle</button>
+                  <button className="ghost" style={{ fontSize: 12 }} onClick={() => setAddMode("search")}>{t("search_player")}</button>
+                  <button className="ghost" style={{ fontSize: 12 }} onClick={() => setAddMode("manual")}>{t("manual_entry")}</button>
                 </div>
               )}
 
@@ -405,14 +409,14 @@ function TeamRow({
                 <div ref={containerRef} style={{ position: "relative" }}>
                   <div style={{ display: "flex", gap: 8 }}>
                     <input
-                      placeholder="Chercher un joueur..."
+                      placeholder={t("search_player_placeholder")}
                       value={query}
                       onChange={(e) => { setQuery(e.target.value); searchPlayers(e.target.value); }}
                       onFocus={() => results.length > 0 && setShowResults(true)}
                       style={{ flex: 1 }}
                       autoFocus
                     />
-                    <button className="ghost" style={{ fontSize: 12 }} onClick={() => { setAddMode(null); setQuery(""); setResults([]); }}>Annuler</button>
+                    <button className="ghost" style={{ fontSize: 12 }} onClick={() => { setAddMode(null); setQuery(""); setResults([]); }}>{t("cancel")}</button>
                   </div>
                   {showResults && results.length > 0 && (
                     <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 200, maxHeight: 180, overflowY: "auto", boxShadow: "var(--shadow-lg)" }}>
@@ -425,7 +429,7 @@ function TeamRow({
                     </div>
                   )}
                   {showResults && results.length === 0 && query.length >= 2 && (
-                    <p className="meta" style={{ marginTop: 4, fontSize: 12 }}>Aucun résultat — essayez la saisie manuelle</p>
+                    <p className="meta" style={{ marginTop: 4, fontSize: 12 }}>{t("no_results")}</p>
                   )}
                 </div>
               )}
@@ -433,19 +437,19 @@ function TeamRow({
               {addMode === "manual" && (
                 <div style={{ display: "grid", gap: 8 }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-                    <input placeholder="Prénom Nom *" value={manualName} onChange={(e) => setManualName(e.target.value)} autoFocus />
-                    <input placeholder="Ville" value={manualCity} onChange={(e) => setManualCity(e.target.value)} />
-                    <input placeholder="Pays *" value={manualCountry} onChange={(e) => setManualCountry(e.target.value)} />
+                    <input placeholder={t("manual_name_placeholder")} value={manualName} onChange={(e) => setManualName(e.target.value)} autoFocus />
+                    <input placeholder={t("manual_city_placeholder")} value={manualCity} onChange={(e) => setManualCity(e.target.value)} />
+                    <input placeholder={t("manual_country_placeholder")} value={manualCountry} onChange={(e) => setManualCountry(e.target.value)} />
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button className="primary" style={{ fontSize: 12 }} onClick={handleAddManual} disabled={isPending}>Ajouter</button>
-                    <button className="ghost" style={{ fontSize: 12 }} onClick={() => { setAddMode(null); setManualName(""); setManualCity(""); setManualCountry(""); }}>Annuler</button>
+                    <button className="primary" style={{ fontSize: 12 }} onClick={handleAddManual} disabled={isPending}>{t("add_player")}</button>
+                    <button className="ghost" style={{ fontSize: 12 }} onClick={() => { setAddMode(null); setManualName(""); setManualCity(""); setManualCountry(""); }}>{t("cancel")}</button>
                   </div>
                 </div>
               )}
             </>
           ) : (
-            <p className="meta" style={{ fontSize: 12 }}>Équipe complète ({maxPlayers}/{maxPlayers} joueurs · format {maxPlayers}v{maxPlayers})</p>
+            <p className="meta" style={{ fontSize: 12 }}>{t("team_full", { current: maxPlayers, max: maxPlayers, format: maxPlayers })}</p>
           )}
         </div>
       )}

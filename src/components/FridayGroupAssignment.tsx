@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { saveFridayGroupsAction } from "@/app/[locale]/tournament/[id]/edit/berlin-mixed-actions";
 
 type Team = {
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function FridayGroupAssignment({ tournamentId, teams, isLocked }: Props) {
+  const t = useTranslations("tournament");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -68,7 +70,7 @@ export function FridayGroupAssignment({ tournamentId, teams, isLocked }: Props) 
       if (res && "error" in res) {
         setMessage(`Erreur : ${res.error}`);
       } else {
-        setMessage("Groupes Vendredi sauvegardés !");
+        setMessage(t("friday_groups_saved"));
         router.refresh();
       }
     });
@@ -121,7 +123,7 @@ export function FridayGroupAssignment({ tournamentId, teams, isLocked }: Props) 
             disabled={pending}
             style={{ fontSize: 13, padding: "8px 20px" }}
           >
-            {pending ? "Sauvegarde..." : "Sauvegarder les groupes"}
+            {pending ? t("friday_groups_saving") : t("friday_groups_save")}
           </button>
           {message && (
             <span style={{ fontSize: 12, color: message.startsWith("Erreur") ? "var(--danger)" : "var(--teal)" }}>

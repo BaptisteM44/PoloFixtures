@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { CharterModal } from "./CharterModal";
 
 type Author = { id: string; name: string; photoPath: string | null };
@@ -28,6 +29,7 @@ function authorColorIndex(id: string): number {
 }
 
 export function TournamentChat({ tournamentId, chatMode, currentPlayerId, currentPlayerName, isOrga, creatorId, fullPage, charterAccepted: initialCharterAccepted }: Props) {
+  const t = useTranslations("tournament");
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -191,7 +193,7 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
       ) : (
         <div className="tournament-chat__login-hint">
           {!currentPlayerId ? (
-            <span className="meta">Connectez-vous pour participer à la discussion.</span>
+            <span className="meta">{t("chat_login_prompt")}</span>
           ) : chatMode === "ORG_ONLY" ? (
             <span className="meta">Seul l&apos;organisateur peut publier des annonces.</span>
           ) : null}

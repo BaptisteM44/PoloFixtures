@@ -41,7 +41,7 @@ export function OrgaNoteBoard({
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
   const flashSaved = () => {
-    setSavedMsg("Note ajoutée ✓");
+    setSavedMsg(t("orga_note_added"));
     setTimeout(() => setSavedMsg(null), 2000);
   };
 

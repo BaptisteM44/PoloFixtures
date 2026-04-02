@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 type RefPlayer = {
   id: string;
@@ -26,6 +27,7 @@ export function RefereeManager({
   referees: RefPlayer[];
   canManage: boolean;
 }) {
+  const t = useTranslations("referee");
   const [referees, setReferees] = useState<RefPlayer[]>(initial);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -69,7 +71,7 @@ export function RefereeManager({
       setReferees((prev) => [...prev, data.player]);
     } else {
       const data = await res.json();
-      setError(data.error ?? "Erreur");
+      setError(data.error ?? "Error");
     }
     setAdding(false);
   };
@@ -87,16 +89,16 @@ export function RefereeManager({
     <div className="panel">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
         <div>
-          <h3 style={{ marginBottom: 2 }}>⚖️ Arbitres assignés</h3>
-          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
-            Ces joueurs auront accès au bouton <strong>Arbitrer</strong> sur la page du tournoi.
-          </p>
+          <h3 style={{ marginBottom: 2 }}>{t("title")}</h3>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}
+            dangerouslySetInnerHTML={{ __html: t("access_hint") }}
+          />
         </div>
       </div>
 
       {/* Liste des arbitres */}
       {referees.length === 0 ? (
-        <p className="meta" style={{ marginBottom: 12 }}>Aucun arbitre assigné pour l&apos;instant.</p>
+        <p className="meta" style={{ marginBottom: 12 }}>{t("no_referee")}</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
           {referees.map((ref) => (
@@ -131,7 +133,7 @@ export function RefereeManager({
                   style={{ padding: "4px 10px", fontSize: 12, color: "var(--danger)" }}
                   onClick={() => removeReferee(ref.id)}
                 >
-                  Retirer
+                  {t("btn_remove")}
                 </button>
               )}
             </div>
@@ -145,7 +147,7 @@ export function RefereeManager({
           <div style={{ display: "flex", gap: 8 }}>
             <input
               type="text"
-              placeholder="Rechercher un joueur par nom…"
+              placeholder={t("search_placeholder")}
               value={query}
               onChange={(e) => { setQuery(e.target.value); search(e.target.value); }}
               style={{ flex: 1, padding: "8px 12px", fontSize: 14, border: "2px solid var(--border)", borderRadius: "var(--radius-sm)", background: "var(--bg)" }}

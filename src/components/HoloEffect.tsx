@@ -16,30 +16,22 @@ const VERT = `
   }
 `;
 
-/* ── 1) GLITTER — dense micro-sparkles (default) ── */
+/* ── 1) SHIMMER — bandes arc-en-ciel + reflet spéculaire ── */
 const FRAG_GLITTER = `
   precision highp float;
   varying vec2 v_uv;
   uniform float u_time; uniform vec2 u_mouse; uniform float u_hover; uniform float u_aspect;
   vec3 hsv2rgb(float h,float s,float v){vec3 c=clamp(abs(mod(h*6.0+vec3(0,4,2),6.0)-3.0)-1.0,0.0,1.0);return v*mix(vec3(1),c,s);}
-  float hash(vec2 p){p=fract(p*vec2(127.1,311.7));p+=dot(p,p+45.32);return fract(p.x*p.y);}
-  float star(vec2 uv,float r){vec2 a=abs(uv);return 1.0-smoothstep(0.0,r,mix(max(a.x,a.y),(a.x+a.y)*0.707,0.4));}
   void main(){
     vec2 uv=v_uv; vec2 tilt=u_mouse-0.5;
-    // Glitter
-    float cR=75.0; vec2 sUV=uv*vec2(u_aspect,1.0)*cR; vec2 cell=floor(sUV); vec2 cUV=fract(sUV)-0.5;
-    float h0=hash(cell),h1=hash(cell+vec2(5.2,1.3)),h2=hash(cell+vec2(2.7,9.8));
-    float flicker=pow(max(0.0,sin(h0*628.3+u_time*(0.8+h1*3.5))),9.0);
-    float shape=max(star(cUV,0.09),star(cUV-vec2(h1-0.5,h2-0.5)*0.25,0.09));
-    vec3 glit=mix(vec3(1.0,0.98,0.96),hsv2rgb(h0,0.35,1.0),0.18)*step(0.68,h0)*flicker*shape;
-    // Bands (hover)
+    // Bandes arc-en-ciel réactives au tilt + hover
     float ta=atan(tilt.y,tilt.x+0.0001); vec2 bd=vec2(-sin(ta+0.5),cos(ta+0.5));
     float ph=dot(uv*vec2(u_aspect,1.0),bd)*mix(3.5,7.0,u_hover)+u_time*mix(0.12,0.0,u_hover)+length(tilt)*4.0;
-    vec3 bands=hsv2rgb(fract(ph*0.38),0.88,1.0)*mix(0.06,0.28,u_hover)*pow(sin(ph*3.14159)*0.5+0.5,1.8);
-    // Specular (hover)
+    vec3 bands=hsv2rgb(fract(ph*0.38),0.88,1.0)*mix(0.06,0.30,u_hover)*pow(sin(ph*3.14159)*0.5+0.5,1.8);
+    // Reflet spéculaire centré sur la position du curseur
     vec2 sd=(uv-(tilt*0.55+0.5))*vec2(u_aspect,1.0);
-    vec3 spec=vec3(1.0,0.98,0.93)*exp(-dot(sd,sd)*4.5)*mix(0.0,0.36,u_hover);
-    gl_FragColor=vec4(min(glit+bands+spec,vec3(0.75)),1.0);
+    vec3 spec=vec3(1.0,0.98,0.93)*exp(-dot(sd,sd)*4.5)*mix(0.0,0.38,u_hover);
+    gl_FragColor=vec4(min(bands+spec,vec3(0.75)),1.0);
   }
 `;
 
@@ -49,11 +41,9 @@ const FRAG_IRIS = `
   varying vec2 v_uv;
   uniform float u_time; uniform vec2 u_mouse; uniform float u_hover; uniform float u_aspect;
   vec3 hsv2rgb(float h,float s,float v){vec3 c=clamp(abs(mod(h*6.0+vec3(0,4,2),6.0)-3.0)-1.0,0.0,1.0);return v*mix(vec3(1),c,s);}
-  float hash(vec2 p){p=fract(p*vec2(127.1,311.7));p+=dot(p,p+45.32);return fract(p.x*p.y);}
-  float star(vec2 uv,float r){vec2 a=abs(uv);return 1.0-smoothstep(0.0,r,mix(max(a.x,a.y),(a.x+a.y)*0.707,0.4));}
   void main(){
     vec2 uv=v_uv; vec2 tilt=u_mouse-0.5;
-    // Iris rings centred on cursor
+    // Anneaux iris centrés sur le curseur
     vec2 light=tilt*0.55+0.5;
     vec2 d=(uv-light)*vec2(u_aspect,1.0);
     float dist=length(d);
@@ -63,14 +53,8 @@ const FRAG_IRIS = `
     float hue=fract(angle/6.28318+dist*0.6+u_time*0.07+length(tilt)*0.6);
     vec3 irisCol=hsv2rgb(hue,0.94,1.0)*ringMask;
     float falloff=smoothstep(0.0,0.12,dist)*smoothstep(1.1,0.2,dist);
-    vec3 iris=irisCol*falloff*mix(0.07,0.42,u_hover);
-    // Micro-sparkles permanent
-    float cR=75.0; vec2 sUV=uv*vec2(u_aspect,1.0)*cR; vec2 cell=floor(sUV); vec2 cUV=fract(sUV)-0.5;
-    float h0=hash(cell),h1=hash(cell+vec2(5.2,1.3));
-    float flicker=pow(max(0.0,sin(h0*628.3+u_time*(0.8+h1*3.5))),9.0);
-    float shape=star(cUV,0.09);
-    vec3 glit=vec3(1.0,0.96,0.92)*step(0.70,h0)*flicker*shape*0.6;
-    gl_FragColor=vec4(min(iris+glit,vec3(0.75)),1.0);
+    vec3 iris=irisCol*falloff*mix(0.07,0.45,u_hover);
+    gl_FragColor=vec4(min(iris,vec3(0.75)),1.0);
   }
 `;
 
@@ -188,35 +172,33 @@ const FRAG_CONSTELLATION = `
   }
 `;
 
-/* ── 4) CHROMATIC — aberration chromatique R/G/B ── */
+/* ── 4) CHROMATIC — aberration chromatique R/G/B sur bandes lisses ── */
 const FRAG_CHROMATIC = `
   precision highp float;
   varying vec2 v_uv;
   uniform float u_time; uniform vec2 u_mouse; uniform float u_hover; uniform float u_aspect;
-  float hash(vec2 p){p=fract(p*vec2(127.1,311.7));p+=dot(p,p+45.32);return fract(p.x*p.y);}
-  float glitLum(vec2 uv2){
-    float cR=65.0; vec2 sUV=uv2*vec2(u_aspect,1.0)*cR; vec2 cell=floor(sUV); vec2 cUV=fract(sUV)-0.5;
-    float h0=hash(cell),h1=hash(cell+vec2(5.2,1.3));
-    float flicker=pow(max(0.0,sin(h0*628.3+u_time*(0.8+h1*3.5))),9.0);
-    vec2 a=abs(cUV); float d=mix(max(a.x,a.y),(a.x+a.y)*0.707,0.4);
-    return step(0.70,h0)*flicker*(1.0-smoothstep(0.0,0.10,d));
+  float shimmer(vec2 p, vec2 asp, vec2 tilt, float t){
+    float ta=atan(tilt.y,tilt.x+0.0001); vec2 bd=vec2(-sin(ta+0.5),cos(ta+0.5));
+    float ph=dot(p*asp,bd)*7.0+t*0.12+length(tilt)*4.0;
+    return pow(sin(ph*3.14159)*0.5+0.5,1.8);
   }
   void main(){
-    vec2 uv=v_uv; vec2 tilt=u_mouse-0.5;
+    vec2 uv=v_uv; vec2 tilt=u_mouse-0.5; vec2 asp=vec2(u_aspect,1.0);
     // Écart chromatique croît avec l'inclinaison + hover
-    float offS=mix(0.004,0.018,u_hover)*(1.0+length(tilt)*1.5);
+    float offS=mix(0.005,0.022,u_hover)*(1.0+length(tilt)*1.5);
     vec2 offDir=normalize(tilt+vec2(0.001,0.0))*offS;
-    // Canal R décalé +, G centré, B décalé -
-    float r=glitLum(uv+offDir);
-    float g=glitLum(uv);
-    float b=glitLum(uv-offDir);
+    // Canal R décalé +, G centré, B décalé — (shimmer lisse, pas de sparkles)
+    float r=shimmer(uv+offDir,asp,tilt,u_time);
+    float g=shimmer(uv,asp,tilt,u_time);
+    float b=shimmer(uv-offDir,asp,tilt,u_time);
     // Bandes holo discrètes (hover)
     float ta=atan(tilt.y,tilt.x+0.0001); vec2 bd=vec2(-sin(ta+0.5),cos(ta+0.5));
-    float ph=dot(uv*vec2(u_aspect,1.0),bd)*mix(3.5,7.0,u_hover)+u_time*mix(0.12,0.0,u_hover)+length(tilt)*4.0;
+    float ph=dot(uv*asp,bd)*mix(3.5,7.0,u_hover)+u_time*mix(0.12,0.0,u_hover)+length(tilt)*4.0;
     float bStr=mix(0.04,0.22,u_hover)*pow(sin(ph*3.14159)*0.5+0.5,1.8);
     float bHue=fract(ph*0.38);
     vec3 hsvC=vec3(fract(bHue),fract(bHue+0.33),fract(bHue+0.67));
-    gl_FragColor=vec4(min(vec3(r,g,b)*0.88+hsvC*bStr,vec3(0.80)),1.0);
+    float chStr=mix(0.0,0.60,u_hover);
+    gl_FragColor=vec4(min(vec3(r,g,b)*chStr+hsvC*bStr,vec3(0.80)),1.0);
   }
 `;
 

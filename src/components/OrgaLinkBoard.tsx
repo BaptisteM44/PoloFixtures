@@ -26,7 +26,7 @@ export function OrgaLinkBoard({
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
   const flashSaved = () => {
-    setSavedMsg("Lien ajouté ✓");
+    setSavedMsg(t("orga_link_added"));
     setTimeout(() => setSavedMsg(null), 2000);
   };
 

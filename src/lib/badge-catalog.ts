@@ -30,7 +30,7 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   golden_double: { id: "golden_double", name: "Golden Double",  emoji: "🌟", description: "Gagner 3 matchs en golden goal dans un même tournoi", category: "performance", rarity: "epic" },
   unbeaten:      { id: "unbeaten",      name: "Unbeaten",       emoji: "🛡️", description: "Aucune défaite dans un tournoi",                   category: "performance", rarity: "legendary" },
   sniper:        { id: "sniper",        name: "Sniper",         emoji: "🎯", description: "15+ buts en carrière",                              category: "performance", rarity: "rare" },
-  eruption:      { id: "eruption",      name: "Eruption",       emoji: "🌋", description: "5 buts dans un seul match",                         category: "performance", rarity: "legendary" },
+  eruption:      { id: "eruption",      name: "Eruption",       emoji: "🌋", description: "5 buts dans un seul match (3v3 ou 4v4 uniquement)",               category: "performance", rarity: "legendary" },
   reverse_sweep: { id: "reverse_sweep", name: "Reverse Sweep",  emoji: "⚡", description: "Revenir de 3 buts de retard et gagner en golden goal", category: "performance", rarity: "epic" },
   on_fire:       { id: "on_fire",       name: "On Fire",        emoji: "🔥", description: "Gagner 5 matches consécutifs dans un tournoi",       category: "performance", rarity: "epic" },
   dragon_slayer: { id: "dragon_slayer", name: "Dragon Slayer",  emoji: "🐉", description: "Battre le tenant du titre",                         category: "performance", rarity: "epic" },

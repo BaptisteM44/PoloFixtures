@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { type MatchEvent } from "@prisma/client";
+import { useTranslations } from "next-intl";
 import { type MatchWithTeams } from "./ScheduleBoard";
 import { formatTime } from "@/lib/utils";
 
@@ -9,12 +10,6 @@ const PHASE_LABEL: Record<string, string> = {
   POOL: "Poule",
   SWISS: "Swiss",
   BRACKET: "Tableau",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  SCHEDULED: "Planifié",
-  LIVE: "🔴 En cours",
-  FINISHED: "✓ Terminé",
 };
 
 type EnrichedMatch = MatchWithTeams & { events: MatchEvent[] };
@@ -216,9 +211,16 @@ export function LiveMatchTile({
   initialMatches: MatchWithTeams[];
   gameDurationMin?: number;
 }) {
+  const t = useTranslations("tournament");
   const [matches, setMatches] = useState<EnrichedMatch[]>(
     initialMatches.map((m) => ({ ...m, events: (m.events ?? []) as MatchEvent[] }))
   );
+
+  const STATUS_LABEL: Record<string, string> = {
+    SCHEDULED: t("status_scheduled"),
+    LIVE: t("status_live_icon"),
+    FINISHED: t("status_finished_icon"),
+  };
 
   // Noms des équipes pour les events
   const teamNames: Record<string, string> = {};
@@ -285,7 +287,7 @@ export function LiveMatchTile({
   return (
     <div className="live-match-tile">
       <h3 style={{ marginBottom: 12 }}>
-        {liveMatches.length > 0 ? "En cours & à venir" : "Prochains matchs"}
+        {liveMatches.length > 0 ? t("live_and_upcoming") : t("next_matches")}
       </h3>
       <div className="live-match-tile__list">
         {/* Cartes LIVE enrichies */}

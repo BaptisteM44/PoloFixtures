@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "next-intl";
 
 export type MatchForEdit = {
   id: string;
@@ -49,6 +50,7 @@ type Props = {
 
 export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: Props) {
   const { data: session } = useSession();
+  const t = useTranslations("match");
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);
   const [status, setStatus] = useState("SCHEDULED");
@@ -99,7 +101,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data?.error ?? "Erreur lors de la sauvegarde");
+        setError(data?.error ?? t("error_save"));
         return;
       }
       const updated = await res.json();
@@ -123,9 +125,9 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
       };
 
       onSaved(savePayload);
-      setSuccess("Match sauvegardé");
+      setSuccess(t("saved"));
     } catch {
-      setError("Erreur réseau");
+      setError(t("error_network"));
     } finally {
       setSaving(false);
     }
@@ -145,7 +147,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
             type="button"
             style={{ padding: "4px 12px", marginLeft: "auto", fontSize: 13 }}
           >
-            ✕ Fermer
+            {t("btn_close")}
           </button>
         </div>
 
@@ -155,7 +157,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
           {canEdit && teams && teams.length > 0 && (
             <div className="match-team-selectors">
               <div className="match-team-select-row">
-                <label>Équipe A</label>
+                <label>{t("label_team_a")}</label>
                 <select value={teamAId ?? ""} onChange={(e) => setTeamAId(e.target.value || null)}>
                   <option value="">— TBD —</option>
                   {teams.map((t) => (
@@ -164,7 +166,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
                 </select>
               </div>
               <div className="match-team-select-row">
-                <label>Équipe B</label>
+                <label>{t("label_team_b")}</label>
                 <select value={teamBId ?? ""} onChange={(e) => setTeamBId(e.target.value || null)}>
                   <option value="">— TBD —</option>
                   {teams.map((t) => (
@@ -212,21 +214,21 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
             {canEdit ? (
               <>
                 <div className="status-select-row">
-                  <label>Statut</label>
+                  <label>{t("label_status")}</label>
                   <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                    <option value="SCHEDULED">Planifié</option>
-                    <option value="LIVE">En cours 🔴</option>
-                    <option value="FINISHED">Terminé ✓</option>
+                    <option value="SCHEDULED">{t("status_scheduled")}</option>
+                    <option value="LIVE">{t("status_live")}</option>
+                    <option value="FINISHED">{t("status_finished")}</option>
                   </select>
                 </div>
                 {error && <p className="error" style={{ margin: 0 }}>{error}</p>}
                 {success && <p style={{ margin: 0, color: "var(--teal)", fontSize: 13, fontWeight: 700 }}>{success}</p>}
                 <button className="primary" onClick={handleSave} disabled={saving}>
-                  {saving ? "Sauvegarde…" : "Sauvegarder"}
+                  {saving ? t("btn_saving") : t("btn_save")}
                 </button>
               </>
             ) : (
-              <span className="meta" style={{ fontSize: 12 }}>Lecture seule — connectez-vous en tant que REF / ORGA</span>
+              <span className="meta" style={{ fontSize: 12 }}>{t("readonly_hint")}</span>
             )}
           </div>
         </div>

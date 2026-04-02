@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export function AdminClubActions({ clubId, mode }: { clubId: string; mode: "pending" | "approved" }) {
   const router = useRouter();
+  const t = useTranslations("admin");
   const [loading, setLoading] = useState(false);
 
   const approve = async () => {
@@ -15,7 +17,7 @@ export function AdminClubActions({ clubId, mode }: { clubId: string; mode: "pend
   };
 
   const reject = async () => {
-    if (!confirm("Supprimer ce club ?")) return;
+    if (!confirm(t("confirm_delete_club"))) return;
     setLoading(true);
     await fetch(`/api/admin/clubs/${clubId}/approve`, { method: "DELETE" });
     router.refresh();
@@ -30,6 +32,6 @@ export function AdminClubActions({ clubId, mode }: { clubId: string; mode: "pend
   );
 
   return (
-    <button className="ghost" style={{ fontSize: 13, color: "var(--danger)" }} onClick={reject} disabled={loading}>Supprimer</button>
+    <button className="ghost" style={{ fontSize: 13, color: "var(--danger)" }} onClick={reject} disabled={loading}>{t("btn_delete")}</button>
   );
 }

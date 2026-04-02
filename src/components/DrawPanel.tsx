@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 type SoloEntry = {
   id: string;
@@ -32,6 +33,7 @@ export function DrawPanel({
   soloEntries: SoloEntry[];
   teams: DrawnTeam[];
 }) {
+  const t = useTranslations("draw");
   const [entries, setEntries] = useState<SoloEntry[]>(initialEntries);
   const [teams, setTeams] = useState<DrawnTeam[]>(initialTeams);
   const [loading, setLoading] = useState(false);
@@ -57,7 +59,7 @@ export function DrawPanel({
     setLoading(false);
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? "Erreur lors du tirage.");
+      setError(data.error ?? t("error_draw"));
       return;
     }
     const data = await res.json();
@@ -96,7 +98,7 @@ export function DrawPanel({
     setSaveLoading(false);
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? "Erreur lors de la sauvegarde.");
+      setError(data.error ?? t("error_save"));
       return;
     }
     setPendingChanges({});
@@ -112,16 +114,16 @@ export function DrawPanel({
       <div className="panel">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
           <h3 style={{ margin: 0 }}>
-            Tirage ABC Chapeau
+            {t("title")}
             <span className="meta" style={{ marginLeft: 10, fontWeight: 400, fontSize: 13 }}>
-              {activeEntries.length} inscrit{activeEntries.length > 1 ? "s" : ""}
-              {waitlistEntries.length > 0 && ` · ${waitlistEntries.length} en attente`}
+              {t("registered_count", { count: activeEntries.length })}
+              {waitlistEntries.length > 0 && ` · ${t("waitlist_count", { count: waitlistEntries.length })}`}
             </span>
           </h3>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {saved && (
               <span style={{ fontSize: 12, color: "var(--success)", fontFamily: "var(--font-display)", fontWeight: 700 }}>
-                Sauvegardé !
+                {t("saved")}
               </span>
             )}
             {Object.keys(pendingChanges).length > 0 && (
@@ -131,7 +133,7 @@ export function DrawPanel({
                 onClick={handleSaveAdjustments}
                 disabled={saveLoading}
               >
-                {saveLoading ? "…" : "Sauvegarder les changements"}
+                {saveLoading ? "…" : t("btn_save_changes")}
               </button>
             )}
             <button
@@ -140,7 +142,7 @@ export function DrawPanel({
               onClick={handleDraw}
               disabled={loading || activeEntries.length < 3}
             >
-              {loading ? "Tirage en cours…" : hasDraw ? "Relancer le tirage" : "Lancer le tirage"}
+              {loading ? t("btn_drawing") : hasDraw ? t("btn_redraw") : t("btn_draw")}
             </button>
           </div>
         </div>
@@ -152,9 +154,9 @@ export function DrawPanel({
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "2px solid var(--border)" }}>
-                <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>Joueur</th>
-                <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>Niveau</th>
-                <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>Équipe assignée</th>
+                <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>{t("col_player")}</th>
+                <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>{t("col_level")}</th>
+                <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>{t("col_team")}</th>
               </tr>
             </thead>
             <tbody>
@@ -171,7 +173,7 @@ export function DrawPanel({
                         onChange={(e) => handleTeamChange(entry.id, e.target.value)}
                         style={{ fontSize: 12, padding: "3px 6px" }}
                       >
-                        <option value="">— Aucune équipe</option>
+                        <option value="">{t("no_team")}</option>
                         {teams.map((t) => (
                           <option key={t.id} value={t.id}>{t.name}</option>
                         ))}
@@ -190,7 +192,7 @@ export function DrawPanel({
         {waitlistEntries.length > 0 && (
           <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--border-light)" }}>
             <p style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 8, textTransform: "uppercase" }}>
-              Liste d&apos;attente ({waitlistEntries.length})
+              {t("waitlist_title", { count: waitlistEntries.length })}
             </p>
             <div style={{ display: "grid", gap: 6 }}>
               {waitlistEntries.map((entry) => (
@@ -207,7 +209,7 @@ export function DrawPanel({
         {hasDraw && (
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border-light)" }}>
             <p style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase" }}>
-              Équipes formées ({teams.length})
+              {t("formed_teams_title", { count: teams.length })}
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
               {teams.map((team) => {
@@ -221,7 +223,7 @@ export function DrawPanel({
                         <span>{e.player.name}</span>
                       </div>
                     ))}
-                    {teamEntries.length === 0 && <span className="meta" style={{ fontSize: 12 }}>Aucun joueur</span>}
+                    {teamEntries.length === 0 && <span className="meta" style={{ fontSize: 12 }}>{t("no_player")}</span>}
                   </div>
                 );
               })}

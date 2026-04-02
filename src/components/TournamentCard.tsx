@@ -11,7 +11,7 @@ export function getTournamentStatusBadge(
   registrationEnd: Date | string | null,
   labels?: { live: string; completed: string; reg_open: string; reg_closed: string; announced: string }
 ): { label: string; cls: string } {
-  const l = labels ?? { live: "En cours", completed: "Terminé", reg_open: "Inscriptions ouvertes", reg_closed: "Inscriptions fermées", announced: "Annoncé" };
+  const l = labels ?? { live: "Live", completed: "Completed", reg_open: "Registration open", reg_closed: "Registration closed", announced: "Announced" };
   if (dbStatus === "LIVE") return { label: l.live, cls: "live" };
   if (dbStatus === "COMPLETED") return { label: l.completed, cls: "completed" };
   const now = new Date();

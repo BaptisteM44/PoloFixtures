@@ -130,7 +130,6 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
           {/* WebGL holo overlay — legendary only to stay under browser GL context limit */}
             {rarity === "legendary" && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoVariant} />}
             {/* CSS overlays uniquement sur les cartes non-legendary (WebGL gère le legendary) */}
-            {rarity !== "legendary" && <div className="pkmn-card__sparkle" />}
             {rarity !== "legendary" && <div className="pkmn-card__holo" />}
             {rarity !== "legendary" && <div className="pkmn-card__glare" />}
           </div>
@@ -217,7 +216,6 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
           {/* WebGL holo overlay — legendary only to stay under browser GL context limit */}
           {rarity === "legendary" && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoVariant} />}
           {/* CSS overlays uniquement sur les cartes non-legendary */}
-          {rarity !== "legendary" && <div className="pkmn-card__sparkle" />}
           {rarity !== "legendary" && <div className="pkmn-card__holo" />}
           {rarity !== "legendary" && <div className="pkmn-card__glare" />}
           {/* Flag → club logo → team logo, empilés en colonne top-left */}

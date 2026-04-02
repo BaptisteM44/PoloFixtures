@@ -881,7 +881,7 @@ export default async function TournamentPage({
         if (groupMatches.length === 0) {
           return (
             <div className="panel" style={{ textAlign: "center", padding: 48 }}>
-              <p className="meta">Aucun match généré pour ce jour.</p>
+              <p className="meta">{t("no_matches_for_day")}</p>
             </div>
           );
         }
@@ -961,7 +961,7 @@ export default async function TournamentPage({
         if (bracketMatches.length === 0) {
           return (
             <div className="panel" style={{ textAlign: "center", padding: 48 }}>
-              <p className="meta">Bracket pas encore généré.</p>
+              <p className="meta">{t("bracket_not_generated_yet")}</p>
             </div>
           );
         }
