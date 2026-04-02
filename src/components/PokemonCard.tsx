@@ -25,9 +25,9 @@ type Props = {
        | "berlin_techno" | "berlin_bauhaus" | "berlin_street" | "berlin_ddr";
   variant?: "classic" | "fullart";
   metalBorder?: "bronze" | "silver" | "gold" | "platinum" | "diamond";
-  holoVariant?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "prism" | "aurora";
-  holoFull?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "prism" | "aurora";
-  cardFx?: "foil" | "glow" | "scanlines";
+  holoVariant?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "sequin" | "aurora";
+  holoFull?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "sequin" | "aurora";
+  cardFx?: "foil" | "glow" | "glow-champ" | "scanlines";
 };
 
 /** Resolve country name → ISO 2-letter code for flag URL */
@@ -128,8 +128,8 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
             ) : (
               <div className="pkmn-card__img-placeholder">{initials}</div>
             )}
-          {/* WebGL holo overlay — legendary only to stay under browser GL context limit */}
-            {rarity === "legendary" && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoVariant} />}
+          {/* WebGL holo overlay — legendary only, skip si holoFull couvre déjà toute la carte */}
+            {rarity === "legendary" && !holoFull && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoVariant} />}
             {/* CSS overlays uniquement sur les cartes non-legendary (WebGL gère le legendary) */}
             {rarity !== "legendary" && <div className="pkmn-card__holo" />}
             {rarity !== "legendary" && <div className="pkmn-card__glare" />}
@@ -215,8 +215,8 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
           ) : (
             <div className="pkmn-card__img-placeholder">{initials}</div>
           )}
-          {/* WebGL holo overlay — legendary only to stay under browser GL context limit */}
-          {rarity === "legendary" && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoVariant} />}
+          {/* WebGL holo overlay — legendary only, skip si holoFull couvre déjà toute la carte */}
+          {rarity === "legendary" && !holoFull && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoVariant} />}
           {/* CSS overlays uniquement sur les cartes non-legendary */}
           {rarity !== "legendary" && <div className="pkmn-card__holo" />}
           {rarity !== "legendary" && <div className="pkmn-card__glare" />}

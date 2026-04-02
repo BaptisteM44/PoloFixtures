@@ -226,21 +226,34 @@ const FRAG_PLASMA = `
   }
 `;
 
-/* ── 6) PRISM — diffraction arc-en-ciel (alpha) ── */
-const FRAG_PRISM = `
+/* ── 6) SEQUIN — paillettes disques miroir qui tournent indépendamment (alpha) ── */
+const FRAG_SEQUIN = `
   precision highp float;
   varying vec2 v_uv;
   uniform float u_time; uniform vec2 u_mouse; uniform float u_hover; uniform float u_aspect;
   vec3 hsv2rgb(float h,float s,float v){vec3 c=clamp(abs(mod(h*6.0+vec3(0,4,2),6.0)-3.0)-1.0,0.0,1.0);return v*mix(vec3(1),c,s);}
+  float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+  vec4 seqLayer(vec2 uv, float grid, float seed, float t, vec2 tilt){
+    vec2 sc=uv*grid; vec2 ce=floor(sc); vec2 fr=fract(sc)-0.5;
+    float h0=hash(ce+seed); float h1=hash(ce+vec2(13.7,seed)); float h2=hash(ce+vec2(seed,27.3));
+    float wobble=t*(0.18+h0*1.6)+h1*6.283;
+    float nx=sin(wobble)*0.80; float ny=cos(wobble)*0.65;
+    float nz=sqrt(max(0.0,1.0-nx*nx-ny*ny));
+    vec3 ldir=normalize(vec3(tilt.x*1.2,-tilt.y*0.8+0.15,1.0));
+    float lit=pow(max(0.0,nx*ldir.x+ny*ldir.y+nz*ldir.z),5.0);
+    float disc=smoothstep(0.46,0.22,length(fr));
+    float hue=fract(h2+wobble*0.10+length(tilt)*0.4);
+    vec3 col=hsv2rgb(hue,0.90,1.0)*lit*disc;
+    return vec4(col,disc*lit);
+  }
   void main(){
-    vec2 uv=v_uv; vec2 tilt=u_mouse-0.5; vec2 asp=vec2(u_aspect,1.0);
-    vec2 light=tilt*0.55+0.5; vec2 d=(uv-light)*asp;
-    float dist=length(d); float angle=atan(d.y,d.x);
-    float hue=fract(angle/6.28318+dist*0.45+u_time*0.06+length(tilt)*0.4);
-    float rings=pow(max(0.0,sin(dist*mix(6.0,18.0,u_hover)*3.14159-u_time*0.4)),1.6);
-    float radial=smoothstep(1.4,0.0,dist);
-    vec3 col=hsv2rgb(hue,0.95,1.0)*rings;
-    float alpha=rings*radial*mix(0.20,0.90,u_hover);
+    vec2 uv=v_uv*vec2(u_aspect,1.0); vec2 tilt=u_mouse-0.5;
+    vec4 s1=seqLayer(uv,18.0,0.0,u_time,tilt);
+    vec4 s2=seqLayer(uv,34.0,47.3,u_time,tilt);
+    vec4 s3=seqLayer(uv,52.0,91.7,u_time*1.2,tilt);
+    float wa=s1.a+s2.a*0.7+s3.a*0.45;
+    vec3 col=(s1.rgb*s1.a+s2.rgb*s2.a*0.7+s3.rgb*s3.a*0.45)/(max(wa,0.001));
+    float alpha=min(wa*mix(0.65,1.0,u_hover),0.97);
     gl_FragColor=vec4(col,alpha);
   }
 `;
@@ -272,7 +285,7 @@ const FRAGS: Record<string, string> = {
   constellation: FRAG_CONSTELLATION,
   chromatic: FRAG_CHROMATIC,
   plasma: FRAG_PLASMA,
-  prism: FRAG_PRISM,
+  sequin: FRAG_SEQUIN,
   aurora: FRAG_AURORA,
 };
 
@@ -282,7 +295,7 @@ type HoloEffectProps = {
   mx: number;
   my: number;
   active: boolean;
-  variant?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "prism" | "aurora";
+  variant?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "sequin" | "aurora";
   alphaBlend?: boolean;
 };
 
@@ -297,6 +310,8 @@ export function HoloEffect({ mx, my, active, variant = "glitter", alphaBlend = f
   const alphaBlendRef = useRef(alphaBlend);
   alphaBlendRef.current = alphaBlend;
   const [ready, setReady] = useState(false);
+  const isNearRef   = useRef(false);
+  const didInitRef  = useRef(false);
 
   propsRef.current = { mx, my, active };
 
@@ -332,7 +347,20 @@ export function HoloEffect({ mx, my, active, variant = "glitter", alphaBlend = f
     setReady(true);
   }, []);
 
+  /* ── IntersectionObserver : lazy-init GL uniquement quand la carte est proche ── */
   useEffect(() => {
+    const parent = canvasRef.current?.parentElement;
+    if (!parent) return;
+    const io = new IntersectionObserver(
+      ([e]) => { isNearRef.current = e.isIntersecting; },
+      { rootMargin: "200px" }
+    );
+    io.observe(parent);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    didInitRef.current = false;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const resize = () => {
@@ -345,12 +373,17 @@ export function HoloEffect({ mx, my, active, variant = "glitter", alphaBlend = f
       canvas.style.height = rect.height + "px";
       glRef.current?.viewport(0, 0, canvas.width, canvas.height);
     };
-    initGL(canvas, FRAGS[variant] ?? FRAG_GLITTER);
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(canvas.parentElement!);
     const loop = () => {
       frameRef.current = requestAnimationFrame(loop);
+      if (!isNearRef.current) return;
+      if (!didInitRef.current) {
+        initGL(canvas, FRAGS[variant] ?? FRAG_GLITTER);
+        resize();
+        didInitRef.current = true;
+      }
       const gl = glRef.current, prog = progRef.current;
       if (!gl || !prog) return;
       const { mx: pmx, my: pmy, active: pa } = propsRef.current;

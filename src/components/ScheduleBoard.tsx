@@ -148,9 +148,9 @@ export function ScheduleBoard({
     });
   }, [matches, filterTeamId, filterDay, filterPhase]);
 
-  // Group matches by phase+round, sorted: active rounds first, then scheduled, then finished
+  // Group matches by phase+round (for POOL: also by poolSessionIndex), sorted: active rounds first, then scheduled, then finished
   const roundGroups = useMemo(() => {
-    const groups = new Map<string, { phase: string; roundIndex: number; matches: MatchWithTeams[] }>();
+    const groups = new Map<string, { phase: string; roundIndex: number; poolSessionIndex?: number; matches: MatchWithTeams[] }>();
 
     // Sort all filtered by startAt
     const sorted = [...filtered].sort(
@@ -158,9 +158,11 @@ export function ScheduleBoard({
     );
 
     for (const match of sorted) {
-      const key = `${match.phase}-R${match.roundIndex}`;
+      // For POOL matches, separate by poolSessionIndex (A, B, etc.)
+      const sessionSuffix = match.phase === "POOL" && match.poolSessionIndex !== null ? `-S${match.poolSessionIndex}` : "";
+      const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}`;
       if (!groups.has(key)) {
-        groups.set(key, { phase: match.phase, roundIndex: match.roundIndex, matches: [] });
+        groups.set(key, { phase: match.phase, roundIndex: match.roundIndex, poolSessionIndex: match.poolSessionIndex ?? undefined, matches: [] });
       }
       groups.get(key)!.matches.push(match);
     }
@@ -305,14 +307,17 @@ export function ScheduleBoard({
           (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
         );
 
+        const sessionLabel = group.phase === "POOL" && group.poolSessionIndex !== undefined
+          ? ` · Pool ${String.fromCharCode(65 + group.poolSessionIndex)}`
+          : "";
         return (
           <div
-            key={`${group.phase}-R${group.roundIndex}`}
+            key={`${group.phase}-R${group.roundIndex}${sessionLabel.replace(/\s/g, "")}`}
             className={`schedule-round${finished ? " schedule-round--finished" : ""}${active ? " schedule-round--active" : ""}`}
           >
             <div className="schedule-round__header">
               <span className="schedule-round__label">
-                {PHASE_LABEL[group.phase] ?? group.phase} · Round {group.roundIndex}
+                {PHASE_LABEL[group.phase] ?? group.phase} · Round {group.roundIndex}{sessionLabel}
               </span>
               {finished && <span className="schedule-round__badge schedule-round__badge--done">{t("status_completed")}</span>}
               {active && <span className="schedule-round__badge schedule-round__badge--live">{t("status_live")}</span>}

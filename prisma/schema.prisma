@@ -453,6 +453,7 @@ model Match {
   courtName       String
   startAt         DateTime
   dayIndex        MatchDay
+  poolSessionIndex Int?        // For pool matches: 0 = Pool A, 1 = Pool B, etc. Orga can launch each session independently
   status          MatchStatus @default(SCHEDULED)
   teamAId         String?
   teamBId         String?

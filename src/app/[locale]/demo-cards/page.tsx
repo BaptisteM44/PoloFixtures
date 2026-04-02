@@ -319,66 +319,6 @@ export default function DemoCardsPage() {
         ))}
       </section>
 
-      {/* SECTION 4 — Tournament mockup */}
-      <section style={{ borderTop: "2px solid var(--border)", paddingTop: 48 }}>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, marginBottom: 8, textAlign: "center" }}>
-          🏆 Tournoi Démo — Euro Hardcourt 2026
-        </h2>
-        <p style={{ color: "var(--text-muted)", marginBottom: 40, textAlign: "center" }}>
-          3 équipes avec des niveaux différents, comme dans un vrai tournoi.
-        </p>
-
-        <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 16, color: "var(--teal)" }}>
-          Team « Les Pédales Furieuses »
-        </h3>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 48 }}>
-          <PokemonCard {...PLAYERS.rookie} />
-          <PokemonCard {...PLAYERS.rising} />
-          <PokemonCard {...PLAYERS.solid} />
-        </div>
-
-        <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 16, color: "#a855f7" }}>
-          Team « Violet Velocity »
-        </h3>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 48 }}>
-          <PokemonCard {...PLAYERS.veteran} />
-          <PokemonCard name="Charlie Venom" country="Italy" city="Milan" startYear={2019} hand="RIGHT" photoPath="/uploads/NN-4CYaU.jpeg" badges={[
-            "first_blood", "hat_trick", "sniper", "clean_ride",
-            "team_player", "squad_up", "veteran",
-            "welcome", "profile_complete", "say_cheese", "chatterbox"
-          ]} />
-          <PokemonCard name="Pat Thunder" country="France" city="Paris" startYear={2021} hand="LEFT" gender="NON_BINARY" showGender photoPath="/uploads/AddvmWVW.jpeg" badges={[
-            "first_blood", "hat_trick", "sniper", "unbeaten", "champion",
-            "team_player", "squad_up", "road_warrior",
-            "host", "welcome", "say_cheese", "flinta_power", "free_agent"
-          ]} />
-        </div>
-
-        <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 16, color: "#fffc8a" }}>
-          Team « Golden Legends » <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 400 }}>— Full Art edition</span>
-        </h3>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginBottom: 48 }}>
-          <PokemonCard {...PLAYERS.legend} variant="fullart" />
-          <PokemonCard name="Casey Inferno" country="Australia" city="Melbourne" startYear={2016} hand="LEFT" variant="fullart" photoPath="/uploads/NN-4CYaU.jpeg" badges={[
-            "first_blood", "hat_trick", "sniper", "goal_machine", "century_club",
-            "champion", "back_to_back", "clean_ride",
-            "team_player", "squad_up", "veteran", "road_warrior", "globe_trotter",
-            "host", "serial_organizer", "mega_event",
-            "welcome", "og", "regular", "profile_complete", "say_cheese",
-            "captain", "chatterbox", "night_owl", "collector"
-          ]} />
-          <PokemonCard name="Drew Phantom" country="Japan" city="Tokyo" startYear={2018} hand="RIGHT" variant="fullart" photoPath="/uploads/AddvmWVW.jpeg" badges={[
-            "first_blood", "hat_trick", "sniper", "goal_machine",
-            "champion", "unbeaten", "hard_edge",
-            "team_player", "squad_up", "veteran", "road_warrior", "globe_trotter", "loyal_rider",
-            "host", "serial_organizer",
-            "welcome", "og", "regular", "addict", "profile_complete", "say_cheese",
-            "chatterbox", "hype_machine", "free_agent",
-            "early_bird", "collector"
-          ]} />
-        </div>
-      </section>
-
       {/* SECTION 5 — Metallic Borders */}
       <section style={{ borderTop: "2px solid var(--border)", paddingTop: 48 }}>
         <h2 style={{ fontFamily: "var(--font-display)", fontSize: 22, marginBottom: 8, textAlign: "center" }}>
@@ -533,14 +473,6 @@ export default function DemoCardsPage() {
         <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "#c77dff", letterSpacing: "0.08em", textTransform: "uppercase" }}>Plasma — vagues organiques psychédéliques</h4>
         <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 36 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <PokemonCard {...PLAYERS.rookie} holoFull="plasma" />
-            <span style={{ fontSize: 11, color: "#888" }}>Rookie · classic</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <PokemonCard {...PLAYERS.veteran} holoFull="plasma" />
-            <span style={{ fontSize: 11, color: "#888" }}>Veteran · classic</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
             <PokemonCard {...PLAYERS.legend} holoFull="plasma" />
             <span style={{ fontSize: 11, color: "#888" }}>Legend · classic</span>
           </div>
@@ -550,23 +482,15 @@ export default function DemoCardsPage() {
           </div>
         </div>
 
-        {/* PRISM */}
-        <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "#60c9cf", letterSpacing: "0.08em", textTransform: "uppercase" }}>Prisme — diffraction arc-en-ciel</h4>
+        {/* SEQUIN */}
+        <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "#f9c8ff", letterSpacing: "0.08em", textTransform: "uppercase" }}>Sequin — paillettes disc miroir</h4>
         <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 36 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <PokemonCard {...PLAYERS.rising} holoFull="prism" />
-            <span style={{ fontSize: 11, color: "#888" }}>Rising · classic</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <PokemonCard {...PLAYERS.mythic} holoFull="prism" />
-            <span style={{ fontSize: 11, color: "#888" }}>Mythic · classic</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <PokemonCard {...PLAYERS.legend} holoFull="prism" />
+            <PokemonCard {...PLAYERS.legend} holoFull="sequin" />
             <span style={{ fontSize: 11, color: "#888" }}>Legend · classic</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <PokemonCard {...PLAYERS.legend} variant="fullart" holoFull="prism" />
+            <PokemonCard {...PLAYERS.legend} variant="fullart" holoFull="sequin" />
             <span style={{ fontSize: 11, color: "#888" }}>Legend · full art</span>
           </div>
         </div>
@@ -574,14 +498,6 @@ export default function DemoCardsPage() {
         {/* AURORA */}
         <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "#a0e9a0", letterSpacing: "0.08em", textTransform: "uppercase" }}>Aurora — aurore boréale ondulante</h4>
         <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 52 }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <PokemonCard {...PLAYERS.solid} holoFull="aurora" />
-            <span style={{ fontSize: 11, color: "#888" }}>Solid · classic</span>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-            <PokemonCard {...PLAYERS.veteran} holoFull="aurora" />
-            <span style={{ fontSize: 11, color: "#888" }}>Veteran · classic</span>
-          </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
             <PokemonCard {...PLAYERS.legend} holoFull="aurora" />
             <span style={{ fontSize: 11, color: "#888" }}>Legend · classic</span>
@@ -608,6 +524,12 @@ export default function DemoCardsPage() {
             <span style={{ fontSize: 13, color: "#bbb", fontWeight: 600, letterSpacing: 1, textTransform: "uppercase" }}>Glow pulsé</span>
             <PokemonCard {...PLAYERS.veteran} cardFx="glow" />
             <span style={{ fontSize: 12, color: "#888", maxWidth: 200, textAlign: "center" }}>Halo cyan-bleu qui pulse autour de la carte</span>
+          </div>
+          {/* Glow champ */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", background: "linear-gradient(90deg,#0033a0,#c60c30,#333,#ffd200,#00a651)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Glow Champion</span>
+            <PokemonCard {...PLAYERS.veteran} cardFx="glow-champ" />
+            <span style={{ fontSize: 12, color: "#888", maxWidth: 200, textAlign: "center" }}>Halo arc-en-ciel UCI — bleu · rouge · noir · jaune · vert</span>
           </div>
           {/* Scanlines */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>

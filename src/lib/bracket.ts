@@ -11,6 +11,7 @@ export type PoolSeed = {
 export type GeneratedMatch = {
   phase: MatchPhase;
   poolName?: string | null;
+  poolSessionIndex?: number | null; // 0 = Pool A, 1 = Pool B, etc.
   bracketSide?: "W" | "L" | "G" | null;
   roundIndex: number;
   positionInRound?: number;
@@ -118,44 +119,40 @@ export function generatePoolMatches(
   const matches: GeneratedMatch[] = [];
   const slotMin = gameDurationMin + 5;
 
-  // Per-court "next available" timestamp
-  const courtFree: Date[] = courtNames.map(() => new Date(startAt));
-
-  const poolRounds = pools.map((pool) => ({
+  // Per-pool courts: each pool gets its own court timeline (separate sessions)
+  const poolRounds = pools.map((pool, poolIdx) => ({
+    poolIdx,
     pool,
     rounds: circleMethodRounds(pool.teams),
+    courtFree: courtNames.map(() => new Date(startAt)), // Each pool starts at same time
   }));
 
   const maxRounds = Math.max(...poolRounds.map((pr) => pr.rounds.length), 0);
 
-  for (let r = 0; r < maxRounds; r++) {
-    // Collect this round's matches from ALL pools (interleaved scheduling)
-    const roundBatch: Array<{ pool: PoolSeed; pair: [Team, Team] }> = [];
-    for (const { pool, rounds } of poolRounds) {
-      if (rounds[r]) {
-        for (const pair of rounds[r]) roundBatch.push({ pool, pair });
+  // Schedule each pool's rounds sequentially (no interleaving between pools)
+  for (const { poolIdx, pool, rounds, courtFree } of poolRounds) {
+    for (let r = 0; r < rounds.length; r++) {
+      const roundMatches = rounds[r];
+      for (const pair of roundMatches) {
+        let bestIdx = 0;
+        for (let c = 1; c < courtNames.length; c++) {
+          if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
+        }
+        matches.push({
+          phase: "POOL",
+          poolName: pool.name,
+          poolSessionIndex: poolIdx, // 0 = Pool A, 1 = Pool B, etc.
+          bracketSide: null,
+          roundIndex: r + 1,
+          courtName: courtNames[bestIdx],
+          startAt: new Date(courtFree[bestIdx]),
+          dayIndex: "SAT",
+          status: "SCHEDULED",
+          teamAId: pair[0].id,
+          teamBId: pair[1].id,
+        });
+        courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
       }
-    }
-
-    // Greedy: assign each match to the court that becomes free earliest
-    for (const { pool, pair } of roundBatch) {
-      let bestIdx = 0;
-      for (let c = 1; c < courtNames.length; c++) {
-        if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
-      }
-      matches.push({
-        phase: "POOL",
-        poolName: pool.name,
-        bracketSide: null,
-        roundIndex: r + 1,
-        courtName: courtNames[bestIdx],
-        startAt: new Date(courtFree[bestIdx]),
-        dayIndex: "SAT",
-        status: "SCHEDULED",
-        teamAId: pair[0].id,
-        teamBId: pair[1].id,
-      });
-      courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
     }
   }
 

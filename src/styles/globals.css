@@ -4830,6 +4830,51 @@ textarea {
   animation: glow-pulse 2s ease-in-out infinite;
 }
 
+/* ── FX: GLOW-CHAMP — maillot champion du monde cyclisme UCI ── */
+/* Conic gradient 5 couleurs UCI qui tourne autour de la carte       */
+@keyframes champ-spin {
+  from { --champ-angle: 0deg; }
+  to   { --champ-angle: 360deg; }
+}
+@property --champ-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+.pkmn-card--fx-glow-champ {
+  padding: 3px;
+  animation: champ-spin 3s linear infinite;
+}
+.pkmn-card--fx-glow-champ .pkmn-card__inner {
+  border: none !important;
+}
+.pkmn-card--fx-glow-champ::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  z-index: 0;
+  background: conic-gradient(
+    from var(--champ-angle),
+    #0033a0 0%,
+    #0033a0 18%,
+    #c60c30 20%,
+    #c60c30 38%,
+    #1a1a1a 40%,
+    #1a1a1a 58%,
+    #ffd200 60%,
+    #ffd200 78%,
+    #00a651 80%,
+    #00a651 98%,
+    #0033a0 100%
+  );
+  filter: blur(2px);
+}
+/* Halo extérieur discret */
+.pkmn-card--fx-glow-champ {
+  box-shadow: 0 0 22px 4px rgba(255,210,0,0.25), 0 0 8px 2px rgba(0,51,160,0.30);
+}
+
 /* ── FX: SCANLINES — lignes CRT rétro ── */
 .pkmn-card--fx-scanlines .pkmn-card__inner::after {
   content: '';
