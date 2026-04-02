@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { getServerSession } from "next-auth";
+import getServerSession from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(

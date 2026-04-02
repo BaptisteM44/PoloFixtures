@@ -26,6 +26,7 @@ type Props = {
   variant?: "classic" | "fullart";
   metalBorder?: "bronze" | "silver" | "gold" | "platinum" | "diamond";
   holoVariant?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "sequin" | "aurora";
+  /** @default "constellation" for legendary rarity */
   holoFull?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "sequin" | "aurora";
   cardFx?: "foil" | "glow" | "glow-champ" | "scanlines";
 };
@@ -129,7 +130,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
               <div className="pkmn-card__img-placeholder">{initials}</div>
             )}
           {/* WebGL holo overlay — legendary only, skip si holoFull couvre déjà toute la carte */}
-            {rarity === "legendary" && !holoFull && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoVariant} />}
+            {rarity === "legendary" && !holoFull && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoVariant ?? "constellation"} />}
             {/* CSS overlays uniquement sur les cartes non-legendary (WebGL gère le legendary) */}
             {rarity !== "legendary" && <div className="pkmn-card__holo" />}
             {rarity !== "legendary" && <div className="pkmn-card__glare" />}
@@ -216,7 +217,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
             <div className="pkmn-card__img-placeholder">{initials}</div>
           )}
           {/* WebGL holo overlay — legendary only, skip si holoFull couvre déjà toute la carte */}
-          {rarity === "legendary" && !holoFull && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoVariant} />}
+          {rarity === "legendary" && !holoFull && <HoloEffect mx={mousePos.current.x} my={mousePos.current.y} active={isHovered} variant={holoVariant ?? "constellation"} />}
           {/* CSS overlays uniquement sur les cartes non-legendary */}
           {rarity !== "legendary" && <div className="pkmn-card__holo" />}
           {rarity !== "legendary" && <div className="pkmn-card__glare" />}
