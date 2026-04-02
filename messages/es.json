@@ -541,6 +541,7 @@
     "communaute_free_agents_desc": "Jugadores sin equipo que buscan unirse a un grupo para este torneo.",
     "communaute_looking": "¿Buscas un equipo?",
     "status_live": "En curso",
+    "status_upcoming": "Próximo",
     "status_completed": "Terminado",
     "status_reg_open": "Inscripciones abiertas",
     "status_reg_closed": "Inscripciones cerradas",

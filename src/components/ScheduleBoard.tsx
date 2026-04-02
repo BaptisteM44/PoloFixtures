@@ -167,7 +167,7 @@ export function ScheduleBoard({
       groups.get(key)!.matches.push(match);
     }
 
-    // Sort groups: active first, then recently finished (newest first), then scheduled
+    // Sort groups: active rounds first, then scheduled, then finished (at the bottom)
     const entries = [...groups.values()];
     entries.sort((a, b) => {
       const aActive = isRoundActive(a.matches);
@@ -178,15 +178,16 @@ export function ScheduleBoard({
       // Active rounds first
       if (aActive && !bActive) return -1;
       if (!aActive && bActive) return 1;
-      // Then finished rounds (most recently played first)
+      // Scheduled rounds second (not finished, not active)
+      if (!aFinished && bFinished) return -1;
+      if (aFinished && !bFinished) return 1;
+      // Finished rounds last (most recently played first)
       if (aFinished && bFinished) {
         const aLatest = Math.max(...a.matches.map(m => new Date(m.startAt).getTime()));
         const bLatest = Math.max(...b.matches.map(m => new Date(m.startAt).getTime()));
         return bLatest - aLatest;
       }
-      if (aFinished && !bFinished) return -1;
-      if (!aFinished && bFinished) return 1;
-      // Scheduled: by round index ascending
+      // Both scheduled: by round index ascending
       return a.roundIndex - b.roundIndex;
     });
 

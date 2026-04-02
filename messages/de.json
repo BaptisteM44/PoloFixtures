@@ -542,6 +542,7 @@
     "communaute_free_agents_desc": "Spieler ohne Team, die dieser Turniergruppe beitreten möchten.",
     "communaute_looking": "Suchst du ein Team?",
     "status_live": "Läuft",
+    "status_upcoming": "Bevorstehend",
     "status_completed": "Beendet",
     "status_reg_open": "Registrierung offen",
     "status_reg_closed": "Registrierung geschlossen",

@@ -439,8 +439,33 @@ export function OrgaDashboard({
           {/* ── Planning standard (non-Berlin) ── */}
           {tournament.saturdayFormat !== "BERLIN_MIXED" && (
             <>
-              {/* Jour 1 — état des matchs */}
-              {hasAnyMatches && (
+              {/* Jour 1 — matchs pool séparés par pool pour format multi-poule */}
+              {hasAnyMatches && (tournament.poolCount ?? 1) > 1 && (
+                <>
+                  {pools.map((pool: any) => {
+                    const poolTeamIds = new Set(pool.teams.map((pt: any) => pt.team.id));
+                    const matchesInPool = poolMatches.filter((m) => poolTeamIds.has(m.teamAId) || poolTeamIds.has(m.teamBId));
+                    return (
+                      <div key={pool.id} className="panel">
+                        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
+                          {t("orga_day1_label")} — {pool.name}
+                        </p>
+                        {matchesInPool.length === 0 ? (
+                          <p className="meta">{t("orga_matches_not_generated")}</p>
+                        ) : (
+                          <p style={{ fontSize: 13, margin: 0, color: matchesInPool.every((m) => m.status === "FINISHED") ? "var(--teal)" : "var(--text)" }}>
+                            {t("orga_matches_finished_count", { done: matchesInPool.filter((m) => m.status === "FINISHED").length, total: matchesInPool.length })}
+                            {matchesInPool.every((m) => m.status === "FINISHED") ? " ✓" : ""}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {/* Jour 1 — matchs pool (format simple ou Swiss) */}
+              {hasAnyMatches && (tournament.poolCount ?? 1) === 1 && (
                 <div className="panel">
                   <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
                     {t("orga_day1_label")} — {tournament.saturdayFormat === "SWISS" ? "Swiss" : "Pools"}
@@ -457,17 +482,24 @@ export function OrgaDashboard({
               )}
 
               {/* Cross-pool (format Barcelona) */}
-              {tournament.crossPool && (isLive || tournament.status === "COMPLETED") && (
+              {tournament.crossPool && (isLive || tournament.status === "COMPLETED") && poolMatchesFinished && (
                 <div className="panel">
+                  <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
+                    {t("orga_day2_label")} — {t("orga_format_cross_pool")}
+                  </p>
                   <CrossPoolActions
                     tournamentId={tournament.id}
-                    hasCrossPool={true}
+                    hasCrossPool={tournament.crossPool}
                     poolMatchesFinished={poolMatchesFinished}
-                    crossPoolGenerated={crossPoolGenerated}
-                    crossPoolFinished={crossPoolFinished}
-                    seGenerated={seGenerated}
-                    seRound1Finished={seRound1Finished}
-                    deGenerated={deGenerated}
+                    crossPoolGenerated={matches.some((m) => m.phase === "CROSS_POOL")}
+                    crossPoolFinished={matches
+                      .filter((m) => m.phase === "CROSS_POOL")
+                      .every((m) => m.status === "FINISHED")}
+                    seGenerated={matches.some((m) => m.phase === "SE")}
+                    seRound1Finished={matches
+                      .filter((m) => m.phase === "SE" && m.roundIndex === 1)
+                      .every((m) => m.status === "FINISHED")}
+                    deGenerated={matches.some((m) => m.phase === "DE")}
                   />
                 </div>
               )}

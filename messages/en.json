@@ -542,6 +542,7 @@
     "created_toast_title": "Tournament created!",
     "created_toast_desc": "You can now complete the information and publish your tournament.",
     "status_live": "Live",
+    "status_upcoming": "Upcoming",
     "status_completed": "Completed",
     "status_reg_open": "Registration open",
     "status_reg_closed": "Registration closed",
