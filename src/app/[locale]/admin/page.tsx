@@ -18,7 +18,7 @@ export default async function AdminPage() {
 
   const pending = await prisma.tournament.findMany({
     where: { submissionStatus: "PENDING" },
-    include: { creator: { select: { id: true, name: true, slug: true } } },
+    select: { id: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, createdAt: true, testMode: true, creator: { select: { id: true, name: true, slug: true } } },
     orderBy: { createdAt: "asc" }
   });
 
@@ -76,6 +76,7 @@ export default async function AdminPage() {
           dateStart: t.dateStart.toISOString(),
           dateEnd: t.dateEnd.toISOString(),
           createdAt: t.createdAt.toISOString(),
+          testMode: t.testMode,
           creatorName: t.creator?.name ?? "?",
           creatorId: t.creator?.id ?? null,
           creatorSlug: t.creator?.slug ?? null,

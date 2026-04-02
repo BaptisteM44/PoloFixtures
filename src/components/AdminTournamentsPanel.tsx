@@ -13,6 +13,7 @@ type PendingTournament = {
   dateStart: string;
   dateEnd: string;
   createdAt: string;
+  testMode: boolean;
   creatorName: string;
   creatorId: string | null;
   creatorSlug?: string | null;
@@ -71,22 +72,28 @@ function TournamentRow({
           <Link href={`/tournament/${t.id}/edit`} style={{ color: "var(--text-muted)", fontSize: 11 }}>{tr("view_edition")}</Link>
         </p>
       </div>
-      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-        <button
-          className="primary"
-          style={{ fontSize: 12, padding: "6px 14px" }}
-          disabled={approving === t.id}
-          onClick={() => onApprove(t.id)}
-        >
-          {approving === t.id ? "…" : tr("btn_approve_check")}
-        </button>
-        <button
-          className="ghost"
-          style={{ fontSize: 12, padding: "6px 14px", borderColor: "var(--pink)", color: "var(--pink)" }}
-          onClick={() => onReject(t.id)}
-        >
-          {tr("btn_reject_cross")}
-        </button>
+      <div style={{ display: "flex", gap: 8, flexShrink: 0, flexDirection: "column", alignItems: "flex-end" }}>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            className="primary"
+            style={{ fontSize: 12, padding: "6px 14px", opacity: t.testMode ? 0.5 : 1 }}
+            disabled={approving === t.id || t.testMode}
+            onClick={() => onApprove(t.id)}
+            title={t.testMode ? tr("test_mode_pending") : undefined}
+          >
+            {approving === t.id ? "…" : tr("btn_approve_check")}
+          </button>
+          <button
+            className="ghost"
+            style={{ fontSize: 12, padding: "6px 14px", borderColor: "var(--pink)", color: "var(--pink)" }}
+            onClick={() => onReject(t.id)}
+          >
+            {tr("btn_reject_cross")}
+          </button>
+        </div>
+        {t.testMode && (
+          <span style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic" }}>🧪 {tr("test_mode_label")}</span>
+        )}
       </div>
     </div>
   );

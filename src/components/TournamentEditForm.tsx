@@ -55,6 +55,7 @@ type Tournament = {
   gfReset?: boolean;
   status: string;
   locked: boolean;
+  testMode?: boolean;
   accommodationAvailable?: boolean;
   accommodationType?: string | null;
   accommodationCapacity?: number | null;
@@ -200,6 +201,9 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const [rushRegistration, setRushRegistration] = useState(
     (tournament as { rushRegistration?: boolean }).rushRegistration ?? false
   );
+
+  // Test mode
+  const [testMode, setTestMode] = useState(tournament.testMode ?? false);
 
   // Hébergement
   const [accommodation, setAccommodation] = useState(tournament.accommodationAvailable ?? false);
@@ -369,6 +373,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         {/* ABC Chapeau hidden field */}
         <input type="hidden" name="maxSoloPlayers" value={maxSoloPlayers} />
         <input type="hidden" name="rushRegistration" value={rushRegistration ? "true" : "false"} />
+        <input type="hidden" name="testMode" value={testMode ? "true" : "false"} />
 
         {/* Hidden fields for new data */}
         <input type="hidden" name="accommodationAvailable" value={accommodation ? "true" : "false"} />
@@ -511,6 +516,20 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
               </span>
             </label>
           </div>
+
+          {/* ── Test mode toggle ── */}
+          <label style={{ display: "flex", flexDirection: "row", gap: 12, alignItems: "center", fontSize: 13, cursor: "pointer", gridColumn: "1 / -1", padding: "12px 16px", background: "var(--bg-secondary)", borderRadius: 8 }}>
+            <input
+              type="checkbox"
+              checked={testMode}
+              onChange={(e) => setTestMode(e.target.checked)}
+              style={{ width: 18, height: 18, cursor: "pointer", flexShrink: 0 }}
+            />
+            <span>
+              <div style={{ fontWeight: 600 }}>{t("field_test_mode")}</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{t("field_test_mode_desc")}</div>
+            </span>
+          </label>
 
           {/* ── Format section (presets + lock) ── */}
           <div style={{ gridColumn: "1 / -1", border: "2px solid var(--border)", borderRadius: 10, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 16 }}>

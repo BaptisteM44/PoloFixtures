@@ -16,6 +16,7 @@ import { RefereeManager } from "@/components/RefereeManager";
 import ConfirmFormButton from "@/components/ConfirmFormButton";
 import { PaymentTracker } from "@/components/PaymentTracker";
 import { PoolScheduleEditor } from "@/components/PoolScheduleEditor";
+import { TestModeToggle } from "@/components/TestModeToggle";
 
 // ─── BerlinMixedPlanning ─────────────────────────────────────────────────────
 
@@ -250,11 +251,14 @@ export function OrgaDashboard({
 
       {/* ── Tab: Config ── */}
       {activeTab === "config" && (
-        <TournamentEditForm
-          tournament={tournament}
-          action={updateAction}
-          toggleLockAction={toggleLockAction}
-        />
+        <>
+          <TestModeToggle tournamentId={tournament.id} initialTestMode={tournament.testMode ?? false} />
+          <TournamentEditForm
+            tournament={tournament}
+            action={updateAction}
+            toggleLockAction={toggleLockAction}
+          />
+        </>
       )}
 
       {/* ── Tab: Équipes ── */}
