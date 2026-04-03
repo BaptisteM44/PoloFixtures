@@ -327,16 +327,23 @@ function TeamRow({
             {showPayment && (
               <button
                 onClick={handleTogglePayment}
-                title={team.feePaid ? t("fee_paid") : t("fee_unpaid")}
                 style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: "none", border: "none", cursor: "pointer", padding: 0, flexShrink: 0,
+                }}
+              >
+                <span style={{
                   width: 20, height: 20, borderRadius: 4, flexShrink: 0,
                   border: `2px solid ${team.feePaid ? "var(--teal)" : "var(--border)"}`,
                   background: team.feePaid ? "var(--teal)" : "transparent",
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 13, color: "#fff", padding: 0,
-                }}
-              >
-                {team.feePaid ? "✓" : ""}
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 13, color: "#fff",
+                }}>
+                  {team.feePaid ? "✓" : ""}
+                </span>
+                <span style={{ fontSize: 12, color: team.feePaid ? "var(--teal)" : "var(--text-muted)" }}>
+                  {t("paid")}
+                </span>
               </button>
             )}
 
