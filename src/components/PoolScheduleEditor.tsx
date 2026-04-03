@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { reschedulePoolMatchesAction } from "@/app/[locale]/tournament/[id]/edit/pool-schedule-actions";
 
 interface Props {
@@ -27,10 +28,15 @@ export function PoolScheduleEditor({
   poolCount,
   tournamentDateStart,
 }: Props) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [poolATime, setPoolATime] = useState(poolAStart?.slice(11, 16) ?? "09:00");
   const [poolBTime, setPoolBTime] = useState(poolBStart?.slice(11, 16) ?? "12:00");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Sync state when server-side props update (after router.refresh)
+  useEffect(() => { if (poolAStart) setPoolATime(poolAStart.slice(11, 16)); }, [poolAStart]);
+  useEffect(() => { if (poolBStart) setPoolBTime(poolBStart.slice(11, 16)); }, [poolBStart]);
 
   const baseDate = toLocalDateString(tournamentDateStart);
 
@@ -45,6 +51,7 @@ export function PoolScheduleEditor({
       } else {
         setMessage({ type: "success", text: "Horaires mis à jour ✓" });
         setTimeout(() => setMessage(null), 3000);
+        router.refresh();
       }
     });
   };
