@@ -8,6 +8,7 @@ import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
 import { generatePools, generatePoolMatches, generateBracket, generateSwissRound, generateCrossPoolMatches, nextPowerOf2 } from "@/lib/bracket";
 import { computeStandings } from "@/lib/standings";
+import { computeCareerBadges } from "@/lib/achievements";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
 
 async function requireTournamentOrgaAccess(tournamentId: string): Promise<{ error: string } | null> {
@@ -1524,6 +1525,13 @@ export async function resetTournamentAction(
   if (!tournament) return { error: "Tournoi introuvable." };
   if (tournament.status === "COMPLETED") return { error: "Impossible de reset un tournoi terminé." };
 
+  // Collect all player IDs from this tournament before deleting
+  const teamPlayers = await prisma.teamPlayer.findMany({
+    where: { team: { tournamentId: id } },
+    select: { playerId: true },
+  });
+  const playerIds = [...new Set(teamPlayers.map((tp) => tp.playerId))];
+
   await prisma.$transaction(async (tx) => {
     await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id } } });
     await tx.match.deleteMany({ where: { tournamentId: id } });
@@ -1534,6 +1542,16 @@ export async function resetTournamentAction(
       data: { status: "UPCOMING", locked: false },
     });
   }, { timeout: 15000 });
+
+  // Recompute badges for all affected players (events deleted = badges may change)
+  for (const playerId of playerIds) {
+    try {
+      const newBadges = await computeCareerBadges(playerId);
+      await prisma.player.update({ where: { id: playerId }, data: { badges: newBadges } });
+    } catch {
+      // Non-blocking: don't fail the reset if badge recompute fails
+    }
+  }
 
   revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);
