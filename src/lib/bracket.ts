@@ -170,7 +170,7 @@ export function generatePoolMatches(
 export function generateSwissRound(
   teams: Team[],
   standings: StandingRow[],
-  existingMatches: Array<{ teamAId: string | null; teamBId: string | null }>,
+  existingMatches: Array<{ teamAId: string | null; teamBId: string | null; courtName?: string | null }>,
   roundIndex: number,
   courtNames: string[],
   startAt: Date,
@@ -185,6 +185,18 @@ export function generateSwissRound(
     if (m.teamAId && m.teamBId) {
       played.add(`${m.teamAId}|${m.teamBId}`);
       played.add(`${m.teamBId}|${m.teamAId}`);
+    }
+  }
+
+  // Count how many times each team has played on each court (for equitable distribution)
+  const teamCourtCount = new Map<string, Map<string, number>>();
+  for (const team of teams) {
+    teamCourtCount.set(team.id, new Map(courtNames.map((c) => [c, 0])));
+  }
+  for (const m of existingMatches) {
+    if (m.courtName && m.teamAId && m.teamBId) {
+      teamCourtCount.get(m.teamAId)?.set(m.courtName, (teamCourtCount.get(m.teamAId)?.get(m.courtName) ?? 0) + 1);
+      teamCourtCount.get(m.teamBId)?.set(m.courtName, (teamCourtCount.get(m.teamBId)?.get(m.courtName) ?? 0) + 1);
     }
   }
 
@@ -214,12 +226,29 @@ export function generateSwissRound(
   const courtFree: Date[] = courtNames.map(() => new Date(startAt));
 
   return pairs.map(([teamA, teamB]) => {
+    // Pick the court that minimises total plays for both teams on it,
+    // using availability as a tiebreaker.
     let bestIdx = 0;
-    for (let c = 1; c < courtNames.length; c++) {
-      if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
+    let bestScore = Infinity;
+    for (let c = 0; c < courtNames.length; c++) {
+      const courtPlays =
+        (teamCourtCount.get(teamA.id)?.get(courtNames[c]) ?? 0) +
+        (teamCourtCount.get(teamB.id)?.get(courtNames[c]) ?? 0);
+      // Score = combined court plays * large weight + time offset (seconds) as tiebreaker
+      const timeOffset = (courtFree[c].getTime() - startAt.getTime()) / 1000;
+      const score = courtPlays * 10000 + timeOffset;
+      if (score < bestScore) {
+        bestScore = score;
+        bestIdx = c;
+      }
     }
+
     const slot = new Date(courtFree[bestIdx]);
     courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
+
+    // Update local court count for subsequent pairs in this round
+    teamCourtCount.get(teamA.id)?.set(courtNames[bestIdx], (teamCourtCount.get(teamA.id)?.get(courtNames[bestIdx]) ?? 0) + 1);
+    teamCourtCount.get(teamB.id)?.set(courtNames[bestIdx], (teamCourtCount.get(teamB.id)?.get(courtNames[bestIdx]) ?? 0) + 1);
 
     return {
       phase: "SWISS" as MatchPhase,
