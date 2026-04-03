@@ -208,6 +208,8 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               rushRegistration: (t_ as any).rushRegistration,
               maxSoloPlayers: (t_ as any).maxSoloPlayers,
               testMode: (t_ as any).testMode ?? false,
+              saturdayPoolAStart: t_.saturdayPoolAStart?.toISOString() ?? null,
+              saturdayPoolBStart: t_.saturdayPoolBStart?.toISOString() ?? null,
             }}
             teams={t_.teams}
             freeAgents={t_.freeAgents}
