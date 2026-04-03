@@ -23,12 +23,15 @@ export default function AdminPlayersPage() {
   const t = useTranslations("admin");
   const [players, setPlayers] = useState<Player[]>([]);
   const [filter, setFilter] = useState<"PENDING" | "ACTIVE" | "REJECTED">("PENDING");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [suspendModal, setSuspendModal] = useState<{ playerId: string; name: string } | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
 
-  const load = () => {
-    fetch(`/api/players?status=${filter}`)
+  const load = (q = search) => {
+    const params = new URLSearchParams({ status: filter, hasAccount: "true" });
+    if (q.trim()) params.set("search", q.trim());
+    fetch(`/api/players?${params}`)
       .then((res) => res.json())
       .then((data) => setPlayers(data));
   };
@@ -38,6 +41,13 @@ export default function AdminPlayersPage() {
     load();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
+
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => { setPage(1); load(search); }, 280);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   const { items: paged, totalPages, page: safePage } = paginate(players, page, PER_PAGE);
 
@@ -88,7 +98,7 @@ export default function AdminPlayersPage() {
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
         {(["PENDING", "ACTIVE", "REJECTED"] as const).map((s) => (
           <button key={s} className={filter === s ? "primary" : "ghost"} onClick={() => setFilter(s)} style={{ fontSize: 12 }}>
             {s === "PENDING" ? t("filter_pending") : s === "ACTIVE" ? t("filter_active") : t("filter_rejected")}
@@ -97,6 +107,15 @@ export default function AdminPlayersPage() {
         <span style={{ fontSize: 13, color: "var(--text-muted)", marginLeft: "auto" }}>
           {players.length === 1 ? t("players_count_one", { count: players.length }) : t("players_count_other", { count: players.length })}
         </span>
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <input
+          type="search"
+          placeholder={t("search_players_placeholder")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ width: "100%", maxWidth: 340 }}
+        />
       </div>
 
       <div className="panel">

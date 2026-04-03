@@ -145,43 +145,204 @@ export default function DemoCardsPage() {
   return (
     <div style={{ background: "#06080f", minHeight: "100vh" }}>
       <div style={PAGE}>
-        <div style={{ textAlign: "center", paddingTop: 32, paddingBottom: 80 }}>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 36, marginBottom: 12, fontWeight: 700 }}>
-            🃏 Demo Cards
+
+        {/* ══════════════════════════════════════════════
+            WOW — plein fond nébuleuse, 3 cartes flottantes
+            ══════════════════════════════════════════════ */}
+        <div style={{ textAlign: "center", paddingTop: 32, paddingBottom: 48 }}>
+          <p style={{ color: "#4a5888", fontFamily: "var(--font-display)", fontSize: 12, letterSpacing: "0.3em", textTransform: "uppercase", marginBottom: 12 }}>
+            Système de cartes
+          </p>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 48, fontWeight: 900, letterSpacing: "0.06em", background: "linear-gradient(130deg, #c8d4ff 0%, #80d4ff 45%, #e0b8ff 80%, #ffffff 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 16, lineHeight: 1.1 }}>
+            CONSTELLATION
           </h1>
-          <p style={MUTED}>A showcase of player cards at different rarity tiers with various effects.</p>
+          <p style={{ color: "#5a6888", maxWidth: 500, margin: "0 auto", lineHeight: 1.8, fontSize: 14 }}>
+            Chaque badge est une étoile. Ta carte t&apos;appartient.
+            Passe ta souris sur une carte.
+          </p>
         </div>
 
+        <div className="demo-wow-stage" style={{ marginBottom: 96 }}>
+          <div className="demo-wow-cards-row">
+
+            {/* Carte 1 — Constellation toute la carte */}
+            <div className="demo-wow-item">
+              <div className="demo-wow-float" style={{ animationDelay: "0s" }}>
+                <div className="demo-wow-scale">
+                  <PokemonCard
+                    {...PLAYERS.legend}
+                    theme="midnight"
+                    holoFull="constellation"
+                    metalBorder="platinum"
+                  />
+                </div>
+              </div>
+              <span className="demo-wow-label">Constellation · Platinum</span>
+            </div>
+
+            {/* Carte 2 — Aurora + Champion glow */}
+            <div className="demo-wow-item">
+              <div className="demo-wow-float" style={{ animationDelay: "-1.6s" }}>
+                <div className="demo-wow-scale">
+                  <PokemonCard
+                    {...PLAYERS.legend}
+                    theme="midnight"
+                    holoFull="aurora"
+                    metalBorder="diamond"
+                  />
+                </div>
+              </div>
+              <span className="demo-wow-label">Aurora · Diamond</span>
+            </div>
+
+            {/* Carte 3 — Sequin + glow-champ */}
+            <div className="demo-wow-item">
+              <div className="demo-wow-float" style={{ animationDelay: "-3.2s" }}>
+                <div className="demo-wow-scale">
+                  <PokemonCard
+                    {...PLAYERS.legend}
+                    theme="midnight"
+                    holoFull="sequin"
+                    cardFx="glow-champ"
+                  />
+                </div>
+              </div>
+              <span className="demo-wow-label">Sequin · Champion</span>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Les raretés */}
         <section style={SECTION}>
-          <h2 style={H2}>Rarity Tiers</h2>
+          <h2 style={H2}>Niveaux de rayonnement</h2>
+          <p style={MUTED}>
+            Plus tu collectes de badges, plus ta carte évolue.
+          </p>
           <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
-            {TIERS.map(({ key, tier, color }) => (
+            {TIERS.map(({ key, tier, color, stars, desc }) => (
               <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color, textTransform: "uppercase" }}>
-                  {tier}
-                </span>
                 <PokemonCard {...PLAYERS[key as keyof typeof PLAYERS]} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color, textTransform: "uppercase" }}>{tier}</div>
+                  <div style={{ color, fontSize: 10, opacity: 0.65 }}>{stars} · {desc}</div>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
+        {/* Scroll mobile */}
         <section style={SECTION}>
-          <h2 style={H2}>Scroll Tilt Effect (Mobile)</h2>
-          <p style={MUTED}>On mobile, cards tilt with scroll. Hover effects on desktop.</p>
+          <h2 style={H2}>📱 Effet scroll mobile</h2>
+          <p style={MUTED}>Sur téléphone, la carte s&apos;incline en 3D au fil du scroll.</p>
           <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
             <ScrollTiltCard {...PLAYERS.mythic} />
             <ScrollTiltCard {...PLAYERS.legend} />
           </div>
         </section>
 
+        {/* Berlin */}
         <section style={SECTION}>
-          <h2 style={H2}>Berlin Theme</h2>
+          <h2 style={H2}>🐻 Berlin Cup — Bauhaus</h2>
+          <p style={MUTED}>Blanc cassé · noir · rouge · typographie géométrique.</p>
           <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
-            <PokemonCard {...PLAYERS.berlin} />
+            <PokemonCard name="Kurt Stahl" country="Germany" city="Berlin" startYear={2019} theme="berlin_bauhaus" photoPath="/uploads/NN-4CYaU.jpeg" badges={[
+              "first_blood","hat_trick","sniper","goal_machine","champion",
+              "team_player","squad_up","veteran","road_warrior",
+              "host","welcome","og","say_cheese","night_owl","collector",
+            ]} />
+            <PokemonCard name="Anya Weiss" country="Germany" city="Berlin" startYear={2021} theme="berlin_bauhaus" variant="fullart" photoPath="/uploads/AddvmWVW.jpeg" badges={[
+              "first_blood","hat_trick","sniper","goal_machine","century_club",
+              "champion","back_to_back","unbeaten",
+              "team_player","squad_up","veteran","road_warrior","globe_trotter",
+              "host","serial_organizer","community_builder",
+              "welcome","og","regular","addict","profile_complete","say_cheese",
+              "chatterbox","hype_machine","captain","night_owl","collector","completionist",
+            ]} />
           </div>
         </section>
+
+        {/* Contours métalliques */}
+        <section style={SECTION}>
+          <h2 style={H2}>✦ Contours métalliques</h2>
+          <p style={MUTED}>5 paliers de rareté — le contour tourne avec son éclat.</p>
+          <div style={{ display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center" }}>
+            {[
+              { level: "bronze",   color: "#cd7f32", name: "Iron Wolf",   country: "Germany",     city: "Berlin",    year: 2020, photo: "/uploads/NN-4CYaU.jpeg", badges: ["first_blood","hat_trick","team_player","welcome","profile_complete"] },
+              { level: "silver",   color: "#c8c8c8", name: "Silver Fox",  country: "Sweden",      city: "Stockholm", year: 2017, photo: "/uploads/AddvmWVW.jpeg", badges: ["first_blood","hat_trick","sniper","team_player","squad_up","veteran","welcome","og","profile_complete"] },
+              { level: "gold",     color: "#ffd700", name: "Golden Ace",  country: "France",      city: "Lyon",      year: 2015, photo: "/uploads/NN-4CYaU.jpeg", badges: ["first_blood","hat_trick","sniper","goal_machine","champion","team_player","squad_up","veteran","road_warrior","host","welcome","og","regular","profile_complete","say_cheese","chatterbox"] },
+              { level: "platinum", color: "#d0d0f0", name: "Plata Storm", country: "Netherlands", city: "Amsterdam", year: 2013, photo: "/uploads/AddvmWVW.jpeg", badges: ["first_blood","hat_trick","sniper","goal_machine","century_club","champion","back_to_back","team_player","squad_up","veteran","road_warrior","globe_trotter","host","serial_organizer","welcome","og","regular","addict","profile_complete","say_cheese","captain","chatterbox","collector"] },
+              { level: "diamond",  color: null,      name: "Diamond Rex", country: "Japan",       city: "Tokyo",     year: 2011, photo: "/uploads/NN-4CYaU.jpeg", badges: ["first_blood","hat_trick","sniper","goal_machine","century_club","champion","back_to_back","unbeaten","team_player","squad_up","veteran","road_warrior","globe_trotter","loyal_rider","host","serial_organizer","welcome","og","regular","addict","profile_complete","say_cheese","captain","chatterbox","hype_machine","night_owl","collector"] },
+            ].map(({ level, color, name, country, city, year, photo, badges }) => (
+              <div key={level} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                {color
+                  ? <span style={{ fontFamily: "var(--font-display)", fontSize: 11, color, letterSpacing: "0.12em", textTransform: "uppercase" }}>{level.toUpperCase()}</span>
+                  : <span style={{ fontFamily: "var(--font-display)", fontSize: 11, background: "linear-gradient(90deg,#ff0080,#ffd700,#00ffff,#8000ff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "0.12em" }}>DIAMOND</span>
+                }
+                <PokemonCard name={name} country={country} city={city} startYear={year} photoPath={photo}
+                  metalBorder={level as any} theme={level === "diamond" ? "midnight" : undefined} badges={badges} />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Tous les effets */}
+        <section style={SECTION}>
+          <h2 style={H2}>🌌 Effets WebGL & CSS</h2>
+          <p style={MUTED}>Survole pour les activer à fond.</p>
+
+          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 13, marginBottom: 24, textAlign: "center", color: "#80d4ff", letterSpacing: "0.15em", textTransform: "uppercase" }}>Sur la photo</h3>
+          <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 56, justifyContent: "center" }}>
+            {[
+              { id: "constellation", label: "Constellation", color: "#80d4ff" },
+              { id: "glitter",       label: "Paillettes",    color: "#ffe080" },
+              { id: "iris",          label: "Iris",          color: "#ff8fc8" },
+              { id: "chromatic",     label: "Chromatique",   color: "#80ffcc" },
+            ].map(({ id, label, color }) => (
+              <div key={id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                <span style={{ fontFamily: "var(--font-display)", fontSize: 11, color, letterSpacing: "0.15em", textTransform: "uppercase" }}>{label}</span>
+                <PokemonCard {...PLAYERS.legend} theme="midnight" holoVariant={id as any} />
+              </div>
+            ))}
+          </div>
+
+          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 13, marginBottom: 24, textAlign: "center", color: "#ff6b6b", letterSpacing: "0.15em", textTransform: "uppercase" }}>Toute la carte</h3>
+          <div style={{ display: "flex", gap: 28, flexWrap: "wrap", marginBottom: 56, justifyContent: "center" }}>
+            {[
+              { id: "constellation", label: "Constellation", color: "#80d4ff" },
+              { id: "plasma",        label: "Plasma",        color: "#c77dff" },
+              { id: "sequin",        label: "Sequin",        color: "#f9c8ff" },
+              { id: "aurora",        label: "Aurora",        color: "#a0e9a0" },
+            ].map(({ id, label, color }) => (
+              <div key={id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                <span style={{ fontFamily: "var(--font-display)", fontSize: 11, color, letterSpacing: "0.15em", textTransform: "uppercase" }}>{label}</span>
+                <PokemonCard {...PLAYERS.legend} theme="midnight" holoFull={id as any} />
+              </div>
+            ))}
+          </div>
+
+          <h3 style={{ fontFamily: "var(--font-display)", fontSize: 13, marginBottom: 24, textAlign: "center", color: "#7fc4e8", letterSpacing: "0.15em", textTransform: "uppercase" }}>Effets CSS</h3>
+          <div style={{ display: "flex", gap: 28, flexWrap: "wrap", justifyContent: "center" }}>
+            {[
+              { fx: "foil"       as const, label: "Foil",        color: "#c8c8c8" },
+              { fx: "glow"       as const, label: "Glow",        color: "#80e8ff" },
+              { fx: "glow-champ" as const, label: "Champion",    color: null      },
+              { fx: "scanlines"  as const, label: "Scanlines",   color: "#8080a0" },
+            ].map(({ fx, label, color }) => (
+              <div key={fx} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                {color
+                  ? <span style={{ fontFamily: "var(--font-display)", fontSize: 11, color, letterSpacing: "0.15em", textTransform: "uppercase" }}>{label}</span>
+                  : <span style={{ fontFamily: "var(--font-display)", fontSize: 11, background: "linear-gradient(90deg,#0033a0,#c60c30,#333,#ffd200,#00a651)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "0.15em", textTransform: "uppercase" as const }}>{label}</span>
+                }
+                <PokemonCard {...PLAYERS.veteran} cardFx={fx} />
+              </div>
+            ))}
+          </div>
+        </section>
+
       </div>
     </div>
   );
 }
+

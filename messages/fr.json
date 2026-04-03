@@ -946,6 +946,7 @@
     "filter_pending": "En attente",
     "filter_active": "Actifs",
     "filter_rejected": "Refusés",
+    "search_players_placeholder": "Rechercher un joueur…",
     "players_count_one": "{count} joueur",
     "players_count_other": "{count} joueurs",
     "empty_players": "Aucun joueur dans cette catégorie.",
