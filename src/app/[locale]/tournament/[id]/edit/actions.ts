@@ -56,7 +56,7 @@ const updateSchema = z.object({
   crossPool: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   swissRounds: z.coerce.number().int().min(1).max(20).default(5),
   bracketSize: z.coerce.number().int().min(2).max(64).default(16),
-  sundayFormat: z.enum(["SE", "DE", "RR"]),
+  sundayFormat: z.enum(["SE", "DE", "RR", "SWISS_SPLIT_SE"]),
   scoringSystem: z.string().default("3/1"),
   thirdPlaceMatch: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   gfReset: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),

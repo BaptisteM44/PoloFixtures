@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { TournamentEditForm } from "@/components/TournamentEditForm";
-import { TeamManager } from "@/components/TeamManager";
+import { UnifiedTeamManager } from "@/components/UnifiedTeamManager";
 import { PoolAssignment } from "@/components/PoolAssignment";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { CrossPoolActions } from "@/components/CrossPoolActions";
@@ -14,7 +14,6 @@ import { SponsorManager } from "@/components/SponsorManager";
 import { CoOrganizerManager } from "@/components/CoOrganizerManager";
 import { RefereeManager } from "@/components/RefereeManager";
 import ConfirmFormButton from "@/components/ConfirmFormButton";
-import { PaymentTracker } from "@/components/PaymentTracker";
 import { PoolScheduleEditor } from "@/components/PoolScheduleEditor";
 import { TestModeToggle } from "@/components/TestModeToggle";
 
@@ -148,13 +147,13 @@ type OrgaDashboardProps = {
   resetAction: (formData: FormData) => Promise<void>;
 };
 
-type Tab = "config" | "teams" | "planning" | "orgateam";
+type Tab = "teams" | "config" | "planning" | "orgateam";
 
 // ─── Tab label helper ─────────────────────────────────────────────────────────
 
 const TAB_KEYS: Record<Tab, string> = {
-  config:   "orga_tab_config",
   teams:    "orga_tab_teams",
+  config:   "orga_tab_config",
   planning: "orga_tab_planning",
   orgateam: "orga_tab_orgateam",
 };
@@ -186,7 +185,7 @@ export function OrgaDashboard({
   resetAction,
 }: OrgaDashboardProps) {
   const t = useTranslations("tournament");
-  const [activeTab, setActiveTab] = useState<Tab>("config");
+  const [activeTab, setActiveTab] = useState<Tab>("teams");
 
   // Derived match state
   const poolMatches = matches.filter((m) => m.phase === "POOL" || m.phase === "SWISS");
@@ -228,7 +227,7 @@ export function OrgaDashboard({
           <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{teams.reduce((acc, t) => acc + t.players.length, 0)}</div>
           <p className="meta">{t("edit_kpi_players")}</p>
         </div>
-        <div className="panel" style={{ textAlign: "center", padding: 16 }}>
+        <div className="panel" style={{ textAlign: "center", padding: 16 }} data-hide-mobile>
           <span className={`status ${tournament.status.toLowerCase()}`}>{tournament.status}</span>
         </div>
       </div>
@@ -236,7 +235,7 @@ export function OrgaDashboard({
       {/* ── Tab bar ── */}
       <div className="tabs-bar" style={{ marginTop: 0 }}>
         <div className="tabs">
-          {(["config", "teams", "planning", "orgateam"] as Tab[]).map((tab) => (
+          {(["teams", "config", "planning", "orgateam"] as Tab[]).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -264,35 +263,33 @@ export function OrgaDashboard({
       {/* ── Tab: Équipes ── */}
       {activeTab === "teams" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <PaymentTracker
-            teams={teams}
-            feePerTeam={tournament.registrationFeePerTeam ?? 0}
-            currency={tournament.registrationFeeCurrency ?? "EUR"}
-          />
-          <TeamManager
+          <UnifiedTeamManager
             tournamentId={tournament.id}
             teams={teams}
             locked={tournament.locked}
             format={tournament.format}
+            showPayment={true}
+            showRecap={true}
+            feePerTeam={tournament.registrationFeePerTeam ?? 0}
+            feeCurrency={tournament.registrationFeeCurrency ?? "EUR"}
+            maxTeams={tournament.maxTeams}
             renameAction={renameTeamAction}
             deleteTeamAction={deleteTeamAction}
             removePlayerAction={removePlayerAction}
             addPlayerAction={addPlayerAction}
           />
 
-          <div className="panel">
-            <h3 style={{ marginBottom: 12 }}>{t("edit_free_agents_title", { count: freeAgents.length })}</h3>
-            {freeAgents.length === 0 ? (
-              <p className="meta">{t("edit_free_agents_empty")}</p>
-            ) : (
+          {freeAgents.length > 0 && (
+            <div className="panel">
+              <h3 style={{ marginBottom: 12 }}>{t("edit_free_agents_title", { count: freeAgents.length })}</h3>
               <FreeAgentList
                 agents={freeAgents}
                 canDelete
                 deleteAction={deleteFreeAgentAction}
                 title=""
               />
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 

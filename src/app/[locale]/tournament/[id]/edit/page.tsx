@@ -207,6 +207,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               scoringSystem: (t_ as any).scoringSystem,
               rushRegistration: (t_ as any).rushRegistration,
               maxSoloPlayers: (t_ as any).maxSoloPlayers,
+              testMode: (t_ as any).testMode ?? false,
             }}
             teams={t_.teams}
             freeAgents={t_.freeAgents}

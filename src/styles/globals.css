@@ -4070,6 +4070,9 @@ textarea {
   .kpi-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .kpi-grid [data-hide-mobile] {
+    display: none;
+  }
 }
 
 .meal-row {

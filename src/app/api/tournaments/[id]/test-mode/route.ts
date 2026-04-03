@@ -16,20 +16,28 @@ export async function PATCH(
     const body = await req.json();
     const { testMode } = body;
 
-    // Verify user is creator or admin
+    const playerId = session.user.playerId;
+    const role = session.user.role;
+
+    // Verify user is creator, admin, or orga for this tournament
     const tournament = await prisma.tournament.findUnique({
       where: { id },
-      select: { id: true, creatorId: true, testMode: true },
+      select: {
+        id: true, creatorId: true, testMode: true,
+        coOrganizers: { select: { playerId: true } },
+      },
     });
 
     if (!tournament) {
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    const isCreator = tournament.creatorId === session.user.playerId;
-    const isAdmin = session.user.role === "ADMIN";
+    const isAdmin = role === "ADMIN";
+    const isOrgaForThis = role === "ORGA" && session.user.tournamentId === id;
+    const isCreator = !!playerId && tournament.creatorId === playerId;
+    const isCoOrga = !!playerId && tournament.coOrganizers.some((co) => co.playerId === playerId);
 
-    if (!isCreator && !isAdmin) {
+    if (!isAdmin && !isOrgaForThis && !isCreator && !isCoOrga) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
