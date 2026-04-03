@@ -8,7 +8,7 @@ export async function PATCH(
 ) {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -26,8 +26,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Tournament not found" }, { status: 404 });
     }
 
-    const isCreator = tournament.creatorId === session.user.id;
-    const isAdmin = (session.user as any).isAdmin;
+    const isCreator = tournament.creatorId === session.user.playerId;
+    const isAdmin = session.user.role === "ADMIN";
 
     if (!isCreator && !isAdmin) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
