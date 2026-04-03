@@ -300,7 +300,7 @@
   "tournament": {
     "not_found": "Tournoi introuvable.",
     "not_approved": "Ce tournoi n'est pas encore approuvé.",
-    "btn_edit": "✏️ Modifier",
+    "btn_edit": "⚙️ Dashboard orga",
     "btn_referee": "⚖️ Arbitrer",
     "btn_contact_organizers": "Contacter les organisateurs",
     "btn_register_cta": "S'inscrire →",

@@ -300,7 +300,7 @@
   "tournament": {
     "not_found": "Torneo no encontrado.",
     "not_approved": "Este torneo aún no ha sido aprobado.",
-    "btn_edit": "✏️ Editar",
+    "btn_edit": "⚙️ Panel orga",
     "btn_referee": "⚖️ Arbitrar",
     "btn_contact_organizers": "Contactar a los organizadores",
     "btn_register_cta": "Inscribirse →",
