@@ -42,8 +42,9 @@ export function PoolScheduleEditor({
 
   const handleSave = () => {
     startTransition(async () => {
-      const poolADateTime = poolATime ? new Date(`${baseDate}T${poolATime}:00`).toISOString() : null;
-      const poolBDateTime = poolBTime && poolCount > 1 ? new Date(`${baseDate}T${poolBTime}:00`).toISOString() : null;
+      // Treat the entered time as UTC directly to avoid local timezone shift
+      const poolADateTime = poolATime ? `${baseDate}T${poolATime}:00.000Z` : null;
+      const poolBDateTime = poolBTime && poolCount > 1 ? `${baseDate}T${poolBTime}:00.000Z` : null;
 
       const res = await reschedulePoolMatchesAction(tournamentId, poolADateTime, poolBDateTime);
       if ("error" in res && res.error) {
