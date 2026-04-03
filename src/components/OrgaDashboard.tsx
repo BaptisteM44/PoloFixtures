@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { TournamentEditForm } from "@/components/TournamentEditForm";
 import { UnifiedTeamManager } from "@/components/UnifiedTeamManager";
@@ -185,7 +185,18 @@ export function OrgaDashboard({
   resetAction,
 }: OrgaDashboardProps) {
   const t = useTranslations("tournament");
-  const [activeTab, setActiveTab] = useState<Tab>("teams");
+  const tabStorageKey = `orga_tab_${tournament.id}`;
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem(tabStorageKey);
+      if (saved === "teams" || saved === "config" || saved === "planning" || saved === "orgateam") return saved;
+    }
+    return "config";
+  });
+
+  useEffect(() => {
+    localStorage.setItem(tabStorageKey, activeTab);
+  }, [activeTab, tabStorageKey]);
 
   // Derived match state
   const poolMatches = matches.filter((m) => m.phase === "POOL" || m.phase === "SWISS");
@@ -235,7 +246,7 @@ export function OrgaDashboard({
       {/* ── Tab bar ── */}
       <div className="tabs-bar" style={{ marginTop: 0 }}>
         <div className="tabs">
-          {(["teams", "config", "planning", "orgateam"] as Tab[]).map((tab) => (
+          {(["config", "teams", "planning", "orgateam"] as Tab[]).map((tab) => (
             <button
               key={tab}
               type="button"

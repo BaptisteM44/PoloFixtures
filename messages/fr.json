@@ -1720,7 +1720,16 @@
     "confirm_delete_team": "Supprimer l'équipe \"{name}\" ? Cette action est irréversible.",
     "confirm_remove_player": "Retirer {name} de l'équipe ?",
     "confirm_merge": "Fusionner \"{source}\" → \"{target}\" ?\n\nToutes les stats de \"{source}\" seront transférées à \"{target}\". Le profil fictif sera supprimé.",
-    "manual_name_country_required": "Nom et pays requis."
+    "manual_name_country_required": "Nom et pays requis.",
+    "fee_paid": "Frais payés",
+    "fee_unpaid": "Frais impayés",
+    "paid": "payé(s)",
+    "notes": "Notes",
+    "registration_note": "Note d'inscription",
+    "accommodation": "Hébergement",
+    "edit_team": "Modifier l'équipe",
+    "delete_team": "Supprimer l'équipe",
+    "players": "joueurs"
   },
   "match": {
     "status_scheduled": "Planifié",

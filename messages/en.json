@@ -1719,7 +1719,16 @@
     "confirm_delete_team": "Delete team \"{name}\"? This action cannot be undone.",
     "confirm_remove_player": "Remove {name} from the team?",
     "confirm_merge": "Merge \"{source}\" → \"{target}\"?\n\nAll stats from \"{source}\" will be transferred to \"{target}\". The placeholder profile will be deleted.",
-    "manual_name_country_required": "Name and country are required."
+    "manual_name_country_required": "Name and country are required.",
+    "fee_paid": "Fee paid",
+    "fee_unpaid": "Fee unpaid",
+    "paid": "paid",
+    "notes": "Notes",
+    "registration_note": "Registration note",
+    "accommodation": "Accommodation",
+    "edit_team": "Edit team",
+    "delete_team": "Delete team",
+    "players": "players"
   },
   "match": {
     "status_scheduled": "Scheduled",

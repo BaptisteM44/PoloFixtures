@@ -1724,7 +1724,16 @@
     "confirm_delete_team": "Team \"{name}\" löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "confirm_remove_player": "{name} aus dem Team entfernen?",
     "confirm_merge": "\"{source}\" → \"{target}\" zusammenführen?\n\nAlle Statistiken von \"{source}\" werden auf \"{target}\" übertragen. Das Platzhalterprofil wird gelöscht.",
-    "manual_name_country_required": "Name und Land sind erforderlich."
+    "manual_name_country_required": "Name und Land sind erforderlich.",
+    "fee_paid": "Gebühr bezahlt",
+    "fee_unpaid": "Gebühr ausstehend",
+    "paid": "bezahlt",
+    "notes": "Notizen",
+    "registration_note": "Anmeldenotiz",
+    "accommodation": "Unterkunft",
+    "edit_team": "Team bearbeiten",
+    "delete_team": "Team löschen",
+    "players": "Spieler"
   },
   "match": {
     "status_scheduled": "Geplant",

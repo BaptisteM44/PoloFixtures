@@ -1723,7 +1723,16 @@
     "confirm_delete_team": "¿Eliminar el equipo \"{name}\"? Esta acción es irreversible.",
     "confirm_remove_player": "¿Quitar a {name} del equipo?",
     "confirm_merge": "¿Fusionar \"{source}\" → \"{target}\"?\n\nTodas las estadísticas de \"{source}\" serán transferidas a \"{target}\". El perfil ficticio será eliminado.",
-    "manual_name_country_required": "El nombre y el país son obligatorios."
+    "manual_name_country_required": "El nombre y el país son obligatorios.",
+    "fee_paid": "Cuota pagada",
+    "fee_unpaid": "Cuota pendiente",
+    "paid": "pagado(s)",
+    "notes": "Notas",
+    "registration_note": "Nota de inscripción",
+    "accommodation": "Alojamiento",
+    "edit_team": "Editar equipo",
+    "delete_team": "Eliminar equipo",
+    "players": "jugadores"
   },
   "match": {
     "status_scheduled": "Programado",
