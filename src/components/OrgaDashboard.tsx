@@ -309,15 +309,14 @@ export function OrgaDashboard({
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
           {/* Pool Schedule Editor — éditer les horaires de chaque poule */}
-          {(tournament.poolCount ?? 1) > 1 && (
-            <PoolScheduleEditor
-              tournamentId={tournament.id}
-              gameDurationMin={tournament.gameDurationMin}
-              poolAStart={(tournament as any).saturdayPoolAStart}
-              poolBStart={(tournament as any).saturdayPoolBStart}
-              poolCount={tournament.poolCount ?? 1}
-            />
-          )}
+          <PoolScheduleEditor
+            tournamentId={tournament.id}
+            gameDurationMin={tournament.gameDurationMin}
+            poolAStart={(tournament as any).saturdayPoolAStart}
+            poolBStart={(tournament as any).saturdayPoolBStart}
+            poolCount={tournament.poolCount ?? 1}
+            tournamentDateStart={tournament.dateStart}
+          />
 
           {/* Pool Assignment (pour cross-pool format) */}
           {(tournament.poolCount ?? 1) > 1 && !isLive && (
