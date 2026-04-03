@@ -314,6 +314,8 @@
     "tab_pools": "Poules",
     "tab_swiss": "Classement",
     "tab_bracket": "Bracket",
+    "bracket_top10": "Top 10",
+    "bracket_bottom8": "Bottom 8",
     "tab_teams": "Équipes ({count})",
     "tab_live": "🔴 Live",
     "tab_free_agent": "Zone free agent",

@@ -314,6 +314,8 @@
     "tab_pools": "Gruppen",
     "tab_swiss": "Rangliste",
     "tab_bracket": "Bracket",
+    "bracket_top10": "Top 10",
+    "bracket_bottom8": "Bottom 8",
     "tab_teams": "Teams ({count})",
     "tab_live": "🔴 Live",
     "tab_free_agent": "Free-Agent-Zone",
