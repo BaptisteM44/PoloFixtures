@@ -225,37 +225,62 @@ export function generateSwissRound(
 
   const courtFree: Date[] = courtNames.map(() => new Date(startAt));
 
-  return pairs.map(([teamA, teamB]) => {
-    // Pick the court that minimises total plays for both teams on it,
-    // using availability as a tiebreaker.
-    let bestIdx = 0;
+  // Pre-assign courts so each court gets exactly floor(pairs/courts) or ceil matches.
+  // Sort pairs by "which court is most needed" (equitable across rounds),
+  // then assign court slots in strict round-robin order.
+  const matchesPerCourt = Math.floor(pairs.length / courtNames.length);
+  const extra = pairs.length % courtNames.length; // first `extra` courts get one more match
+
+  // Build ordered court slot list: [C0, C1, C2, C0, C1, C2, ...] with exact counts
+  const courtSlots: number[] = [];
+  for (let c = 0; c < courtNames.length; c++) {
+    const count = matchesPerCourt + (c < extra ? 1 : 0);
+    for (let i = 0; i < count; i++) courtSlots.push(c);
+  }
+
+  // Sort pairs so that teams most "overdue" on a court get assigned to it first.
+  // Score each pair for each court: lower = more needed on that court.
+  const sortedPairs = [...pairs].map(([teamA, teamB], originalIdx) => {
+    const courtScores = courtNames.map((name) =>
+      (teamCourtCount.get(teamA.id)?.get(name) ?? 0) +
+      (teamCourtCount.get(teamB.id)?.get(name) ?? 0)
+    );
+    return { teamA, teamB, courtScores, originalIdx };
+  });
+
+  // Assign: for each court slot (in order), find the pair that most needs that court
+  const assigned: Array<{ teamA: Team; teamB: Team; courtIdx: number }> = [];
+  const usedPairIdxs = new Set<number>();
+
+  for (const courtIdx of courtSlots) {
+    let bestPairIdx = -1;
     let bestScore = Infinity;
-    for (let c = 0; c < courtNames.length; c++) {
-      const courtPlays =
-        (teamCourtCount.get(teamA.id)?.get(courtNames[c]) ?? 0) +
-        (teamCourtCount.get(teamB.id)?.get(courtNames[c]) ?? 0);
-      // Score = combined court plays * large weight + time offset (seconds) as tiebreaker
-      const timeOffset = (courtFree[c].getTime() - startAt.getTime()) / 1000;
-      const score = courtPlays * 10000 + timeOffset;
+    for (let i = 0; i < sortedPairs.length; i++) {
+      if (usedPairIdxs.has(i)) continue;
+      const score = sortedPairs[i].courtScores[courtIdx];
       if (score < bestScore) {
         bestScore = score;
-        bestIdx = c;
+        bestPairIdx = i;
       }
     }
+    usedPairIdxs.add(bestPairIdx);
+    assigned.push({ teamA: sortedPairs[bestPairIdx].teamA, teamB: sortedPairs[bestPairIdx].teamB, courtIdx });
+  }
 
-    const slot = new Date(courtFree[bestIdx]);
-    courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
+  return assigned.map(({ teamA, teamB, courtIdx }) => {
+    const slot = new Date(courtFree[courtIdx]);
+    courtFree[courtIdx] = addMinutes(courtFree[courtIdx], slotMin);
 
-    // Update local court count for subsequent pairs in this round
-    teamCourtCount.get(teamA.id)?.set(courtNames[bestIdx], (teamCourtCount.get(teamA.id)?.get(courtNames[bestIdx]) ?? 0) + 1);
-    teamCourtCount.get(teamB.id)?.set(courtNames[bestIdx], (teamCourtCount.get(teamB.id)?.get(courtNames[bestIdx]) ?? 0) + 1);
+    // Update local court count for subsequent assignments in this round
+    teamCourtCount.get(teamA.id)?.set(courtNames[courtIdx], (teamCourtCount.get(teamA.id)?.get(courtNames[courtIdx]) ?? 0) + 1);
+    teamCourtCount.get(teamB.id)?.set(courtNames[courtIdx], (teamCourtCount.get(teamB.id)?.get(courtNames[courtIdx]) ?? 0) + 1);
 
     return {
       phase: "SWISS" as MatchPhase,
       poolName: `Swiss R${roundIndex}`,
       bracketSide: null,
       roundIndex,
-      courtName: courtNames[bestIdx],
+      courtName: courtNames[courtIdx],
       startAt: slot,
       dayIndex: day,
       status: "SCHEDULED",
