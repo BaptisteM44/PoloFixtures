@@ -65,9 +65,12 @@ enum MatchPhase {
 }
 
 enum BracketSide {
-  W
-  L
-  G
+  W  // Top bracket / standard SE: normal round
+  L  // Top bracket / standard SE: 3rd place match
+  G  // Top bracket / standard SE: final
+  B  // Bottom bracket (SWISS_SPLIT_SE): normal round
+  BG // Bottom bracket (SWISS_SPLIT_SE): final
+  BL // Bottom bracket (SWISS_SPLIT_SE): 3rd place match
 }
 
 enum MatchStatus {

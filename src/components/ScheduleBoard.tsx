@@ -150,7 +150,7 @@ export function ScheduleBoard({
 
   // Group matches by phase+round (for POOL: also by poolSessionIndex), sorted: active rounds first, then scheduled, then finished
   const roundGroups = useMemo(() => {
-    const groups = new Map<string, { phase: string; roundIndex: number; poolSessionIndex?: number; matches: MatchWithTeams[] }>();
+    const groups = new Map<string, { phase: string; roundIndex: number; poolSessionIndex?: number; bracketSide?: string | null; matches: MatchWithTeams[] }>();
 
     // Sort all filtered by startAt
     const sorted = [...filtered].sort(
@@ -160,9 +160,11 @@ export function ScheduleBoard({
     for (const match of sorted) {
       // For POOL matches, separate by poolSessionIndex (A, B, etc.)
       const sessionSuffix = match.phase === "POOL" && match.poolSessionIndex !== null ? `-S${match.poolSessionIndex}` : "";
-      const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}`;
+      // For BRACKET matches, separate by bracketSide (W/L/G for Top 10 or standard SE, B/BG/BL for Bottom 8)
+      const bracketSuffix = match.phase === "BRACKET" && match.bracketSide ? `-${match.bracketSide}` : "";
+      const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}${bracketSuffix}`;
       if (!groups.has(key)) {
-        groups.set(key, { phase: match.phase, roundIndex: match.roundIndex, poolSessionIndex: match.poolSessionIndex ?? undefined, matches: [] });
+        groups.set(key, { phase: match.phase, roundIndex: match.roundIndex, poolSessionIndex: match.poolSessionIndex ?? undefined, bracketSide: match.bracketSide ?? undefined, matches: [] });
       }
       groups.get(key)!.matches.push(match);
     }
@@ -311,14 +313,29 @@ export function ScheduleBoard({
         const sessionLabel = group.phase === "POOL" && group.poolSessionIndex !== undefined
           ? ` · Pool ${String.fromCharCode(65 + group.poolSessionIndex)}`
           : "";
+
+        // For BRACKET phase, show which bracket + match type based on bracketSide
+        const bracketSide = group.matches[0]?.bracketSide;
+        let bracketLabel = "";
+        if (group.phase === "BRACKET" && bracketSide) {
+          // Top 10 / standard SE: W=normal, G=final, L=3rd place
+          if (bracketSide === "W") bracketLabel = " · Top 10";
+          else if (bracketSide === "G") bracketLabel = " · Top 10 · Finale";
+          else if (bracketSide === "L") bracketLabel = " · Top 10 · Petite finale";
+          // Bottom 8 (SWISS_SPLIT_SE): B=normal, BG=final, BL=3rd place
+          else if (bracketSide === "B") bracketLabel = " · Bottom 8";
+          else if (bracketSide === "BG") bracketLabel = " · Bottom 8 · Finale";
+          else if (bracketSide === "BL") bracketLabel = " · Bottom 8 · Manche des perdants";
+        }
+
         return (
           <div
-            key={`${group.phase}-R${group.roundIndex}${sessionLabel.replace(/\s/g, "")}`}
+            key={`${group.phase}-R${group.roundIndex}${sessionLabel.replace(/\s/g, "")}${bracketSide ?? ""}`}
             className={`schedule-round${finished ? " schedule-round--finished" : ""}${active ? " schedule-round--active" : ""}`}
           >
             <div className="schedule-round__header">
               <span className="schedule-round__label">
-                {PHASE_LABEL[group.phase] ?? group.phase} · Round {group.roundIndex}{sessionLabel}
+                {PHASE_LABEL[group.phase] ?? group.phase}{bracketLabel}{(bracketSide !== "G" && bracketSide !== "L" && bracketSide !== "BG" && bracketSide !== "BL") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}
               </span>
               {finished && <span className="schedule-round__badge schedule-round__badge--done">{t("status_completed")}</span>}
               {active && <span className="schedule-round__badge schedule-round__badge--live">{t("status_live")}</span>}

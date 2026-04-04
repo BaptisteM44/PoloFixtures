@@ -12,7 +12,7 @@ export type GeneratedMatch = {
   phase: MatchPhase;
   poolName?: string | null;
   poolSessionIndex?: number | null; // 0 = Pool A, 1 = Pool B, etc.
-  bracketSide?: "W" | "L" | "G" | null;
+  bracketSide?: "W" | "L" | "G" | "B" | "BG" | "BL" | null;
   roundIndex: number;
   positionInRound?: number;
   courtName: string;
@@ -389,23 +389,78 @@ function generateSplitSE(
   gameDurationMin: number
 ): GeneratedMatch[] {
   const sorted = [...teams];
-
-  // Split into TOP 10 and Bottom 8
   const top10 = sorted.slice(0, 10);
   const bottom8 = sorted.slice(10, 18);
 
-  // Generate SE for TOP 10 (uses first half of courts)
-  const topCourtCount = Math.ceil(courtNames.length / 2);
-  const topCourts = courtNames.slice(0, topCourtCount);
-  const topMatches = generateSingleElim(top10, topCourts, startAt, gameDurationMin, false)
-    .map((m) => ({ ...m, bracketSide: "W" as const })); // "W" side for top bracket
+  // Generate both SEs with all courts and 3rd place match — courts will be reassigned below
+  // Top 10: bracketSide "W" for normal, "G" for final, "L" for 3rd place
+  const topMatchesRaw = generateSingleElim(top10, courtNames, startAt, gameDurationMin, true);
+  const topMatches = topMatchesRaw.map((m) => ({
+    ...m,
+    // "L" (3rd place) and "G" (final) stay as-is; rest become "W"
+    bracketSide: (m.bracketSide === "G" || m.bracketSide === "L") ? m.bracketSide : "W" as const,
+  }));
+  // Bottom 8: use B/BG/BL to distinguish from Top 10's W/G/L
+  const bottomMatchesRaw = generateSingleElim(bottom8, courtNames, startAt, gameDurationMin, true);
+  const bottomMatches = bottomMatchesRaw.map((m) => ({
+    ...m,
+    bracketSide: m.bracketSide === "G" ? "BG" as const : m.bracketSide === "L" ? "BL" as const : "B" as const,
+  }));
 
-  // Generate SE for Bottom 8 (uses second half of courts, same start time)
-  const bottomCourts = courtNames.slice(topCourtCount);
-  const bottomMatches = generateSingleElim(bottom8, bottomCourts.length > 0 ? bottomCourts : topCourts, startAt, gameDurationMin, false)
-    .map((m) => ({ ...m, bracketSide: "L" as const })); // "L" side for consolante bracket
+  // Reassign courts globally by interleaving top + bottom matches per round,
+  // guaranteeing equal court distribution. We process rounds in order and
+  // assign courts in strict rotation across both brackets combined.
+  const slotMin = gameDurationMin + 5;
+  const roundBreak = gameDurationMin + 15;
 
-  return [...topMatches, ...bottomMatches];
+  // Collect all matches grouped by round (same roundIndex = same stage)
+  const maxRound = Math.max(...topMatches.map((m) => m.roundIndex), ...bottomMatches.map((m) => m.roundIndex));
+
+  const result: GeneratedMatch[] = [];
+  const courtUsed: number[] = new Array(courtNames.length).fill(0); // total per court across rounds
+
+  for (let r = 1; r <= maxRound; r++) {
+    const roundTop = topMatches.filter((m) => m.roundIndex === r);
+    const roundBot = bottomMatches.filter((m) => m.roundIndex === r);
+    // Interleave: Top, Bot, Top, Bot, ... so courts spread across both brackets
+    const roundAll: GeneratedMatch[] = [];
+    const maxLen = Math.max(roundTop.length, roundBot.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < roundTop.length) roundAll.push(roundTop[i]);
+      if (i < roundBot.length) roundAll.push(roundBot[i]);
+    }
+
+    const roundStart = addMinutes(startAt, (r - 1) * roundBreak);
+    const courtFree: Date[] = courtNames.map(() => new Date(roundStart));
+
+    // Assign courts: prefer courts with fewest total uses (for cross-round equity)
+    // then use availability as tiebreaker
+    const roundCourtUsed = new Map<number, number>(courtNames.map((_, i) => [i, 0]));
+
+    const assigned: GeneratedMatch[] = roundAll.map((m) => {
+      // Find court with fewest total uses, tiebreak by earliest free
+      let bestIdx = 0;
+      let bestScore = Infinity;
+      for (let c = 0; c < courtNames.length; c++) {
+        const totalUses = courtUsed[c] + (roundCourtUsed.get(c) ?? 0);
+        const timeOffset = courtFree[c].getTime() - roundStart.getTime();
+        const score = totalUses * 100000 + timeOffset;
+        if (score < bestScore) { bestScore = score; bestIdx = c; }
+      }
+      const slot = new Date(courtFree[bestIdx]);
+      courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
+      roundCourtUsed.set(bestIdx, (roundCourtUsed.get(bestIdx) ?? 0) + 1);
+
+      return { ...m, courtName: courtNames[bestIdx], startAt: slot };
+    });
+
+    for (let c = 0; c < courtNames.length; c++) {
+      courtUsed[c] += roundCourtUsed.get(c) ?? 0;
+    }
+    result.push(...assigned);
+  }
+
+  return result;
 }
 
 // ─── Bracket ──────────────────────────────────────────────────────────────────
