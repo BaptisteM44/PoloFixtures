@@ -177,9 +177,11 @@ export function BracketView({
   }, [tournamentId, isLive]);
 
   const bracketMatches = matches.filter((m) => m.phase === "BRACKET");
-  // DE has multiple L matches; SE 3rd place has exactly one L match
-  const lMatches = bracketMatches.filter((m) => m.bracketSide === "L");
-  const isDE = lMatches.length > 1;
+  // SWISS_SPLIT_SE: detect by presence of B/BG/BL bracket sides
+  const isSplitSE = bracketMatches.some((m) => m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL");
+  // DE has multiple L matches; SE 3rd place has exactly one L or BL match
+  const lMatches = bracketMatches.filter((m) => m.bracketSide === "L" || m.bracketSide === "BL");
+  const isDE = !isSplitSE && bracketMatches.some((m) => m.bracketSide === "L") && lMatches.length > 1;
   const has3rdPlace = !isDE && lMatches.length === 1;
   const teamNumberById = new Map((teams ?? []).map((team) => [team.id, team.bracketNumber]));
 
@@ -274,7 +276,9 @@ export function BracketView({
   return (
     <div>
       <FitWrapper>
-        {isDE
+        {isSplitSE
+          ? <SplitSEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} teamNumberById={teamNumberById} />
+          : isDE
           ? <DEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} teamNumberById={teamNumberById} />
           : <SEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} teamNumberById={teamNumberById} />}
       </FitWrapper>
@@ -391,6 +395,33 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function SplitSEBracket({ matches, onEdit, selectedId, teamNumberById }: {
+  matches: MatchWithTeams[];
+  onEdit: (m: MatchWithTeams) => void;
+  selectedId: string | null;
+  teamNumberById: Map<string, number | undefined>;
+}) {
+  const top10 = matches.filter((m) => m.bracketSide === "W" || m.bracketSide === "G" || m.bracketSide === "L");
+  const bottom8 = matches.filter((m) => m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL");
+
+  return (
+    <div className="de-bracket">
+      {top10.length > 0 && (
+        <div className="de-section de-section--upper">
+          <h4 className="de-section-title">Top 10</h4>
+          <SEBracket matches={top10} onEdit={onEdit} selectedId={selectedId} teamNumberById={teamNumberById} />
+        </div>
+      )}
+      {bottom8.length > 0 && (
+        <div className="de-section de-section--lower">
+          <h4 className="de-section-title">Bottom 8</h4>
+          <SEBracket matches={bottom8} onEdit={onEdit} selectedId={selectedId} teamNumberById={teamNumberById} />
+        </div>
+      )}
     </div>
   );
 }

@@ -414,6 +414,28 @@ export async function generateBracketAction(id: string) {
             }
           }
         }
+
+        // Link semifinal losers → 3rd place match (L)
+        const thirdPlaceW = created.find(m => m.bracketSide === "L");
+        if (thirdPlaceW) {
+          const semiRound = thirdPlaceW.roundIndex;
+          const semis = wMatches.filter(m => m.roundIndex === semiRound - 1 ||
+            (m.roundIndex === maxWRound - 1 && created.find(x => x.bracketSide === "G" && x.roundIndex === m.roundIndex + 1)));
+          // Find the two W matches whose winners go to the G final
+          const gFinal = created.find(m => m.bracketSide === "G");
+          const semiMatches = gFinal
+            ? wMatches.filter(m => m.roundIndex === gFinal.roundIndex - 1)
+            : [];
+          for (const m of semiMatches) {
+            await tx.match.update({
+              where: { id: m.id },
+              data: {
+                nextMatchLoseId: thirdPlaceW.id,
+                nextSlotLose: m.positionInRound % 2 === 0 ? "A" : "B",
+              }
+            });
+          }
+        }
       }
 
       // Bottom 8: B = normal rounds, BG = final, BL = 3rd place
@@ -439,6 +461,24 @@ export async function generateBracketAction(id: string) {
                 }
               });
             }
+          }
+        }
+
+        // Link semifinal losers → 3rd place match (BL)
+        const thirdPlaceB = created.find(m => m.bracketSide === "BL");
+        if (thirdPlaceB) {
+          const bgFinal = created.find(m => m.bracketSide === "BG");
+          const semiMatches = bgFinal
+            ? bMatches.filter(m => m.roundIndex === bgFinal.roundIndex - 1)
+            : [];
+          for (const m of semiMatches) {
+            await tx.match.update({
+              where: { id: m.id },
+              data: {
+                nextMatchLoseId: thirdPlaceB.id,
+                nextSlotLose: m.positionInRound % 2 === 0 ? "A" : "B",
+              }
+            });
           }
         }
       }
