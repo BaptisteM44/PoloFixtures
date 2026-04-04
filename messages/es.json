@@ -561,6 +561,7 @@
     "orga_tab_teams": "👥 Equipos",
     "orga_tab_planning": "📋 Planificación",
     "orga_tab_orgateam": "🛠️ Equipo orga",
+    "orga_tab_orga": "Orga",
     "orga_no_teams_hint": "Inscribe y selecciona equipos en la pestaña <strong>Equipos</strong> para poder lanzar el torneo.",
     "orga_planning_format_configured": "Formato configurado",
     "orga_planning_format_locked_warning": "⚠️ El formato aún no está bloqueado. Ve a <strong>Configuración</strong> para bloquearlo antes de lanzar.",

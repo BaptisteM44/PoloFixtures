@@ -562,6 +562,7 @@
     "orga_tab_teams": "👥 Teams",
     "orga_tab_planning": "📋 Planning",
     "orga_tab_orgateam": "🛠️ Orga team",
+    "orga_tab_orga": "Orga",
     "orga_no_teams_hint": "Register and select teams in the <strong>Teams</strong> tab to launch the tournament.",
     "orga_planning_format_configured": "Configured format",
     "orga_planning_format_locked_warning": "⚠️ The format is not yet locked. Go to <strong>Configuration</strong> to lock it before launching.",

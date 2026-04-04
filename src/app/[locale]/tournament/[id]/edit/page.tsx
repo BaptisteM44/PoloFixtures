@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction } from "./actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
@@ -90,6 +90,55 @@ export default async function TournamentEditPage({ params }: { params: { id: str
   const addPlayer = async (teamId: string, tId: string, playerData: Parameters<typeof addPlayerToTeamAction>[2]) => {
     "use server";
     return await addPlayerToTeamAction(teamId, tId, playerData);
+  };
+
+  const currentPlayerId = (session?.user as any)?.playerId ?? null;
+
+  const [orgaTasks, orgaNotes, orgaLinks] = await Promise.all([
+    prisma.orgaTask.findMany({
+      where: { tournamentId: tournament.id },
+      include: { assignedTo: { select: { id: true, name: true } }, createdBy: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.orgaNote.findMany({
+      where: { tournamentId: tournament.id },
+      include: { author: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.orgaLink.findMany({
+      where: { tournamentId: tournament.id },
+      include: { addedBy: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+
+  const toggleTeamSelected = async (teamId: string, tId: string, selected: boolean) => {
+    "use server";
+    return await toggleTeamSelectedAction(teamId, tId, selected);
+  };
+  const drawTeams = async (tId: string, count: number, preDrawnIds?: string[]) => {
+    "use server";
+    return await drawTeamsAction(tId, count, preDrawnIds);
+  };
+  const guaranteeTeam = async (teamId: string, tId: string, guaranteed: boolean) => {
+    "use server";
+    return await toggleTeamGuaranteedAction(teamId, tId, guaranteed);
+  };
+  const drawOneTeam = async (tId: string, candidateIds: string[]) => {
+    "use server";
+    return await drawOneTeamAction(tId, candidateIds);
+  };
+  const drawOneWaitlist = async (tId: string, candidateIds: string[]) => {
+    "use server";
+    return await drawOneWaitlistAction(tId, candidateIds);
+  };
+  const removeFromWaitlist = async (tId: string, teamId: string) => {
+    "use server";
+    return await removeFromWaitlistAction(tId, teamId);
+  };
+  const createTeam = async (...args: Parameters<typeof createTeamAction>) => {
+    "use server";
+    return await createTeamAction(...args);
   };
 
   const submissionStatus = (t_.submissionStatus ?? (t_.approved ? "APPROVED" : "PENDING")) as "PENDING" | "APPROVED" | "REJECTED";
@@ -238,6 +287,17 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               "use server";
               await resetTournamentAction(t_.id);
             }}
+            orgaTasks={orgaTasks.map((t) => ({ ...t, priority: t.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT", deadline: t.deadline?.toISOString() ?? null, createdAt: t.createdAt.toISOString() }))}
+            orgaNotes={orgaNotes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString() }))}
+            orgaLinks={orgaLinks.map((l) => ({ ...l, createdAt: l.createdAt.toISOString() }))}
+            currentPlayerId={currentPlayerId ?? ""}
+            toggleTeamSelectedAction={toggleTeamSelected}
+            drawTeamsAction={drawTeams}
+            guaranteeTeamAction={guaranteeTeam}
+            drawOneTeamAction={drawOneTeam}
+            drawOneWaitlistAction={drawOneWaitlist}
+            removeFromWaitlistAction={removeFromWaitlist}
+            createTeamAction={createTeam}
           />
         </div>{/* end right column */}
       </div>{/* end 2-col grid */}

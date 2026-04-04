@@ -14,21 +14,14 @@ import { FreeAgentForm } from "@/components/FreeAgentForm";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { RegisterTeamForm } from "@/components/RegisterTeamForm";
 import { computeStandings } from "@/lib/standings";
-import { deleteFreeAgentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, createTeamAction } from "./edit/actions";
-import { TeamManager } from "@/components/TeamManager";
-import { SelectionManager } from "@/components/SelectionManager";
+import { deleteFreeAgentAction } from "./edit/actions";
 import { TournamentChat } from "@/components/TournamentChat";
 import { TelegramWidget } from "@/components/TelegramWidget";
 import { LiveMatchTile } from "@/components/LiveMatchTile";
-import { OrgaNoteEditor } from "@/components/OrgaNoteEditor";
-import { OrgaTaskBoard } from "@/components/OrgaTaskBoard";
-import { OrgaNoteBoard } from "@/components/OrgaNoteBoard";
-import { OrgaLinkBoard } from "@/components/OrgaLinkBoard";
 import { HeroCountdown } from "@/components/HeroCountdown";
 import { TournamentRecap } from "@/components/TournamentRecap";
 import { FollowButton } from "@/components/FollowButton";
 import { SoloRegisterForm } from "@/components/SoloRegisterForm";
-import { DrawPanel } from "@/components/DrawPanel";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { TournamentCompletionWatcher } from "@/components/TournamentCompletionWatcher";
 import { BracketActions } from "@/components/BracketActions";
@@ -58,9 +51,9 @@ export default async function TournamentPage({
   // ne charger les données lourdes (players, events) que si nécessaire.
   const activeTab = searchParams.tab;
 
-  // Les onglets "equipes", "orga" et "recap" ont besoin des joueurs complets.
+  // Les onglets "equipes" et "recap" ont besoin des joueurs complets.
   // Pas de tab = page chargée sans ?tab= : on charge les players par précaution (recap default pour COMPLETED).
-  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "orga" || activeTab === "recap";
+  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap";
   // L'onglet "equipes" a besoin des events pour les badges.
   const needsEvents = activeTab === "equipes";
   // Les onglets sans matches : info, inscription, recap, communaute, equipes (matches via events)
@@ -88,7 +81,7 @@ export default async function TournamentPage({
       freeAgents: (activeTab === "info" || activeTab === "communaute" || !activeTab)
         ? true
         : { select: { id: true } },
-      soloEntries: (activeTab === "inscription" || activeTab === "orga")
+      soloEntries: activeTab === "inscription"
         ? { include: { player: { select: { id: true, name: true } } }, orderBy: { createdAt: "asc" as const } }
         : false,
     }
@@ -143,8 +136,8 @@ export default async function TournamentPage({
   const berlinSunSwissMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SUNDAY_SWISS");
   const berlinTop32Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "TOP32");
   const berlinBottom16Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "BOTTOM16");
-  const swissSplitSeTop10 = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && m.bracketSide === "W" && tournament.sundayFormat === "SWISS_SPLIT_SE");
-  const swissSplitSeBottom8 = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && m.bracketSide === "L" && tournament.sundayFormat === "SWISS_SPLIT_SE");
+  const swissSplitSeTop10 = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "W" || m.bracketSide === "G" || m.bracketSide === "L") && tournament.sundayFormat === "SWISS_SPLIT_SE");
+  const swissSplitSeBottom8 = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL") && tournament.sundayFormat === "SWISS_SPLIT_SE");
   const allEvents = (tournament.matches ?? []).flatMap((m: any) => m.events ?? []);
 
   // When tournament is launched (LIVE/COMPLETED), show selected teams count instead of total registered
@@ -186,37 +179,8 @@ export default async function TournamentPage({
     ...(youtubeEmbed || t_.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
-    ...(isOrga ? [{ label: t("tab_orga"), value: "orga", href: `/tournament/${params.id}?tab=orga` }] : []),
   ];
 
-
-  // Orga dashboard data (only fetched when needed)
-  let orgaTasks: { id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignedTo: { id: string; name: string } | null; createdBy: { id: string; name: string }; createdAt: string }[] = [];
-  let orgaNotes: { id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }[] = [];
-  let orgaLinks: { id: string; label: string; url: string; addedBy: { id: string; name: string }; createdAt: string }[] = [];
-
-  if (isOrga && tab === "orga") {
-    const [tasks, notes, links] = await Promise.all([
-      prisma.orgaTask.findMany({
-        where: { tournamentId: tournament.id },
-        include: { assignedTo: { select: { id: true, name: true } }, createdBy: { select: { id: true, name: true } } },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.orgaNote.findMany({
-        where: { tournamentId: tournament.id },
-        include: { author: { select: { id: true, name: true } } },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.orgaLink.findMany({
-        where: { tournamentId: tournament.id },
-        include: { addedBy: { select: { id: true, name: true } } },
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
-    orgaTasks = tasks.map((t) => ({ ...t, priority: t.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT", deadline: t.deadline?.toISOString() ?? null, createdAt: t.createdAt.toISOString() }));
-    orgaNotes = notes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString() }));
-    orgaLinks = links.map((l) => ({ ...l, createdAt: l.createdAt.toISOString() }));
-  }
 
   // Podium (extrait du bracket si tournoi terminé)
   type PodiumPlayer = { id: string; name: string; country: string; city?: string | null; photoPath?: string | null; badges?: string[]; startYear?: number | null; hand?: string | null; gender?: string | null; slug?: string | null };
@@ -254,61 +218,6 @@ export default async function TournamentPage({
   const deleteFreeAgent = async (id: string) => {
     "use server";
     return await deleteFreeAgentAction(id, tournament.id);
-  };
-
-  const toggleTeamSelected = async (teamId: string, tId: string, selected: boolean) => {
-    "use server";
-    return await toggleTeamSelectedAction(teamId, tId, selected);
-  };
-
-  const drawTeams = async (tId: string, count: number, preDrawnIds?: string[]) => {
-    "use server";
-    return await drawTeamsAction(tId, count, preDrawnIds);
-  };
-
-  const guaranteeTeam = async (teamId: string, tId: string, guaranteed: boolean) => {
-    "use server";
-    return await toggleTeamGuaranteedAction(teamId, tId, guaranteed);
-  };
-
-  const drawOneTeam = async (tId: string, candidateIds: string[]) => {
-    "use server";
-    return await drawOneTeamAction(tId, candidateIds);
-  };
-
-  const drawOneWaitlist = async (tId: string, candidateIds: string[]) => {
-    "use server";
-    return await drawOneWaitlistAction(tId, candidateIds);
-  };
-
-  const removeFromWaitlist = async (tId: string, teamId: string) => {
-    "use server";
-    return await removeFromWaitlistAction(tId, teamId);
-  };
-
-  const renameTeam = async (teamId: string, name: string, tId: string) => {
-    "use server";
-    return await renameTeamAction(teamId, name, tId);
-  };
-
-  const deleteTeam = async (teamId: string, tId: string) => {
-    "use server";
-    return await deleteTeamAction(teamId, tId);
-  };
-
-  const removePlayer = async (teamPlayerId: string, tId: string) => {
-    "use server";
-    return await removePlayerFromTeamAction(teamPlayerId, tId);
-  };
-
-  const addPlayer = async (teamId: string, tId: string, playerData: { type: "existing"; playerId: string } | { type: "manual"; name: string; city?: string | null; country: string }) => {
-    "use server";
-    return await addPlayerToTeamAction(teamId, tId, playerData);
-  };
-
-  const createTeam = async (tId: string, name: string) => {
-    "use server";
-    return await createTeamAction(tId, name);
   };
 
   // Info tab: tiles content
@@ -1447,194 +1356,6 @@ export default async function TournamentPage({
         </div>
       )}
 
-      {/* ===== ONGLET ORGA ===== */}
-      {tab === "orga" && isOrga && (() => {
-        const sortedTeams = [...tournament.teams].sort((a, b) => a.seed - b.seed);
-        const selected = sortedTeams.filter((t) => t.selected);
-        const dietLabels: Record<string, string> = { OMNIVORE: tm("diet_omnivore"), VEGETARIAN: tm("diet_vegetarian"), VEGAN: tm("diet_vegan"), GLUTEN_FREE: tm("diet_gluten_free") };
-        const dietCounts = new Map<string, number>();
-        let nonPrecise = 0;
-        let totalAccommodation = 0;
-        for (const team of tournament.teams) {
-          for (const tp of team.players) {
-            const diets = (tp.player as { diets?: string[] }).diets ?? [];
-            if (diets.length === 0) nonPrecise++;
-            else for (const d of diets) dietCounts.set(d, (dietCounts.get(d) ?? 0) + 1);
-            if ((tp as { needsAccommodation?: boolean }).needsAccommodation) totalAccommodation++;
-          }
-        }
-        const totalPlayers = tournament.teams.reduce((s, t) => s + t.players.length, 0);
-        const totalMatches = tournament.matches.length;
-        const doneMatches = tournament.matches.filter((m) => m.status === "FINISHED").length;
-
-        return (
-          <div style={{ display: "grid", gap: 24 }}>
-            {/* Stats bar */}
-            <div className="orga-stats-bar">
-              <span style={{ fontWeight: 700, fontFamily: "var(--font-display)" }}>{t("orga_stats_title")}</span>
-              <span>🏑 <strong>{displayTeamCount}</strong>/{tournament.maxTeams} {t("orga_stats_teams_label")}</span>
-              <span>👤 <strong>{totalPlayers}</strong> {t("orga_stats_players_label")}</span>
-              <span>🏟️ <strong>{tournament.courtsCount}</strong> {t("orga_stats_courts_label")}</span>
-              <span>⚡ {tournament.format} · {tournament.gameDurationMin} min</span>
-              {totalMatches > 0 && (
-                <span style={{ padding: "2px 10px", background: doneMatches === totalMatches ? "color-mix(in srgb, var(--teal) 20%, var(--surface))" : "color-mix(in srgb, var(--yellow) 20%, var(--surface))", borderRadius: 6, fontWeight: 700 }}>
-                  🎯 {doneMatches}/{totalMatches} {t("orga_stats_matches_label")}
-                </span>
-              )}
-              {tournament.accommodationAvailable && totalAccommodation > 0 && (
-                <span style={{ padding: "2px 10px", background: "color-mix(in srgb, var(--teal) 15%, var(--surface))", borderRadius: 6, fontWeight: 700 }}>
-                  🛏️ {totalAccommodation} {t("orga_stats_accommodation_label")}
-                </span>
-              )}
-            </div>
-
-            {/* Task board */}
-            <OrgaTaskBoard
-              tasks={orgaTasks}
-              tournamentId={tournament.id}
-              coOrganizers={tournament.coOrganizers.map((co) => ({
-                playerId: co.playerId,
-                playerName: co.player.name,
-              }))}
-            />
-
-            {/* Note board */}
-            <OrgaNoteBoard
-              notes={orgaNotes}
-              tournamentId={tournament.id}
-              currentPlayerId={currentPlayerId ?? ""}
-            />
-
-            {/* Link board */}
-            <OrgaLinkBoard
-              links={orgaLinks}
-              tournamentId={tournament.id}
-            />
-
-            {/* DrawPanel ABC Chapeau */}
-            {tournament.format === "ABC Chapeau" && (() => {
-              const soloEntries = (t_ as { soloEntries?: { id: string; player: { id: string; name: string }; level: string; teamId: string | null; waitlisted: boolean }[] }).soloEntries ?? [];
-              const abcTeams = tournament.teams.map((t) => ({ id: t.id, name: t.name }));
-              return (
-                <DrawPanel
-                  tournamentId={tournament.id}
-                  soloEntries={soloEntries}
-                  teams={abcTeams}
-                />
-              );
-            })()}
-
-            {/* Sélection / Tirage au sort */}
-            {tournament.teams.length > 0 && tournament.format !== "ABC Chapeau" && (
-              <div className="panel">
-                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 12 }}>{t("orga_selection_title")}</h3>
-                <SelectionManager
-                  teams={tournament.teams.map((t) => ({
-                    id: t.id,
-                    name: t.name,
-                    seed: t.seed,
-                    city: t.city,
-                    country: t.country,
-                    selected: t.selected,
-                    guaranteed: t.guaranteed,
-                    waitlistPosition: t.waitlistPosition,
-                  }))}
-                  maxTeams={tournament.maxTeams}
-                  tournamentId={tournament.id}
-                  toggleAction={toggleTeamSelected}
-                  drawAction={drawTeams}
-                  guaranteeAction={guaranteeTeam}
-                  drawOneAction={drawOneTeam}
-                  drawOneWaitlistAction={drawOneWaitlist}
-                  removeFromWaitlistAction={removeFromWaitlist}
-                />
-              </div>
-            )}
-
-            {/* Gestion des équipes — ajout/modification/suppression */}
-            <div className="panel">
-              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 12 }}>{t("orga_teams_title")}</h3>
-              <TeamManager
-                teams={tournament.teams.map((t) => ({
-                  id: t.id,
-                  name: t.name,
-                  seed: t.seed,
-                  city: t.city,
-                  country: t.country,
-                  players: t.players.map((tp) => ({
-                    id: tp.id,
-                    player: { id: tp.player.id, name: tp.player.name, country: tp.player.country },
-                  })),
-                  selected: t.selected,
-                  waitlistPosition: t.waitlistPosition,
-                }))}
-                locked={tournament.locked}
-                format={tournament.format}
-                renameAction={renameTeam}
-                deleteTeamAction={deleteTeam}
-                removePlayerAction={removePlayer}
-                addPlayerAction={addPlayer}
-                createTeamAction={createTeam}
-                tournamentId={tournament.id}
-              />
-            </div>
-
-            {/* Récap par équipe — régimes, logement, notes */}
-            {selected.length > 0 && (
-              <div className="panel">
-                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 12 }}>{t("orga_recap_title")}</h3>
-                <div style={{ display: "grid", gap: 12 }}>
-                  {sortedTeams.map((team) => {
-                    const hasInfo = team.players.some((tp) =>
-                      (tp.player as { diets?: string[] }).diets?.length ||
-                      (tp as { needsAccommodation?: boolean }).needsAccommodation
-                    );
-                    const hasNotes = (team as { registrationNote?: string | null }).registrationNote || (team as { orgaNote?: string | null }).orgaNote;
-                    if (!hasInfo && !hasNotes) return null;
-                    return (
-                      <div key={team.id} style={{ padding: "12px 16px", background: "var(--surface-2)", border: "1.5px solid var(--border)", borderRadius: 8, fontSize: 13 }}>
-                        <div style={{ fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 8 }}>#{team.seed} {team.name}</div>
-                        <div style={{ display: "grid", gap: 4, marginBottom: hasNotes ? 10 : 0 }}>
-                          {team.players.map((tp) => {
-                            const diets = (tp.player as { diets?: string[] }).diets ?? [];
-                            const accom = (tp as { needsAccommodation?: boolean }).needsAccommodation;
-                            if (!diets.length && !accom) return null;
-                            return (
-                              <div key={tp.player.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ minWidth: 120, fontWeight: 500 }}>{tp.player.name}</span>
-                                {diets.length > 0
-                                  ? diets.map((d) => (
-                                      <span key={d} style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "var(--yellow)", color: "var(--text)", border: "1.5px solid var(--border)" }}>
-                                        {dietLabels[d] ?? d}
-                                      </span>
-                                    ))
-                                  : <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("diet_not_specified")}</span>
-                                }
-                                {accom && (
-                                  <span style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "color-mix(in srgb, var(--teal) 20%, var(--surface))", border: "1.5px solid var(--teal)" }}>
-                                    {t("orga_needs_accommodation")}
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {(team as { registrationNote?: string | null }).registrationNote && (
-                          <div style={{ marginTop: 8, padding: "8px 12px", background: "color-mix(in srgb, var(--yellow) 12%, var(--surface))", borderRadius: 6, borderLeft: "3px solid var(--yellow)" }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", marginRight: 8 }}>{t("orga_registration_note")}</span>
-                            <span>{(team as { registrationNote?: string | null }).registrationNote}</span>
-                          </div>
-                        )}
-                        <OrgaNoteEditor teamId={team.id} initialNote={(team as { orgaNote?: string | null }).orgaNote ?? ""} label={t("orga_note_label")} placeholder={t("orga_note_placeholder")} />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
     </div>
   );
 }

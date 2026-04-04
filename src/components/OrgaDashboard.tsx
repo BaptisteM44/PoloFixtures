@@ -16,6 +16,12 @@ import { RefereeManager } from "@/components/RefereeManager";
 import ConfirmFormButton from "@/components/ConfirmFormButton";
 import { PoolScheduleEditor } from "@/components/PoolScheduleEditor";
 import { TestModeToggle } from "@/components/TestModeToggle";
+import { OrgaTaskBoard } from "@/components/OrgaTaskBoard";
+import { OrgaNoteBoard } from "@/components/OrgaNoteBoard";
+import { OrgaLinkBoard } from "@/components/OrgaLinkBoard";
+import { SelectionManager } from "@/components/SelectionManager";
+import { DrawPanel } from "@/components/DrawPanel";
+import { OrgaNoteEditor } from "@/components/OrgaNoteEditor";
 
 // ─── BerlinMixedPlanning ─────────────────────────────────────────────────────
 
@@ -145,9 +151,21 @@ type OrgaDashboardProps = {
   addPlayerAction: (...args: any[]) => Promise<any>;
   launchAction: (formData: FormData) => Promise<void>;
   resetAction: (formData: FormData) => Promise<void>;
+  // Orga tab data
+  orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignedTo: { id: string; name: string } | null; createdBy: { id: string; name: string }; createdAt: string }>;
+  orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
+  orgaLinks: Array<{ id: string; label: string; url: string; addedBy: { id: string; name: string }; createdAt: string }>;
+  currentPlayerId: string;
+  toggleTeamSelectedAction: (teamId: string, tId: string, selected: boolean) => Promise<any>;
+  drawTeamsAction: (tId: string, count: number, preDrawnIds?: string[]) => Promise<any>;
+  guaranteeTeamAction: (teamId: string, tId: string, guaranteed: boolean) => Promise<any>;
+  drawOneTeamAction: (tId: string, candidateIds: string[]) => Promise<any>;
+  drawOneWaitlistAction: (tId: string, candidateIds: string[]) => Promise<any>;
+  removeFromWaitlistAction: (tId: string, teamId: string) => Promise<any>;
+  createTeamAction: (...args: any[]) => Promise<any>;
 };
 
-type Tab = "teams" | "config" | "planning" | "orgateam";
+type Tab = "teams" | "config" | "planning" | "orga" | "orgateam";
 
 // ─── Tab label helper ─────────────────────────────────────────────────────────
 
@@ -155,6 +173,7 @@ const TAB_KEYS: Record<Tab, string> = {
   teams:    "orga_tab_teams",
   config:   "orga_tab_config",
   planning: "orga_tab_planning",
+  orga:     "orga_tab_orga",
   orgateam: "orga_tab_orgateam",
 };
 
@@ -183,13 +202,24 @@ export function OrgaDashboard({
   addPlayerAction,
   launchAction,
   resetAction,
+  orgaTasks,
+  orgaNotes,
+  orgaLinks,
+  currentPlayerId,
+  toggleTeamSelectedAction,
+  drawTeamsAction,
+  guaranteeTeamAction,
+  drawOneTeamAction,
+  drawOneWaitlistAction,
+  removeFromWaitlistAction,
+  createTeamAction,
 }: OrgaDashboardProps) {
   const t = useTranslations("tournament");
   const tabStorageKey = `orga_tab_${tournament.id}`;
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(tabStorageKey);
-      if (saved === "teams" || saved === "config" || saved === "planning" || saved === "orgateam") return saved;
+      if (saved === "teams" || saved === "config" || saved === "planning" || saved === "orga" || saved === "orgateam") return saved;
     }
     return "config";
   });
@@ -246,7 +276,7 @@ export function OrgaDashboard({
       {/* ── Tab bar ── */}
       <div className="tabs-bar" style={{ marginTop: 0 }}>
         <div className="tabs">
-          {(["config", "teams", "planning", "orgateam"] as Tab[]).map((tab) => (
+          {(["config", "teams", "planning", "orga", "orgateam"] as Tab[]).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -540,6 +570,161 @@ export function OrgaDashboard({
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* ── Tab: Orga ── */}
+      {activeTab === "orga" && (
+        <div style={{ display: "grid", gap: 24 }}>
+          {/* Stats bar */}
+          <div className="orga-stats-bar">
+            <span style={{ fontWeight: 700, fontFamily: "var(--font-display)" }}>{t("orga_stats_title")}</span>
+            <span>🏑 <strong>{selectedTeams}</strong>/{tournament.maxTeams} {t("orga_stats_teams_label")}</span>
+            <span>👤 <strong>{teams.reduce((s, t_) => s + t_.players.length, 0)}</strong> {t("orga_stats_players_label")}</span>
+            <span>🏟️ <strong>{tournament.courtsCount}</strong> {t("orga_stats_courts_label")}</span>
+            <span>⚡ {tournament.format} · {tournament.gameDurationMin} min</span>
+            {matches.length > 0 && (
+              <span style={{ padding: "2px 10px", background: matches.filter((m) => m.status === "FINISHED").length === matches.length ? "color-mix(in srgb, var(--teal) 20%, var(--surface))" : "color-mix(in srgb, var(--yellow) 20%, var(--surface))", borderRadius: 6, fontWeight: 700 }}>
+                🎯 {matches.filter((m) => m.status === "FINISHED").length}/{matches.length} {t("orga_stats_matches_label")}
+              </span>
+            )}
+            {tournament.accommodationAvailable && (() => {
+              let totalAccom = 0;
+              for (const team of teams) for (const tp of team.players) if ((tp as any).needsAccommodation) totalAccom++;
+              return totalAccom > 0 ? (
+                <span style={{ padding: "2px 10px", background: "color-mix(in srgb, var(--teal) 15%, var(--surface))", borderRadius: 6, fontWeight: 700 }}>
+                  🛏️ {totalAccom} {t("orga_stats_accommodation_label")}
+                </span>
+              ) : null;
+            })()}
+          </div>
+
+          {/* Task board */}
+          <OrgaTaskBoard
+            tasks={orgaTasks}
+            tournamentId={tournament.id}
+            coOrganizers={coOrganizers.map((co) => ({
+              playerId: co.playerId,
+              playerName: co.player.name,
+            }))}
+          />
+
+          {/* Note board */}
+          <OrgaNoteBoard
+            notes={orgaNotes}
+            tournamentId={tournament.id}
+            currentPlayerId={currentPlayerId}
+          />
+
+          {/* Link board */}
+          <OrgaLinkBoard
+            links={orgaLinks}
+            tournamentId={tournament.id}
+          />
+
+          {/* DrawPanel ABC Chapeau */}
+          {tournament.format === "ABC Chapeau" && (() => {
+            const soloEntries = (tournament as any).soloEntries ?? [];
+            const abcTeams = teams.map((t) => ({ id: t.id, name: t.name }));
+            return (
+              <DrawPanel
+                tournamentId={tournament.id}
+                soloEntries={soloEntries}
+                teams={abcTeams}
+              />
+            );
+          })()}
+
+          {/* Sélection / Tirage au sort */}
+          {teams.length > 0 && tournament.format !== "ABC Chapeau" && (
+            <div className="panel">
+              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 12 }}>{t("orga_selection_title")}</h3>
+              <SelectionManager
+                teams={teams.map((t) => ({
+                  id: t.id,
+                  name: t.name,
+                  seed: t.seed,
+                  city: t.city,
+                  country: t.country,
+                  selected: t.selected,
+                  guaranteed: t.guaranteed,
+                  waitlistPosition: t.waitlistPosition,
+                }))}
+                maxTeams={tournament.maxTeams}
+                tournamentId={tournament.id}
+                toggleAction={toggleTeamSelectedAction}
+                drawAction={drawTeamsAction}
+                guaranteeAction={guaranteeTeamAction}
+                drawOneAction={drawOneTeamAction}
+                drawOneWaitlistAction={drawOneWaitlistAction}
+                removeFromWaitlistAction={removeFromWaitlistAction}
+              />
+            </div>
+          )}
+
+          {/* Récap régimes/logement/notes */}
+          {(() => {
+            const sortedTeams = [...teams].sort((a, b) => a.seed - b.seed);
+            const selected = sortedTeams.filter((t) => t.selected);
+            const dietLabels: Record<string, string> = {
+              OMNIVORE: t("diet_omnivore"),
+              VEGETARIAN: t("diet_vegetarian"),
+              VEGAN: t("diet_vegan"),
+              GLUTEN_FREE: t("diet_gluten_free"),
+            };
+            if (selected.length === 0) return null;
+            return (
+              <div className="panel">
+                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 12 }}>{t("orga_recap_title")}</h3>
+                <div style={{ display: "grid", gap: 12 }}>
+                  {sortedTeams.map((team) => {
+                    const hasInfo = team.players.some((tp: any) =>
+                      (tp.player as any).diets?.length || (tp as any).needsAccommodation
+                    );
+                    const hasNotes = (team as any).registrationNote || (team as any).orgaNote;
+                    if (!hasInfo && !hasNotes) return null;
+                    return (
+                      <div key={team.id} style={{ padding: "12px 16px", background: "var(--surface-2)", border: "1.5px solid var(--border)", borderRadius: 8, fontSize: 13 }}>
+                        <div style={{ fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 8 }}>#{team.seed} {team.name}</div>
+                        <div style={{ display: "grid", gap: 4, marginBottom: hasNotes ? 10 : 0 }}>
+                          {team.players.map((tp: any) => {
+                            const diets = (tp.player as any).diets ?? [];
+                            const accom = (tp as any).needsAccommodation;
+                            if (!diets.length && !accom) return null;
+                            return (
+                              <div key={tp.player.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ minWidth: 120, fontWeight: 500 }}>{tp.player.name}</span>
+                                {diets.length > 0
+                                  ? diets.map((d: string) => (
+                                      <span key={d} style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "var(--yellow)", color: "var(--text)", border: "1.5px solid var(--border)" }}>
+                                        {dietLabels[d] ?? d}
+                                      </span>
+                                    ))
+                                  : <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("diet_not_specified")}</span>
+                                }
+                                {accom && (
+                                  <span style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "color-mix(in srgb, var(--teal) 20%, var(--surface))", border: "1.5px solid var(--teal)" }}>
+                                    {t("orga_needs_accommodation")}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {(team as any).registrationNote && (
+                          <div style={{ marginTop: 8, padding: "8px 12px", background: "color-mix(in srgb, var(--yellow) 12%, var(--surface))", borderRadius: 6, borderLeft: "3px solid var(--yellow)" }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", marginRight: 8 }}>{t("orga_registration_note")}</span>
+                            <span>{(team as any).registrationNote}</span>
+                          </div>
+                        )}
+                        <OrgaNoteEditor teamId={team.id} initialNote={(team as any).orgaNote ?? ""} label={t("orga_note_label")} placeholder={t("orga_note_placeholder")} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 

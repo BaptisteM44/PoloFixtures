@@ -562,6 +562,7 @@
     "orga_tab_teams": "👥 Teams",
     "orga_tab_planning": "📋 Planung",
     "orga_tab_orgateam": "🛠️ Orga-Team",
+    "orga_tab_orga": "Orga",
     "orga_no_teams_hint": "Melde Teams an und wähle sie im <strong>Teams</strong>-Tab aus, um das Turnier zu starten.",
     "orga_planning_format_configured": "Konfiguriertes Format",
     "orga_planning_format_locked_warning": "⚠️ Das Format ist noch nicht gesperrt. Gehe zur <strong>Konfiguration</strong>, um es vor dem Start zu sperren.",

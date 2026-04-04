@@ -547,6 +547,7 @@
     "orga_tab_teams": "👥 Équipes",
     "orga_tab_planning": "📋 Planning",
     "orga_tab_orgateam": "🛠️ Équipe orga",
+    "orga_tab_orga": "Orga",
     "orga_no_teams_hint": "Inscris et sélectionne des équipes dans l'onglet <strong>Équipes</strong> pour pouvoir lancer le tournoi.",
     "orga_planning_format_configured": "Format configuré",
     "orga_planning_format_locked_warning": "⚠️ Le format n'est pas encore verrouillé. Va dans <strong>Configuration</strong> pour le verrouiller avant de lancer.",
