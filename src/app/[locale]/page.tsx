@@ -11,28 +11,71 @@ import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 
 const CONTINENT_CODES = ["NA", "SA", "EU", "AF", "AS", "OC"] as const;
 
+// Mapping exhaustif code ISO → continent (couvre tous les pays de COUNTRIES)
+const CODE_TO_CONTINENT: Record<string, string> = {
+  // Europe
+  AD:"EU",AL:"EU",AT:"EU",BA:"EU",BE:"EU",BG:"EU",BY:"EU",CH:"EU",CY:"EU",CZ:"EU",
+  DE:"EU",DK:"EU",EE:"EU",ES:"EU",FI:"EU",FR:"EU",GB:"EU",GE:"EU",GR:"EU",HR:"EU",
+  HU:"EU",IE:"EU",IS:"EU",IT:"EU",LI:"EU",LT:"EU",LU:"EU",LV:"EU",MC:"EU",MD:"EU",
+  ME:"EU",MK:"EU",MT:"EU",NL:"EU",NO:"EU",PL:"EU",PT:"EU",RO:"EU",RS:"EU",RU:"EU",
+  SE:"EU",SI:"EU",SK:"EU",SM:"EU",TR:"EU",UA:"EU",VA:"EU",XK:"EU",
+  // Amérique du Nord
+  CA:"NA",MX:"NA",US:"NA",
+  // Amérique du Sud / Centrale / Caraïbes
+  AG:"SA",AR:"SA",BB:"SA",BO:"SA",BR:"SA",BS:"SA",BZ:"SA",CL:"SA",CO:"SA",CR:"SA",
+  CU:"SA",DM:"SA",DO:"SA",EC:"SA",GD:"SA",GT:"SA",GY:"SA",HN:"SA",HT:"SA",JM:"SA",
+  KN:"SA",LC:"SA",NI:"SA",PA:"SA",PE:"SA",PY:"SA",SR:"SA",SV:"SA",TT:"SA",UY:"SA",
+  VC:"SA",VE:"SA",
+  // Afrique
+  AO:"AF",BF:"AF",BI:"AF",BJ:"AF",BW:"AF",CD:"AF",CF:"AF",CG:"AF",CI:"AF",CM:"AF",
+  CV:"AF",DJ:"AF",DZ:"AF",EG:"AF",ER:"AF",ET:"AF",GA:"AF",GH:"AF",GM:"AF",GN:"AF",
+  GQ:"AF",GW:"AF",KE:"AF",KM:"AF",LR:"AF",LS:"AF",LY:"AF",MA:"AF",MG:"AF",ML:"AF",
+  MR:"AF",MU:"AF",MW:"AF",MZ:"AF",NA:"AF",NE:"AF",NG:"AF",RW:"AF",SC:"AF",SD:"AF",
+  SL:"AF",SN:"AF",SO:"AF",SS:"AF",ST:"AF",SZ:"AF",TD:"AF",TG:"AF",TN:"AF",TZ:"AF",
+  UG:"AF",ZA:"AF",ZM:"AF",ZW:"AF",
+  // Asie
+  AE:"AS",AF:"AS",AM:"AS",AZ:"AS",BD:"AS",BH:"AS",BN:"AS",BT:"AS",CN:"AS",
+  HK:"AS",ID:"AS",IL:"AS",IN:"AS",IQ:"AS",IR:"AS",JO:"AS",JP:"AS",KG:"AS",KH:"AS",
+  KP:"AS",KR:"AS",KW:"AS",KZ:"AS",LA:"AS",LB:"AS",LK:"AS",MM:"AS",MN:"AS",MO:"AS",
+  MV:"AS",MY:"AS",NP:"AS",OM:"AS",PH:"AS",PK:"AS",PS:"AS",QA:"AS",SA:"AS",SG:"AS",
+  SY:"AS",TH:"AS",TJ:"AS",TL:"AS",TM:"AS",TW:"AS",UZ:"AS",VN:"AS",YE:"AS",
+  // Océanie
+  AU:"OC",FJ:"OC",FM:"OC",KI:"OC",MH:"OC",MP:"OC",NR:"OC",NZ:"OC",PG:"OC",PW:"OC",
+  SB:"OC",TO:"OC",TV:"OC",VU:"OC",WS:"OC",
+};
+
+// Accepte nom complet ET code ISO (majuscule ou minuscule)
+function resolveContinent(country: string): string | null {
+  if (!country) return null;
+  const upper = country.trim().toUpperCase();
+  // Code ISO direct (2 lettres)
+  if (upper.length === 2 && CODE_TO_CONTINENT[upper]) return CODE_TO_CONTINENT[upper];
+  // Noms complets fréquents
+  const byName: Record<string, string> = {
+    "FRANCE":"EU","GERMANY":"EU","UNITED KINGDOM":"EU","SPAIN":"EU","ITALY":"EU",
+    "NETHERLANDS":"EU","BELGIUM":"EU","PORTUGAL":"EU","SWITZERLAND":"EU","AUSTRIA":"EU",
+    "POLAND":"EU","SWEDEN":"EU","NORWAY":"EU","DENMARK":"EU","FINLAND":"EU",
+    "CZECH REPUBLIC":"EU","HUNGARY":"EU","ROMANIA":"EU","SLOVAKIA":"EU","CROATIA":"EU",
+    "IRELAND":"EU","GREECE":"EU","SERBIA":"EU","UKRAINE":"EU","RUSSIA":"EU",
+    "UNITED STATES":"NA","USA":"NA","CANADA":"NA","MEXICO":"NA",
+    "BRAZIL":"SA","ARGENTINA":"SA","CHILE":"SA","COLOMBIA":"SA","PERU":"SA",
+    "URUGUAY":"SA","ECUADOR":"SA","BOLIVIA":"SA","VENEZUELA":"SA","PARAGUAY":"SA",
+    "JAPAN":"AS","SINGAPORE":"AS","SOUTH KOREA":"AS","CHINA":"AS","INDIA":"AS",
+    "THAILAND":"AS","TAIWAN":"AS","PHILIPPINES":"AS","INDONESIA":"AS","VIETNAM":"AS",
+    "MALAYSIA":"AS","PAKISTAN":"AS","ISRAEL":"AS",
+    "AUSTRALIA":"OC","AUSTRALIE":"OC","NEW ZEALAND":"OC","FIJI":"OC",
+    "SOUTH AFRICA":"AF","NIGERIA":"AF","KENYA":"AF","MOROCCO":"AF","GHANA":"AF",
+    "EGYPT":"AF","TANZANIA":"AF","SENEGAL":"AF","CONGO":"AF",
+  };
+  return byName[upper] ?? null;
+}
+
 export default async function HomePage() {
   await syncLiveTournamentsCompletion();
 
   const t = await getTranslations("home");
   const tc = await getTranslations("common");
   const locale = await getLocale();
-  const countryToContinent: Record<string, string> = {
-    France: "EU", Germany: "EU", "United Kingdom": "EU", Spain: "EU", Italy: "EU",
-    Netherlands: "EU", Belgium: "EU", Portugal: "EU", Switzerland: "EU", Austria: "EU",
-    Poland: "EU", Sweden: "EU", Norway: "EU", Denmark: "EU", Finland: "EU",
-    "Czech Republic": "EU", Hungary: "EU", Romania: "EU", Slovakia: "EU", Croatia: "EU",
-    Ireland: "EU", Greece: "EU", Serbia: "EU", Ukraine: "EU",
-    USA: "NA", "United States": "NA", Canada: "NA", Mexico: "NA",
-    Brazil: "SA", Argentina: "SA", Chile: "SA", Colombia: "SA", Peru: "SA",
-    Uruguay: "SA", Ecuador: "SA", Bolivia: "SA", Venezuela: "SA",
-    Japan: "AS", Singapore: "AS", "South Korea": "AS", China: "AS", India: "AS",
-    Thailand: "AS", Taiwan: "AS", Philippines: "AS", Indonesia: "AS", Vietnam: "AS",
-    Malaysia: "AS", Pakistan: "AS",
-    Australia: "OC", Australie: "OC", "New Zealand": "OC", Fiji: "OC",
-    "South Africa": "AF", Nigeria: "AF", Kenya: "AF", Morocco: "AF", Ghana: "AF",
-    Egypt: "AF", Tanzania: "AF", Senegal: "AF",
-  };
 
   const session = await auth();
   const currentPlayerId = (session?.user as any)?.playerId ?? null;
@@ -41,7 +84,7 @@ export default async function HomePage() {
   let playerContinent: string | null = null;
   if (currentPlayerId) {
     const player = await prisma.player.findUnique({ where: { id: currentPlayerId }, select: { country: true } });
-    if (player) playerContinent = countryToContinent[player.country] ?? null;
+    if (player) playerContinent = resolveContinent(player.country);
   }
 
   // Fetch upcoming tournaments for logged-in player
@@ -135,7 +178,7 @@ export default async function HomePage() {
 
   const playerCountByContinent: Record<string, number> = {};
   for (const row of countryCounts) {
-    const cont = countryToContinent[row.country];
+    const cont = resolveContinent(row.country);
     if (cont) playerCountByContinent[cont] = (playerCountByContinent[cont] ?? 0) + row._count._all;
   }
 
