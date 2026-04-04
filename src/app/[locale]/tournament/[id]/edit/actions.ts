@@ -265,6 +265,7 @@ export async function generatePoolsAction(id: string) {
   const matches = generatePoolMatches(pools, courtNames, new Date(tournament.dateStart), tournament.gameDurationMin);
 
   await prisma.$transaction(async (tx) => {
+    await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: "POOL" } } });
     await tx.match.deleteMany({ where: { tournamentId: id, phase: "POOL" } });
     // Only clear pool assignments if we generated new pools
     if (tournament.pools.length === 0) {
@@ -355,6 +356,7 @@ export async function generateBracketAction(id: string) {
   const matches = generateBracket(seededTeams, tournament.sundayFormat, courtNames, new Date(tournament.dateEnd), tournament.gameDurationMin, bracketOptions);
 
   await prisma.$transaction(async (tx) => {
+    await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: "BRACKET" } } });
     await tx.match.deleteMany({ where: { tournamentId: id, phase: "BRACKET" } });
 
     // First pass: create all matches
@@ -384,21 +386,22 @@ export async function generateBracketAction(id: string) {
 
     if (tournament.sundayFormat === "SE" || tournament.sundayFormat === "SWISS_SPLIT_SE") {
       // Single Elimination linking: Round r, position p → feeds Round r+1, position floor(p/2)
-      // bracketSide "W" = TOP 10 (winner bracket), "L" = Bottom 8 (loser bracket / consolante)
+      // SWISS_SPLIT_SE: Top 10 uses W/G/L sides, Bottom 8 uses B/BG/BL sides
       // Each bracket is independent, no linking between them
 
+      // Top 10: W = normal rounds, G = final, L = 3rd place
+      // "W" matches feed into next "W" match (or "G" final in last round)
       const wMatches = created.filter(m => m.bracketSide === "W");
-      const lMatches = created.filter(m => m.bracketSide === "L");
+      const wAndG = created.filter(m => m.bracketSide === "W" || m.bracketSide === "G");
 
-      // Link TOP 10 (W side)
       if (wMatches.length > 0) {
-        const maxWRound = Math.max(...wMatches.map((m) => m.roundIndex));
+        const maxWRound = Math.max(...wAndG.map((m) => m.roundIndex));
         for (const m of wMatches) {
           if (m.roundIndex < maxWRound) {
             const nextPos = Math.floor(m.positionInRound / 2);
             const nextRound = m.roundIndex + 1;
             const nextMatch = created.find(
-              (x) => x.bracketSide === "W" && x.roundIndex === nextRound && x.positionInRound === nextPos
+              (x) => (x.bracketSide === "W" || x.bracketSide === "G") && x.roundIndex === nextRound && x.positionInRound === nextPos
             );
             if (nextMatch) {
               await tx.match.update({
@@ -413,15 +416,19 @@ export async function generateBracketAction(id: string) {
         }
       }
 
-      // Link Bottom 8 (L side)
-      if (lMatches.length > 0) {
-        const maxLRound = Math.max(...lMatches.map((m) => m.roundIndex));
-        for (const m of lMatches) {
-          if (m.roundIndex < maxLRound) {
+      // Bottom 8: B = normal rounds, BG = final, BL = 3rd place
+      // "B" matches feed into next "B" match (or "BG" final in last round)
+      const bMatches = created.filter(m => m.bracketSide === "B");
+      const bAndBG = created.filter(m => m.bracketSide === "B" || m.bracketSide === "BG");
+
+      if (bMatches.length > 0) {
+        const maxBRound = Math.max(...bAndBG.map((m) => m.roundIndex));
+        for (const m of bMatches) {
+          if (m.roundIndex < maxBRound) {
             const nextPos = Math.floor(m.positionInRound / 2);
             const nextRound = m.roundIndex + 1;
             const nextMatch = created.find(
-              (x) => x.bracketSide === "L" && x.roundIndex === nextRound && x.positionInRound === nextPos
+              (x) => (x.bracketSide === "B" || x.bracketSide === "BG") && x.roundIndex === nextRound && x.positionInRound === nextPos
             );
             if (nextMatch) {
               await tx.match.update({
@@ -435,6 +442,7 @@ export async function generateBracketAction(id: string) {
           }
         }
       }
+
     }
 
     if (tournament.sundayFormat === "DE") {
@@ -655,6 +663,7 @@ export async function generateCrossPoolAction(id: string) {
 
   await prisma.$transaction(async (tx) => {
     // Remove any existing cross-pool matches
+    await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: "CROSS_POOL" } } });
     await tx.match.deleteMany({ where: { tournamentId: id, phase: "CROSS_POOL" } });
 
     for (const match of matches) {
@@ -737,6 +746,7 @@ export async function generateCrossPoolSEAction(id: string) {
   const matchCount = Math.floor(playingTeams.length / 2);
 
   await prisma.$transaction(async (tx) => {
+    await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: "BRACKET" } } });
     await tx.match.deleteMany({ where: { tournamentId: id, phase: "BRACKET" } });
 
     for (let i = 0; i < matchCount; i++) {
@@ -827,6 +837,7 @@ export async function generateCrossPoolDEAction(id: string) {
 
   await prisma.$transaction(async (tx) => {
     // Delete existing bracket matches (SE ones are done)
+    await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: "BRACKET" } } });
     await tx.match.deleteMany({ where: { tournamentId: id, phase: "BRACKET" } });
 
     const created: Array<{ id: string; roundIndex: number; bracketSide: string | null; positionInRound: number }> = [];
@@ -1064,6 +1075,7 @@ export async function resetSwissAction(id: string) {
   const denied = await requireTournamentOrgaAccess(id);
   if (denied) return denied;
 
+  await prisma.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: "SWISS" } } });
   await prisma.match.deleteMany({ where: { tournamentId: id, phase: "SWISS" } });
   revalidatePath(`/tournament/${id}`);
   return { ok: true };
