@@ -253,24 +253,26 @@ export function OrgaDashboard({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
 
-      {/* ── Status + KPI bar ── */}
-      <div className="status-kpi-row">
-        <span className={`status ${tournament.status.toLowerCase()}`} style={{ flexShrink: 0 }}>{tournament.status}</span>
-        <div className="kpi-grid" style={{ flex: 1 }}>
-          <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-            <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>
-              {selectedTeams}<span style={{ fontSize: 14, color: "var(--text-muted)", marginLeft: 2 }}>/{tournament.maxTeams}</span>
-            </div>
-            <p className="meta">{t("edit_kpi_teams")}</p>
+      {/* ── Status ── */}
+      <div style={{ marginBottom: 12 }}>
+        <span className={`status ${tournament.status.toLowerCase()}`}>{tournament.status}</span>
+      </div>
+
+      {/* ── KPI bar ── */}
+      <div className="kpi-grid" style={{ marginBottom: 20 }}>
+        <div className="panel" style={{ textAlign: "center", padding: 16 }}>
+          <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>
+            {selectedTeams}<span style={{ fontSize: 14, color: "var(--text-muted)", marginLeft: 2 }}>/{tournament.maxTeams}</span>
           </div>
-          <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-            <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{freeAgents.length}</div>
-            <p className="meta">{t("edit_kpi_free_agents")}</p>
-          </div>
-          <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-            <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{teams.reduce((acc, t) => acc + t.players.length, 0)}</div>
-            <p className="meta">{t("edit_kpi_players")}</p>
-          </div>
+          <p className="meta">{t("edit_kpi_teams")}</p>
+        </div>
+        <div className="panel" style={{ textAlign: "center", padding: 16 }}>
+          <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{freeAgents.length}</div>
+          <p className="meta">{t("edit_kpi_free_agents")}</p>
+        </div>
+        <div className="panel" style={{ textAlign: "center", padding: 16 }}>
+          <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{teams.reduce((acc, t) => acc + t.players.length, 0)}</div>
+          <p className="meta">{t("edit_kpi_players")}</p>
         </div>
       </div>
 
