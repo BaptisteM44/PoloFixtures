@@ -82,8 +82,8 @@ a {
 }
 
 .page--full-width {
-  padding-left: 0;
-  padding-right: 0;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 @media (max-width: 768px) {
   .page--full-width {
