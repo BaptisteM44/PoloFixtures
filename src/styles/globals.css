@@ -4040,24 +4040,29 @@ textarea {
   gap: 10px;
   margin-bottom: 16px;
 }
-.edit-page-layout {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 24px;
-  align-items: start;
-  min-width: 0;
+/* Checklist wrapper — always visible on desktop, collapsible on mobile */
+.edit-checklist-wrapper {
+  outline: none;
 }
-.edit-page-layout > * {
-  min-width: 0;
+.edit-checklist-wrapper summary {
+  display: none; /* hidden on desktop — always open */
 }
-@media (max-width: 1024px) {
-  .edit-page-layout {
-    grid-template-columns: 1fr;
+@media (max-width: 768px) {
+  .edit-checklist-wrapper summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
   }
-  .edit-page-sidebar {
-    position: static !important;
-    top: unset !important;
-  }
+  .edit-checklist-wrapper summary::-webkit-details-marker { display: none; }
 }
 
 /* KPI bar – 4 colonnes desktop, 2 colonnes mobile */

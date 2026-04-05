@@ -211,7 +211,6 @@ function TeamRow({
   const [manualName, setManualName] = useState("");
   const [manualCity, setManualCity] = useState("");
   const [manualCountry, setManualCountry] = useState("");
-  const [expandedRecap, setExpandedRecap] = useState(false);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -450,7 +449,7 @@ function TeamRow({
         </div>
       )}
 
-      {/* Recap : régimes, logement, notes inscription, note orga */}
+      {/* Recap : régimes, logement, notes inscription, note orga — toujours visible */}
       {showRecap && (() => {
         const dietLabels: Record<string, string> = {
           OMNIVORE: tTeam("diet_omnivore"),
@@ -459,53 +458,41 @@ function TeamRow({
           GLUTEN_FREE: tTeam("diet_gluten_free"),
         };
         const playersWithDiet = team.players.filter((tp) => (tp.player.diets?.length ?? 0) > 0 || tp.needsAccommodation);
-        const hasAnyInfo = playersWithDiet.length > 0 || team.registrationNote || team.orgaNote || team.accommodationNote;
-        if (!hasAnyInfo) return null;
         return (
-          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border-light)" }}>
-            <button
-              onClick={() => setExpandedRecap((v) => !v)}
-              style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--teal)" }}
-            >
-              {expandedRecap ? "▼" : "▶"} {t("notes")}
-            </button>
-            {expandedRecap && (
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                {/* Régimes alimentaires & logement par joueur */}
-                {playersWithDiet.map((tp) => {
-                  const diets = tp.player.diets ?? [];
-                  return (
-                    <div key={tp.player.id} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 12 }}>
-                      <span style={{ fontWeight: 600, minWidth: 100 }}>{tp.player.name}</span>
-                      {diets.map((d) => (
-                        <span key={d} style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "var(--yellow)", color: "var(--text)", border: "1.5px solid var(--border)" }}>
-                          {dietLabels[d] ?? d}
-                        </span>
-                      ))}
-                      {tp.needsAccommodation && (
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "color-mix(in srgb, var(--teal) 20%, var(--surface))", border: "1.5px solid var(--teal)" }}>
-                          {tTournament("orga_needs_accommodation")}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-                {/* Message inscription */}
-                {team.registrationNote && (
-                  <div style={{ padding: "6px 10px", background: "color-mix(in srgb, var(--yellow) 12%, var(--surface))", borderRadius: 6, borderLeft: "3px solid var(--yellow)", fontSize: 12 }}>
-                    <span style={{ fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", marginRight: 6, fontSize: 11 }}>{tTournament("orga_registration_note")}</span>
-                    {team.registrationNote}
-                  </div>
-                )}
-                {/* Note orga */}
-                <OrgaNoteEditor
-                  teamId={team.id}
-                  initialNote={team.orgaNote ?? ""}
-                  label={tTournament("orga_note_label")}
-                  placeholder={tTournament("orga_note_placeholder")}
-                />
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--border-light)", display: "grid", gap: 8 }}>
+            {/* Régimes alimentaires & logement par joueur */}
+            {playersWithDiet.map((tp) => {
+              const diets = tp.player.diets ?? [];
+              return (
+                <div key={tp.player.id} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 12 }}>
+                  <span style={{ fontWeight: 600, minWidth: 100 }}>{tp.player.name}</span>
+                  {diets.map((d) => (
+                    <span key={d} style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "var(--yellow)", color: "var(--text)", border: "1.5px solid var(--border)" }}>
+                      {dietLabels[d] ?? d}
+                    </span>
+                  ))}
+                  {tp.needsAccommodation && (
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "color-mix(in srgb, var(--teal) 20%, var(--surface))", border: "1.5px solid var(--teal)" }}>
+                      {tTournament("orga_needs_accommodation")}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+            {/* Message inscription */}
+            {team.registrationNote && (
+              <div style={{ padding: "6px 10px", background: "color-mix(in srgb, var(--yellow) 12%, var(--surface))", borderRadius: 6, borderLeft: "3px solid var(--yellow)", fontSize: 12 }}>
+                <span style={{ fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", marginRight: 6, fontSize: 11 }}>{tTournament("orga_registration_note")}</span>
+                {team.registrationNote}
               </div>
             )}
+            {/* Note orga */}
+            <OrgaNoteEditor
+              teamId={team.id}
+              initialNote={team.orgaNote ?? ""}
+              label={tTournament("orga_note_label")}
+              placeholder={tTournament("orga_note_placeholder")}
+            />
           </div>
         );
       })()}

@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 export function TestModeToggle({ tournamentId, initialTestMode }: { tournamentId: string; initialTestMode: boolean }) {
   const router = useRouter();
-  const t = useTranslations("tournament");
+  const t = useTranslations("tournament_edit");
   const [testMode, setTestMode] = useState(initialTestMode);
   const [pending, setPending] = useState(false);
 
