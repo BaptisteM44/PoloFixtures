@@ -85,6 +85,12 @@ a {
   padding-left: 0;
   padding-right: 0;
 }
+@media (max-width: 768px) {
+  .page--full-width {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
 
 /* ========================
    ABOUT PAGE
@@ -2021,6 +2027,11 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 
 @media (max-width: 768px) {
+  .orga-stats-bar {
+    gap: 6px 12px;
+    font-size: 12px;
+    padding: 10px 12px;
+  }
   .orga-task-row {
     flex-wrap: wrap;
   }
@@ -4070,18 +4081,29 @@ textarea {
   .edit-checklist-wrapper summary::-webkit-details-marker { display: none; }
 }
 
-/* KPI bar – 4 colonnes desktop, 2 colonnes mobile */
+/* KPI bar – 3 colonnes desktop, 3 colonnes mobile */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
+
+/* Status + KPI row */
+.status-kpi-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
 @media (max-width: 768px) {
-  .kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .status-kpi-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
   }
-  .kpi-grid [data-hide-mobile] {
-    display: none;
+  .status-kpi-row .kpi-grid {
+    width: 100%;
+    gap: 8px;
   }
 }
 

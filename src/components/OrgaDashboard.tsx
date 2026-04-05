@@ -254,7 +254,7 @@ export function OrgaDashboard({
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
 
       {/* ── Status + KPI bar ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+      <div className="status-kpi-row">
         <span className={`status ${tournament.status.toLowerCase()}`} style={{ flexShrink: 0 }}>{tournament.status}</span>
         <div className="kpi-grid" style={{ flex: 1 }}>
           <div className="panel" style={{ textAlign: "center", padding: 16 }}>
@@ -693,8 +693,8 @@ export function OrgaDashboard({
                             const accom = (tp as any).needsAccommodation;
                             if (!diets.length && !accom) return null;
                             return (
-                              <div key={tp.player.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span style={{ minWidth: 120, fontWeight: 500 }}>{tp.player.name}</span>
+                              <div key={tp.player.id} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                <span style={{ fontWeight: 500 }}>{tp.player.name}</span>
                                 {diets.length > 0
                                   ? diets.map((d: string) => (
                                       <span key={d} style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "var(--yellow)", color: "var(--text)", border: "1.5px solid var(--border)" }}>
