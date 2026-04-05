@@ -156,9 +156,9 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       </div>
 
       {/* Checklist compacte au-dessus du dashboard */}
-      <details style={{ marginBottom: 16 }}>
-        <summary style={{ cursor: "pointer", fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700, padding: "8px 0", userSelect: "none" }}>
-          Checklist
+      <details style={{ marginBottom: 16, outline: "none", border: "none" }}>
+        <summary style={{ cursor: "pointer", fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700, padding: "8px 12px", userSelect: "none", listStyle: "none", display: "flex", alignItems: "center", gap: 8, background: "var(--surface-2)", borderRadius: 8, border: "1.5px solid var(--border)" }}>
+          <span style={{ fontSize: 10 }}>▶</span> Checklist
         </summary>
         <div style={{ marginTop: 8 }}>
           <TournamentChecklist t={{
