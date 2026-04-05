@@ -155,11 +155,12 @@ export default async function TournamentEditPage({ params }: { params: { id: str
         <Link href={`/tournament/${t_.slug}`} className="ghost">{t("edit_view_public")}</Link>
       </div>
 
-      {/* 2-column layout: checklist left, main content right */}
-      <div className="edit-page-layout">
-
-        {/* Left: checklist sticky */}
-        <div className="edit-page-sidebar" style={{ position: "sticky", top: 80 }}>
+      {/* Checklist compacte au-dessus du dashboard */}
+      <details style={{ marginBottom: 16 }}>
+        <summary style={{ cursor: "pointer", fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700, padding: "8px 0", userSelect: "none" }}>
+          Checklist
+        </summary>
+        <div style={{ marginTop: 8 }}>
           <TournamentChecklist t={{
             name: t_.name,
             country: t_.country,
@@ -182,8 +183,6 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             coOrganizersCount: t_.coOrganizers.length,
             sponsorsCount: t_.sponsors.length,
           }} />
-
-          {/* Resubmit button if REJECTED */}
           {submissionStatus === "REJECTED" && (
             <form action={async () => {
               "use server";
@@ -195,10 +194,9 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             </form>
           )}
         </div>
+      </details>
 
-        {/* Right: main content */}
-        <div>
-          <OrgaDashboard
+      <OrgaDashboard
             tournament={{
               id: t_.id,
               name: t_.name,
@@ -299,8 +297,6 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             removeFromWaitlistAction={removeFromWaitlist}
             createTeamAction={createTeam}
           />
-        </div>{/* end right column */}
-      </div>{/* end 2-col grid */}
     </div>
   );
 }

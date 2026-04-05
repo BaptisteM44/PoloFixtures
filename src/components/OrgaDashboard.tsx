@@ -215,6 +215,7 @@ export function OrgaDashboard({
   createTeamAction,
 }: OrgaDashboardProps) {
   const t = useTranslations("tournament");
+  const tTeam = useTranslations("team");
   const tabStorageKey = `orga_tab_${tournament.id}`;
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     if (typeof window !== "undefined") {
@@ -667,10 +668,10 @@ export function OrgaDashboard({
             const sortedTeams = [...teams].sort((a, b) => a.seed - b.seed);
             const selected = sortedTeams.filter((t) => t.selected);
             const dietLabels: Record<string, string> = {
-              OMNIVORE: t("diet_omnivore"),
-              VEGETARIAN: t("diet_vegetarian"),
-              VEGAN: t("diet_vegan"),
-              GLUTEN_FREE: t("diet_gluten_free"),
+              OMNIVORE: tTeam("diet_omnivore"),
+              VEGETARIAN: tTeam("diet_vegetarian"),
+              VEGAN: tTeam("diet_vegan"),
+              GLUTEN_FREE: tTeam("diet_gluten_free"),
             };
             if (selected.length === 0) return null;
             return (
