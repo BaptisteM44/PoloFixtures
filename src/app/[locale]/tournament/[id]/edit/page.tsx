@@ -155,43 +155,48 @@ export default async function TournamentEditPage({ params }: { params: { id: str
         <Link href={`/tournament/${t_.slug}`} className="ghost">{t("edit_view_public")}</Link>
       </div>
 
-      {/* Checklist — visible en desktop, collapsible en mobile */}
-      <details className="edit-checklist-wrapper" open style={{ marginBottom: 16 }}>
-        <summary>Checklist</summary>
-        <TournamentChecklist t={{
-          name: t_.name,
-          country: t_.country,
-          city: t_.city,
-          dateStart: t_.dateStart.toISOString(),
-          dateEnd: t_.dateEnd.toISOString(),
-          contactEmail: t_.contactEmail,
-          registrationStart: t_.registrationStart?.toISOString() ?? null,
-          registrationEnd: t_.registrationEnd?.toISOString() ?? null,
-          registrationFeePerTeam: t_.registrationFeePerTeam,
-          fridayWelcomeName: t_.fridayWelcomeName,
-          saturdayEventName: t_.saturdayEventName,
-          saturdayEventAddress: t_.saturdayEventAddress,
-          bannerPath: t_.bannerPath,
-          maxTeams: t_.maxTeams,
-          courtsCount: t_.courtsCount,
-          accommodationAvailable: t_.accommodationAvailable,
-          submissionStatus,
-          rejectionReason: t_.rejectionReason,
-          coOrganizersCount: t_.coOrganizers.length,
-          sponsorsCount: t_.sponsors.length,
-        }} />
-        {submissionStatus === "REJECTED" && (
-          <form action={async () => {
-            "use server";
-            await resubmitTournamentAction(params.id);
-          }}>
-            <button className="primary" type="submit" style={{ width: "100%", marginTop: 12, justifyContent: "center" }}>
-              {t("edit_resubmit")}
-            </button>
-          </form>
-        )}
-      </details>
+      <div className="edit-layout">
+        {/* Sidebar checklist — colonne gauche desktop, collapsible mobile */}
+        <aside className="edit-sidebar">
+          <details className="edit-checklist-wrapper" open>
+            <summary>Checklist</summary>
+            <TournamentChecklist t={{
+              name: t_.name,
+              country: t_.country,
+              city: t_.city,
+              dateStart: t_.dateStart.toISOString(),
+              dateEnd: t_.dateEnd.toISOString(),
+              contactEmail: t_.contactEmail,
+              registrationStart: t_.registrationStart?.toISOString() ?? null,
+              registrationEnd: t_.registrationEnd?.toISOString() ?? null,
+              registrationFeePerTeam: t_.registrationFeePerTeam,
+              fridayWelcomeName: t_.fridayWelcomeName,
+              saturdayEventName: t_.saturdayEventName,
+              saturdayEventAddress: t_.saturdayEventAddress,
+              bannerPath: t_.bannerPath,
+              maxTeams: t_.maxTeams,
+              courtsCount: t_.courtsCount,
+              accommodationAvailable: t_.accommodationAvailable,
+              submissionStatus,
+              rejectionReason: t_.rejectionReason,
+              coOrganizersCount: t_.coOrganizers.length,
+              sponsorsCount: t_.sponsors.length,
+            }} />
+            {submissionStatus === "REJECTED" && (
+              <form action={async () => {
+                "use server";
+                await resubmitTournamentAction(params.id);
+              }}>
+                <button className="primary" type="submit" style={{ width: "100%", marginTop: 12, justifyContent: "center" }}>
+                  {t("edit_resubmit")}
+                </button>
+              </form>
+            )}
+          </details>
+        </aside>
 
+        {/* Main content — colonne droite */}
+        <div className="edit-main">
       <OrgaDashboard
             tournament={{
               id: t_.id,
@@ -293,6 +298,8 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             removeFromWaitlistAction={removeFromWaitlist}
             createTeamAction={createTeam}
           />
+        </div>
+      </div>
     </div>
   );
 }

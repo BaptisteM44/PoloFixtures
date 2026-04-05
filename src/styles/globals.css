@@ -4056,6 +4056,21 @@ textarea {
   gap: 10px;
   margin-bottom: 16px;
 }
+/* Edit page 2-column layout: sidebar left + main right */
+.edit-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.edit-sidebar {
+  position: sticky;
+  top: 16px;
+}
+.edit-main {
+  min-width: 0;
+}
+
 /* Checklist wrapper — always visible on desktop, collapsible on mobile */
 .edit-checklist-wrapper {
   outline: none;
@@ -4063,7 +4078,18 @@ textarea {
 .edit-checklist-wrapper summary {
   display: none; /* hidden on desktop — always open */
 }
+
 @media (max-width: 768px) {
+  .edit-layout {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .edit-sidebar {
+    position: static;
+  }
+  .edit-checklist-wrapper {
+    margin-bottom: 16px;
+  }
   .edit-checklist-wrapper summary {
     display: flex;
     align-items: center;
