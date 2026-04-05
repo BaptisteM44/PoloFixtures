@@ -21,7 +21,7 @@ import { OrgaNoteBoard } from "@/components/OrgaNoteBoard";
 import { OrgaLinkBoard } from "@/components/OrgaLinkBoard";
 import { SelectionManager } from "@/components/SelectionManager";
 import { DrawPanel } from "@/components/DrawPanel";
-import { OrgaNoteEditor } from "@/components/OrgaNoteEditor";
+
 
 // ─── BerlinMixedPlanning ─────────────────────────────────────────────────────
 
@@ -215,7 +215,7 @@ export function OrgaDashboard({
   createTeamAction,
 }: OrgaDashboardProps) {
   const t = useTranslations("tournament");
-  const tTeam = useTranslations("team");
+
   const tabStorageKey = `orga_tab_${tournament.id}`;
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     if (typeof window !== "undefined") {
@@ -663,69 +663,6 @@ export function OrgaDashboard({
             </div>
           )}
 
-          {/* Récap régimes/logement/notes */}
-          {(() => {
-            const sortedTeams = [...teams].sort((a, b) => a.seed - b.seed);
-            const selected = sortedTeams.filter((t) => t.selected);
-            const dietLabels: Record<string, string> = {
-              OMNIVORE: tTeam("diet_omnivore"),
-              VEGETARIAN: tTeam("diet_vegetarian"),
-              VEGAN: tTeam("diet_vegan"),
-              GLUTEN_FREE: tTeam("diet_gluten_free"),
-            };
-            if (selected.length === 0) return null;
-            return (
-              <div className="panel">
-                <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 12 }}>{t("orga_recap_title")}</h3>
-                <div style={{ display: "grid", gap: 12 }}>
-                  {sortedTeams.map((team) => {
-                    const hasInfo = team.players.some((tp: any) =>
-                      (tp.player as any).diets?.length || (tp as any).needsAccommodation
-                    );
-                    const hasNotes = (team as any).registrationNote || (team as any).orgaNote;
-                    if (!hasInfo && !hasNotes) return null;
-                    return (
-                      <div key={team.id} style={{ padding: "12px 16px", background: "var(--surface-2)", border: "1.5px solid var(--border)", borderRadius: 8, fontSize: 13 }}>
-                        <div style={{ fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 8 }}>#{team.seed} {team.name}</div>
-                        <div style={{ display: "grid", gap: 4, marginBottom: hasNotes ? 10 : 0 }}>
-                          {team.players.map((tp: any) => {
-                            const diets = (tp.player as any).diets ?? [];
-                            const accom = (tp as any).needsAccommodation;
-                            if (!diets.length && !accom) return null;
-                            return (
-                              <div key={tp.player.id} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                                <span style={{ fontWeight: 500 }}>{tp.player.name}</span>
-                                {diets.length > 0
-                                  ? diets.map((d: string) => (
-                                      <span key={d} style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "var(--yellow)", color: "var(--text)", border: "1.5px solid var(--border)" }}>
-                                        {dietLabels[d] ?? d}
-                                      </span>
-                                    ))
-                                  : <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("diet_not_specified")}</span>
-                                }
-                                {accom && (
-                                  <span style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "color-mix(in srgb, var(--teal) 20%, var(--surface))", border: "1.5px solid var(--teal)" }}>
-                                    {t("orga_needs_accommodation")}
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {(team as any).registrationNote && (
-                          <div style={{ marginTop: 8, padding: "8px 12px", background: "color-mix(in srgb, var(--yellow) 12%, var(--surface))", borderRadius: 6, borderLeft: "3px solid var(--yellow)" }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--text-muted)", marginRight: 8 }}>{t("orga_registration_note")}</span>
-                            <span>{(team as any).registrationNote}</span>
-                          </div>
-                        )}
-                        <OrgaNoteEditor teamId={team.id} initialNote={(team as any).orgaNote ?? ""} label={t("orga_note_label")} placeholder={t("orga_note_placeholder")} />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
         </div>
       )}
 
