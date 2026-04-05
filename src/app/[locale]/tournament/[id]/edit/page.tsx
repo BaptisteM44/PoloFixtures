@@ -145,7 +145,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
   const t = await getTranslations("tournament");
 
   return (
-    <div className="page">
+    <div className="page page--full-width">
       <CreatedToast />
       <div className="edit-header">
         <div>

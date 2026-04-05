@@ -88,7 +88,7 @@ export function Header() {
                 {t("header.brand_name")}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <LanguageSwitcher drawerAlign="left" />
+                <LanguageSwitcher />
                 <button className="nav-drawer__close" onClick={() => setMenuOpen(false)}>✕</button>
               </div>
             </div>

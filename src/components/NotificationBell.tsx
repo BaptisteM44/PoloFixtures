@@ -115,11 +115,8 @@ export function NotificationBell() {
     <div ref={ref} style={{ position: "relative" }}>
       <button
         onClick={handleOpen}
-        style={{
-          position: "relative", background: "none", border: "2px solid var(--border)",
-          borderRadius: 8, padding: "5px 10px", cursor: "pointer",
-          fontSize: 16, color: "var(--text)", display: "flex", alignItems: "center",
-        }}
+        className="header-icon-btn"
+        style={{ position: "relative", fontSize: 16 }}
       >
         🔔
         {unread > 0 && (

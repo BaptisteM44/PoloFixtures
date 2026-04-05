@@ -13,9 +13,8 @@ const LABELS: Record<string, string> = {
   es: "ES",
 };
 
-/** inline=true → affiche les 4 boutons directement sans dropdown (pour le drawer mobile)
- *  drawerAlign="left" → ouvre le dropdown vers la gauche (pour éviter le débordement dans le drawer) */
-export function LanguageSwitcher({ inline = false, drawerAlign }: { inline?: boolean; drawerAlign?: "left" }) {
+/** inline=true → affiche les 4 boutons directement sans dropdown (pour le drawer mobile) */
+export function LanguageSwitcher({ inline = false }: { inline?: boolean }) {
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
@@ -87,12 +86,7 @@ export function LanguageSwitcher({ inline = false, drawerAlign }: { inline?: boo
     <div ref={ref} style={{ position: "relative" }}>
       <button
         onClick={handleToggle}
-        style={{
-          position: "relative", background: "none", border: "2px solid var(--border)",
-          borderRadius: 8, padding: "5px 10px", cursor: "pointer",
-          fontSize: 13, color: "var(--text)", display: "flex", alignItems: "center", gap: 4,
-          fontFamily: "var(--font-display)", fontWeight: 600,
-        }}
+        className="header-icon-btn"
         aria-label="Switch language"
       >
         {LABELS[locale]}
@@ -101,9 +95,8 @@ export function LanguageSwitcher({ inline = false, drawerAlign }: { inline?: boo
       {open && (
         <div
           style={{
-            position: "absolute", top: "calc(100% + 8px)",
-            ...(drawerAlign === "left" ? { left: 0 } : { right: 0 }),
-            width: 120, background: "var(--surface)", border: "2px solid var(--border)",
+            position: "absolute", top: "calc(100% + 8px)", right: 0,
+            width: 120, maxWidth: "calc(100vw - 16px)", background: "var(--surface)", border: "2px solid var(--border)",
             borderRadius: "var(--radius)", boxShadow: "var(--shadow-lg)",
             zIndex: 1000, overflow: "hidden",
             animation: closing

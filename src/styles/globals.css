@@ -81,6 +81,11 @@ a {
   overflow-x: hidden;
 }
 
+.page--full-width {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 /* ========================
    ABOUT PAGE
    ======================== */
@@ -8364,6 +8369,30 @@ details[open] .my-tournaments__section-title--summary::after {
 
 .site-footer__links a:hover {
   color: var(--text);
+}
+
+/* ── Header icon buttons (bell, lang, avatar) ────────────────────────────── */
+
+.header-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: none;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  padding: 0;
+  transition: box-shadow var(--transition);
+}
+
+.header-icon-btn:hover {
+  box-shadow: var(--shadow);
 }
 
 /* ── Avatar dropdown ───────────────────────────────────────────────────────── */
