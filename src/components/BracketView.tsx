@@ -17,12 +17,16 @@ const FIRST_COL_GAP = 28;
 const CELL_BASE = 76;
 const CARD_OFFSET_X = 0;
 
-function getDERoundLabel(side: string, roundIndex: number, maxUpperRound: number, maxLowerRound: number): string {
+function getDERoundLabel(side: string, roundIndex: number, maxUpperRound: number, maxLowerRound: number, minUpperRound = 1): string {
   if (side === "G") return roundIndex === 2 ? "Bracket Reset" : "Finale";
   if (side === "W") {
+    // Cross-pool: round before the DE upper bracket = SE elimination
+    if (minUpperRound > 1 && roundIndex < minUpperRound) return "Élimination";
     if (roundIndex === maxUpperRound) return "Finale WB";
     if (roundIndex === maxUpperRound - 1) return "Demi-Finales";
-    return `Tour ${roundIndex}`;
+    // Shift tour label for cross-pool so DE R1 shows "Tour 1" not "Tour 2"
+    const displayRound = minUpperRound > 1 ? roundIndex - minUpperRound + 1 : roundIndex;
+    return `Tour ${displayRound}`;
   }
   if (maxLowerRound <= 1) return "Manche des perdants";
   return `Manche des perdants ${roundIndex}`;
@@ -150,12 +154,14 @@ export function BracketView({
   teams,
   isOrganizer,
   isLive = false,
+  crossPool = false,
 }: {
   matches: MatchWithTeams[];
   tournamentId: string;
   teams?: TeamOption[];
   isOrganizer?: boolean;
   isLive?: boolean;
+  crossPool?: boolean;
 }) {
   const t = useTranslations("tournament");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
@@ -279,7 +285,7 @@ export function BracketView({
         {isSplitSE
           ? <SplitSEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} teamNumberById={teamNumberById} />
           : isDE
-          ? <DEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} teamNumberById={teamNumberById} />
+          ? <DEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} teamNumberById={teamNumberById} crossPool={crossPool} />
           : <SEBracket matches={bracketMatches} onEdit={openEdit} selectedId={selectedId} teamNumberById={teamNumberById} />}
       </FitWrapper>
       <MatchEditPanel
@@ -426,16 +432,18 @@ function SplitSEBracket({ matches, onEdit, selectedId, teamNumberById }: {
   );
 }
 
-function DEBracket({ matches, onEdit, selectedId, teamNumberById }: {
+function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = false }: {
   matches: MatchWithTeams[];
   onEdit: (m: MatchWithTeams) => void;
   selectedId: string | null;
   teamNumberById: Map<string, number | undefined>;
+  crossPool?: boolean;
 }) {
   const upper = matches.filter((m) => m.bracketSide === "W");
   const lower = matches.filter((m) => m.bracketSide === "L");
   const grand = matches.filter((m) => m.bracketSide === "G");
   const maxUpperRound = upper.length > 0 ? Math.max(...upper.map((m) => m.roundIndex)) : 1;
+  const minUpperRound = upper.length > 0 ? Math.min(...upper.map((m) => m.roundIndex)) : 1;
   const maxLowerRound = lower.length > 0 ? Math.max(...lower.map((m) => m.roundIndex)) : 1;
 
   const matchNumbers = new Map<string, number>();
@@ -569,7 +577,7 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById }: {
           </svg>
 
           {sortedRounds.map(([roundIdx, roundMatches], colIdx) => {
-            const label = getDERoundLabel(side, roundIdx, maxUpperRound, maxLowerRound);
+            const label = getDERoundLabel(side, roundIdx, maxUpperRound, maxLowerRound, crossPool ? minUpperRound : 1);
             const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
             const x = colMetrics[colIdx].x;
             const cardWidth = colMetrics[colIdx].cardWidth;

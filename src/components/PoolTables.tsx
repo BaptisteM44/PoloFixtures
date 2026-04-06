@@ -34,8 +34,54 @@ export function PoolTables({
     });
     return () => es.close();
   }, [tournamentId, isLive]);
+  // Combined standings across all pools — shown when all pool matches are finished
+  const allPoolMatches = matches.filter((m) => pools.some((p) => p.id === m.poolId));
+  const allPoolTeams = pools.flatMap((p) => p.teams.map((pt) => pt.team));
+  const allFinished = allPoolMatches.length > 0 && allPoolMatches.every((m) => m.status === "FINISHED");
+  const showCombined = pools.length >= 2 && allFinished;
+  const combinedStandings = showCombined ? computeStandings(allPoolTeams, allPoolMatches as Match[], scoringSystem) : [];
+
   return (
     <div className="pool-tables">
+      {showCombined && (
+        <div className="pool-card">
+          <h4>Classement général</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Team</th>
+                <th>W</th>
+                <th>D</th>
+                <th>L</th>
+                <th>GF</th>
+                <th>GA</th>
+                <th>Diff</th>
+                <th>Pts</th>
+                <th title="Buchholz (force adversaires)">Buch.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {combinedStandings.map((row, i) => (
+                <tr key={row.teamId}>
+                  <td style={{ fontWeight: 700, color: "var(--text-muted)", width: 28 }}>{i + 1}</td>
+                  <td>{row.name}</td>
+                  <td>{row.wins}</td>
+                  <td>{row.draws}</td>
+                  <td>{row.losses}</td>
+                  <td>{row.goalsFor}</td>
+                  <td>{row.goalsAgainst}</td>
+                  <td style={{ color: row.goalDiff > 0 ? "var(--teal)" : row.goalDiff < 0 ? "var(--danger)" : undefined }}>
+                    {row.goalDiff > 0 ? `+${row.goalDiff}` : row.goalDiff}
+                  </td>
+                  <td style={{ fontWeight: 700 }}>{row.points}</td>
+                  <td>{row.buchholz}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {pools.map((pool) => {
         const poolTeamIds = pool.teams.map((pt) => pt.teamId);
         const poolTeams = pool.teams.map((pt) => pt.team);

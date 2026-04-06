@@ -748,7 +748,7 @@ export default async function TournamentPage({
                   mode="buttons"
                 />
               )}
-              <BracketView matches={bracketMatches} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />
+              <BracketView matches={bracketMatches} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} crossPool={tournament.crossPool} />
             </>
           );
         }

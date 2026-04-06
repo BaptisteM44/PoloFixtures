@@ -876,18 +876,31 @@ export async function generateCrossPoolDEAction(id: string) {
   const deMatches = generateBracket(survivors, "DE", courtNames, new Date(tournament.dateEnd), tournament.gameDurationMin, { gfReset });
 
   await prisma.$transaction(async (tx) => {
-    // Delete existing bracket matches (SE ones are done)
-    await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: "BRACKET" } } });
-    await tx.match.deleteMany({ where: { tournamentId: id, phase: "BRACKET" } });
+    // Delete only DE matches (round > 1 or bracketSide L/G), keep SE round 1 matches
+    await tx.matchEvent.deleteMany({
+      where: { match: { tournamentId: id, phase: "BRACKET", OR: [{ roundIndex: { gt: 1 } }, { bracketSide: "L" }, { bracketSide: "G" }] } }
+    });
+    await tx.match.deleteMany({
+      where: { tournamentId: id, phase: "BRACKET", OR: [{ roundIndex: { gt: 1 } }, { bracketSide: "L" }, { bracketSide: "G" }] }
+    });
 
+    // Fetch the SE round 1 matches we kept
+    const seMatches = await tx.match.findMany({
+      where: { tournamentId: id, phase: "BRACKET", roundIndex: 1, bracketSide: "W" },
+      orderBy: { positionInRound: "asc" },
+    });
+
+    // Shift DE roundIndex: upper bracket W gets +1, lower bracket L stays as-is, G stays as-is
+    // This way SE is round 1, DE upper starts at round 2
     const created: Array<{ id: string; roundIndex: number; bracketSide: string | null; positionInRound: number }> = [];
     for (const match of deMatches) {
+      const shiftedRoundIndex = match.bracketSide === "W" ? match.roundIndex + 1 : match.roundIndex;
       const m = await tx.match.create({
         data: {
           tournamentId: id,
           phase: "BRACKET",
           bracketSide: match.bracketSide ?? null,
-          roundIndex: match.roundIndex,
+          roundIndex: shiftedRoundIndex,
           positionInRound: match.positionInRound ?? 0,
           courtName: match.courtName,
           startAt: match.startAt,
@@ -900,11 +913,9 @@ export async function generateCrossPoolDEAction(id: string) {
       created.push({ id: m.id, roundIndex: m.roundIndex, bracketSide: m.bracketSide, positionInRound: m.positionInRound });
     }
 
-    // DE linking (same as generateBracketAction DE section)
-    const findMatch = (side: string | null, round: number, pos: number) =>
-      created.find((m) => m.bracketSide === side && m.roundIndex === round && m.positionInRound === pos);
-
+    // DE linking — same logic but on the shifted rounds
     const maxUR = Math.max(...created.filter(m => m.bracketSide === "W").map(m => m.roundIndex), 0);
+    const minUR = Math.min(...created.filter(m => m.bracketSide === "W").map(m => m.roundIndex));
     const maxLR = Math.max(...created.filter(m => m.bracketSide === "L").map(m => m.roundIndex), 0);
     const grandFinal = created.find(m => m.bracketSide === "G");
 
@@ -923,14 +934,20 @@ export async function generateCrossPoolDEAction(id: string) {
       arr.sort((a, b) => a.positionInRound - b.positionInRound);
     }
 
-    // Upper bracket linking
-    for (let ur = 1; ur <= maxUR; ur++) {
+    // Upper bracket linking (DE rounds, shifted by +1)
+    const upperRoundKeys = Array.from(upperByRound.keys()).sort((a, b) => a - b);
+    for (let idx = 0; idx < upperRoundKeys.length; idx++) {
+      const ur = upperRoundKeys[idx];
       const uMatches = upperByRound.get(ur) ?? [];
-      const uNext = upperByRound.get(ur + 1) ?? [];
+      const nextUr = upperRoundKeys[idx + 1];
+      const uNext = nextUr ? (upperByRound.get(nextUr) ?? []) : [];
       const isLastUpper = ur === maxUR;
+
+      // For losers routing: map DE upper round index (1-based relative) to lower bracket round
+      const relativeRound = idx + 1; // 1st DE upper round = 1, 2nd = 2, etc.
       let lrForLosers: number;
-      if (ur === 1) lrForLosers = 1;
-      else lrForLosers = 2 * ur - 2;
+      if (relativeRound === 1) lrForLosers = 1;
+      else lrForLosers = 2 * relativeRound - 2;
       const lMatches = lowerByRound.get(lrForLosers) ?? [];
 
       for (let i = 0; i < uMatches.length; i++) {
@@ -945,7 +962,7 @@ export async function generateCrossPoolDEAction(id: string) {
           data.nextSlotWin = uMatches[i].positionInRound % 2 === 0 ? "A" : "B";
         }
         if (!isLastUpper && lMatches.length > 0) {
-          if (ur === 1) {
+          if (relativeRound === 1) {
             const sourcePos = uMatches[i].positionInRound;
             const lowerPos = Math.floor(sourcePos / 2);
             const lowerMatch = lMatches.find(m => m.positionInRound === lowerPos);
@@ -997,6 +1014,36 @@ export async function generateCrossPoolDEAction(id: string) {
           }
         }
         await tx.match.update({ where: { id: lMatches[i].id }, data });
+      }
+    }
+
+    // Link SE round 1 winners → DE upper bracket
+    // For each SE match, find which DE match contains its winner (by teamId)
+    // and set nextMatchWinId + nextSlotWin so the bracket tree draws connections.
+    // We need to read the created DE matches from DB to get their teamAId/teamBId.
+    const deAllMatches = await tx.match.findMany({
+      where: { tournamentId: id, phase: "BRACKET", roundIndex: { gte: minUR }, bracketSide: "W" },
+      orderBy: [{ roundIndex: "asc" }, { positionInRound: "asc" }],
+    });
+    // For each SE match, the winner's teamId tells us where they land in DE
+    for (const se of seMatches) {
+      if (!se.winnerTeamId) continue;
+      // Find the DE match that has this winner as teamA or teamB
+      for (const de of deAllMatches) {
+        if (de.teamAId === se.winnerTeamId) {
+          await tx.match.update({
+            where: { id: se.id },
+            data: { nextMatchWinId: de.id, nextSlotWin: "A" },
+          });
+          break;
+        }
+        if (de.teamBId === se.winnerTeamId) {
+          await tx.match.update({
+            where: { id: se.id },
+            data: { nextMatchWinId: de.id, nextSlotWin: "B" },
+          });
+          break;
+        }
       }
     }
   }, { timeout: 15000 });
