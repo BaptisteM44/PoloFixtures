@@ -80,6 +80,21 @@ export async function POST(request: Request) {
 
   const slug = await generateTournamentSlug(data.name, data.city, start.getFullYear());
 
+  // Auto-geocode city+country via Nominatim if no coords provided
+  if (data.lat == null || data.lng == null) {
+    try {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(data.city + ", " + data.country)}`,
+        { headers: { "User-Agent": "bikepolo-app" } }
+      );
+      const geoData = await geoRes.json();
+      if (geoData[0]) {
+        data.lat = parseFloat(geoData[0].lat);
+        data.lng = parseFloat(geoData[0].lon);
+      }
+    } catch { /* geocoding is best-effort */ }
+  }
+
   const created = await prisma.tournament.create({
     data: {
       ...data,

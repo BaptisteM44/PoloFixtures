@@ -144,6 +144,23 @@ export async function updateTournamentAction(formData: FormData) {
     ? await generateTournamentSlug(data.name, data.city, dateStart.getFullYear(), data.id)
     : existing.slug;
 
+  // Auto-geocode if city or country changed, or tournament has no coords yet
+  let geoLat = tournament.lat;
+  let geoLng = tournament.lng;
+  if (tournament.city !== data.city || tournament.country !== data.country || (geoLat == null && geoLng == null)) {
+    try {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(data.city + ", " + data.country)}`,
+        { headers: { "User-Agent": "bikepolo-app" } }
+      );
+      const geoData = await geoRes.json();
+      if (geoData[0]) {
+        geoLat = parseFloat(geoData[0].lat);
+        geoLng = parseFloat(geoData[0].lon);
+      }
+    } catch { /* geocoding is best-effort */ }
+  }
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (prisma.tournament.update as any)({
@@ -152,6 +169,8 @@ export async function updateTournamentAction(formData: FormData) {
         ...rest,
         status: statusUpdate,
         slug,
+        lat: geoLat,
+        lng: geoLng,
         dateStart,
         dateEnd: new Date(data.dateEnd),
         registrationStart: data.registrationStart ? new Date(data.registrationStart) : null,
