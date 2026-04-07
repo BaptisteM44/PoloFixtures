@@ -488,7 +488,7 @@
     "btn_regenerate": "Neu generieren",
     "confirm_yes": "Ja, neu generieren",
     "confirm_cancel": "Abbrechen",
-    "confirm_regenerate_step": "„{step}" neu generieren?",
+    "confirm_regenerate_step": "\u201E{step}\u201C neu generieren?",
     "confirm_regenerate_warning": "Bestehende Spiele dieses Schritts werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
     "bracket_generated": "Bracket generiert!",
     "bracket_regenerated": "Bracket neu generiert!",
