@@ -160,7 +160,7 @@ export function ScheduleBoard({
     for (const match of sorted) {
       // For POOL matches, separate by poolSessionIndex (A, B, etc.)
       const sessionSuffix = match.phase === "POOL" && match.poolSessionIndex !== null ? `-S${match.poolSessionIndex}` : "";
-      // For BRACKET matches, separate by bracketSide (W/L/G for Top 10 or standard SE, B/BG/BL for Bottom 8)
+      // For BRACKET matches, separate by bracketSide (W/L/G for standard DE/SE, B/BG/BL for Bottom 8 in SWISS_SPLIT_SE)
       const bracketSuffix = match.phase === "BRACKET" && match.bracketSide ? `-${match.bracketSide}` : "";
       const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}${bracketSuffix}`;
       if (!groups.has(key)) {
@@ -318,14 +318,22 @@ export function ScheduleBoard({
         const bracketSide = group.matches[0]?.bracketSide;
         let bracketLabel = "";
         if (group.phase === "BRACKET" && bracketSide) {
-          // Top 10 / standard SE: W=normal, G=final, L=3rd place
-          if (bracketSide === "W") bracketLabel = " · Top 10";
-          else if (bracketSide === "G") bracketLabel = " · Top 10 · Finale";
-          else if (bracketSide === "L") bracketLabel = " · Top 10 · Petite finale";
-          // Bottom 8 (SWISS_SPLIT_SE): B=normal, BG=final, BL=3rd place
-          else if (bracketSide === "B") bracketLabel = " · Bottom 8";
-          else if (bracketSide === "BG") bracketLabel = " · Bottom 8 · Finale";
-          else if (bracketSide === "BL") bracketLabel = " · Bottom 8 · Manche des perdants";
+          // Detect SWISS_SPLIT_SE by presence of B/BG/BL sides
+          const isSplitSE = filtered.some((m) => m.phase === "BRACKET" && (m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL"));
+          if (isSplitSE) {
+            // Top 10 / Bottom 8 labels for SWISS_SPLIT_SE
+            if (bracketSide === "W") bracketLabel = " · Top 10";
+            else if (bracketSide === "G") bracketLabel = " · Top 10 · Finale";
+            else if (bracketSide === "L") bracketLabel = " · Top 10 · Petite finale";
+            else if (bracketSide === "B") bracketLabel = " · Bottom 8";
+            else if (bracketSide === "BG") bracketLabel = " · Bottom 8 · Finale";
+            else if (bracketSide === "BL") bracketLabel = " · Bottom 8 · Manche des perdants";
+          } else {
+            // Standard DE or cross-pool DE
+            if (bracketSide === "W") bracketLabel = "";
+            else if (bracketSide === "L") bracketLabel = " · Repêchage";
+            else if (bracketSide === "G") bracketLabel = " · Finale";
+          }
         }
 
         return (

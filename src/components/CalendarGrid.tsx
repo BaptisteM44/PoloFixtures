@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 
 export type CalendarTournament = {
@@ -13,6 +14,7 @@ export type CalendarTournament = {
   status: string;
   city: string;
   country: string;
+  continentCode?: string;
   format?: string;
 };
 
@@ -21,6 +23,7 @@ type Props = {
   initialMonth?: number;
   initialYear?: number;
   mini?: boolean;
+  defaultContinent?: string | null;
 };
 
 const DAY_NAMES = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -92,11 +95,13 @@ function eventDayLabel(t: CalendarTournament, dayDate: Date): string {
   return t.format ?? "";
 }
 
-export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = false }: Props) {
+export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = false, defaultContinent = null }: Props) {
   const now = new Date();
   const router = useRouter();
+  const tFilter = useTranslations("tournaments");
   const [month, setMonth] = useState(initialMonth ?? now.getMonth());
   const [year, setYear] = useState(initialYear ?? now.getFullYear());
+  const [continent, setContinent] = useState(() => defaultContinent ?? "");
 
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -115,18 +120,23 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
 
   const days = useMemo(() => getCalendarDays(year, month), [year, month]);
 
+  const filteredTournaments = useMemo(() => {
+    if (!continent) return tournaments;
+    return tournaments.filter((t) => t.continentCode === continent);
+  }, [tournaments, continent]);
+
   /* Assign each tournament a unique colour */
   const colorMap = useMemo(() => {
     const map = new Map<string, string>();
-    tournaments.forEach((t, i) => map.set(t.id, EVENT_PALETTE[i % EVENT_PALETTE.length]));
+    filteredTournaments.forEach((t, i) => map.set(t.id, EVENT_PALETTE[i % EVENT_PALETTE.length]));
     return map;
-  }, [tournaments]);
+  }, [filteredTournaments]);
 
   const tournamentsForDay = useMemo(() => {
     const map = new Map<string, CalendarTournament[]>();
     for (const day of days) {
       const key = day.date.toISOString().slice(0, 10);
-      const matching = tournaments.filter((t) => {
+      const matching = filteredTournaments.filter((t) => {
         const s = new Date(t.dateStart);
         const e = new Date(t.dateEnd);
         s.setHours(0, 0, 0, 0);
@@ -161,11 +171,53 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
   today.setHours(0, 0, 0, 0);
 
   /* Tournois sélectionnés, dans l'ordre de la palette */
-  const expandedList = tournaments.filter((t) => expandedIds.has(t.id));
+  const expandedList = filteredTournaments.filter((t) => expandedIds.has(t.id));
   const dayNames = mini ? DAY_NAMES_SHORT : DAY_NAMES;
+
+  const CONTINENTS = [
+    { code: "", label: tFilter("filter_all_continents") },
+    { code: "EU", label: tFilter("continent_eu") },
+    { code: "NA", label: tFilter("continent_na") },
+    { code: "SA", label: tFilter("continent_sa") },
+    { code: "AS", label: tFilter("continent_as") },
+    { code: "OC", label: tFilter("continent_oc") },
+    { code: "AF", label: tFilter("continent_af") },
+  ];
 
   const calendarContent = (
     <div className={`calendar${mini ? " calendar--mini" : ""}`}>
+      {!mini && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+            {CONTINENTS.map((c) => (
+              <button
+                key={c.code}
+                type="button"
+                onClick={() => { setContinent(c.code); setExpandedIds(new Set()); }}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: 20,
+                  border: "2px solid var(--border)",
+                  background: continent === c.code ? "var(--teal)" : "var(--surface)",
+                  color: continent === c.code ? "var(--bg)" : "var(--text)",
+                  cursor: "pointer",
+                  fontFamily: "var(--font-display)",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.04em",
+                  transition: "var(--transition)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {c.label}
+              </button>
+            ))}
+            <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: "auto" }}>
+              {filteredTournaments.length} tournoi{filteredTournaments.length > 1 ? "s" : ""}
+            </span>
+          </div>
+        </div>
+      )}
       <div className="calendar-header">
         <button type="button" className="ghost calendar-nav" onClick={prev}>←</button>
         <span className="calendar-title">{MONTH_NAMES[month]} {year}</span>

@@ -17,15 +17,15 @@ const FIRST_COL_GAP = 28;
 const CELL_BASE = 76;
 const CARD_OFFSET_X = 0;
 
-function getDERoundLabel(side: string, roundIndex: number, maxUpperRound: number, maxLowerRound: number, minUpperRound = 1): string {
+function getDERoundLabel(side: string, roundIndex: number, maxUpperRound: number, maxLowerRound: number, crossPool = false): string {
   if (side === "G") return roundIndex === 2 ? "Bracket Reset" : "Finale";
   if (side === "W") {
-    // Cross-pool: round before the DE upper bracket = SE elimination
-    if (minUpperRound > 1 && roundIndex < minUpperRound) return "Élimination";
+    // Cross-pool: round 1 of W side is SE elimination, DE upper starts at round 2
+    if (crossPool && roundIndex === 1) return "Élimination";
     if (roundIndex === maxUpperRound) return "Finale WB";
     if (roundIndex === maxUpperRound - 1) return "Demi-Finales";
-    // Shift tour label for cross-pool so DE R1 shows "Tour 1" not "Tour 2"
-    const displayRound = minUpperRound > 1 ? roundIndex - minUpperRound + 1 : roundIndex;
+    // Shift tour label for cross-pool so DE R2 shows "Tour 1" not "Tour 2"
+    const displayRound = crossPool ? roundIndex - 1 : roundIndex;
     return `Tour ${displayRound}`;
   }
   if (maxLowerRound <= 1) return "Manche des perdants";
@@ -577,7 +577,7 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
           </svg>
 
           {sortedRounds.map(([roundIdx, roundMatches], colIdx) => {
-            const label = getDERoundLabel(side, roundIdx, maxUpperRound, maxLowerRound, crossPool ? minUpperRound : 1);
+            const label = getDERoundLabel(side, roundIdx, maxUpperRound, maxLowerRound, crossPool);
             const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
             const x = colMetrics[colIdx].x;
             const cardWidth = colMetrics[colIdx].cardWidth;

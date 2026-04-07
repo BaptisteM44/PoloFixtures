@@ -99,9 +99,9 @@ export function computeStandings(teams: Team[], matches: Match[], scoringSystem?
 
   return Array.from(rows.values()).sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
     if (b.buchholz !== a.buchholz) return b.buchholz - a.buchholz;
     if (b.sonnebornBerger !== a.sonnebornBerger) return b.sonnebornBerger - a.sonnebornBerger;
-    if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
     return b.goalsFor - a.goalsFor;
   });
 }

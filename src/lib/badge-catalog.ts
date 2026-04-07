@@ -12,6 +12,8 @@ export interface BadgeInfo {
   id: string;
   name: string;
   emoji: string;
+  /** Optional pixel-art SVG icon path (relative to /public). When set, renderers use this instead of the emoji. */
+  iconUrl?: string;
   description: string;
   category: "performance" | "team" | "organization" | "engagement" | "social" | "secret";
   rarity: BadgeRarity;
@@ -28,14 +30,14 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   tidal_wave:    { id: "tidal_wave",    name: "Tidal Wave",     emoji: "🌊", description: "Gagner un match par 5+ buts d'écart",               category: "performance", rarity: "rare" },
   dicey:         { id: "dicey",         name: "Golden Touch",   emoji: "⭐", description: "Gagner un match en golden goal",                    category: "performance", rarity: "common" },
   golden_double: { id: "golden_double", name: "Golden Double",  emoji: "🌟", description: "Gagner 3 matchs en golden goal dans un même tournoi", category: "performance", rarity: "epic" },
-  unbeaten:      { id: "unbeaten",      name: "Unbeaten",       emoji: "🛡️", description: "Aucune défaite dans un tournoi",                   category: "performance", rarity: "legendary" },
+  unbeaten:      { id: "unbeaten",      name: "Unbeaten",       emoji: "🛡️", iconUrl: "/badges/unbeaten.svg", description: "Aucune défaite dans un tournoi",                   category: "performance", rarity: "legendary" },
   sniper:        { id: "sniper",        name: "Sniper",         emoji: "🎯", description: "15+ buts en carrière",                              category: "performance", rarity: "rare" },
   eruption:      { id: "eruption",      name: "Eruption",       emoji: "🌋", description: "5 buts dans un seul match (3v3 ou 4v4 uniquement)",               category: "performance", rarity: "legendary" },
   reverse_sweep: { id: "reverse_sweep", name: "Reverse Sweep",  emoji: "⚡", description: "Revenir de 3 buts de retard et gagner en golden goal", category: "performance", rarity: "epic" },
-  on_fire:       { id: "on_fire",       name: "On Fire",        emoji: "🔥", description: "Gagner 5 matches consécutifs dans un tournoi",       category: "performance", rarity: "epic" },
+  on_fire:       { id: "on_fire",       name: "On Fire",        emoji: "🔥", iconUrl: "/badges/on-fire.svg", description: "Gagner 5 matches consécutifs dans un tournoi",       category: "performance", rarity: "epic" },
   dragon_slayer: { id: "dragon_slayer", name: "Dragon Slayer",  emoji: "🐉", description: "Battre le tenant du titre",                         category: "performance", rarity: "epic" },
   goal_machine:  { id: "goal_machine",  name: "Goal Machine",   emoji: "💣", description: "75+ buts en carrière",                              category: "performance", rarity: "epic" },
-  champion:      { id: "champion",      name: "Champion",       emoji: "🏆", description: "Gagner un tournoi",                                 category: "performance", rarity: "epic" },
+  champion:      { id: "champion",      name: "Champion",       emoji: "🏆", iconUrl: "/badges/champion.svg", description: "Gagner un tournoi",                                 category: "performance", rarity: "epic" },
   comeback_kid:  { id: "comeback_kid",  name: "Comeback Kid",   emoji: "🔄", description: "Gagner un match après avoir été mené de 3+ buts",   category: "performance", rarity: "mythic" },
   back_to_back:  { id: "back_to_back",  name: "Back to Back",   emoji: "👑", description: "Gagner 2 tournois d'affilée",                       category: "performance", rarity: "mythic" },
   century_club:  { id: "century_club",  name: "Century Club",   emoji: "💯", description: "150+ buts en carrière",                             category: "performance", rarity: "legendary" },

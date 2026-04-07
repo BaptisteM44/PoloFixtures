@@ -45,7 +45,11 @@ function BadgeRow({
         filter: earned ? "none" : "grayscale(1)",
       }}
     >
-      <span style={{ fontSize: 20, lineHeight: 1 }}>{info.emoji}</span>
+      {info.iconUrl ? (
+        <img src={info.iconUrl} alt={info.name} width={20} height={20} style={{ imageRendering: "pixelated" }} />
+      ) : (
+        <span style={{ fontSize: 20, lineHeight: 1 }}>{info.emoji}</span>
+      )}
       <div style={{ flex: 1 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontWeight: 700, fontSize: 13, fontFamily: "var(--font-display)", color: earned ? "inherit" : "var(--text-muted)" }}>

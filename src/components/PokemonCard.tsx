@@ -169,7 +169,9 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
                   const info = getBadgeInfo(badge);
                   return (
                     <div key={badge} className={`pkmn-card__attack pkmn-card__attack--${info.rarity}`}>
-                      <span className="pkmn-card__attack-icon">{info.emoji}</span>
+                      <span className="pkmn-card__attack-icon">
+                        {info.iconUrl ? <img src={info.iconUrl} alt={info.name} width={15} height={15} style={{ imageRendering: "pixelated" }} /> : info.emoji}
+                      </span>
                       <span className="pkmn-card__attack-name">{info.name}</span>
                       <span className={`pkmn-card__attack-rarity pkmn-card__attack-rarity--${info.rarity}`}>
                         {info.rarity === "legendary" ? "★★★★★" : info.rarity === "mythic" ? "★★★★" : info.rarity === "epic" ? "★★★" : info.rarity === "rare" ? "★★" : "★"}
@@ -245,7 +247,9 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
               const info = getBadgeInfo(badge);
               return (
                 <div key={badge} className={`pkmn-card__attack pkmn-card__attack--${info.rarity}`}>
-                  <span className="pkmn-card__attack-icon">{info.emoji}</span>
+                  <span className="pkmn-card__attack-icon">
+                    {info.iconUrl ? <img src={info.iconUrl} alt={info.name} width={15} height={15} style={{ imageRendering: "pixelated" }} /> : info.emoji}
+                  </span>
                   <span className="pkmn-card__attack-name">{info.name}</span>
                   <span className={`pkmn-card__attack-rarity pkmn-card__attack-rarity--${info.rarity}`}>
                     {info.rarity === "legendary" ? "★★★★★" : info.rarity === "mythic" ? "★★★★" : info.rarity === "epic" ? "★★★" : info.rarity === "rare" ? "★★" : "★"}
