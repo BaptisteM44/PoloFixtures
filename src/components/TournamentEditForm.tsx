@@ -566,7 +566,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             {/* Standard presets — grille fixe 3 colonnes */}
             <div>
               <p style={{ ...subTitleStyle, marginBottom: 8 }}>{t("format_standard")}</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              <div className="grid-3col">
                 {([
                   ["pool_de",   t("preset_pool_de"),   t("preset_pool_de_desc")],
                   ["pool_se",   t("preset_pool_se"),   t("preset_pool_se_desc")],
@@ -605,7 +605,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             {/* Special presets */}
             <div>
               <p style={{ ...subTitleStyle, marginBottom: 8 }}>{t("format_special")}</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+              <div className="grid-2col">
                 {([
                   ["cross_pool_bcn", t("preset_cross_pool_bcn"), t("preset_cross_pool_bcn_desc")],
                   ["berlin_mixed",   "🐻 Berlin Mixed",          "3 jours · 2×Swiss Ven · 2×Swiss Sam · Grand Swiss + Top32/Bottom16 Dim"],
