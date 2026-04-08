@@ -550,6 +550,7 @@
     "edit_access_denied": "Zugriff verweigert",
     "edit_access_denied_desc": "Du bist nicht der Organisator dieses Turniers.",
     "edit_view_tournament": "Turnier ansehen",
+    "popup_view_club": "Club ansehen",
     "venue_maps": "Karten",
     "accommodation_places": "{count} Plätze",
     "teams_col_team": "Team",
@@ -934,7 +935,20 @@
       "fri": "Fr",
       "sat": "Sa",
       "sun": "So"
-    }
+    },
+    "days_mini": {
+      "mon": "M",
+      "tue": "D",
+      "wed": "M",
+      "thu": "D",
+      "fri": "F",
+      "sat": "S",
+      "sun": "S"
+    },
+    "tournament_count": "{count, plural, one {# Turnier} other {# Turniere}}",
+    "label_format": "Format",
+    "label_status": "Status",
+    "link_view_tournament": "Turnier ansehen →"
   },
   "admin": {
     "page_title": "Administration",
@@ -1668,6 +1682,9 @@
     "format_special": "Spezialformate",
     "format_custom": "Benutzerdefiniert",
     "format_custom_desc": "Manuell konfigurieren",
+    "format_warn_swiss_even": "Dieses Format erfordert eine gerade Anzahl an gemeldeten Teams.",
+    "format_warn_split_se_min18": "Dieses Format erfordert mindestens 18 Teams (Top 10 + Bottom 8).",
+    "format_warn_cross_pool_equal": "Dieses Format erfordert eine Anzahl an Teams, die durch die Anzahl der Gruppen teilbar ist (gleiche Gruppen).",
     "format_request_custom": "Benutzerdefiniertes Format anfragen",
     "format_request_custom_desc": "Benötigst du ein spezifisches Format? Kontaktiere uns per E-Mail.",
     "format_request_custom_btn": "Kontaktieren",

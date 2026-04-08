@@ -545,6 +545,7 @@
     "edit_access_denied": "Accès refusé",
     "edit_access_denied_desc": "Vous n'êtes pas l'organisateur de ce tournoi.",
     "edit_view_tournament": "Voir le tournoi",
+    "popup_view_club": "Voir le club",
     "venue_maps": "Maps",
     "accommodation_places": "{count} places",
     "meal_breakfast_short": "Petit-déj",
@@ -929,7 +930,20 @@
       "fri": "Ven",
       "sat": "Sam",
       "sun": "Dim"
-    }
+    },
+    "days_mini": {
+      "mon": "L",
+      "tue": "M",
+      "wed": "M",
+      "thu": "J",
+      "fri": "V",
+      "sat": "S",
+      "sun": "D"
+    },
+    "tournament_count": "{count, plural, one {# tournoi} other {# tournois}}",
+    "label_format": "Format",
+    "label_status": "Statut",
+    "link_view_tournament": "Voir le tournoi →"
   },
   "admin": {
     "page_title": "Administration",
@@ -1664,6 +1678,9 @@
     "format_special": "Formats spéciaux",
     "format_custom": "Personnalisé",
     "format_custom_desc": "Configurer manuellement",
+    "format_warn_swiss_even": "Ce format requiert un nombre pair d'équipes inscrites.",
+    "format_warn_split_se_min18": "Ce format requiert au minimum 18 équipes (Top 10 + Bottom 8).",
+    "format_warn_cross_pool_equal": "Ce format requiert un nombre d'équipes divisible par le nombre de poules (poules égales).",
     "format_request_custom": "Demander un format personnalisé",
     "format_request_custom_desc": "Besoin d'un format spécifique ? Contactez-nous par mail.",
     "format_request_custom_btn": "Contacter",

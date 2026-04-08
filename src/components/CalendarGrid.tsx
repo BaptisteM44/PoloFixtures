@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 
 export type CalendarTournament = {
@@ -26,12 +26,8 @@ type Props = {
   defaultContinent?: string | null;
 };
 
-const DAY_NAMES = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-const DAY_NAMES_SHORT = ["L", "M", "M", "J", "V", "S", "D"];
-const MONTH_NAMES = [
-  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
-];
+const MONTH_KEYS = ["january","february","march","april","may","june","july","august","september","october","november","december"] as const;
+const DAY_KEYS = ["mon","tue","wed","thu","fri","sat","sun"] as const;
 
 /* Palette to visually differentiate tournaments sharing the same dates */
 const EVENT_PALETTE = [
@@ -72,8 +68,8 @@ function getCalendarDays(year: number, month: number) {
   return days;
 }
 
-function fmtFR(d: Date) {
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+function fmtDate(d: Date, locale: string) {
+  return d.toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
 }
 
 /** Label to display in the calendar event chip for a given day index within the tournament span. */
@@ -98,7 +94,9 @@ function eventDayLabel(t: CalendarTournament, dayDate: Date): string {
 export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = false, defaultContinent = null }: Props) {
   const now = new Date();
   const router = useRouter();
+  const locale = useLocale();
   const tFilter = useTranslations("tournaments");
+  const tCal = useTranslations("calendar");
   const [month, setMonth] = useState(initialMonth ?? now.getMonth());
   const [year, setYear] = useState(initialYear ?? now.getFullYear());
   const [continent, setContinent] = useState(() => defaultContinent ?? "");
@@ -172,7 +170,8 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
 
   /* Tournois sélectionnés, dans l'ordre de la palette */
   const expandedList = filteredTournaments.filter((t) => expandedIds.has(t.id));
-  const dayNames = mini ? DAY_NAMES_SHORT : DAY_NAMES;
+  const dayNames = DAY_KEYS.map((k) => mini ? tCal(`days_mini.${k}`) : tCal(`days_short.${k}`));
+  const monthNames = MONTH_KEYS.map((k) => tCal(`months.${k}`));
 
   const CONTINENTS = [
     { code: "", label: tFilter("filter_all_continents") },
@@ -213,14 +212,14 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
               </button>
             ))}
             <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: "auto" }}>
-              {filteredTournaments.length} tournoi{filteredTournaments.length > 1 ? "s" : ""}
+              {tCal("tournament_count", { count: filteredTournaments.length })}
             </span>
           </div>
         </div>
       )}
       <div className="calendar-header">
         <button type="button" className="ghost calendar-nav" onClick={prev}>←</button>
-        <span className="calendar-title">{MONTH_NAMES[month]} {year}</span>
+        <span className="calendar-title">{monthNames[month]} {year}</span>
         <button type="button" className="ghost calendar-nav" onClick={next}>→</button>
       </div>
 
@@ -283,14 +282,14 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
       </div>
       <p className="calendar-expand__meta">📍 {t.city}, {t.country}</p>
       <p className="calendar-expand__meta">
-        📅 {fmtFR(new Date(t.dateStart))} — {fmtFR(new Date(t.dateEnd))}
+        📅 {fmtDate(new Date(t.dateStart), locale)} — {fmtDate(new Date(t.dateEnd), locale)}
       </p>
-      {t.format && <p className="calendar-expand__meta">🏆 Format : {t.format}</p>}
+      {t.format && <p className="calendar-expand__meta">🏆 {tCal("label_format")} : {t.format}</p>}
       <p className="calendar-expand__meta" style={{ textTransform: "capitalize" }}>
-        🔴 Statut : {t.status.toLowerCase()}
+        🔴 {tCal("label_status")} : {t.status.toLowerCase()}
       </p>
       <Link href={`/tournament/${t.slug ?? t.id}`} className="calendar-expand__link">
-        Voir le tournoi →
+        {tCal("link_view_tournament")}
       </Link>
     </div>
   );
@@ -321,14 +320,14 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
                 </div>
                 <p className="calendar-expand__meta">📍 {t.city}, {t.country}</p>
                 <p className="calendar-expand__meta">
-                  📅 {fmtFR(new Date(t.dateStart))} — {fmtFR(new Date(t.dateEnd))}
+                  📅 {fmtDate(new Date(t.dateStart), locale)} — {fmtDate(new Date(t.dateEnd), locale)}
                 </p>
-                {t.format && <p className="calendar-expand__meta">🏆 Format : {t.format}</p>}
+                {t.format && <p className="calendar-expand__meta">🏆 {tCal("label_format")} : {t.format}</p>}
                 <p className="calendar-expand__meta" style={{ textTransform: "capitalize" }}>
-                  🔴 Statut : {t.status.toLowerCase()}
+                  🔴 {tCal("label_status")} : {t.status.toLowerCase()}
                 </p>
                 <Link href={`/tournament/${t.slug ?? t.id}`} className="calendar-expand__link">
-                  Voir le tournoi →
+                  {tCal("link_view_tournament")}
                 </Link>
               </div>
             ))}
