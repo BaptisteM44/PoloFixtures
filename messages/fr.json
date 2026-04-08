@@ -943,7 +943,10 @@
     "tournament_count": "{count, plural, one {# tournoi} other {# tournois}}",
     "label_format": "Format",
     "label_status": "Statut",
-    "link_view_tournament": "Voir le tournoi →"
+    "link_view_tournament": "Voir le tournoi →",
+    "status_upcoming": "À venir",
+    "status_live": "En cours",
+    "status_completed": "Terminé"
   },
   "admin": {
     "page_title": "Administration",

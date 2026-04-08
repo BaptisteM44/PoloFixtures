@@ -285,8 +285,8 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
         📅 {fmtDate(new Date(t.dateStart), locale)} — {fmtDate(new Date(t.dateEnd), locale)}
       </p>
       {t.format && <p className="calendar-expand__meta">🏆 {tCal("label_format")} : {t.format}</p>}
-      <p className="calendar-expand__meta" style={{ textTransform: "capitalize" }}>
-        🔴 {tCal("label_status")} : {t.status.toLowerCase()}
+      <p className="calendar-expand__meta">
+        🔴 {tCal("label_status")} : {tCal(`status_${t.status.toLowerCase()}` as any)}
       </p>
       <Link href={`/tournament/${t.slug ?? t.id}`} className="calendar-expand__link">
         {tCal("link_view_tournament")}

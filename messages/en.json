@@ -943,7 +943,10 @@
     "tournament_count": "{count, plural, one {# tournament} other {# tournaments}}",
     "label_format": "Format",
     "label_status": "Status",
-    "link_view_tournament": "View tournament →"
+    "link_view_tournament": "View tournament →",
+    "status_upcoming": "Upcoming",
+    "status_live": "Live",
+    "status_completed": "Completed"
   },
   "admin": {
     "page_title": "Administration",
