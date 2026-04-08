@@ -652,7 +652,7 @@ export function UnifiedTeamManager({
 
       {/* Create team */}
       {createTeamAction && (
-        <div style={{ marginTop: 16 }}>
+        <div style={{ marginTop: 16, paddingBottom: 16 }}>
           {showCreateForm ? (
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <input
