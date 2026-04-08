@@ -651,7 +651,7 @@ export function UnifiedTeamManager({
       )}
 
       {/* Create team */}
-      {!locked && createTeamAction && (
+      {createTeamAction && (
         <div style={{ marginTop: 16 }}>
           {showCreateForm ? (
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>

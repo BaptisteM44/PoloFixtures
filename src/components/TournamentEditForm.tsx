@@ -3,7 +3,7 @@
 import { useTransition, useState, useRef } from "react";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { ISO_COUNTRIES } from "@/lib/iso-countries";
 
 type MealDay = { day: number; breakfast: boolean; lunch: boolean; dinner: boolean };
@@ -83,11 +83,11 @@ function computeDays(dateStart: string, dateEnd: string): number {
   return Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 }
 
-function dayLabel(dayIndex: number, totalDays: number, dateStart: string, dayText: string): string {
+function dayLabel(dayIndex: number, totalDays: number, dateStart: string, dayText: string, locale: string): string {
   const d = new Date(dateStart);
   d.setDate(d.getDate() + dayIndex);
-  const weekday = d.toLocaleDateString("fr-FR", { weekday: "long" });
-  const date = d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  const weekday = d.toLocaleDateString(locale, { weekday: "long" });
+  const date = d.toLocaleDateString(locale, { day: "numeric", month: "short" });
   return `${dayText} ${dayIndex + 1} · ${weekday} ${date}`;
 }
 
@@ -105,6 +105,7 @@ const subTitleStyle = { fontFamily: "var(--font-display)", fontSize: 11, color: 
 
 export function TournamentEditForm({ tournament, action, toggleLockAction }: Props) {
   const t = useTranslations("tournament_edit");
+  const locale = useLocale();
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -973,7 +974,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             {meals.slice(0, days).map((m, i) => (
               <div key={i} className="meal-row">
                 <span className="meal-row-label">
-                  {dayLabel(i, days, tournament.dateStart, t("day"))}
+                  {dayLabel(i, days, tournament.dateStart, t("day"), locale)}
                 </span>
                 <div className="meal-row-checks">
                   {(["breakfast", "lunch", "dinner"] as const).map((meal) => {

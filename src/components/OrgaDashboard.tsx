@@ -321,6 +321,7 @@ export function OrgaDashboard({
             deleteTeamAction={deleteTeamAction}
             removePlayerAction={removePlayerAction}
             addPlayerAction={addPlayerAction}
+            createTeamAction={createTeamAction}
           />
 
           {freeAgents.length > 0 && (
