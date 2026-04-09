@@ -1538,7 +1538,20 @@
   "clubs": {
     "title": "Clubs weltweit",
     "subtitle": "Finde alle Bike-Polo-Clubs der Welt.",
-    "create_club": "Meinen Club erstellen"
+    "create_club": "Meinen Club erstellen",
+    "search_placeholder": "Club oder Stadt suchen…",
+    "all_continents": "Alle Kontinente",
+    "all_countries": "Alle Länder",
+    "club_count": "{count, plural, one {# Club} other {# Clubs}}",
+    "country_count": "{count, plural, one {# Land} other {# Länder}}",
+    "member_count": "{count, plural, one {# Mitglied} other {# Mitglieder}}",
+    "view_club": "Club ansehen →",
+    "continent_eu": "Europa",
+    "continent_na": "Nordamerika",
+    "continent_sa": "Südamerika",
+    "continent_as": "Asien / Pazifik",
+    "continent_oc": "Ozeanien",
+    "continent_af": "Afrika"
   },
   "squad": {
     "tab_members": "Mitglieder",

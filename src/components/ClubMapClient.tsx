@@ -19,15 +19,7 @@ export type MapClub = {
   lng: number;
 };
 
-const CONTINENTS = [
-  { code: "", label: "All" },
-  { code: "EU", label: "Europe" },
-  { code: "NA", label: "N. America" },
-  { code: "SA", label: "S. America" },
-  { code: "AS", label: "Asia" },
-  { code: "OC", label: "Oceania" },
-  { code: "AF", label: "Africa" },
-];
+const CONTINENT_CODES = ["", "EU", "NA", "SA", "AS", "OC", "AF"] as const;
 
 const CONTINENT_VIEW: Record<string, { center: [number, number]; zoom: number }> = {
   EU: { center: [50, 10], zoom: 4 },
@@ -65,6 +57,7 @@ function FilterBtn({ active, onClick, children }: { active: boolean; onClick: ()
 
 export function ClubMapClient({ clubs, userContinent }: { clubs: MapClub[]; userContinent?: string }) {
   const t = useTranslations("tournament");
+  const tClubs = useTranslations("clubs");
   const [selectedClub, setSelectedClub] = useState<MapClub | null>(null);
   const [continent, setContinent] = useState(userContinent ?? "");
 
@@ -80,6 +73,8 @@ export function ClubMapClient({ clubs, userContinent }: { clubs: MapClub[]; user
     color: "#8b5cf6",
     label: c.name,
     sublabel: `${c.city}, ${c.country}`,
+    href: `/club/${c.id}`,
+    linkLabel: t("popup_view_club"),
   }));
 
   return (
@@ -97,9 +92,9 @@ export function ClubMapClient({ clubs, userContinent }: { clubs: MapClub[]; user
           <div>
             <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Continent</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {CONTINENTS.map((c) => (
-                <FilterBtn key={c.code} active={continent === c.code} onClick={() => { setContinent(c.code); setSelectedClub(null); }}>
-                  {c.label}
+              {CONTINENT_CODES.map((code) => (
+                <FilterBtn key={code} active={continent === code} onClick={() => { setContinent(code); setSelectedClub(null); }}>
+                  {code === "" ? tClubs("all_continents") : tClubs(`continent_${code.toLowerCase()}` as any)}
                 </FilterBtn>
               ))}
             </div>
@@ -117,10 +112,10 @@ export function ClubMapClient({ clubs, userContinent }: { clubs: MapClub[]; user
               {selectedClub.city}, {selectedClub.country}
             </div>
             <div style={{ fontSize: 13 }}>
-              {selectedClub.memberCount} membre{selectedClub.memberCount !== 1 ? "s" : ""}
+              {tClubs("member_count", { count: selectedClub.memberCount })}
             </div>
             <Link href={`/club/${selectedClub.id}`} className="primary" style={{ fontSize: 13 }}>
-              Voir le club →
+              {tClubs("view_club")}
             </Link>
           </div>
         ) : (
@@ -133,9 +128,9 @@ export function ClubMapClient({ clubs, userContinent }: { clubs: MapClub[]; user
         )}
 
         <div className="home-stats" style={{ justifyContent: "center" }}>
-          <span><strong>{clubs.length}</strong> clubs</span>
+          <span>{tClubs("club_count", { count: clubs.length })}</span>
           <span className="home-stats__dot">·</span>
-          <span><strong>{new Set(clubs.map((c) => c.country)).size}</strong> pays</span>
+          <span>{tClubs("country_count", { count: new Set(clubs.map((c) => c.country)).size })}</span>
         </div>
       </div>
     </div>

@@ -15,27 +15,11 @@ type Club = {
   memberCount: number;
 };
 
-const CONTINENTS: { code: string; label: string }[] = [
-  { code: "", label: "Tous les continents" },
-  { code: "EU", label: "Europe" },
-  { code: "NA", label: "Amérique du Nord" },
-  { code: "SA", label: "Amérique du Sud" },
-  { code: "AS", label: "Asie / Pacifique" },
-  { code: "OC", label: "Océanie" },
-  { code: "AF", label: "Afrique" },
-];
-
-const CONTINENT_LABELS: Record<string, string> = {
-  EU: "Europe",
-  NA: "Amérique du Nord",
-  SA: "Amérique du Sud",
-  AS: "Asie / Pacifique",
-  OC: "Océanie",
-  AF: "Afrique",
-};
+const CONTINENT_CODES = ["", "EU", "NA", "SA", "AS", "OC", "AF"] as const;
 
 export function ClubsBrowser({ clubs }: { clubs: Club[] }) {
   const t = useTranslations("club");
+  const tClubs = useTranslations("clubs");
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -68,7 +52,7 @@ export function ClubsBrowser({ clubs }: { clubs: Club[] }) {
         if (!byCountry[c.country]) byCountry[c.country] = [];
         byCountry[c.country].push(c);
       }
-      return [{ label: CONTINENT_LABELS[continent] ?? continent, subgroups: Object.entries(byCountry).map(([k, v]) => ({ label: k, clubs: v })) }];
+      return [{ label: tClubs(`continent_${continent.toLowerCase()}` as any), subgroups: Object.entries(byCountry).map(([k, v]) => ({ label: k, clubs: v })) }];
     }
     // All continents — group by continent, then country
     const byCont: Record<string, Record<string, Club[]>> = {};
@@ -81,10 +65,10 @@ export function ClubsBrowser({ clubs }: { clubs: Club[] }) {
     return order
       .filter((code) => byCont[code])
       .map((code) => ({
-        label: CONTINENT_LABELS[code] ?? code,
+        label: tClubs(`continent_${code.toLowerCase()}` as any),
         subgroups: Object.entries(byCont[code]).map(([k, v]) => ({ label: k, clubs: v })),
       }));
-  }, [filtered, continent]);
+  }, [filtered, continent, tClubs]);
 
   function handleContinentChange(val: string) {
     setContinent(val);
@@ -103,7 +87,7 @@ export function ClubsBrowser({ clubs }: { clubs: Club[] }) {
         <input
           className="clubs-browser__search"
           type="text"
-          placeholder="Rechercher un club ou une ville…"
+          placeholder={tClubs("search_placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -112,8 +96,10 @@ export function ClubsBrowser({ clubs }: { clubs: Club[] }) {
           value={continent}
           onChange={(e) => handleContinentChange(e.target.value)}
         >
-          {CONTINENTS.map((c) => (
-            <option key={c.code} value={c.code}>{c.label}</option>
+          {CONTINENT_CODES.map((code) => (
+            <option key={code} value={code}>
+              {code === "" ? tClubs("all_continents") : tClubs(`continent_${code.toLowerCase()}` as any)}
+            </option>
           ))}
         </select>
         {countries.length > 1 && (
@@ -122,7 +108,7 @@ export function ClubsBrowser({ clubs }: { clubs: Club[] }) {
             value={country}
             onChange={(e) => setCountry(e.target.value)}
           >
-            <option value="">Tous les pays</option>
+            <option value="">{tClubs("all_countries")}</option>
             {countries.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
@@ -132,7 +118,7 @@ export function ClubsBrowser({ clubs }: { clubs: Club[] }) {
 
       {/* Stats */}
       <p className="clubs-browser__count">
-        {filtered.length} club{filtered.length !== 1 ? "s" : ""}
+        {tClubs("club_count", { count: filtered.length })}
       </p>
 
       {/* Groups */}

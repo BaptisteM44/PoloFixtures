@@ -1534,7 +1534,20 @@
   "clubs": {
     "title": "Clubs du monde entier",
     "subtitle": "Retrouve tous les clubs de bike polo à travers le monde.",
-    "create_club": "Créer mon club"
+    "create_club": "Créer mon club",
+    "search_placeholder": "Rechercher un club ou une ville…",
+    "all_continents": "Tous les continents",
+    "all_countries": "Tous les pays",
+    "club_count": "{count, plural, one {# club} other {# clubs}}",
+    "country_count": "{count, plural, one {# pays} other {# pays}}",
+    "member_count": "{count, plural, one {# membre} other {# membres}}",
+    "view_club": "Voir le club →",
+    "continent_eu": "Europe",
+    "continent_na": "Amérique du Nord",
+    "continent_sa": "Amérique du Sud",
+    "continent_as": "Asie / Pacifique",
+    "continent_oc": "Océanie",
+    "continent_af": "Afrique"
   },
   "squad": {
     "tab_members": "Membres",
