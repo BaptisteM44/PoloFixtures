@@ -97,8 +97,8 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
     .slice(0, 2)
     .toUpperCase();
 
-  // If pinnedBadges is provided and non-empty, show those; otherwise fallback to first 5 badges
-  const displayedBadges = pinnedBadges && pinnedBadges.length > 0 ? pinnedBadges : badges.slice(0, 5);
+  // If pinnedBadges is explicitly provided (even empty), respect that choice; undefined = no preference → fallback to first 5
+  const displayedBadges = pinnedBadges !== undefined ? pinnedBadges : badges.slice(0, 5);
   const rarity = getCardRarity(badges);
   const rarityLabels: Record<string, string> = { common: "", uncommon: "★", rare: "★★", epic: "★★★", mythic: "★★★★", legendary: "★★★★★" };
   const rarityIntensity: Record<string, number> = { common: 0, uncommon: 0.2, rare: 0.4, epic: 0.6, mythic: 0.8, legendary: 1 };
