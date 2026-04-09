@@ -37,5 +37,10 @@ Thumbs.db
 /public/uploads/
 .vercel
 
+# Backups
+*.dump
+*.sql.gz
+*.sql
+
 # Scripts sensibles (contiennent des credentials)
 scripts/backup.sh
