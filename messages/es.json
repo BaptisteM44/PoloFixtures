@@ -622,7 +622,8 @@
     "status_finished": "TERMINADO",
     "chat_login_prompt": "Inicia sesión para participar en la discusión.",
     "no_matches_for_day": "No hay partidos generados para este día.",
-    "bracket_not_generated_yet": "Bracket aún no generado."
+    "bracket_not_generated_yet": "Bracket aún no generado.",
+    "test_mode_hidden": "Los partidos están ocultos al público durante el modo test."
   },
   "registration": {
     "section_title": "Inscribir mi equipo",

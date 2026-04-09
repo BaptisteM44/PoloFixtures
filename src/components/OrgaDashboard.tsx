@@ -295,7 +295,9 @@ export function OrgaDashboard({
       {/* ── Tab: Config ── */}
       {activeTab === "config" && (
         <>
-          <TestModeToggle tournamentId={tournament.id} initialTestMode={tournament.testMode ?? false} />
+          <div style={{ marginBottom: 20 }}>
+            <TestModeToggle tournamentId={tournament.id} initialTestMode={tournament.testMode ?? false} />
+          </div>
           <TournamentEditForm
             tournament={tournament}
             action={updateAction}
@@ -580,29 +582,6 @@ export function OrgaDashboard({
       {/* ── Tab: Orga ── */}
       {activeTab === "orga" && (
         <div style={{ display: "grid", gap: 24 }}>
-          {/* Stats bar */}
-          <div className="orga-stats-bar">
-            <span style={{ fontWeight: 700, fontFamily: "var(--font-display)" }}>{t("orga_stats_title")}</span>
-            <span>🏑 <strong>{selectedTeams}</strong>/{tournament.maxTeams} {t("orga_stats_teams_label")}</span>
-            <span>👤 <strong>{teams.reduce((s, t_) => s + t_.players.length, 0)}</strong> {t("orga_stats_players_label")}</span>
-            <span>🏟️ <strong>{tournament.courtsCount}</strong> {t("orga_stats_courts_label")}</span>
-            <span>⚡ {tournament.format} · {tournament.gameDurationMin} min</span>
-            {matches.length > 0 && (
-              <span style={{ padding: "2px 10px", background: matches.filter((m) => m.status === "FINISHED").length === matches.length ? "color-mix(in srgb, var(--teal) 20%, var(--surface))" : "color-mix(in srgb, var(--yellow) 20%, var(--surface))", borderRadius: 6, fontWeight: 700 }}>
-                🎯 {matches.filter((m) => m.status === "FINISHED").length}/{matches.length} {t("orga_stats_matches_label")}
-              </span>
-            )}
-            {tournament.accommodationAvailable && (() => {
-              let totalAccom = 0;
-              for (const team of teams) for (const tp of team.players) if ((tp as any).needsAccommodation) totalAccom++;
-              return totalAccom > 0 ? (
-                <span style={{ padding: "2px 10px", background: "color-mix(in srgb, var(--teal) 15%, var(--surface))", borderRadius: 6, fontWeight: 700 }}>
-                  🛏️ {totalAccom} {t("orga_stats_accommodation_label")}
-                </span>
-              ) : null;
-            })()}
-          </div>
-
           {/* Task board */}
           <OrgaTaskBoard
             tasks={orgaTasks}

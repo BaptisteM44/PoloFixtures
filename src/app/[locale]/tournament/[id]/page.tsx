@@ -121,6 +121,8 @@ export default async function TournamentPage({
     (!!currentPlayerId && currentPlayerId === tournament.creatorId) ||
     tournament.coOrganizers.some((co) => co.playerId === currentPlayerId);
   const isOrga = canEdit;
+  // In test mode, matches are hidden from the public (orgas/refs still see everything)
+  const isTestMode = !!(tournament as any).testMode && !isOrga;
 
   // Bouton arbitrage : REF (global ou lié à ce tournoi), orga, admin, co-organisateur
   const canRef =
@@ -515,7 +517,7 @@ export default async function TournamentPage({
               </div>
             )}
 
-            {tournament.matches.length > 0 && (
+            {tournament.matches.length > 0 && !isTestMode && (
               <div className="panel">
                 <LiveMatchTile
                   tournamentId={tournament.id}
@@ -523,6 +525,11 @@ export default async function TournamentPage({
                   gameDurationMin={tournament.gameDurationMin}
                   isLive={tournament.status === "LIVE"}
                 />
+              </div>
+            )}
+            {isTestMode && tournament.matches.length > 0 && (
+              <div className="panel" style={{ padding: "16px 20px", textAlign: "center", color: "var(--text-muted)", fontSize: 13 }}>
+                🧪 {t("test_mode_hidden")}
               </div>
             )}
           </div>
@@ -649,15 +656,21 @@ export default async function TournamentPage({
         </div>
       )}
 
-      {tab === "schedule" && (
-        <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} isOrganizer={isOrga} />
+      {tab === "schedule" && (isTestMode
+        ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
+        : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} isOrganizer={isOrga} />
       )}
 
-      {tab === "pools" && (
-        <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} scoringSystem={tournament.scoringSystem} isLive={tournament.status === "LIVE"} />
+      {tab === "pools" && (isTestMode
+        ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
+        : <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} scoringSystem={tournament.scoringSystem} isLive={tournament.status === "LIVE"} />
       )}
 
-      {tab === "bracket" && (() => {
+      {tab === "bracket" && isTestMode && (
+        <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
+      )}
+
+      {tab === "bracket" && !isTestMode && (() => {
         const bracketMatches = tournament.matches.filter((m) => m.phase === "BRACKET");
         const swissAll = tournament.matches.filter((m) => m.phase === "SWISS");
         const bracketTeams = (() => {

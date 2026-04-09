@@ -623,7 +623,8 @@
     "status_finished": "FINISHED",
     "chat_login_prompt": "Log in to join the discussion.",
     "no_matches_for_day": "No matches generated for this day.",
-    "bracket_not_generated_yet": "Bracket not yet generated."
+    "bracket_not_generated_yet": "Bracket not yet generated.",
+    "test_mode_hidden": "Matches are hidden from the public during test mode."
   },
   "registration": {
     "section_title": "Register my team",
