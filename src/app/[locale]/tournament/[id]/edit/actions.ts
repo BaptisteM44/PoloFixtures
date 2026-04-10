@@ -1614,14 +1614,21 @@ export async function launchTournamentAction(
   if (selectedCount < 3) return { error: `Pas assez d'équipes sélectionnées (${selectedCount}). Minimum 3.` };
 
   // Format-specific guards
+  const poolCount = (tournament as any).poolCount ?? 2;
+
+  // Saturday format guards
   if (tournament.saturdayFormat === "SWISS" && selectedCount % 2 !== 0) {
     return { error: `Le format Swiss requiert un nombre pair d'équipes. Vous avez ${selectedCount} équipes sélectionnées.` };
   }
-  if (tournament.sundayFormat === "SWISS_SPLIT_SE" && selectedCount < 18) {
-    return { error: `Le format Swiss Split SE requiert au minimum 18 équipes. Vous avez ${selectedCount} équipes sélectionnées.` };
+  if (tournament.saturdayFormat === "SPLIT_POOLS" && selectedCount < poolCount * 2) {
+    return { error: `Le format ${poolCount} poules requiert au minimum ${poolCount * 2} équipes (2 par poule). Vous avez ${selectedCount} équipes.` };
   }
+  if (tournament.saturdayFormat === "ALL_DAY" && selectedCount < 3) {
+    return { error: `Le format Single Pool requiert au minimum 3 équipes. Vous avez ${selectedCount} équipes.` };
+  }
+
+  // Cross-pool balance guard
   if (tournament.crossPool && tournament.saturdayFormat === "SPLIT_POOLS") {
-    const poolCount = (tournament as any).poolCount ?? 2;
     const base = Math.floor(selectedCount / poolCount);
     const extra = selectedCount % poolCount;
     if (extra !== 0 && base === 0) {
@@ -1630,6 +1637,14 @@ export async function launchTournamentAction(
     if (extra !== 0 && base < 2) {
       return { error: `Les poules de cross-pool sont trop inégales (${selectedCount} équipes, ${poolCount} poules). Ajoutez ou retirez des équipes pour équilibrer.` };
     }
+  }
+
+  // Sunday format guards
+  if (tournament.sundayFormat === "SWISS_SPLIT_SE" && selectedCount < 18) {
+    return { error: `Le format Swiss Split SE requiert au minimum 18 équipes. Vous avez ${selectedCount} équipes sélectionnées.` };
+  }
+  if ((tournament.sundayFormat === "DE" || tournament.sundayFormat === "SE") && selectedCount < 4) {
+    return { error: `Le format bracket requiert au minimum 4 équipes. Vous avez ${selectedCount} équipes.` };
   }
 
   // Verrouiller + passer LIVE
