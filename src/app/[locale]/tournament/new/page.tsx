@@ -6,40 +6,11 @@ import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import cityCoords from "@/data/polo-city-coords.json";
+import { CURRENCIES, COUNTRY_TO_CURRENCY } from "@/lib/currencies";
 
 type CityEntry = { lat: number; lng: number; country: string; continent: string };
 
 type PlayerResult = { id: string; name: string; city: string | null; country: string };
-
-const COUNTRY_TO_CURRENCY: Record<string, string> = {
-  // Europe
-  "France": "EUR", "Germany": "EUR", "Spain": "EUR", "Italy": "EUR", "Belgium": "EUR",
-  "Netherlands": "EUR", "Portugal": "EUR", "Austria": "EUR", "Finland": "EUR", "Luxembourg": "EUR",
-  "Ireland": "EUR", "Greece": "EUR", "Slovenia": "EUR", "Slovakia": "EUR", "Estonia": "EUR",
-  "Latvia": "EUR", "Lithuania": "EUR", "Malta": "EUR", "Cyprus": "EUR",
-  "United Kingdom": "GBP",
-  "Switzerland": "CHF",
-  "Sweden": "SEK", "Norway": "NOK", "Denmark": "DKK",
-  "Poland": "PLN", "Czech Republic": "CZK", "Hungary": "HUF",
-  "Romania": "RON", "Bulgaria": "BGN", "Croatia": "EUR",
-  "Russia": "RUB", "Ukraine": "UAH",
-  // Americas
-  "United States": "USD", "Puerto Rico": "USD",
-  "Canada": "CAD",
-  "Brazil": "BRL",
-  "Mexico": "MXN", "Colombia": "COP", "Argentina": "ARS",
-  "Chile": "CLP", "Peru": "PEN", "Uruguay": "UYU",
-  // Asia-Pacific
-  "Australia": "AUD", "New Zealand": "NZD",
-  "Japan": "JPY",
-  "China": "CNY", "Taiwan": "TWD", "Hong Kong": "HKD",
-  "South Korea": "KRW",
-  "Singapore": "SGD", "Malaysia": "MYR",
-  "India": "INR",
-  // Africa & Middle East
-  "South Africa": "ZAR",
-  "Morocco": "MAD",
-};
 
 export default function NewTournamentPage() {
   const t = useTranslations("tournament");
@@ -345,20 +316,9 @@ export default function NewTournamentPage() {
             <label className="field-row">
               {t("field_currency")}
               <select value={form.registrationFeeCurrency} onChange={set("registrationFeeCurrency")}>
-                <option value="EUR">EUR €</option>
-                <option value="USD">USD $</option>
-                <option value="GBP">GBP £</option>
-                <option value="CHF">CHF</option>
-                <option value="CAD">CAD $</option>
-                <option value="AUD">AUD $</option>
-                <option value="BRL">BRL R$</option>
-                <option value="SEK">SEK</option>
-                <option value="NOK">NOK</option>
-                <option value="DKK">DKK</option>
-                <option value="PLN">PLN</option>
-                <option value="CZK">CZK</option>
-                <option value="HUF">HUF</option>
-                <option value="JPY">JPY ¥</option>
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
               </select>
             </label>
           </div>

@@ -5,6 +5,7 @@ import { fixImageOrientation } from "@/lib/fix-orientation";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { ISO_COUNTRIES } from "@/lib/iso-countries";
+import { CURRENCIES } from "@/lib/currencies";
 
 type MealDay = { day: number; breakfast: boolean; lunch: boolean; dinner: boolean };
 type FaqItem = { question: string; answer: string };
@@ -477,20 +478,9 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           <label className="field-row">
             {t("field_currency")}
             <select name="registrationFeeCurrency" defaultValue={tournament.registrationFeeCurrency ?? "EUR"}>
-              <option value="EUR">EUR</option>
-              <option value="USD">USD</option>
-              <option value="GBP">GBP</option>
-              <option value="CHF">CHF</option>
-              <option value="CAD">CAD</option>
-              <option value="AUD">AUD</option>
-              <option value="BRL">BRL</option>
-              <option value="SEK">SEK</option>
-              <option value="NOK">NOK</option>
-              <option value="DKK">DKK</option>
-              <option value="PLN">PLN</option>
-              <option value="CZK">CZK</option>
-              <option value="HUF">HUF</option>
-              <option value="JPY">JPY</option>
+              {CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>{c.label}</option>
+              ))}
             </select>
           </label>
           <label className="field-row">
