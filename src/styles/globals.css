@@ -1221,6 +1221,7 @@ button:focus-visible,
   font-size: 13px;
   line-height: 1.5;
   max-width: 680px;
+  margin-bottom: 32px;
 }
 
 .data-loss-notice__icon {
