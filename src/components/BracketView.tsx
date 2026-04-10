@@ -314,10 +314,28 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
 
   const sortedRounds = Array.from(rounds.entries()).sort(([a], [b]) => a - b);
   const maxRound = Math.max(...rounds.keys());
-  const fullR1Slots = Math.pow(2, maxRound - 1);
-  const totalHeight = fullR1Slots * CELL_BASE;
   const headerOffset = 28;
   const { metrics: colMetrics, totalWidth } = getColumnMetrics(sortedRounds.length);
+
+  // Compute the "virtual" R1 slot count: the round with the most matches defines the base
+  // For standard power-of-2 brackets this equals 2^(maxRound-1)
+  // For non-power-of-2 (e.g. 9 teams: R1 has 1 match, R2 has 4), we need to find the
+  // round that has the most matches and use positionInRound to compute the virtual grid size
+  const virtualR1Slots = (() => {
+    // Find the largest positionInRound across all matches to derive the grid height
+    let maxPos = 0;
+    for (const [roundIdx, roundMatches] of rounds) {
+      const r = roundIdx - 1;
+      const divisor = Math.pow(2, r);
+      for (const m of roundMatches) {
+        const virtualPos = (m.positionInRound ?? 0) * divisor + divisor - 1;
+        if (virtualPos > maxPos) maxPos = virtualPos;
+      }
+    }
+    return maxPos + 1;
+  })();
+
+  const totalHeight = virtualR1Slots * CELL_BASE;
 
   const matchNumbers = new Map<string, number>();
   let matchCounter = 1;
