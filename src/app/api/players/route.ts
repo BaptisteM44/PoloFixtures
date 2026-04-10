@@ -60,6 +60,11 @@ export async function GET(request: Request) {
         clubLogoPath: true,
       },
     });
+    // Shuffle (Fisher-Yates)
+    for (let i = players.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [players[i], players[j]] = [players[j], players[i]];
+    }
     return Response.json(players);
   }
 
