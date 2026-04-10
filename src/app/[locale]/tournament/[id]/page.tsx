@@ -82,7 +82,7 @@ export default async function TournamentPage({
         ? true
         : { select: { id: true } },
       soloEntries: activeTab === "inscription"
-        ? { include: { player: { select: { id: true, name: true } } }, orderBy: { createdAt: "asc" as const } }
+        ? { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true } } }, orderBy: { createdAt: "asc" as const } }
         : false,
     }
   }) as any;
@@ -652,30 +652,45 @@ export default async function TournamentPage({
             </div>
           </div>
 
-          {/* Liste des inscrits ABC Chapeau */}
+          {/* Liste des inscrits ABC Chapeau — cartes joueurs */}
           {tournament.format === "ABC Chapeau" && (() => {
-            const soloEntries = (t_ as { soloEntries?: { id: string; player: { id: string; name: string }; level: string; waitlisted: boolean }[] }).soloEntries ?? [];
+            const soloEntries = (t_ as { soloEntries?: { id: string; player: { id: string; name: string; country: string; city: string | null; photoPath: string | null; badges: string[]; pinnedBadges: string[]; startYear: number | null; hand: string | null; gender: string | null; showGender: boolean; slug: string | null }; level: string; waitlisted: boolean }[] }).soloEntries ?? [];
             const active = soloEntries.filter((e) => !e.waitlisted);
             const waitlist = soloEntries.filter((e) => e.waitlisted);
             if (active.length === 0) return null;
-            const LEVEL_COLORS: Record<string, string> = {
-              "A+": "#e53e3e", "A": "#e53e3e", "A-": "#dd6b20",
-              "B+": "#d69e2e", "B": "#d69e2e", "B-": "#38a169",
-              "C+": "#3182ce", "C": "#3182ce",
-            };
             return (
-              <div className="panel" style={{ marginTop: 16 }}>
-                <h3 style={{ marginBottom: 12 }}>{t("abc_registered_title", { count: active.length })}</h3>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {active.map((e) => (
-                    <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-2)", borderRadius: 20, padding: "5px 12px", fontSize: 13 }}>
-                      <span style={{ fontWeight: 700, fontSize: 11, background: LEVEL_COLORS[e.level] ?? "var(--border)", color: "#fff", borderRadius: 4, padding: "1px 6px" }}>{e.level}</span>
-                      <span>{e.player.name}</span>
-                    </div>
-                  ))}
+              <div style={{ marginTop: 24 }}>
+                <h3 style={{ marginBottom: 16 }}>{t("abc_registered_title", { count: active.length })}</h3>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+                  {active.map((e) => {
+                    const card = (
+                      <div key={e.id} style={{ position: "relative" }}>
+                        <PokemonCard
+                          name={e.player.name}
+                          country={e.player.country}
+                          city={e.player.city}
+                          photoPath={e.player.photoPath}
+                          badges={e.player.badges}
+                          pinnedBadges={e.player.pinnedBadges}
+                          startYear={e.player.startYear}
+                          hand={e.player.hand}
+                          gender={e.player.gender ?? undefined}
+                          showGender={e.player.showGender}
+                        />
+                        <div style={{ position: "absolute", top: 8, right: 8, fontWeight: 700, fontSize: 12, background: "rgba(0,0,0,0.7)", color: "#fff", borderRadius: 6, padding: "2px 7px" }}>
+                          {e.level}
+                        </div>
+                      </div>
+                    );
+                    return e.player.slug ? (
+                      <Link key={e.id} href={`/player/${e.player.slug}`} style={{ textDecoration: "none", display: "contents" }}>
+                        {card}
+                      </Link>
+                    ) : card;
+                  })}
                 </div>
                 {waitlist.length > 0 && (
-                  <p className="meta" style={{ marginTop: 10, fontSize: 12 }}>
+                  <p className="meta" style={{ marginTop: 12, fontSize: 12 }}>
                     + {waitlist.length} {t("abc_on_waitlist")}
                   </p>
                 )}
