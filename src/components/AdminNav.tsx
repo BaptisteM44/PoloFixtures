@@ -14,6 +14,7 @@ export function AdminNav() {
     { href: "/admin/clubs", label: t("nav_clubs") },
     { href: "/admin/countries", label: t("nav_countries") },
     { href: "/admin/settings", label: t("nav_access_codes") },
+    { href: "/admin/roadmap", label: t("nav_roadmap") },
   ];
 
   return (
