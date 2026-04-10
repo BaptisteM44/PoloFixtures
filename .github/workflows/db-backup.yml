@@ -23,7 +23,7 @@ jobs:
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
         run: |
           FILENAME="backup_$(date +%Y%m%d_%H%M%S).dump"
-          pg_dump "$DIRECT_URL" --format=custom --no-acl --no-owner --schema=public -f "$FILENAME"
+          /usr/lib/postgresql/17/bin/pg_dump "$DIRECT_URL" --format=custom --no-acl --no-owner --schema=public -f "$FILENAME"
           echo "FILENAME=$FILENAME" >> $GITHUB_ENV
 
       - name: Upload backup as artifact
