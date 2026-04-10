@@ -2,9 +2,10 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { ClubsBrowser } from "@/components/ClubsBrowser";
+import { ClubsPageTabs } from "@/components/ClubsPageTabs";
 import { ClubMapClient } from "@/components/ClubMapClient";
 import type { MapClub } from "@/components/ClubMapClient";
+// ClubsBrowser is now rendered inside ClubsPageTabs
 
 export default async function ClubsPage() {
   const t = await getTranslations("clubs");
@@ -62,7 +63,7 @@ export default async function ClubsPage() {
         </section>
       )}
 
-      <ClubsBrowser clubs={mapped} />
+      <ClubsPageTabs clubs={mapped} />
     </div>
   );
 }

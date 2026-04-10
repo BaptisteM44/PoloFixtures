@@ -1551,7 +1551,14 @@
     "continent_sa": "Amérique du Sud",
     "continent_as": "Asie / Pacifique",
     "continent_oc": "Océanie",
-    "continent_af": "Afrique"
+    "continent_af": "Afrique",
+    "tab_clubs": "Clubs",
+    "tab_players": "Joueurs",
+    "search_players_placeholder": "Rechercher un joueur…",
+    "filter_by_country": "Filtrer par pays",
+    "player_count": "{count, plural, one {# joueur} other {# joueurs}}",
+    "no_players_found": "Aucun joueur trouvé.",
+    "loading": "Chargement…"
   },
   "squad": {
     "tab_members": "Membres",

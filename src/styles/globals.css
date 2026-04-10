@@ -8000,12 +8000,50 @@ details[open] .my-tournaments__section-title--summary::after {
   gap: 12px;
 }
 
+.clubs-page__tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 28px;
+  border-bottom: 2px solid var(--border);
+}
+
+.clubs-page__tab {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.clubs-page__tab:hover {
+  color: var(--text);
+}
+
+.clubs-page__tab--active {
+  color: var(--teal);
+  border-bottom-color: var(--teal);
+}
+
+.players-browser__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
 @media (max-width: 600px) {
   .clubs-page__hero {
     flex-direction: column;
   }
   .clubs-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .players-browser__grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
 }
 

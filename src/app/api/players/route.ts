@@ -8,6 +8,9 @@ export async function GET(request: Request) {
   const search = searchParams.get("search");
   const excludeTournamentId = searchParams.get("excludeTournamentId");
   const hasAccount = searchParams.get("hasAccount") === "true";
+  const country = searchParams.get("country");
+  const continent = searchParams.get("continent");
+  const browse = searchParams.get("browse") === "true";
 
   // Get player IDs already in a team for this tournament
   let excludedPlayerIds: string[] = [];
@@ -26,13 +29,42 @@ export async function GET(request: Request) {
     : status === "PENDING" || status === "REJECTED" ? { status: status as "PENDING" | "REJECTED" }
     : { status: "ACTIVE" as const };
 
+  // For browse mode, filter by country/continent via club membership
+  let continentPlayerIds: string[] | undefined;
+  if (continent) {
+    const clubMembers = await prisma.clubMember.findMany({
+      where: { club: { continentCode: continent, approved: true }, status: "MEMBER" },
+      select: { playerId: true },
+    });
+    continentPlayerIds = clubMembers.map((m) => m.playerId);
+  }
+
+  const whereClause = {
+    ...statusFilter,
+    ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
+    ...(excludedPlayerIds.length > 0 ? { id: { notIn: excludedPlayerIds } } : {}),
+    ...(hasAccount ? { account: { isNot: null } } : {}),
+    ...(country ? { country: { equals: country, mode: "insensitive" as const } } : {}),
+    ...(continentPlayerIds !== undefined ? { id: { in: continentPlayerIds } } : {}),
+  };
+
+  if (browse) {
+    const players = await prisma.player.findMany({
+      where: whereClause,
+      orderBy: { name: "asc" },
+      take: 48,
+      select: {
+        id: true, name: true, country: true, city: true, slug: true,
+        photoPath: true, badges: true, pinnedBadges: true,
+        startYear: true, hand: true, gender: true, showGender: true,
+        clubLogoPath: true,
+      },
+    });
+    return Response.json(players);
+  }
+
   const players = await prisma.player.findMany({
-    where: {
-      ...statusFilter,
-      ...(search ? { name: { contains: search, mode: "insensitive" } } : {}),
-      ...(excludedPlayerIds.length > 0 ? { id: { notIn: excludedPlayerIds } } : {}),
-      ...(hasAccount ? { account: { isNot: null } } : {}),
-    },
+    where: whereClause,
     orderBy: { name: "asc" },
     take: search ? 10 : undefined,
     include: status ? { account: { select: { email: true } } } : undefined,
