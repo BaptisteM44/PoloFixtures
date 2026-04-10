@@ -2,8 +2,8 @@ name: Database Backup
 
 on:
   schedule:
-    # Every day at 2:00 AM UTC
-    - cron: '0 2 * * *'
+    # Every day at 11:00 PM UTC
+    - cron: '0 23 * * *'
   workflow_dispatch: # allow manual trigger
 
 jobs:
