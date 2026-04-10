@@ -151,6 +151,15 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   squeaky_clean:   { id: "squeaky_clean",   name: "Squeaky Clean",  emoji: "🧹", description: "Gagner un tournoi en n'encaissant jamais plus d'1 but par match",      category: "performance", rarity: "legendary" },
   ref_duty:        { id: "ref_duty",        name: "Ref & Player",   emoji: "🪬", description: "Arbitrer 3 matchs ET jouer 3 matchs dans la même journée",              category: "secret",  rarity: "mythic" },
   double_duty:     { id: "double_duty",     name: "Double Duty",    emoji: "🎝️", description: "Arbitrer 5 matchs ET jouer 5 matchs dans la même journée",              category: "secret",  rarity: "legendary" },
+
+  // ─────────────────────────────────────────────────────
+  // 🏁 Arbitrage — badges dédiés (valorisation arbitres)
+  // ─────────────────────────────────────────────────────
+  first_whistle:   { id: "first_whistle",   name: "First Whistle",  emoji: "📣", description: "Arbitrer ton 1er match",                                                category: "engagement", rarity: "common",     iconUrl: "/badges/first-whistle.svg" },
+  full_ref_day:    { id: "full_ref_day",    name: "Full Ref Day",   emoji: "📋", description: "Arbitrer 5 matchs ou plus dans un seul tournoi",                       category: "engagement", rarity: "rare",       iconUrl: "/badges/full-ref-day.svg" },
+  head_ref:        { id: "head_ref",        name: "Head Ref",       emoji: "🏁", description: "Arbitrer une finale de tournoi",                                        category: "secret",     rarity: "epic",       iconUrl: "/badges/head-ref.svg" },
+  grand_referee:   { id: "grand_referee",   name: "Grand Referee",  emoji: "👑", description: "Arbitrer 12 matchs dont la finale dans un seul tournoi",               category: "secret",     rarity: "legendary",  iconUrl: "/badges/grand-referee.svg" },
+  golden_whistle:  { id: "golden_whistle",  name: "Golden Whistle", emoji: "🎖️", description: "100 matchs arbitrés + 5 finales en carrière",                          category: "secret",     rarity: "mythic",     iconUrl: "/badges/golden-whistle.svg" },
 };
 
 /**

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -82,6 +83,7 @@ function MapFlyTo({ center, zoom }: { center: [number, number]; zoom: number }) 
 }
 
 export default function TournamentMap({ tournaments, onSelect, center = [25, 20], zoom = 2 }: Props) {
+  const tr = useTranslations("tournament");
   return (
     <MapContainer
       center={center}
@@ -106,7 +108,13 @@ export default function TournamentMap({ tournaments, onSelect, center = [25, 20]
         >
           <Popup>
             <strong>{t.name}</strong><br />
-            {t.city}, {t.country}
+            <span style={{ color: "#666", fontSize: "0.85em" }}>{t.city}, {t.country}</span><br />
+            <a
+              href={`/tournament/${t.slug ?? t.id}`}
+              style={{ color: "#60c9cf", fontWeight: 700, fontSize: "0.85em" }}
+            >
+              {tr("edit_view_tournament")} →
+            </a>
           </Popup>
         </Marker>
       ))}

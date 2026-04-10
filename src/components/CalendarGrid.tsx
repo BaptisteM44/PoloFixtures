@@ -144,7 +144,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
       if (matching.length > 0) map.set(key, matching);
     }
     return map;
-  }, [days, tournaments]);
+  }, [days, filteredTournaments]);
 
   /* Tournaments visible in the current month view (for legend) */
   const visibleTournaments = useMemo(() => {

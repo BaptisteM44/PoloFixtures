@@ -1109,6 +1109,10 @@ export async function generateSwissRoundAction(id: string) {
   });
   if (!tournament) return { error: "Tournoi introuvable" };
 
+  if (tournament.teams.length % 2 !== 0) {
+    return { error: `Le format Swiss requiert un nombre pair d'équipes. Vous avez ${tournament.teams.length} équipes sélectionnées.` };
+  }
+
   const swissMatches = tournament.matches.filter((m) => m.phase === "SWISS");
   const existingRounds = swissMatches.length > 0
     ? Math.max(...swissMatches.map((m) => m.roundIndex))
@@ -1608,6 +1612,25 @@ export async function launchTournamentAction(
 
   const selectedCount = tournament.teams.length;
   if (selectedCount < 3) return { error: `Pas assez d'équipes sélectionnées (${selectedCount}). Minimum 3.` };
+
+  // Format-specific guards
+  if (tournament.saturdayFormat === "SWISS" && selectedCount % 2 !== 0) {
+    return { error: `Le format Swiss requiert un nombre pair d'équipes. Vous avez ${selectedCount} équipes sélectionnées.` };
+  }
+  if (tournament.sundayFormat === "SWISS_SPLIT_SE" && selectedCount < 18) {
+    return { error: `Le format Swiss Split SE requiert au minimum 18 équipes. Vous avez ${selectedCount} équipes sélectionnées.` };
+  }
+  if (tournament.crossPool && tournament.saturdayFormat === "SPLIT_POOLS") {
+    const poolCount = (tournament as any).poolCount ?? 2;
+    const base = Math.floor(selectedCount / poolCount);
+    const extra = selectedCount % poolCount;
+    if (extra !== 0 && base === 0) {
+      return { error: `Pas assez d'équipes pour ${poolCount} poules de cross-pool.` };
+    }
+    if (extra !== 0 && base < 2) {
+      return { error: `Les poules de cross-pool sont trop inégales (${selectedCount} équipes, ${poolCount} poules). Ajoutez ou retirez des équipes pour équilibrer.` };
+    }
+  }
 
   // Verrouiller + passer LIVE
   await prisma.tournament.update({

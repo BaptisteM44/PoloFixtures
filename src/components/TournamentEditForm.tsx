@@ -639,6 +639,23 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
               </div>
             </div>
 
+            {/* Format constraint warnings */}
+            {(formatPreset === "swiss_de" || formatPreset === "swiss_se") && (
+              <div style={{ fontSize: 12, color: "var(--orange)", background: "color-mix(in srgb, var(--orange) 10%, var(--bg-panel))", border: "1px solid var(--orange)", borderRadius: 8, padding: "8px 12px" }}>
+                ⚠ {t("format_warn_swiss_even")}
+              </div>
+            )}
+            {formatPreset === "swiss6_split_se" && (
+              <div style={{ fontSize: 12, color: "var(--orange)", background: "color-mix(in srgb, var(--orange) 10%, var(--bg-panel))", border: "1px solid var(--orange)", borderRadius: 8, padding: "8px 12px" }}>
+                ⚠ {t("format_warn_split_se_min18")}
+              </div>
+            )}
+            {formatPreset === "cross_pool_bcn" && (
+              <div style={{ fontSize: 12, color: "var(--orange)", background: "color-mix(in srgb, var(--orange) 10%, var(--bg-panel))", border: "1px solid var(--orange)", borderRadius: 8, padding: "8px 12px" }}>
+                ⚠ {t("format_warn_cross_pool_equal")}
+              </div>
+            )}
+
             {/* Hidden inputs for preset values (when not locked — locked case handled above) */}
             {!isLocked && formatPreset !== "custom" && <>
               <input type="hidden" name="saturdayFormat" value={presetConfig.saturdayFormat} />

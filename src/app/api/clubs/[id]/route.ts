@@ -28,6 +28,10 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
     include: {
       manager: { select: { id: true, name: true, slug: true, photoPath: true } },
       members: {
+        where: {
+          status: "MEMBER",
+          player: { status: { not: "REJECTED" } },
+        },
         include: {
           player: { select: { id: true, name: true, slug: true, country: true, city: true, photoPath: true } },
         },

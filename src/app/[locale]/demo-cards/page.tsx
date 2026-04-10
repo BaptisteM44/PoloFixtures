@@ -143,7 +143,7 @@ const MUTED: React.CSSProperties = {
 
 export default function DemoCardsPage() {
   return (
-    <div style={{ background: "#06080f", minHeight: "100vh" }}>
+    <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
       <div style={PAGE}>
 
         {/* ══════════════════════════════════════════════
@@ -338,6 +338,219 @@ export default function DemoCardsPage() {
                 <PokemonCard {...PLAYERS.veteran} cardFx={fx} />
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* ══ Portraits fictifs ══ */}
+        <section style={SECTION}>
+          <h2 style={H2}>🎭 Portraits fictifs</h2>
+          <p style={MUTED}>
+            Des joueurs imaginaires venus des 5 continents — pour voir ce que donnent des combos de badges rares.
+          </p>
+
+          {/* Ligne 1 */}
+          <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap", marginBottom: 48 }}>
+
+            {/* Zara Quinn — Canada · sniperasse back-to-back */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <PokemonCard
+                name="Zara Quinn"
+                country="Canada"
+                city="Montréal"
+                startYear={2019}
+                hand="LEFT"
+                metalBorder="platinum"
+                holoVariant="glitter"
+                photoPath="https://live.staticflickr.com/4118/4943204704_ba09002cce_w.jpg"
+                badges={[
+                  "first_blood", "hat_trick", "sniper", "goal_machine", "century_club",
+                  "champion", "back_to_back", "unbeaten", "eruption",
+                  "team_player", "squad_up", "veteran", "road_warrior",
+                  "host", "welcome", "og", "regular", "addict", "say_cheese",
+                  "night_owl", "collector",
+                ]}
+              />
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "#1a1a1a", letterSpacing: "0.1em" }}>🇨🇦 Montréal · Platinum</span>
+            </div>
+
+            {/* Kwame Asante — Nigeria · grand arbitre golden whistle */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <PokemonCard
+                name="Kwame Asante"
+                country="Nigeria"
+                city="Lagos"
+                startYear={2016}
+                hand="RIGHT"
+                metalBorder="gold"
+                cardFx="glow"
+                photoPath="https://live.staticflickr.com/4136/4942607039_c46df33fd4_w.jpg"
+                badges={[
+                  "first_whistle", "full_ref_day", "head_ref", "grand_referee", "golden_whistle",
+                  "double_duty", "ref_duty",
+                  "veteran", "road_warrior", "globe_trotter", "five_continents",
+                  "team_player", "welcome", "og", "regular", "say_cheese", "captain",
+                ]}
+              />
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "#7a5800", letterSpacing: "0.1em" }}>🇳🇬 Lagos · Gold · Arbitre mythique</span>
+            </div>
+
+            {/* Lena Wolff — République tchèque · community builder */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <PokemonCard
+                name="Lena Wolff"
+                country="Czech Republic"
+                city="Prague"
+                startYear={2015}
+                hand="RIGHT"
+                holoFull="aurora"
+                photoPath="https://live.staticflickr.com/4074/4942599437_38da44c5fc_w.jpg"
+                badges={[
+                  "host", "serial_organizer", "community_builder", "grand_architect",
+                  "team_player", "squad_up", "veteran", "road_warrior",
+                  "welcome", "og", "regular", "addict", "profile_complete",
+                  "say_cheese", "chatterbox", "hype_machine", "captain",
+                  "full_year", "completionist",
+                ]}
+              />
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "#1a6b40", letterSpacing: "0.1em" }}>🇨🇿 Prague · Aurora</span>
+            </div>
+
+          </div>
+
+          {/* Ligne 2 */}
+          <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap" }}>
+
+            {/* Tomás Vargas — Brésil · globe-trotter 5 continents */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <PokemonCard
+                name="Tomás Vargas"
+                country="Brazil"
+                city="São Paulo"
+                startYear={2018}
+                hand="LEFT"
+                holoVariant="iris"
+                metalBorder="silver"
+                photoPath="https://live.staticflickr.com/4079/4942616777_78291a55d4_w.jpg"
+                badges={[
+                  "first_blood", "hat_trick", "sniper", "goal_machine",
+                  "champion", "team_player", "squad_up", "veteran",
+                  "road_warrior", "globe_trotter", "loyal_rider", "five_continents",
+                  "host", "welcome", "og", "regular", "say_cheese",
+                ]}
+              />
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "#c0006a", letterSpacing: "0.1em" }}>🇧🇷 São Paulo · Silver · 5 continents</span>
+            </div>
+
+            {/* Priya Dev — Nouvelle-Zélande · fantôme stone cold */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <PokemonCard
+                name="Priya Dev"
+                country="New Zealand"
+                city="Auckland"
+                startYear={2014}
+                hand="RIGHT"
+                holoFull="plasma"
+                metalBorder="diamond"
+                photoPath="https://live.staticflickr.com/4141/4943199570_3b9eb83475_w.jpg"
+                badges={[
+                  "first_blood", "hat_trick", "sniper", "goal_machine", "century_club",
+                  "champion", "back_to_back", "unbeaten", "stone_cold", "squeaky_clean",
+                  "phantom", "night_owl", "eruption", "five_continents", "full_year",
+                  "team_player", "squad_up", "veteran", "road_warrior", "globe_trotter", "loyal_rider",
+                  "host", "serial_organizer", "community_builder",
+                  "welcome", "og", "regular", "addict", "profile_complete",
+                  "say_cheese", "chatterbox", "hype_machine", "captain", "collector", "completionist",
+                ]}
+              />
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "#1a1a1a", letterSpacing: "0.1em" }}>🇳🇿 Auckland · Diamond · Tout débloqué</span>
+            </div>
+
+            {/* Nico Faber — Corée du Sud · capitaine joueur-arbitre */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <PokemonCard
+                name="Nico Faber"
+                country="South Korea"
+                city="Séoul"
+                startYear={2020}
+                hand="RIGHT"
+                cardFx="foil"
+                metalBorder="bronze"
+                photoPath="https://live.staticflickr.com/4081/4943205720_e439fbacc3_n.jpg"
+                badges={[
+                  "first_blood", "hat_trick", "sniper",
+                  "champion", "team_player", "squad_up", "veteran", "road_warrior",
+                  "first_whistle", "full_ref_day", "head_ref", "ref_duty",
+                  "host", "welcome", "og", "regular", "say_cheese", "captain",
+                  "chatterbox", "collector", "night_owl",
+                ]}
+              />
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "#7a3800", letterSpacing: "0.1em" }}>🇰🇷 Séoul · Bronze · Joueur-Arbitre</span>
+            </div>
+
+          </div>
+
+          {/* Ligne 3 — Australie, Maroc, Finlande */}
+          <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap", marginTop: 48 }}>
+
+            {/* Ethan Marsh — Australie · rookie prometteur */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <PokemonCard
+                name="Ethan Marsh"
+                country="Australia"
+                city="Melbourne"
+                startYear={2023}
+                hand="RIGHT"
+                photoPath="https://live.staticflickr.com/4081/4905585718_5b7e922ba5_n.jpg"
+                badges={[
+                  "first_blood", "hat_trick", "welcome", "say_cheese", "profile_complete",
+                ]}
+              />
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "#006b80", letterSpacing: "0.1em" }}>🇦🇺 Melbourne · Rookie</span>
+            </div>
+
+            {/* Yasmine Oukili — Maroc · organisatrice régionale */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <PokemonCard
+                name="Yasmine Oukili"
+                country="Morocco"
+                city="Casablanca"
+                startYear={2017}
+                hand="LEFT"
+                metalBorder="silver"
+                holoVariant="chromatic"
+                photoPath="https://live.staticflickr.com/4114/4943203226_870952a06c_n.jpg"
+                badges={[
+                  "first_blood", "hat_trick", "sniper", "goal_machine",
+                  "host", "serial_organizer", "community_builder",
+                  "team_player", "squad_up", "veteran", "road_warrior", "globe_trotter",
+                  "welcome", "og", "regular", "addict", "captain",
+                  "say_cheese", "chatterbox",
+                ]}
+              />
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "#006b50", letterSpacing: "0.1em" }}>🇲🇦 Casablanca · Chromatique</span>
+            </div>
+
+            {/* Mikael Korhonen — Finlande · addict night owl */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <PokemonCard
+                name="Mikael Korhonen"
+                country="Finland"
+                city="Helsinki"
+                startYear={2021}
+                hand="LEFT"
+                holoFull="sequin"
+                photoPath="https://live.staticflickr.com/4141/4943198896_fbe96117f1_n.jpg"
+                badges={[
+                  "first_blood", "hat_trick", "sniper",
+                  "team_player", "squad_up", "veteran", "road_warrior",
+                  "first_whistle", "full_ref_day",
+                  "welcome", "og", "regular", "addict",
+                  "say_cheese", "chatterbox", "night_owl", "collector",
+                ]}
+              />
+              <span style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "#7a008a", letterSpacing: "0.1em" }}>🇫🇮 Helsinki · Sequin</span>
+            </div>
+
           </div>
         </section>
 

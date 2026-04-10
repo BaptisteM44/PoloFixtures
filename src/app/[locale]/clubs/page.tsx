@@ -15,7 +15,7 @@ export default async function ClubsPage() {
     where: { approved: true },
     include: {
       manager: { select: { id: true, name: true, slug: true } },
-      _count: { select: { members: { where: { status: "MEMBER" } } } },
+      _count: { select: { members: { where: { status: "MEMBER", player: { status: { not: "REJECTED" } } } } } },
     },
     orderBy: [{ continentCode: "asc" }, { country: "asc" }, { name: "asc" }],
   });

@@ -148,6 +148,7 @@ const ALL_COUNTRIES = [
   { code: "PE", name: "Peru" },
   { code: "PH", name: "Philippines" },
   { code: "PL", name: "Poland" },
+  { code: "PR", name: "Puerto Rico" },
   { code: "PT", name: "Portugal" },
   { code: "QA", name: "Qatar" },
   { code: "RO", name: "Romania" },

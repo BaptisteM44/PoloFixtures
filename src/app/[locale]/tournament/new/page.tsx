@@ -311,6 +311,14 @@ export default function NewTournamentPage() {
                 <option value="CHF">CHF</option>
                 <option value="CAD">CAD $</option>
                 <option value="AUD">AUD $</option>
+                <option value="BRL">BRL R$</option>
+                <option value="SEK">SEK</option>
+                <option value="NOK">NOK</option>
+                <option value="DKK">DKK</option>
+                <option value="PLN">PLN</option>
+                <option value="CZK">CZK</option>
+                <option value="HUF">HUF</option>
+                <option value="JPY">JPY ¥</option>
               </select>
             </label>
           </div>

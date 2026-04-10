@@ -12,6 +12,8 @@ export type MapMarker = {
   color: string;
   label: string;
   sublabel?: string;
+  href?: string;
+  linkLabel?: string;
 };
 
 type Props = {
@@ -79,7 +81,10 @@ export default function GenericMap({ markers, onSelect, center = [25, 20], zoom 
         >
           <Popup>
             <strong>{m.label}</strong>
-            {m.sublabel && <><br />{m.sublabel}</>}
+            {m.sublabel && <><br /><span style={{ color: "#666", fontSize: "0.85em" }}>{m.sublabel}</span></>}
+            {m.href && (
+              <><br /><a href={m.href} style={{ color: "#60c9cf", fontWeight: 700, fontSize: "0.85em" }}>{m.linkLabel ?? "Voir"} →</a></>
+            )}
           </Popup>
         </Marker>
       ))}
