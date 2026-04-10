@@ -255,6 +255,8 @@
     "feature_map": "Interaktive Weltkarte",
     "feature_calendar": "Turnierkalender",
     "feature_notifications": "Benachrichtigungen & Turnierverfolgung",
+    "incident_title": "Technischer Vorfall — 9. April 2026",
+    "incident_body": "Aufgrund eines Datenbankfehlers gingen Daten verloren, die zwischen dem 9. April um 15:00 Uhr und dem 10. April um 00:00 Uhr erstellt wurden (Konten, Turniere, Anmeldungen). Wir entschuldigen uns aufrichtig.",
     "stats_players": "Spieler",
     "stats_tournaments": "Turniere",
     "stats_countries": "Länder",

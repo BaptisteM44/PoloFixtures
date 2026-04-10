@@ -213,8 +213,8 @@ export default async function HomePage() {
       <div className="data-loss-notice">
         <span className="data-loss-notice__icon">⚠️</span>
         <div>
-          <strong>Incident technique — 9 avril 2026</strong>
-          <p>Suite à une erreur de manipulation de base de données, les données créées entre le <strong>9 avril à 15h00</strong> et le <strong>10 avril à 00h00</strong> ont été perdues (comptes, tournois, inscriptions). Nous nous en excusons sincèrement.</p>
+          <strong>{t("incident_title")}</strong>
+          <p>{t("incident_body")}</p>
         </div>
       </div>
 

@@ -1217,9 +1217,10 @@ button:focus-visible,
   background: #fff8e1;
   border: 1.5px solid #f9a825;
   border-radius: var(--radius);
-  padding: 16px 20px;
-  font-size: 14px;
+  padding: 14px 18px;
+  font-size: 13px;
   line-height: 1.5;
+  max-width: 680px;
 }
 
 .data-loss-notice__icon {

@@ -255,6 +255,8 @@
     "feature_map": "Carte interactive mondiale",
     "feature_calendar": "Calendrier des tournois",
     "feature_notifications": "Alertes & suivi de tournois",
+    "incident_title": "Incident technique — 9 avril 2026",
+    "incident_body": "Suite à une erreur de manipulation de base de données, les données créées entre le 9 avril à 15h00 et le 10 avril à 00h00 ont été perdues (comptes, tournois, inscriptions). Nous nous en excusons sincèrement.",
     "stats_players": "joueurs",
     "stats_tournaments": "tournois",
     "stats_countries": "pays",

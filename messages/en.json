@@ -255,6 +255,8 @@
     "feature_map": "Interactive world map",
     "feature_calendar": "Tournament calendar",
     "feature_notifications": "Alerts & tournament tracking",
+    "incident_title": "Technical incident — April 9, 2026",
+    "incident_body": "Due to a database error, data created between April 9 at 3:00 PM and April 10 at 12:00 AM was lost (accounts, tournaments, registrations). We sincerely apologize.",
     "stats_players": "players",
     "stats_tournaments": "tournaments",
     "stats_countries": "countries",
