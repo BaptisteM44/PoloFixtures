@@ -441,6 +441,7 @@
     "field_max_teams": "Max teams *",
     "field_courts": "Courts *",
     "field_game_duration": "Game duration (min) *",
+    "format_hint": "The competition format (pools, Swiss, bracket…) is configured in the organiser dashboard, in the next step.",
     "field_saturday_format": "Saturday format",
     "field_sunday_format": "Sunday format",
     "saturday_all_day": "Pools all day",

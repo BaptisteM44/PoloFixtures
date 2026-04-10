@@ -11,6 +11,36 @@ type CityEntry = { lat: number; lng: number; country: string; continent: string 
 
 type PlayerResult = { id: string; name: string; city: string | null; country: string };
 
+const COUNTRY_TO_CURRENCY: Record<string, string> = {
+  // Europe
+  "France": "EUR", "Germany": "EUR", "Spain": "EUR", "Italy": "EUR", "Belgium": "EUR",
+  "Netherlands": "EUR", "Portugal": "EUR", "Austria": "EUR", "Finland": "EUR", "Luxembourg": "EUR",
+  "Ireland": "EUR", "Greece": "EUR", "Slovenia": "EUR", "Slovakia": "EUR", "Estonia": "EUR",
+  "Latvia": "EUR", "Lithuania": "EUR", "Malta": "EUR", "Cyprus": "EUR",
+  "United Kingdom": "GBP",
+  "Switzerland": "CHF",
+  "Sweden": "SEK", "Norway": "NOK", "Denmark": "DKK",
+  "Poland": "PLN", "Czech Republic": "CZK", "Hungary": "HUF",
+  "Romania": "RON", "Bulgaria": "BGN", "Croatia": "EUR",
+  "Russia": "RUB", "Ukraine": "UAH",
+  // Americas
+  "United States": "USD", "Puerto Rico": "USD",
+  "Canada": "CAD",
+  "Brazil": "BRL",
+  "Mexico": "MXN", "Colombia": "COP", "Argentina": "ARS",
+  "Chile": "CLP", "Peru": "PEN", "Uruguay": "UYU",
+  // Asia-Pacific
+  "Australia": "AUD", "New Zealand": "NZD",
+  "Japan": "JPY",
+  "China": "CNY", "Taiwan": "TWD", "Hong Kong": "HKD",
+  "South Korea": "KRW",
+  "Singapore": "SGD", "Malaysia": "MYR",
+  "India": "INR",
+  // Africa & Middle East
+  "South Africa": "ZAR",
+  "Morocco": "MAD",
+};
+
 export default function NewTournamentPage() {
   const t = useTranslations("tournament");
   const tt = useTranslations("tournaments");
@@ -80,6 +110,16 @@ export default function NewTournamentPage() {
     }));
     setCitySuggestions([]);
     setShowCitySuggestions(false);
+  };
+
+  const handleCountryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const country = e.target.value;
+    const currency = COUNTRY_TO_CURRENCY[country];
+    setForm((f) => ({
+      ...f,
+      country,
+      ...(currency ? { registrationFeeCurrency: currency } : {}),
+    }));
   };
 
   const [coOrganizers, setCoOrganizers] = useState<PlayerResult[]>([]);
@@ -212,7 +252,7 @@ export default function NewTournamentPage() {
             </label>
             <label className="field-row">
               {t("field_country")}
-              <input value={form.country} onChange={set("country")} required placeholder="France" />
+              <input value={form.country} onChange={handleCountryChange} required placeholder="France" />
             </label>
             <div className="field-row" ref={cityRef} style={{ position: "relative" }}>
               <span>{t("field_city")}</span>
@@ -279,7 +319,7 @@ export default function NewTournamentPage() {
             </label>
           </div>
           <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)", padding: "10px 14px", background: "color-mix(in srgb, var(--accent) 8%, var(--surface))", borderRadius: "var(--radius-sm)", border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)" }}>
-            💡 Le format de compétition (pools, Swiss, bracket…) se configure dans le dashboard organisateur, à l'étape suivante.
+            💡 {t("format_hint")}
           </p>
         </section>
 

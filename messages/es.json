@@ -445,6 +445,7 @@
     "field_max_teams": "Equipos máx. *",
     "field_courts": "Canchas *",
     "field_game_duration": "Duración del partido (min) *",
+    "format_hint": "El formato de competición (grupos, Swiss, bracket…) se configura en el panel del organizador, en el siguiente paso.",
     "field_saturday_format": "Formato del sábado",
     "field_sunday_format": "Formato del domingo",
     "saturday_all_day": "Grupos todo el día",

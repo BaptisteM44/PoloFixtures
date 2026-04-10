@@ -441,6 +441,7 @@
     "field_max_teams": "Équipes max *",
     "field_courts": "Terrains *",
     "field_game_duration": "Durée match (min) *",
+    "format_hint": "Le format de compétition (poules, Swiss, bracket…) se configure dans le dashboard organisateur, à l'étape suivante.",
     "field_saturday_format": "Format samedi",
     "field_sunday_format": "Format dimanche",
     "saturday_all_day": "Poules toute la journée",
