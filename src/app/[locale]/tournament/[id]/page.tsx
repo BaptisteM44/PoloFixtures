@@ -817,7 +817,7 @@ export default async function TournamentPage({
             {canLaunch ? (
               <>
                 <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 8, fontSize: 18 }}>
-                  {isRR ? "Round Robin" : `Top ${t_.bracketSize ?? 16} qualifiés`}
+                  {isRR ? "Round Robin" : `Top ${Math.min(t_.bracketSize ?? 16, tournament.teams.length)} qualifiés`}
                 </p>
                 <p className="meta" style={{ marginBottom: 20 }}>{formatLabel}</p>
                 <BracketActions
