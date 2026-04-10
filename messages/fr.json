@@ -624,7 +624,9 @@
     "chat_login_prompt": "Connectez-vous pour participer à la discussion.",
     "no_matches_for_day": "Aucun match généré pour ce jour.",
     "bracket_not_generated_yet": "Bracket pas encore généré.",
-    "test_mode_hidden": "Les matchs sont masqués au public pendant le mode test."
+    "test_mode_hidden": "Les matchs sont masqués au public pendant le mode test.",
+    "abc_registered_title": "{count} inscrits",
+    "abc_on_waitlist": "en liste d'attente"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",

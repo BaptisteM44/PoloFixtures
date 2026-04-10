@@ -652,7 +652,36 @@ export default async function TournamentPage({
             </div>
           </div>
 
-          {/* Sélection orga déplacée vers l'onglet Orga */}
+          {/* Liste des inscrits ABC Chapeau */}
+          {tournament.format === "ABC Chapeau" && (() => {
+            const soloEntries = (t_ as { soloEntries?: { id: string; player: { id: string; name: string }; level: string; waitlisted: boolean }[] }).soloEntries ?? [];
+            const active = soloEntries.filter((e) => !e.waitlisted);
+            const waitlist = soloEntries.filter((e) => e.waitlisted);
+            if (active.length === 0) return null;
+            const LEVEL_COLORS: Record<string, string> = {
+              "A+": "#e53e3e", "A": "#e53e3e", "A-": "#dd6b20",
+              "B+": "#d69e2e", "B": "#d69e2e", "B-": "#38a169",
+              "C+": "#3182ce", "C": "#3182ce",
+            };
+            return (
+              <div className="panel" style={{ marginTop: 16 }}>
+                <h3 style={{ marginBottom: 12 }}>{t("abc_registered_title", { count: active.length })}</h3>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {active.map((e) => (
+                    <div key={e.id} style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--surface-2)", borderRadius: 20, padding: "5px 12px", fontSize: 13 }}>
+                      <span style={{ fontWeight: 700, fontSize: 11, background: LEVEL_COLORS[e.level] ?? "var(--border)", color: "#fff", borderRadius: 4, padding: "1px 6px" }}>{e.level}</span>
+                      <span>{e.player.name}</span>
+                    </div>
+                  ))}
+                </div>
+                {waitlist.length > 0 && (
+                  <p className="meta" style={{ marginTop: 10, fontSize: 12 }}>
+                    + {waitlist.length} {t("abc_on_waitlist")}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 

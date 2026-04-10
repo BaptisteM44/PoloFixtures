@@ -624,7 +624,9 @@
     "chat_login_prompt": "Melde dich an, um an der Diskussion teilzunehmen.",
     "no_matches_for_day": "Keine Spiele für diesen Tag generiert.",
     "bracket_not_generated_yet": "Bracket noch nicht generiert.",
-    "test_mode_hidden": "Spiele sind im Testmodus für die Öffentlichkeit verborgen."
+    "test_mode_hidden": "Spiele sind im Testmodus für die Öffentlichkeit verborgen.",
+    "abc_registered_title": "{count} Angemeldete",
+    "abc_on_waitlist": "auf der Warteliste"
   },
   "registration": {
     "section_title": "Mein Team anmelden",
