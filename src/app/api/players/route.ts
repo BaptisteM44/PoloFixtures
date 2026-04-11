@@ -51,8 +51,6 @@ export async function GET(request: Request) {
   if (browse) {
     const players = await prisma.player.findMany({
       where: whereClause,
-      orderBy: { name: "asc" },
-      take: 48,
       select: {
         id: true, name: true, country: true, city: true, slug: true,
         photoPath: true, badges: true, pinnedBadges: true,
@@ -60,7 +58,7 @@ export async function GET(request: Request) {
         clubLogoPath: true,
       },
     });
-    // Shuffle (Fisher-Yates)
+    // Full Fisher-Yates shuffle across all results
     for (let i = players.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [players[i], players[j]] = [players[j], players[i]];
