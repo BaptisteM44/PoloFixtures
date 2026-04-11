@@ -45,7 +45,7 @@ export function PlayersBrowser() {
 
   async function fetchPlayers() {
     setLoading(true);
-    const params = new URLSearchParams({ browse: "true" });
+    const params = new URLSearchParams({ browse: "true", hasAccount: "true" });
     if (search) params.set("search", search);
     if (continent) params.set("continent", continent);
     if (country) params.set("country", country);
