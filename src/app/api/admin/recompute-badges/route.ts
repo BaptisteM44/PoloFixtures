@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 
   if (all) {
     const players = await prisma.player.findMany({
-      where: { status: "ACTIVE" },
+      where: { status: "ACTIVE", account: { isNot: null } },
       select: { id: true },
       orderBy: { createdAt: "asc" },
     });
