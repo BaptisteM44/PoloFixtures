@@ -48,6 +48,7 @@ export function AuthStatus({ onNavigate, inDrawer }: { onNavigate?: () => void; 
   if ((data?.user as any)?.playerId) {
     const user = data!.user!;
     const initials = getInitials(user.name);
+    const clubId = (user as any).clubId as string | null;
 
     // Mode drawer : afficher les liens directement sans dropdown
     if (inDrawer) {
@@ -56,6 +57,7 @@ export function AuthStatus({ onNavigate, inDrawer }: { onNavigate?: () => void; 
           <Link href="/account" onClick={onNavigate}>{t("account")}</Link>
           <Link href="/my-tournaments" onClick={onNavigate}>{t("my_tournaments")}</Link>
           <Link href="/my-teams" onClick={onNavigate}>{t("my_teams")}</Link>
+          {clubId && <Link href={`/club/${clubId}`} onClick={onNavigate}>{t("my_club")}</Link>}
           <Link href="/messages" onClick={onNavigate}>{t("messages")}</Link>
           <Link href="/settings/notifications" onClick={onNavigate}>{t("settings")}</Link>
           <button onClick={() => { onNavigate?.(); signOut({ callbackUrl: "/" }); }}>{t("logout")}</button>
@@ -104,6 +106,14 @@ export function AuthStatus({ onNavigate, inDrawer }: { onNavigate?: () => void; 
             >
               {t("my_teams")}
             </Link>
+            {clubId && (
+              <Link
+                href={`/club/${clubId}`}
+                onClick={() => { closeDropdown(); onNavigate?.(); }}
+              >
+                {t("my_club")}
+              </Link>
+            )}
             <Link
               href="/messages"
               onClick={() => { closeDropdown(); onNavigate?.(); }}

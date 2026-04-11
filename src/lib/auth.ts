@@ -68,6 +68,11 @@ export const authConfig = {
         const ok = await bcrypt.compare(parsed.data.password, account.passwordHash);
         if (!ok) return null;
 
+        const clubMember = await prisma.clubMember.findFirst({
+          where: { playerId: account.playerId, status: "MEMBER" },
+          select: { clubId: true },
+        });
+
         return {
           id: account.id,
           name: account.player.name,
@@ -78,6 +83,7 @@ export const authConfig = {
           charterAccepted: !!account.charterAcceptedAt,
           playerStatus: account.player.status,
           suspendedReason: (account.player as { suspendedReason?: string | null }).suspendedReason ?? null,
+          clubId: clubMember?.clubId ?? null,
         };
       }
     })
@@ -93,6 +99,7 @@ export const authConfig = {
         token.charterAccepted = user.charterAccepted ?? false;
         token.playerStatus = user.playerStatus ?? null;
         token.suspendedReason = user.suspendedReason ?? null;
+        token.clubId = user.clubId ?? null;
       }
       return token;
     },
@@ -105,6 +112,7 @@ export const authConfig = {
         charterAccepted: token.charterAccepted ?? false,
         playerStatus: token.playerStatus ?? null,
         suspendedReason: token.suspendedReason ?? null,
+        clubId: token.clubId ?? null,
       };
       return session;
     }
