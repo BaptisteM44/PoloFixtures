@@ -526,7 +526,9 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
           {pendingInvitations.length === 0 ? (
             <div className="panel" style={{ textAlign: "center", padding: 32 }}>
               <p className="meta">{t("no_pending_invitations")}</p>
-              <p className="meta" style={{ fontSize: 12 }}>{t("invite_from_members_tab")}</p>
+              {!isCaptain && (
+                <p className="meta" style={{ fontSize: 12 }}>{t("captain_only_invite")}</p>
+              )}
             </div>
           ) : (
             pendingInvitations.map((inv) => (

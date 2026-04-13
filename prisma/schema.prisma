@@ -139,6 +139,7 @@ enum NotificationType {
   TASK_ASSIGNED          // tâche orga assignée
   TASK_DEADLINE_APPROACHING // deadline tâche orga proche
   CLUB_JOIN_REQUEST      // un joueur a rejoint le club (notif au manager)
+  CLUB_SESSION           // nouvelle session ajoutée dans le club
 }
 
 enum TaskPriority {
@@ -243,6 +244,7 @@ model Tournament {
   saturdayPoolAStart      DateTime?        // Pool A session start time (for match scheduling)
   saturdayPoolBStart      DateTime?        // Pool B session start time (for match scheduling)
   testMode                Boolean          @default(false)        // Test tournament: excluded from badge calculations
+  hidden                  Boolean          @default(false)        // Hidden from public tournament list (organizer-controlled)
   approved                Boolean          @default(false)
   submissionStatus        SubmissionStatus @default(PENDING)
   rejectionReason         String?
@@ -388,6 +390,11 @@ model Player {
   freeAgentRegistrations  FreeAgent[]
   managedClubs            Club[]       @relation("ManagedClubs")
   clubMemberships         ClubMember[]
+  clubAdminRoles          ClubAdmin[]
+  createdClubSessions     ClubSession[]        @relation("CreatedSessions")
+  clubSessionAttendances  ClubSessionAttendee[]
+  clubMessages            ClubMessage[]
+  clubSessionMessages     ClubSessionMessage[]
   assignedOrgaTasks       OrgaTask[]   @relation("AssignedTasks")
   createdOrgaTasks        OrgaTask[]   @relation("CreatedTasks")
   orgaNotes               OrgaNote[]   @relation("OrgaNotes")
@@ -709,8 +716,12 @@ model Club {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  manager Player       @relation("ManagedClubs", fields: [managerId], references: [id])
-  members ClubMember[]
+  manager  Player         @relation("ManagedClubs", fields: [managerId], references: [id])
+  members  ClubMember[]
+  admins   ClubAdmin[]
+  sessions ClubSession[]
+  messages ClubMessage[]
+  venues   ClubVenue[]
 
   @@index([continentCode])
   @@index([country])
@@ -730,6 +741,103 @@ model ClubMember {
   @@unique([clubId, playerId])
   @@index([clubId])
   @@index([playerId])
+}
+
+model ClubAdmin {
+  id        String   @id @default(cuid())
+  clubId    String
+  playerId  String
+  createdAt DateTime @default(now())
+
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, playerId])
+  @@index([clubId])
+}
+
+model ClubSession {
+  id             String   @id @default(cuid())
+  clubId         String
+  venueId        String?
+  title          String?
+  date           DateTime
+  duration       Int      @default(120)
+  location       String?
+  notes          String?
+  recurring      Boolean  @default(false)
+  recurrenceDay  Int?
+  recurrenceTime String?
+  createdById    String
+  createdAt      DateTime @default(now())
+  status         String   @default("ACTIVE")
+
+  club      Club                  @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  venue     ClubVenue?            @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  createdBy Player                @relation("CreatedSessions", fields: [createdById], references: [id], onDelete: Cascade)
+  attendees ClubSessionAttendee[]
+  messages  ClubSessionMessage[]
+
+  @@index([clubId])
+  @@index([date])
+}
+
+model ClubSessionAttendee {
+  id          String   @id @default(cuid())
+  sessionId   String
+  playerId    String
+  status      String   @default("CONFIRMED")
+  arrivalTime String?  // ex: "19:30"
+  minPlayers  Int?     // vient si >= N joueurs
+  createdAt   DateTime @default(now())
+
+  session ClubSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  player  Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, playerId])
+  @@index([sessionId])
+}
+
+model ClubMessage {
+  id        String   @id @default(cuid())
+  clubId    String
+  playerId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([clubId])
+}
+
+model ClubVenue {
+  id        String   @id @default(cuid())
+  clubId    String
+  name      String
+  address   String?
+  mapLink   String?
+  notes     String?
+  color     String?   // hex color ex: "#3b82f6"
+  createdAt DateTime @default(now())
+
+  club     Club           @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  sessions ClubSession[]
+
+  @@index([clubId])
+}
+
+model ClubSessionMessage {
+  id        String   @id @default(cuid())
+  sessionId String
+  playerId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  session ClubSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  player  Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 // ── Orga Dashboard ───────────────────────────────────────────────────────────

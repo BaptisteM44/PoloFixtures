@@ -296,7 +296,7 @@ export function OrgaDashboard({
       {activeTab === "config" && (
         <>
           <div style={{ marginBottom: 20 }}>
-            <TestModeToggle tournamentId={tournament.id} initialTestMode={tournament.testMode ?? false} />
+            <TestModeToggle tournamentId={tournament.id} initialTestMode={tournament.testMode ?? false} initialHidden={(tournament as any).hidden ?? false} />
           </div>
           <TournamentEditForm
             tournament={tournament}

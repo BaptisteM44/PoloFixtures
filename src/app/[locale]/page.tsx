@@ -110,13 +110,13 @@ export default async function HomePage() {
 
   const [activeTournaments, allTournaments, countryCounts, mapTournaments, recentPlayers, totalPlayers, totalCountries] = await Promise.all([
     prisma.tournament.findMany({
-      where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true },
+      where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true, hidden: false },
       include: { teams: { where: { selected: true } } },
       orderBy: { dateStart: "asc" },
       take: 20,
     }),
     prisma.tournament.findMany({
-      where: { approved: true },
+      where: { approved: true, hidden: false },
       select: { id: true, slug: true, name: true, dateStart: true, dateEnd: true, status: true, city: true, country: true, format: true },
       orderBy: { dateStart: "asc" },
     }),
@@ -126,7 +126,7 @@ export default async function HomePage() {
       _count: { _all: true },
     }),
     prisma.tournament.findMany({
-      where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true, lat: { not: null }, lng: { not: null } },
+      where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true, hidden: false, lat: { not: null }, lng: { not: null } },
       select: { id: true, slug: true, name: true, city: true, country: true, continentCode: true, format: true, dateStart: true, dateEnd: true, status: true, registrationStart: true, registrationEnd: true, lat: true, lng: true },
       orderBy: [{ status: "asc" }, { dateStart: "asc" }],
     }),

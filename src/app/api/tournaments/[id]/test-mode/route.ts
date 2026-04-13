@@ -14,7 +14,7 @@ export async function PATCH(
 
     const { id } = params;
     const body = await req.json();
-    const { testMode } = body;
+    const { testMode, hidden } = body;
 
     const playerId = session.user.playerId;
     const role = session.user.role;
@@ -23,7 +23,7 @@ export async function PATCH(
     const tournament = await prisma.tournament.findUnique({
       where: { id },
       select: {
-        id: true, creatorId: true, testMode: true,
+        id: true, creatorId: true, testMode: true, hidden: true,
         coOrganizers: { select: { playerId: true } },
       },
     });
@@ -41,11 +41,15 @@ export async function PATCH(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Update testMode
+    const updateData: { testMode?: boolean; hidden?: boolean } = {};
+    if (typeof testMode === "boolean") updateData.testMode = testMode;
+    if (typeof hidden === "boolean") updateData.hidden = hidden;
+
+    // Update testMode and/or hidden
     const updated = await prisma.tournament.update({
       where: { id },
-      data: { testMode: typeof testMode === "boolean" ? testMode : !tournament.testMode },
-      select: { id: true, testMode: true },
+      data: updateData,
+      select: { id: true, testMode: true, hidden: true },
     });
 
     return NextResponse.json(updated);

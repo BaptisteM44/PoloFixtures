@@ -79,6 +79,14 @@ const updateSchema = z.object({
     (v) => v === "true" || v === true,
     z.boolean().default(false)
   ),
+  testMode: z.preprocess(
+    (v) => v === "true" || v === true,
+    z.boolean().default(false)
+  ),
+  hidden: z.preprocess(
+    (v) => v === "true" || v === true,
+    z.boolean().default(false)
+  ),
 });
 
 export async function updateTournamentAction(formData: FormData) {

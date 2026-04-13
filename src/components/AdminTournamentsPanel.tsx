@@ -76,10 +76,9 @@ function TournamentRow({
         <div style={{ display: "flex", gap: 8 }}>
           <button
             className="primary"
-            style={{ fontSize: 12, padding: "6px 14px", opacity: t.testMode ? 0.5 : 1 }}
-            disabled={approving === t.id || t.testMode}
+            style={{ fontSize: 12, padding: "6px 14px" }}
+            disabled={approving === t.id}
             onClick={() => onApprove(t.id)}
-            title={t.testMode ? tr("test_mode_pending") : undefined}
           >
             {approving === t.id ? "…" : tr("btn_approve_check")}
           </button>

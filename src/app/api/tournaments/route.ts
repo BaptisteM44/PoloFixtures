@@ -8,7 +8,7 @@ export async function GET() {
   await syncLiveTournamentsCompletion();
 
   const tournaments = await prisma.tournament.findMany({
-    where: { approved: true },
+    where: { approved: true, hidden: false },
     include: {
       teams: { select: { id: true, selected: true } },
     },

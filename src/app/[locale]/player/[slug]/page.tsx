@@ -50,7 +50,7 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
 
   return (
     <div className="player-profile">
-      <div style={{ display: "flex", gap: 40, alignItems: "flex-start", flexWrap: "wrap", width: "100%" }}>
+      <div style={{ display: "flex", gap: 40, alignItems: "flex-start", flexWrap: "wrap", maxWidth: 820, width: "100%" }}>
         <PlayerCardWithShare
           name={player.name}
           country={player.country ?? ""}
@@ -67,7 +67,7 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
           canShare={isOwnProfile}
         />
 
-        <div style={{ flex: 1, minWidth: 0, paddingTop: 8, overflow: "hidden" }}>
+        <div style={{ flex: 1, minWidth: 0, paddingTop: 8 }}>
           <h1 style={{ marginBottom: 4 }}>{player.name}</h1>
           <p style={{ color: "var(--text-muted)", fontSize: 14, margin: "0 0 20px" }}>
             {player.city ? `${player.city}, ` : ""}{player.country}
@@ -76,7 +76,9 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
             <p style={{ fontSize: 14, lineHeight: 1.7, margin: "0 0 16px", wordBreak: "break-word", overflowWrap: "break-word" }}>{player.bio}</p>
           )}
           {canContact && (
-            <ContactModal recipientId={player.id} recipientName={player.name} />
+            <div style={{ marginBottom: 24 }}>
+              <ContactModal recipientId={player.id} recipientName={player.name} />
+            </div>
           )}
         </div>
       </div>
