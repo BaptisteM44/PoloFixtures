@@ -68,6 +68,14 @@ export const authConfig = {
         const ok = await bcrypt.compare(parsed.data.password, account.passwordHash);
         if (!ok) return null;
 
+        // Enregistre le jour de connexion (1 ligne par jour au max)
+        const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+        await prisma.loginDay.upsert({
+          where: { accountId_date: { accountId: account.id, date: today } },
+          create: { accountId: account.id, date: today },
+          update: {}, // conserve le 1er login de la journée (no-op)
+        }).catch(() => {}); // silencieux si la table n'existe pas encore
+
         const clubMember = await prisma.clubMember.findFirst({
           where: { playerId: account.playerId, status: "MEMBER" },
           select: { clubId: true },

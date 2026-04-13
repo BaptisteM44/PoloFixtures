@@ -334,6 +334,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     select: {
       photoPath: true, bio: true, city: true, startYear: true,
       hand: true, createdAt: true, country: true,
+      account: { select: { id: true } },
     },
   });
   if (player && player.createdAt < new Date("2026-04-01")) badges.add("og");
@@ -831,6 +832,32 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
         if (refCount >= 3 && playCount >= 3) badges.add("ref_duty");
         if (refCount >= 5 && playCount >= 5) badges.add("double_duty");
       }
+    }
+  }
+
+  // ── Badges connexion (LoginDay) ──────────────────────────────────────────
+  if (player?.account?.id) {
+    const loginDayCount = await prisma.loginDay.count({
+      where: { accountId: player.account.id },
+    });
+    if (loginDayCount >= 30)  badges.add("regular");
+    if (loginDayCount >= 100) badges.add("addict");
+    if (loginDayCount >= 200) badges.add("no_days_off");
+    if (loginDayCount >= 365) badges.add("full_year");
+
+    // night_owl — se connecter entre 4h55 et 5h05 UTC
+    // (complète la condition existante sur les messages de chat)
+    if (!badges.has("night_owl")) {
+      const allLoginTimes = await prisma.loginDay.findMany({
+        where: { accountId: player.account.id },
+        select: { loggedAt: true },
+      }).catch(() => [] as { loggedAt: Date }[]);
+      const hadNightLogin = allLoginTimes.some((l) => {
+        const h = l.loggedAt.getUTCHours();
+        const m = l.loggedAt.getUTCMinutes();
+        return (h === 4 && m >= 55) || (h === 5 && m <= 5);
+      });
+      if (hadNightLogin) badges.add("night_owl");
     }
   }
 

@@ -416,6 +416,7 @@ model PlayerAccount {
   createdAt         DateTime  @default(now())
 
   player Player @relation(fields: [playerId], references: [id])
+  loginDays LoginDay[]
 
   @@index([email])
 }
@@ -946,4 +947,28 @@ model TournamentSoloEntry {
   @@unique([tournamentId, playerId])
   @@index([tournamentId])
   @@index([playerId])
+}
+
+model LoginDay {
+  id        String        @id @default(cuid())
+  accountId String
+  date      String        // "YYYY-MM-DD" en UTC
+  loggedAt  DateTime      @default(now()) // timestamp du 1er login de la journée
+
+  account   PlayerAccount @relation(fields: [accountId], references: [id])
+
+  @@unique([accountId, date])
+  @@index([accountId])
+}
+
+model LoginDay {
+  id        String        @id @default(cuid())
+  accountId String
+  date      String        // "YYYY-MM-DD" en UTC
+  loggedAt  DateTime      @default(now()) // timestamp du 1er login de la journée
+
+  account   PlayerAccount @relation(fields: [accountId], references: [id])
+
+  @@unique([accountId, date])
+  @@index([accountId])
 }
