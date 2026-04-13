@@ -6,7 +6,11 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
   const secret = process.env.CRON_SECRET;
   if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({
+      error: "Unauthorized",
+      receivedHeader: auth,
+      expectedPrefix: `Bearer ${secret?.slice(0, 6)}...`,
+    }, { status: 401 });
   }
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
