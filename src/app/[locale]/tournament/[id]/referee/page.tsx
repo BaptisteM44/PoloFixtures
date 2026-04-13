@@ -85,6 +85,8 @@ export default async function RefereeMatchPage({ params }: { params: { id: strin
           teamBName: m.teamB?.name ?? null,
           scoreA: m.scoreA,
           scoreB: m.scoreB,
+          refereePlayerId: m.refereePlayerId ?? null,
+          coRefereePlayerId: m.coRefereePlayerId ?? null,
           events: m.events.map((e) => ({
             id: e.id,
             type: e.type,

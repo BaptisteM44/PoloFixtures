@@ -12,6 +12,8 @@ const schema = z.object({
   scoreB: z.number().optional(),
   teamAId: z.string().nullable().optional(),
   teamBId: z.string().nullable().optional(),
+  refereePlayerId: z.string().nullable().optional(),
+  coRefereePlayerId: z.string().nullable().optional(),
 });
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {

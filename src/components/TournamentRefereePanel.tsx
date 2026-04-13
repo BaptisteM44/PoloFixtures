@@ -16,6 +16,8 @@ type MatchInfo = {
   teamAId: string | null; teamBId: string | null;
   teamAName: string | null; teamBName: string | null;
   scoreA: number; scoreB: number; events: MatchEvent[];
+  refereePlayerId?: string | null;
+  coRefereePlayerId?: string | null;
 };
 type TournamentData = {
   id: string; slug?: string | null; name: string; gameDurationMin: number;
@@ -144,6 +146,11 @@ export function TournamentRefereePanel({
   const [goldenGoalModal, setGoldenGoalModal] = useState<GoldenGoalModal>(null);
   const [timeoutTimer, setTimeoutTimer] = useState<{ sec: number; label: string } | null>(null);
 
+  // Referee assignment
+  const [localRefereeId, setLocalRefereeId] = useState<string>("");
+  const [localCoRefereeId, setLocalCoRefereeId] = useState<string>("");
+  const [refSaving, setRefSaving] = useState(false);
+
   const lastMatchId = useRef<string>("");
 
   // SSE — met à jour matchMap quand un match avancé (ou mis à jour par un autre panel) arrive
@@ -191,7 +198,31 @@ export function TournamentRefereePanel({
     setBuzzerPlayed(false);
     setMatchEnded(m.status === "FINISHED");
     setActionError(null);
+    // Sync referee IDs depuis le match
+    setLocalRefereeId(m.refereePlayerId ?? "");
+    setLocalCoRefereeId(m.coRefereePlayerId ?? "");
   }, [selectedMatchId, matchMap]);
+
+  const saveReferees = useCallback(async (refId: string, coRefId: string) => {
+    if (!selectedMatchId) return;
+    setRefSaving(true);
+    await fetch(`/api/matches/${selectedMatchId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        refereePlayerId: refId || null,
+        coRefereePlayerId: coRefId || null,
+      }),
+    });
+    setMatchMap((prev) => {
+      const cur = prev.get(selectedMatchId);
+      if (!cur) return prev;
+      const next = new Map(prev);
+      next.set(selectedMatchId, { ...cur, refereePlayerId: refId || null, coRefereePlayerId: coRefId || null });
+      return next;
+    });
+    setRefSaving(false);
+  }, [selectedMatchId]);
 
   // Timer principal
   useEffect(() => {
@@ -367,6 +398,15 @@ export function TournamentRefereePanel({
   const teamA = tournament.teams.find((t) => t.id === selectedMatch?.teamAId);
   const teamB = tournament.teams.find((t) => t.id === selectedMatch?.teamBId);
   const clockColor = displaySec <= 60 ? "var(--red)" : displaySec <= 120 ? "#f59e0b" : "var(--teal)";
+  // Tous les joueurs du tournoi (pour la sélection d'arbitres)
+  const allPlayers = useMemo(() => {
+    const seen = new Set<string>();
+    return tournament.teams.flatMap((t) => t.players).filter((p) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [tournament.teams]);
   const cannotEndBracketDraw = !!selectedMatch && selectedMatch.phase === "BRACKET" && selectedMatch.scoreA === selectedMatch.scoreB;
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -533,6 +573,44 @@ export function TournamentRefereePanel({
 
       {selectedMatch && (
         <>
+          {/* ── Assignation arbitres ───────────────────────────────────── */}
+          {!matchEnded && (
+            <div className="ref-section" style={{ padding: "12px 16px", display: "grid", gap: 10 }}>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>🦺 Arbitres</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <label style={{ fontSize: 12, display: "grid", gap: 4 }}>
+                  <span>Arbitre principal</span>
+                  <select
+                    value={localRefereeId}
+                    onChange={(e) => { setLocalRefereeId(e.target.value); saveReferees(e.target.value, localCoRefereeId); }}
+                    disabled={refSaving}
+                    style={{ fontSize: 13 }}
+                  >
+                    <option value="">— Non assigné —</option>
+                    {allPlayers.map((p) => (
+                      <option key={p.id} value={p.id} disabled={p.id === localCoRefereeId}>{p.name}</option>
+                    ))}
+                  </select>
+                </label>
+                <label style={{ fontSize: 12, display: "grid", gap: 4 }}>
+                  <span>Co-arbitre (téléphone)</span>
+                  <select
+                    value={localCoRefereeId}
+                    onChange={(e) => { setLocalCoRefereeId(e.target.value); saveReferees(localRefereeId, e.target.value); }}
+                    disabled={refSaving}
+                    style={{ fontSize: 13 }}
+                  >
+                    <option value="">— Non assigné —</option>
+                    {allPlayers.map((p) => (
+                      <option key={p.id} value={p.id} disabled={p.id === localRefereeId}>{p.name}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {refSaving && <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>Enregistrement…</p>}
+            </div>
+          )}
+
           {/* ── Clock ──────────────────────────────────────────────────── */}
           <div className="ref-clock-section">
             <div className="ref-clock" style={{ color: clockColor }}>{fmtClock(displaySec)}</div>
@@ -663,6 +741,18 @@ export function TournamentRefereePanel({
                   ? <p className="ref-result-winner">🏆 {selectedMatch.teamBName}</p>
                   : <p className="ref-result-winner">{t("draw_result")}</p>
               }
+              {/* Arbitres du match */}
+              {(selectedMatch.refereePlayerId || selectedMatch.coRefereePlayerId) && (
+                <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "4px 0 0", textAlign: "center" }}>
+                  {selectedMatch.refereePlayerId && (
+                    <>🦺 {allPlayers.find((p) => p.id === selectedMatch.refereePlayerId)?.name ?? "?"}</>
+                  )}
+                  {selectedMatch.refereePlayerId && selectedMatch.coRefereePlayerId && " · "}
+                  {selectedMatch.coRefereePlayerId && (
+                    <>📱 {allPlayers.find((p) => p.id === selectedMatch.coRefereePlayerId)?.name ?? "?"}</>
+                  )}
+                </p>
+              )}
               <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
                 {nextScheduled && (
                   <button className="primary ref-nextmatch-btn"

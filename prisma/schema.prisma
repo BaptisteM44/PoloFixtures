@@ -400,6 +400,7 @@ model Player {
   orgaNotes               OrgaNote[]   @relation("OrgaNotes")
   orgaLinks               OrgaLink[]   @relation("OrgaLinks")
   refereedMatches         Match[]      @relation("RefereedMatches")
+  coRefereedMatches       Match[]      @relation("CoRefereedMatches")
   notificationPreference  NotificationPreference?
   tournamentFollows       TournamentFollow[]
 }
@@ -481,12 +482,14 @@ model Match {
   nextSlotLose    String?
   goldenGoal      Boolean     @default(false)
   refereePlayerId String?
+  coRefereePlayerId String?
 
   tournament Tournament @relation(fields: [tournamentId], references: [id])
   pool       Pool?      @relation(fields: [poolId], references: [id])
   teamA      Team?      @relation("TeamA", fields: [teamAId], references: [id])
   teamB      Team?      @relation("TeamB", fields: [teamBId], references: [id])
   referee    Player?    @relation("RefereedMatches", fields: [refereePlayerId], references: [id])
+  coReferee  Player?    @relation("CoRefereedMatches", fields: [coRefereePlayerId], references: [id])
   events     MatchEvent[]
 
   @@index([tournamentId])

@@ -767,10 +767,21 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   }
 
   // ref_duty (mythic 4★) + double_duty (legendary 5★)
-  const refereedMatches = await prisma.match.findMany({
-    where: { refereePlayerId: playerId, status: "FINISHED" },
-    select: { startAt: true },
-  });
+  // On compte les matchs arbitrés en tant que referee principal OU co-arbitre
+  const [refereedMatchesMain, refereedMatchesCo] = await Promise.all([
+    prisma.match.findMany({
+      where: { refereePlayerId: playerId, status: "FINISHED" },
+      select: { startAt: true },
+    }),
+    prisma.match.findMany({
+      where: { coRefereePlayerId: playerId, status: "FINISHED" },
+      select: { startAt: true },
+    }),
+  ]);
+  // Déduplique par date (un match ne compte qu'une fois même si on est les deux)
+  const refereedMatches = [...refereedMatchesMain, ...refereedMatchesCo].filter(
+    (m, i, arr) => arr.findIndex((x) => x.startAt.getTime() === m.startAt.getTime()) === i
+  );
   if (refereedMatches.length >= 3 && allTeamMatches.length >= 3) {
     const playDayCount = new Map<string, number>();
     for (const m of allTeamMatches) {
