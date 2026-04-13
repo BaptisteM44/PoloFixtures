@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AdminNav } from "@/components/AdminNav";
 import { Pagination, paginate } from "@/components/Pagination";
+import { BADGE_CATALOG } from "@/lib/badge-catalog";
 
 const PER_PAGE = 20;
 
@@ -17,7 +18,10 @@ type Player = {
   createdAt: string;
   suspendedReason?: string | null;
   account?: { email: string } | null;
+  badges?: string[];
 };
+
+type BadgeModal = { playerId: string; name: string; badges: string[] };
 
 export default function AdminPlayersPage() {
   const t = useTranslations("admin");
@@ -27,6 +31,9 @@ export default function AdminPlayersPage() {
   const [page, setPage] = useState(1);
   const [suspendModal, setSuspendModal] = useState<{ playerId: string; name: string } | null>(null);
   const [suspendReason, setSuspendReason] = useState("");
+  const [badgeModal, setBadgeModal] = useState<BadgeModal | null>(null);
+  const [badgeToAdd, setBadgeToAdd] = useState("");
+  const [badgeSaving, setBadgeSaving] = useState(false);
 
   const load = (q = search) => {
     const params = new URLSearchParams({ status: filter, hasAccount: "true" });
@@ -67,10 +74,91 @@ export default function AdminPlayersPage() {
     setSuspendReason("");
   };
 
+  const handleBadgeRemove = async (badge: string) => {
+    if (!badgeModal) return;
+    setBadgeSaving(true);
+    const res = await fetch(`/api/admin/players/${badgeModal.playerId}/badges`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ remove: [badge] }),
+    });
+    const data = await res.json();
+    setBadgeModal((m) => m ? { ...m, badges: data.badges as string[] } : null);
+    setPlayers((prev) => prev.map((p) => p.id === badgeModal.playerId ? { ...p, badges: data.badges } : p));
+    setBadgeSaving(false);
+  };
+
+  const handleBadgeAdd = async () => {
+    if (!badgeModal || !badgeToAdd) return;
+    setBadgeSaving(true);
+    const res = await fetch(`/api/admin/players/${badgeModal.playerId}/badges`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ add: [badgeToAdd] }),
+    });
+    const data = await res.json();
+    setBadgeModal((m) => m ? { ...m, badges: data.badges as string[] } : null);
+    setPlayers((prev) => prev.map((p) => p.id === badgeModal.playerId ? { ...p, badges: data.badges } : p));
+    setBadgeToAdd("");
+    setBadgeSaving(false);
+  };
+
   return (
     <div className="page">
       <h1>{t("players_title")}</h1>
       <AdminNav />
+
+      {/* Badge modal */}
+      {badgeModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="panel" style={{ width: "min(520px, 94vw)", padding: 28, display: "grid", gap: 16 }}>
+            <h3 style={{ margin: 0 }}>🏅 Badges — {badgeModal.name}</h3>
+
+            {/* Badges actuels */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {badgeModal.badges.length === 0 && <p className="meta" style={{ margin: 0 }}>Aucun badge</p>}
+              {badgeModal.badges.map((b) => {
+                const info = BADGE_CATALOG[b];
+                return (
+                  <span key={b} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--surface-2)", border: "1.5px solid var(--border)", borderRadius: 6, padding: "3px 8px", fontSize: 12 }}>
+                    {info ? `${info.emoji} ${info.name}` : b}
+                    <button
+                      onClick={() => handleBadgeRemove(b)}
+                      disabled={badgeSaving}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--pink)", fontWeight: 700, fontSize: 14, padding: "0 2px", lineHeight: 1 }}
+                      title="Retirer"
+                    >×</button>
+                  </span>
+                );
+              })}
+            </div>
+
+            {/* Ajouter un badge */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <select
+                value={badgeToAdd}
+                onChange={(e) => setBadgeToAdd(e.target.value)}
+                style={{ flex: 1, fontSize: 13 }}
+              >
+                <option value="">— Choisir un badge —</option>
+                {Object.values(BADGE_CATALOG)
+                  .filter((b) => !badgeModal.badges.includes(b.id))
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((b) => (
+                    <option key={b.id} value={b.id}>{b.emoji} {b.name} ({b.rarity})</option>
+                  ))}
+              </select>
+              <button className="primary" onClick={handleBadgeAdd} disabled={!badgeToAdd || badgeSaving} style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                Ajouter
+              </button>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button className="ghost" onClick={() => { setBadgeModal(null); setBadgeToAdd(""); }}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Suspend modal */}
       {suspendModal && (
@@ -145,9 +233,14 @@ export default function AdminPlayersPage() {
                 </>
               )}
               {filter === "ACTIVE" && (
-                <button className="ghost" style={{ fontSize: 12, color: "var(--pink)", borderColor: "var(--pink)" }} onClick={() => setSuspendModal({ playerId: player.id, name: player.name })}>
-                  {t("btn_suspend")}
-                </button>
+                <>
+                  <button className="ghost" style={{ fontSize: 12 }} onClick={() => setBadgeModal({ playerId: player.id, name: player.name, badges: player.badges ?? [] })}>
+                    🏅
+                  </button>
+                  <button className="ghost" style={{ fontSize: 12, color: "var(--pink)", borderColor: "var(--pink)" }} onClick={() => setSuspendModal({ playerId: player.id, name: player.name })}>
+                    {t("btn_suspend")}
+                  </button>
+                </>
               )}
               {filter === "REJECTED" && (
                 <button className="primary" style={{ fontSize: 12 }} onClick={() => moderate(player.id, "ACTIVE")}>{t("btn_reactivate")}</button>
