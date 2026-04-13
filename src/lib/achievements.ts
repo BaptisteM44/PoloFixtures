@@ -766,37 +766,71 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     if (clean) { badges.add("squeaky_clean"); break; }
   }
 
-  // ref_duty (mythic 4★) + double_duty (legendary 5★)
-  // On compte les matchs arbitrés en tant que referee principal OU co-arbitre
-  const [refereedMatchesMain, refereedMatchesCo] = await Promise.all([
+  // ── Badges arbitrage ─────────────────────────────────────────────────────
+  // Récupère tous les matchs arbitrés (principal OU co-arbitre)
+  const [refMain, refCo] = await Promise.all([
     prisma.match.findMany({
       where: { refereePlayerId: playerId, status: "FINISHED" },
-      select: { startAt: true },
+      select: { id: true, tournamentId: true, phase: true, nextMatchWinId: true, startAt: true },
     }),
     prisma.match.findMany({
       where: { coRefereePlayerId: playerId, status: "FINISHED" },
-      select: { startAt: true },
+      select: { id: true, tournamentId: true, phase: true, nextMatchWinId: true, startAt: true },
     }),
   ]);
-  // Déduplique par date (un match ne compte qu'une fois même si on est les deux)
-  const refereedMatches = [...refereedMatchesMain, ...refereedMatchesCo].filter(
-    (m, i, arr) => arr.findIndex((x) => x.startAt.getTime() === m.startAt.getTime()) === i
-  );
-  if (refereedMatches.length >= 3 && allTeamMatches.length >= 3) {
-    const playDayCount = new Map<string, number>();
-    for (const m of allTeamMatches) {
-      const day = m.startAt.toISOString().slice(0, 10);
-      playDayCount.set(day, (playDayCount.get(day) ?? 0) + 1);
+  // Déduplique par id
+  const allRefMatchesMap = new Map([...refMain, ...refCo].map((m) => [m.id, m]));
+  const allRefMatches = Array.from(allRefMatchesMap.values());
+
+  if (allRefMatches.length > 0) {
+    // first_whistle — 1er match arbitré
+    badges.add("first_whistle");
+
+    // Finales = match BRACKET sans nextMatchWinId (dernier match du bracket)
+    const finalesArbitrees = allRefMatches.filter(
+      (m) => m.phase === "BRACKET" && !m.nextMatchWinId
+    );
+
+    // head_ref — arbitrer au moins une finale
+    if (finalesArbitrees.length >= 1) badges.add("head_ref");
+
+    // golden_whistle — 100 matchs arbitrés + 5 finales en carrière
+    if (allRefMatches.length >= 100 && finalesArbitrees.length >= 5) badges.add("golden_whistle");
+
+    // Grouper par tournoi pour full_ref_day et grand_referee
+    const byTournament = new Map<string, typeof allRefMatches>();
+    for (const m of allRefMatches) {
+      const list = byTournament.get(m.tournamentId) ?? [];
+      list.push(m);
+      byTournament.set(m.tournamentId, list);
     }
-    const refDayCount = new Map<string, number>();
-    for (const m of refereedMatches) {
-      const day = m.startAt.toISOString().slice(0, 10);
-      refDayCount.set(day, (refDayCount.get(day) ?? 0) + 1);
+    for (const [tid, matches] of byTournament) {
+      // full_ref_day — 5+ matchs arbitrés dans un même tournoi
+      if (matches.length >= 5) badges.add("full_ref_day");
+      // grand_referee — 12+ matchs arbitrés + au moins une finale dans un même tournoi
+      const hasFinale = matches.some((m) => m.phase === "BRACKET" && !m.nextMatchWinId);
+      if (matches.length >= 12 && hasFinale) { badges.add("grand_referee"); }
+      void tid; // évite le warning "unused variable"
     }
-    for (const [day, refCount] of refDayCount) {
-      const playCount = playDayCount.get(day) ?? 0;
-      if (refCount >= 3 && playCount >= 3) badges.add("ref_duty");
-      if (refCount >= 5 && playCount >= 5) badges.add("double_duty");
+
+    // ref_duty + double_duty — arbitrer ET jouer beaucoup dans la même journée
+    const refereedMatches = allRefMatches; // déjà dédupliqué
+    if (refereedMatches.length >= 3 && allTeamMatches.length >= 3) {
+      const playDayCount = new Map<string, number>();
+      for (const m of allTeamMatches) {
+        const day = m.startAt.toISOString().slice(0, 10);
+        playDayCount.set(day, (playDayCount.get(day) ?? 0) + 1);
+      }
+      const refDayCount = new Map<string, number>();
+      for (const m of refereedMatches) {
+        const day = m.startAt.toISOString().slice(0, 10);
+        refDayCount.set(day, (refDayCount.get(day) ?? 0) + 1);
+      }
+      for (const [day, refCount] of refDayCount) {
+        const playCount = playDayCount.get(day) ?? 0;
+        if (refCount >= 3 && playCount >= 3) badges.add("ref_duty");
+        if (refCount >= 5 && playCount >= 5) badges.add("double_duty");
+      }
     }
   }
 
