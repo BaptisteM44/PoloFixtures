@@ -1669,6 +1669,7 @@
     "no_results": "No results.",
     "no_pending_invitations": "No pending invitations.",
     "invite_from_members_tab": "Invite players from the Members tab.",
+    "captain_only_invite": "Only the captain can invite players.",
     "invited_by": "Invited by {name}",
     "pending": "Pending",
     "you": "You"

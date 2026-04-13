@@ -1670,6 +1670,7 @@
     "no_results": "Aucun résultat.",
     "no_pending_invitations": "Aucune invitation en attente.",
     "invite_from_members_tab": "Invite des joueurs depuis l'onglet Membres.",
+    "captain_only_invite": "Seul le capitaine peut inviter des joueurs.",
     "invited_by": "Invité·e par {name}",
     "pending": "En attente",
     "you": "Vous"

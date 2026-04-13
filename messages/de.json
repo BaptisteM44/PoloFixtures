@@ -1674,6 +1674,7 @@
     "no_results": "Keine Ergebnisse.",
     "no_pending_invitations": "Keine ausstehenden Einladungen.",
     "invite_from_members_tab": "Lade Spieler über den Mitglieder-Tab ein.",
+    "captain_only_invite": "Nur der Kapitän kann Spieler einladen.",
     "invited_by": "Eingeladen von {name}",
     "pending": "Ausstehend",
     "you": "Du"
