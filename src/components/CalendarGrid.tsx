@@ -300,8 +300,15 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
       <div className="calendar-layout">
         <div className="calendar-main">{calendarContent}</div>
         <div className="calendar-sidebar">
+          {visibleTournaments.length === 0 && (
+            <div className="calendar-expand" style={{ color: "var(--text-muted)", fontSize: 13, padding: "20px 16px" }}>
+              {continent
+                ? tCal("no_tournaments_continent")
+                : tCal("no_tournaments_month")}
+            </div>
+          )}
           {expandedList.map((t) => <InfoCard key={t.id} t={t} />)}
-          {Array.from({ length: Math.max(0, 3 - expandedList.length) }).map((_, i) => (
+          {visibleTournaments.length > 0 && Array.from({ length: Math.max(0, 3 - expandedList.length) }).map((_, i) => (
             <div key={`ghost-${i}`} className="calendar-expand calendar-expand--ghost" />
           ))}
         </div>

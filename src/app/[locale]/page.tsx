@@ -117,7 +117,7 @@ export default async function HomePage() {
     }),
     prisma.tournament.findMany({
       where: { approved: true, hidden: false },
-      select: { id: true, slug: true, name: true, dateStart: true, dateEnd: true, status: true, city: true, country: true, format: true },
+      select: { id: true, slug: true, name: true, dateStart: true, dateEnd: true, status: true, city: true, country: true, continentCode: true, format: true },
       orderBy: { dateStart: "asc" },
     }),
     prisma.player.groupBy({
@@ -339,6 +339,7 @@ export default async function HomePage() {
             status: t.status,
             city: t.city,
             country: t.country,
+            continentCode: t.continentCode,
             format: t.format,
           }))}
         />

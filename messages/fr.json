@@ -953,6 +953,8 @@
     "label_format": "Format",
     "label_status": "Statut",
     "link_view_tournament": "Voir le tournoi →",
+    "no_tournaments_month": "Aucun tournoi ce mois-ci.",
+    "no_tournaments_continent": "Aucun tournoi ce mois-ci pour ce continent. Naviguez vers un autre mois →",
     "status_upcoming": "À venir",
     "status_live": "En cours",
     "status_completed": "Terminé"

@@ -953,6 +953,8 @@
     "label_format": "Format",
     "label_status": "Status",
     "link_view_tournament": "View tournament →",
+    "no_tournaments_month": "No tournaments this month.",
+    "no_tournaments_continent": "No tournaments this month for this continent. Navigate to another month →",
     "status_upcoming": "Upcoming",
     "status_live": "Live",
     "status_completed": "Completed"
