@@ -545,6 +545,8 @@
     "edit_launch_tournament": "Turnier starten",
     "edit_launch_confirm": "Turnier starten? Das Format wird gesperrt und Spiele des ersten Tages werden generiert.",
     "edit_reset_tournament": "Turnier zurücksetzen (Spiele & Gruppen löschen)",
+    "edit_reset_matches": "Alle Spiele löschen",
+    "edit_reset_matches_confirm": "Alle Spiele und Ereignisse löschen? Teams und Gruppen bleiben erhalten.",
     "edit_reset_confirm": "Turnier zurücksetzen? Alle Spiele und Gruppen werden gelöscht.",
     "edit_kpi_teams": "Teams",
     "edit_kpi_free_agents": "Freie Spieler",

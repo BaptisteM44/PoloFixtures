@@ -540,6 +540,8 @@
     "edit_launch_tournament": "Lancer le tournoi",
     "edit_launch_confirm": "Lancer le tournoi ? Le format sera verrouillé et les matchs du premier jour seront générés.",
     "edit_reset_tournament": "Reset le tournoi (supprimer matchs & poules)",
+    "edit_reset_matches": "Effacer tous les matchs",
+    "edit_reset_matches_confirm": "Supprimer tous les matchs et événements ? Les équipes et groupes sont conservés.",
     "edit_reset_confirm": "Reset le tournoi ? Tous les matchs et poules seront supprimés.",
     "edit_kpi_teams": "Équipes",
     "edit_kpi_free_agents": "Free agents",

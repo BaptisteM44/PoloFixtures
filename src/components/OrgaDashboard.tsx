@@ -151,6 +151,7 @@ type OrgaDashboardProps = {
   addPlayerAction: (...args: any[]) => Promise<any>;
   launchAction: (formData: FormData) => Promise<void>;
   resetAction: (formData: FormData) => Promise<void>;
+  resetMatchesAction: (formData: FormData) => Promise<void>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignedTo: { id: string; name: string } | null; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -202,6 +203,7 @@ export function OrgaDashboard({
   addPlayerAction,
   launchAction,
   resetAction,
+  resetMatchesAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -471,6 +473,17 @@ export function OrgaDashboard({
               style={{ fontSize: 12, padding: "6px 14px", color: "var(--danger)" }}
             >
               {t("edit_reset_tournament")}
+            </ConfirmFormButton>
+          )}
+
+          {isLive && (
+            <ConfirmFormButton
+              action={resetMatchesAction}
+              confirmMessage={t("edit_reset_matches_confirm")}
+              className="ghost"
+              style={{ fontSize: 12, padding: "6px 14px", color: "var(--warning)" }}
+            >
+              {t("edit_reset_matches")}
             </ConfirmFormButton>
           )}
 

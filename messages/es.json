@@ -544,6 +544,8 @@
     "edit_launch_tournament": "Lanzar torneo",
     "edit_launch_confirm": "¿Lanzar el torneo? El formato se bloqueará y se generarán los partidos del primer día.",
     "edit_reset_tournament": "Resetear torneo (eliminar partidos y grupos)",
+    "edit_reset_matches": "Borrar todos los partidos",
+    "edit_reset_matches_confirm": "¿Eliminar todos los partidos y eventos? Los equipos y grupos se conservarán.",
     "edit_reset_confirm": "¿Resetear el torneo? Todos los partidos y grupos serán eliminados.",
     "edit_kpi_teams": "Equipos",
     "edit_kpi_free_agents": "Jugadores libres",

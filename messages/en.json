@@ -540,6 +540,8 @@
     "edit_launch_tournament": "Launch Tournament",
     "edit_launch_confirm": "Launch the tournament? The format will be locked and first day matches will be generated.",
     "edit_reset_tournament": "Reset tournament (delete matches & pools)",
+    "edit_reset_matches": "Clear all matches",
+    "edit_reset_matches_confirm": "Delete all matches and events? Teams and pools will be kept.",
     "edit_reset_confirm": "Reset the tournament? All matches and pools will be deleted.",
     "edit_kpi_teams": "Teams",
     "edit_kpi_free_agents": "Free agents",

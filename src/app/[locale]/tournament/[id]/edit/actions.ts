@@ -1677,6 +1677,44 @@ export async function launchTournamentAction(
 }
 
 /**
+ * Reset matches only: delete all match events + matches across ALL phases,
+ * but keep pools, team selections, and tournament status intact.
+ */
+export async function resetMatchesAction(
+  id: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({ where: { id } });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if (tournament.status === "COMPLETED") return { error: "Impossible de reset un tournoi terminé." };
+
+  const teamPlayers = await prisma.teamPlayer.findMany({
+    where: { team: { tournamentId: id } },
+    select: { playerId: true },
+  });
+  const playerIds = [...new Set(teamPlayers.map((tp) => tp.playerId))];
+
+  await prisma.$transaction(async (tx) => {
+    await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id } } });
+    await tx.match.deleteMany({ where: { tournamentId: id } });
+  }, { timeout: 15000 });
+
+  // Recompute badges for affected players
+  for (const playerId of playerIds) {
+    try {
+      const newBadges = await computeCareerBadges(playerId);
+      await prisma.player.update({ where: { id: playerId }, data: { badges: newBadges } });
+    } catch { /* non-blocking */ }
+  }
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+/**
  * Reset tournament: delete all matches/pools, unlock, revert to UPCOMING.
  */
 export async function resetTournamentAction(
