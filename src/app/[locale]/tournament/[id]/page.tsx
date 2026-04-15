@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Link } from "@/i18n/navigation";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { Tabs } from "@/components/Tabs";
 import { ScheduleBoard } from "@/components/ScheduleBoard";
@@ -22,6 +22,7 @@ import { HeroCountdown } from "@/components/HeroCountdown";
 import { TournamentRecap } from "@/components/TournamentRecap";
 import { FollowButton } from "@/components/FollowButton";
 import { SoloRegisterForm } from "@/components/SoloRegisterForm";
+import { WithdrawTeamPanel } from "@/components/WithdrawTeamPanel";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { TournamentCompletionWatcher } from "@/components/TournamentCompletionWatcher";
 import { BracketActions } from "@/components/BracketActions";
@@ -96,6 +97,7 @@ export default async function TournamentPage({
     tournament.status = syncedStatus;
   }
 
+  const locale = await getLocale();
   const t = await getTranslations("tournament");
   const r = await getTranslations("registration");
   const tm = await getTranslations("team");
@@ -142,13 +144,23 @@ export default async function TournamentPage({
   const swissSplitSeBottom8 = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL") && tournament.sundayFormat === "SWISS_SPLIT_SE");
   const allEvents = (tournament.matches ?? []).flatMap((m: any) => m.events ?? []);
 
+  // Find current player's team (as captain or member) for this tournament
+  const myTeam = currentPlayerId
+    ? (tournament.teams as any[]).find((team: any) =>
+        team.players?.some((tp: any) => tp.playerId === currentPlayerId || tp.player?.id === currentPlayerId)
+      ) ?? null
+    : null;
+  const isCaptainOfMyTeam = myTeam
+    ? (myTeam.players ?? []).some((tp: any) => (tp.playerId === currentPlayerId || tp.player?.id === currentPlayerId) && tp.isCaptain)
+    : false;
+
   // When tournament is launched (LIVE/COMPLETED), show selected teams count instead of total registered
   const isLaunched = tournament.status === "LIVE" || tournament.status === "COMPLETED";
   const selectedTeams = tournament.teams.filter((t: any) => t.selected !== false);
   const displayTeamCount = isLaunched && selectedTeams.length > 0 ? selectedTeams.length : tournament.teams.length;
 
-  const dateStart = new Date(tournament.dateStart).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  const dateEnd = new Date(tournament.dateEnd).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  const dateStart = new Date(tournament.dateStart).toLocaleDateString(locale, { day: "numeric", month: "short" });
+  const dateEnd = new Date(tournament.dateEnd).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
 
   const youtubeEmbed = toYoutubeEmbed(t_.streamYoutubeUrl);
 
@@ -422,7 +434,7 @@ export default async function TournamentPage({
                       {meals.filter((m) => m.breakfast || m.lunch || m.dinner).map((m) => {
                         const d = new Date(tournament.dateStart);
                         d.setDate(d.getDate() + m.day - 1);
-                        const label = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" });
+                        const label = d.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "short" });
                         const parts = [];
                         if (m.breakfast) parts.push(t("meal_breakfast_short"));
                         if (m.lunch) parts.push(t("meal_lunch_short"));
@@ -442,10 +454,10 @@ export default async function TournamentPage({
                   <p style={{ marginTop: 12, fontSize: 13, paddingTop: 10, borderTop: "1px solid var(--border-light)" }}>
                     <strong>{t("registration_period")}</strong>{" "}
                     {tournament.registrationStart
-                      ? new Date(tournament.registrationStart).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                      ? new Date(tournament.registrationStart).toLocaleString(locale, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
                       : "?"}{" "}
                     — {tournament.registrationEnd
-                      ? new Date(tournament.registrationEnd).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                      ? new Date(tournament.registrationEnd).toLocaleString(locale, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
                       : "?"}
                   </p>
                 )}
@@ -458,7 +470,7 @@ export default async function TournamentPage({
                   )}
                   {registrationClosed ? (
                     <span className="primary" style={{ fontSize: 14, opacity: 0.45, cursor: "not-allowed", pointerEvents: "none" }}>
-                      {t("reg_closed_title", { date: tournament.registrationEnd ? new Date(tournament.registrationEnd).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : "" })}
+                      {t("reg_closed_title", { date: tournament.registrationEnd ? new Date(tournament.registrationEnd).toLocaleString(locale, { day: "numeric", month: "long", year: "numeric" }) : "" })}
                     </span>
                   ) : (
                     <Link href={`/tournament/${params.id}?tab=inscription`} className="primary" style={{ fontSize: 14 }}>
@@ -587,7 +599,7 @@ export default async function TournamentPage({
                   {tournament.registrationEnd && (
                     <p className="meta" style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ background: "color-mix(in srgb, var(--teal) 15%, transparent)", color: "var(--teal)", borderRadius: "var(--radius-sm)", padding: "2px 10px", fontWeight: 700, fontSize: 12, fontFamily: "var(--font-display)" }}>
-                        {t("reg_closes_on", { date: new Date(tournament.registrationEnd).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) })}
+                        {t("reg_closes_on", { date: new Date(tournament.registrationEnd).toLocaleString(locale, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) })}
                       </span>
                     </p>
                   )}
@@ -610,14 +622,21 @@ export default async function TournamentPage({
                         alreadyLevel={currentEntry?.level ?? null}
                       />
                     );
-                  })() : (
+                  })() : myTeam ? (
+                    <WithdrawTeamPanel
+                      tournamentId={tournament.id}
+                      teamName={myTeam.name}
+                      waitlisted={!myTeam.selected}
+                      isCaptain={isCaptainOfMyTeam}
+                    />
+                  ) : (
                     <RegisterTeamForm tournamentId={tournament.id} format={tournament.format} currentPlayerId={currentPlayerId} accommodationAvailable={tournament.accommodationAvailable} />
                   )}
                 </>
               ) : registrationClosed ? (
                 <div style={{ textAlign: "center", padding: "24px 0" }}>
                   <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", margin: 0 }}>
-                    {t("reg_closed_title", { date: tournament.registrationEnd ? new Date(tournament.registrationEnd).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "" })}
+                    {t("reg_closed_title", { date: tournament.registrationEnd ? new Date(tournament.registrationEnd).toLocaleString(locale, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "" })}
                   </p>
                 </div>
               ) : (
@@ -627,7 +646,7 @@ export default async function TournamentPage({
                   </p>
                   {tournament.registrationStart && (
                     <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--text-muted)" }}>
-                      {t("reg_opens_on", { date: new Date(tournament.registrationStart).toLocaleString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) })}
+                      {t("reg_opens_on", { date: new Date(tournament.registrationStart).toLocaleString(locale, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) })}
                     </p>
                   )}
                 </div>
