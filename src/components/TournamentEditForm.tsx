@@ -122,7 +122,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const [currentFormat, setCurrentFormat] = useState(tournament.format);
 
   // Format preset
-  type FormatPreset = "pool_de" | "pool_se" | "2pools_de" | "2pools_se" | "swiss_de" | "swiss_se" | "swiss6_split_se" | "cross_pool_bcn" | "berlin_mixed" | "custom";
+  type FormatPreset = "pool_de" | "pool_se" | "2pools_de" | "2pools_se" | "swiss_de" | "swiss_se" | "swiss6_split_se" | "cross_pool_bcn" | "berlin_mixed" | "graz" | "custom";
   type PresetConfig = { saturdayFormat: string; poolCount: number; swissRounds: number; bracketSize: number; sundayFormat: string; crossPool: boolean; thirdPlaceMatch: boolean; gfReset: boolean };
 
   const PRESETS: Record<Exclude<FormatPreset, "custom">, PresetConfig> = {
@@ -135,6 +135,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     swiss6_split_se: { saturdayFormat: "SWISS",      poolCount: 1, swissRounds: 6, bracketSize: 18, sundayFormat: "SWISS_SPLIT_SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
     cross_pool_bcn: { saturdayFormat: "SPLIT_POOLS",  poolCount: 2, swissRounds: 5, bracketSize: 8,  sundayFormat: "DE", crossPool: true,  thirdPlaceMatch: false, gfReset: false },
     berlin_mixed:   { saturdayFormat: "BERLIN_MIXED", poolCount: 2, swissRounds: 5, bracketSize: 32, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
+    graz:           { saturdayFormat: "GRAZ",         poolCount: 2, swissRounds: 7, bracketSize: 8,  sundayFormat: "SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
   };
 
   function detectPreset(tn: Tournament): FormatPreset {
@@ -627,6 +628,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                 {([
                   ["cross_pool_bcn", t("preset_cross_pool_bcn"), t("preset_cross_pool_bcn_desc")],
                   ["berlin_mixed",   "🐻 Berlin Mixed",          "3 jours · 2×Swiss Ven · 2×Swiss Sam · Grand Swiss + Top32/Bottom16 Dim"],
+                  ["graz",           "🇦🇹 Graz",                  "2 jours · 2×RR Poules · Regroup 4 groupes · SE Top 8"],
                   ["custom",         t("format_custom"),         t("format_custom_desc")],
                 ] as [FormatPreset, string, string][]).map(([key, label, sub]) => {
                   const active = formatPreset === key;
@@ -722,6 +724,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                     <option value="ALL_DAY">{t("saturday_all_day")}</option>
                     <option value="SPLIT_POOLS">{t("saturday_split_pools")}</option>
                     <option value="SWISS">{t("saturday_swiss")}</option>
+                    <option value="GRAZ">Graz (RR + Regroup)</option>
                   </select>
                 </label>
                 <label className="field-row">
@@ -775,7 +778,9 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
               {formatPreset !== "custom" && (
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                   <strong>{t("format_summary_label")}</strong>{" "}
-                  {presetConfig.saturdayFormat === "ALL_DAY"
+                  {presetConfig.saturdayFormat === "GRAZ"
+                    ? "2×RR Poules → Regroup 4 groupes → SE Top 8"
+                    : presetConfig.saturdayFormat === "ALL_DAY"
                     ? t("format_summary_pool1")
                     : presetConfig.saturdayFormat === "SPLIT_POOLS"
                       ? `${presetConfig.poolCount} ${t("format_summary_pools")}`

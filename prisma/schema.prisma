@@ -41,6 +41,7 @@ enum SaturdayFormat {
   SPLIT_POOLS
   SWISS
   BERLIN_MIXED
+  GRAZ
 }
 
 enum SundayFormat {
