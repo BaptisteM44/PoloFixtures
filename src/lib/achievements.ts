@@ -84,6 +84,21 @@ function getContinent(country: string): string {
   return CONTINENT_MAP[country] ?? "OTHER";
 }
 
+/** Normalise un nom de tournoi pour regrouper les éditions d'une même série.
+ *  Ex: "Bench de la galette #11" et "Bench de la galette #10" → même clé. */
+function normalizeTournamentSeries(name: string): string {
+  // Prend la partie avant " - " (séparateur d'édition)
+  const base = name.split(/\s+-\s+/)[0];
+  return base
+    .toLowerCase()
+    .replace(/#\s*\d+/g, "")              // #1, #50
+    .replace(/\bvol\.?\s*\d+/g, "")      // vol.3, vol 3
+    .replace(/\b(20|19)\d{2}\b/g, "")    // 2026, 1999
+    .replace(/\b\d+(st|nd|rd|th)\b/g, "") // 1st, 2nd
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export async function computeCareerBadges(playerId: string): Promise<string[]> {
   const badges = new Set<string>();
 
@@ -132,8 +147,8 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
         include: {
           tournament: {
             select: {
-              id: true, status: true, dateStart: true, dateEnd: true,
-              country: true, registrationEnd: true, testMode: true,
+              id: true, name: true, status: true, dateStart: true, dateEnd: true,
+              country: true, city: true, registrationEnd: true, testMode: true,
             },
           },
           matchesA: { select: { scoreA: true, scoreB: true, status: true, winnerTeamId: true, phase: true, bracketSide: true } },
@@ -164,20 +179,21 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   }
 
   const tournaments = teamPlayers.map((tp) => tp.team.tournament).filter((t) => !t.testMode);
+  const playedTournaments = tournaments.filter((t) => t.status === "COMPLETED");
   const uniqueTournamentIds = new Set(tournaments.map((t) => t.id));
   if (uniqueTournamentIds.size >= 1)  badges.add("team_player");
   if (uniqueTournamentIds.size >= 5)  badges.add("squad_up");
   if (uniqueTournamentIds.size >= 15) badges.add("veteran");
 
-  // road_warrior / globe_trotter / five_continents
-  const countries  = new Set(tournaments.map((t) => t.country));
+  // road_warrior / globe_trotter / five_continents (uniquement tournois joués)
+  const countries  = new Set(playedTournaments.map((t) => t.country));
   const continents = new Set([...countries].map(getContinent));
   if (countries.size  >= 3) badges.add("road_warrior");
   if (continents.size >= 3) badges.add("globe_trotter");
   if (continents.size >= 5) badges.add("five_continents");
 
   // into_the_storm: 5+ tournaments in winter (Dec, Jan, Feb)
-  const winterCount = tournaments.filter((t) => {
+  const winterCount = playedTournaments.filter((t) => {
     const m = new Date(t.dateStart).getMonth() + 1;
     return m === 12 || m === 1 || m === 2;
   }).length;
@@ -339,8 +355,8 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   });
   if (player && player.createdAt < new Date("2026-04-01")) badges.add("og");
 
-  // tourist: at least one tournament in a country different from player's home country
-  if (player?.country && tournaments.some((t) => t.country !== player.country))
+  // tourist: at least one completed tournament in a country different from player's home country
+  if (player?.country && playedTournaments.some((t) => t.country !== player.country))
     badges.add("tourist");
 
   // ── Chat / Messages ──────────────────────────────────────────────────────
@@ -548,6 +564,15 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     monthCounts.set(key, (monthCounts.get(key) ?? 0) + 1);
   }
   if ([...monthCounts.values()].some((c) => c >= 3)) badges.add("circus_act");
+
+  // deja_vu / ritual: participer 2+/4+ fois à la même série de tournoi
+  const seriesCount = new Map<string, number>();
+  for (const tp of teamPlayers.filter((tp) => !tp.team.tournament.testMode)) {
+    const key = normalizeTournamentSeries(tp.team.tournament.name);
+    if (key.length >= 3) seriesCount.set(key, (seriesCount.get(key) ?? 0) + 1);
+  }
+  if ([...seriesCount.values()].some((c) => c >= 2)) badges.add("deja_vu");
+  if ([...seriesCount.values()].some((c) => c >= 4)) badges.add("ritual");
 
   // night_ride: played a match starting after 22:00
   if (allTeamMatches.some((m) => m.startAt.getHours() >= 22)) badges.add("night_ride");
@@ -835,6 +860,76 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     }
   }
 
+  // ── Badges clubs ─────────────────────────────────────────────────────────
+  const clubMemberships = await prisma.clubMember.findMany({
+    where: { playerId, status: "MEMBER" },
+    include: { club: { select: { id: true, city: true, country: true } } },
+  });
+
+  if (clubMemberships.length > 0) {
+    // club_champion: gagner un tournoi dans la ville de son club
+    if (wonTournamentIds.length > 0) {
+      const clubCities = new Set(clubMemberships.map((cm) => cm.club.city.toLowerCase().trim()));
+      const wonDetails = await prisma.tournament.findMany({
+        where: { id: { in: wonTournamentIds } },
+        select: { id: true, city: true },
+      });
+      if (wonDetails.some((t) => clubCities.has(t.city.toLowerCase().trim())))
+        badges.add("club_champion");
+    }
+
+    // represent: tournoi à l'étranger avec équipe 100% membres du même club
+    if (player?.country) {
+      const foreignParticipations = teamPlayers.filter(
+        (tp) => !tp.team.tournament.testMode && tp.team.tournament.country !== player.country
+      );
+      represent: for (const tp of foreignParticipations) {
+        const teammates = await prisma.teamPlayer.findMany({
+          where: { teamId: tp.teamId },
+          select: { playerId: true },
+        });
+        const teammateIds = teammates.map((t) => t.playerId);
+        for (const cm of clubMemberships) {
+          const clubMemberIds = new Set(
+            (await prisma.clubMember.findMany({
+              where: { clubId: cm.club.id, status: "MEMBER" },
+              select: { playerId: true },
+            })).map((m) => m.playerId)
+          );
+          if (teammateIds.length >= 2 && teammateIds.every((id) => clubMemberIds.has(id))) {
+            badges.add("represent");
+            break represent;
+          }
+        }
+      }
+    }
+
+    // club_derby: affronter une équipe avec 2+ membres de ton club
+    if (allTeamMatches.length > 0 && !badges.has("club_derby")) {
+      const allClubMemberIds = new Set<string>();
+      for (const cm of clubMemberships) {
+        const members = await prisma.clubMember.findMany({
+          where: { clubId: cm.club.id, status: "MEMBER", NOT: { playerId } },
+          select: { playerId: true },
+        });
+        for (const m of members) allClubMemberIds.add(m.playerId);
+      }
+      if (allClubMemberIds.size >= 2) {
+        derby: for (const m of allTeamMatches) {
+          const myTeamId = playerTeamIdSet.has(m.teamAId ?? "") ? m.teamAId : m.teamBId;
+          const oppTeamId = myTeamId === m.teamAId ? m.teamBId : m.teamAId;
+          if (!oppTeamId) continue;
+          const oppPlayers = await prisma.teamPlayer.findMany({
+            where: { teamId: oppTeamId },
+            select: { playerId: true },
+          });
+          const clubMembersInOpp = oppPlayers.filter((p) => allClubMemberIds.has(p.playerId)).length;
+          if (clubMembersInOpp >= 2) { badges.add("club_derby"); break derby; }
+        }
+      }
+    }
+  }
+
   // ── Badges connexion (LoginDay) ──────────────────────────────────────────
   if (player?.account?.id) {
     const loginDayCount = await prisma.loginDay.count({
@@ -844,6 +939,30 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     if (loginDayCount >= 100) badges.add("addict");
     if (loginDayCount >= 200) badges.add("no_days_off");
     if (loginDayCount >= 365) badges.add("full_year");
+
+    // on_a_roll / habit_formed: streak de jours consécutifs
+    const loginDatesList = await prisma.loginDay.findMany({
+      where: { accountId: player.account.id },
+      select: { date: true },
+      orderBy: { date: "asc" },
+    }).catch(() => [] as { date: string }[]);
+    if (loginDatesList.length > 0) {
+      let maxStreak = 1;
+      let currentStreak = 1;
+      for (let i = 1; i < loginDatesList.length; i++) {
+        const prev = new Date(loginDatesList[i - 1].date);
+        const curr = new Date(loginDatesList[i].date);
+        const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
+        if (diffDays === 1) {
+          currentStreak++;
+          if (currentStreak > maxStreak) maxStreak = currentStreak;
+        } else {
+          currentStreak = 1;
+        }
+      }
+      if (maxStreak >= 7)  badges.add("on_a_roll");
+      if (maxStreak >= 30) badges.add("habit_formed");
+    }
 
     // night_owl — se connecter entre 4h55 et 5h05 UTC
     // (complète la condition existante sur les messages de chat)
