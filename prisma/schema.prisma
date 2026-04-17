@@ -62,6 +62,9 @@ enum MatchPhase {
   SUNDAY_SWISS
   TOP32
   BOTTOM16
+  GRAZ_RR
+  GRAZ_REGROUP
+  GRAZ_SE
 }
 
 enum BracketSide {
