@@ -100,7 +100,7 @@ function PlayerChip({
     if (q.length < 2) { setResults([]); return; }
     if (debounce.current) clearTimeout(debounce.current);
     debounce.current = setTimeout(async () => {
-      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}&hasAccount=true`);
       const data = await res.json();
       setResults((data as PlayerResult[]).filter((p: PlayerResult) => p.id !== tp.player.id));
     }, 250);
