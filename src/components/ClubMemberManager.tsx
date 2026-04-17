@@ -173,7 +173,7 @@ export function ClubMemberManager({ clubId, managerId, members: initialMembers, 
 
       {/* Bouton rejoindre (joueur non-membre) */}
       {currentPlayerId && !isManager && !isAlreadyMember && !hasPendingInvite && !hasPendingRequest && (
-        <div className="club-members__section">
+        <div className="club-members__section" style={{ marginBottom: 24 }}>
           <button className="primary" disabled={loading === "request"} onClick={joinDirectly}>
             {loading === "request" ? t("btn_joining") : t("btn_join")}
           </button>

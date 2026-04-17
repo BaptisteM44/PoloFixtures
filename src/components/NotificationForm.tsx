@@ -138,38 +138,19 @@ export function NotificationForm({
       </div>
 
       {enabled && (
-        <div className="settings-notif-types" style={{ marginBottom: 24 }}>
-          <h3 className="settings-section-title">{t("notif_types_title")}</h3>
-          <div className="settings-toggle-row">
-            <label className="settings-toggle-label">
-              <input
-                type="checkbox"
-                checked={notifyNewTournaments}
-                onChange={(e) => setNotifyNewTournaments(e.target.checked)}
-              />
-              <span>✉️ {t("notif_new_tournaments")}</span>
-            </label>
-          </div>
-          <div className="settings-toggle-row">
-            <label className="settings-toggle-label">
-              <input
-                type="checkbox"
-                checked={notifyFollowedClosing}
-                onChange={(e) => setNotifyFollowedClosing(e.target.checked)}
-              />
-              <span>⭐ {t("notif_followed_closing")}</span>
-            </label>
-          </div>
-          <div className="settings-toggle-row">
-            <label className="settings-toggle-label">
-              <input
-                type="checkbox"
-                checked={notifySquadInvite}
-                onChange={(e) => setNotifySquadInvite(e.target.checked)}
-              />
-              <span>👥 {t("notif_squad_invite")}</span>
-            </label>
-          </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 24px", marginBottom: 24 }}>
+          <label className="settings-toggle-label">
+            <input type="checkbox" checked={notifyNewTournaments} onChange={(e) => setNotifyNewTournaments(e.target.checked)} />
+            <span>✉️ {t("notif_new_tournaments")}</span>
+          </label>
+          <label className="settings-toggle-label">
+            <input type="checkbox" checked={notifyFollowedClosing} onChange={(e) => setNotifyFollowedClosing(e.target.checked)} />
+            <span>⭐ {t("notif_followed_closing")}</span>
+          </label>
+          <label className="settings-toggle-label">
+            <input type="checkbox" checked={notifySquadInvite} onChange={(e) => setNotifySquadInvite(e.target.checked)} />
+            <span>👥 {t("notif_squad_invite")}</span>
+          </label>
         </div>
       )}
 
@@ -178,6 +159,7 @@ export function NotificationForm({
           <h3 className="settings-section-title">{t("geo_zones")}</h3>
           <p className="settings-hint">{t("geo_hint")}</p>
 
+          <div className="settings-geo-grid">
           {GEO.map(({ continent, label, flag, countries }) => {
             const allChecked = countries.every((c) => selectedCountries.has(c.code));
             const someChecked = countries.some((c) => selectedCountries.has(c.code));
@@ -210,6 +192,7 @@ export function NotificationForm({
               </div>
             );
           })}
+          </div>
         </div>
       )}
 

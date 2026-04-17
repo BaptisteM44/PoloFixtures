@@ -76,16 +76,9 @@ export function computeGlobalRanking(
 // ─── Saturday Group Assignment ────────────────────────────────────────────────
 
 /**
- * Assign 48 globally-ranked teams to Saturday groups using a snake/serpentin draft:
- * - Rank 1 → Sat-A (morning), Rank 2 → Sat-B (afternoon),
- *   Rank 3 → Sat-B, Rank 4 → Sat-A, Rank 5 → Sat-A, Rank 6 → Sat-B…
- *
- * Pattern per pair of ranks (0-indexed pair i):
- *   Even pair (0,2,4…): A then B
- *   Odd  pair (1,3,5…): B then A
- *
- * This ensures each group gets one team from every adjacent rank pair,
- * balancing strength across morning and afternoon sessions.
+ * Assign 48 globally-ranked teams to Saturday groups using strict alternation:
+ * Rank 1→A, 2→B, 3→A, 4→B, 5→A, 6→B…
+ * Each group gets 24 teams, evenly spread across the ranking.
  */
 export function assignSaturdayGroups(
   globalRanking: Array<{ team: Team; globalRank: number }>
@@ -94,7 +87,6 @@ export function assignSaturdayGroups(
   const satA: Team[] = [];
   const satB: Team[] = [];
 
-  // Simple alternation: rank 1→A, 2→B, 3→A, 4→B…
   sorted.forEach(({ team }, idx) => {
     if (idx % 2 === 0) satA.push(team);
     else satB.push(team);
@@ -226,8 +218,12 @@ export function generateSundaySwissRound(
 
   const byRank = new Map<string, number>();
   sundayStandings.forEach((row, i) => byRank.set(row.teamId, i));
+
+  // Trier du MOINS bien classé au MIEUX classé :
+  // les équipes faibles jouent en premier (matchs du matin),
+  // les tops jouent en dernier (cadeau pour les meilleures équipes).
   const sorted = [...teams].sort(
-    (a, b) => (byRank.get(a.id) ?? 999) - (byRank.get(b.id) ?? 999)
+    (a, b) => (byRank.get(b.id) ?? 0) - (byRank.get(a.id) ?? 0)
   );
 
   const unpaired = [...sorted];

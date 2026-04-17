@@ -135,7 +135,7 @@ export function AdminTournamentsPanel({
 
   const handleRejectSubmit = async () => {
     if (!rejectingId) return;
-    if (rejectReason.trim().length < 10) {
+    if (rejectReason.trim().length < 3) {
       setRejectError(tr("reject_reason_min"));
       return;
     }
@@ -185,7 +185,7 @@ export function AdminTournamentsPanel({
               <button
                 style={{ background: "var(--pink)", color: "#fff", border: "2px solid var(--pink)", borderRadius: "var(--radius)", padding: "8px 18px", fontWeight: 700, cursor: "pointer", fontSize: 13 }}
                 onClick={handleRejectSubmit}
-                disabled={rejectSubmitting || rejectReason.trim().length < 10}
+                disabled={rejectSubmitting || rejectReason.trim().length < 3}
               >
                 {rejectSubmitting ? tr("btn_sending") : tr("btn_confirm_reject")}
               </button>

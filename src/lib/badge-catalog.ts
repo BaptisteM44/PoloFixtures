@@ -55,6 +55,8 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   wild_card:       { id: "wild_card",       name: "Wild Card",       emoji: "🃏", description: "Rejoindre comme agent libre et finir top 3",           category: "team", rarity: "epic" },
   circus_act:      { id: "circus_act",      name: "Circus Act",      emoji: "🎪", description: "Participer à 3+ tournois dans le même mois",          category: "team", rarity: "mythic" },
   united_nations:  { id: "united_nations",  name: "United Nations",  emoji: "🇺🇳", description: "Jouer dans une équipe avec 3 nationalités différentes", category: "team", rarity: "rare" },
+  deja_vu:         { id: "deja_vu",         name: "Déjà Vu",         emoji: "♻️", description: "Participer 2 fois à la même série de tournoi",         category: "team", rarity: "rare" },
+  ritual:          { id: "ritual",          name: "Ritual",          emoji: "🔁", description: "Participer 4 fois à la même série de tournoi",         category: "team", rarity: "epic" },
 
   // ─────────────────────────────────────────────────────
   // 🏗️ Organisation
@@ -76,6 +78,8 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   addict:           { id: "addict",           name: "Addict",           emoji: "🔋", description: "Se connecter 100 jours différents",                category: "engagement", rarity: "rare" },
   no_days_off:      { id: "no_days_off",      name: "No Days Off",      emoji: "🗓️", description: "Se connecter 200 jours différents",               category: "engagement", rarity: "epic" },
   full_year:        { id: "full_year",        name: "Full Year",        emoji: "⚙️", description: "Se connecter 365 jours différents",               category: "engagement", rarity: "legendary" },
+  on_a_roll:        { id: "on_a_roll",        name: "On a Roll",        emoji: "📈", description: "Se connecter 7 jours consécutifs",                 category: "engagement", rarity: "rare" },
+  habit_formed:     { id: "habit_formed",     name: "Habit Formed",     emoji: "🔄", description: "Se connecter 30 jours consécutifs",                category: "engagement", rarity: "epic" },
   og:               { id: "og",               name: "OG",               emoji: "🏴", description: "Compte créé avant le 1er avril 2026",               category: "engagement", rarity: "epic" },
 
   // ─────────────────────────────────────────────────────
@@ -85,6 +89,7 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   chatterbox:   { id: "chatterbox",   name: "Chatterbox",   emoji: "💬", description: "Envoyer 50+ messages",                       category: "social", rarity: "common" },
   captain:      { id: "captain",      name: "Captain",      emoji: "©️", description: "Être capitaine 3+ fois",                    category: "social", rarity: "rare" },
   hype_machine: { id: "hype_machine", name: "Hype Machine", emoji: "📣", description: "Envoyer 300+ messages",                     category: "social", rarity: "rare" },
+  club_derby:   { id: "club_derby",   name: "Club Derby",   emoji: "⚔️", description: "Affronter une équipe avec 2+ membres de ton club", category: "social", rarity: "rare" },
 
   // ─────────────────────────────────────────────────────
   // 🔮 Secret / Easter egg
@@ -116,6 +121,12 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   // 🎒 Voyage
   // ─────────────────────────────────────────────────────
   tourist:       { id: "tourist",       name: "Tourist",          emoji: "🗺️", description: "Premier tournoi joué dans un pays étranger",                      category: "team",    rarity: "common" },
+
+  // ─────────────────────────────────────────────────────
+  // 🏠 Clubs
+  // ─────────────────────────────────────────────────────
+  club_champion: { id: "club_champion", name: "Club Champion",    emoji: "🏅", description: "Gagner un tournoi dans la ville de son club",                      category: "team",    rarity: "epic" },
+  represent:     { id: "represent",     name: "Represent",        emoji: "🚗", description: "Jouer un tournoi à l'étranger avec une équipe 100% membres du même club", category: "team", rarity: "epic", iconUrl: "/badges/represent.svg" },
 
   // ─────────────────────────────────────────────────────
   // 😄 Personnalité & Humour

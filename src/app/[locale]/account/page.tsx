@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { Link } from "@/i18n/navigation";
-import { useRouter } from "@/i18n/navigation";
+import { useRouter, usePathname } from "@/i18n/navigation";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PokemonCard } from "@/components/PokemonCard";
 import { ShareCardButton } from "@/components/ShareCardButton";
@@ -12,6 +13,9 @@ import { fixImageOrientation } from "@/lib/fix-orientation";
 import { BadgeShowcase } from "@/components/BadgeShowcase";
 import { ClubPicker } from "@/components/ClubPicker";
 import { ImageCropModal } from "@/components/ImageCropModal";
+import { NotificationForm } from "@/components/NotificationForm";
+import { MessagesClient } from "@/app/[locale]/messages/MessagesClient";
+import { Tabs } from "@/components/Tabs";
 import type { BadgeInfo } from "@/lib/badge-catalog";
 
 type Squad = {
@@ -60,76 +64,129 @@ type ClubMembership = {
   club: ClubInfo;
 };
 
+type NotifPrefs = {
+  enabled: boolean;
+  continents: string[];
+  countries: string[];
+  notifyNewTournaments: boolean;
+  notifyFollowedClosing: boolean;
+  notifySquadInvite: boolean;
+};
+
+type ConvSummary = {
+  id: string;
+  unread: number;
+  other: { id: string; name: string; photoPath: string | null; slug: string | null };
+  lastMessage: { content: string; createdAt: string; authorId: string } | null;
+};
 
 export default function AccountPage() {
   const t = useTranslations("account");
   const { data: session, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const tab = searchParams.get("tab") ?? "edit";
+
   const [player, setPlayer] = useState<Player | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: "", city: "", country: "", bio: "", startYear: "", hand: "", gender: "" as "" | "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY", showGender: false, diets: [] as string[] });
+  const [form, setForm] = useState({
+    name: "", city: "", country: "", bio: "", startYear: "", hand: "",
+    gender: "" as "" | "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY",
+    showGender: false, diets: [] as string[],
+  });
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
 
-  // Cities autocomplete
   const [availableCities, setAvailableCities] = useState<Array<{ city: string; country: string; label: string }>>([]);
-  const [cityClubSuggestions, setCityClubSuggestions] = useState<ClubInfo[]>([]);
-  const [loadingCityClubs, setLoadingCityClubs] = useState(false);
-  const [joiningClubId, setJoiningClubId] = useState<string | null>(null);
-
-  // Club
   const [clubMemberships, setClubMemberships] = useState<ClubMembership[]>([]);
 
-  // Changement de mot de passe
   const [pwOpen, setPwOpen] = useState(false);
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  // Suppression de compte
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
-  const handleDeleteAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (deleteConfirm !== t("delete_confirm_word")) return;
-    setDeleting(true);
-    setDeleteError(null);
-    const res = await fetch("/api/account/delete", { method: "DELETE" });
-    if (res.ok) {
-      await signOut({ callbackUrl: "/" });
-    } else {
-      const data = await res.json().catch(() => ({}));
-      setDeleteError(data.error ?? t("delete_error"));
-      setDeleting(false);
-    }
-  };
+  // Notif prefs (loaded lazily on settings tab)
+  const [notifPrefs, setNotifPrefs] = useState<NotifPrefs | null>(null);
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pwForm.next !== pwForm.confirm) { setPwMsg({ ok: false, text: t("pw_mismatch") }); return; }
-    setPwSaving(true); setPwMsg(null);
-    const res = await fetch("/api/account/password", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.next }),
-    });
-    const data = await res.json().catch(() => ({}));
-    setPwSaving(false);
-    if (res.ok) { setPwMsg({ ok: true, text: t("success_password") }); setPwForm({ current: "", next: "", confirm: "" }); setTimeout(() => setPwOpen(false), 1500); }
-    else setPwMsg({ ok: false, text: data.error ?? t("error_wrong_password") });
-  };
+  // Messages
+  const [conversations, setConversations] = useState<ConvSummary[]>([]);
+  const [charterAccepted, setCharterAccepted] = useState(false);
+
+  const fetchClubMemberships = useCallback(async () => {
+    const res = await fetch("/api/account/clubs");
+    if (res.ok) setClubMemberships(await res.json());
+  }, []);
+
+  const fetchCityClubSuggestions = useCallback(async (city?: string | null, country?: string | null) => {
+    if (!city || !country) return;
+    try {
+      const params = new URLSearchParams({ city, country });
+      await fetch(`/api/clubs/by-city?${params.toString()}`);
+    } catch { /* ignore */ }
+  }, []);
+
+  const fetchPlayer = useCallback(async () => {
+    const res = await fetch("/api/account/profile");
+    if (res.ok) {
+      const data = await res.json();
+      setPlayer(data);
+      setForm({
+        name: data.name, city: data.city ?? "", country: data.country, bio: data.bio ?? "",
+        startYear: data.startYear ? String(data.startYear) : "",
+        hand: data.hand ?? "",
+        gender: data.gender ?? "",
+        showGender: data.showGender ?? false,
+        diets: data.diets ?? [],
+      });
+    }
+  }, []);
+
+  const fetchNotifPrefs = useCallback(async () => {
+    if (notifPrefs) return;
+    const res = await fetch("/api/account/notification-prefs");
+    if (res.ok) setNotifPrefs(await res.json());
+  }, [notifPrefs]);
+
+  const fetchConversations = useCallback(async () => {
+    const res = await fetch("/api/direct-conversations");
+    if (res.ok) {
+      const data = await res.json();
+      setConversations(data.conversations);
+      setCharterAccepted(data.charterAccepted);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status === "unauthenticated") { router.push("/login"); return; }
+    if (status === "authenticated" && !session.user.playerId) { router.push("/"); return; }
+    if (status === "authenticated") { fetchPlayer(); fetchClubMemberships(); fetchConversations(); }
+
+    const loadCities = async () => {
+      try {
+        const res = await fetch("/api/clubs/cities");
+        if (res.ok) setAvailableCities(await res.json());
+      } catch { /* ignore */ }
+    };
+    loadCities();
+  }, [status, session, router, fetchPlayer, fetchClubMemberships]);
+
+  useEffect(() => {
+    if (tab === "settings") fetchNotifPrefs();
+  }, [tab, fetchNotifPrefs]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Reset input so the same file can be re-selected
     e.target.value = "";
     const oriented = await fixImageOrientation(file);
     setCropFile(oriented);
@@ -159,71 +216,6 @@ export default function AccountPage() {
     }
   };
 
-  const fetchClubMemberships = useCallback(async () => {
-    const res = await fetch("/api/account/clubs");
-    if (res.ok) setClubMemberships(await res.json());
-  }, []);
-
-  const fetchCityClubSuggestions = useCallback(async (city?: string | null, country?: string | null) => {
-    if (!city || !country) {
-      setCityClubSuggestions([]);
-      return;
-    }
-
-    setLoadingCityClubs(true);
-    try {
-      const params = new URLSearchParams({ city, country });
-      const res = await fetch(`/api/clubs/by-city?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setCityClubSuggestions(data.clubs ?? []);
-      } else {
-        setCityClubSuggestions([]);
-      }
-    } catch {
-      setCityClubSuggestions([]);
-    } finally {
-      setLoadingCityClubs(false);
-    }
-  }, []);
-
-  const fetchPlayer = useCallback(async () => {
-    const res = await fetch("/api/account/profile");
-    if (res.ok) {
-      const data = await res.json();
-      setPlayer(data);
-      setForm({
-        name: data.name, city: data.city ?? "", country: data.country, bio: data.bio ?? "",
-        startYear: data.startYear ? String(data.startYear) : "",
-        hand: data.hand ?? "",
-        gender: data.gender ?? "",
-        showGender: data.showGender ?? false,
-        diets: data.diets ?? []
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (status === "unauthenticated") { router.push("/login"); return; }
-    if (status === "authenticated" && !session.user.playerId) { router.push("/"); return; }
-    if (status === "authenticated") { fetchPlayer(); fetchClubMemberships(); }
-    
-    // Load available cities for autocomplete
-    const loadCities = async () => {
-      try {
-        const res = await fetch("/api/clubs/cities");
-        if (res.ok) setAvailableCities(await res.json());
-      } catch (e) {
-        console.error("Failed to load cities:", e);
-      }
-    };
-    loadCities();
-  }, [status, session, router, fetchPlayer, fetchClubMemberships]);
-
-  useEffect(() => {
-    fetchCityClubSuggestions(player?.city, player?.country);
-  }, [player?.city, player?.country, fetchCityClubSuggestions]);
-
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -235,24 +227,67 @@ export default function AccountPage() {
         startYear: form.startYear ? parseInt(form.startYear) : null,
         hand: form.hand || null,
         gender: form.gender || null,
-        diets: form.diets
-      })
+        diets: form.diets,
+      }),
     });
     if (res.ok) {
       await fetchPlayer();
-      setEditing(false);
       setSaveMsg(t("success_profile"));
       setTimeout(() => setSaveMsg(null), 3000);
     }
     setSaving(false);
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwForm.next !== pwForm.confirm) { setPwMsg({ ok: false, text: t("pw_mismatch") }); return; }
+    setPwSaving(true); setPwMsg(null);
+    const res = await fetch("/api/account/password", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.next }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setPwSaving(false);
+    if (res.ok) {
+      setPwMsg({ ok: true, text: t("success_password") });
+      setPwForm({ current: "", next: "", confirm: "" });
+      setTimeout(() => setPwOpen(false), 1500);
+    } else {
+      setPwMsg({ ok: false, text: data.error ?? t("error_wrong_password") });
+    }
+  };
+
+  const handleDeleteAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (deleteConfirm !== t("delete_confirm_word")) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const res = await fetch("/api/account/delete", { method: "DELETE" });
+    if (res.ok) {
+      await signOut({ callbackUrl: "/" });
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setDeleteError(data.error ?? t("delete_error"));
+      setDeleting(false);
+    }
+  };
+
   if (status === "loading" || !player) {
-    return <div className="player-profile"><p>{t("loading")}</p></div>;
+    return <div className="page-container"><p>{t("loading")}</p></div>;
   }
 
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0);
+
+  const tabs = [
+    { label: t("tab_edit"), value: "edit", href: `${pathname}?tab=edit` },
+    { label: t("tab_badges"), value: "badges", href: `${pathname}?tab=badges` },
+    { label: totalUnread > 0 ? `${t("tab_messages")} (${totalUnread})` : t("tab_messages"), value: "messages", href: `${pathname}?tab=messages` },
+    { label: t("tab_settings"), value: "settings", href: `${pathname}?tab=settings` },
+  ];
+
   return (
-    <div className="page">
+    <div>
       {cropFile && (
         <ImageCropModal
           file={cropFile}
@@ -260,10 +295,10 @@ export default function AccountPage() {
           onCancel={() => setCropFile(null)}
         />
       )}
-      <div className="account-layout">
 
-        {/* Pokemon card + photo upload */}
-        <div className="account-sidebar">
+      <div className="account-main-layout">
+        {/* ── Sidebar permanente : carte pokémon ── */}
+        <div className="account-card-sidebar">
           <PokemonCard
             ref={cardRef}
             name={player.name}
@@ -276,52 +311,40 @@ export default function AccountPage() {
             pinnedBadges={player.pinnedBadges}
             startYear={player.startYear}
           />
-          <div style={{ marginTop: 12, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
             <ShareCardButton cardRef={cardRef} playerName={player.name} />
-            <label style={{ cursor: "pointer", display: "inline-block" }}>
+            <label style={{ cursor: "pointer" }}>
               <span className="ghost" style={{ fontSize: 12, display: "inline-block", cursor: "pointer" }}>
-                {uploading ? t("photo_uploading") : t("photo_change")}
+                {uploading ? "…" : " " + t("photo_change")}
               </span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoUpload}
-                disabled={uploading}
-                style={{ display: "none" }}
-              />
+              <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} style={{ display: "none" }} />
             </label>
           </div>
         </div>
 
-        {/* Right column */}
-        <div style={{ display: "grid", gap: 24 }}>
-
+        {/* ── Colonne droite : header + tabs + contenu ── */}
+        <div style={{ minWidth: 0 }}>
           {/* Header */}
-          <div className="account-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div className="account-page-header">
             <div>
-              <h1 style={{ marginBottom: 4 }}>{player.name}</h1>
-              <p style={{ color: "var(--text-muted)", fontSize: 14, margin: 0 }}>
+              <h1 style={{ margin: 0, fontSize: 22 }}>{player.name}</h1>
+              <p style={{ color: "var(--text-muted)", fontSize: 14, margin: "2px 0 0" }}>
                 {player.city ? `${player.city}, ` : ""}{player.country}
               </p>
-              {player.bio && <p style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6 }}>{player.bio}</p>}
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="ghost" onClick={() => setEditing(!editing)}>
-                {editing ? t("btn_cancel") : t("btn_edit")}
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <Link className="ghost" href={`/player/${player.slug ?? player.id}`} target="_blank" style={{ fontSize: 13 }}>
+                {t("btn_public_page")}
+              </Link>
+              <button className="ghost" style={{ fontSize: 13 }} onClick={() => signOut({ callbackUrl: "/" })}>
+                {t("btn_logout")}
               </button>
-              <button className="ghost" onClick={() => signOut({ callbackUrl: "/" })}>{t("btn_logout")}</button>
             </div>
           </div>
 
-          {saveMsg && (
-            <div style={{ background: "var(--yellow)", border: "2px solid var(--border)", borderRadius: 8, padding: "10px 16px", fontWeight: 700, fontSize: 14 }}>
-              ✓ {saveMsg}
-            </div>
-          )}
-
-          {/* Onboarding banner */}
+          {/* Onboarding */}
           {!onboardingDismissed && (!player.photoPath || clubMemberships.filter(m => m.status === "MEMBER").length === 0) && (
-            <div style={{ background: "color-mix(in srgb, var(--teal) 8%, var(--surface))", border: "2px solid var(--teal)", borderRadius: 8, padding: "16px 20px", position: "relative" }}>
+            <div style={{ background: "color-mix(in srgb, var(--teal) 8%, var(--surface))", border: "2px solid var(--teal)", borderRadius: 8, padding: "16px 20px", position: "relative", marginBottom: 16 }}>
               <button type="button" onClick={() => setOnboardingDismissed(true)} style={{ position: "absolute", top: 8, right: 10, background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "var(--text-muted)" }}>✕</button>
               <p style={{ margin: "0 0 6px", fontWeight: 700, fontSize: 14, fontFamily: "var(--font-display)" }}>{t("onboarding_title")}</p>
               <p style={{ margin: "0 0 12px", fontSize: 13, color: "var(--text-muted)" }}>{t("onboarding_hint")}</p>
@@ -334,8 +357,13 @@ export default function AccountPage() {
             </div>
           )}
 
-          {/* Edit form */}
-          {editing && (
+          <Tabs items={tabs} active={tab} />
+
+          {/* ── TAB: EDIT ── */}
+          {tab === "edit" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 24, marginTop: 24 }}>
+
+            {/* Formulaire profil */}
             <form className="panel" onSubmit={save} style={{ display: "grid", gap: 14 }}>
               <h3 style={{ margin: 0 }}>{t("edit_title")}</h3>
               <div className="form-grid">
@@ -351,9 +379,7 @@ export default function AccountPage() {
                     onChange={(e) => {
                       const newCity = e.target.value;
                       setForm((f) => ({ ...f, city: newCity }));
-                      if (newCity && form.country) {
-                        fetchCityClubSuggestions(newCity, form.country);
-                      }
+                      if (newCity && form.country) fetchCityClubSuggestions(newCity, form.country);
                     }}
                     placeholder="Paris"
                   />
@@ -362,8 +388,7 @@ export default function AccountPage() {
                       .filter((c) => !form.country || c.country === form.country)
                       .map((c) => (
                         <option key={`${c.city}-${c.country}`} value={c.city} label={c.label} />
-                      ))
-                    }
+                      ))}
                   </datalist>
                 </label>
               </div>
@@ -374,9 +399,7 @@ export default function AccountPage() {
                   onChange={(e) => {
                     const newCountry = e.target.value;
                     setForm((f) => ({ ...f, country: newCountry }));
-                    if (form.city && newCountry) {
-                      fetchCityClubSuggestions(form.city, newCountry);
-                    }
+                    if (form.city && newCountry) fetchCityClubSuggestions(form.city, newCountry);
                   }}
                 >
                   {COUNTRIES.map((c) => <option key={c.code} value={c.name}>{c.name}</option>)}
@@ -454,20 +477,18 @@ export default function AccountPage() {
                   })}
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 <button className="primary" type="submit" disabled={saving}>
                   {saving ? t("btn_save_loading") : t("btn_save")}
                 </button>
-                <button className="ghost" type="button" onClick={() => setEditing(false)}>{t("btn_cancel")}</button>
+                {saveMsg && <span style={{ fontSize: 13, color: "var(--teal)", fontWeight: 600 }}>✓ {saveMsg}</span>}
               </div>
             </form>
-          )}
 
-          {/* Section Mon Club */}
-          <div id="club-section" className="panel">
-            <h3 style={{ marginBottom: 16 }}>{t("club_section")}</h3>
+            {/* Mon club */}
+            <div className="panel">
+              <h3 style={{ marginBottom: 16 }}>{t("club_section")}</h3>
 
-              {/* Clubs dont le joueur est MEMBER */}
               {clubMemberships.filter(m => m.status === "MEMBER").map(m => (
                 <div key={m.clubId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
                   {m.club.logoPath
@@ -509,7 +530,6 @@ export default function AccountPage() {
                 </div>
               ))}
 
-              {/* Demandes envoyées (PENDING_BY_PLAYER) */}
               {clubMemberships.filter(m => m.status === "PENDING_BY_PLAYER").map(m => (
                 <div key={m.clubId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", color: "var(--text-muted)", fontSize: 13 }}>
                   <span>⏳</span>
@@ -518,7 +538,6 @@ export default function AccountPage() {
                 </div>
               ))}
 
-              {/* Invitations reçues (PENDING_BY_MANAGER) */}
               {clubMemberships.filter(m => m.status === "PENDING_BY_MANAGER").map(m => (
                 <div key={m.clubId} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", fontSize: 13, flexWrap: "wrap" }}>
                   <span>📩</span>
@@ -528,42 +547,28 @@ export default function AccountPage() {
                 </div>
               ))}
 
-              {/* Pas encore dans un club — ClubPicker filtré par pays */}
               {clubMemberships.filter(m => m.status === "MEMBER").length === 0 && clubMemberships.filter(m => m.status === "PENDING_BY_MANAGER").length === 0 && (
                 <div style={{ marginTop: 8 }}>
                   <ClubPicker
                     country={player.country}
                     onJoin={async (clubId) => {
-                      await fetch("/api/clubs/by-city", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ clubId }),
-                      });
+                      await fetch("/api/clubs/by-city", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clubId }) });
                       await fetchClubMemberships();
                       await fetchPlayer();
                     }}
                     onCreate={async (data) => {
-                      await fetch("/api/clubs", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(data),
-                      });
+                      await fetch("/api/clubs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
                       await fetchClubMemberships();
                     }}
                   />
                 </div>
               )}
-          </div>
+            </div>
 
-          {/* Badges & Emblème */}
-          <div className="panel">
-
-
-            {/* ── Team logo — choisir parmi ses squads ── */}
-            <div style={{ marginBottom: 16, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
-              <p style={{ fontWeight: 600, fontSize: 13, marginBottom: 8 }}>
-                {t("logo_team")} <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({t("logo_team_hint")})</span>
-              </p>
+            {/* Logos */}
+            <div className="panel">
+              <h3 style={{ marginBottom: 16 }}>{t("logo_team")}</h3>
+              <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "0 0 12px" }}>{t("logo_team_hint")}</p>
               {(() => {
                 const squadsWithLogo = player.squads.map((s) => s.squad).filter((s) => !!s.logoPath);
                 if (squadsWithLogo.length === 0) {
@@ -579,11 +584,7 @@ export default function AccountPage() {
                           type="button"
                           onClick={async () => {
                             const newPath = isSelected ? null : squad.logoPath;
-                            await fetch("/api/account/profile", {
-                              method: "PATCH",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ teamLogoPath: newPath }),
-                            });
+                            await fetch("/api/account/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ teamLogoPath: newPath }) });
                             await fetchPlayer();
                           }}
                           style={{
@@ -604,11 +605,12 @@ export default function AccountPage() {
                 );
               })()}
             </div>
+          </div>
+          )}
 
-
-            {/* Badge list with catalogue + pin toggles */}
-
-            <div style={{ borderTop: "2px solid var(--border)", paddingTop: 16 }}>
+          {/* ── TAB: BADGES ── */}
+          {tab === "badges" && (
+            <div style={{ marginTop: 24 }}>
               <BadgeShowcase
                 earnedBadges={player.badges}
                 pinnedBadges={player.pinnedBadges}
@@ -627,76 +629,105 @@ export default function AccountPage() {
                 }}
               />
             </div>
-          </div>
+          )}
 
-          {/* Changer le mot de passe */}
-          <div style={{ borderTop: "2px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
-            <button type="button" className="ghost" style={{ fontSize: 13, width: "100%", justifyContent: "space-between" }} onClick={() => { setPwOpen((v) => !v); setPwMsg(null); }}>
-              🔒 {t("pw_section")} {pwOpen ? "▲" : "▼"}
-            </button>
-            {pwOpen && (
-              <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
-                <label className="field-row">
-                  {t("field_current_password")}
-                  <input type="password" required value={pwForm.current} onChange={(e) => setPwForm((p) => ({ ...p, current: e.target.value }))} />
-                </label>
-                <label className="field-row">
-                  {t("field_new_password")}
-                  <input type="password" required minLength={8} value={pwForm.next} onChange={(e) => setPwForm((p) => ({ ...p, next: e.target.value }))} placeholder="8 caractères minimum" />
-                </label>
-                <label className="field-row">
-                  {t("pw_confirm")}
-                  <input type="password" required value={pwForm.confirm} onChange={(e) => setPwForm((p) => ({ ...p, confirm: e.target.value }))} />
-                </label>
-                {pwMsg && <p style={{ fontSize: 13, color: pwMsg.ok ? "var(--teal)" : "var(--danger)", margin: 0 }}>{pwMsg.text}</p>}
-                <button type="submit" className="primary" disabled={pwSaving}>{pwSaving ? t("pw_saving") : t("pw_save")}</button>
-              </form>
-            )}
-          </div>
+          {/* ── TAB: MESSAGES ── */}
+          {tab === "messages" && player && (
+            <div style={{ marginTop: 24 }}>
+              <MessagesClient
+                conversations={conversations}
+                currentPlayerId={player.id}
+                charterAccepted={charterAccepted}
+              />
+            </div>
+          )}
 
-          {/* Supprimer le compte */}
-          <div style={{ borderTop: "2px solid var(--border)", paddingTop: 16, marginTop: 8 }}>
-            <button
-              type="button"
-              className="ghost"
-              style={{ fontSize: 13, width: "100%", justifyContent: "space-between", color: "var(--danger)" }}
-              onClick={() => { setDeleteOpen((v) => !v); setDeleteConfirm(""); setDeleteError(null); }}
-            >
-              {t("delete_section")} {deleteOpen ? "▲" : "▼"}
-            </button>
-            {deleteOpen && (
-              <form onSubmit={handleDeleteAccount} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12, padding: "12px 16px", background: "rgba(var(--danger-rgb,220,38,38),0.06)", border: "1px solid var(--danger)", borderRadius: 8 }}>
-                <p style={{ fontSize: 13, margin: 0, lineHeight: 1.6 }}>{t("delete_warning")}</p>
-                <label className="field-row">
-                  {t("delete_confirm_label", { word: t("delete_confirm_word") })}
-                  <input
-                    value={deleteConfirm}
-                    onChange={(e) => setDeleteConfirm(e.target.value)}
-                    placeholder={t("delete_confirm_word")}
-                    style={{ borderColor: "var(--danger)" }}
+          {/* ── TAB: SETTINGS ── */}
+          {tab === "settings" && (
+            <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 24 }}>
+              <div className="panel">
+                <h3 style={{ margin: "0 0 16px" }}>{t("settings_notifications_title")}</h3>
+                {notifPrefs ? (
+                  <NotificationForm
+                    initialEnabled={notifPrefs.enabled}
+                    initialContinents={notifPrefs.continents}
+                    initialCountries={notifPrefs.countries}
+                    initialNotifyNewTournaments={notifPrefs.notifyNewTournaments}
+                    initialNotifyFollowedClosing={notifPrefs.notifyFollowedClosing}
+                    initialNotifySquadInvite={notifPrefs.notifySquadInvite}
                   />
-                </label>
-                {deleteError && <p style={{ fontSize: 13, color: "var(--danger)", margin: 0 }}>{deleteError}</p>}
-                <button
-                  type="submit"
-                  className="primary"
-                  disabled={deleting || deleteConfirm !== t("delete_confirm_word")}
-                  style={{ background: "var(--danger)", opacity: deleteConfirm !== t("delete_confirm_word") ? 0.5 : 1 }}
-                >
-                  {deleting ? t("delete_deleting") : t("delete_btn")}
-                </button>
-              </form>
-            )}
-          </div>
+                ) : (
+                  <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("loading")}</p>
+                )}
+              </div>
 
-          {/* Player card link */}
-          <div style={{ textAlign: "center", paddingTop: 8 }}>
-            <Link className="ghost" href={`/player/${player.slug ?? player.id}`} target="_blank">
-              {t("btn_public_page")}
-            </Link>
-          </div>
-        </div>
-      </div>
+              <div className="panel">
+                <button
+                  type="button"
+                  className="ghost"
+                  style={{ fontSize: 14, width: "100%", justifyContent: "space-between" }}
+                  onClick={() => { setPwOpen((v) => !v); setPwMsg(null); }}
+                >
+                  🔒 {t("pw_section")} {pwOpen ? "▲" : "▼"}
+                </button>
+                {pwOpen && (
+                  <form onSubmit={handleChangePassword} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16 }}>
+                    <label className="field-row">
+                      {t("field_current_password")}
+                      <input type="password" required value={pwForm.current} onChange={(e) => setPwForm((p) => ({ ...p, current: e.target.value }))} />
+                    </label>
+                    <label className="field-row">
+                      {t("field_new_password")}
+                      <input type="password" required minLength={8} value={pwForm.next} onChange={(e) => setPwForm((p) => ({ ...p, next: e.target.value }))} placeholder="8 caractères minimum" />
+                    </label>
+                    <label className="field-row">
+                      {t("pw_confirm")}
+                      <input type="password" required value={pwForm.confirm} onChange={(e) => setPwForm((p) => ({ ...p, confirm: e.target.value }))} />
+                    </label>
+                    {pwMsg && <p style={{ fontSize: 13, color: pwMsg.ok ? "var(--teal)" : "var(--danger)", margin: 0 }}>{pwMsg.text}</p>}
+                    <button type="submit" className="primary" disabled={pwSaving}>{pwSaving ? t("pw_saving") : t("pw_save")}</button>
+                  </form>
+                )}
+              </div>
+
+              <div className="panel">
+                <button
+                  type="button"
+                  className="ghost"
+                  style={{ fontSize: 14, width: "100%", justifyContent: "space-between", color: "var(--danger)" }}
+                  onClick={() => { setDeleteOpen((v) => !v); setDeleteConfirm(""); setDeleteError(null); }}
+                >
+                  {t("delete_section")} {deleteOpen ? "▲" : "▼"}
+                </button>
+                {deleteOpen && (
+                  <form onSubmit={handleDeleteAccount} style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16, padding: "12px 16px", background: "rgba(var(--danger-rgb,220,38,38),0.06)", border: "1px solid var(--danger)", borderRadius: 8 }}>
+                    <p style={{ fontSize: 13, margin: 0, lineHeight: 1.6 }}>{t("delete_warning")}</p>
+                    <label className="field-row">
+                      {t("delete_confirm_label", { word: t("delete_confirm_word") })}
+                      <input
+                        value={deleteConfirm}
+                        onChange={(e) => setDeleteConfirm(e.target.value)}
+                        placeholder={t("delete_confirm_word")}
+                        style={{ borderColor: "var(--danger)" }}
+                      />
+                    </label>
+                    {deleteError && <p style={{ fontSize: 13, color: "var(--danger)", margin: 0 }}>{deleteError}</p>}
+                    <button
+                      type="submit"
+                      className="primary"
+                      disabled={deleting || deleteConfirm !== t("delete_confirm_word")}
+                      style={{ background: "var(--danger)", opacity: deleteConfirm !== t("delete_confirm_word") ? 0.5 : 1 }}
+                    >
+                      {deleting ? t("delete_deleting") : t("delete_btn")}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
+
+        </div>{/* fin colonne droite */}
+      </div>{/* fin account-main-layout */}
     </div>
   );
 }

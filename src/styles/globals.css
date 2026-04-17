@@ -45,6 +45,79 @@
   --transition: 150ms ease;
 }
 
+/* ========================
+   DARK MODE
+   ======================== */
+[data-theme="dark"] {
+  --bg:           #26262e;
+  --surface:      #32323c;
+  --surface-2:    #3e3e48;
+  --border:       #1a1a1a;
+  --border-light: #4e4e5a;
+
+  --text:       #ededf4;
+  --text-muted: #9a9aaa;
+
+  --teal:   #60c9cf;
+  --pink:   #ffa2af;
+  --yellow: #fffc8a;
+  --purple: #c9a8f5;
+  --orange: #ffb347;
+  --gray:   #3a3a45;
+
+  --shadow:    4px 4px 0px #1a1a1a;
+  --shadow-lg: 6px 6px 0px #1a1a1a;
+}
+
+[data-theme="dark"] .nav a:hover {
+  background: var(--surface-2);
+  color: var(--teal);
+}
+[data-theme="dark"] .nav-drawer__links a:hover {
+  background: var(--surface-2);
+  color: var(--teal);
+}
+[data-theme="dark"] .burger-btn:hover {
+  background: var(--surface-2);
+}
+[data-theme="dark"] .header-icon-btn:hover {
+  background: var(--surface-2);
+}
+
+/* Éléments à fond de couleur vive : forcer le texte sombre */
+[data-theme="dark"] .hero-feature-card {
+  color: #1a1a1a;
+}
+/* Status badges sur fond vif → texte sombre */
+[data-theme="dark"] .status.announced,
+[data-theme="dark"] .status.upcoming,
+[data-theme="dark"] .status.live,
+[data-theme="dark"] .status.reg-open,
+[data-theme="dark"] .status.reg-closed,
+[data-theme="dark"] .continent-card .continent-stat {
+  color: #1a1a1a;
+}
+[data-theme="dark"] .about-mockup__badge {
+  color: #1a1a1a;
+}
+[data-theme="dark"] .data-loss-notice {
+  background: color-mix(in srgb, var(--yellow) 15%, var(--surface));
+  border-color: var(--yellow);
+  color: var(--text);
+}
+[data-theme="dark"] .data-loss-notice strong { color: var(--orange); }
+[data-theme="dark"] .data-loss-notice p { color: var(--text-muted); }
+[data-theme="dark"] .my-tournaments__status-badge.badge--live {
+  background: color-mix(in srgb, #e74c3c 20%, var(--surface));
+  color: #ff8a80;
+  border-color: #e74c3c;
+}
+[data-theme="dark"] .my-tournaments__status-badge.badge--upcoming {
+  background: color-mix(in srgb, #2db37a 20%, var(--surface));
+  color: #69f0ae;
+  border-color: #2db37a;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -78,7 +151,6 @@ a {
 
 .page {
   padding: 32px 6vw 80px;
-  overflow-x: hidden;
 }
 
 .page--full-width {
@@ -2562,6 +2634,7 @@ details.agenda-month--past > summary::-webkit-details-marker {
    ACCOUNT PAGE
    ======================== */
 
+/* Legacy layout (kept for fallback) */
 .account-layout {
   display: grid;
   grid-template-columns: 300px 1fr;
@@ -2569,45 +2642,41 @@ details.agenda-month--past > summary::-webkit-details-marker {
   align-items: start;
 }
 
-@media (min-width: 1400px) {
-  .account-layout {
-    grid-template-columns: 340px 1fr;
-    gap: 64px;
-  }
+/* New tabbed account page — card fixed left, content offset right */
+.account-main-layout {
+  padding-left: 380px; /* 340px carte + 40px gap */
 }
 
-@media (max-width: 1100px) {
-  .account-layout {
-    grid-template-columns: 260px 1fr;
-    gap: 32px;
-  }
-}
-
-.account-sidebar {
-  position: sticky;
-  top: 88px;
-  align-self: start;
+.account-card-sidebar {
+  position: fixed;
+  top: 0;
+  left: 6vw;
+  height: 100vh;
+  width: 340px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
-@media (max-width: 1100px) {
-  .account-layout {
-    grid-template-columns: 1fr;
-    gap: 32px;
+.account-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 820px) {
+  .account-main-layout {
+    padding-left: 0;
   }
-  .account-sidebar {
+  .account-card-sidebar {
     position: static;
-  }
-}
-
-/* Header actions wrap on small screens */
-@media (max-width: 480px) {
-  .account-layout .account-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    height: auto;
+    width: auto;
+    justify-content: flex-start;
   }
 }
 
@@ -8240,8 +8309,84 @@ details[open] .my-tournaments__section-title--summary::after {
   display: flex;
   gap: 24px;
   align-items: flex-start;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
+}
+
+/* ── Bannière post-its ── */
+.club-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.club-banner__postit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  min-width: 180px;
+  max-width: 260px;
+  flex: 1;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: var(--shadow);
+}
+
+.club-banner__postit:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.club-banner__postit--session {
+  background: var(--yellow);
+  color: var(--text);
+  border: 2px solid color-mix(in srgb, var(--yellow) 60%, var(--border));
+}
+
+.club-banner__postit--announce {
+  background: var(--teal);
+  color: var(--text);
+  border: 2px solid color-mix(in srgb, var(--teal) 60%, var(--border));
+}
+
+[data-theme="dark"] .club-banner__postit--session {
+  background: color-mix(in srgb, var(--yellow) 25%, var(--surface));
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--yellow) 40%, var(--border-light));
+}
+
+[data-theme="dark"] .club-banner__postit--announce {
+  background: color-mix(in srgb, var(--teal) 25%, var(--surface));
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--teal) 40%, var(--border-light));
+}
+
+.club-banner__postit-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.club-banner__postit-label {
+  font-weight: 700;
+  font-size: 13px;
+  font-family: var(--font-display);
+  line-height: 1.2;
+}
+
+.club-banner__postit-value {
+  font-size: 12px;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .club-banner__postit {
+    max-width: 100%;
+    flex: 1 1 100%;
+  }
 }
 .club-hero__logo {
   flex-shrink: 0;
@@ -8372,6 +8517,562 @@ details[open] .my-tournaments__section-title--summary::after {
   .club-sidebar {
     position: static;
   }
+}
+
+/* ── Club Sessions ────────────────────────────────────────────────────────── */
+
+.club-sessions {
+  margin-top: 24px;
+}
+.club-sessions__actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.club-sessions__add-form {
+  margin-bottom: 24px;
+}
+.club-sessions__form-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.club-sessions__recurring-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.club-sessions__section {
+  margin-bottom: 28px;
+}
+.club-sessions__section-title {
+  font-size: 16px;
+  margin: 0 0 14px;
+}
+.club-sessions__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(560px, 100%), 1fr));
+  gap: 16px;
+}
+.club-sessions__past-details {
+  margin-top: 24px;
+}
+.club-sessions__past-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  user-select: none;
+}
+.club-sessions__past-summary::-webkit-details-marker {
+  display: none;
+}
+.club-sessions__past-summary::before {
+  content: "▶";
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+  display: inline-block;
+}
+details[open] .club-sessions__past-summary::before {
+  transform: rotate(90deg);
+}
+
+/* Session card */
+.club-session-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.club-session-card--past {
+  opacity: 0.55;
+}
+.club-session-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.club-session-card__date {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
+}
+.club-session-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.club-session-card__badge {
+  font-size: 10px;
+  background: var(--teal);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: inline-block;
+  margin-top: 3px;
+}
+.club-session-card__meta {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.club-session-card__notes {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+/* Body: left (attendees/actions) + right (chat) */
+.club-session-card__body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  min-height: 220px;
+}
+.club-session-card__left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.club-session-card__attendee-count {
+  font-size: 12px;
+  font-weight: 600;
+}
+.club-session-card__avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* Player avatar chips in session cards */
+.session-player-avatar {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: visible;
+  cursor: default;
+  flex-shrink: 0;
+}
+.session-player-avatar img,
+.session-player-avatar__initials {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--teal), var(--pink));
+  color: #fff;
+}
+.session-player-avatar--conditional img,
+.session-player-avatar--conditional .session-player-avatar__initials {
+  border-color: #f57c00;
+  opacity: 0.75;
+}
+.session-player-avatar__tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.session-venue-link {
+  font-size: 12px;
+  color: var(--teal);
+  text-decoration: none;
+}
+.session-venue-link:hover { text-decoration: underline; }
+
+/* Join modal */
+.session-join-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.session-join-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 28px 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+.club-session-card__pending {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.club-session-card__pending-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.club-session-card__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: auto;
+}
+/* Mini chat inside session card */
+.club-session-card__chat {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border-light);
+  padding-left: 12px;
+  min-height: 220px;
+}
+.club-session-card__chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-bottom: 4px;
+}
+.club-session-card__chat-empty {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: auto 0;
+  text-align: center;
+}
+.club-session-card__chat-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+.club-session-card__chat-msg.mine {
+  flex-direction: row-reverse;
+}
+.club-session-card__chat-bubble {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 4px 8px;
+  border-left: 2px solid var(--author-color, var(--teal));
+  max-width: 85%;
+}
+.club-session-card__chat-msg.mine .club-session-card__chat-bubble {
+  border-left: none;
+  border-right: 2px solid var(--author-color, var(--teal));
+}
+.club-session-card__chat-author {
+  font-size: 10px;
+  font-weight: 700;
+  display: block;
+}
+.club-session-card__chat-text {
+  font-size: 12px;
+  display: block;
+  word-break: break-word;
+  line-height: 1.4;
+}
+.club-session-card__chat-time {
+  font-size: 9px;
+  color: var(--text-muted);
+  display: block;
+  text-align: right;
+}
+.club-session-card__chat-del {
+  background: none;
+  border: none;
+  font-size: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0;
+  flex-shrink: 0;
+}
+.club-session-card__chat-msg:hover .club-session-card__chat-del {
+  opacity: 1;
+}
+.club-session-card__chat-input {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+.club-session-card__chat-input .form-input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .club-sessions__grid {
+    grid-template-columns: 1fr;
+  }
+  .club-session-card__body {
+    grid-template-columns: 1fr;
+  }
+  .club-session-card__chat {
+    border-left: none;
+    border-top: 1px solid var(--border-light);
+    padding-left: 0;
+    padding-top: 10px;
+  }
+}
+
+/* ── Club Sessions layout with venues ────────────────────────────────────── */
+
+.club-sessions-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── Club Venues ──────────────────────────────────────────────────────────── */
+
+.club-venues {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.club-venues__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.club-venues__header h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.club-venues__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 12px;
+}
+.club-venue-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.club-venue-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.club-venue-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.club-venue-card__name {
+  font-size: 14px;
+  font-weight: 700;
+}
+.club-venue-card__actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.club-venue-card__address {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.club-venue-card__map-link {
+  font-size: 12px;
+  color: var(--teal);
+  text-decoration: none;
+}
+.club-venue-card__map-link:hover {
+  text-decoration: underline;
+}
+.club-venue-card__notes {
+  font-size: 12px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--yellow) 8%, transparent);
+  border-left: 3px solid var(--yellow);
+  padding: 4px 8px;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.4;
+}
+
+/* ── Club Chat ────────────────────────────────────────────────────────────── */
+
+.club-chat {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.club-chat__messages {
+  flex: 1;
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.club-chat__date-sep {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 12px 0 6px;
+}
+.club-chat__msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.club-chat__msg--mine {
+  flex-direction: row-reverse;
+}
+.club-chat__msg-bubble {
+  max-width: 75%;
+  background: var(--surface-2);
+  border-radius: 12px;
+  padding: 8px 14px;
+  border-left: 3px solid var(--author-color, var(--teal));
+}
+.club-chat__msg--mine .club-chat__msg-bubble {
+  border-left: none;
+  border-right: 3px solid var(--author-color, var(--teal));
+  background: color-mix(in srgb, var(--teal) 8%, var(--surface-2));
+}
+.club-chat__msg-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.club-chat__msg-header strong {
+  font-size: 12px;
+}
+.club-chat__msg-time {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.club-chat__msg-bubble p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: break-word;
+}
+.club-chat__delete-btn {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.club-chat__msg:hover .club-chat__delete-btn {
+  opacity: 1;
+}
+.club-chat__input-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg);
+}
+.club-chat__input-bar .form-input {
+  flex: 1;
+}
+
+/* ── Club Admin Panel ─────────────────────────────────────────────────────── */
+
+.club-admin-panel {
+  margin-top: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  max-width: 500px;
+}
+.club-admin-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.club-admin-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 14px;
+}
+.club-admin-panel__row:last-child {
+  border-bottom: none;
+}
+.club-admin-panel__badge {
+  font-size: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.club-admin-panel__badge--manager {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+.club-admin-panel__add {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 /* ── Charter Modal ─────────────────────────────────────────────────────────── */
@@ -8595,6 +9296,12 @@ details[open] .my-tournaments__section-title--summary::after {
   margin-bottom: 10px;
 }
 
+.settings-geo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
 .settings-countries {
   display: flex;
   flex-wrap: wrap;
@@ -8609,6 +9316,19 @@ details[open] .my-tournaments__section-title--summary::after {
   font-size: 13px;
   cursor: pointer;
   min-width: 140px;
+}
+
+@media (max-width: 640px) {
+  .settings-geo-grid {
+    grid-template-columns: 1fr;
+  }
+  .settings-country-label {
+    min-width: 0;
+    width: 100%;
+  }
+  .settings-countries {
+    gap: 6px 0;
+  }
 }
 
 .settings-form-footer {
@@ -8899,4 +9619,43 @@ details[open] .my-tournaments__section-title--summary::after {
 .draw-panel-table td {
   padding: 8px 10px;
   border-bottom: 1px solid var(--border-light);
+}
+
+/* ── Club components — mobile ─────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  /* Sessions join modal */
+  .session-join-modal {
+    padding: 20px 16px 18px;
+  }
+
+  /* Venues single column */
+  .club-venues__list {
+    grid-template-columns: 1fr;
+  }
+
+  /* Chat bubbles wider */
+  .club-chat__msg-bubble {
+    max-width: 90%;
+  }
+
+  /* Chat messages shorter on small screens */
+  .club-chat__messages {
+    max-height: 60vh;
+  }
+
+  /* Chat input stacks on very small screens */
+  .club-chat__input-bar {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  /* Banner post-its stack */
+  .club-banner {
+    flex-direction: column;
+  }
+
+  .club-banner__postit {
+    width: 100%;
+  }
 }

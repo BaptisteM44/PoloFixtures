@@ -128,9 +128,9 @@ export function ClubMapClient({ clubs, userContinent }: { clubs: MapClub[]; user
         )}
 
         <div className="home-stats" style={{ justifyContent: "center" }}>
-          <span>{tClubs("club_count", { count: clubs.length })}</span>
+          <span>{tClubs("club_count", { count: filtered.length })}</span>
           <span className="home-stats__dot">·</span>
-          <span>{tClubs("country_count", { count: new Set(clubs.map((c) => c.country)).size })}</span>
+          <span>{tClubs("country_count", { count: new Set(filtered.map((c) => c.country)).size })}</span>
         </div>
       </div>
     </div>

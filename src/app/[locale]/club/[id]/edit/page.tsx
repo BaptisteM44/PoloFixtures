@@ -8,6 +8,59 @@ import { useParams } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 
+type Venue = {
+  id: string;
+  name: string;
+  address: string | null;
+  mapLink: string | null;
+  notes: string | null;
+  color: string | null;
+};
+
+function VenueForm({
+  initial,
+  onSave,
+  onCancel,
+  saving,
+}: {
+  initial?: Venue;
+  onSave: (data: Omit<Venue, "id">) => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const t = useTranslations("club");
+  const [name, setName] = useState(initial?.name ?? "");
+  const [address, setAddress] = useState(initial?.address ?? "");
+  const [mapLink, setMapLink] = useState(initial?.mapLink ?? "");
+  const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [color, setColor] = useState(initial?.color ?? "#3b82f6");
+
+  return (
+    <div className="club-venue-form">
+      <input className="form-input" placeholder={t("venues_name_placeholder")} value={name} onChange={(e) => setName(e.target.value)} />
+      <input className="form-input" placeholder={t("venues_address_placeholder")} value={address} onChange={(e) => setAddress(e.target.value)} />
+      <input className="form-input" placeholder={t("venues_map_placeholder")} value={mapLink} onChange={(e) => setMapLink(e.target.value)} />
+      <textarea
+        className="form-input"
+        placeholder={t("venues_notes_placeholder")}
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        rows={2}
+      />
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <label style={{ fontSize: 13 }}>{t("venues_color_label")}</label>
+        <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ width: 36, height: 28, border: "none", padding: 0, cursor: "pointer" }} />
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="primary" style={{ fontSize: 13 }} onClick={() => onSave({ name, address: address || null, mapLink: mapLink || null, notes: notes || null, color: color || null })} disabled={saving || !name.trim()}>
+          {initial ? t("venues_btn_save") : t("venues_btn_add")}
+        </button>
+        <button className="ghost" style={{ fontSize: 13 }} onClick={onCancel}>{t("venues_btn_cancel")}</button>
+      </div>
+    </div>
+  );
+}
+
 export default function EditClubPage() {
   const t = useTranslations("club");
   const tc = useTranslations("common");
@@ -17,7 +70,7 @@ export default function EditClubPage() {
   const { data: session, status } = useSession();
 
   const [form, setForm] = useState({
-    name: "", city: "", country: "France", description: "", website: "", trainingMapLink: "",
+    name: "", city: "", country: "France", description: "", website: "", instagram: "", trainingMapLink: "",
   });
   const [logoPath, setLogoPath] = useState("");
   const [logoUploading, setLogoUploading] = useState(false);
@@ -25,23 +78,33 @@ export default function EditClubPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+
+  // Venues state
+  const [venues, setVenues] = useState<Venue[]>([]);
+  const [showAddVenue, setShowAddVenue] = useState(false);
+  const [editingVenueId, setEditingVenueId] = useState<string | null>(null);
+  const [venueSaving, setVenueSaving] = useState(false);
+
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch(`/api/clubs/${id}`)
-      .then((r) => r.json())
-      .then((club) => {
-        setForm({
-          name: club.name ?? "",
-          city: club.city ?? "",
-          country: club.country ?? "France",
-          description: club.description ?? "",
-          website: club.website ?? "",
-          trainingMapLink: club.trainingMapLink ?? "",
-        });
-        setLogoPath(club.logoPath ?? "");
-        setFetching(false);
+    Promise.all([
+      fetch(`/api/clubs/${id}`).then((r) => r.json()),
+      fetch(`/api/clubs/${id}/venues`).then((r) => r.json()),
+    ]).then(([club, venueList]) => {
+      setForm({
+        name: club.name ?? "",
+        city: club.city ?? "",
+        country: club.country ?? "France",
+        description: club.description ?? "",
+        website: club.website ?? "",
+        instagram: club.instagram ?? "",
+        trainingMapLink: club.trainingMapLink ?? "",
       });
+      setLogoPath(club.logoPath ?? "");
+      setVenues(venueList);
+      setFetching(false);
+    });
   }, [id]);
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -64,7 +127,6 @@ export default function EditClubPage() {
       if (!data || !data.path) throw new Error("Réponse d'upload invalide");
       setLogoPath(data.path);
     } catch (err: any) {
-      console.error("Club logo upload failed:", err);
       setLogoUploadError(err?.message ?? "Erreur lors de l'upload");
     } finally {
       setLogoUploading(false);
@@ -89,6 +151,42 @@ export default function EditClubPage() {
     router.push(`/club/${id}`);
   }
 
+  async function handleAddVenue(data: Omit<Venue, "id">) {
+    setVenueSaving(true);
+    const res = await fetch(`/api/clubs/${id}/venues`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const venue = await res.json();
+      setVenues((prev) => [...prev, venue]);
+      setShowAddVenue(false);
+    }
+    setVenueSaving(false);
+  }
+
+  async function handleUpdateVenue(venueId: string, data: Omit<Venue, "id">) {
+    setVenueSaving(true);
+    const res = await fetch(`/api/clubs/${id}/venues/${venueId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setVenues((prev) => prev.map((v) => v.id === venueId ? updated : v));
+      setEditingVenueId(null);
+    }
+    setVenueSaving(false);
+  }
+
+  async function handleDeleteVenue(venueId: string) {
+    if (!confirm(t("venues_confirm_delete"))) return;
+    await fetch(`/api/clubs/${id}/venues/${venueId}`, { method: "DELETE" });
+    setVenues((prev) => prev.filter((v) => v.id !== venueId));
+  }
+
   if (status === "loading" || fetching) return null;
 
   if (!session?.user?.playerId) {
@@ -109,7 +207,8 @@ export default function EditClubPage() {
         <h1>{t("edit_title")}</h1>
       </div>
 
-      <div className="panel">
+      {/* Club info form */}
+      <div className="panel" style={{ marginBottom: 24 }}>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <label className="field-row">
             {t("field_name")}
@@ -142,6 +241,10 @@ export default function EditClubPage() {
             <input type="url" value={form.website} onChange={set("website")} placeholder="https://…" />
           </label>
           <label className="field-row">
+            Instagram
+            <input value={form.instagram} onChange={set("instagram")} placeholder="@monclub ou https://instagram.com/monclub" />
+          </label>
+          <label className="field-row">
             {t("field_training_map")}
             <input type="url" value={form.trainingMapLink} onChange={set("trainingMapLink")} placeholder="https://maps.google.com/…" />
           </label>
@@ -172,11 +275,68 @@ export default function EditClubPage() {
           </div>
 
           {error && <p style={{ color: "var(--danger)", fontSize: 13 }}>{error}</p>}
-
           <button type="submit" className="primary" disabled={loading}>
             {loading ? t("btn_saving") : t("btn_save")}
           </button>
         </form>
+      </div>
+
+      {/* Venues section */}
+      <div className="panel">
+        <div className="club-venues__header" style={{ marginBottom: showAddVenue ? 12 : venues.length > 0 ? 12 : 0 }}>
+          <h2 style={{ fontSize: 18, margin: 0 }}>{t("edit_venues_title")}</h2>
+          {!showAddVenue && (
+            <button className="ghost" style={{ fontSize: 13 }} onClick={() => setShowAddVenue(true)}>
+              {t("venues_add_btn")}
+            </button>
+          )}
+        </div>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
+          {t("edit_venues_description")}
+        </p>
+
+        {showAddVenue && (
+          <VenueForm
+            onSave={handleAddVenue}
+            onCancel={() => setShowAddVenue(false)}
+            saving={venueSaving}
+          />
+        )}
+
+        {venues.length === 0 && !showAddVenue && (
+          <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("venues_empty")}</p>
+        )}
+
+        <div className="club-venues__list">
+          {venues.map((v) =>
+            editingVenueId === v.id ? (
+              <VenueForm
+                key={v.id}
+                initial={v}
+                onSave={(data) => handleUpdateVenue(v.id, data)}
+                onCancel={() => setEditingVenueId(null)}
+                saving={venueSaving}
+              />
+            ) : (
+              <div key={v.id} className="club-venue-card" style={{ borderLeft: v.color ? `4px solid ${v.color}` : undefined }}>
+                <div className="club-venue-card__top">
+                  <div className="club-venue-card__name">{v.name}</div>
+                  <div className="club-venue-card__actions">
+                    <button className="ghost" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => setEditingVenueId(v.id)}>✏️</button>
+                    <button className="ghost" style={{ fontSize: 11, padding: "2px 8px", color: "var(--text-muted)" }} onClick={() => handleDeleteVenue(v.id)}>✕</button>
+                  </div>
+                </div>
+                {v.address && <div className="club-venue-card__address">📍 {v.address}</div>}
+                {v.mapLink && (
+                  <a href={v.mapLink} target="_blank" rel="noopener noreferrer" className="club-venue-card__map-link">
+                    {t("venues_map_link")}
+                  </a>
+                )}
+                {v.notes && <div className="club-venue-card__notes">{v.notes}</div>}
+              </div>
+            )
+          )}
+        </div>
       </div>
     </div>
   );

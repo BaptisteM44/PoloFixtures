@@ -140,6 +140,8 @@ enum NotificationType {
   TASK_DEADLINE_APPROACHING // deadline tâche orga proche
   CLUB_JOIN_REQUEST      // un joueur a rejoint le club (notif au manager)
   CLUB_SESSION           // nouvelle session ajoutée dans le club
+  CLUB_SESSION_JOIN      // des joueurs se sont inscrits à une session
+  CLUB_ANNOUNCEMENT      // nouvelle annonce dans le club
 }
 
 enum TaskPriority {
@@ -395,6 +397,8 @@ model Player {
   clubSessionAttendances  ClubSessionAttendee[]
   clubMessages            ClubMessage[]
   clubSessionMessages     ClubSessionMessage[]
+  borrowedEquipment       ClubEquipment[]      @relation("BorrowedEquipment")
+  clubAnnouncements       ClubAnnouncement[]   @relation("ClubAnnouncements")
   assignedOrgaTasks       OrgaTask[]   @relation("AssignedTasks")
   createdOrgaTasks        OrgaTask[]   @relation("CreatedTasks")
   orgaNotes               OrgaNote[]   @relation("OrgaNotes")
@@ -712,6 +716,7 @@ model Club {
   logoPath        String?
   description     String?
   website         String?
+  instagram       String?
   trainingMapLink String?
   lat             Float?
   lng             Float?
@@ -720,16 +725,33 @@ model Club {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  manager  Player         @relation("ManagedClubs", fields: [managerId], references: [id])
-  members  ClubMember[]
-  admins   ClubAdmin[]
-  sessions ClubSession[]
-  messages ClubMessage[]
-  venues   ClubVenue[]
+  manager       Player              @relation("ManagedClubs", fields: [managerId], references: [id])
+  members       ClubMember[]
+  admins        ClubAdmin[]
+  sessions      ClubSession[]
+  messages      ClubMessage[]
+  venues        ClubVenue[]
+  equipment     ClubEquipment[]
+  announcements ClubAnnouncement[]
 
   @@index([continentCode])
   @@index([country])
   @@index([managerId])
+}
+
+model ClubEquipment {
+  id          String   @id @default(cuid())
+  clubId      String
+  name        String
+  category    String   // "bike", "mallet", "other"
+  notes       String?
+  borrowedBy  String?  // playerId si emprunté
+  createdAt   DateTime @default(now())
+
+  club       Club    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  borrower   Player? @relation("BorrowedEquipment", fields: [borrowedBy], references: [id])
+
+  @@index([clubId])
 }
 
 model ClubMember {
@@ -772,6 +794,7 @@ model ClubSession {
   recurring      Boolean  @default(false)
   recurrenceDay  Int?
   recurrenceTime String?
+  color          String?  // hex color chosen by creator, e.g. "#ffa2af"
   createdById    String
   createdAt      DateTime @default(now())
   status         String   @default("ACTIVE")
@@ -842,6 +865,20 @@ model ClubSessionMessage {
   player  Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+}
+
+model ClubAnnouncement {
+  id        String   @id @default(cuid())
+  clubId    String
+  authorId  String
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  author Player @relation("ClubAnnouncements", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([clubId])
 }
 
 // ── Orga Dashboard ───────────────────────────────────────────────────────────

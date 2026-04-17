@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { AuthStatus } from "@/components/AuthStatus";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { DarkModeToggle } from "@/components/DarkModeToggle";
 
 export function Header() {
   const { data: session } = useSession();
@@ -58,6 +59,7 @@ export function Header() {
 
       {/* Actions desktop */}
       <div className="header-actions header-actions--desktop">
+        <DarkModeToggle />
         <LanguageSwitcher />
         {hasPlayer && <NotificationBell />}
         <AuthStatus />
@@ -88,6 +90,7 @@ export function Header() {
                 {t("header.brand_name")}
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <DarkModeToggle />
                 <LanguageSwitcher />
                 <button className="nav-drawer__close" onClick={() => setMenuOpen(false)}>✕</button>
               </div>

@@ -56,7 +56,39 @@ function MapFlyTo({ center, zoom }: { center: [number, number]; zoom: number }) 
   return null;
 }
 
+const TILE_LIGHT = "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png";
+const TILE_DARK  = "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png";
+const ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://stamen.com">Stamen Design</a>';
+
+function TileLayerSwitcher() {
+  const map = useMap();
+
+  useEffect(() => {
+    let currentLayer: L.TileLayer | null = null;
+
+    const applyTile = () => {
+      const dark = document.documentElement.getAttribute("data-theme") === "dark";
+const url = dark ? TILE_DARK : TILE_LIGHT;
+      if (currentLayer) map.removeLayer(currentLayer);
+      currentLayer = L.tileLayer(url, { attribution: ATTRIBUTION, minZoom: 1 });
+      currentLayer.addTo(map);
+    };
+
+    applyTile();
+
+    const observer = new MutationObserver(applyTile);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => {
+      observer.disconnect();
+      if (currentLayer) map.removeLayer(currentLayer);
+    };
+  }, [map]);
+
+  return null;
+}
+
 export default function GenericMap({ markers, onSelect, center = [25, 20], zoom = 2 }: Props) {
+
   return (
     <MapContainer
       center={center}
@@ -68,10 +100,7 @@ export default function GenericMap({ markers, onSelect, center = [25, 20], zoom 
     >
       <MapInvalidator />
       <MapFlyTo center={center} zoom={zoom} />
-      <TileLayer
-        url="https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://stamen.com">Stamen Design</a>'
-      />
+      <TileLayerSwitcher />
       {markers.map((m) => (
         <Marker
           key={m.id}

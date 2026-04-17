@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <!-- Bike 1 (left) — diamond shape = 2 wheels + frame -->
+  <rect x="2"  y="4"  width="2" height="2" fill="#60c9cf"/>
+  <rect x="6"  y="4"  width="2" height="2" fill="#60c9cf"/>
+  <rect x="4"  y="6"  width="2" height="2" fill="#60c9cf"/>
+  <rect x="2"  y="8"  width="2" height="2" fill="#60c9cf"/>
+  <rect x="6"  y="8"  width="2" height="2" fill="#60c9cf"/>
+  <!-- Bike 2 (right) -->
+  <rect x="16" y="4"  width="2" height="2" fill="#60c9cf"/>
+  <rect x="20" y="4"  width="2" height="2" fill="#60c9cf"/>
+  <rect x="18" y="6"  width="2" height="2" fill="#60c9cf"/>
+  <rect x="16" y="8"  width="2" height="2" fill="#60c9cf"/>
+  <rect x="20" y="8"  width="2" height="2" fill="#60c9cf"/>
+  <!-- Roof rack (gray bar) -->
+  <rect x="2"  y="10" width="20" height="2" fill="#888888"/>
+  <!-- Car roof strip -->
+  <rect x="2"  y="12" width="20" height="2" fill="#cccccc"/>
+  <!-- Car cabin : front pillar | windows | rear section -->
+  <rect x="2"  y="14" width="4"  height="4" fill="#cccccc"/>
+  <rect x="6"  y="14" width="12" height="4" fill="#7ecef5"/>
+  <rect x="18" y="14" width="4"  height="4" fill="#cccccc"/>
+  <!-- Car main body (wider than roof) -->
+  <rect x="0"  y="18" width="24" height="4" fill="#cccccc"/>
+  <!-- Underside with wheel arch gaps -->
+  <rect x="2"  y="22" width="2"  height="2" fill="#cccccc"/>
+  <rect x="8"  y="22" width="8"  height="2" fill="#cccccc"/>
+  <rect x="20" y="22" width="2"  height="2" fill="#cccccc"/>
+  <!-- Wheels -->
+  <rect x="4"  y="24" width="4"  height="4" fill="#222222"/>
+  <rect x="16" y="24" width="4"  height="4" fill="#222222"/>
+</svg>

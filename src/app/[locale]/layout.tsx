@@ -49,6 +49,10 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
 
   return (
     <html lang={locale} className={`${space.variable} ${chakra.variable}`}>
+      <head>
+        {/* Script bloquant : applique le thème AVANT le premier paint pour éviter le flash */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();` }} />
+      </head>
       <body>
         <NextIntlClientProvider messages={messages}>
           <SessionProvider>

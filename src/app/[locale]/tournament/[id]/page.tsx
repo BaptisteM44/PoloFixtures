@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { Link } from "@/i18n/navigation";
-import { getTranslations, getLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { Tabs } from "@/components/Tabs";
 import { ScheduleBoard } from "@/components/ScheduleBoard";
@@ -42,7 +42,7 @@ export default async function TournamentPage({
   params,
   searchParams
 }: {
-  params: { id: string };
+  params: { id: string; locale: string };
   searchParams: { tab?: string; view?: string };
 }) {
   const view = searchParams.view ?? "cards";
@@ -97,7 +97,7 @@ export default async function TournamentPage({
     tournament.status = syncedStatus;
   }
 
-  const locale = await getLocale();
+  const locale = params.locale ?? "fr";
   const t = await getTranslations("tournament");
   const r = await getTranslations("registration");
   const tm = await getTranslations("team");

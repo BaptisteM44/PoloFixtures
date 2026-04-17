@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     .upload(filename, webpBuffer, {
       contentType: "image/webp",
       upsert: false,
+      cacheControl: "31536000",
     });
 
   if (error) {

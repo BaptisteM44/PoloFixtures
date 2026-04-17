@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { sendMail } from "@/lib/mailer";
 import { getLangFromCountry, squadInviteEmail } from "@/lib/email-templates";
+import { createNotification } from "@/lib/notify";
 import { z } from "zod";
 
 // POST /api/squads/[squadId]/invite — inviter un joueur
@@ -55,19 +56,13 @@ export async function POST(req: Request, { params }: { params: { squadId: string
     update: { status: "PENDING", invitedById: currentPlayerId, updatedAt: new Date() },
   });
 
-  // Notification
-  await prisma.notification.create({
-    data: {
-      playerId: invitedPlayerId,
-      type: "SQUAD_INVITE",
-      payload: {
-        invitationId: invitation.id,
-        squadId: params.squadId,
-        squadName: squad?.name ?? "",
-        invitedById: currentPlayerId,
-        invitedByName: inviter?.name ?? "",
-      },
-    },
+  // Notification in-app (respecte notifySquadInvite + enabled via createNotification)
+  await createNotification(invitedPlayerId, "SQUAD_INVITE", {
+    invitationId: invitation.id,
+    squadId: params.squadId,
+    squadName: squad?.name ?? "",
+    invitedById: currentPlayerId,
+    invitedByName: inviter?.name ?? "",
   });
 
   // Email au joueur invité (sauf si désactivé dans ses prefs)

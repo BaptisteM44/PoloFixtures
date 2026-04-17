@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { notifyTeamPlayers } from "@/lib/notify";
@@ -204,4 +205,49 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   return Response.json({ ...team, waitlisted: !selectedTeam, waitlistPosition: waitlistPos }, { status: 201 });
+}
+
+export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+  const session = await auth();
+  const playerId = (session?.user as { playerId?: string } | undefined)?.playerId;
+  if (!playerId) return Response.json({ error: "Non connecté" }, { status: 401 });
+
+  const tournament = await prisma.tournament.findUnique({ where: { id: params.id } });
+  if (!tournament) return Response.json({ error: "Tournoi introuvable" }, { status: 404 });
+
+  const now = new Date();
+  if (tournament.registrationEnd && now > tournament.registrationEnd) {
+    return Response.json({ error: "Les inscriptions sont clôturées, contacte l'organisateur." }, { status: 403 });
+  }
+
+  // Find the team where this player is captain
+  const captainEntry = await prisma.teamPlayer.findFirst({
+    where: { playerId, isCaptain: true, team: { tournamentId: params.id } },
+    include: { team: true },
+  });
+  if (!captainEntry) {
+    return Response.json({ error: "Tu n'es pas capitaine d'une équipe inscrite à ce tournoi." }, { status: 403 });
+  }
+
+  const teamId = captainEntry.teamId;
+  const wasSelected = captainEntry.team.selected;
+  const isRush = (tournament as { rushRegistration?: boolean }).rushRegistration ?? false;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.teamPlayer.deleteMany({ where: { teamId } });
+    await tx.team.delete({ where: { id: teamId } });
+
+    // Promote first waitlisted team if rush mode
+    if (wasSelected && isRush) {
+      const first = await tx.team.findFirst({
+        where: { tournamentId: params.id, selected: false },
+        orderBy: { waitlistPosition: "asc" },
+      });
+      if (first) {
+        await tx.team.update({ where: { id: first.id }, data: { selected: true, waitlistPosition: null } });
+      }
+    }
+  });
+
+  return Response.json({ ok: true });
 }

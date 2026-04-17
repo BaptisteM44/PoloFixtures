@@ -14,31 +14,36 @@ export async function GET() {
   const playerId = session?.user?.playerId;
   if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
 
-  const conversations = await prisma.directConversation.findMany({
-    where: { OR: [{ playerAId: playerId }, { playerBId: playerId }] },
-    include: {
-      playerA: { select: { id: true, name: true, photoPath: true, slug: true } },
-      playerB: { select: { id: true, name: true, photoPath: true, slug: true } },
-      messages: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
+  const [conversations, account] = await Promise.all([
+    prisma.directConversation.findMany({
+      where: { OR: [{ playerAId: playerId }, { playerBId: playerId }] },
+      include: {
+        playerA: { select: { id: true, name: true, photoPath: true, slug: true } },
+        playerB: { select: { id: true, name: true, photoPath: true, slug: true } },
+        messages: { orderBy: { createdAt: "desc" }, take: 1 },
       },
-    },
-    orderBy: { updatedAt: "desc" },
-  });
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.playerAccount.findUnique({ where: { playerId }, select: { charterAcceptedAt: true } }),
+  ]);
 
-  // Count unread per conversation
   const withUnread = await Promise.all(
     conversations.map(async (conv) => {
       const unread = await prisma.directMessage.count({
         where: { conversationId: conv.id, authorId: { not: playerId }, read: false },
       });
       const other = conv.playerAId === playerId ? conv.playerB : conv.playerA;
-      return { ...conv, unread, other };
+      const lastMsg = conv.messages[0];
+      return {
+        id: conv.id,
+        other,
+        lastMessage: lastMsg ? { content: lastMsg.content, createdAt: lastMsg.createdAt.toISOString(), authorId: lastMsg.authorId } : null,
+        unread,
+      };
     })
   );
 
-  return NextResponse.json(withUnread);
+  return NextResponse.json({ conversations: withUnread, charterAccepted: !!account?.charterAcceptedAt });
 }
 
 export async function POST(req: Request) {

@@ -2,9 +2,35 @@
 
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+
+const TILE_LIGHT = "https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png";
+const TILE_DARK  = "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png";
+const ATTRIBUTION = '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>';
+
+function TileLayerSwitcher() {
+  const map = useMap();
+  useEffect(() => {
+    let currentLayer: L.TileLayer | null = null;
+    const applyTile = () => {
+      const dark = document.documentElement.getAttribute("data-theme") === "dark";
+      const url = dark ? TILE_DARK : TILE_LIGHT;
+      if (currentLayer) map.removeLayer(currentLayer);
+      currentLayer = L.tileLayer(url, { attribution: ATTRIBUTION, minZoom: 1 });
+      currentLayer.addTo(map);
+    };
+    applyTile();
+    const observer = new MutationObserver(applyTile);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => {
+      observer.disconnect();
+      if (currentLayer) map.removeLayer(currentLayer);
+    };
+  }, [map]);
+  return null;
+}
 
 export type MapTournament = {
   id: string;
@@ -95,10 +121,7 @@ export default function TournamentMap({ tournaments, onSelect, center = [25, 20]
     >
       <MapInvalidator />
       <MapFlyTo center={center} zoom={zoom} />
-      <TileLayer
-        url="https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png"
-        attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://stamen.com">Stamen Design</a>'
-      />
+      <TileLayerSwitcher />
       {tournaments.map((t) => (
         <Marker
           key={t.id}

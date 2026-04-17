@@ -49,6 +49,7 @@ const updateSchema = z.object({
   country: z.string().min(1).optional(),
   description: z.string().max(500).optional().nullable(),
   website: z.string().optional().nullable(),
+  instagram: z.string().optional().nullable(),
   logoPath: z.string().optional().nullable(),
   trainingMapLink: z.string().url().optional().nullable().or(z.literal("")),
 });

@@ -3,7 +3,7 @@ import { hasAtLeastRole } from "@/lib/rbac";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
-const schema = z.object({ reason: z.string().min(10, "La raison doit faire au moins 10 caractères.") });
+const schema = z.object({ reason: z.string().min(3, "La raison doit faire au moins 3 caractères.") });
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();

@@ -19,7 +19,7 @@ export function Tabs({
     <div className="tabs-bar">
       <div className="tabs">
         {items.map((tab) => (
-          <Link key={tab.value} href={tab.href} className={`tab ${active === tab.value ? "active" : ""}`}>
+          <Link key={tab.value} href={tab.href} scroll={false} className={`tab ${active === tab.value ? "active" : ""}`}>
             {tab.label}
           </Link>
         ))}
