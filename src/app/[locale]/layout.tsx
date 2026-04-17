@@ -6,7 +6,6 @@ import { getMessages, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import SessionProvider from "@/components/SessionProvider";
-import { auth } from "@/lib/auth";
 import { Header } from "@/components/Header";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -47,17 +46,12 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
   }
 
   const messages = await getMessages();
-  const session = await auth();
 
   return (
     <html lang={locale} className={`${space.variable} ${chakra.variable}`}>
-      <head>
-        {/* Script bloquant : applique le thème AVANT le premier paint pour éviter le flash */}
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();` }} />
-      </head>
       <body>
         <NextIntlClientProvider messages={messages}>
-          <SessionProvider session={session}>
+          <SessionProvider>
             <Header />
             <main className="page">{children}</main>
             <SiteFooter />
