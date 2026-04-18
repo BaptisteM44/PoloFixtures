@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Match, Team } from "@prisma/client";
 import { MatchEditPanel, type MatchForEdit } from "./MatchEditPanel";
 
-export type MatchWithTeams = Match & { teamA?: Team | null; teamB?: Team | null };
+export type MatchWithTeams = Match & { teamA?: Team | null; teamB?: Team | null; referee?: { id: string; name: string } | null; coReferee?: { id: string; name: string } | null };
 
 type TeamOption = { id: string; name: string; bracketNumber?: number };
 
