@@ -193,6 +193,14 @@ function LiveCard({
         </div>
       )}
 
+      {/* Referees */}
+      {(match.referee || match.coReferee) && (
+        <div className="match-card__referees">
+          {match.referee && <span>🦓 {match.referee.name}</span>}
+          {match.coReferee && <span>🦓 {match.coReferee.name}</span>}
+        </div>
+      )}
+
       {/* Footer */}
       <div className="match-card__footer">
         <span className="pill">{PHASE_LABEL[match.phase] ?? match.phase} R{match.roundIndex + 1}</span>

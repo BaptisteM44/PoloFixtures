@@ -101,6 +101,11 @@ function BracketCard({
           <span className="bracket-team-name">{teamB}</span>
           <strong className="bracket-score">{isFinished || isLive ? match.scoreB : "–"}</strong>
         </div>
+        {(match.referee || match.coReferee) && (
+          <div className="bracket-match-referees">
+            🦓 {[match.referee?.name, match.coReferee?.name].filter(Boolean).join(" · ")}
+          </div>
+        )}
       </div>
     </button>
   );

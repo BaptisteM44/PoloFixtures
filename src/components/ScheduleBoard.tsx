@@ -10,6 +10,8 @@ export type MatchWithTeams = Match & {
   teamA?: Team | null;
   teamB?: Team | null;
   events?: MatchEvent[];
+  referee?: { id: string; name: string } | null;
+  coReferee?: { id: string; name: string } | null;
 };
 
 const PHASE_LABEL: Record<string, string> = {
@@ -254,6 +256,13 @@ export function ScheduleBoard({
             {teamName(match.teamBId)}
           </div>
         </div>
+
+        {(match.referee || match.coReferee) && (
+          <div className="match-card__referees">
+            {match.referee && <span title="Referee">🦓 {match.referee.name}</span>}
+            {match.coReferee && <span title="Co-referee">🦓 {match.coReferee.name}</span>}
+          </div>
+        )}
 
         <div className="match-card__corner match-card__corner--bl">
           <span className="pill">{PHASE_LABEL[match.phase] ?? match.phase} R{match.roundIndex}</span>

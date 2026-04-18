@@ -3365,6 +3365,20 @@ details.agenda-month--past > summary::-webkit-details-marker {
 .match-card__corner--bl { bottom: 10px; left: 12px; }
 .match-card__corner--br { bottom: 10px; right: 12px; }
 
+/* — Referees row — */
+.match-card__referees {
+  position: absolute;
+  bottom: 30px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
 /* — Center (teams + score) — */
 .match-card__center {
   position: absolute;
@@ -6310,6 +6324,16 @@ textarea {
 
 .bracket-match-card--finished {
   border-color: var(--success) !important;
+}
+
+.bracket-match-referees {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2px 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bracket-match-card--selected {

@@ -75,6 +75,8 @@ export default async function TournamentPage({
         include: {
           teamA: true,
           teamB: true,
+          referee: { select: { id: true, name: true } },
+          coReferee: { select: { id: true, name: true } },
           ...(needsEvents ? { events: true } : {}),
         },
         orderBy: { startAt: "asc" },
