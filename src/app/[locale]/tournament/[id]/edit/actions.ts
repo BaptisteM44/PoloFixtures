@@ -52,7 +52,7 @@ const updateSchema = z.object({
   bannerPath: z.string().optional().nullable(),
   streamYoutubeUrl: z.string().optional().nullable(),
   chatMode: z.enum(["OPEN", "ORG_ONLY", "DISABLED"]).default("DISABLED"),
-  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED"]),
+  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED", "GRAZ"]),
   poolCount: z.coerce.number().int().min(1).max(4).default(1),
   crossPool: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   swissRounds: z.coerce.number().int().min(1).max(20).default(5),

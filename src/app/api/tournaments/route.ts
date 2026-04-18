@@ -35,7 +35,7 @@ const createSchema = z.object({
   contactEmail: z.string().email(),
   registrationStart: z.string().optional().nullable(),
   registrationEnd: z.string().optional().nullable(),
-  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS"]),
+  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED", "GRAZ"]),
   sundayFormat: z.enum(["SE", "DE", "RR"]),
   thirdPlaceMatch: z.boolean().default(false),
   gfReset: z.boolean().default(false),

@@ -64,7 +64,7 @@ const updateSchema = z.object({
   links: z.array(z.string()).default([]),
   bannerPath: z.string().optional().nullable(),
   streamYoutubeUrl: z.string().optional().nullable(),
-  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS"]),
+  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED", "GRAZ"]),
   sundayFormat: z.enum(["SE", "DE", "RR"]),
   thirdPlaceMatch: z.boolean().optional(),
   gfReset: z.boolean().optional(),
