@@ -6,7 +6,14 @@ export function DarkModeToggle() {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
-    setDark(document.documentElement.getAttribute("data-theme") === "dark");
+    const saved = localStorage.getItem("theme");
+    if (saved === "dark") {
+      setDark(true);
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      setDark(false);
+      document.documentElement.removeAttribute("data-theme");
+    }
   }, []);
 
   const toggle = () => {
