@@ -374,7 +374,16 @@ export function OrgaDashboard({
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
               {t("orga_planning_format_configured")}
             </p>
-            {tournament.saturdayFormat === "BERLIN_MIXED" ? (
+            {tournament.saturdayFormat === "GRAZ" ? (
+              <>
+                <p style={{ fontSize: 13, margin: 0 }}>
+                  <strong>{t("orga_format_graz_title")}</strong> — {t("orga_format_graz_days")}
+                </p>
+                <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--text-muted)" }}>
+                  {t("orga_format_graz_desc")}
+                </p>
+              </>
+            ) : tournament.saturdayFormat === "BERLIN_MIXED" ? (
               <>
                 <p style={{ fontSize: 13, margin: 0 }}>
                   <strong>{t("orga_format_berlin_mixed_title")}</strong> — {t("orga_format_berlin_mixed_days")}

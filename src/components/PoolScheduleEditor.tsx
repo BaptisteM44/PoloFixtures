@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { reschedulePoolMatchesAction } from "@/app/[locale]/tournament/[id]/edit/pool-schedule-actions";
 
 interface Props {
@@ -16,7 +17,6 @@ interface Props {
 function toLocalDateString(dateInput?: string | Date | null): string {
   if (!dateInput) return new Date().toISOString().slice(0, 10);
   const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-  // Use UTC date to avoid timezone shift
   return d.toISOString().slice(0, 10);
 }
 
@@ -29,12 +29,12 @@ export function PoolScheduleEditor({
   tournamentDateStart,
 }: Props) {
   const router = useRouter();
+  const t = useTranslations("tournament");
   const [isPending, startTransition] = useTransition();
   const [poolATime, setPoolATime] = useState(poolAStart?.slice(11, 16) ?? "09:00");
   const [poolBTime, setPoolBTime] = useState(poolBStart?.slice(11, 16) ?? "12:00");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Sync state when server-side props update (after router.refresh)
   useEffect(() => { if (poolAStart) setPoolATime(poolAStart.slice(11, 16)); }, [poolAStart]);
   useEffect(() => { if (poolBStart) setPoolBTime(poolBStart.slice(11, 16)); }, [poolBStart]);
 
@@ -42,7 +42,6 @@ export function PoolScheduleEditor({
 
   const handleSave = () => {
     startTransition(async () => {
-      // Treat the entered time as UTC directly to avoid local timezone shift
       const poolADateTime = poolATime ? `${baseDate}T${poolATime}:00.000Z` : null;
       const poolBDateTime = poolBTime && poolCount > 1 ? `${baseDate}T${poolBTime}:00.000Z` : null;
 
@@ -50,7 +49,7 @@ export function PoolScheduleEditor({
       if ("error" in res && res.error) {
         setMessage({ type: "error", text: res.error });
       } else {
-        setMessage({ type: "success", text: "Horaires mis à jour ✓" });
+        setMessage({ type: "success", text: t("orga_schedule_updated") });
         setTimeout(() => setMessage(null), 3000);
         router.refresh();
       }
@@ -62,14 +61,13 @@ export function PoolScheduleEditor({
   return (
     <div className="panel">
       <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
-        ⏰ Horaire de début
+        ⏰ {t("orga_schedule_title")}
       </p>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "flex-end" }}>
-        {/* Pool A / unique */}
         <div>
           <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-            {poolCount > 1 ? "Pool A — Heure de début" : "Heure de début des matchs"}
+            {poolCount > 1 ? t("orga_schedule_pool_a") : t("orga_schedule_single")}
           </label>
           <input
             type="time"
@@ -79,15 +77,14 @@ export function PoolScheduleEditor({
             style={{ padding: "8px 12px", borderRadius: 6, border: "1.5px solid var(--border)", fontSize: 14, width: 130 }}
           />
           <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0" }}>
-            Slot : {gameDurationMin}min + 4min pause = {slotDuration}min
+            {t("orga_schedule_slot", { game: gameDurationMin, total: slotDuration })}
           </p>
         </div>
 
-        {/* Pool B — only if multiple pools */}
         {poolCount > 1 && (
           <div>
             <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-              Pool B — Heure de début
+              {t("orga_schedule_pool_b")}
             </label>
             <input
               type="time"
@@ -97,7 +94,7 @@ export function PoolScheduleEditor({
               style={{ padding: "8px 12px", borderRadius: 6, border: "1.5px solid var(--border)", fontSize: 14, width: 130 }}
             />
             <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0" }}>
-              Slot : {gameDurationMin}min + 4min pause = {slotDuration}min
+              {t("orga_schedule_slot", { game: gameDurationMin, total: slotDuration })}
             </p>
           </div>
         )}
@@ -109,7 +106,7 @@ export function PoolScheduleEditor({
             disabled={isPending}
             style={{ fontSize: 13 }}
           >
-            {isPending ? "Mise à jour…" : "Appliquer"}
+            {isPending ? t("orga_schedule_updating") : t("orga_schedule_apply")}
           </button>
           {message && (
             <p style={{ fontSize: 12, color: message.type === "success" ? "var(--teal)" : "var(--danger)", margin: 0 }}>
