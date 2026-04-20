@@ -134,6 +134,7 @@ export function ClubSessions({
 
   const [sessions, setSessions] = useState(initialSessions);
   const [showAdd, setShowAdd] = useState(false);
+  const [showGenerateDropdown, setShowGenerateDropdown] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // Join modal state
@@ -462,6 +463,47 @@ export function ClubSessions({
             {t("sessions_add_btn")}
           </button>
         )}
+        {isAdmin && hasRecurring && (() => {
+          const templates = sessions.filter((s) => s.recurring);
+          if (templates.length === 1) {
+            return (
+              <button className="ghost" onClick={() => handleGenerateNext(templates[0].id)} disabled={isPending} style={{ fontSize: 12 }}>
+                {t("sessions_generate_next")}
+              </button>
+            );
+          }
+          return (
+            <div style={{ position: "relative" }}>
+              <button className="ghost" onClick={() => setShowGenerateDropdown((v) => !v)} disabled={isPending} style={{ fontSize: 12 }}>
+                {t("sessions_generate_next")} ▾
+              </button>
+              {showGenerateDropdown && (
+                <div style={{
+                  position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20,
+                  background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8,
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.15)", minWidth: 220, padding: "4px 0",
+                }}>
+                  {templates.map((tpl) => (
+                    <button
+                      key={tpl.id}
+                      onClick={() => { setShowGenerateDropdown(false); handleGenerateNext(tpl.id); }}
+                      style={{
+                        display: "block", width: "100%", textAlign: "left",
+                        padding: "8px 14px", fontSize: 13, background: "none",
+                        border: "none", cursor: "pointer", color: "var(--text)",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-2)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                    >
+                      <span style={{ fontWeight: 600 }}>{tpl.title ?? t("sessions_untitled")}</span>
+                      <span style={{ marginLeft: 6, fontSize: 11, color: "var(--text-muted)" }}>{fmtDate(new Date(tpl.date))} · {fmtTime(new Date(tpl.date))}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Add form */}
@@ -835,11 +877,6 @@ function SessionCard({
               {!past && isAdmin && s.status !== "CANCELLED" && (
                 <button className="ghost" style={{ fontSize: 11, color: "var(--danger)" }} onClick={() => onCancel(s.id)} disabled={isPending}>
                   {t("sessions_cancel_btn")}
-                </button>
-              )}
-              {!past && s.recurring && isAdmin && onGenerateNext && (
-                <button className="ghost" style={{ fontSize: 11, color: "var(--teal)", marginLeft: "auto" }} onClick={() => onGenerateNext(s.id)} disabled={isPending}>
-                  + {t("sessions_generate_next")}
                 </button>
               )}
             </div>
