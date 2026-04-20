@@ -327,12 +327,17 @@ export async function deleteClubMessageAction(clubId: string, messageId: string)
 
 // ── Auto-generate recurring sessions ──────────────────────────────────────
 
-export async function generateNextRecurringSessionAction(clubId: string) {
+export async function generateNextRecurringSessionAction(clubId: string, templateId?: string) {
   const { isAdmin } = await getClubRole(clubId);
   if (!isAdmin) return { error: "Réservé aux admins." };
 
   const templates = await prisma.clubSession.findMany({
-    where: { clubId, recurring: true, recurrenceDay: { not: null }, recurrenceTime: { not: null } },
+    where: {
+      clubId,
+      recurring: true,
+      recurrenceDay: { not: null },
+      ...(templateId ? { id: templateId } : {}),
+    },
   });
 
   const now = new Date();

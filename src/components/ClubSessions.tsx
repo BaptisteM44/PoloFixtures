@@ -243,9 +243,9 @@ export function ClubSessions({
     });
   }
 
-  function handleGenerateNext() {
+  function handleGenerateNext(templateId?: string) {
     startTransition(async () => {
-      const res = await generateNextRecurringSessionAction(clubId);
+      const res = await generateNextRecurringSessionAction(clubId, templateId);
       if ("ok" in res) window.location.reload();
     });
   }
@@ -462,11 +462,6 @@ export function ClubSessions({
             {t("sessions_add_btn")}
           </button>
         )}
-        {isAdmin && hasRecurring && (
-          <button className="ghost" onClick={handleGenerateNext} disabled={isPending} style={{ fontSize: 12 }}>
-            {t("sessions_generate_next")}
-          </button>
-        )}
       </div>
 
       {/* Add form */}
@@ -579,6 +574,7 @@ export function ClubSessions({
                 onDeleteMessage={handleDeleteMessage}
                 onCancel={handleCancel}
                 onEdit={handleOpenEdit}
+                onGenerateNext={handleGenerateNext}
                 isPending={isPending}
               />
             ))}
@@ -679,6 +675,7 @@ function SessionCard({
   onDeleteMessage,
   onCancel,
   onEdit,
+  onGenerateNext,
   isPending,
   past,
 }: {
@@ -696,6 +693,7 @@ function SessionCard({
   onDeleteMessage: (sessionId: string, messageId: string) => void;
   onCancel: (id: string) => void;
   onEdit: (session: Session) => void;
+  onGenerateNext?: (templateId: string) => void;
   isPending: boolean;
   past?: boolean;
 }) {
@@ -837,6 +835,11 @@ function SessionCard({
               {!past && isAdmin && s.status !== "CANCELLED" && (
                 <button className="ghost" style={{ fontSize: 11, color: "var(--danger)" }} onClick={() => onCancel(s.id)} disabled={isPending}>
                   {t("sessions_cancel_btn")}
+                </button>
+              )}
+              {!past && s.recurring && isAdmin && onGenerateNext && (
+                <button className="ghost" style={{ fontSize: 11, color: "var(--teal)", marginLeft: "auto" }} onClick={() => onGenerateNext(s.id)} disabled={isPending}>
+                  + {t("sessions_generate_next")}
                 </button>
               )}
             </div>
