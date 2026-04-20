@@ -18,6 +18,8 @@ export type MatchForEdit = {
   courtName: string;
   nextMatchWinId?: string | null;
   nextSlotWin?: string | null;
+  refereePlayerId?: string | null;
+  coRefereePlayerId?: string | null;
 };
 
 type SavePayload = {
@@ -75,8 +77,11 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
 
   if (!match) return null;
 
+  const isAssignedReferee = session?.user?.playerId != null &&
+    (match.refereePlayerId === session.user.playerId || match.coRefereePlayerId === session.user.playerId);
   const canEdit =
     isOrganizer ||
+    isAssignedReferee ||
     session?.user?.role === "REF" ||
     session?.user?.role === "ADMIN" ||
     session?.user?.role === "ORGA";

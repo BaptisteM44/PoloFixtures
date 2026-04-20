@@ -418,6 +418,74 @@ export function OrgaDashboard({
                 dangerouslySetInnerHTML={{ __html: t("orga_planning_format_locked_warning") }}
               />
             )}
+
+            {/* Preview : estimation matchs & durée */}
+            {(() => {
+              const n = selectedTeams;
+              const dur = tournament.gameDurationMin ?? 12;
+              const pause = 4;
+              const slot = dur + pause;
+              const courts = tournament.courtsCount ?? 1;
+
+              let day1Matches = 0;
+              let day2Matches = 0;
+
+              if (tournament.saturdayFormat === "BERLIN_MIXED") {
+                const half = Math.ceil(n / 2);
+                const fridayRounds = tournament.fridayRounds ?? 5;
+                const saturdayRounds = tournament.saturdayRounds ?? 5;
+                const sundayRounds = tournament.sundayRounds ?? 2;
+                day1Matches = fridayRounds * Math.floor(half / 2) * 2;
+                day2Matches = saturdayRounds * Math.floor(half / 2) * 2 + sundayRounds * Math.floor(n / 2);
+              } else if (tournament.saturdayFormat === "GRAZ") {
+                const poolSize = Math.ceil(n / 2);
+                day1Matches = 2 * (poolSize * (poolSize - 1) / 2);
+                day2Matches = 4 * 6 + 8; // 4 groups × 6 RR matches + 8 SE matches (QF+SF+F+3rd)
+              } else if (tournament.saturdayFormat === "SWISS") {
+                const rounds = tournament.swissRounds ?? 5;
+                day1Matches = rounds * Math.floor(n / 2);
+              } else {
+                // Pool RR
+                const poolCount = tournament.poolCount ?? 1;
+                const perPool = Math.ceil(n / poolCount);
+                day1Matches = poolCount * (perPool * (perPool - 1) / 2);
+              }
+
+              if (tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ") {
+                const bracketSize = tournament.bracketSize ?? 16;
+                const qualified = Math.min(bracketSize, n);
+                if (tournament.sundayFormat === "DE") {
+                  day2Matches = 2 * qualified - 2 + (tournament.gfReset ? 1 : 0);
+                } else if (tournament.sundayFormat === "SE") {
+                  day2Matches = qualified - 1 + (tournament.thirdPlaceMatch ? 1 : 0);
+                } else {
+                  day2Matches = qualified * (qualified - 1) / 2;
+                }
+                if (tournament.crossPool) {
+                  day2Matches += Math.floor(n / 2);
+                }
+              }
+
+              const totalMatches = Math.round(day1Matches + day2Matches);
+              const day1Dur = Math.ceil(day1Matches / courts) * slot;
+              const day2Dur = Math.ceil(day2Matches / courts) * slot;
+              const fmtTime = (mins: number) => `${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, "0")}`;
+
+              return (
+                <div style={{ marginTop: 12, padding: "10px 12px", background: "var(--bg-muted)", borderRadius: 8, fontSize: 12 }}>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 6 }}>
+                    {t("orga_preview_title")}
+                  </p>
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    <span>📊 <strong>{totalMatches}</strong> {t("orga_preview_matches")}</span>
+                    <span>📅 {t("orga_day1_label")}: <strong>{Math.round(day1Matches)}</strong> ({fmtTime(day1Dur)})</span>
+                    <span>📅 {t("orga_day2_label")}: <strong>{Math.round(day2Matches)}</strong> ({fmtTime(day2Dur)})</span>
+                    <span>⏱ {t("orga_preview_slot")}: {slot}min ({dur}+{pause})</span>
+                    {courts > 1 && <span>🏟 {courts} {t("orga_preview_courts")}</span>}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Jour 1 — matchs pool séparés par pool pour format multi-poule */}

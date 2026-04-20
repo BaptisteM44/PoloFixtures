@@ -41,7 +41,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     isOrganizer = tournament?.creatorId === playerId ||
       tournament?.coOrganizers.some((co) => co.playerId === playerId) || false;
   }
-  if (!hasRole && !isOrganizer) {
+  const isAssignedReferee = playerId != null &&
+    (existing.refereePlayerId === playerId || existing.coRefereePlayerId === playerId);
+  if (!hasRole && !isOrganizer && !isAssignedReferee) {
     return new Response("Unauthorized", { status: 401 });
   }
 

@@ -217,6 +217,8 @@ export function BracketView({
       courtName: m.courtName,
       nextMatchWinId: m.nextMatchWinId,
       nextSlotWin: m.nextSlotWin,
+      refereePlayerId: m.refereePlayerId,
+      coRefereePlayerId: m.coRefereePlayerId,
     });
   };
 

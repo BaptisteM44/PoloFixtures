@@ -156,6 +156,9 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
       ? { saturdayFormat: tournament.saturdayFormat, poolCount: tournament.poolCount ?? 1, swissRounds: tournament.swissRounds ?? 5, bracketSize: tournament.bracketSize ?? 16, sundayFormat: tournament.sundayFormat, crossPool: tournament.crossPool ?? false, thirdPlaceMatch: tournament.thirdPlaceMatch ?? false, gfReset: tournament.gfReset ?? false }
       : PRESETS[detectPreset(tournament) as Exclude<FormatPreset, "custom">]
   );
+  const [savedCustomConfig, setSavedCustomConfig] = useState<PresetConfig | null>(
+    detectPreset(tournament) === "custom" ? presetConfig : null
+  );
   const [showFormatInfo, setShowFormatInfo] = useState(true);
   const [showFormatContact, setShowFormatContact] = useState(false);
   const [contactName, setContactName] = useState("");
@@ -192,8 +195,15 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   };
 
   function selectPreset(key: FormatPreset) {
+    if (formatPreset === "custom") {
+      setSavedCustomConfig({ ...presetConfig });
+    }
     setFormatPreset(key);
-    if (key !== "custom") setPresetConfig(PRESETS[key as Exclude<FormatPreset, "custom">]);
+    if (key === "custom") {
+      if (savedCustomConfig) setPresetConfig(savedCustomConfig);
+    } else {
+      setPresetConfig(PRESETS[key as Exclude<FormatPreset, "custom">]);
+    }
   }
 
   // ABC Chapeau

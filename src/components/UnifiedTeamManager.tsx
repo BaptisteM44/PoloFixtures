@@ -175,7 +175,7 @@ function TeamRow({
   team, locked, maxPlayers, tournamentId, showPayment, showRecap, showActions,
   feePerTeam, feeCurrency,
   isEditing, onStartEdit, onCancelEdit, onDelete, onRemovePlayer,
-  isPending, renameAction, addPlayerAction, startTransition, setEditingId, onPlayerChanged,
+  renameAction, addPlayerAction, setEditingId, onPlayerChanged,
 }: {
   team: Team;
   locked: boolean;
@@ -191,10 +191,8 @@ function TeamRow({
   onCancelEdit: () => void;
   onDelete: () => void;
   onRemovePlayer: (tpId: string, name: string) => void;
-  isPending: boolean;
   renameAction: Props["renameAction"];
   addPlayerAction: Props["addPlayerAction"];
-  startTransition: (fn: () => Promise<void>) => void;
   setEditingId: (id: string | null) => void;
   onPlayerChanged: () => void;
 }) {
@@ -202,6 +200,7 @@ function TeamRow({
   const tTeam = useTranslations("team");
   const tTournament = useTranslations("tournament");
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [editName, setEditName] = useState(team.name);
   const [rowError, setRowError] = useState<string | null>(null);
   const [addMode, setAddMode] = useState<"search" | "manual" | null>(null);
@@ -307,18 +306,14 @@ function TeamRow({
 
         {isEditing ? (
           <div style={{ display: "flex", gap: 8, flex: 1, alignItems: "center", flexWrap: "wrap" }}>
-            {locked ? (
-              <strong style={{ fontFamily: "var(--font-display)", fontSize: 16, flex: 1 }}>{team.name}</strong>
-            ) : (
-              <input
+            <input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleRename(); if (e.key === "Escape") onCancelEdit(); }}
                 autoFocus
                 style={{ flex: 1, minWidth: 120, padding: "6px 10px", fontSize: 15, fontFamily: "var(--font-display)", fontWeight: 700 }}
               />
-            )}
-            {!locked && <button className="primary" onClick={handleRename} disabled={isPending} style={{ padding: "6px 14px", fontSize: 13 }}>{t("save")}</button>}
+            <button className="primary" onClick={handleRename} disabled={isPending} style={{ padding: "6px 14px", fontSize: 13 }}>{t("save")}</button>
             <button className="ghost" onClick={onCancelEdit} disabled={isPending} style={{ padding: "6px 14px", fontSize: 13 }}>{t("close")}</button>
           </div>
         ) : (
@@ -595,10 +590,8 @@ export function UnifiedTeamManager({
             onCancelEdit={() => setEditingId(null)}
             onDelete={() => handleDeleteTeam(team.id, team.name)}
             onRemovePlayer={handleRemovePlayer}
-            isPending={isPending}
             renameAction={renameAction}
             addPlayerAction={addPlayerAction}
-            startTransition={startTransition}
             setEditingId={setEditingId}
             onPlayerChanged={() => router.refresh()}
           />
@@ -638,10 +631,8 @@ export function UnifiedTeamManager({
                 onCancelEdit={() => setEditingId(null)}
                 onDelete={() => handleDeleteTeam(team.id, team.name)}
                 onRemovePlayer={handleRemovePlayer}
-                isPending={isPending}
                 renameAction={renameAction}
                 addPlayerAction={addPlayerAction}
-                startTransition={startTransition}
                 setEditingId={setEditingId}
                 onPlayerChanged={() => router.refresh()}
               />

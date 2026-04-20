@@ -16,6 +16,7 @@ export function Header() {
   const isAdmin = role === "ADMIN";
   const hasPlayer = !!(session?.user as any)?.playerId;
   const isSuspended = (session?.user as any)?.playerStatus === "REJECTED";
+  const clubId = (session?.user as any)?.clubId ?? null;
   const [menuOpen, setMenuOpen] = useState(false);
 
   // Fermer le menu sur changement de route
@@ -52,7 +53,7 @@ export function Header() {
       <nav className="nav nav--desktop">
         <Link href="/tournaments">{t("nav.tournaments")}</Link>
         <Link href="/calendar">{t("nav.calendar")}</Link>
-        <Link href="/clubs">{t("nav.clubs")}</Link>
+        <Link href={clubId ? `/club/${clubId}` : "/clubs"}>{clubId ? t("nav.my_club") : t("nav.clubs")}</Link>
         <Link href="/about">{t("nav.about")}</Link>
         {isAdmin && <Link href="/admin">{t("nav.admin")}</Link>}
       </nav>

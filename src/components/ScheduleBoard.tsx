@@ -114,6 +114,8 @@ export function ScheduleBoard({
       phase: match.phase,
       roundIndex: match.roundIndex,
       courtName: match.courtName,
+      refereePlayerId: match.refereePlayerId,
+      coRefereePlayerId: match.coRefereePlayerId,
     });
   };
 
