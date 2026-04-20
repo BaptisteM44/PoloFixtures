@@ -496,7 +496,11 @@ export function ClubSessions({
                       onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
                     >
                       <span style={{ fontWeight: 600 }}>{tpl.title ?? t("sessions_untitled")}</span>
-                      <span style={{ marginLeft: 6, fontSize: 11, color: "var(--text-muted)" }}>{fmtDate(new Date(tpl.date))} · {fmtTime(new Date(tpl.date))}</span>
+                      {tpl.recurrenceDay !== null && (
+                        <span style={{ marginLeft: 6, fontSize: 11, color: "var(--text-muted)" }}>
+                          {DAY_NAMES[tpl.recurrenceDay]}{tpl.recurrenceTime ? ` · ${tpl.recurrenceTime}` : ""}
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -842,15 +846,16 @@ function SessionCard({
           {/* Actions */}
           {!past && currentPlayerId && (
             <div className="club-session-card__actions">
-              {!myAttendance ? (
-                <button className="primary" style={{ fontSize: 12 }} onClick={() => onJoin(s.id)} disabled={isPending}>
-                  {isMember ? t("sessions_join_member") : t("sessions_join_guest")}
-                </button>
-              ) : myAttendance.status === "PENDING" ? (
-                <span style={{ fontSize: 12, color: "#f57c00", fontWeight: 600 }}>{t("sessions_pending")}</span>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              {/* Rangée participation */}
+              <div className="club-session-card__actions-row">
+                {!myAttendance ? (
+                  <button className="primary" style={{ fontSize: 12 }} onClick={() => onJoin(s.id)} disabled={isPending}>
+                    {isMember ? t("sessions_join_member") : t("sessions_join_guest")}
+                  </button>
+                ) : myAttendance.status === "PENDING" ? (
+                  <span style={{ fontSize: 12, color: "#f57c00", fontWeight: 600 }}>{t("sessions_pending")}</span>
+                ) : (
+                  <>
                     <span style={{ fontSize: 11, color: "var(--teal)", fontWeight: 600 }}>{t("sessions_registered")}</span>
                     {myAttendance.arrivalTime && (
                       <span style={{ fontSize: 11, color: "var(--text-muted)" }}>→ {myAttendance.arrivalTime}</span>
@@ -858,26 +863,31 @@ function SessionCard({
                     {myAttendance.minPlayers && (
                       <span style={{ fontSize: 11, color: "#f57c00" }}>{t("join_modal_if_min")} {myAttendance.minPlayers}</span>
                     )}
-                  </div>
-                  <button className="ghost" style={{ fontSize: 11 }} onClick={() => onLeave(s.id)} disabled={isPending}>
-                    {t("sessions_leave")}
-                  </button>
+                    <button className="ghost" style={{ fontSize: 11 }} onClick={() => onLeave(s.id)} disabled={isPending}>
+                      {t("sessions_leave")}
+                    </button>
+                  </>
+                )}
+              </div>
+              {/* Rangée admin */}
+              {(canDelete || (isAdmin && s.status !== "CANCELLED")) && (
+                <div className="club-session-card__actions-admin">
+                  {canDelete && (
+                    <>
+                      <button className="ghost" style={{ fontSize: 11 }} onClick={() => onEdit(s)} disabled={isPending}>
+                        ✏️ {t("sessions_edit")}
+                      </button>
+                      <button className="ghost" style={{ fontSize: 11, color: "var(--text-muted)" }} onClick={() => onDelete(s.id)} disabled={isPending}>
+                        {t("sessions_delete")}
+                      </button>
+                    </>
+                  )}
+                  {isAdmin && s.status !== "CANCELLED" && (
+                    <button className="ghost" style={{ fontSize: 11, color: "var(--danger)" }} onClick={() => onCancel(s.id)} disabled={isPending}>
+                      {t("sessions_cancel_btn")}
+                    </button>
+                  )}
                 </div>
-              )}
-              {canDelete && (
-                <div style={{ display: "flex", gap: 4, marginLeft: "auto" }}>
-                  <button className="ghost" style={{ fontSize: 11 }} onClick={() => onEdit(s)} disabled={isPending}>
-                    ✏️ {t("sessions_edit")}
-                  </button>
-                  <button className="ghost" style={{ fontSize: 11, color: "var(--text-muted)" }} onClick={() => onDelete(s.id)} disabled={isPending}>
-                    {t("sessions_delete")}
-                  </button>
-                </div>
-              )}
-              {!past && isAdmin && s.status !== "CANCELLED" && (
-                <button className="ghost" style={{ fontSize: 11, color: "var(--danger)" }} onClick={() => onCancel(s.id)} disabled={isPending}>
-                  {t("sessions_cancel_btn")}
-                </button>
               )}
             </div>
           )}

@@ -7812,15 +7812,26 @@ details[open] .my-tournaments__section-title--summary::after {
   display: flex;
   gap: 6px;
   align-items: center;
+  width: 100%;
+  justify-content: center;
 }
 .ref-bigbtn {
   font-size: 15px !important;
   padding: 10px 14px !important;
   font-weight: 700 !important;
+  flex: 1;
+  min-width: 0;
 }
 .ref-smallbtn {
   font-size: 13px !important;
   padding: 10px 12px !important;
+  flex-shrink: 0;
+}
+@media (max-width: 400px) {
+  .ref-team-panel { padding: 12px 6px; }
+  .ref-bigbtn { padding: 10px 8px !important; font-size: 13px !important; }
+  .ref-smallbtn { padding: 8px 8px !important; font-size: 12px !important; }
+  .ref-score-btns { gap: 4px; }
 }
 .ref-penaltybtn, .ref-timeoutbtn {
   font-size: 12px;
@@ -8771,9 +8782,23 @@ details[open] .club-sessions__past-summary::before {
 }
 .club-session-card__actions {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  flex-direction: column;
+  gap: 6px;
   margin-top: auto;
+}
+.club-session-card__actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.club-session-card__actions-admin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-light);
 }
 /* Mini chat inside session card */
 .club-session-card__chat {
