@@ -341,12 +341,21 @@ export async function generateNextRecurringSessionAction(clubId: string) {
   for (const tpl of templates) {
     const day = tpl.recurrenceDay!;
 
-    // Utilise la date de la template (déjà en UTC correct) et avance de 7j jusqu'à être dans le futur
-    const tplDate = new Date(tpl.date);
-    const nextDate = new Date(tplDate);
+    // Trouver la dernière session générée depuis ce template (hors template elle-même)
+    const lastGenerated = await prisma.clubSession.findFirst({
+      where: { clubId, id: { not: tpl.id }, recurrenceDay: day },
+      orderBy: { date: "desc" },
+    });
+
+    // Point de départ : la dernière générée ou la template elle-même
+    const baseDate = new Date(lastGenerated ? lastGenerated.date : tpl.date);
+    const nextDate = new Date(baseDate);
+    nextDate.setDate(nextDate.getDate() + 7);
+
+    // Si pour une raison quelconque on est encore dans le passé, avancer jusqu'au futur
     while (nextDate <= now) nextDate.setDate(nextDate.getDate() + 7);
 
-    // Vérifie si une session existe déjà à cette date (en excluant la template elle-même)
+    // Vérifier qu'il n'existe pas déjà une session ce jour-là (sécurité anti-doublon)
     const exists = await prisma.clubSession.findFirst({
       where: {
         clubId,
