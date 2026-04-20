@@ -776,119 +776,71 @@ function SessionCard({
 
   const cardColor = s.color || s.venue?.color || null;
   return (
-    <div className={`club-session-card${past ? " club-session-card--past" : ""}`} style={{ borderTop: cardColor ? `3px solid ${cardColor}` : undefined }}>
-      {/* Header */}
+    <div className={`club-session-card${past ? " club-session-card--past" : ""}${s.status === "CANCELLED" ? " club-session-card--cancelled" : ""}`}
+      style={{ borderLeft: cardColor ? `4px solid ${cardColor}` : undefined }}>
+
+      {/* ── Header ── */}
       <div className="club-session-card__header">
-        <div>
-          <div className="club-session-card__date">
-            {fmtDate(d)} · {fmtTime(d)} → {endTime}
-          </div>
-          {s.title && <div className="club-session-card__title">{s.title}</div>}
-          {s.recurring && <span className="club-session-card__badge">Récurrent</span>}
-          {s.status === "CANCELLED" && (
-            <span className="club-session-card__badge" style={{ background: "var(--danger)", color: "#fff", marginLeft: 4 }}>
-              {t("sessions_cancelled_badge")}
-            </span>
-          )}
+        <div className="club-session-card__header-left">
+          <span className="club-session-card__date">{fmtDate(d)} · {fmtTime(d)} → {endTime}</span>
+          {s.title && <span className="club-session-card__title">{s.title}</span>}
+          {s.recurring && <span className="club-session-card__badge club-session-card__badge--recurring">↻</span>}
+          {s.status === "CANCELLED" && <span className="club-session-card__badge club-session-card__badge--cancelled">{t("sessions_cancelled_badge")}</span>}
         </div>
-        <div className="club-session-card__meta">
-          {cardColor && (
-            <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: cardColor, marginRight: 4 }} />
-          )}
+        <div className="club-session-card__header-right">
           {locationDisplay}
+          {/* Admin icon buttons */}
+          {currentPlayerId && (canDelete || (isAdmin && s.status !== "CANCELLED")) && !past && (
+            <div className="club-session-card__admin-btns">
+              {canDelete && (
+                <>
+                  <button className="club-session-card__icon-btn" onClick={() => onEdit(s)} disabled={isPending} title={t("sessions_edit")}>✏️</button>
+                  <button className="club-session-card__icon-btn" onClick={() => onDelete(s.id)} disabled={isPending} title={t("sessions_delete")}>🗑</button>
+                </>
+              )}
+              {isAdmin && s.status !== "CANCELLED" && (
+                <button className="club-session-card__icon-btn club-session-card__icon-btn--danger" onClick={() => onCancel(s.id)} disabled={isPending} title={t("sessions_cancel_btn")}>✕</button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {s.notes && <p className="club-session-card__notes">{s.notes}</p>}
 
-      {/* Body: attendees + chat */}
+      {/* ── Body: attendees + chat ── */}
       <div className="club-session-card__body">
         {/* Left: attendees */}
         <div className="club-session-card__left">
           <div className="club-session-card__attendee-count">
             {confirmed.length !== 1 ? t("sessions_participants_plural", { count: confirmed.length }) : t("sessions_participants", { count: confirmed.length })}
             {conditional.length > 0 && (
-              <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 6 }}>
-                {conditional.length > 1 ? t("sessions_conditionals", { count: conditional.length }) : t("sessions_conditional", { count: conditional.length })}
+              <span style={{ fontSize: 10, color: "#f57c00", marginLeft: 5 }}>
+                ({conditional.length > 1 ? t("sessions_conditionals", { count: conditional.length }) : t("sessions_conditional", { count: conditional.length })})
               </span>
             )}
           </div>
-
           <div className="club-session-card__avatars">
             {confirmed.map((a) => (
-              <PlayerAvatar
-                key={a.id}
-                player={a.player}
-                arrivalTime={a.arrivalTime}
-                minPlayers={a.minPlayers}
-              />
+              <PlayerAvatar key={a.id} player={a.player} arrivalTime={a.arrivalTime} minPlayers={a.minPlayers} />
             ))}
           </div>
 
           {/* Pending requests (admin only) */}
           {isAdmin && pending.length > 0 && (
             <div className="club-session-card__pending">
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#f57c00" }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: "#f57c00" }}>
                 {pending.length > 1 ? t("sessions_requests_plural", { count: pending.length }) : t("sessions_requests", { count: pending.length })}
               </span>
               {pending.map((a) => (
                 <div key={a.id} className="club-session-card__pending-row">
-                  <span style={{ fontSize: 12 }}>{a.player.name}</span>
+                  <span>{a.player.name}</span>
                   <div style={{ display: "flex", gap: 4 }}>
-                    <button className="primary" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => onApprove(s.id, a.playerId)} disabled={isPending}>✓</button>
-                    <button className="ghost" style={{ fontSize: 10, padding: "2px 6px" }} onClick={() => onReject(s.id, a.playerId)} disabled={isPending}>✕</button>
+                    <button className="primary" style={{ fontSize: 10, padding: "2px 7px" }} onClick={() => onApprove(s.id, a.playerId)} disabled={isPending}>✓</button>
+                    <button className="ghost" style={{ fontSize: 10, padding: "2px 7px" }} onClick={() => onReject(s.id, a.playerId)} disabled={isPending}>✕</button>
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* Actions */}
-          {!past && currentPlayerId && (
-            <div className="club-session-card__actions">
-              {/* Rangée participation */}
-              <div className="club-session-card__actions-row">
-                {!myAttendance ? (
-                  <button className="primary" style={{ fontSize: 12 }} onClick={() => onJoin(s.id)} disabled={isPending}>
-                    {isMember ? t("sessions_join_member") : t("sessions_join_guest")}
-                  </button>
-                ) : myAttendance.status === "PENDING" ? (
-                  <span style={{ fontSize: 12, color: "#f57c00", fontWeight: 600 }}>{t("sessions_pending")}</span>
-                ) : (
-                  <>
-                    <span style={{ fontSize: 11, color: "var(--teal)", fontWeight: 600 }}>{t("sessions_registered")}</span>
-                    {myAttendance.arrivalTime && (
-                      <span style={{ fontSize: 11, color: "var(--text-muted)" }}>→ {myAttendance.arrivalTime}</span>
-                    )}
-                    {myAttendance.minPlayers && (
-                      <span style={{ fontSize: 11, color: "#f57c00" }}>{t("join_modal_if_min")} {myAttendance.minPlayers}</span>
-                    )}
-                    <button className="ghost" style={{ fontSize: 11 }} onClick={() => onLeave(s.id)} disabled={isPending}>
-                      {t("sessions_leave")}
-                    </button>
-                  </>
-                )}
-              </div>
-              {/* Rangée admin */}
-              {(canDelete || (isAdmin && s.status !== "CANCELLED")) && (
-                <div className="club-session-card__actions-admin">
-                  {canDelete && (
-                    <>
-                      <button className="ghost" style={{ fontSize: 11 }} onClick={() => onEdit(s)} disabled={isPending}>
-                        ✏️ {t("sessions_edit")}
-                      </button>
-                      <button className="ghost" style={{ fontSize: 11, color: "var(--text-muted)" }} onClick={() => onDelete(s.id)} disabled={isPending}>
-                        {t("sessions_delete")}
-                      </button>
-                    </>
-                  )}
-                  {isAdmin && s.status !== "CANCELLED" && (
-                    <button className="ghost" style={{ fontSize: 11, color: "var(--danger)" }} onClick={() => onCancel(s.id)} disabled={isPending}>
-                      {t("sessions_cancel_btn")}
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -911,12 +863,7 @@ function SessionCard({
                         <span className="club-session-card__chat-time">{fmtTime(new Date(m.createdAt))}</span>
                       </div>
                       {(isMine || isAdmin) && (
-                        <button
-                          className="club-session-card__chat-del"
-                          onClick={() => onDeleteMessage(s.id, m.id)}
-                          disabled={isPending}
-                          title={t("chat_delete_title")}
-                        >✕</button>
+                        <button className="club-session-card__chat-del" onClick={() => onDeleteMessage(s.id, m.id)} disabled={isPending} title={t("chat_delete_title")}>✕</button>
                       )}
                     </div>
                   );
@@ -931,15 +878,32 @@ function SessionCard({
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 disabled={isPending}
-                style={{ fontSize: 12 }}
               />
-              <button className="primary" style={{ fontSize: 12, whiteSpace: "nowrap" }} onClick={handleSend} disabled={isPending || !chatInput.trim()}>
-                {t("session_chat_send")}
-              </button>
+              <button className="primary" onClick={handleSend} disabled={isPending || !chatInput.trim()}>{t("session_chat_send")}</button>
             </div>
           </div>
         )}
       </div>
+
+      {/* ── Footer: participation CTA ── */}
+      {!past && currentPlayerId && s.status !== "CANCELLED" && (
+        <div className="club-session-card__footer">
+          {!myAttendance ? (
+            <button className="primary club-session-card__join-btn" onClick={() => onJoin(s.id)} disabled={isPending}>
+              {isMember ? t("sessions_join_member") : t("sessions_join_guest")}
+            </button>
+          ) : myAttendance.status === "PENDING" ? (
+            <span className="club-session-card__status-pending">{t("sessions_pending")}</span>
+          ) : (
+            <div className="club-session-card__registered">
+              <span className="club-session-card__status-confirmed">✓ {t("sessions_registered")}</span>
+              {myAttendance.arrivalTime && <span className="club-session-card__meta-chip">→ {myAttendance.arrivalTime}</span>}
+              {myAttendance.minPlayers && <span className="club-session-card__meta-chip club-session-card__meta-chip--orange">≥{myAttendance.minPlayers}</span>}
+              <button className="ghost club-session-card__leave-btn" onClick={() => onLeave(s.id)} disabled={isPending}>{t("sessions_leave")}</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -8618,87 +8618,201 @@ details[open] .club-sessions__past-summary::before {
   transform: rotate(90deg);
 }
 
-/* Session card */
+/* ── Session card ────────────────────────────────────────────────────────── */
 .club-session-card {
   background: var(--surface);
   border: 1px solid var(--border-light);
+  border-left: 4px solid var(--border-light);
   border-radius: var(--radius);
-  padding: 16px 18px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+.club-session-card:hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
 }
 .club-session-card--past {
-  opacity: 0.55;
+  opacity: 0.5;
 }
+.club-session-card--cancelled {
+  opacity: 0.6;
+}
+
+/* Header */
 .club-session-card__header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+.club-session-card__header-left {
+  display: flex;
+  align-items: baseline;
   flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+.club-session-card__header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 4px;
 }
 .club-session-card__date {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--teal);
+  white-space: nowrap;
 }
 .club-session-card__title {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  margin-top: 2px;
+  color: var(--text);
 }
 .club-session-card__badge {
-  font-size: 10px;
-  background: var(--teal);
-  color: #fff;
-  padding: 2px 8px;
+  font-size: 9px;
+  padding: 1px 6px;
   border-radius: 999px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  display: inline-block;
-  margin-top: 3px;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  flex-shrink: 0;
 }
-.club-session-card__meta {
+.club-session-card__badge--recurring {
+  background: color-mix(in srgb, var(--teal) 15%, transparent);
+  color: var(--teal);
+  border: 1px solid var(--teal);
+}
+.club-session-card__badge--cancelled {
+  background: var(--danger);
+  color: #fff;
+}
+/* Admin icon buttons (header right) */
+.club-session-card__admin-btns {
   display: flex;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--text-muted);
+  align-items: center;
+  gap: 2px;
 }
+.club-session-card__icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 5px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--text-muted);
+  opacity: 0.6;
+  transition: opacity 0.1s, background 0.1s;
+}
+.club-session-card__icon-btn:hover {
+  opacity: 1;
+  background: var(--surface-2);
+}
+.club-session-card__icon-btn--danger:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
 .club-session-card__notes {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
   margin: 0;
+  padding: 6px 14px 0;
   line-height: 1.4;
 }
-/* Body: left (attendees/actions) + right (chat) */
+
+/* Body */
 .club-session-card__body {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  min-height: 220px;
+  gap: 0;
+  flex: 1;
 }
 .club-session-card__left {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 12px 14px;
+  min-width: 0;
 }
 .club-session-card__attendee-count {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
+  color: var(--text-muted);
 }
 .club-session-card__avatars {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 5px;
+}
+.club-session-card__pending {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   margin-top: 4px;
 }
+.club-session-card__pending-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  gap: 6px;
+}
 
-/* Player avatar chips in session cards */
+/* Footer: participation CTA */
+.club-session-card__footer {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border-light);
+  background: var(--surface-2, color-mix(in srgb, var(--surface) 60%, transparent));
+}
+.club-session-card__join-btn {
+  font-size: 12px !important;
+  padding: 6px 14px !important;
+}
+.club-session-card__status-pending {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f57c00;
+}
+.club-session-card__registered {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.club-session-card__status-confirmed {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--teal);
+}
+.club-session-card__meta-chip {
+  font-size: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 999px;
+  padding: 1px 7px;
+  color: var(--text-muted);
+}
+.club-session-card__meta-chip--orange {
+  border-color: #f57c00;
+  color: #f57c00;
+}
+.club-session-card__leave-btn {
+  font-size: 11px !important;
+  padding: 3px 10px !important;
+  margin-left: auto;
+}
+
+/* Player avatar chips */
 .session-player-avatar {
   position: relative;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   overflow: visible;
   cursor: default;
@@ -8706,15 +8820,15 @@ details[open] .club-sessions__past-summary::before {
 }
 .session-player-avatar img,
 .session-player-avatar__initials {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   background: linear-gradient(135deg, var(--teal), var(--pink));
   color: #fff;
@@ -8732,8 +8846,8 @@ details[open] .club-sessions__past-summary::before {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 6px 10px;
-  font-size: 11px;
+  padding: 5px 9px;
+  font-size: 10px;
   white-space: nowrap;
   z-index: 50;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -8743,9 +8857,13 @@ details[open] .club-sessions__past-summary::before {
   gap: 2px;
 }
 .session-venue-link {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--teal);
   text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
 }
 .session-venue-link:hover { text-decoration: underline; }
 
@@ -8769,49 +8887,20 @@ details[open] .club-sessions__past-summary::before {
   width: 100%;
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
-.club-session-card__pending {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.club-session-card__pending-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-}
-.club-session-card__actions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: auto;
-}
-.club-session-card__actions-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.club-session-card__actions-admin {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding-top: 6px;
-  border-top: 1px solid var(--border-light);
-}
-/* Mini chat inside session card */
+
+/* Mini chat */
 .club-session-card__chat {
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--border-light);
-  padding-left: 12px;
-  min-height: 220px;
+  padding: 12px 14px;
+  min-width: 0;
 }
 .club-session-card__chat-messages {
   flex: 1;
   overflow-y: auto;
-  max-height: 240px;
+  max-height: 180px;
+  min-height: 80px;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -8848,7 +8937,7 @@ details[open] .club-sessions__past-summary::before {
   display: block;
 }
 .club-session-card__chat-text {
-  font-size: 12px;
+  font-size: 11px;
   display: block;
   word-break: break-word;
   line-height: 1.4;
@@ -8869,9 +8958,7 @@ details[open] .club-sessions__past-summary::before {
   opacity: 0;
   flex-shrink: 0;
 }
-.club-session-card__chat-msg:hover .club-session-card__chat-del {
-  opacity: 1;
-}
+.club-session-card__chat-msg:hover .club-session-card__chat-del { opacity: 1; }
 .club-session-card__chat-input {
   display: flex;
   gap: 6px;
@@ -8882,21 +8969,128 @@ details[open] .club-sessions__past-summary::before {
 .club-session-card__chat-input .form-input {
   flex: 1;
   padding: 5px 8px;
-  font-size: 12px;
+  font-size: 11px;
 }
+.club-session-card__chat-input .primary {
+  font-size: 11px !important;
+  padding: 5px 10px !important;
+  white-space: nowrap;
+}
+
+/* Removed old action classes kept for reference cleanup */
+.club-session-card__actions,
+.club-session-card__actions-row,
+.club-session-card__actions-admin { display: none; }
+
+/* ── Responsive ── */
 @media (max-width: 700px) {
-  .club-sessions__grid {
-    grid-template-columns: 1fr;
-  }
-  .club-session-card__body {
-    grid-template-columns: 1fr;
-  }
+  .club-sessions__grid { grid-template-columns: 1fr; }
+  .club-session-card__body { grid-template-columns: 1fr; }
   .club-session-card__chat {
     border-left: none;
     border-top: 1px solid var(--border-light);
-    padding-left: 0;
     padding-top: 10px;
   }
+  .club-session-card__header { flex-wrap: wrap; gap: 6px; }
+  .club-session-card__header-right { flex-wrap: wrap; }
+  .session-venue-link { max-width: 100%;club-session-card__chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 180px;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-bottom: 4px;
+}
+.club-session-card__chat-empty {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: auto 0;
+  text-align: center;
+}
+.club-session-card__chat-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+.club-session-card__chat-msg.mine {
+  flex-direction: row-reverse;
+}
+.club-session-card__chat-bubble {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 4px 8px;
+  border-left: 2px solid var(--author-color, var(--teal));
+  max-width: 85%;
+}
+.club-session-card__chat-msg.mine .club-session-card__chat-bubble {
+  border-left: none;
+  border-right: 2px solid var(--author-color, var(--teal));
+}
+.club-session-card__chat-author {
+  font-size: 10px;
+  font-weight: 700;
+  display: block;
+}
+.club-session-card__chat-text {
+  font-size: 11px;
+  display: block;
+  word-break: break-word;
+  line-height: 1.4;
+}
+.club-session-card__chat-time {
+  font-size: 9px;
+  color: var(--text-muted);
+  display: block;
+  text-align: right;
+}
+.club-session-card__chat-del {
+  background: none;
+  border: none;
+  font-size: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0;
+  flex-shrink: 0;
+}
+.club-session-card__chat-msg:hover .club-session-card__chat-del { opacity: 1; }
+.club-session-card__chat-input {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+.club-session-card__chat-input .form-input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+.club-session-card__chat-input .primary {
+  font-size: 11px !important;
+  padding: 5px 10px !important;
+  white-space: nowrap;
+}
+
+/* Removed old action classes kept for reference cleanup */
+.club-session-card__actions,
+.club-session-card__actions-row,
+.club-session-card__actions-admin { display: none; }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  .club-sessions__grid { grid-template-columns: 1fr; }
+  .club-session-card__body { grid-template-columns: 1fr; }
+  .club-session-card__chat {
+    border-left: none;
+    border-top: 1px solid var(--border-light);
+    padding-top: 10px;
+  }
+  .club-session-card__header { flex-wrap: wrap; gap: 6px; }
+  .club-session-card__header-right { flex-wrap: wrap; }
+  .session-venue-link { max-width: 100%; }
 }
 
 /* ── Club Sessions layout with venues ────────────────────────────────────── */
