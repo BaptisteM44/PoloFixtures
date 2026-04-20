@@ -117,8 +117,7 @@ export async function deleteSessionAction(clubId: string, sessionId: string) {
 
 export async function updateSessionAction(clubId: string, sessionId: string, data: {
   title?: string;
-  date?: string;
-  time?: string;
+  datetime?: string;
   duration?: number;
   venueId?: string | null;
   location?: string;
@@ -136,7 +135,7 @@ export async function updateSessionAction(clubId: string, sessionId: string, dat
 
   const updateData: any = {};
   if (data.title !== undefined) updateData.title = data.title || null;
-  if (data.date && data.time) updateData.date = new Date(`${data.date}T${data.time}:00`);
+  if (data.datetime) updateData.date = new Date(data.datetime);
   if (data.duration !== undefined) updateData.duration = data.duration;
   if (data.venueId !== undefined) updateData.venueId = data.venueId || null;
   if (data.location !== undefined) updateData.location = data.location || null;
@@ -341,21 +340,21 @@ export async function generateNextRecurringSessionAction(clubId: string) {
 
   for (const tpl of templates) {
     const day = tpl.recurrenceDay!;
-    const [hours, minutes] = tpl.recurrenceTime!.split(":").map(Number);
 
-    const d = new Date(now);
-    d.setHours(hours, minutes, 0, 0);
+    // Utilise la date de la template (déjà en UTC correct) et avance de 7j jusqu'à être dans le futur
+    const tplDate = new Date(tpl.date);
+    const nextDate = new Date(tplDate);
+    while (nextDate <= now) nextDate.setDate(nextDate.getDate() + 7);
 
-    // Go to the next occurrence of the target day
-    while (d.getDay() !== day) d.setDate(d.getDate() + 1);
-    if (d <= now) d.setDate(d.getDate() + 7);
-
-    // Check if session already exists for this date
+    // Vérifie si une session existe déjà à cette date (en excluant la template elle-même)
     const exists = await prisma.clubSession.findFirst({
       where: {
         clubId,
-        date: { gte: new Date(d.getFullYear(), d.getMonth(), d.getDate()), lt: new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1) },
-        recurrenceDay: day,
+        id: { not: tpl.id },
+        date: {
+          gte: new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate()),
+          lt: new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate() + 1),
+        },
       },
     });
 
@@ -364,11 +363,14 @@ export async function generateNextRecurringSessionAction(clubId: string) {
         data: {
           clubId,
           title: tpl.title,
-          date: new Date(d),
+          date: nextDate,
           duration: tpl.duration,
+          venueId: tpl.venueId ?? null,
           location: tpl.location,
           notes: tpl.notes,
           recurring: false,
+          recurrenceDay: day,
+          color: tpl.color ?? null,
           createdById: tpl.createdById,
         },
       });

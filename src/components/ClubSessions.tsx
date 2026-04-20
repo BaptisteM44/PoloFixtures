@@ -169,7 +169,7 @@ export function ClubSessions({
 
   function handleCreate() {
     if (!date || !time) return;
-    const dateTime = `${date}T${time}:00`;
+    const dateTime = new Date(`${date}T${time}:00`).toISOString();
     startTransition(async () => {
       const res = await createSessionAction(clubId, {
         title: title.trim() || undefined,
@@ -254,7 +254,10 @@ export function ClubSessions({
     const d = new Date(session.date);
     setEditingSessionId(session.id);
     setEditTitle(session.title ?? "");
-    setEditDate(d.toISOString().slice(0, 10));
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const dy = String(d.getDate()).padStart(2, "0");
+    setEditDate(`${yr}-${mo}-${dy}`);
     setEditTime(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
     setEditDurationHours(String(session.duration / 60));
     setEditVenueId(session.venueId ?? "");
@@ -270,8 +273,7 @@ export function ClubSessions({
     startTransition(async () => {
       const res = await updateSessionAction(clubId, editingSessionId, {
         title: editTitle,
-        date: editDate,
-        time: editTime,
+        datetime: new Date(`${editDate}T${editTime}:00`).toISOString(),
         duration: Math.round((parseFloat(editDurationHours) || 2) * 60),
         venueId: editVenueId || null,
         location: editLocation,
