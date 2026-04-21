@@ -647,7 +647,8 @@
     "bracket_not_generated_yet": "Bracket not yet generated.",
     "test_mode_hidden": "Matches are hidden from the public during test mode.",
     "abc_registered_title": "{count} registered",
-    "abc_on_waitlist": "on waitlist"
+    "abc_on_waitlist": "on waitlist",
+    "schedule_no_filter_matches": "No matches for these filters."
   },
   "registration": {
     "section_title": "Register my team",
@@ -734,7 +735,12 @@
     "withdraw_yes": "Yes, withdraw",
     "withdraw_no": "Cancel",
     "withdraw_error": "An error occurred.",
-    "withdraw_captain_only": "Only the captain can withdraw the team."
+    "withdraw_captain_only": "Only the captain can withdraw the team.",
+    "chat_empty": "No messages. Start the discussion with your teammates!",
+    "chat_placeholder": "Write a message…",
+    "chat_send": "Send",
+    "chat_error_send": "Failed to send message.",
+    "chat_loading": "Loading…"
   },
   "contact_modal": {
     "btn_contact": "Contact",
@@ -1241,6 +1247,8 @@
     "sessions_cancelled_badge": "Cancelled",
     "sessions_cancel_btn": "Cancel session",
     "sessions_confirm_cancel": "Cancel this session? Registered players will be notified.",
+    "sessions_untitled": "Untitled",
+    "sessions_color_none": "None",
     "edit_venues_title": "Training venues",
     "edit_venues_add": "+ Add",
     "edit_venues_desc": "Add your venues with a note on when you play there. They will be suggested when creating sessions."
@@ -2078,8 +2086,8 @@
     "item_reg_dates": "Registration dates",
     "hint_reg_dates": "Set opening and closing",
     "section_logistics": "Logistics",
-    "item_saturday_venue": "Main venue (Saturday)",
-    "hint_saturday_venue": "Name and address of Saturday court",
+    "item_saturday_venue": "Main venue",
+    "hint_saturday_venue": "Name and address of the court",
     "item_friday_welcome": "Friday welcome",
     "hint_friday_welcome": "Optional but appreciated",
     "section_visual": "Visuals & comms",

@@ -143,7 +143,7 @@ export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
       ]} />
 
       <Section title={tl("section_logistics")} items={[
-        { label: tl("item_saturday_venue"), done: !!t.saturdayEventName && !!t.saturdayEventAddress, hint: tl("hint_saturday_venue") },
+        { label: tl("item_saturday_venue"), done: !!t.venueName && !!t.venueAddress, hint: tl("hint_saturday_venue") },
         { label: tl("item_friday_welcome"), done: !!t.fridayWelcomeName, hint: tl("hint_friday_welcome") },
       ]} />
 

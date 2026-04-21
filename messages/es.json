@@ -646,7 +646,8 @@
     "bracket_not_generated_yet": "Bracket aún no generado.",
     "test_mode_hidden": "Los partidos están ocultos al público durante el modo test.",
     "abc_registered_title": "{count} inscritos",
-    "abc_on_waitlist": "en lista de espera"
+    "abc_on_waitlist": "en lista de espera",
+    "schedule_no_filter_matches": "Sin partidos para estos filtros."
   },
   "registration": {
     "section_title": "Inscribir mi equipo",
@@ -738,7 +739,12 @@
     "withdraw_yes": "Sí, darme de baja",
     "withdraw_no": "Cancelar",
     "withdraw_error": "Ha ocurrido un error.",
-    "withdraw_captain_only": "Solo el capitán puede dar de baja al equipo."
+    "withdraw_captain_only": "Solo el capitán puede dar de baja al equipo.",
+    "chat_empty": "¡Sin mensajes. ¡Inicia la conversación con tus compañeros!",
+    "chat_placeholder": "Escribe un mensaje…",
+    "chat_send": "Enviar",
+    "chat_error_send": "Error al enviar el mensaje.",
+    "chat_loading": "Cargando…"
   },
   "contact_modal": {
     "btn_contact": "Contactar",
@@ -1244,6 +1250,8 @@
     "sessions_cancelled_badge": "Cancelada",
     "sessions_cancel_btn": "Cancelar sesión",
     "sessions_confirm_cancel": "¿Cancelar esta sesión? Los inscritos serán notificados.",
+    "sessions_untitled": "Sin título",
+    "sessions_color_none": "Ninguno",
     "edit_venues_title": "Terrenos de entrenamiento",
     "edit_venues_add": "+ Añadir",
     "edit_venues_desc": "Añade tus terrenos con una nota sobre cuándo jugáis ahí. Se propondrán al crear sesiones."
@@ -2082,8 +2090,8 @@
     "item_reg_dates": "Fechas de inscripción",
     "hint_reg_dates": "Definir apertura y cierre",
     "section_logistics": "Logística",
-    "item_saturday_venue": "Lugar principal (sábado)",
-    "hint_saturday_venue": "Nombre y dirección del campo del sábado",
+    "item_saturday_venue": "Lugar principal",
+    "hint_saturday_venue": "Nombre y dirección del campo",
     "item_friday_welcome": "Bienvenida del viernes",
     "hint_friday_welcome": "Opcional pero apreciado",
     "section_visual": "Visual y comunicación",

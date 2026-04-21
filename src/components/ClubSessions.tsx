@@ -418,7 +418,7 @@ export function ClubSessions({
                       width: 28, height: 28, minWidth: 28, borderRadius: "50%", border: !editColor ? "3px solid var(--border)" : "2px solid var(--border-light)",
                       background: "var(--surface-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, padding: 0, flexShrink: 0,
                     }}
-                    title="Aucune"
+                    title={t("sessions_color_none")}
                   >✕</button>
                   {SITE_COLORS.map((c) => (
                     <button
@@ -559,7 +559,7 @@ export function ClubSessions({
                     width: 28, height: 28, minWidth: 28, borderRadius: "50%", border: !color ? "3px solid var(--border)" : "2px solid var(--border-light)",
                     background: "var(--surface-2)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, padding: 0, flexShrink: 0,
                   }}
-                  title="Aucune"
+                  title={t("sessions_color_none")}
                 >✕</button>
                 {SITE_COLORS.map((c) => (
                   <button

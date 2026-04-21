@@ -647,7 +647,8 @@
     "bracket_not_generated_yet": "Bracket noch nicht generiert.",
     "test_mode_hidden": "Spiele sind im Testmodus für die Öffentlichkeit verborgen.",
     "abc_registered_title": "{count} Angemeldete",
-    "abc_on_waitlist": "auf der Warteliste"
+    "abc_on_waitlist": "auf der Warteliste",
+    "schedule_no_filter_matches": "Keine Spiele für diese Filter."
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -739,7 +740,12 @@
     "withdraw_yes": "Ja, abmelden",
     "withdraw_no": "Abbrechen",
     "withdraw_error": "Ein Fehler ist aufgetreten.",
-    "withdraw_captain_only": "Nur der Kapitän kann das Team abmelden."
+    "withdraw_captain_only": "Nur der Kapitän kann das Team abmelden.",
+    "chat_empty": "Keine Nachrichten. Starte die Diskussion mit deinen Mitspielern!",
+    "chat_placeholder": "Nachricht schreiben…",
+    "chat_send": "Senden",
+    "chat_error_send": "Nachricht konnte nicht gesendet werden.",
+    "chat_loading": "Wird geladen…"
   },
   "contact_modal": {
     "btn_contact": "Kontaktieren",
@@ -1245,6 +1251,8 @@
     "sessions_cancelled_badge": "Abgesagt",
     "sessions_cancel_btn": "Sitzung absagen",
     "sessions_confirm_cancel": "Diese Sitzung absagen? Angemeldete Spieler werden benachrichtigt.",
+    "sessions_untitled": "Ohne Titel",
+    "sessions_color_none": "Keine",
     "edit_venues_title": "Trainingsplätze",
     "edit_venues_add": "+ Hinzufügen",
     "edit_venues_desc": "Füge deine Spielorte mit einer Notiz hinzu, wann ihr dort spielt. Sie werden beim Erstellen von Sessions vorgeschlagen."
@@ -2083,8 +2091,8 @@
     "item_reg_dates": "Anmeldedaten",
     "hint_reg_dates": "Öffnung und Schließung festlegen",
     "section_logistics": "Logistik",
-    "item_saturday_venue": "Hauptspielort (Samstag)",
-    "hint_saturday_venue": "Name und Adresse des Samstagsplatzes",
+    "item_saturday_venue": "Hauptspielort",
+    "hint_saturday_venue": "Name und Adresse des Spielortes",
     "item_friday_welcome": "Freitagsempfang",
     "hint_friday_welcome": "Optional, aber geschätzt",
     "section_visual": "Visuelles & Komms",

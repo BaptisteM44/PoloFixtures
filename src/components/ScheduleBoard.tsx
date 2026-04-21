@@ -387,7 +387,7 @@ export function ScheduleBoard({
       })}
 
       {filtered.length === 0 && (
-        <div className="empty-state"><p>Aucun match pour ces filtres.</p></div>
+        <div className="empty-state"><p>{t("schedule_no_filter_matches")}</p></div>
       )}
 
       <MatchEditPanel

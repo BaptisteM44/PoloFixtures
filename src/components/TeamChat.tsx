@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { CharterModal } from "./CharterModal";
 
 type Author = { id: string; name: string; photoPath: string | null };
@@ -33,6 +34,7 @@ export function TeamChat({ teamId, currentPlayerId, teammates, charterAccepted: 
   const [showCharter, setShowCharter] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
+  const t = useTranslations("team");
 
   const fetchMessages = useCallback(async () => {
     const res = await fetch(`/api/teams/${teamId}/messages`);
@@ -81,7 +83,7 @@ export function TeamChat({ teamId, currentPlayerId, teammates, charterAccepted: 
       setText("");
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Erreur lors de l'envoi.");
+      setError(data.error ?? t("chat_error_send"));
     }
   };
 
@@ -90,10 +92,10 @@ export function TeamChat({ teamId, currentPlayerId, teammates, charterAccepted: 
     {showCharter && <CharterModal onAccepted={() => { setLocalCharterAccepted(true); setShowCharter(false); }} />}
     <div className="team-chat">
       <div className="team-chat__messages" ref={containerRef}>
-        {loading && <p className="meta" style={{ textAlign: "center", padding: 16 }}>Chargement…</p>}
+        {loading && <p className="meta" style={{ textAlign: "center", padding: 16 }}>{t("chat_loading")}</p>}
         {!loading && messages.length === 0 && (
           <p className="meta" style={{ textAlign: "center", padding: 16, margin: 0 }}>
-            Aucun message. Lancez la discussion avec vos coéquipiers !
+            {t("chat_empty")}
           </p>
         )}
         {messages.map((msg) => {
@@ -120,13 +122,13 @@ export function TeamChat({ teamId, currentPlayerId, teammates, charterAccepted: 
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Écrire un message…"
+          placeholder={t("chat_placeholder")}
           maxLength={1000}
           disabled={sending}
           style={{ flex: 1 }}
         />
         <button className="primary" type="submit" disabled={sending || !text.trim()} style={{ padding: "8px 18px", fontSize: 13, flexShrink: 0 }}>
-          {sending ? "…" : "Envoyer"}
+          {sending ? "…" : t("chat_send")}
         </button>
       </form>
 

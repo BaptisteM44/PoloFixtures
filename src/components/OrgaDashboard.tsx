@@ -488,48 +488,6 @@ export function OrgaDashboard({
             })()}
           </div>
 
-          {/* Jour 1 — matchs pool séparés par pool pour format multi-poule */}
-          {hasAnyMatches && (tournament.poolCount ?? 1) > 1 && (
-            <>
-              {pools.map((pool: any) => {
-                const poolTeamIds = new Set(pool.teams.map((pt: any) => pt.team.id));
-                const matchesInPool = poolMatches.filter((m) => poolTeamIds.has(m.teamAId) || poolTeamIds.has(m.teamBId));
-                return (
-                  <div key={pool.id} className="panel">
-                    <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
-                      {t("orga_day1_label")} — {pool.name}
-                    </p>
-                    {matchesInPool.length === 0 ? (
-                      <p className="meta">{t("orga_matches_not_generated")}</p>
-                    ) : (
-                      <p style={{ fontSize: 13, margin: 0, color: matchesInPool.every((m) => m.status === "FINISHED") ? "var(--teal)" : "var(--text)" }}>
-                        {t("orga_matches_finished_count", { done: matchesInPool.filter((m) => m.status === "FINISHED").length, total: matchesInPool.length })}
-                        {matchesInPool.every((m) => m.status === "FINISHED") ? " ✓" : ""}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </>
-          )}
-
-          {/* Jour 1 — matchs pool (format simple ou Swiss) */}
-          {hasAnyMatches && (tournament.poolCount ?? 1) === 1 && (
-            <div className="panel">
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
-                {t("orga_day1_label")} — {tournament.saturdayFormat === "SWISS" ? "Swiss" : "Pools"}
-              </p>
-              {poolMatches.length === 0 ? (
-                <p className="meta">{t("orga_matches_not_generated")}</p>
-              ) : (
-                <p style={{ fontSize: 13, margin: 0, color: poolMatchesFinished ? "var(--teal)" : "var(--text)" }}>
-                  {t("orga_matches_finished_count", { done: poolMatches.filter((m) => m.status === "FINISHED").length, total: poolMatches.length })}
-                  {poolMatchesFinished ? " ✓" : ""}
-                </p>
-              )}
-            </div>
-          )}
-
           {/* Lancer / Reset */}
           {canLaunch && (
             <ConfirmFormButton
@@ -576,12 +534,50 @@ export function OrgaDashboard({
           {/* ── Planning standard (non-Berlin) ── */}
           {tournament.saturdayFormat !== "BERLIN_MIXED" && (
             <>
-              {/* Jour 1 — matchs pool séparés par pool pour format multi-poule */}
+              {/* Pools — séparés par pool pour format multi-poule */}
               {hasAnyMatches && (tournament.poolCount ?? 1) > 1 && (
                 <>
                   {pools.map((pool: any) => {
                     const poolTeamIds = new Set(pool.teams.map((pt: any) => pt.team.id));
-                    const matchesInPool = poolMatches.filter((m) => poolTeamIds.has(m.teamAId) || poolTeamIds.has(m.teamBId));
+                    const isGraz = tournament.saturdayFormat === "GRAZ";
+                    const grazRRMatches = isGraz
+                      ? matches.filter((m: any) => m.phase === "GRAZ_RR" && (poolTeamIds.has(m.teamAId) || poolTeamIds.has(m.teamBId)))
+                      : null;
+                    const day1Graz = grazRRMatches ? grazRRMatches.filter((m: any) => m.dayIndex === "SAT") : null;
+                    const day2Graz = grazRRMatches ? grazRRMatches.filter((m: any) => m.dayIndex === "SUN") : null;
+                    const matchesInPool = isGraz
+                      ? []
+                      : poolMatches.filter((m) => poolTeamIds.has(m.teamAId) || poolTeamIds.has(m.teamBId));
+
+                    if (isGraz) {
+                      return (
+                        <div key={pool.id} className="panel">
+                          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
+                            {pool.name} — Rounds 1–5
+                          </p>
+                          {!day1Graz || day1Graz.length === 0 ? (
+                            <p className="meta">{t("orga_matches_not_generated")}</p>
+                          ) : (
+                            <p style={{ fontSize: 13, margin: 0, color: day1Graz.every((m: any) => m.status === "FINISHED") ? "var(--teal)" : "var(--text)" }}>
+                              {t("orga_matches_finished_count", { done: day1Graz.filter((m: any) => m.status === "FINISHED").length, total: day1Graz.length })}
+                              {day1Graz.every((m: any) => m.status === "FINISHED") ? " ✓" : ""}
+                            </p>
+                          )}
+                          {day2Graz && day2Graz.length > 0 && (
+                            <>
+                              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: "10px 0 6px" }}>
+                                {pool.name} — Rounds 6–7
+                              </p>
+                              <p style={{ fontSize: 13, margin: 0, color: day2Graz.every((m: any) => m.status === "FINISHED") ? "var(--teal)" : "var(--text)" }}>
+                                {t("orga_matches_finished_count", { done: day2Graz.filter((m: any) => m.status === "FINISHED").length, total: day2Graz.length })}
+                                {day2Graz.every((m: any) => m.status === "FINISHED") ? " ✓" : ""}
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      );
+                    }
+
                     return (
                       <div key={pool.id} className="panel">
                         <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>

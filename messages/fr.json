@@ -647,7 +647,8 @@
     "bracket_not_generated_yet": "Bracket pas encore généré.",
     "test_mode_hidden": "Les matchs sont masqués au public pendant le mode test.",
     "abc_registered_title": "{count} inscrits",
-    "abc_on_waitlist": "en liste d'attente"
+    "abc_on_waitlist": "en liste d'attente",
+    "schedule_no_filter_matches": "Aucun match pour ces filtres."
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -734,7 +735,12 @@
     "withdraw_yes": "Oui, se désinscrire",
     "withdraw_no": "Annuler",
     "withdraw_error": "Une erreur est survenue.",
-    "withdraw_captain_only": "Seul le capitaine peut se désinscrire."
+    "withdraw_captain_only": "Seul le capitaine peut se désinscrire.",
+    "chat_empty": "Aucun message. Lancez la discussion avec vos coéquipiers !",
+    "chat_placeholder": "Écrire un message…",
+    "chat_send": "Envoyer",
+    "chat_error_send": "Erreur lors de l'envoi.",
+    "chat_loading": "Chargement…"
   },
   "contact_modal": {
     "btn_contact": "Contacter",
@@ -1241,6 +1247,8 @@
     "sessions_cancelled_badge": "Annulée",
     "sessions_cancel_btn": "Annuler la session",
     "sessions_confirm_cancel": "Annuler cette session ? Les inscrits seront notifiés.",
+    "sessions_untitled": "Sans titre",
+    "sessions_color_none": "Aucune",
     "edit_venues_title": "Terrains d'entraînement",
     "edit_venues_add": "+ Ajouter",
     "edit_venues_desc": "Ajoutez vos terrains avec une note sur quand vous y jouez. Ils seront proposés à la création de sessions."
@@ -2079,8 +2087,8 @@
     "item_reg_dates": "Dates d'inscription",
     "hint_reg_dates": "Définir ouverture et fermeture",
     "section_logistics": "Logistique",
-    "item_saturday_venue": "Lieu principal (samedi)",
-    "hint_saturday_venue": "Nom et adresse du terrain samedi",
+    "item_saturday_venue": "Lieu principal",
+    "hint_saturday_venue": "Nom et adresse du terrain",
     "item_friday_welcome": "Accueil vendredi",
     "hint_friday_welcome": "Optionnel mais apprécié",
     "section_visual": "Visuel & comms",
