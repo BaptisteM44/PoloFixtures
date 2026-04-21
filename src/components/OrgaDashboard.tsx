@@ -94,7 +94,7 @@ function GrazPlanning({
           {/* Pool A — matin */}
           <div className="panel">
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
-              Pool A — Rounds 1–5 (matin)
+              {t("graz_pool_a_day1" as any)}
             </p>
             <StatusLine arr={poolADay1} />
           </div>
@@ -102,7 +102,7 @@ function GrazPlanning({
           {/* Pool B — après-midi */}
           <div className="panel">
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
-              Pool B — Rounds 1–5 (après-midi)
+              {t("graz_pool_b_day1" as any)}
             </p>
             <StatusLine arr={poolBDay1} />
             {canLaunchPoolB && launchGrazPoolBAction && (
@@ -118,7 +118,7 @@ function GrazPlanning({
                   setPendingB(false);
                 }}
               >
-                {pendingB ? "..." : "🚀 Lancer Pool B"}
+                {pendingB ? "..." : t("graz_launch_pool_b" as any)}
               </button>
             )}
           </div>
@@ -130,7 +130,7 @@ function GrazPlanning({
           {/* Rounds 6-7 alternés */}
           <div className="panel">
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
-              Rounds 6–7 (A/B alternés)
+              {t("graz_sunday_rr" as any)}
             </p>
             <StatusLine arr={sundayRR} />
             {canLaunchSundayRR && launchGrazSundayRRAction && (
@@ -146,7 +146,7 @@ function GrazPlanning({
                   setPendingSun(false);
                 }}
               >
-                {pendingSun ? "..." : "🚀 Générer Rounds 6–7"}
+                {pendingSun ? "..." : t("graz_launch_sunday_rr" as any)}
               </button>
             )}
           </div>
@@ -154,7 +154,7 @@ function GrazPlanning({
           {/* Regroup */}
           <div className="panel">
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
-              Phase 2 — Regroup
+              {t("graz_regroup" as any)}
             </p>
             <StatusLine arr={regroupMatches} />
             {regroupMatches.length === 0 && sundayRRDone && (
@@ -171,7 +171,7 @@ function GrazPlanning({
           {/* SE */}
           <div className="panel">
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
-              Phase 3 — SE 8 équipes
+              {t("graz_se" as any)}
             </p>
             <StatusLine arr={seMatches} />
             {seMatches.length === 0 && regroupMatches.length > 0 && regroupMatches.every((m: any) => m.status === "FINISHED") && (
