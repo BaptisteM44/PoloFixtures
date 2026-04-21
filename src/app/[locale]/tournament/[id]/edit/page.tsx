@@ -171,6 +171,8 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               registrationEnd: t_.registrationEnd?.toISOString() ?? null,
               registrationFeePerTeam: t_.registrationFeePerTeam,
               fridayWelcomeName: t_.fridayWelcomeName,
+              venueName: t_.venueName,
+              venueAddress: t_.venueAddress,
               saturdayEventName: t_.saturdayEventName,
               saturdayEventAddress: t_.saturdayEventAddress,
               bannerPath: t_.bannerPath,
