@@ -1,10 +1,11 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Mentions légales — Poloperator" };
 
 export default async function MentionsLegalesPage() {
   const t = await getTranslations("legal_mentions");
+  const locale = await getLocale();
   return (
     <div className="legal-page">
       <h1>{t("title")}</h1>
@@ -52,7 +53,7 @@ export default async function MentionsLegalesPage() {
         <p>{t("law_text")}</p>
       </section>
 
-      <p className="legal-updated">{t("updated")} : {new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long" })}</p>
+      <p className="legal-updated">{t("updated")} : {new Date().toLocaleDateString(locale, { year: "numeric", month: "long" })}</p>
     </div>
   );
 }

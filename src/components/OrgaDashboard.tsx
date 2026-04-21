@@ -439,8 +439,14 @@ export function OrgaDashboard({
                 day2Matches = saturdayRounds * Math.floor(half / 2) * 2 + sundayRounds * Math.floor(n / 2);
               } else if (tournament.saturdayFormat === "GRAZ") {
                 const poolSize = Math.ceil(n / 2);
-                day1Matches = 2 * (poolSize * (poolSize - 1) / 2);
-                day2Matches = 4 * 6 + 8; // 4 groups × 6 RR matches + 8 SE matches (QF+SF+F+3rd)
+                const matchesPerRound = Math.floor(poolSize / 2);
+                // Day 1: 5 rounds × 2 pools
+                day1Matches = 5 * matchesPerRound * 2;
+                // Day 2: 2 remaining RR rounds + phase 2 (2 new matches/team = n matches) + SE 7 matches
+                const day2RR = 2 * matchesPerRound * 2;
+                const phase2 = n; // each team plays 2 new matches, n/2 pairs per group × 4 groups ≈ n
+                const se = 7; // QF×4 + SF×2 + F×1
+                day2Matches = day2RR + phase2 + se;
               } else if (tournament.saturdayFormat === "SWISS") {
                 const rounds = tournament.swissRounds ?? 5;
                 day1Matches = rounds * Math.floor(n / 2);

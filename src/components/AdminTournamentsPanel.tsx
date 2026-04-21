@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 type PendingTournament = {
   id: string;
@@ -32,8 +32,8 @@ type RejectedTournament = {
   creatorSlug?: string | null;
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
 }
 
 function TournamentRow({
@@ -48,6 +48,7 @@ function TournamentRow({
   approving: string | null;
 }) {
   const tr = useTranslations("admin");
+  const locale = useLocale();
   const waitingDays = Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 86400000);
 
   return (
@@ -61,7 +62,7 @@ function TournamentRow({
             </span>
           )}
         </div>
-        <p className="meta" style={{ margin: "0 0 2px" }}>{t.city}, {t.country} · {formatDate(t.dateStart)} → {formatDate(t.dateEnd)}</p>
+        <p className="meta" style={{ margin: "0 0 2px" }}>{t.city}, {t.country} · {formatDate(t.dateStart, locale)} → {formatDate(t.dateEnd, locale)}</p>
         <p className="meta" style={{ margin: 0 }}>
           {tr("created_by")}{" "}
           {t.creatorId
@@ -107,6 +108,7 @@ export function AdminTournamentsPanel({
 }) {
   const router = useRouter();
   const tr = useTranslations("admin");
+  const locale = useLocale();
   const [isPending, startTransition] = useTransition();
   const [approving, setApproving] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -222,7 +224,7 @@ export function AdminTournamentsPanel({
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
                   <div>
                     <strong style={{ fontFamily: "var(--font-display)", fontSize: 15 }}>{t.name}</strong>
-                    <p className="meta" style={{ margin: "2px 0" }}>{t.city}, {t.country} · {formatDate(t.dateStart)} → {formatDate(t.dateEnd)}</p>
+                    <p className="meta" style={{ margin: "2px 0" }}>{t.city}, {t.country} · {formatDate(t.dateStart, locale)} → {formatDate(t.dateEnd, locale)}</p>
                     <p className="meta" style={{ margin: 0 }}>{tr("by_creator", { name: t.creatorName })}</p>
                   </div>
                   <Link href={`/tournament/${t.id}/edit`} className="ghost" style={{ fontSize: 12, flexShrink: 0 }}>{tr("view_edition")}</Link>

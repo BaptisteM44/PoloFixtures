@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 import {
   createRoadmapItemAction,
   updateRoadmapItemAction,
@@ -18,28 +19,42 @@ type Item = {
   order: number;
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  feature: "✨ Feature",
-  bug: "🐛 Bug",
-  improvement: "🔧 Amélioration",
+const TYPE_KEYS: Record<string, string> = {
+  feature: "roadmap_type_feature",
+  bug: "roadmap_type_bug",
+  improvement: "roadmap_type_improvement",
 };
 
-const PRIORITY_LABELS: Record<string, { label: string; color: string }> = {
-  critical: { label: "Critique", color: "#e53935" },
-  high:     { label: "Haute",    color: "#f57c00" },
-  normal:   { label: "Normale",  color: "#1976d2" },
-  low:      { label: "Basse",    color: "#757575" },
+const PRIORITY_COLORS: Record<string, string> = {
+  critical: "#e53935",
+  high:     "#f57c00",
+  normal:   "#1976d2",
+  low:      "#757575",
 };
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  todo:        { label: "À faire",   color: "var(--text-muted)" },
-  in_progress: { label: "En cours",  color: "#f57c00" },
-  done:        { label: "Fait ✓",    color: "#43a047" },
+const PRIORITY_KEYS: Record<string, string> = {
+  critical: "roadmap_priority_critical",
+  high:     "roadmap_priority_high",
+  normal:   "roadmap_priority_normal",
+  low:      "roadmap_priority_low",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  todo:        "var(--text-muted)",
+  in_progress: "#f57c00",
+  done:        "#43a047",
+};
+
+const STATUS_KEYS: Record<string, string> = {
+  todo:        "roadmap_status_todo",
+  in_progress: "roadmap_status_in_progress",
+  done:        "roadmap_status_done",
 };
 
 const STATUSES = ["todo", "in_progress", "done"] as const;
 
 export function RoadmapBoard({ items: initialItems }: { items: Item[] }) {
+  const t = useTranslations("admin");
   const [items, setItems] = useState(initialItems);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -68,7 +83,7 @@ export function RoadmapBoard({ items: initialItems }: { items: Item[] }) {
   }
 
   function handleDelete(id: string) {
-    if (!confirm("Supprimer cet élément ?")) return;
+    if (!confirm(t("roadmap_confirm_delete"))) return;
     startTransition(async () => {
       await deleteRoadmapItemAction(id);
       setItems((prev) => prev.filter((i) => i.id !== id));
@@ -106,37 +121,37 @@ export function RoadmapBoard({ items: initialItems }: { items: Item[] }) {
       {/* Add button */}
       <div style={{ marginBottom: 24 }}>
         {!showAdd ? (
-          <button className="primary" onClick={() => setShowAdd(true)}>+ Ajouter</button>
+          <button className="primary" onClick={() => setShowAdd(true)}>{t("roadmap_btn_add")}</button>
         ) : (
           <div className="panel roadmap-add-form">
-            <h3 style={{ marginBottom: 16 }}>Nouvelle entrée</h3>
+            <h3 style={{ marginBottom: 16 }}>{t("roadmap_form_title")}</h3>
             <div className="roadmap-add-form__fields">
               <input
                 className="form-input"
-                placeholder="Titre *"
+                placeholder={t("roadmap_field_title")}
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
                 autoFocus
               />
               <textarea
                 className="form-input"
-                placeholder="Description (optionnel)"
+                placeholder={t("roadmap_field_desc")}
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
                 rows={2}
               />
               <div style={{ display: "flex", gap: 8 }}>
                 <select className="form-select" value={newType} onChange={(e) => setNewType(e.target.value)}>
-                  {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  {Object.entries(TYPE_KEYS).map(([k, tKey]) => <option key={k} value={k}>{t(tKey as Parameters<typeof t>[0])}</option>)}
                 </select>
                 <select className="form-select" value={newPriority} onChange={(e) => setNewPriority(e.target.value)}>
-                  {Object.entries(PRIORITY_LABELS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                  {Object.entries(PRIORITY_KEYS).map(([k, tKey]) => <option key={k} value={k}>{t(tKey as Parameters<typeof t>[0])}</option>)}
                 </select>
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button className="primary" onClick={handleAdd} disabled={isPending}>Ajouter</button>
-              <button className="ghost" onClick={() => setShowAdd(false)}>Annuler</button>
+              <button className="primary" onClick={handleAdd} disabled={isPending}>{t("roadmap_btn_submit")}</button>
+              <button className="ghost" onClick={() => setShowAdd(false)}>{t("roadmap_btn_cancel")}</button>
             </div>
           </div>
         )}
@@ -147,8 +162,8 @@ export function RoadmapBoard({ items: initialItems }: { items: Item[] }) {
         {grouped.map(({ status, items: colItems }) => (
           <div key={status} className="roadmap-column">
             <div className="roadmap-column__header">
-              <span style={{ color: STATUS_LABELS[status].color, fontWeight: 700 }}>
-                {STATUS_LABELS[status].label}
+              <span style={{ color: STATUS_COLORS[status], fontWeight: 700 }}>
+                {t(STATUS_KEYS[status] as Parameters<typeof t>[0])}
               </span>
               <span className="roadmap-column__count">{colItems.length}</span>
             </div>
@@ -157,12 +172,12 @@ export function RoadmapBoard({ items: initialItems }: { items: Item[] }) {
               {colItems.map((item, idx) => (
                 <div key={item.id} className={`roadmap-item roadmap-item--${item.status}`}>
                   <div className="roadmap-item__header">
-                    <span className="roadmap-item__type">{TYPE_LABELS[item.type] ?? item.type}</span>
+                    <span className="roadmap-item__type">{t((TYPE_KEYS[item.type] ?? "roadmap_type_feature") as Parameters<typeof t>[0])}</span>
                     <span
                       className="roadmap-item__priority"
-                      style={{ color: PRIORITY_LABELS[item.priority]?.color }}
+                      style={{ color: PRIORITY_COLORS[item.priority] }}
                     >
-                      {PRIORITY_LABELS[item.priority]?.label}
+                      {t((PRIORITY_KEYS[item.priority] ?? "roadmap_priority_normal") as Parameters<typeof t>[0])}
                     </span>
                   </div>
 
@@ -177,7 +192,7 @@ export function RoadmapBoard({ items: initialItems }: { items: Item[] }) {
                       onChange={(e) => handleStatus(item.id, e.target.value)}
                     >
                       {STATUSES.map((s) => (
-                        <option key={s} value={s}>{STATUS_LABELS[s].label}</option>
+                        <option key={s} value={s}>{t(STATUS_KEYS[s] as Parameters<typeof t>[0])}</option>
                       ))}
                     </select>
 
@@ -187,13 +202,13 @@ export function RoadmapBoard({ items: initialItems }: { items: Item[] }) {
                         className="roadmap-item__move-btn"
                         onClick={() => handleMove(item.id, "up")}
                         disabled={idx === 0 || isPending}
-                        title="Monter"
+                        title={t("roadmap_move_up")}
                       >↑</button>
                       <button
                         className="roadmap-item__move-btn"
                         onClick={() => handleMove(item.id, "down")}
                         disabled={idx === colItems.length - 1 || isPending}
-                        title="Descendre"
+                        title={t("roadmap_move_down")}
                       >↓</button>
                     </div>
 
@@ -201,14 +216,14 @@ export function RoadmapBoard({ items: initialItems }: { items: Item[] }) {
                       className="roadmap-item__delete-btn"
                       onClick={() => handleDelete(item.id)}
                       disabled={isPending}
-                      title="Supprimer"
+                      title={t("roadmap_btn_delete")}
                     >✕</button>
                   </div>
                 </div>
               ))}
 
               {colItems.length === 0 && (
-                <div className="roadmap-column__empty">Aucun élément</div>
+                <div className="roadmap-column__empty">{t("roadmap_column_empty")}</div>
               )}
             </div>
           </div>

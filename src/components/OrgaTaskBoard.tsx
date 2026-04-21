@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 type TaskRow = {
   id: string;
@@ -41,9 +41,9 @@ function deadlineStatus(deadline: string | null, completed: boolean): "overdue" 
   return null;
 }
 
-function formatDeadline(iso: string): string {
+function formatDeadline(iso: string, locale: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleDateString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 export function OrgaTaskBoard({
@@ -56,6 +56,7 @@ export function OrgaTaskBoard({
   coOrganizers: CoOrga[];
 }) {
   const t = useTranslations("tournament");
+  const locale = useLocale();
   const [tasks, setTasks] = useState<TaskRow[]>(initial);
   const [isPending, startTransition] = useTransition();
 
@@ -226,7 +227,7 @@ export function OrgaTaskBoard({
                       <span className={`meta${dl === "overdue" ? " orga-deadline--overdue" : dl === "soon" ? " orga-deadline--warning" : ""}`} style={{ fontSize: 11 }}>
                         {dl === "overdue" && `${t("orga_tasks_overdue")} · `}
                         {dl === "soon" && `${t("orga_tasks_due_soon")} · `}
-                        {formatDeadline(task.deadline)}
+                        {formatDeadline(task.deadline, locale)}
                       </span>
                     )}
                   </div>

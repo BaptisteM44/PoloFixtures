@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Match, MatchEvent, Team, TeamPlayer } from "@prisma/client";
 import { clampScore } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ type TournamentPayload = {
 };
 
 export function RefereePanel() {
+  const t = useTranslations("referee");
   const [tournaments, setTournaments] = useState<TournamentPayload[]>([]);
   const [selectedTournament, setSelectedTournament] = useState<string>("");
   const [selectedMatch, setSelectedMatch] = useState<MatchWithTeams | null>(null);
@@ -102,7 +104,7 @@ export function RefereePanel() {
 
     const data = await response.json();
     if (!response.ok) {
-      setMatchError(data?.error ?? "Erreur inconnue");
+      setMatchError(data?.error ?? t("unknown_error"));
       return;
     }
     if (data?.match) {
@@ -207,23 +209,23 @@ export function RefereePanel() {
   return (
     <div className="referee">
       <div className="panel">
-        <h2>Referee Console</h2>
+        <h2>{t("console_title")}</h2>
         <div className="field-row">
-          <label>Tournament</label>
+          <label>{t("select_tournament")}</label>
           <select value={selectedTournament} onChange={(e) => setSelectedTournament(e.target.value)}>
-            <option value="">Select tournament</option>
-            {tournaments.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
+            <option value="">{t("select_tournament_placeholder")}</option>
+            {tournaments.map((t2) => (
+              <option key={t2.id} value={t2.id}>{t2.name}</option>
             ))}
           </select>
         </div>
         <div className="field-row">
-          <label>Match</label>
+          <label>{t("select_match")}</label>
           <select
             value={selectedMatch?.id ?? ""}
             onChange={(e) => setSelectedMatch(matches.find((m) => m.id === e.target.value) ?? null)}
           >
-            <option value="">Select match</option>
+            <option value="">{t("select_match_placeholder")}</option>
             {matches.map((match) => (
               <option key={match.id} value={match.id}>
                 {match.teamA?.name ?? "TBD"} vs {match.teamB?.name ?? "TBD"} ({match.courtName})
@@ -236,12 +238,12 @@ export function RefereePanel() {
       {selectedMatch && (
         <div className="referee-grid">
           <div className="panel">
-            <h3>Timer</h3>
+            <h3>{t("timer_title")}</h3>
             <div className="clock">{formatClock(clockSec)}</div>
             <div className="button-row">
-              <button onClick={onStart}>Start</button>
-              <button onClick={onPause} className="ghost">Pause</button>
-              <button onClick={onReset} className="ghost">Reset</button>
+              <button onClick={onStart}>{t("btn_start")}</button>
+              <button onClick={onPause} className="ghost">{t("btn_pause")}</button>
+              <button onClick={onReset} className="ghost">{t("btn_reset")}</button>
             </div>
             <div className="button-row">
               <button onClick={() => onAdjust(30)}>+30s</button>
@@ -249,10 +251,10 @@ export function RefereePanel() {
             </div>
             <div className="button-row">
               <button className="ghost" onClick={() => setMuted((prev) => !prev)}>
-                {muted ? "Unmute Buzzer" : "Mute Buzzer"}
+                {muted ? t("btn_unmute") : t("btn_mute")}
               </button>
               <label className="volume">
-                Volume
+                {t("volume_label")}
                 <input
                   type="range"
                   min="0"
@@ -266,7 +268,7 @@ export function RefereePanel() {
           </div>
 
           <div className="panel">
-            <h3>Score</h3>
+            <h3>{t("score_title")}</h3>
             <div className="scoreboard">
               <div>
                 <h4>{selectedMatch.teamA?.name ?? "Team A"}</h4>
@@ -276,12 +278,12 @@ export function RefereePanel() {
                   <button className="ghost" onClick={() => selectedMatch.teamAId && onScore(selectedMatch.teamAId, -1)}>-1</button>
                 </div>
                 <div className="button-row">
-                  <button className="ghost" onClick={() => selectedMatch.teamAId && onTimeout(selectedMatch.teamAId, "normal")}>Timeout</button>
-                  <button className="ghost" onClick={() => selectedMatch.teamAId && onTimeout(selectedMatch.teamAId, "normal", -1)}>Undo</button>
-                  <button className="ghost" onClick={() => selectedMatch.teamAId && onTimeout(selectedMatch.teamAId, "mechanical")}>Mechanical</button>
-                  <button className="ghost" onClick={() => selectedMatch.teamAId && onTimeout(selectedMatch.teamAId, "mechanical", -1)}>Undo</button>
+                  <button className="ghost" onClick={() => selectedMatch.teamAId && onTimeout(selectedMatch.teamAId, "normal")}>{t("btn_timeout")}</button>
+                  <button className="ghost" onClick={() => selectedMatch.teamAId && onTimeout(selectedMatch.teamAId, "normal", -1)}>{t("btn_undo")}</button>
+                  <button className="ghost" onClick={() => selectedMatch.teamAId && onTimeout(selectedMatch.teamAId, "mechanical")}>{t("btn_mechanical")}</button>
+                  <button className="ghost" onClick={() => selectedMatch.teamAId && onTimeout(selectedMatch.teamAId, "mechanical", -1)}>{t("btn_undo")}</button>
                 </div>
-                <p className="meta">Timeouts: {timeoutCounts.normalA} normal / {timeoutCounts.mechA} mech</p>
+                <p className="meta">{t("timeouts_label", { normal: timeoutCounts.normalA, mech: timeoutCounts.mechA })}</p>
               </div>
               <div>
                 <h4>{selectedMatch.teamB?.name ?? "Team B"}</h4>
@@ -291,18 +293,18 @@ export function RefereePanel() {
                   <button className="ghost" onClick={() => selectedMatch.teamBId && onScore(selectedMatch.teamBId, -1)}>-1</button>
                 </div>
                 <div className="button-row">
-                  <button className="ghost" onClick={() => selectedMatch.teamBId && onTimeout(selectedMatch.teamBId, "normal")}>Timeout</button>
-                  <button className="ghost" onClick={() => selectedMatch.teamBId && onTimeout(selectedMatch.teamBId, "normal", -1)}>Undo</button>
-                  <button className="ghost" onClick={() => selectedMatch.teamBId && onTimeout(selectedMatch.teamBId, "mechanical")}>Mechanical</button>
-                  <button className="ghost" onClick={() => selectedMatch.teamBId && onTimeout(selectedMatch.teamBId, "mechanical", -1)}>Undo</button>
+                  <button className="ghost" onClick={() => selectedMatch.teamBId && onTimeout(selectedMatch.teamBId, "normal")}>{t("btn_timeout")}</button>
+                  <button className="ghost" onClick={() => selectedMatch.teamBId && onTimeout(selectedMatch.teamBId, "normal", -1)}>{t("btn_undo")}</button>
+                  <button className="ghost" onClick={() => selectedMatch.teamBId && onTimeout(selectedMatch.teamBId, "mechanical")}>{t("btn_mechanical")}</button>
+                  <button className="ghost" onClick={() => selectedMatch.teamBId && onTimeout(selectedMatch.teamBId, "mechanical", -1)}>{t("btn_undo")}</button>
                 </div>
-                <p className="meta">Timeouts: {timeoutCounts.normalB} normal / {timeoutCounts.mechB} mech</p>
+                <p className="meta">{t("timeouts_label", { normal: timeoutCounts.normalB, mech: timeoutCounts.mechB })}</p>
               </div>
             </div>
           </div>
 
           <div className="panel">
-            <h3>Penalties</h3>
+            <h3>{t("penalties_title")}</h3>
             <div className="penalty-grid">
               {[selectedMatch.teamA, selectedMatch.teamB].map((team) => (
                 <div key={team?.id}>
@@ -323,7 +325,7 @@ export function RefereePanel() {
           </div>
 
           <div className="panel">
-            <h3>Event Log</h3>
+            <h3>{t("event_log_title")}</h3>
             <div className="event-log">
               {(selectedMatch.events ?? []).slice(-8).reverse().map((event) => (
                 <div key={event.id} className="event-row">
@@ -331,22 +333,22 @@ export function RefereePanel() {
                   <span className="meta">{formatClock(event.matchClockSec)}</span>
                 </div>
               ))}
-              {(selectedMatch.events ?? []).length === 0 && <p className="meta">No events yet.</p>}
+              {(selectedMatch.events ?? []).length === 0 && <p className="meta">{t("event_log_empty")}</p>}
             </div>
           </div>
 
           <div className="panel">
-            <h3>Finish</h3>
-            <p style={{ fontSize: 12, marginBottom: 8 }}>Golden goal (termine le match +1) :</p>
+            <h3>{t("finish_title")}</h3>
+            <p style={{ fontSize: 12, marginBottom: 8 }}>{t("golden_goal_label")}</p>
             <div className="button-row">
               <button onClick={() => selectedMatch.teamAId && onGoldenGoal(selectedMatch.teamAId)}>
-                ⭐ GG — {selectedMatch.teamA?.name ?? "Team A"}
+                {t("btn_gg_team", { name: selectedMatch.teamA?.name ?? "Team A" })}
               </button>
               <button onClick={() => selectedMatch.teamBId && onGoldenGoal(selectedMatch.teamBId)}>
-                ⭐ GG — {selectedMatch.teamB?.name ?? "Team B"}
+                {t("btn_gg_team", { name: selectedMatch.teamB?.name ?? "Team B" })}
               </button>
             </div>
-            <button className="danger" style={{ marginTop: 8 }} onClick={() => postEvent("END")}>End Match</button>
+            <button className="danger" style={{ marginTop: 8 }} onClick={() => postEvent("END")}>{t("btn_end_match")}</button>
             {matchError && (
               <p style={{ color: "var(--pink)", fontSize: 13, marginTop: 8, fontWeight: 600 }}>{matchError}</p>
             )}

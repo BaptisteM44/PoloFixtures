@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { CharterModal } from "./CharterModal";
 
 type Author = { id: string; name: string; photoPath: string | null };
@@ -30,6 +30,7 @@ function authorColorIndex(id: string): number {
 
 export function TournamentChat({ tournamentId, chatMode, currentPlayerId, currentPlayerName, isOrga, creatorId, fullPage, charterAccepted: initialCharterAccepted }: Props) {
   const t = useTranslations("tournament");
+  const locale = useLocale();
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
@@ -98,7 +99,7 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
       setText("");
     } else {
       const data = await res.json().catch(() => ({}));
-      setError(data.error ?? "Erreur lors de l'envoi.");
+      setError(data.error ?? t("chat_error_send"));
     }
   };
 
@@ -123,16 +124,16 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
         </h3>
         {chatMode === "ORG_ONLY" && (
           <span style={{ fontSize: 11, fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--text-muted)", background: "var(--surface-2)", border: "1.5px solid var(--border-light)", borderRadius: 4, padding: "2px 8px" }}>
-            ANNONCES · ORG ONLY
+            {t("chat_org_badge")}
           </span>
         )}
       </div>
 
       <div className="tournament-chat__messages" ref={messagesContainerRef}>
-        {loading && <p className="meta" style={{ textAlign: "center", padding: 16 }}>Chargement…</p>}
+        {loading && <p className="meta" style={{ textAlign: "center", padding: 16 }}>{t("chat_loading")}</p>}
         {!loading && messages.length === 0 && (
           <p className="meta" style={{ textAlign: "center", padding: 16, margin: 0 }}>
-            {chatMode === "ORG_ONLY" ? "Aucune annonce pour l'instant." : "Aucun message pour l'instant. Soyez le premier !"}
+            {chatMode === "ORG_ONLY" ? t("chat_empty_orga") : t("chat_empty_participants")}
           </p>
         )}
         {messages.map((msg) => {
@@ -146,13 +147,13 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
             <div className="tournament-chat__msg-meta">
               <span className="tournament-chat__msg-author">{msg.author.name}</span>
               <span className="tournament-chat__msg-time">
-                {new Date(msg.createdAt).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                {new Date(msg.createdAt).toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
               </span>
             </div>
             <div className="tournament-chat__msg-bubble">
               {msg.deletedByModeration ? (
                 <span style={{ fontStyle: "italic", color: "var(--text-muted)", fontSize: 12 }}>
-                  [Message supprimé par la modération]
+                  {t("chat_msg_deleted")}
                 </span>
               ) : (
                 <>
@@ -161,7 +162,7 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
                     <button
                       className="tournament-chat__msg-delete"
                       onClick={() => handleDelete(msg.id)}
-                      title="Supprimer ce message"
+                      title={t("chat_delete_title")}
                       type="button"
                     >
                       ✕
@@ -181,13 +182,13 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={chatMode === "ORG_ONLY" ? "Écrire une annonce…" : "Écrire un message…"}
+            placeholder={chatMode === "ORG_ONLY" ? t("chat_placeholder_orga") : t("chat_placeholder")}
             maxLength={1000}
             disabled={sending}
             style={{ flex: 1 }}
           />
           <button className="primary" type="submit" disabled={sending || !text.trim()} style={{ padding: "8px 18px", fontSize: 13, flexShrink: 0 }}>
-            {sending ? "…" : "Envoyer"}
+            {sending ? "…" : t("chat_send")}
           </button>
         </form>
       ) : (
@@ -195,7 +196,7 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
           {!currentPlayerId ? (
             <span className="meta">{t("chat_login_prompt")}</span>
           ) : chatMode === "ORG_ONLY" ? (
-            <span className="meta">Seul l&apos;organisateur peut publier des annonces.</span>
+            <span className="meta">{t("chat_orga_only_hint")}</span>
           ) : null}
         </div>
       )}

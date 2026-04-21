@@ -11,7 +11,7 @@ import { ClubChat } from "@/components/ClubChat";
 import { ClubAdminPanel } from "@/components/ClubAdminPanel";
 import { ClubEquipment } from "@/components/ClubEquipment";
 import { ClubAnnouncements } from "@/components/ClubAnnouncements";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +60,7 @@ export default async function ClubPage({
 
   const t = await getTranslations("club");
   const ta = await getTranslations("admin");
+  const locale = await getLocale();
 
   const activeMembers = club.members.filter((m) => m.status === "MEMBER");
   const membersForManager = club.members.map((m) => ({
@@ -341,7 +342,7 @@ export default async function ClubPage({
               <span className="club-banner__postit-icon">📅</span>
               <span className="club-banner__postit-label">{t("banner_next_session")}</span>
               <span className="club-banner__postit-value">
-                {new Date(nextSession.date).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}
+                {new Date(nextSession.date).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" })}
                 {nextSession.recurrenceTime && ` · ${nextSession.recurrenceTime}`}
                 {nextSession.venue?.name && ` — ${nextSession.venue.name}`}
               </span>
@@ -424,7 +425,7 @@ export default async function ClubPage({
                         {tr.name}
                       </Link>
                       <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--text-muted)" }}>
-                        📍 {tr.city}, {tr.country} · {new Date(tr.dateStart).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
+                        📍 {tr.city}, {tr.country} · {new Date(tr.dateStart).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })}
                       </p>
                     </div>
                     <span className={`status ${tr.status.toLowerCase()}`}>{tr.status}</span>

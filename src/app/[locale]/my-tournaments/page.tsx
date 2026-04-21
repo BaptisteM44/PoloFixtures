@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { TeamChat } from "@/components/TeamChat";
 
 type Teammate = {
@@ -64,14 +64,15 @@ function flagEmoji(countryCode: string) {
   );
 }
 
-function formatDateRange(start: string, end: string) {
-  return `${new Date(start).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} — ${new Date(end).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}`;
+function formatDateRange(start: string, end: string, locale: string) {
+  return `${new Date(start).toLocaleDateString(locale, { day: "numeric", month: "short" })} — ${new Date(end).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })}`;
 }
 
 export default function MyTournamentsPage() {
   const t = useTranslations("my_tournaments");
   const ts = useTranslations("tournaments");
   const tc = useTranslations("common");
+  const locale = useLocale();
   const { data: session, status: sessionStatus } = useSession();
 
   const statusLabel = (s: string) => {
@@ -176,7 +177,7 @@ export default function MyTournamentsPage() {
                             <Link href={`/tournament/${entry.tournament.slug}`} className="my-tournaments__tournament-name">{entry.tournament.name}</Link>
                             <div className="my-tournaments__card-sub">
                               <span>{flagEmoji(entry.tournament.country)} {entry.tournament.city}, {entry.tournament.country}</span>
-                              <span className="my-tournaments__card-dates">{formatDateRange(entry.tournament.dateStart, entry.tournament.dateEnd)}</span>
+                              <span className="my-tournaments__card-dates">{formatDateRange(entry.tournament.dateStart, entry.tournament.dateEnd, locale)}</span>
                             </div>
                           </div>
                           <span className={`my-tournaments__status-badge ${statusCls}`}>{statusLabel(entry.tournament.status)}</span>
@@ -240,7 +241,7 @@ export default function MyTournamentsPage() {
                           </Link>
                           <div className="my-tournaments__card-sub">
                             <span>{flagEmoji(entry.tournament.country)} {entry.tournament.city}, {entry.tournament.country}</span>
-                            <span className="my-tournaments__card-dates">{formatDateRange(entry.tournament.dateStart, entry.tournament.dateEnd)}</span>
+                            <span className="my-tournaments__card-dates">{formatDateRange(entry.tournament.dateStart, entry.tournament.dateEnd, locale)}</span>
                           </div>
                         </div>
                         <span className={`my-tournaments__status-badge ${statusCls}`}>
@@ -326,7 +327,7 @@ export default function MyTournamentsPage() {
                       <Link href={`/tournament/${tour.slug}`} className="my-tournaments__tournament-name">{tour.name}</Link>
                       <div className="my-tournaments__card-sub">
                         <span>{flagEmoji(tour.country)} {tour.city}, {tour.country}</span>
-                        <span className="my-tournaments__card-dates">{formatDateRange(tour.dateStart, tour.dateEnd)}</span>
+                        <span className="my-tournaments__card-dates">{formatDateRange(tour.dateStart, tour.dateEnd, locale)}</span>
                       </div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
