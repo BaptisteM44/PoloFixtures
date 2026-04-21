@@ -107,8 +107,58 @@ export function generateGrazPools(teams: Team[]): GrazGroup[] {
 }
 
 /**
+ * Generate RR matches for a single pool (day 1 or day 2).
+ * @param pool           The pool to generate for
+ * @param courtNames     Court names
+ * @param startAt        Start time for this block
+ * @param dayIndex       SAT or SUN
+ * @param gameDurationMin
+ * @param roundFrom      First round index to generate (1-based, inclusive)
+ * @param roundTo        Last round index to generate (1-based, inclusive)
+ */
+export function generateGrazPoolRounds(
+  pool: GrazGroup,
+  courtNames: string[],
+  startAt: Date,
+  dayIndex: MatchDay,
+  gameDurationMin: number,
+  roundFrom: number,
+  roundTo: number
+): GrazMatch[] {
+  const matches: GrazMatch[] = [];
+  const slotMin = gameDurationMin + 5;
+  const rounds = circleMethodRounds(pool.teams);
+  const courtFree = courtNames.map(() => new Date(startAt));
+
+  for (let r = roundFrom - 1; r < Math.min(roundTo, rounds.length); r++) {
+    for (const [teamA, teamB] of rounds[r]) {
+      let bestIdx = 0;
+      for (let c = 1; c < courtNames.length; c++) {
+        if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
+      }
+      matches.push({
+        phase: "GRAZ_RR",
+        poolName: pool.name,
+        bracketSide: null,
+        roundIndex: r + 1,
+        courtName: courtNames[bestIdx],
+        startAt: new Date(courtFree[bestIdx]),
+        dayIndex,
+        status: "SCHEDULED",
+        teamAId: teamA.id,
+        teamBId: teamB.id,
+      });
+      courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
+    }
+  }
+
+  return matches;
+}
+
+/**
  * Generate RR matches for the initial pools.
  * Splits rounds across Day 1 and Day 2 based on matchesPerDay1.
+ * @deprecated Use generateGrazPoolRounds for per-pool generation.
  */
 export function generateGrazRRMatches(
   pools: GrazGroup[],
@@ -125,13 +175,10 @@ export function generateGrazRRMatches(
     const rounds = circleMethodRounds(pool.teams);
     const courtFree = courtNames.map(() => new Date(day1Start));
     let currentDay: MatchDay = "SAT";
-    let matchCount = 0;
-    // Each team plays once per round. matchesPerDay1 rounds on day 1.
     const day1Rounds = matchesPerDay1;
 
     for (let r = 0; r < rounds.length; r++) {
       if (r === day1Rounds) {
-        // Switch to day 2
         currentDay = "SUN";
         for (let c = 0; c < courtFree.length; c++) {
           courtFree[c] = new Date(day2Start);

@@ -23,6 +23,173 @@ import { SelectionManager } from "@/components/SelectionManager";
 import { DrawPanel } from "@/components/DrawPanel";
 
 
+// ─── GrazPlanning ────────────────────────────────────────────────────────────
+
+type GrazTab = "samedi" | "dimanche";
+
+function GrazPlanning({
+  tournament,
+  pools,
+  matches,
+  launchGrazPoolBAction,
+  launchGrazSundayRRAction,
+}: {
+  tournament: any;
+  pools: any[];
+  matches: any[];
+  launchGrazPoolBAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchGrazSundayRRAction?: () => Promise<{ ok?: boolean; error?: string }>;
+}) {
+  const t = useTranslations("tournament");
+  const [tab, setTab] = useState<GrazTab>("samedi");
+  const [pendingB, setPendingB] = useState(false);
+  const [pendingSun, setPendingSun] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const poolAId = pools.find((p: any) => p.name === "Pool A")?.id;
+  const poolBId = pools.find((p: any) => p.name === "Pool B")?.id;
+
+  const rrMatches = matches.filter((m: any) => m.phase === "GRAZ_RR");
+  const poolADay1 = rrMatches.filter((m: any) => m.dayIndex === "SAT" && m.poolId === poolAId);
+  const poolBDay1 = rrMatches.filter((m: any) => m.dayIndex === "SAT" && m.poolId === poolBId);
+  const sundayRR = rrMatches.filter((m: any) => m.dayIndex === "SUN");
+  const regroupMatches = matches.filter((m: any) => m.phase === "GRAZ_REGROUP");
+  const seMatches = matches.filter((m: any) => m.phase === "GRAZ_SE" || m.phase === "BRACKET");
+
+  const poolADay1Done = poolADay1.length > 0 && poolADay1.every((m: any) => m.status === "FINISHED");
+  const poolBDay1Done = poolBDay1.length > 0 && poolBDay1.every((m: any) => m.status === "FINISHED");
+  const sundayRRDone = sundayRR.length > 0 && sundayRR.every((m: any) => m.status === "FINISHED");
+
+  const canLaunchPoolB = poolADay1.length > 0 && poolBDay1.length === 0;
+  const canLaunchSundayRR = poolADay1.length > 0 && poolBDay1.length > 0 && sundayRR.length === 0;
+
+  const matchCount = (arr: any[]) => ({ done: arr.filter((m: any) => m.status === "FINISHED").length, total: arr.length });
+
+  function StatusLine({ arr }: { arr: any[] }) {
+    const { done, total } = matchCount(arr);
+    if (total === 0) return <p className="meta">{t("orga_matches_not_generated")}</p>;
+    return (
+      <p style={{ fontSize: 13, margin: 0, color: done === total ? "var(--teal)" : "var(--text)" }}>
+        {t("orga_matches_finished_count", { done, total })}{done === total ? " ✓" : ""}
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      <div className="tabs-bar" style={{ marginTop: 0 }}>
+        <div className="tabs">
+          {(["samedi", "dimanche"] as GrazTab[]).map((v) => (
+            <button key={v} type="button" onClick={() => setTab(v)} className={`tab${tab === v ? " active" : ""}`}>
+              {v === "samedi" ? t("orga_day1_label") : t("orga_day2_label")}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && <p style={{ color: "var(--danger)", fontSize: 12, padding: "8px 0" }}>{error}</p>}
+
+      {tab === "samedi" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Pool A — matin */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              Pool A — Rounds 1–5 (matin)
+            </p>
+            <StatusLine arr={poolADay1} />
+          </div>
+
+          {/* Pool B — après-midi */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              Pool B — Rounds 1–5 (après-midi)
+            </p>
+            <StatusLine arr={poolBDay1} />
+            {canLaunchPoolB && launchGrazPoolBAction && (
+              <button
+                className="primary"
+                style={{ marginTop: 10, fontSize: 13 }}
+                disabled={pendingB}
+                onClick={async () => {
+                  setPendingB(true);
+                  setError(null);
+                  const res = await launchGrazPoolBAction();
+                  if (res?.error) setError(res.error);
+                  setPendingB(false);
+                }}
+              >
+                {pendingB ? "..." : "🚀 Lancer Pool B"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "dimanche" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Rounds 6-7 alternés */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              Rounds 6–7 (A/B alternés)
+            </p>
+            <StatusLine arr={sundayRR} />
+            {canLaunchSundayRR && launchGrazSundayRRAction && (
+              <button
+                className="primary"
+                style={{ marginTop: 10, fontSize: 13 }}
+                disabled={pendingSun}
+                onClick={async () => {
+                  setPendingSun(true);
+                  setError(null);
+                  const res = await launchGrazSundayRRAction();
+                  if (res?.error) setError(res.error);
+                  setPendingSun(false);
+                }}
+              >
+                {pendingSun ? "..." : "🚀 Générer Rounds 6–7"}
+              </button>
+            )}
+          </div>
+
+          {/* Regroup */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              Phase 2 — Regroup
+            </p>
+            <StatusLine arr={regroupMatches} />
+            {regroupMatches.length === 0 && sundayRRDone && (
+              <BracketActions
+                tournamentId={tournament.id}
+                returnPath={`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`}
+                hasQualifyingMatches={true}
+                isRR={false}
+                mode="launch"
+              />
+            )}
+          </div>
+
+          {/* SE */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              Phase 3 — SE 8 équipes
+            </p>
+            <StatusLine arr={seMatches} />
+            {seMatches.length === 0 && regroupMatches.length > 0 && regroupMatches.every((m: any) => m.status === "FINISHED") && (
+              <BracketActions
+                tournamentId={tournament.id}
+                returnPath={`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`}
+                hasQualifyingMatches={true}
+                isRR={false}
+                mode="buttons"
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── BerlinMixedPlanning ─────────────────────────────────────────────────────
 
 type BerlinTab = "groupes" | "vendredi" | "samedi" | "dimanche" | "brackets";
@@ -152,6 +319,8 @@ type OrgaDashboardProps = {
   launchAction: (formData: FormData) => Promise<void>;
   resetAction: (formData: FormData) => Promise<void>;
   resetMatchesAction: (formData: FormData) => Promise<void>;
+  launchGrazPoolBAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchGrazSundayRRAction?: () => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignedTo: { id: string; name: string } | null; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -204,6 +373,8 @@ export function OrgaDashboard({
   launchAction,
   resetAction,
   resetMatchesAction,
+  launchGrazPoolBAction,
+  launchGrazSundayRRAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -537,52 +708,26 @@ export function OrgaDashboard({
             />
           )}
 
-          {/* ── Planning standard (non-Berlin) ── */}
-          {tournament.saturdayFormat !== "BERLIN_MIXED" && (
+          {/* ── Graz Format planning ── */}
+          {tournament.saturdayFormat === "GRAZ" && (isLive || tournament.status === "COMPLETED") && (
+            <GrazPlanning
+              tournament={tournament}
+              pools={pools}
+              matches={matches}
+              launchGrazPoolBAction={launchGrazPoolBAction}
+              launchGrazSundayRRAction={launchGrazSundayRRAction}
+            />
+          )}
+
+          {/* ── Planning standard (non-Berlin, non-Graz) ── */}
+          {tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && (
             <>
               {/* Pools — séparés par pool pour format multi-poule */}
               {hasAnyMatches && (tournament.poolCount ?? 1) > 1 && (
                 <>
                   {pools.map((pool: any) => {
                     const poolTeamIds = new Set(pool.teams.map((pt: any) => pt.team.id));
-                    const isGraz = tournament.saturdayFormat === "GRAZ";
-                    const grazRRMatches = isGraz
-                      ? matches.filter((m: any) => m.phase === "GRAZ_RR" && (poolTeamIds.has(m.teamAId) || poolTeamIds.has(m.teamBId)))
-                      : null;
-                    const day1Graz = grazRRMatches ? grazRRMatches.filter((m: any) => m.dayIndex === "SAT") : null;
-                    const day2Graz = grazRRMatches ? grazRRMatches.filter((m: any) => m.dayIndex === "SUN") : null;
-                    const matchesInPool = isGraz
-                      ? []
-                      : poolMatches.filter((m) => poolTeamIds.has(m.teamAId) || poolTeamIds.has(m.teamBId));
-
-                    if (isGraz) {
-                      return (
-                        <div key={pool.id} className="panel">
-                          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
-                            {pool.name} — Rounds 1–5
-                          </p>
-                          {!day1Graz || day1Graz.length === 0 ? (
-                            <p className="meta">{t("orga_matches_not_generated")}</p>
-                          ) : (
-                            <p style={{ fontSize: 13, margin: 0, color: day1Graz.every((m: any) => m.status === "FINISHED") ? "var(--teal)" : "var(--text)" }}>
-                              {t("orga_matches_finished_count", { done: day1Graz.filter((m: any) => m.status === "FINISHED").length, total: day1Graz.length })}
-                              {day1Graz.every((m: any) => m.status === "FINISHED") ? " ✓" : ""}
-                            </p>
-                          )}
-                          {day2Graz && day2Graz.length > 0 && (
-                            <>
-                              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: "10px 0 6px" }}>
-                                {pool.name} — Rounds 6–7
-                              </p>
-                              <p style={{ fontSize: 13, margin: 0, color: day2Graz.every((m: any) => m.status === "FINISHED") ? "var(--teal)" : "var(--text)" }}>
-                                {t("orga_matches_finished_count", { done: day2Graz.filter((m: any) => m.status === "FINISHED").length, total: day2Graz.length })}
-                                {day2Graz.every((m: any) => m.status === "FINISHED") ? " ✓" : ""}
-                              </p>
-                            </>
-                          )}
-                        </div>
-                      );
-                    }
+                    const matchesInPool = poolMatches.filter((m) => poolTeamIds.has(m.teamAId) || poolTeamIds.has(m.teamBId));
 
                     return (
                       <div key={pool.id} className="panel">

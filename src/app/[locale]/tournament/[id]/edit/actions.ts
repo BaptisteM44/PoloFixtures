@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
 import { generatePools, generatePoolMatches, generateBracket, generateSwissRound, generateCrossPoolMatches, nextPowerOf2 } from "@/lib/bracket";
+import { generateGrazPools, generateGrazPoolRounds } from "@/lib/graz";
 import { computeStandings } from "@/lib/standings";
 import { computeCareerBadges } from "@/lib/achievements";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
@@ -1653,9 +1654,13 @@ export async function launchTournamentAction(
 
   // Générer les matchs selon le format choisi
   // Berlin Mixed: pas de matchs auto-générés au lancement — l'orga gère manuellement via BerlinMixedActions
+  // Graz: génère seulement Pool A (5 rounds samedi matin) — Pool B lancé séparément
   if (tournament.saturdayFormat === "SWISS") {
     const res = await generateSwissRoundAction(id);
     if ("error" in res && res.error) return { error: `Lancement OK mais erreur Swiss : ${res.error}` };
+  } else if (tournament.saturdayFormat === "GRAZ") {
+    const res = await launchGrazPoolAction(id, "Pool A");
+    if ("error" in res && res.error) return { error: `Lancement OK mais erreur Graz Pool A : ${res.error}` };
   } else if (tournament.saturdayFormat !== "BERLIN_MIXED") {
     const res = await generatePoolsAction(id);
     if ("error" in res && res.error) return { error: `Lancement OK mais erreur Poules : ${res.error}` };
@@ -1744,6 +1749,197 @@ export async function resetTournamentAction(
       // Non-blocking: don't fail the reset if badge recompute fails
     }
   }
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+/**
+ * Génère les 5 rounds de jour 1 pour une pool Graz (A ou B).
+ * Pool A : samedi matin (saturdayPoolAStart ou dateStart)
+ * Pool B : samedi après-midi (saturdayPoolBStart ou dateStart+3h)
+ */
+export async function launchGrazPoolAction(
+  id: string,
+  poolName: "Pool A" | "Pool B"
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      pools: { include: { teams: { include: { team: true } } } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: "Ce tournoi n'utilise pas le format Graz." };
+
+  // Check if this pool's rounds already exist
+  const poolAlreadyGenerated = await prisma.match.findFirst({
+    where: {
+      tournamentId: id,
+      phase: "GRAZ_RR",
+      dayIndex: "SAT",
+      pool: { name: poolName },
+    },
+  });
+  if (poolAlreadyGenerated) return { error: `Les matchs du jour 1 pour ${poolName} ont déjà été générés.` };
+
+  // Get or create pool record
+  let poolRecord = tournament.pools.find((p) => p.name === poolName);
+
+  // Generate the two pools from teams if not already assigned
+  const grazPools = generateGrazPools(tournament.teams);
+  const targetPool = grazPools.find((p) => p.name === poolName);
+  if (!targetPool) return { error: `Pool ${poolName} introuvable.` };
+
+  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+
+  // Start time: Pool A = saturdayPoolAStart ?? dateStart, Pool B = saturdayPoolBStart ?? dateStart+3h
+  const dateStart = new Date((tournament as any).dateStart);
+  let startAt: Date;
+  if (poolName === "Pool A") {
+    startAt = (tournament as any).saturdayPoolAStart
+      ? new Date((tournament as any).saturdayPoolAStart)
+      : dateStart;
+  } else {
+    startAt = (tournament as any).saturdayPoolBStart
+      ? new Date((tournament as any).saturdayPoolBStart)
+      : new Date(dateStart.getTime() + 3 * 60 * 60 * 1000);
+  }
+
+  const newMatches = generateGrazPoolRounds(
+    targetPool,
+    courtNames,
+    startAt,
+    "SAT",
+    tournament.gameDurationMin,
+    1,
+    5
+  );
+
+  await prisma.$transaction(async (tx) => {
+    // Create pool record if needed
+    if (!poolRecord) {
+      const created = await tx.pool.create({
+        data: { tournamentId: id, name: poolName, session: null },
+      });
+      await tx.poolTeam.createMany({
+        data: targetPool.teams.map((team) => ({ poolId: created.id, teamId: team.id })),
+      });
+      poolRecord = { ...created, teams: [] } as any;
+    }
+
+    for (const match of newMatches) {
+      await tx.match.create({
+        data: {
+          tournamentId: id,
+          phase: "GRAZ_RR",
+          poolId: poolRecord!.id,
+          bracketSide: null,
+          roundIndex: match.roundIndex,
+          positionInRound: match.positionInRound ?? 0,
+          courtName: match.courtName,
+          startAt: match.startAt,
+          dayIndex: "SAT",
+          status: "SCHEDULED",
+          teamAId: match.teamAId,
+          teamBId: match.teamBId,
+        },
+      });
+    }
+  }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+/**
+ * Génère les rounds 6-7 du dimanche matin pour les deux pools Graz,
+ * en alternant : Round 6 Pool A, Round 6 Pool B, Round 7 Pool A, Round 7 Pool B.
+ */
+export async function launchGrazSundayRRAction(
+  id: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      pools: { include: { teams: { include: { team: true } } } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: "Ce tournoi n'utilise pas le format Graz." };
+
+  // Check all day 1 matches are done
+  const day1Matches = await prisma.match.findMany({
+    where: { tournamentId: id, phase: "GRAZ_RR", dayIndex: "SAT" },
+  });
+  if (day1Matches.length === 0) return { error: "Générez d'abord les matchs du samedi." };
+  const unfinishedDay1 = day1Matches.filter((m) => m.status !== "FINISHED");
+  if (unfinishedDay1.length > 0) return { error: `${unfinishedDay1.length} match(s) du samedi non terminé(s).` };
+
+  // Check rounds 6-7 not already generated
+  const sundayRRExists = await prisma.match.findFirst({
+    where: { tournamentId: id, phase: "GRAZ_RR", dayIndex: "SUN" },
+  });
+  if (sundayRRExists) return { error: "Les matchs du dimanche matin sont déjà générés." };
+
+  const grazPools = generateGrazPools(tournament.teams);
+  const poolA = grazPools.find((p) => p.name === "Pool A")!;
+  const poolB = grazPools.find((p) => p.name === "Pool B")!;
+  const poolARecord = tournament.pools.find((p) => p.name === "Pool A");
+  const poolBRecord = tournament.pools.find((p) => p.name === "Pool B");
+
+  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const dateEnd = new Date((tournament as any).dateEnd);
+  const slotMin = tournament.gameDurationMin + 5;
+
+  // Alternate rounds: R6-A, R6-B, R7-A, R7-B
+  const allNewMatches: Array<{ m: ReturnType<typeof generateGrazPoolRounds>[0]; poolId: string }> = [];
+
+  for (let round = 6; round <= 7; round++) {
+    const aMatches = generateGrazPoolRounds(poolA, courtNames, dateEnd, "SUN", tournament.gameDurationMin, round, round);
+    const bMatches = generateGrazPoolRounds(poolB, courtNames, dateEnd, "SUN", tournament.gameDurationMin, round, round);
+    for (const m of aMatches) allNewMatches.push({ m, poolId: poolARecord?.id ?? "" });
+    for (const m of bMatches) allNewMatches.push({ m, poolId: poolBRecord?.id ?? "" });
+  }
+
+  // Re-schedule with actual alternating times
+  let cursor = new Date(dateEnd);
+  const scheduled = allNewMatches.map(({ m, poolId }) => {
+    const startAt = new Date(cursor);
+    cursor = new Date(cursor.getTime() + slotMin * 60000);
+    return { ...m, startAt, poolId };
+  });
+
+  await prisma.$transaction(async (tx) => {
+    for (const m of scheduled) {
+      await tx.match.create({
+        data: {
+          tournamentId: id,
+          phase: "GRAZ_RR",
+          poolId: m.poolId || null,
+          bracketSide: null,
+          roundIndex: m.roundIndex,
+          positionInRound: m.positionInRound ?? 0,
+          courtName: m.courtName,
+          startAt: m.startAt,
+          dayIndex: "SUN",
+          status: "SCHEDULED",
+          teamAId: m.teamAId,
+          teamBId: m.teamBId,
+        },
+      });
+    }
+  }, { timeout: 15000 });
 
   revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);
