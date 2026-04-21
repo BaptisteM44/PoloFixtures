@@ -127,15 +127,15 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
   const PRESETS: Record<Exclude<FormatPreset, "custom">, PresetConfig> = {
     pool_de:        { saturdayFormat: "ALL_DAY",      poolCount: 1, swissRounds: 5, bracketSize: 16, sundayFormat: "DE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
-    pool_se:        { saturdayFormat: "ALL_DAY",      poolCount: 1, swissRounds: 5, bracketSize: 16, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    pool_se:        { saturdayFormat: "ALL_DAY",      poolCount: 1, swissRounds: 5, bracketSize: 16, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
     "2pools_de":    { saturdayFormat: "SPLIT_POOLS",  poolCount: 2, swissRounds: 5, bracketSize: 16, sundayFormat: "DE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
-    "2pools_se":    { saturdayFormat: "SPLIT_POOLS",  poolCount: 2, swissRounds: 5, bracketSize: 16, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    "2pools_se":    { saturdayFormat: "SPLIT_POOLS",  poolCount: 2, swissRounds: 5, bracketSize: 16, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
     swiss_de:       { saturdayFormat: "SWISS",        poolCount: 1, swissRounds: 5, bracketSize: 8,  sundayFormat: "DE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
-    swiss_se:       { saturdayFormat: "SWISS",        poolCount: 1, swissRounds: 5, bracketSize: 8,  sundayFormat: "SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    swiss_se:       { saturdayFormat: "SWISS",        poolCount: 1, swissRounds: 5, bracketSize: 8,  sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
     swiss6_split_se: { saturdayFormat: "SWISS",      poolCount: 1, swissRounds: 6, bracketSize: 18, sundayFormat: "SWISS_SPLIT_SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
     cross_pool_bcn: { saturdayFormat: "SPLIT_POOLS",  poolCount: 2, swissRounds: 5, bracketSize: 8,  sundayFormat: "DE", crossPool: true,  thirdPlaceMatch: false, gfReset: false },
     berlin_mixed:   { saturdayFormat: "BERLIN_MIXED", poolCount: 2, swissRounds: 5, bracketSize: 32, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
-    graz:           { saturdayFormat: "GRAZ",         poolCount: 2, swissRounds: 7, bracketSize: 8,  sundayFormat: "SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    graz:           { saturdayFormat: "GRAZ",         poolCount: 2, swissRounds: 7, bracketSize: 8,  sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
   };
 
   function detectPreset(tn: Tournament): FormatPreset {
@@ -154,7 +154,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const [presetConfig, setPresetConfig] = useState<PresetConfig>(() =>
     detectPreset(tournament) === "custom"
       ? { saturdayFormat: tournament.saturdayFormat, poolCount: tournament.poolCount ?? 1, swissRounds: tournament.swissRounds ?? 5, bracketSize: tournament.bracketSize ?? 16, sundayFormat: tournament.sundayFormat, crossPool: tournament.crossPool ?? false, thirdPlaceMatch: tournament.thirdPlaceMatch ?? false, gfReset: tournament.gfReset ?? false }
-      : PRESETS[detectPreset(tournament) as Exclude<FormatPreset, "custom">]
+      : { ...PRESETS[detectPreset(tournament) as Exclude<FormatPreset, "custom">], thirdPlaceMatch: tournament.thirdPlaceMatch ?? true, gfReset: tournament.gfReset ?? false }
   );
   const [savedCustomConfig, setSavedCustomConfig] = useState<PresetConfig | null>(
     detectPreset(tournament) === "custom" ? presetConfig : null
