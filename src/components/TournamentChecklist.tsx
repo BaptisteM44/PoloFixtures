@@ -13,6 +13,8 @@ type ChecklistTournament = {
   registrationEnd: string | null;
   registrationFeePerTeam: number;
   fridayWelcomeName: string | null | undefined;
+  venueName: string | null | undefined;
+  venueAddress: string | null | undefined;
   saturdayEventName: string | null | undefined;
   saturdayEventAddress: string | null | undefined;
   bannerPath: string | null | undefined;
