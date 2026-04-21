@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import {
   sendClubMessageAction,
   deleteClubMessageAction,
@@ -26,12 +26,12 @@ function hashColor(id: string): string {
   return CHAT_COLORS[Math.abs(hash) % CHAT_COLORS.length];
 }
 
-function fmtTime(d: Date) {
-  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+function fmtTime(d: Date, locale: string) {
+  return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 }
 
-function fmtDay(d: Date) {
-  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+function fmtDay(d: Date, locale: string) {
+  return d.toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 
 export function ClubChat({
@@ -46,6 +46,7 @@ export function ClubChat({
   isAdmin: boolean;
 }) {
   const t = useTranslations("club");
+  const locale = useLocale();
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -114,7 +115,7 @@ export function ClubChat({
             return (
               <div key={m.id}>
                 {showDate && (
-                  <div className="club-chat__date-sep">{fmtDay(d)}</div>
+                  <div className="club-chat__date-sep">{fmtDay(d, locale)}</div>
                 )}
                 <div className={`club-chat__msg${isMine ? " club-chat__msg--mine" : ""}`}>
                   <div
@@ -123,7 +124,7 @@ export function ClubChat({
                   >
                     <div className="club-chat__msg-header">
                       <strong style={{ color }}>{m.player.name}</strong>
-                      <span className="club-chat__msg-time">{fmtTime(d)}</span>
+                      <span className="club-chat__msg-time">{fmtTime(d, locale)}</span>
                     </div>
                     <p>{m.content}</p>
                   </div>

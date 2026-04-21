@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 type Announcement = {
   id: string;
@@ -20,6 +20,7 @@ interface Props {
 
 export function ClubAnnouncements({ clubId, initialAnnouncements, isAdmin, currentPlayerId }: Props) {
   const t = useTranslations("club");
+  const locale = useLocale();
   const [announcements, setAnnouncements] = useState<Announcement[]>(initialAnnouncements);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: "", content: "" });
@@ -118,7 +119,7 @@ export function ClubAnnouncements({ clubId, initialAnnouncements, isAdmin, curre
             <div style={{ marginBottom: 6 }}>
               <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15 }}>{a.title}</span>
               <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: 10 }}>
-                {a.author.name} · {new Date(a.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}
+                {a.author.name} · {new Date(a.createdAt).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })}
               </span>
             </div>
             <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{a.content}</p>

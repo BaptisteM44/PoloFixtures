@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { CharterModal } from "./CharterModal";
 
 type Author = { id: string; name: string; photoPath: string | null };
@@ -35,6 +35,7 @@ export function TeamChat({ teamId, currentPlayerId, teammates, charterAccepted: 
   const containerRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(0);
   const t = useTranslations("team");
+  const locale = useLocale();
 
   const fetchMessages = useCallback(async () => {
     const res = await fetch(`/api/teams/${teamId}/messages`);
@@ -109,7 +110,7 @@ export function TeamChat({ teamId, currentPlayerId, teammates, charterAccepted: 
               <div className="team-chat__msg-meta">
                 <span className="team-chat__msg-author">{msg.author.name}</span>
                 <span className="team-chat__msg-time">
-                  {new Date(msg.createdAt).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  {new Date(msg.createdAt).toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>
               <div className="team-chat__msg-bubble">{msg.content}</div>

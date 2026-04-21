@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
   createSessionAction,
@@ -100,12 +100,12 @@ function hashColor(id: string): string {
   return CHAT_COLORS[Math.abs(hash) % CHAT_COLORS.length];
 }
 
-function fmtDate(d: Date) {
-  return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+function fmtDate(d: Date, locale: string) {
+  return d.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
 }
 
-function fmtTime(d: Date) {
-  return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+function fmtTime(d: Date, locale: string) {
+  return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 }
 
 function addMinutes(d: Date, mins: number) {
@@ -130,6 +130,7 @@ export function ClubSessions({
   hasRecurring: boolean;
 }) {
   const t = useTranslations("club");
+  const locale = useLocale();
   const DAY_NAMES = t("sessions_day_names").split(",");
 
   const [sessions, setSessions] = useState(initialSessions);
@@ -205,7 +206,7 @@ export function ClubSessions({
     const session = sessions.find((s) => s.id === sessionId);
     if (!session) return;
     const d = new Date(session.date);
-    setJoinArrival(fmtTime(d));
+    setJoinArrival(fmtTime(d, locale));
     setJoinMinPlayers("");
     setJoinCondition("always");
     setJoiningSessionId(sessionId);
@@ -744,8 +745,9 @@ function SessionCard({
   past?: boolean;
 }) {
   const t = useTranslations("club");
+  const locale = useLocale();
   const d = new Date(s.date);
-  const endTime = fmtTime(addMinutes(d, s.duration));
+  const endTime = fmtTime(addMinutes(d, s.duration), locale);
   const confirmed = s.attendees.filter((a) => a.status === "CONFIRMED");
   const conditional = confirmed.filter((a) => !!a.minPlayers);
   const pending = s.attendees.filter((a) => a.status === "PENDING");
@@ -782,7 +784,7 @@ function SessionCard({
       {/* ── Header ── */}
       <div className="club-session-card__header">
         <div className="club-session-card__header-left">
-          <span className="club-session-card__date">{fmtDate(d)} · {fmtTime(d)} → {endTime}</span>
+          <span className="club-session-card__date">{fmtDate(d, locale)} · {fmtTime(d, locale)} → {endTime}</span>
           {s.title && <span className="club-session-card__title">{s.title}</span>}
           {s.recurring && <span className="club-session-card__badge club-session-card__badge--recurring">↻</span>}
           {s.status === "CANCELLED" && <span className="club-session-card__badge club-session-card__badge--cancelled">{t("sessions_cancelled_badge")}</span>}
@@ -860,7 +862,7 @@ function SessionCard({
                       <div className="club-session-card__chat-bubble" style={{ "--author-color": color } as React.CSSProperties}>
                         <span className="club-session-card__chat-author" style={{ color }}>{m.player.name}</span>
                         <span className="club-session-card__chat-text">{m.content}</span>
-                        <span className="club-session-card__chat-time">{fmtTime(new Date(m.createdAt))}</span>
+                        <span className="club-session-card__chat-time">{fmtTime(new Date(m.createdAt), locale)}</span>
                       </div>
                       {(isMine || isAdmin) && (
                         <button className="club-session-card__chat-del" onClick={() => onDeleteMessage(s.id, m.id)} disabled={isPending} title={t("chat_delete_title")}>✕</button>
