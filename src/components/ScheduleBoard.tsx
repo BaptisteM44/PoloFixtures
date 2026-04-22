@@ -16,6 +16,7 @@ export type MatchWithTeams = Match & {
 
 const PHASE_LABEL: Record<string, string> = {
   POOL: "Poule", SWISS: "Swiss", CROSS_POOL: "Cross-pool", BRACKET: "Tableau",
+  GRAZ_RR: "RR", GRAZ_REGROUP: "Regroup", GRAZ_SE: "SE",
 };
 
 function positionLabel(match: MatchWithTeams, courtMatches: MatchWithTeams[]) {
@@ -42,11 +43,13 @@ export function ScheduleBoard({
   tournamentId,
   initialMatches,
   teams,
+  pools,
   isOrganizer,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
   teams: Team[];
+  pools?: { id: string; name: string }[];
   isOrganizer?: boolean;
 }) {
   const t = useTranslations("tournament");
@@ -154,7 +157,7 @@ export function ScheduleBoard({
 
   // Group matches by phase+round (for POOL: also by poolSessionIndex), sorted: active rounds first, then scheduled, then finished
   const roundGroups = useMemo(() => {
-    const groups = new Map<string, { phase: string; roundIndex: number; poolSessionIndex?: number; bracketSide?: string | null; matches: MatchWithTeams[] }>();
+    const groups = new Map<string, { phase: string; roundIndex: number; poolSessionIndex?: number; bracketSide?: string | null; poolId?: string | null; matches: MatchWithTeams[] }>();
 
     // Sort all filtered by startAt
     const sorted = [...filtered].sort(
@@ -166,9 +169,11 @@ export function ScheduleBoard({
       const sessionSuffix = match.phase === "POOL" && match.poolSessionIndex !== null ? `-S${match.poolSessionIndex}` : "";
       // For BRACKET matches, separate by bracketSide (W/L/G for standard DE/SE, B/BG/BL for Bottom 8 in SWISS_SPLIT_SE)
       const bracketSuffix = match.phase === "BRACKET" && match.bracketSide ? `-${match.bracketSide}` : "";
-      const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}${bracketSuffix}`;
+      // For GRAZ_RR matches, separate by pool (poolId) so Pool A and Pool B are distinct groups
+      const grazPoolSuffix = match.phase === "GRAZ_RR" && match.poolId ? `-P${match.poolId}` : "";
+      const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}${bracketSuffix}${grazPoolSuffix}`;
       if (!groups.has(key)) {
-        groups.set(key, { phase: match.phase, roundIndex: match.roundIndex, poolSessionIndex: match.poolSessionIndex ?? undefined, bracketSide: match.bracketSide ?? undefined, matches: [] });
+        groups.set(key, { phase: match.phase, roundIndex: match.roundIndex, poolSessionIndex: match.poolSessionIndex ?? undefined, bracketSide: match.bracketSide ?? undefined, poolId: match.poolId ?? null, matches: [] });
       }
       groups.get(key)!.matches.push(match);
     }
@@ -325,6 +330,11 @@ export function ScheduleBoard({
           ? ` · Pool ${String.fromCharCode(65 + group.poolSessionIndex)}`
           : "";
 
+        // For GRAZ_RR: show pool name (Pool A / Pool B)
+        const grazPoolLabel = group.phase === "GRAZ_RR" && group.poolId
+          ? ` · ${pools?.find((p) => p.id === group.poolId)?.name ?? "Pool"}`
+          : "";
+
         // For BRACKET phase, show which bracket + match type based on bracketSide
         const bracketSide = group.matches[0]?.bracketSide;
         let bracketLabel = "";
@@ -354,7 +364,7 @@ export function ScheduleBoard({
           >
             <div className="schedule-round__header">
               <span className="schedule-round__label">
-                {PHASE_LABEL[group.phase] ?? group.phase}{bracketLabel}{(bracketSide !== "G" && bracketSide !== "L" && bracketSide !== "BG" && bracketSide !== "BL") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}
+                {PHASE_LABEL[group.phase] ?? group.phase}{bracketLabel}{(bracketSide !== "G" && bracketSide !== "L" && bracketSide !== "BG" && bracketSide !== "BL") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}{grazPoolLabel}
               </span>
               {finished && <span className="schedule-round__badge schedule-round__badge--done">{t("status_completed")}</span>}
               {active && <span className="schedule-round__badge schedule-round__badge--live">{t("status_live")}</span>}

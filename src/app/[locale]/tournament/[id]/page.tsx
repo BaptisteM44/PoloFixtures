@@ -68,7 +68,7 @@ export default async function TournamentPage({
       teams: needsPlayers
         ? { include: { players: { include: { player: { include: { account: { select: { id: true } } } } } } } }
         : { select: { id: true, name: true, seed: true, selected: true, guaranteed: true, waitlistPosition: true, city: true, country: true, registrationNote: true, orgaNote: true, tournamentId: true, color: true, playerALevel: true, playerBLevel: true, playerCLevel: true } },
-      pools: activeTab === "pools"
+      pools: activeTab === "pools" || activeTab === "schedule"
         ? { include: { teams: { include: { team: true } } } }
         : false,
       matches: noMatchesNeeded ? false : {
@@ -724,7 +724,7 @@ export default async function TournamentPage({
 
       {tab === "schedule" && (isTestMode
         ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
-        : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} isOrganizer={isOrga} />
+        : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} pools={(tournament.pools ?? []).map((p: any) => ({ id: p.id, name: p.name }))} isOrganizer={isOrga} />
       )}
 
       {tab === "pools" && (isTestMode
