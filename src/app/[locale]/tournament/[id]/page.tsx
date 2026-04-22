@@ -137,6 +137,7 @@ export default async function TournamentPage({
   const swissMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SWISS");
   const hasSwiss = swissMatches.length > 0 || tournament.saturdayFormat === "SWISS";
   const isBerlinMixed = tournament.saturdayFormat === "BERLIN_MIXED";
+  const isGraz = tournament.saturdayFormat === "GRAZ";
   const berlinFriMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "FRIDAY_A" || m.phase === "FRIDAY_B");
   const berlinSatMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SATURDAY_A" || m.phase === "SATURDAY_B");
   const berlinSunSwissMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SUNDAY_SWISS");
@@ -186,7 +187,7 @@ export default async function TournamentPage({
     ...(isLaunched && isBerlinMixed && berlinTop32Matches.length > 0 ? [{ label: "Top 32", value: "berlin_top32", href: `/tournament/${params.id}?tab=berlin_top32` }] : []),
     ...(isLaunched && isBerlinMixed && berlinBottom16Matches.length > 0 ? [{ label: "Bottom 16", value: "berlin_bot16", href: `/tournament/${params.id}?tab=berlin_bot16` }] : []),
     // Standard tabs (hidden for Berlin Mixed)
-    ...(isLaunched && !isBerlinMixed && tournament.saturdayFormat !== "SWISS" ? [{ label: t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
+    ...(isLaunched && !isBerlinMixed && tournament.saturdayFormat !== "SWISS" ? [{ label: isGraz ? t("tab_rr_groups") : t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
     ...(isLaunched && !isBerlinMixed && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SWISS_SPLIT_SE" && swissSplitSeTop10.length > 0 ? [{ label: t("bracket_top10"), value: "top10", href: `/tournament/${params.id}?tab=top10` }] : []),
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SWISS_SPLIT_SE" && swissSplitSeBottom8.length > 0 ? [{ label: t("bracket_bottom8"), value: "bottom8", href: `/tournament/${params.id}?tab=bottom8` }] : []),
