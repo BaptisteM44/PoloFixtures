@@ -15,9 +15,11 @@ interface Props {
 }
 
 function toLocalDateString(dateInput?: string | Date | null): string {
-  if (!dateInput) return new Date().toISOString().slice(0, 10);
-  const d = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-  return d.toISOString().slice(0, 10);
+  const d = dateInput ? (typeof dateInput === "string" ? new Date(dateInput) : dateInput) : new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export function PoolScheduleEditor({
@@ -40,10 +42,17 @@ export function PoolScheduleEditor({
 
   const baseDate = toLocalDateString(tournamentDateStart);
 
+  // Convert "HH:mm" local time on baseDate to a UTC ISO string
+  const toUTCIso = (date: string, time: string): string => {
+    // Build a date in local timezone (no Z suffix = local time)
+    const local = new Date(`${date}T${time}:00`);
+    return local.toISOString();
+  };
+
   const handleSave = () => {
     startTransition(async () => {
-      const poolADateTime = poolATime ? `${baseDate}T${poolATime}:00.000Z` : null;
-      const poolBDateTime = poolBTime && poolCount > 1 ? `${baseDate}T${poolBTime}:00.000Z` : null;
+      const poolADateTime = poolATime ? toUTCIso(baseDate, poolATime) : null;
+      const poolBDateTime = poolBTime && poolCount > 1 ? toUTCIso(baseDate, poolBTime) : null;
 
       const res = await reschedulePoolMatchesAction(tournamentId, poolADateTime, poolBDateTime);
       if ("error" in res && res.error) {

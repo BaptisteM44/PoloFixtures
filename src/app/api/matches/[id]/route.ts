@@ -129,28 +129,47 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
   }
 
-  // Auto-advance: when a match finishes, set the next SCHEDULED match on the same court to LIVE
+  // Auto-advance + cascade reschedule: when a match finishes, shift all upcoming matches on same court
   if (isNowFinished) {
-    const nextOnCourt = await prisma.match.findFirst({
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: match.tournamentId },
+      select: { gameDurationMin: true },
+    });
+    const slotMin = (tournament?.gameDurationMin ?? 15) + 4; // game + 4min break
+
+    const upcomingOnCourt = await prisma.match.findMany({
       where: {
         tournamentId: match.tournamentId,
         courtName: match.courtName,
-        status: "SCHEDULED",
+        status: { in: ["SCHEDULED", "LIVE"] },
       },
       orderBy: { startAt: "asc" },
     });
 
-    if (nextOnCourt) {
-      const advanced = await prisma.match.update({
-        where: { id: nextOnCourt.id },
-        data: { status: "LIVE" },
-      });
-      publishMatchUpdate({
-        matchId: advanced.id,
-        tournamentId: advanced.tournamentId,
-        type: "match_update",
-        data: advanced,
-      });
+    if (upcomingOnCourt.length > 0) {
+      // Real finish time = now. Next match starts after break.
+      const realFinishTime = new Date();
+      let cursor = new Date(realFinishTime.getTime() + 4 * 60 * 1000);
+
+      for (let i = 0; i < upcomingOnCourt.length; i++) {
+        const m = upcomingOnCourt[i];
+        const isFirst = i === 0;
+        const newData: Record<string, unknown> = { startAt: new Date(cursor) };
+        if (isFirst && m.status === "SCHEDULED") newData.status = "LIVE";
+
+        const updated = await prisma.match.update({
+          where: { id: m.id },
+          data: newData,
+        });
+        publishMatchUpdate({
+          matchId: updated.id,
+          tournamentId: updated.tournamentId,
+          type: "match_update",
+          data: updated,
+        });
+
+        cursor = new Date(cursor.getTime() + slotMin * 60 * 1000);
+      }
     }
   }
 
