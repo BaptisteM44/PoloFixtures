@@ -49,6 +49,8 @@ const updateSchema = z.object({
   teamLogoPath: z.string().optional().nullable(),
   teamLogoPosition: z.enum(["top-left", "top-right", "bottom-left", "bottom-right"]).optional(),
   pinnedBadges: z.array(z.string()).max(5).optional(),
+  petAllergies: z.string().max(500).optional().nullable(),
+  foodAllergies: z.string().max(500).optional().nullable(),
 });
 
 export async function PATCH(req: Request) {

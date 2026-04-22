@@ -41,6 +41,8 @@ type Player = {
   gender: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY" | null;
   showGender: boolean;
   diets: string[];
+  petAllergies: string | null;
+  foodAllergies: string | null;
   badges: string[];
   pinnedBadges: string[];
   badgeCatalog: Record<string, BadgeInfo>;
@@ -95,6 +97,7 @@ export default function AccountPage() {
     name: "", city: "", country: "", bio: "", startYear: "", hand: "",
     gender: "" as "" | "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY",
     showGender: false, diets: [] as string[],
+    petAllergies: "" as string, foodAllergies: "" as string,
   });
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
@@ -147,6 +150,8 @@ export default function AccountPage() {
         gender: data.gender ?? "",
         showGender: data.showGender ?? false,
         diets: data.diets ?? [],
+        petAllergies: data.petAllergies ?? "",
+        foodAllergies: data.foodAllergies ?? "",
       });
     }
   }, []);
@@ -228,6 +233,8 @@ export default function AccountPage() {
         hand: form.hand || null,
         gender: form.gender || null,
         diets: form.diets,
+        petAllergies: form.petAllergies || null,
+        foodAllergies: form.foodAllergies || null,
       }),
     });
     if (res.ok) {
@@ -476,6 +483,26 @@ export default function AccountPage() {
                     );
                   })}
                 </div>
+              </div>
+              <div className="field-row">
+                <label>{t("field_pet_allergies")}</label>
+                <input
+                  type="text"
+                  value={form.petAllergies}
+                  onChange={(e) => setForm((f) => ({ ...f, petAllergies: e.target.value }))}
+                  placeholder={t("field_pet_allergies_placeholder")}
+                  style={{ fontSize: 13 }}
+                />
+              </div>
+              <div className="field-row">
+                <label>{t("field_food_allergies")}</label>
+                <input
+                  type="text"
+                  value={form.foodAllergies}
+                  onChange={(e) => setForm((f) => ({ ...f, foodAllergies: e.target.value }))}
+                  placeholder={t("field_food_allergies_placeholder")}
+                  style={{ fontSize: 13 }}
+                />
               </div>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 <button className="primary" type="submit" disabled={saving}>

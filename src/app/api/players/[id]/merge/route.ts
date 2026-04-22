@@ -108,8 +108,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
     // TournamentOrganizer (co-organizer)
     await tx.tournamentOrganizer.updateMany({ where: { playerId: params.id }, data: { playerId: targetPlayerId } });
 
-    // OrgaTask assigned
-    await tx.orgaTask.updateMany({ where: { assignedToId: params.id }, data: { assignedToId: targetPlayerId } });
+    // OrgaTask assignees
+    await tx.orgaTaskAssignee.updateMany({ where: { playerId: params.id }, data: { playerId: targetPlayerId } });
 
     // MatchEvent payload — JSON field containing playerId
     // Raw SQL needed since Prisma can't filter/update inside JSON

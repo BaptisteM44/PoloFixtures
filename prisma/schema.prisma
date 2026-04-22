@@ -296,10 +296,11 @@ model Tournament {
   freeAgents     FreeAgent[]
   messages       TournamentMessage[]
   coOrganizers   TournamentOrganizer[]
-  orgaTasks      OrgaTask[]
-  orgaNotes      OrgaNote[]
-  orgaLinks      OrgaLink[]
-  followers      TournamentFollow[]
+  orgaTasks           OrgaTask[]
+  orgaNotes           OrgaNote[]
+  orgaLinks           OrgaLink[]
+  followers           TournamentFollow[]
+  accommodationHosts  AccommodationHost[]
   soloEntries    TournamentSoloEntry[]
 
   @@index([continentCode])
@@ -366,6 +367,8 @@ model Player {
   gender      Gender?
   showGender  Boolean  @default(false)
   diets       String[]  // OMNIVORE | VEGETARIAN | VEGAN | GLUTEN_FREE (cumulative)
+  petAllergies  String?  // free text: cat, dog, etc.
+  foodAllergies String?  // free text: nuts, lactose, etc.
   status           PlayerStatus @default(PENDING)
   suspendedReason  String?      // raison de la suspension (visible par l'admin)
   suspendedAt      DateTime?    // date de suspension
@@ -403,7 +406,7 @@ model Player {
   clubSessionMessages     ClubSessionMessage[]
   borrowedEquipment       ClubEquipment[]      @relation("BorrowedEquipment")
   clubAnnouncements       ClubAnnouncement[]   @relation("ClubAnnouncements")
-  assignedOrgaTasks       OrgaTask[]   @relation("AssignedTasks")
+  orgaTaskAssignments     OrgaTaskAssignee[] @relation("OrgaTaskAssignments")
   createdOrgaTasks        OrgaTask[]   @relation("CreatedTasks")
   orgaNotes               OrgaNote[]   @relation("OrgaNotes")
   orgaLinks               OrgaLink[]   @relation("OrgaLinks")
@@ -411,6 +414,7 @@ model Player {
   coRefereedMatches       Match[]      @relation("CoRefereedMatches")
   notificationPreference  NotificationPreference?
   tournamentFollows       TournamentFollow[]
+  hostedAccommodations    AccommodationHost[] @relation("AccommodationHostPlayer")
 }
 
 model PlayerAccount {
@@ -439,6 +443,7 @@ model TeamPlayer {
 
   team   Team   @relation(fields: [teamId], references: [id])
   player Player @relation(fields: [playerId], references: [id])
+  accommodationGuest AccommodationGuest?
 
   @@unique([teamId, playerId])
 }
@@ -895,17 +900,29 @@ model OrgaTask {
   deadline     DateTime?
   completed    Boolean      @default(false)
   priority     TaskPriority @default(MEDIUM)
-  assignedToId String?
   createdById  String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  assignedTo Player?    @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
-  createdBy  Player     @relation("CreatedTasks", fields: [createdById], references: [id])
+  tournament Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  createdBy  Player           @relation("CreatedTasks", fields: [createdById], references: [id])
+  assignees  OrgaTaskAssignee[]
 
   @@index([tournamentId])
-  @@index([assignedToId])
+}
+
+model OrgaTaskAssignee {
+  id         String   @id @default(cuid())
+  taskId     String
+  playerId   String
+  assignedAt DateTime @default(now())
+
+  task   OrgaTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  player Player   @relation("OrgaTaskAssignments", fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, playerId])
+  @@index([taskId])
+  @@index([playerId])
 }
 
 model OrgaNote {
@@ -958,6 +975,37 @@ model TournamentFollow {
   player       Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   @@unique([playerId, tournamentId])
+}
+
+// ── Accommodation ─────────────────────────────────────────────────────────────
+
+model AccommodationHost {
+  id           String   @id @default(cuid())
+  tournamentId String
+  playerId     String?  // optional: registered player host
+  name         String   // display name
+  contact      String?  // email, telegram, phone… free text
+  notes        String?  // orga-only notes
+  createdAt    DateTime @default(now())
+
+  tournament Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player?             @relation("AccommodationHostPlayer", fields: [playerId], references: [id], onDelete: SetNull)
+  guests     AccommodationGuest[]
+
+  @@index([tournamentId])
+  @@index([playerId])
+}
+
+model AccommodationGuest {
+  id           String  @id @default(cuid())
+  hostId       String
+  teamPlayerId String  @unique
+  notes        String?
+
+  host       AccommodationHost @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  teamPlayer TeamPlayer        @relation(fields: [teamPlayerId], references: [id], onDelete: Cascade)
+
+  @@index([hostId])
 }
 
 model RoadmapItem {

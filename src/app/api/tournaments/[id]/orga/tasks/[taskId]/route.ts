@@ -9,14 +9,22 @@ const updateSchema = z.object({
   deadline: z.string().nullable().optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
   completed: z.boolean().optional(),
-  assignedToId: z.string().nullable().optional(),
+  assigneeIds: z.array(z.string()).nullable().optional(),
 });
+
+const taskInclude = {
+  assignees: { include: { player: { select: { id: true, name: true } } } },
+  createdBy: { select: { id: true, name: true } },
+};
 
 export async function PATCH(req: Request, { params }: { params: { id: string; taskId: string } }) {
   const playerId = await getOrgaPlayerId(params.id);
   if (!playerId) return new Response("Forbidden", { status: 403 });
 
-  const existing = await prisma.orgaTask.findUnique({ where: { id: params.taskId } });
+  const existing = await prisma.orgaTask.findUnique({
+    where: { id: params.taskId },
+    include: { assignees: { select: { playerId: true } } },
+  });
   if (!existing || existing.tournamentId !== params.id) return new Response("Not found", { status: 404 });
 
   const body = await req.json();
@@ -29,29 +37,46 @@ export async function PATCH(req: Request, { params }: { params: { id: string; ta
   if (parsed.data.deadline !== undefined) data.deadline = parsed.data.deadline ? new Date(parsed.data.deadline) : null;
   if (parsed.data.priority !== undefined) data.priority = parsed.data.priority;
   if (parsed.data.completed !== undefined) data.completed = parsed.data.completed;
-  if (parsed.data.assignedToId !== undefined) data.assignedToId = parsed.data.assignedToId;
+
+  // Update assignees if provided
+  if (parsed.data.assigneeIds !== undefined) {
+    const newIds = parsed.data.assigneeIds ?? [];
+    const oldIds = existing.assignees.map((a) => a.playerId);
+    const toAdd = newIds.filter((id) => !oldIds.includes(id));
+    const toRemove = oldIds.filter((id) => !newIds.includes(id));
+
+    if (toRemove.length > 0) {
+      await prisma.orgaTaskAssignee.deleteMany({
+        where: { taskId: params.taskId, playerId: { in: toRemove } },
+      });
+    }
+    if (toAdd.length > 0) {
+      await prisma.orgaTaskAssignee.createMany({
+        data: toAdd.map((id) => ({ taskId: params.taskId, playerId: id })),
+        skipDuplicates: true,
+      });
+      // Notify newly assigned players
+      const tournament = await prisma.tournament.findUnique({ where: { id: params.id }, select: { name: true, slug: true } });
+      const assigner = await prisma.player.findUnique({ where: { id: playerId }, select: { name: true } });
+      for (const assigneeId of toAdd) {
+        if (assigneeId !== playerId) {
+          await createNotification(assigneeId, "TASK_ASSIGNED", {
+            taskTitle: existing.title,
+            tournamentId: params.id,
+            tournamentSlug: tournament?.slug ?? "",
+            tournamentName: tournament?.name ?? "",
+            assignedByName: assigner?.name ?? "",
+          });
+        }
+      }
+    }
+  }
 
   const updated = await prisma.orgaTask.update({
     where: { id: params.taskId },
     data,
-    include: {
-      assignedTo: { select: { id: true, name: true } },
-      createdBy: { select: { id: true, name: true } },
-    },
+    include: taskInclude,
   });
-
-  // Notify if newly assigned
-  if (parsed.data.assignedToId && parsed.data.assignedToId !== existing.assignedToId && parsed.data.assignedToId !== playerId) {
-    const tournament = await prisma.tournament.findUnique({ where: { id: params.id }, select: { name: true, slug: true } });
-    const assigner = await prisma.player.findUnique({ where: { id: playerId }, select: { name: true } });
-    await createNotification(parsed.data.assignedToId, "TASK_ASSIGNED", {
-      taskTitle: updated.title,
-      tournamentId: params.id,
-      tournamentSlug: tournament?.slug ?? "",
-      tournamentName: tournament?.name ?? "",
-      assignedByName: assigner?.name ?? "",
-    });
-  }
 
   return Response.json(updated);
 }

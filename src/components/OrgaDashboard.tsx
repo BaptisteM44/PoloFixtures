@@ -21,6 +21,7 @@ import { OrgaNoteBoard } from "@/components/OrgaNoteBoard";
 import { OrgaLinkBoard } from "@/components/OrgaLinkBoard";
 import { SelectionManager } from "@/components/SelectionManager";
 import { DrawPanel } from "@/components/DrawPanel";
+import { AccommodationManager } from "@/components/AccommodationManager";
 
 
 // ─── GrazPlanning ────────────────────────────────────────────────────────────
@@ -342,7 +343,7 @@ type OrgaDashboardProps = {
   launchGrazSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetGrazPhaseAction?: (phase: "SUNDAY_RR" | "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
-  orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignedTo: { id: string; name: string } | null; createdBy: { id: string; name: string }; createdAt: string }>;
+  orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
   orgaLinks: Array<{ id: string; label: string; url: string; addedBy: { id: string; name: string }; createdAt: string }>;
   currentPlayerId: string;
@@ -353,18 +354,24 @@ type OrgaDashboardProps = {
   drawOneWaitlistAction: (tId: string, candidateIds: string[]) => Promise<any>;
   removeFromWaitlistAction: (tId: string, teamId: string) => Promise<any>;
   createTeamAction: (...args: any[]) => Promise<any>;
+  accommodationHosts?: Array<{
+    id: string; playerId: string | null; name: string; contact: string | null; notes: string | null;
+    player: { id: string; name: string; photoPath: string | null } | null;
+    guests: Array<{ id: string; notes: string | null; teamPlayer: { id: string; player: { id: string; name: string; photoPath: string | null }; team: { id: string; name: string } } }>;
+  }>;
 };
 
-type Tab = "teams" | "config" | "planning" | "orga" | "orgateam";
+type Tab = "teams" | "config" | "planning" | "orga" | "orgateam" | "hebergement";
 
 // ─── Tab label helper ─────────────────────────────────────────────────────────
 
 const TAB_KEYS: Record<Tab, string> = {
-  teams:    "orga_tab_teams",
-  config:   "orga_tab_config",
-  planning: "orga_tab_planning",
-  orga:     "orga_tab_orga",
-  orgateam: "orga_tab_orgateam",
+  teams:        "orga_tab_teams",
+  config:       "orga_tab_config",
+  planning:     "orga_tab_planning",
+  orga:         "orga_tab_orga",
+  orgateam:     "orga_tab_orgateam",
+  hebergement:  "orga_tab_hebergement",
 };
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -409,6 +416,7 @@ export function OrgaDashboard({
   drawOneWaitlistAction,
   removeFromWaitlistAction,
   createTeamAction,
+  accommodationHosts = [],
 }: OrgaDashboardProps) {
   const t = useTranslations("tournament");
 
@@ -416,7 +424,7 @@ export function OrgaDashboard({
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(tabStorageKey);
-      if (saved === "teams" || saved === "config" || saved === "planning" || saved === "orga" || saved === "orgateam") return saved;
+      if (saved === "teams" || saved === "config" || saved === "planning" || saved === "orga" || saved === "orgateam" || saved === "hebergement") return saved;
     }
     return "config";
   });
@@ -475,7 +483,7 @@ export function OrgaDashboard({
       {/* ── Tab bar ── */}
       <div className="tabs-bar" style={{ marginTop: 0 }}>
         <div className="tabs">
-          {(["config", "teams", "planning", "orga", "orgateam"] as Tab[]).map((tab) => (
+          {(["config", "teams", "planning", "orga", "orgateam", ...(tournament.accommodationAvailable ? ["hebergement"] : [])] as Tab[]).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -931,6 +939,22 @@ export function OrgaDashboard({
             canManage={isCreator || isAdmin || isOrgaForThis}
           />
         </div>
+      )}
+
+      {/* ── Tab: Hébergement ── */}
+      {activeTab === "hebergement" && tournament.accommodationAvailable && (
+        <AccommodationManager
+          tournamentId={tournament.id}
+          teamPlayers={teams.flatMap((team) =>
+            (team.players ?? []).map((tp: any) => ({
+              id: tp.id,
+              needsAccommodation: tp.needsAccommodation ?? false,
+              player: tp.player,
+              team: { id: team.id, name: team.name },
+            }))
+          )}
+          initialHosts={accommodationHosts}
+        />
       )}
 
     </div>

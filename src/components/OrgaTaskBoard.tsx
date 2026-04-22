@@ -10,7 +10,7 @@ type TaskRow = {
   deadline: string | null;
   completed: boolean;
   priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-  assignedTo: { id: string; name: string } | null;
+  assignees: Array<{ player: { id: string; name: string } }>;
   createdBy: { id: string; name: string };
   createdAt: string;
 };
@@ -63,7 +63,7 @@ export function OrgaTaskBoard({
   // Add form state
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<TaskRow["priority"]>("MEDIUM");
-  const [assignee, setAssignee] = useState("");
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [deadline, setDeadline] = useState("");
 
   // Edit state
@@ -79,6 +79,12 @@ export function OrgaTaskBoard({
 
   const api = `/api/tournaments/${tournamentId}/orga/tasks`;
 
+  const toggleAssignee = (id: string) => {
+    setAssigneeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
   const addTask = () => {
     if (!title.trim()) return;
     setError(null);
@@ -89,7 +95,7 @@ export function OrgaTaskBoard({
         body: JSON.stringify({
           title: title.trim(),
           priority,
-          assignedToId: assignee || undefined,
+          assigneeIds: assigneeIds.length > 0 ? assigneeIds : undefined,
           deadline: deadline || undefined,
         }),
       });
@@ -98,7 +104,7 @@ export function OrgaTaskBoard({
         setTasks((prev) => [task, ...prev]);
         setTitle("");
         setPriority("MEDIUM");
-        setAssignee("");
+        setAssigneeIds([]);
         setDeadline("");
         flashSaved(t("orga_task_added"));
       } else {
@@ -170,18 +176,27 @@ export function OrgaTaskBoard({
           <option value="HIGH">{t("orga_priority_high")}</option>
           <option value="URGENT">{t("orga_priority_urgent")}</option>
         </select>
-        {coOrganizers.length > 0 && (
-          <select value={assignee} onChange={(e) => setAssignee(e.target.value)} style={{ fontSize: 12, width: "auto" }}>
-            <option value="">{t("orga_tasks_unassigned")}</option>
-            {coOrganizers.map((co) => (
-              <option key={co.playerId} value={co.playerId}>{co.playerName}</option>
-            ))}
-          </select>
-        )}
         <input type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} style={{ fontSize: 12, width: "auto" }} />
         <button className="primary" onClick={addTask} disabled={!title.trim() || isPending} style={{ fontSize: 12, padding: "6px 14px" }}>+</button>
         {savedMsg && <span style={{ fontSize: 12, color: "var(--teal)", alignSelf: "center" }}>{savedMsg}</span>}
       </div>
+      {/* Assignee checkboxes */}
+      {coOrganizers.length > 0 && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+          <span style={{ fontSize: 11, color: "var(--text-muted)", alignSelf: "center" }}>{t("orga_tasks_assign_to")}</span>
+          {coOrganizers.map((co) => (
+            <label key={co.playerId} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, cursor: "pointer", background: assigneeIds.includes(co.playerId) ? "var(--teal-muted, #e0f5f1)" : "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 8px" }}>
+              <input
+                type="checkbox"
+                checked={assigneeIds.includes(co.playerId)}
+                onChange={() => toggleAssignee(co.playerId)}
+                style={{ width: 12, height: 12 }}
+              />
+              {co.playerName}
+            </label>
+          ))}
+        </div>
+      )}
       {error && <p style={{ color: "var(--danger)", fontSize: 12, margin: "-8px 0 12px" }}>{error}</p>}
 
       {/* Task list */}
@@ -220,8 +235,10 @@ export function OrgaTaskBoard({
                     </span>
                   )}
                   <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 2, flexWrap: "wrap" }}>
-                    {task.assignedTo && (
-                      <span className="meta" style={{ fontSize: 11 }}>{task.assignedTo.name}</span>
+                    {task.assignees.length > 0 && (
+                      <span className="meta" style={{ fontSize: 11 }}>
+                        {task.assignees.map((a) => a.player.name).join(", ")}
+                      </span>
                     )}
                     {task.deadline && (
                       <span className={`meta${dl === "overdue" ? " orga-deadline--overdue" : dl === "soon" ? " orga-deadline--warning" : ""}`} style={{ fontSize: 11 }}>

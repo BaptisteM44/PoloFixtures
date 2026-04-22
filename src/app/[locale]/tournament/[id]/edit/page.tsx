@@ -94,10 +94,10 @@ export default async function TournamentEditPage({ params }: { params: { id: str
 
   const currentPlayerId = (session?.user as any)?.playerId ?? null;
 
-  const [orgaTasks, orgaNotes, orgaLinks] = await Promise.all([
+  const [orgaTasks, orgaNotes, orgaLinks, accommodationHosts] = await Promise.all([
     prisma.orgaTask.findMany({
       where: { tournamentId: tournament.id },
-      include: { assignedTo: { select: { id: true, name: true } }, createdBy: { select: { id: true, name: true } } },
+      include: { assignees: { include: { player: { select: { id: true, name: true } } } }, createdBy: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.orgaNote.findMany({
@@ -110,6 +110,25 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       include: { addedBy: { select: { id: true, name: true } } },
       orderBy: { createdAt: "desc" },
     }),
+    (t_ as any).accommodationAvailable
+      ? prisma.accommodationHost.findMany({
+          where: { tournamentId: tournament.id },
+          include: {
+            player: { select: { id: true, name: true, photoPath: true } },
+            guests: {
+              include: {
+                teamPlayer: {
+                  include: {
+                    player: { select: { id: true, name: true, photoPath: true } },
+                    team: { select: { id: true, name: true } },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        })
+      : Promise.resolve([]),
   ]);
 
   const toggleTeamSelected = async (teamId: string, tId: string, selected: boolean) => {
@@ -324,6 +343,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             drawOneWaitlistAction={drawOneWaitlist}
             removeFromWaitlistAction={removeFromWaitlist}
             createTeamAction={createTeam}
+            accommodationHosts={accommodationHosts as any}
           />
         </div>
       </div>

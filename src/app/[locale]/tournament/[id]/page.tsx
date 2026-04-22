@@ -26,6 +26,7 @@ import { WithdrawTeamPanel } from "@/components/WithdrawTeamPanel";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { TournamentCompletionWatcher } from "@/components/TournamentCompletionWatcher";
 import { BracketActions } from "@/components/BracketActions";
+import { AccommodationPublicView } from "@/components/AccommodationPublicView";
 
 function summarizeCities(players: { player: { city: string | null } }[]): string {
   const counts = new Map<string, number>();
@@ -196,6 +197,7 @@ export default async function TournamentPage({
     ...(youtubeEmbed || t_.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
+    ...(tournament.accommodationAvailable && !!myTeam ? [{ label: t("tab_accommodation"), value: "hebergement", href: `/tournament/${params.id}?tab=hebergement` }] : []),
   ];
 
 
@@ -1433,6 +1435,10 @@ export default async function TournamentPage({
       )}
 
       {/* ── ONGLET CHAT ── */}
+      {tab === "hebergement" && tournament.accommodationAvailable && !!myTeam && (
+        <AccommodationPublicView tournamentId={tournament.id} />
+      )}
+
       {tab === "chat" && t_.chatMode !== "DISABLED" && (
         <div className="panel" style={{ minHeight: 500 }}>
           <TournamentChat
