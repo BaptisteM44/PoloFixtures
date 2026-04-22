@@ -85,10 +85,23 @@ export function PoolTables({
       {pools.map((pool) => {
         const poolTeamIds = pool.teams.map((pt) => pt.teamId);
         const poolTeams = pool.teams.map((pt) => pt.team);
+        const isRegroupPool = pool.name.startsWith("Regroup-");
         const poolMatches = matches.filter((m) => m.poolId === pool.id);
-        const standings = computeStandings(poolTeams, poolMatches as Match[], scoringSystem);
+        // For Regroup pools, include recycled intra-pool RR matches (both teams in group)
+        const recycledRR = isRegroupPool
+          ? matches.filter(
+              (m) =>
+                (m as any).phase === "GRAZ_RR" &&
+                m.teamAId && m.teamBId &&
+                poolTeamIds.includes(m.teamAId) &&
+                poolTeamIds.includes(m.teamBId)
+            )
+          : [];
+        const standingsMatches = [...poolMatches, ...recycledRR];
+        const standings = computeStandings(poolTeams, standingsMatches as Match[], scoringSystem);
 
         const isGraz = poolMatches.some((m) => (m as any).phase === "GRAZ_RR");
+        const isRegroup = isRegroupPool && poolMatches.some((m) => (m as any).phase === "GRAZ_REGROUP");
         const day1Matches = isGraz ? poolMatches.filter((m) => (m as any).dayIndex === "SAT") : poolMatches;
         const day2Matches = isGraz ? poolMatches.filter((m) => (m as any).dayIndex === "SUN") : [];
 
@@ -153,7 +166,23 @@ export function PoolTables({
                 <MatchList ms={day2Matches} />
               </>
             )}
-            {!isGraz && <MatchList ms={day1Matches} />}
+            {isRegroup && recycledRR.length > 0 && (
+              <>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: "12px 0 6px" }}>
+                  Score recyclé (Phase 1)
+                </p>
+                <MatchList ms={recycledRR as MatchWithTeams[]} />
+              </>
+            )}
+            {isRegroup && (
+              <>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: "12px 0 6px" }}>
+                  Nouveaux matchs
+                </p>
+                <MatchList ms={poolMatches} />
+              </>
+            )}
+            {!isGraz && !isRegroup && <MatchList ms={day1Matches} />}
           </div>
         );
       })}
