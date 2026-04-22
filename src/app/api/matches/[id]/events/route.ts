@@ -72,7 +72,16 @@ export async function POST(request: Request, { params }: { params: { id: string 
     goldenGoal = true;
   }
 
-  if (parsed.data.type === "START") status = "LIVE";
+  if (parsed.data.type === "START") {
+    // Block START if another match on the same court is already LIVE
+    const alreadyLive = await prisma.match.findFirst({
+      where: { tournamentId: match.tournamentId, courtName: match.courtName, status: "LIVE", id: { not: match.id } },
+    });
+    if (alreadyLive) {
+      return Response.json({ error: "Un match est déjà en cours sur ce terrain." }, { status: 409 });
+    }
+    status = "LIVE";
+  }
   // PAUSE garde le match LIVE — c'est juste une pause du chrono local
   if (parsed.data.type === "END") {
     // Block ending a BRACKET match on a draw
@@ -129,16 +138,38 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
   }
 
-  // Auto-advance: when a match finishes, set the next SCHEDULED match on the same court to LIVE
+  // Auto-advance + cascade reschedule: when a match finishes, shift all upcoming matches on same court
   const isNowFinished = status === "FINISHED" && match.status !== "FINISHED";
   if (isNowFinished) {
-    const nextOnCourt = await prisma.match.findFirst({
-      where: { tournamentId: match.tournamentId, courtName: match.courtName, status: "SCHEDULED" },
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: match.tournamentId },
+      select: { gameDurationMin: true },
+    });
+    const slotMin = (tournament?.gameDurationMin ?? 15) + 4;
+
+    const upcomingOnCourt = await prisma.match.findMany({
+      where: {
+        tournamentId: match.tournamentId,
+        courtName: match.courtName,
+        status: { in: ["SCHEDULED", "LIVE"] },
+      },
       orderBy: { startAt: "asc" },
     });
-    if (nextOnCourt) {
-      const advanced = await prisma.match.update({ where: { id: nextOnCourt.id }, data: { status: "LIVE" } });
-      publishMatchUpdate({ matchId: advanced.id, tournamentId: advanced.tournamentId, type: "match_update", data: advanced });
+
+    if (upcomingOnCourt.length > 0) {
+      const realFinishTime = new Date();
+      let cursor = new Date(realFinishTime.getTime() + 4 * 60 * 1000);
+
+      for (let i = 0; i < upcomingOnCourt.length; i++) {
+        const m = upcomingOnCourt[i];
+        const newData: Record<string, unknown> = { startAt: new Date(cursor) };
+        if (i === 0 && m.status === "SCHEDULED") newData.status = "LIVE";
+
+        const cascaded = await prisma.match.update({ where: { id: m.id }, data: newData });
+        publishMatchUpdate({ matchId: cascaded.id, tournamentId: cascaded.tournamentId, type: "match_update", data: cascaded });
+
+        cursor = new Date(cursor.getTime() + slotMin * 60 * 1000);
+      }
     }
   }
 

@@ -736,7 +736,20 @@ export default async function TournamentPage({
         <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
       )}
 
-      {tab === "bracket" && !isTestMode && (() => {
+      {tab === "bracket" && !isTestMode && isGraz && (() => {
+        const grazSEMatches = tournament.matches.filter((m) => m.phase === "GRAZ_SE");
+        const bracketTeams = tournament.teams.filter((t) => t.selected).map((team) => ({ id: team.id, name: team.name, bracketNumber: team.seed }));
+        if (grazSEMatches.length === 0) {
+          return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>Le SE n&apos;a pas encore été généré.</p>;
+        }
+        return (
+          <div>
+            <BracketView matches={grazSEMatches as any} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />
+          </div>
+        );
+      })()}
+
+      {tab === "bracket" && !isTestMode && !isGraz && (() => {
         const bracketMatches = tournament.matches.filter((m) => m.phase === "BRACKET");
         const swissAll = tournament.matches.filter((m) => m.phase === "SWISS");
         const bracketTeams = (() => {

@@ -35,6 +35,7 @@ function GrazPlanning({
   launchGrazSundayRRAction,
   launchGrazRegroupAction,
   launchGrazSEAction,
+  resetGrazPhaseAction,
 }: {
   tournament: any;
   pools: any[];
@@ -43,6 +44,7 @@ function GrazPlanning({
   launchGrazSundayRRAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchGrazRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchGrazSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  resetGrazPhaseAction?: (phase: "SUNDAY_RR" | "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const t = useTranslations("tournament");
   const [tab, setTab] = useState<GrazTab>("samedi");
@@ -50,6 +52,7 @@ function GrazPlanning({
   const [pendingSun, setPendingSun] = useState(false);
   const [pendingRegroup, setPendingRegroup] = useState(false);
   const [pendingSE, setPendingSE] = useState(false);
+  const [pendingReset, setPendingReset] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const poolAId = pools.find((p: any) => p.name === "Pool A")?.id;
@@ -60,7 +63,7 @@ function GrazPlanning({
   const poolBDay1 = rrMatches.filter((m: any) => m.dayIndex === "SAT" && m.poolId === poolBId);
   const sundayRR = rrMatches.filter((m: any) => m.dayIndex === "SUN");
   const regroupMatches = matches.filter((m: any) => m.phase === "GRAZ_REGROUP");
-  const seMatches = matches.filter((m: any) => m.phase === "GRAZ_SE" || m.phase === "BRACKET");
+  const seMatches = matches.filter((m: any) => m.phase === "GRAZ_SE");
 
   const poolADay1Done = poolADay1.length > 0 && poolADay1.every((m: any) => m.status === "FINISHED");
   const poolBDay1Done = poolBDay1.length > 0 && poolBDay1.every((m: any) => m.status === "FINISHED");
@@ -139,22 +142,20 @@ function GrazPlanning({
               {t("graz_sunday_rr" as any)}
             </p>
             <StatusLine arr={sundayRR} />
-            {canLaunchSundayRR && launchGrazSundayRRAction && (
-              <button
-                className="primary"
-                style={{ marginTop: 10, fontSize: 13 }}
-                disabled={pendingSun}
-                onClick={async () => {
-                  setPendingSun(true);
-                  setError(null);
-                  const res = await launchGrazSundayRRAction();
-                  if (res?.error) setError(res.error);
-                  setPendingSun(false);
-                }}
-              >
-                {pendingSun ? "..." : t("graz_launch_sunday_rr" as any)}
-              </button>
-            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {canLaunchSundayRR && launchGrazSundayRRAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pendingSun}
+                  onClick={async () => { setPendingSun(true); setError(null); const res = await launchGrazSundayRRAction(); if (res?.error) setError(res.error); setPendingSun(false); }}>
+                  {pendingSun ? "..." : t("graz_launch_sunday_rr" as any)}
+                </button>
+              )}
+              {sundayRR.length > 0 && resetGrazPhaseAction && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pendingReset === "SUNDAY_RR"}
+                  onClick={async () => { if (!window.confirm("Reset Rounds 6-7 + Regroup + SE ?")) return; setPendingReset("SUNDAY_RR"); setError(null); const res = await resetGrazPhaseAction("SUNDAY_RR"); if (res?.error) setError(res.error); setPendingReset(null); }}>
+                  {pendingReset === "SUNDAY_RR" ? "..." : "↺ Reset"}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Regroup */}
@@ -163,22 +164,20 @@ function GrazPlanning({
               {t("graz_regroup" as any)}
             </p>
             <StatusLine arr={regroupMatches} />
-            {regroupMatches.length === 0 && sundayRRDone && launchGrazRegroupAction && (
-              <button
-                className="primary"
-                style={{ marginTop: 10, fontSize: 13 }}
-                disabled={pendingRegroup}
-                onClick={async () => {
-                  setPendingRegroup(true);
-                  setError(null);
-                  const res = await launchGrazRegroupAction();
-                  if (res?.error) setError(res.error);
-                  setPendingRegroup(false);
-                }}
-              >
-                {pendingRegroup ? "..." : t("graz_launch_regroup" as any)}
-              </button>
-            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {regroupMatches.length === 0 && sundayRRDone && launchGrazRegroupAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pendingRegroup}
+                  onClick={async () => { setPendingRegroup(true); setError(null); const res = await launchGrazRegroupAction(); if (res?.error) setError(res.error); setPendingRegroup(false); }}>
+                  {pendingRegroup ? "..." : t("graz_launch_regroup" as any)}
+                </button>
+              )}
+              {regroupMatches.length > 0 && resetGrazPhaseAction && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pendingReset === "REGROUP"}
+                  onClick={async () => { if (!window.confirm("Reset Regroup + SE ?")) return; setPendingReset("REGROUP"); setError(null); const res = await resetGrazPhaseAction("REGROUP"); if (res?.error) setError(res.error); setPendingReset(null); }}>
+                  {pendingReset === "REGROUP" ? "..." : "↺ Reset"}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* SE */}
@@ -187,22 +186,20 @@ function GrazPlanning({
               {t("graz_se" as any)}
             </p>
             <StatusLine arr={seMatches} />
-            {seMatches.length === 0 && regroupMatches.length > 0 && regroupMatches.every((m: any) => m.status === "FINISHED") && launchGrazSEAction && (
-              <button
-                className="primary"
-                style={{ marginTop: 10, fontSize: 13 }}
-                disabled={pendingSE}
-                onClick={async () => {
-                  setPendingSE(true);
-                  setError(null);
-                  const res = await launchGrazSEAction();
-                  if (res?.error) setError(res.error);
-                  setPendingSE(false);
-                }}
-              >
-                {pendingSE ? "..." : t("graz_launch_se" as any)}
-              </button>
-            )}
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {seMatches.length === 0 && regroupMatches.length > 0 && regroupMatches.every((m: any) => m.status === "FINISHED") && launchGrazSEAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pendingSE}
+                  onClick={async () => { setPendingSE(true); setError(null); const res = await launchGrazSEAction(); if (res?.error) setError(res.error); setPendingSE(false); }}>
+                  {pendingSE ? "..." : t("graz_launch_se" as any)}
+                </button>
+              )}
+              {seMatches.length > 0 && resetGrazPhaseAction && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pendingReset === "SE"}
+                  onClick={async () => { if (!window.confirm("Reset SE ?")) return; setPendingReset("SE"); setError(null); const res = await resetGrazPhaseAction("SE"); if (res?.error) setError(res.error); setPendingReset(null); }}>
+                  {pendingReset === "SE" ? "..." : "↺ Reset"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -343,6 +340,7 @@ type OrgaDashboardProps = {
   launchGrazSundayRRAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchGrazRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchGrazSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  resetGrazPhaseAction?: (phase: "SUNDAY_RR" | "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignedTo: { id: string; name: string } | null; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -399,6 +397,7 @@ export function OrgaDashboard({
   launchGrazSundayRRAction,
   launchGrazRegroupAction,
   launchGrazSEAction,
+  resetGrazPhaseAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -742,6 +741,7 @@ export function OrgaDashboard({
               launchGrazSundayRRAction={launchGrazSundayRRAction}
               launchGrazRegroupAction={launchGrazRegroupAction}
               launchGrazSEAction={launchGrazSEAction}
+              resetGrazPhaseAction={resetGrazPhaseAction}
             />
           )}
 

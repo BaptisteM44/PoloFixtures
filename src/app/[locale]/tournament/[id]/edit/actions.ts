@@ -1899,21 +1899,21 @@ export async function launchGrazSundayRRAction(
   const poolBRecord = tournament.pools.find((p) => p.name === "Pool B");
 
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
-  const dateEnd = new Date((tournament as any).dateEnd);
   const slotMin = tournament.gameDurationMin + 5;
 
   // Alternate rounds: R6-A, R6-B, R7-A, R7-B
   const allNewMatches: Array<{ m: ReturnType<typeof generateGrazPoolRounds>[0]; poolId: string }> = [];
+  const placeholderDate = new Date(); // placeholder, will be overwritten below
 
   for (let round = 6; round <= 7; round++) {
-    const aMatches = generateGrazPoolRounds(poolA, courtNames, dateEnd, "SUN", tournament.gameDurationMin, round, round);
-    const bMatches = generateGrazPoolRounds(poolB, courtNames, dateEnd, "SUN", tournament.gameDurationMin, round, round);
+    const aMatches = generateGrazPoolRounds(poolA, courtNames, placeholderDate, "SUN", tournament.gameDurationMin, round, round);
+    const bMatches = generateGrazPoolRounds(poolB, courtNames, placeholderDate, "SUN", tournament.gameDurationMin, round, round);
     for (const m of aMatches) allNewMatches.push({ m, poolId: poolARecord?.id ?? "" });
     for (const m of bMatches) allNewMatches.push({ m, poolId: poolBRecord?.id ?? "" });
   }
 
-  // Re-schedule with actual alternating times
-  let cursor = new Date(dateEnd);
+  // Re-schedule with actual times: now + 5min
+  let cursor = new Date(Date.now() + 5 * 60 * 1000);
   const scheduled = allNewMatches.map(({ m, poolId }) => {
     const startAt = new Date(cursor);
     cursor = new Date(cursor.getTime() + slotMin * 60000);
@@ -1940,6 +1940,44 @@ export async function launchGrazSundayRRAction(
       });
     }
   }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+// ─── Graz Reset actions ───────────────────────────────────────────────────────
+
+export async function resetGrazPhaseAction(
+  id: string,
+  phase: "SUNDAY_RR" | "REGROUP" | "SE"
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  if (phase === "SUNDAY_RR") {
+    // Delete SUN RR matches + cascade: also delete Regroup, SE, and regroup pools
+    await prisma.match.deleteMany({ where: { tournamentId: id, phase: "GRAZ_SE" } });
+    await prisma.match.deleteMany({ where: { tournamentId: id, phase: "GRAZ_REGROUP" } });
+    // Delete regroup pools (Regroup-Top etc.)
+    const regroupPools = await prisma.pool.findMany({ where: { tournamentId: id, name: { startsWith: "Regroup-" } } });
+    for (const p of regroupPools) {
+      await prisma.poolTeam.deleteMany({ where: { poolId: p.id } });
+      await prisma.pool.delete({ where: { id: p.id } });
+    }
+    await prisma.match.deleteMany({ where: { tournamentId: id, phase: "GRAZ_RR", dayIndex: "SUN" } });
+  } else if (phase === "REGROUP") {
+    // Delete SE + Regroup + regroup pools
+    await prisma.match.deleteMany({ where: { tournamentId: id, phase: "GRAZ_SE" } });
+    await prisma.match.deleteMany({ where: { tournamentId: id, phase: "GRAZ_REGROUP" } });
+    const regroupPools = await prisma.pool.findMany({ where: { tournamentId: id, name: { startsWith: "Regroup-" } } });
+    for (const p of regroupPools) {
+      await prisma.poolTeam.deleteMany({ where: { poolId: p.id } });
+      await prisma.pool.delete({ where: { id: p.id } });
+    }
+  } else if (phase === "SE") {
+    await prisma.match.deleteMany({ where: { tournamentId: id, phase: "GRAZ_SE" } });
+  }
 
   revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);
@@ -1996,12 +2034,8 @@ export async function launchGrazRegroupAction(
 
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
 
-  // Start time: after last RR match + 10min break
-  const lastRR = rrMatches.reduce((latest, m) => {
-    const t = new Date(m.startAt).getTime();
-    return t > latest ? t : latest;
-  }, 0);
-  const regroupStart = new Date(lastRR + (tournament.gameDurationMin + 10) * 60 * 1000);
+  // Start time: now + 10min (orga just clicked the button, matches start soon)
+  const regroupStart = new Date(Date.now() + 10 * 60 * 1000);
 
   const newMatches = generateRegroupMatches(groups, playedPairs, courtNames, regroupStart, tournament.gameDurationMin);
 
@@ -2097,12 +2131,8 @@ export async function launchGrazSEAction(
   const seTeamIds = selectSETeams(regroupStandings);
   if (seTeamIds.length < 4) return { error: "Pas assez d'équipes qualifiées pour le SE." };
 
-  // Start time: after last regroup match + 15min break
-  const lastRegroup = regroupMatches.reduce((latest, m) => {
-    const t = new Date(m.startAt).getTime();
-    return t > latest ? t : latest;
-  }, 0);
-  const seStart = new Date(lastRegroup + (tournament.gameDurationMin + 15) * 60 * 1000);
+  // Start time: now + 15min (orga just clicked the button)
+  const seStart = new Date(Date.now() + 15 * 60 * 1000);
 
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
   const seMatches = generateGrazSE(seTeamIds, courtNames, seStart, tournament.gameDurationMin);

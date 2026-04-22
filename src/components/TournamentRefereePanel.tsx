@@ -75,11 +75,12 @@ function fmtClock(sec: number) {
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
-function matchLabel(m: MatchInfo, t: (key: string) => string) {
+function matchLabel(m: MatchInfo, t: (key: string) => string, num?: number) {
   const a = m.teamAName ?? "TBD"; const b = m.teamBName ?? "TBD";
   const dayKey = DAY_KEYS[m.dayIndex];
   const phaseKey = PHASE_KEYS[m.phase];
-  return `${dayKey ? t(dayKey) : m.dayIndex} · ${m.courtName} · ${phaseKey ? t(phaseKey) : m.phase} R${m.roundIndex + 1} — ${a} vs ${b}`;
+  const prefix = num != null ? `#${num} · ` : "";
+  return `${prefix}${dayKey ? t(dayKey) : m.dayIndex} · ${m.courtName} · ${phaseKey ? t(phaseKey) : m.phase} R${m.roundIndex + 1} — ${a} vs ${b}`;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -397,6 +398,22 @@ export function TournamentRefereePanel({
     return { penaltyCounts: penalties, timeoutNormal: toNormal, timeoutMech: toMech, goalsByPlayer: goals };
   }, [selectedMatch]);
 
+  // Global match number per court (chronological)
+  const globalOrder = useMemo(() => {
+    const byCourt = new Map<string, MatchInfo[]>();
+    for (const m of [...matchMap.values()]) {
+      const list = byCourt.get(m.courtName) ?? [];
+      list.push(m);
+      byCourt.set(m.courtName, list);
+    }
+    const map = new Map<string, number>();
+    for (const courtMatches of byCourt.values()) {
+      const sorted = [...courtMatches].sort((a, b) => a.startAt.localeCompare(b.startAt));
+      sorted.forEach((m, i) => map.set(m.id, i + 1));
+    }
+    return map;
+  }, [matchMap]);
+
   const nextScheduled = useMemo(() => {
     const currentCourt = selectedMatch?.courtName;
     // Priorité au prochain match SCHEDULED sur le même terrain, sinon premier SCHEDULED global
@@ -569,7 +586,7 @@ export function TournamentRefereePanel({
           {sortedMatches.map((m) => (
             <option key={m.id} value={m.id}>
               {m.status === "LIVE" ? "🔴 " : m.status === "FINISHED" ? "✅ " : "⏳ "}
-              {matchLabel(m, t)}
+              {matchLabel(m, t, globalOrder.get(m.id))}
             </option>
           ))}
         </select>

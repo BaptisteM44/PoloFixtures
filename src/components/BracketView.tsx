@@ -187,7 +187,7 @@ export function BracketView({
     return () => es.close();
   }, [tournamentId, isLive]);
 
-  const bracketMatches = matches.filter((m) => m.phase === "BRACKET");
+  const bracketMatches = matches.filter((m) => m.phase === "BRACKET" || m.phase === "GRAZ_SE");
   // SWISS_SPLIT_SE: detect by presence of B/BG/BL bracket sides
   const isSplitSE = bracketMatches.some((m) => m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL");
   // DE has multiple L matches; SE 3rd place has exactly one L or BL match

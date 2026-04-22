@@ -171,7 +171,9 @@ export function ScheduleBoard({
       const bracketSuffix = match.phase === "BRACKET" && match.bracketSide ? `-${match.bracketSide}` : "";
       // For GRAZ_RR matches, separate by pool (poolId) so Pool A and Pool B are distinct groups
       const grazPoolSuffix = match.phase === "GRAZ_RR" && match.poolId ? `-P${match.poolId}` : "";
-      const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}${bracketSuffix}${grazPoolSuffix}`;
+      // For GRAZ_REGROUP matches, separate by pool (Top / Mid1 / Mid2 / Bottom)
+      const grazRegroupSuffix = match.phase === "GRAZ_REGROUP" && match.poolId ? `-P${match.poolId}` : "";
+      const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}${bracketSuffix}${grazPoolSuffix}${grazRegroupSuffix}`;
       if (!groups.has(key)) {
         groups.set(key, { phase: match.phase, roundIndex: match.roundIndex, poolSessionIndex: match.poolSessionIndex ?? undefined, bracketSide: match.bracketSide ?? undefined, poolId: match.poolId ?? null, matches: [] });
       }
@@ -208,17 +210,24 @@ export function ScheduleBoard({
   // Global match ordering for numbering (based on ALL matches, not filtered)
   // Sort by: phase order (POOL→SWISS→BRACKET), then roundIndex, then startAt, then court
   const globalOrder = useMemo(() => {
-    const phaseOrder: Record<string, number> = { POOL: 0, SWISS: 1, CROSS_POOL: 2, BRACKET: 3 };
-    const sorted = [...matches].sort(
-      (a, b) =>
-        (phaseOrder[a.phase] ?? 9) - (phaseOrder[b.phase] ?? 9)
-        || a.roundIndex - b.roundIndex
-        || new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
-        || (a.positionInRound ?? 0) - (b.positionInRound ?? 0)
-        || a.courtName.localeCompare(b.courtName)
-    );
+    // Global match number = chronological order by startAt per court
+    // Each court has its own sequence: court 1 → 1,2,3... court 2 → 1,2,3...
+    // If only 1 court, it's the true global sequence across all phases
+    const byCourt = new Map<string, MatchWithTeams[]>();
+    for (const m of matches) {
+      const list = byCourt.get(m.courtName) ?? [];
+      list.push(m);
+      byCourt.set(m.courtName, list);
+    }
     const map = new Map<string, number>();
-    sorted.forEach((m, i) => map.set(m.id, i + 1));
+    for (const courtMatches of byCourt.values()) {
+      const sorted = [...courtMatches].sort(
+        (a, b) =>
+          new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+          || (a.positionInRound ?? 0) - (b.positionInRound ?? 0)
+      );
+      sorted.forEach((m, i) => map.set(m.id, i + 1));
+    }
     return map;
   }, [matches]);
 
@@ -333,6 +342,8 @@ export function ScheduleBoard({
         // For GRAZ_RR: show pool name (Pool A / Pool B)
         const grazPoolLabel = group.phase === "GRAZ_RR" && group.poolId
           ? ` · ${pools?.find((p) => p.id === group.poolId)?.name ?? "Pool"}`
+          : group.phase === "GRAZ_REGROUP" && group.poolId
+          ? ` · ${pools?.find((p) => p.id === group.poolId)?.name?.replace("Regroup-", "") ?? "Groupe"}`
           : "";
 
         // For BRACKET phase, show which bracket + match type based on bracketSide
