@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
 import { generatePools, generatePoolMatches, generateBracket, generateSwissRound, generateCrossPoolMatches, nextPowerOf2 } from "@/lib/bracket";
-import { generateGrazPools, generateGrazPoolRounds } from "@/lib/graz";
+import { generateGrazPools, generateGrazPoolRounds, assignRegroupTeamIds, buildPlayedPairs, generateRegroupMatches, selectSETeams, generateGrazSE } from "@/lib/graz";
 import { computeStandings } from "@/lib/standings";
 import { computeCareerBadges } from "@/lib/achievements";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
@@ -1940,6 +1940,209 @@ export async function launchGrazSundayRRAction(
       });
     }
   }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+// ─── Graz Phase 2 : Regroup ───────────────────────────────────────────────────
+
+export async function launchGrazRegroupAction(
+  id: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      pools: { include: { teams: { include: { team: true } } } },
+      matches: { where: { phase: "GRAZ_RR" }, include: { teamA: true, teamB: true } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: "Ce tournoi n'utilise pas le format Graz." };
+
+  // All 7 RR rounds must be finished
+  const rrMatches = tournament.matches;
+  if (rrMatches.length === 0) return { error: "Aucun match RR trouvé." };
+  const unfinished = rrMatches.filter((m) => m.status !== "FINISHED");
+  if (unfinished.length > 0) return { error: `${unfinished.length} match(s) RR non terminé(s).` };
+
+  // Regroup already generated?
+  const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "GRAZ_REGROUP" } });
+  if (existing) return { error: "Le Regroup a déjà été généré." };
+
+  // Compute standings for each pool
+  const poolARecord = tournament.pools.find((p) => p.name === "Pool A");
+  const poolBRecord = tournament.pools.find((p) => p.name === "Pool B");
+  if (!poolARecord || !poolBRecord) return { error: "Pools introuvables." };
+
+  const poolATeams = poolARecord.teams.map((pt) => pt.team);
+  const poolBTeams = poolBRecord.teams.map((pt) => pt.team);
+  const poolAMatches = rrMatches.filter((m) => m.poolId === poolARecord.id);
+  const poolBMatches = rrMatches.filter((m) => m.poolId === poolBRecord.id);
+
+  const poolAStandings = computeStandings(poolATeams, poolAMatches as any, (tournament as any).scoringSystem);
+  const poolBStandings = computeStandings(poolBTeams, poolBMatches as any, (tournament as any).scoringSystem);
+
+  // Build regroup groups
+  const groups = assignRegroupTeamIds(poolAStandings, poolBStandings);
+
+  // Build set of already-played pairs (skip intra-pool matches)
+  const playedPairs = buildPlayedPairs(rrMatches);
+
+  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+
+  // Start time: after last RR match + 10min break
+  const lastRR = rrMatches.reduce((latest, m) => {
+    const t = new Date(m.startAt).getTime();
+    return t > latest ? t : latest;
+  }, 0);
+  const regroupStart = new Date(lastRR + (tournament.gameDurationMin + 10) * 60 * 1000);
+
+  const newMatches = generateRegroupMatches(groups, playedPairs, courtNames, regroupStart, tournament.gameDurationMin);
+
+  // Create pool records for each regroup group and persist matches
+  await prisma.$transaction(async (tx) => {
+    for (const group of groups) {
+      const pool = await tx.pool.create({
+        data: { tournamentId: id, name: `Regroup-${group.name}`, session: null },
+      });
+      // Assign pool teams
+      await tx.poolTeam.createMany({
+        data: group.teamIds.map((teamId) => ({ poolId: pool.id, teamId })),
+      });
+      // Create matches for this group
+      const groupMatches = newMatches.filter((m) => m.poolName === group.name);
+      for (const match of groupMatches) {
+        await tx.match.create({
+          data: {
+            tournamentId: id,
+            phase: "GRAZ_REGROUP",
+            poolId: pool.id,
+            bracketSide: null,
+            roundIndex: match.roundIndex,
+            positionInRound: match.positionInRound ?? 0,
+            courtName: match.courtName,
+            startAt: match.startAt,
+            dayIndex: "SUN",
+            status: "SCHEDULED",
+            teamAId: match.teamAId,
+            teamBId: match.teamBId,
+          },
+        });
+      }
+    }
+  }, { timeout: 20000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+// ─── Graz Phase 3 : SE ────────────────────────────────────────────────────────
+
+export async function launchGrazSEAction(
+  id: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      pools: { include: { teams: { include: { team: true } } } },
+      matches: { where: { phase: { in: ["GRAZ_RR", "GRAZ_REGROUP"] } } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: "Ce tournoi n'utilise pas le format Graz." };
+
+  // All regroup matches must be finished
+  const regroupMatches = tournament.matches.filter((m) => m.phase === "GRAZ_REGROUP");
+  if (regroupMatches.length === 0) return { error: "Générez d'abord le Regroup." };
+  const unfinished = regroupMatches.filter((m) => m.status !== "FINISHED");
+  if (unfinished.length > 0) return { error: `${unfinished.length} match(s) Regroup non terminé(s).` };
+
+  // SE already generated?
+  const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "GRAZ_SE" } });
+  if (existing) return { error: "Le SE a déjà été généré." };
+
+  // Compute standings for each regroup group (RR matches + Regroup matches combined)
+  const rrMatches = tournament.matches.filter((m) => m.phase === "GRAZ_RR");
+  const regroupPools = tournament.pools.filter((p) => p.name.startsWith("Regroup-"));
+
+  const regroupStandings = new Map<string, ReturnType<typeof computeStandings>>();
+
+  for (const pool of regroupPools) {
+    const groupName = pool.name.replace("Regroup-", ""); // "Top", "Mid 1", etc.
+    const teamIds = pool.teams.map((pt) => pt.teamId);
+    const teams = pool.teams.map((pt) => pt.team);
+
+    // Combine RR intra-pool matches + Regroup matches for this group
+    const relevantRR = rrMatches.filter(
+      (m) => m.teamAId && m.teamBId && teamIds.includes(m.teamAId) && teamIds.includes(m.teamBId)
+    );
+    const relevantRegroup = regroupMatches.filter((m) => m.poolId === pool.id);
+    const allRelevant = [...relevantRR, ...relevantRegroup];
+
+    const standings = computeStandings(teams, allRelevant as any, (tournament as any).scoringSystem);
+    regroupStandings.set(groupName, standings);
+  }
+
+  const seTeamIds = selectSETeams(regroupStandings);
+  if (seTeamIds.length < 4) return { error: "Pas assez d'équipes qualifiées pour le SE." };
+
+  // Start time: after last regroup match + 15min break
+  const lastRegroup = regroupMatches.reduce((latest, m) => {
+    const t = new Date(m.startAt).getTime();
+    return t > latest ? t : latest;
+  }, 0);
+  const seStart = new Date(lastRegroup + (tournament.gameDurationMin + 15) * 60 * 1000);
+
+  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const seMatches = generateGrazSE(seTeamIds, courtNames, seStart, tournament.gameDurationMin);
+
+  // Persist SE matches and wire nextMatch links
+  await prisma.$transaction(async (tx) => {
+    // Create all SE matches and collect their IDs
+    const createdIds: string[] = [];
+    for (const match of seMatches) {
+      const created = await tx.match.create({
+        data: {
+          tournamentId: id,
+          phase: "GRAZ_SE",
+          poolId: null,
+          bracketSide: match.bracketSide ?? null,
+          roundIndex: match.roundIndex,
+          positionInRound: match.positionInRound ?? 0,
+          courtName: match.courtName,
+          startAt: match.startAt,
+          dayIndex: "SUN",
+          status: "SCHEDULED",
+          teamAId: match.teamAId,
+          teamBId: match.teamBId,
+        },
+      });
+      createdIds.push(created.id);
+    }
+
+    // seMatches order: [QF1(0), QF2(1), SF1(2), SF2(3), 3rd(4), Final(5)]
+    const [qf1Id, qf2Id, sf1Id, sf2Id, thirdId, finalId] = createdIds;
+
+    // QF1 winner → SF1 slot B, loser → 3rd (no — losers don't go to 3rd from QF)
+    await tx.match.update({ where: { id: qf1Id }, data: { nextMatchWinId: sf1Id, nextSlotWin: "B" } });
+    // QF2 winner → SF2 slot B
+    await tx.match.update({ where: { id: qf2Id }, data: { nextMatchWinId: sf2Id, nextSlotWin: "B" } });
+    // SF1 winner → Final slot A, loser → 3rd slot A
+    await tx.match.update({ where: { id: sf1Id }, data: { nextMatchWinId: finalId, nextSlotWin: "A", nextMatchLoseId: thirdId, nextSlotLose: "A" } });
+    // SF2 winner → Final slot B, loser → 3rd slot B
+    await tx.match.update({ where: { id: sf2Id }, data: { nextMatchWinId: finalId, nextSlotWin: "B", nextMatchLoseId: thirdId, nextSlotLose: "B" } });
+  }, { timeout: 20000 });
 
   revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);

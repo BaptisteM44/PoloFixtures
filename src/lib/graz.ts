@@ -337,12 +337,10 @@ export function generateRegroupMatches(
 // ─── Phase 3: SE bracket (8 teams) ──────────────────────────────────────────
 
 /**
- * Select 8 teams for the final SE bracket:
- *   - All 4 from Top group
- *   - 1st and 2nd from Mid 1
- *   - 1st and 2nd from Mid 2
- *
- * Teams are seeded 1-8 based on their regroup standing.
+ * Select 6 teams for the final SE bracket:
+ *   - All 4 from Top group (seeded 1-4, Top1 & Top2 get BYE in SF)
+ *   - 1st from Mid 1 (seed 5)
+ *   - 1st from Mid 2 (seed 6)
  */
 export function selectSETeams(
   regroupStandings: Map<string, StandingRow[]>
@@ -352,67 +350,56 @@ export function selectSETeams(
   const mid2 = regroupStandings.get("Mid 2") ?? [];
 
   return [
-    ...top.map((s) => s.teamId),
-    ...(mid1.slice(0, 2).map((s) => s.teamId)),
-    ...(mid2.slice(0, 2).map((s) => s.teamId)),
-  ];
+    top[0]?.teamId,   // seed 1 — BYE
+    top[1]?.teamId,   // seed 2 — BYE
+    top[2]?.teamId,   // seed 3
+    top[3]?.teamId,   // seed 4
+    mid1[0]?.teamId,  // seed 5 (Mid1 winner)
+    mid2[0]?.teamId,  // seed 6 (Mid2 winner)
+  ].filter(Boolean) as string[];
 }
 
 /**
- * Generate SE bracket matches for qualified teams.
- * 8 teams → QF (4 matches) → SF (2 matches) → Final (1 match) = 7 matches
+ * Generate SE bracket for 6 teams:
+ *   QF1 (round 1, pos 0): seed3 vs seed6
+ *   QF2 (round 1, pos 1): seed4 vs seed5
+ *   SF1 (round 2, pos 0): seed1 (BYE) vs QF1W  → teamA=seed1, teamB=null
+ *   SF2 (round 2, pos 1): seed2 (BYE) vs QF2W  → teamA=seed2, teamB=null
+ *   3rd place (round 3, bracketSide L): SF1L vs SF2L
+ *   Final (round 3, bracketSide G): SF1W vs SF2W
+ *
+ * nextMatchWinId / nextMatchLoseId wiring is done in the action after DB insert.
  */
 export function generateGrazSE(
-  teamIds: string[],
+  teamIds: string[], // [seed1, seed2, seed3, seed4, mid1W, mid2W]
   courtNames: string[],
   startAt: Date,
   gameDurationMin: number
 ): GrazMatch[] {
-  const size = nextPowerOf2(teamIds.length);
-  const totalRounds = Math.log2(size);
   const slotMin = gameDurationMin + 5;
   const roundBreak = gameDurationMin + 15;
+  const court = courtNames[0] ?? "Court 1";
 
-  const seedOrder = bracketSeeding(size);
-  const slots: (string | null)[] = seedOrder.map((s) => teamIds[s - 1] ?? null);
+  const [s1, s2, s3, s4, m1w, m2w] = teamIds;
 
-  const matches: GrazMatch[] = [];
+  const r1Start = new Date(startAt);
+  const r2Start = addMinutes(startAt, roundBreak);
+  const r3Start = addMinutes(startAt, 2 * roundBreak);
 
-  for (let r = 0; r < totalRounds; r++) {
-    const matchesInRound = size / Math.pow(2, r + 1);
-    const roundStart = addMinutes(startAt, r * roundBreak);
-    let courtIdx = 0;
-
-    for (let m = 0; m < matchesInRound; m++) {
-      let teamAId: string | null = null;
-      let teamBId: string | null = null;
-
-      if (r === 0) {
-        const a = slots[m * 2] ?? null;
-        const b = slots[m * 2 + 1] ?? null;
-        if ((a && !b) || (b && !a) || (!a && !b)) continue; // BYE
-        teamAId = a;
-        teamBId = b;
-      }
-
-      matches.push({
-        phase: "GRAZ_SE",
-        poolName: null,
-        bracketSide: r === totalRounds - 1 ? "G" : "W",
-        roundIndex: r + 1,
-        positionInRound: m,
-        courtName: courtNames[courtIdx % courtNames.length],
-        startAt: addMinutes(roundStart, Math.floor(courtIdx / courtNames.length) * slotMin),
-        dayIndex: "SUN",
-        status: "SCHEDULED",
-        teamAId,
-        teamBId,
-      });
-      courtIdx++;
-    }
-  }
-
-  return matches;
+  return [
+    // QF1 : seed3 vs Mid2W
+    { phase: "GRAZ_SE", bracketSide: "W", roundIndex: 1, positionInRound: 0, courtName: court, startAt: r1Start, dayIndex: "SUN", status: "SCHEDULED", teamAId: s3 ?? null, teamBId: m2w ?? null },
+    // QF2 : seed4 vs Mid1W — starts after QF1
+    { phase: "GRAZ_SE", bracketSide: "W", roundIndex: 1, positionInRound: 1, courtName: court, startAt: addMinutes(r1Start, slotMin), dayIndex: "SUN", status: "SCHEDULED", teamAId: s4 ?? null, teamBId: m1w ?? null },
+    // SF1 : seed1 BYE (teamB=null, will be filled when QF1 finishes)
+    { phase: "GRAZ_SE", bracketSide: "W", roundIndex: 2, positionInRound: 0, courtName: court, startAt: r2Start, dayIndex: "SUN", status: "SCHEDULED", teamAId: s1 ?? null, teamBId: null },
+    // SF2 : seed2 BYE
+    { phase: "GRAZ_SE", bracketSide: "W", roundIndex: 2, positionInRound: 1, courtName: court, startAt: addMinutes(r2Start, slotMin), dayIndex: "SUN", status: "SCHEDULED", teamAId: s2 ?? null, teamBId: null },
+    // 3rd place
+    { phase: "GRAZ_SE", bracketSide: "L", roundIndex: 3, positionInRound: 0, courtName: court, startAt: r3Start, dayIndex: "SUN", status: "SCHEDULED", teamAId: null, teamBId: null },
+    // Final
+    { phase: "GRAZ_SE", bracketSide: "G", roundIndex: 3, positionInRound: 1, courtName: court, startAt: addMinutes(r3Start, slotMin), dayIndex: "SUN", status: "SCHEDULED", teamAId: null, teamBId: null },
+  ];
 }
 
 // ─── Utility ─────────────────────────────────────────────────────────────────

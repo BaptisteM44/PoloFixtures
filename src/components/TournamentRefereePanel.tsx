@@ -29,7 +29,11 @@ type PenaltyModal = { teamId: string; teamName: string; players: PlayerInfo[] } 
 type TimeoutModal = { teamId: string; teamName: string; type: "normal" | "mechanical" } | null;
 type GoldenGoalModal = { teamId: string; teamName: string } | null;
 
-const PHASE_KEYS: Record<string, string> = { POOL: "phase_pool", SWISS: "phase_swiss", BRACKET: "phase_bracket" };
+const PHASE_KEYS: Record<string, string> = {
+  POOL: "phase_pool", SWISS: "phase_swiss", BRACKET: "phase_bracket",
+  GRAZ_RR: "phase_pool", GRAZ_REGROUP: "phase_pool", GRAZ_SE: "phase_bracket",
+  BERLIN_MIXED_POOL: "phase_pool", BERLIN_MIXED_SE: "phase_bracket",
+};
 const DAY_KEYS: Record<string, string> = { SAT: "day_sat", SUN: "day_sun" };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -90,7 +94,10 @@ export function TournamentRefereePanel({
   const sortedMatches = useMemo(() => {
     const order: Record<string, number> = { LIVE: 0, SCHEDULED: 1, FINISHED: 2 };
     return [...matchMap.values()].sort(
-      (a, b) => (order[a.status] ?? 1) - (order[b.status] ?? 1) || a.startAt.localeCompare(b.startAt)
+      (a, b) =>
+        (order[a.status] ?? 1) - (order[b.status] ?? 1) ||
+        a.courtName.localeCompare(b.courtName) ||
+        a.startAt.localeCompare(b.startAt)
     );
   }, [matchMap]);
   const [selectedMatchId, setSelectedMatchId] = useState<string>(() => sortedMatches.find((m) => m.status === "LIVE" || m.status === "SCHEDULED")?.id ?? sortedMatches[0]?.id ?? "");
@@ -390,10 +397,14 @@ export function TournamentRefereePanel({
     return { penaltyCounts: penalties, timeoutNormal: toNormal, timeoutMech: toMech, goalsByPlayer: goals };
   }, [selectedMatch]);
 
-  const nextScheduled = useMemo(() =>
-    sortedMatches.find((m) => m.status === "SCHEDULED" && m.id !== selectedMatchId),
-    [sortedMatches, selectedMatchId]
-  );
+  const nextScheduled = useMemo(() => {
+    const currentCourt = selectedMatch?.courtName;
+    // Priorité au prochain match SCHEDULED sur le même terrain, sinon premier SCHEDULED global
+    return (
+      sortedMatches.find((m) => m.status === "SCHEDULED" && m.id !== selectedMatchId && m.courtName === currentCourt) ??
+      sortedMatches.find((m) => m.status === "SCHEDULED" && m.id !== selectedMatchId)
+    );
+  }, [sortedMatches, selectedMatchId, selectedMatch?.courtName]);
 
   const teamA = tournament.teams.find((t) => t.id === selectedMatch?.teamAId);
   const teamB = tournament.teams.find((t) => t.id === selectedMatch?.teamBId);

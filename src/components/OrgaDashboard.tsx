@@ -33,17 +33,23 @@ function GrazPlanning({
   matches,
   launchGrazPoolBAction,
   launchGrazSundayRRAction,
+  launchGrazRegroupAction,
+  launchGrazSEAction,
 }: {
   tournament: any;
   pools: any[];
   matches: any[];
   launchGrazPoolBAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchGrazSundayRRAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchGrazRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchGrazSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const t = useTranslations("tournament");
   const [tab, setTab] = useState<GrazTab>("samedi");
   const [pendingB, setPendingB] = useState(false);
   const [pendingSun, setPendingSun] = useState(false);
+  const [pendingRegroup, setPendingRegroup] = useState(false);
+  const [pendingSE, setPendingSE] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const poolAId = pools.find((p: any) => p.name === "Pool A")?.id;
@@ -157,14 +163,21 @@ function GrazPlanning({
               {t("graz_regroup" as any)}
             </p>
             <StatusLine arr={regroupMatches} />
-            {regroupMatches.length === 0 && sundayRRDone && (
-              <BracketActions
-                tournamentId={tournament.id}
-                returnPath={`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`}
-                hasQualifyingMatches={true}
-                isRR={false}
-                mode="launch"
-              />
+            {regroupMatches.length === 0 && sundayRRDone && launchGrazRegroupAction && (
+              <button
+                className="primary"
+                style={{ marginTop: 10, fontSize: 13 }}
+                disabled={pendingRegroup}
+                onClick={async () => {
+                  setPendingRegroup(true);
+                  setError(null);
+                  const res = await launchGrazRegroupAction();
+                  if (res?.error) setError(res.error);
+                  setPendingRegroup(false);
+                }}
+              >
+                {pendingRegroup ? "..." : t("graz_launch_regroup" as any)}
+              </button>
             )}
           </div>
 
@@ -174,14 +187,21 @@ function GrazPlanning({
               {t("graz_se" as any)}
             </p>
             <StatusLine arr={seMatches} />
-            {seMatches.length === 0 && regroupMatches.length > 0 && regroupMatches.every((m: any) => m.status === "FINISHED") && (
-              <BracketActions
-                tournamentId={tournament.id}
-                returnPath={`/tournament/${tournament.slug ?? tournament.id}?tab=bracket`}
-                hasQualifyingMatches={true}
-                isRR={false}
-                mode="buttons"
-              />
+            {seMatches.length === 0 && regroupMatches.length > 0 && regroupMatches.every((m: any) => m.status === "FINISHED") && launchGrazSEAction && (
+              <button
+                className="primary"
+                style={{ marginTop: 10, fontSize: 13 }}
+                disabled={pendingSE}
+                onClick={async () => {
+                  setPendingSE(true);
+                  setError(null);
+                  const res = await launchGrazSEAction();
+                  if (res?.error) setError(res.error);
+                  setPendingSE(false);
+                }}
+              >
+                {pendingSE ? "..." : t("graz_launch_se" as any)}
+              </button>
             )}
           </div>
         </div>
@@ -321,6 +341,8 @@ type OrgaDashboardProps = {
   resetMatchesAction: (formData: FormData) => Promise<void>;
   launchGrazPoolBAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchGrazSundayRRAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchGrazRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchGrazSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignedTo: { id: string; name: string } | null; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -375,6 +397,8 @@ export function OrgaDashboard({
   resetMatchesAction,
   launchGrazPoolBAction,
   launchGrazSundayRRAction,
+  launchGrazRegroupAction,
+  launchGrazSEAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -716,6 +740,8 @@ export function OrgaDashboard({
               matches={matches}
               launchGrazPoolBAction={launchGrazPoolBAction}
               launchGrazSundayRRAction={launchGrazSundayRRAction}
+              launchGrazRegroupAction={launchGrazRegroupAction}
+              launchGrazSEAction={launchGrazSEAction}
             />
           )}
 
