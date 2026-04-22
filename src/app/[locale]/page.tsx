@@ -209,15 +209,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ---- DATA LOSS NOTICE ---- */}
-      <div className="data-loss-notice">
-        <span className="data-loss-notice__icon">⚠️</span>
-        <div>
-          <strong>{t("incident_title")}</strong>
-          <p>{t("incident_body")}</p>
-        </div>
-      </div>
-
       {/* ---- MAP SECTION (WIP) ---- */}
       {process.env.NEXT_PUBLIC_MAP_ENABLED === "true" && mapTournaments.length > 0 && (
         <TournamentMapClient
