@@ -88,6 +88,22 @@ export function PoolTables({
         const poolMatches = matches.filter((m) => m.poolId === pool.id);
         const standings = computeStandings(poolTeams, poolMatches as Match[], scoringSystem);
 
+        const isGraz = poolMatches.some((m) => (m as any).phase === "GRAZ_RR");
+        const day1Matches = isGraz ? poolMatches.filter((m) => (m as any).dayIndex === "SAT") : poolMatches;
+        const day2Matches = isGraz ? poolMatches.filter((m) => (m as any).dayIndex === "SUN") : [];
+
+        const MatchList = ({ ms }: { ms: MatchWithTeams[] }) => (
+          <div className="pool-matches">
+            {ms.map((match) => (
+              <div key={match.id} className="pool-match">
+                <span>{match.teamA?.name ?? "TBD"} vs {match.teamB?.name ?? "TBD"}</span>
+                <strong>{match.scoreA} - {match.scoreB}</strong>
+                <span className="meta">{match.status}</span>
+              </div>
+            ))}
+          </div>
+        );
+
         return (
           <div key={pool.id} className="pool-card">
             <h4>{pool.name}</h4>
@@ -121,15 +137,23 @@ export function PoolTables({
                   ))}
               </tbody>
             </table>
-            <div className="pool-matches">
-              {poolMatches.map((match) => (
-                <div key={match.id} className="pool-match">
-                  <span>{match.teamA?.name ?? "TBD"} vs {match.teamB?.name ?? "TBD"}</span>
-                  <strong>{match.scoreA} - {match.scoreB}</strong>
-                  <span className="meta">{match.status}</span>
-                </div>
-              ))}
-            </div>
+            {isGraz && day1Matches.length > 0 && (
+              <>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: "12px 0 6px" }}>
+                  Rounds 1–5
+                </p>
+                <MatchList ms={day1Matches} />
+              </>
+            )}
+            {isGraz && day2Matches.length > 0 && (
+              <>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: "12px 0 6px" }}>
+                  Rounds 6–7
+                </p>
+                <MatchList ms={day2Matches} />
+              </>
+            )}
+            {!isGraz && <MatchList ms={day1Matches} />}
           </div>
         );
       })}
