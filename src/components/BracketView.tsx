@@ -329,21 +329,6 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
   const headerOffset = 28;
   const { metrics: colMetrics, totalWidth: mainWidth } = getColumnMetrics(sortedRounds.length);
 
-  const virtualR1Slots = (() => {
-    let maxPos = 0;
-    for (const [roundIdx, roundMatches] of rounds) {
-      const r = roundIdx - 1;
-      const divisor = Math.pow(2, r);
-      for (const m of roundMatches) {
-        const virtualPos = (m.positionInRound ?? 0) * divisor + divisor - 1;
-        if (virtualPos > maxPos) maxPos = virtualPos;
-      }
-    }
-    return maxPos + 1;
-  })();
-
-  const mainHeight = virtualR1Slots * CELL_BASE;
-
   const matchNumbers = new Map<string, number>();
   let matchCounter = 1;
   for (const [, roundMatches] of sortedRounds) {
@@ -352,17 +337,46 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
   }
   if (thirdPlaceMatch) matchNumbers.set(thirdPlaceMatch.id, matchCounter++);
 
+  // Position matches: R1 uses CELL_BASE grid, then each later round is centered
+  // between its two feeders (avoids large empty spaces when R1 count is not power-of-2)
   const matchPositions = new Map<string, { colIdx: number; y: number }>();
-  sortedRounds.forEach(([roundIdx, roundMatches], colIdx) => {
-    const r = roundIdx - 1;
-    const cellH = CELL_BASE * Math.pow(2, r);
+
+  // Step 1: place R1 (or earliest round) using simple grid
+  sortedRounds.forEach(([, roundMatches], colIdx) => {
+    if (colIdx !== 0) return;
     const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
-    sorted.forEach((m) => {
-      const pos = m.positionInRound ?? 0;
-      const top = pos * cellH + (cellH - CARD_H) / 2;
-      matchPositions.set(m.id, { colIdx, y: top });
+    sorted.forEach((m, i) => {
+      matchPositions.set(m.id, { colIdx: 0, y: i * CELL_BASE + (CELL_BASE - CARD_H) / 2 });
     });
   });
+
+  // Step 2: for each subsequent round, center each match between its two feeders
+  // Build a map: matchId -> list of matches that feed into it
+  const feedersOf = new Map<string, MatchWithTeams[]>();
+  mainMatches.forEach((m) => {
+    if (!m.nextMatchWinId) return;
+    const list = feedersOf.get(m.nextMatchWinId) ?? [];
+    list.push(m);
+    feedersOf.set(m.nextMatchWinId, list);
+  });
+
+  sortedRounds.forEach(([, roundMatches], colIdx) => {
+    if (colIdx === 0) return;
+    const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
+    sorted.forEach((m) => {
+      const feeders = feedersOf.get(m.id) ?? [];
+      const feederYs = feeders.map((f) => matchPositions.get(f.id)?.y ?? 0).filter((y) => y !== undefined);
+      const centerY = feederYs.length > 0
+        ? (Math.min(...feederYs) + Math.max(...feederYs)) / 2
+        : (m.positionInRound ?? 0) * CELL_BASE + (CELL_BASE - CARD_H) / 2;
+      matchPositions.set(m.id, { colIdx, y: centerY });
+    });
+  });
+
+  // Compute actual used height from positioned matches
+  let maxY = 0;
+  matchPositions.forEach(({ y }) => { if (y + CARD_H > maxY) maxY = y + CARD_H; });
+  const mainHeight = Math.max(maxY, CELL_BASE);
 
   const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
   mainMatches.forEach((m) => {
@@ -407,8 +421,6 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
 
       {/* Main bracket rounds */}
       {sortedRounds.map(([roundIdx, roundMatches], colIdx) => {
-        const r = roundIdx - 1;
-        const cellH = CELL_BASE * Math.pow(2, r);
         const x = colMetrics[colIdx].x;
         const cardWidth = colMetrics[colIdx].cardWidth;
         let label: string;
@@ -421,8 +433,8 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
           <div key={roundIdx} style={{ position: "absolute", left: x, top: 0, width: cardWidth }}>
             <div className="bracket-round-header">{label}</div>
             {sorted.map((m) => {
-              const pos = m.positionInRound ?? 0;
-              const top = pos * cellH + (cellH - CARD_H) / 2 + headerOffset;
+              const pos = matchPositions.get(m.id);
+              const top = (pos?.y ?? 0) + headerOffset;
               return (
                 <div key={m.id} style={{ position: "absolute", top, left: CARD_OFFSET_X, width: cardWidth }}>
                   <BracketCard
