@@ -17,19 +17,18 @@ const FIRST_COL_GAP = 28;
 const CELL_BASE = 76;
 const CARD_OFFSET_X = 0;
 
-function getDERoundLabel(side: string, roundIndex: number, maxUpperRound: number, maxLowerRound: number, crossPool = false): string {
-  if (side === "G") return roundIndex === 2 ? "Bracket Reset" : "Finale";
+// Returns a translation key + params instead of a hardcoded string
+function getDERoundLabelKey(side: string, roundIndex: number, maxUpperRound: number, maxLowerRound: number, crossPool = false): { key: string; params?: Record<string, string | number> } {
+  if (side === "G") return roundIndex === 2 ? { key: "bracket_reset" } : { key: "bracket_final" };
   if (side === "W") {
-    // Cross-pool: round 1 of W side is SE elimination, DE upper starts at round 2
-    if (crossPool && roundIndex === 1) return "Élimination";
-    if (roundIndex === maxUpperRound) return "Finale WB";
-    if (roundIndex === maxUpperRound - 1) return "Demi-Finales";
-    // Shift tour label for cross-pool so DE R2 shows "Tour 1" not "Tour 2"
+    if (crossPool && roundIndex === 1) return { key: "bracket_elim" };
+    if (roundIndex === maxUpperRound) return { key: "bracket_wb_final" };
+    if (roundIndex === maxUpperRound - 1) return { key: "bracket_semifinal" };
     const displayRound = crossPool ? roundIndex - 1 : roundIndex;
-    return `Tour ${displayRound}`;
+    return { key: "bracket_round", params: { n: displayRound } };
   }
-  if (maxLowerRound <= 1) return "Manche des perdants";
-  return `Manche des perdants ${roundIndex}`;
+  if (maxLowerRound <= 1) return { key: "bracket_losers" };
+  return { key: "bracket_losers_round", params: { n: roundIndex } };
 }
 
 function getColumnMetrics(count: number) {
@@ -312,24 +311,25 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
   selectedId: string | null;
   teamNumberById: Map<string, number | undefined>;
 }) {
+  const t = useTranslations("tournament");
+
+  // Separate 3rd place match from main bracket
+  const thirdPlaceMatch = matches.find((m) => m.bracketSide === "L");
+  const mainMatches = matches.filter((m) => m.bracketSide !== "L");
+
   const rounds = new Map<number, MatchWithTeams[]>();
-  matches.forEach((m) => {
+  mainMatches.forEach((m) => {
     const list = rounds.get(m.roundIndex) ?? [];
     list.push(m);
     rounds.set(m.roundIndex, list);
   });
 
   const sortedRounds = Array.from(rounds.entries()).sort(([a], [b]) => a - b);
-  const maxRound = Math.max(...rounds.keys());
+  const maxRound = rounds.size > 0 ? Math.max(...rounds.keys()) : 0;
   const headerOffset = 28;
-  const { metrics: colMetrics, totalWidth } = getColumnMetrics(sortedRounds.length);
+  const { metrics: colMetrics, totalWidth: mainWidth } = getColumnMetrics(sortedRounds.length);
 
-  // Compute the "virtual" R1 slot count: the round with the most matches defines the base
-  // For standard power-of-2 brackets this equals 2^(maxRound-1)
-  // For non-power-of-2 (e.g. 9 teams: R1 has 1 match, R2 has 4), we need to find the
-  // round that has the most matches and use positionInRound to compute the virtual grid size
   const virtualR1Slots = (() => {
-    // Find the largest positionInRound across all matches to derive the grid height
     let maxPos = 0;
     for (const [roundIdx, roundMatches] of rounds) {
       const r = roundIdx - 1;
@@ -342,7 +342,7 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
     return maxPos + 1;
   })();
 
-  const totalHeight = virtualR1Slots * CELL_BASE;
+  const mainHeight = virtualR1Slots * CELL_BASE;
 
   const matchNumbers = new Map<string, number>();
   let matchCounter = 1;
@@ -350,10 +350,10 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
     const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
     for (const m of sorted) matchNumbers.set(m.id, matchCounter++);
   }
+  if (thirdPlaceMatch) matchNumbers.set(thirdPlaceMatch.id, matchCounter++);
 
   const matchPositions = new Map<string, { colIdx: number; y: number }>();
   sortedRounds.forEach(([roundIdx, roundMatches], colIdx) => {
-    // Always relative to round 1 so spacing is correct even when R1 is absent (BYEs)
     const r = roundIdx - 1;
     const cellH = CELL_BASE * Math.pow(2, r);
     const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
@@ -365,7 +365,7 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
   });
 
   const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
-  matches.forEach((m) => {
+  mainMatches.forEach((m) => {
     if (!m.nextMatchWinId) return;
     const src = matchPositions.get(m.id);
     const dst = matchPositions.get(m.nextMatchWinId);
@@ -378,9 +378,19 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
     });
   });
 
+  // The 3rd place match goes in the same column as the final (last col),
+  // but rendered below with a gap to distinguish it visually
+  const finalColIdx = sortedRounds.length - 1;
+  const finalColMetric = colMetrics[finalColIdx];
+  const thirdPlaceGap = 24; // gap between main bracket and 3rd place section
+  const thirdPlaceTopOffset = mainHeight + headerOffset + thirdPlaceGap;
+  const totalHeight = thirdPlaceMatch
+    ? thirdPlaceTopOffset + CARD_H + headerOffset + thirdPlaceGap
+    : mainHeight + headerOffset;
+
   return (
-    <div className="bracket-tree" style={{ position: "relative", width: totalWidth, minHeight: totalHeight + headerOffset }}>
-      <svg width={totalWidth} height={totalHeight + headerOffset} style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none" }}>
+    <div className="bracket-tree" style={{ position: "relative", width: mainWidth, minHeight: totalHeight }}>
+      <svg width={mainWidth} height={totalHeight} style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none" }}>
         {lines.map((line, index) => {
           const elbowX = line.x1 + 14;
           return (
@@ -395,12 +405,16 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
         })}
       </svg>
 
+      {/* Main bracket rounds */}
       {sortedRounds.map(([roundIdx, roundMatches], colIdx) => {
         const r = roundIdx - 1;
         const cellH = CELL_BASE * Math.pow(2, r);
         const x = colMetrics[colIdx].x;
         const cardWidth = colMetrics[colIdx].cardWidth;
-        const label = roundIdx === maxRound ? "Finales" : roundIdx === maxRound - 1 ? "Demi-Finales" : `Tour ${roundIdx}`;
+        let label: string;
+        if (roundIdx === maxRound) label = t("bracket_final");
+        else if (roundIdx === maxRound - 1) label = t("bracket_semifinal");
+        else label = t("bracket_round", { n: roundIdx });
         const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
 
         return (
@@ -426,6 +440,23 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
           </div>
         );
       })}
+
+      {/* 3rd place match — aligned with final column, positioned below main bracket */}
+      {thirdPlaceMatch && finalColMetric && (
+        <div style={{ position: "absolute", left: finalColMetric.x, top: thirdPlaceTopOffset - headerOffset, width: finalColMetric.cardWidth }}>
+          <div className="bracket-round-header bracket-round-header--3rd">{t("bracket_3rd_place")}</div>
+          <div style={{ position: "absolute", top: headerOffset, left: CARD_OFFSET_X, width: finalColMetric.cardWidth }}>
+            <BracketCard
+              match={thirdPlaceMatch}
+              onEdit={() => onEdit(thirdPlaceMatch)}
+              isSelected={selectedId === thirdPlaceMatch.id}
+              matchNumber={matchNumbers.get(thirdPlaceMatch.id)}
+              teamANumber={thirdPlaceMatch.teamAId ? teamNumberById.get(thirdPlaceMatch.teamAId) : undefined}
+              teamBNumber={thirdPlaceMatch.teamBId ? teamNumberById.get(thirdPlaceMatch.teamBId) : undefined}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -464,6 +495,7 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
   teamNumberById: Map<string, number | undefined>;
   crossPool?: boolean;
 }) {
+  const t = useTranslations("tournament");
   const upper = matches.filter((m) => m.bracketSide === "W");
   const lower = matches.filter((m) => m.bracketSide === "L");
   const grand = matches.filter((m) => m.bracketSide === "G");
@@ -602,7 +634,8 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
           </svg>
 
           {sortedRounds.map(([roundIdx, roundMatches], colIdx) => {
-            const label = getDERoundLabel(side, roundIdx, maxUpperRound, maxLowerRound, crossPool);
+            const { key, params } = getDERoundLabelKey(side, roundIdx, maxUpperRound, maxLowerRound, crossPool);
+            const label = t(key as any, params);
             const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
             const x = colMetrics[colIdx].x;
             const cardWidth = colMetrics[colIdx].cardWidth;
@@ -637,9 +670,9 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
 
   return (
     <div className="de-bracket">
-      {renderTreeSection("Tableau principal", upper, "de-section--upper", false)}
-      {renderTreeSection("Tableau repêchage", lower, "de-section--lower", false)}
-      {renderTreeSection("Finale", grand, "de-section--grand", false)}
+      {renderTreeSection(t("de_upper"), upper, "de-section--upper", false)}
+      {renderTreeSection(t("de_lower"), lower, "de-section--lower", false)}
+      {renderTreeSection(t("de_grand"), grand, "de-section--grand", false)}
     </div>
   );
 }

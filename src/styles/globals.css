@@ -6271,6 +6271,13 @@ textarea {
   white-space: nowrap;
 }
 
+.bracket-round-header--3rd {
+  color: var(--accent, #e8854a);
+  border-top: 1px dashed var(--border, #e0ddd8);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
 .bracket-match-btn {
   background: none;
   border: none;
