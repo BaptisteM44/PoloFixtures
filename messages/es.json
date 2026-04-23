@@ -397,6 +397,8 @@
     "empty_no_teams": "Ningún equipo inscrito aún.",
     "diet_label": "Requisitos alimentarios:",
     "diet_not_specified": "No especificado",
+    "orga_mark_completed": "Cerrar torneo",
+    "orga_marked_completed": "¡Torneo cerrado!",
     "orga_recap_title": "Resumen:",
     "orga_players": "jugador(es)",
     "orga_accommodation_total": "{count} alojamiento(s) solicitado(s)",

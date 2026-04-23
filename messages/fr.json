@@ -397,6 +397,8 @@
     "empty_no_teams": "Aucune équipe inscrite pour l'instant.",
     "diet_label": "Régimes alimentaires :",
     "diet_not_specified": "Non précisé",
+    "orga_mark_completed": "Clôturer le tournoi",
+    "orga_marked_completed": "Tournoi clôturé !",
     "orga_recap_title": "Récap :",
     "orga_players": "joueur(s)",
     "orga_accommodation_total": "{count} logement(s) demandé(s)",

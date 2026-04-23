@@ -449,6 +449,28 @@ export function OrgaDashboard({
   const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0)) && teams.some((t) => t.selected === true);
   const isLive = tournament.status === "LIVE";
 
+  // All bracket matches finished → show "mark as completed" button
+  const allBracketFinished = bracketMatches.length > 0 && bracketMatches.every((m) => m.status === "FINISHED");
+  const [completePending, setCompletePending] = useState(false);
+  const [completeDone, setCompleteDone] = useState(false);
+
+  const handleMarkCompleted = async () => {
+    setCompletePending(true);
+    try {
+      const res = await fetch(`/api/tournaments/${tournament.id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "COMPLETED" }),
+      });
+      if (res.ok) {
+        setCompleteDone(true);
+        setTimeout(() => window.location.reload(), 800);
+      }
+    } finally {
+      setCompletePending(false);
+    }
+  };
+
   // KPIs
   const selectedTeams = (isLive || tournament.status === "COMPLETED") && teams.filter((t) => t.selected !== false).length > 0
     ? teams.filter((t) => t.selected !== false).length
@@ -458,8 +480,24 @@ export function OrgaDashboard({
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
 
       {/* ── Status ── */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <span className={`status ${tournament.status.toLowerCase()}`}>{tournament.status}</span>
+        {isLive && allBracketFinished && !completeDone && (
+          <button
+            type="button"
+            className="btn btn--success"
+            onClick={handleMarkCompleted}
+            disabled={completePending}
+            style={{ fontSize: 13, padding: "6px 14px" }}
+          >
+            {completePending ? "…" : `🏁 ${t("orga_mark_completed")}`}
+          </button>
+        )}
+        {completeDone && (
+          <span style={{ fontSize: 13, color: "var(--success, #3a9a5c)", fontWeight: 600 }}>
+            ✓ {t("orga_marked_completed")}
+          </span>
+        )}
       </div>
 
       {/* ── KPI bar ── */}

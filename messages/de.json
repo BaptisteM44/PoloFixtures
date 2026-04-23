@@ -398,6 +398,8 @@
     "empty_no_teams": "Noch keine Teams angemeldet.",
     "diet_label": "Ernährungsanforderungen:",
     "diet_not_specified": "Nicht angegeben",
+    "orga_mark_completed": "Turnier abschließen",
+    "orga_marked_completed": "Turnier abgeschlossen!",
     "orga_recap_title": "Übersicht:",
     "orga_players": "Spieler",
     "orga_accommodation_total": "{count} Unterkunft(en) angefragt",
