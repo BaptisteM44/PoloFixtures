@@ -15,7 +15,6 @@ import { CoOrganizerManager } from "@/components/CoOrganizerManager";
 import { RefereeManager } from "@/components/RefereeManager";
 import ConfirmFormButton from "@/components/ConfirmFormButton";
 import { PoolScheduleEditor } from "@/components/PoolScheduleEditor";
-import { TestModeToggle } from "@/components/TestModeToggle";
 import { OrgaTaskBoard } from "@/components/OrgaTaskBoard";
 import { OrgaNoteBoard } from "@/components/OrgaNoteBoard";
 import { OrgaLinkBoard } from "@/components/OrgaLinkBoard";
@@ -537,9 +536,6 @@ export function OrgaDashboard({
       {/* ── Tab: Config ── */}
       {activeTab === "config" && (
         <>
-          <div style={{ marginBottom: 20 }}>
-            <TestModeToggle tournamentId={tournament.id} initialTestMode={tournament.testMode ?? false} initialHidden={(tournament as any).hidden ?? false} />
-          </div>
           <TournamentEditForm
             tournament={tournament}
             action={updateAction}
