@@ -1452,7 +1452,7 @@
     "field_gender_prefer_not": "Prefiero no decirlo",
     "field_gender_show": "Mostrar en mi carta",
     "field_diet": "Régimen alimentario",
-    "field_diet_hint": "para comidas en torneos — se puede combinar",
+    "field_diet_hint": "para comidas en torneos — sin gluten se puede combinar",
     "diet_omnivore": "Omnívoro",
     "diet_vegetarian": "Vegetariano/a",
     "diet_vegan": "Vegano/a",

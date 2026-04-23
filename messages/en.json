@@ -1448,7 +1448,7 @@
     "field_gender_prefer_not": "Prefer not to say",
     "field_gender_show": "Show on my card",
     "field_diet": "Dietary preferences",
-    "field_diet_hint": "for tournament meals — can be combined",
+    "field_diet_hint": "for tournament meals — gluten-free can be combined",
     "diet_omnivore": "Omnivore",
     "diet_vegetarian": "Vegetarian",
     "diet_vegan": "Vegan",

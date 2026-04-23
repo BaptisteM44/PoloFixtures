@@ -464,17 +464,18 @@ export default function AccountPage() {
               <div className="field-row">
                 {t("field_diet")} <span style={{ color: "var(--text-muted)", fontSize: 12 }}>({t("field_diet_hint")})</span>
                 <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 6 }}>
-                  {(["OMNIVORE", "VEGETARIAN", "VEGAN", "GLUTEN_FREE"] as const).map((d) => {
-                    const labels: Record<string, string> = { OMNIVORE: t("diet_omnivore"), VEGETARIAN: t("diet_vegetarian"), VEGAN: t("diet_vegan"), GLUTEN_FREE: t("diet_gluten_free") };
-                    const checked = form.diets.includes(d);
+                  {(["OMNIVORE", "VEGETARIAN", "VEGAN"] as const).map((d) => {
+                    const labels: Record<string, string> = { OMNIVORE: t("diet_omnivore"), VEGETARIAN: t("diet_vegetarian"), VEGAN: t("diet_vegan") };
+                    const mainDiet = form.diets.find((x) => x !== "GLUTEN_FREE") ?? null;
                     return (
                       <label key={d} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
                         <input
-                          type="checkbox"
-                          checked={checked}
+                          type="radio"
+                          name="diet-main"
+                          checked={mainDiet === d}
                           onChange={() => setForm((f) => ({
                             ...f,
-                            diets: checked ? f.diets.filter((x) => x !== d) : [...f.diets, d],
+                            diets: f.diets.includes("GLUTEN_FREE") ? [d, "GLUTEN_FREE"] : [d],
                           }))}
                           style={{ width: 14, height: 14 }}
                         />
@@ -482,6 +483,20 @@ export default function AccountPage() {
                       </label>
                     );
                   })}
+                  <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, fontWeight: 600, marginLeft: 4, borderLeft: "1px solid var(--border)", paddingLeft: 12 }}>
+                    <input
+                      type="checkbox"
+                      checked={form.diets.includes("GLUTEN_FREE")}
+                      onChange={() => setForm((f) => ({
+                        ...f,
+                        diets: f.diets.includes("GLUTEN_FREE")
+                          ? f.diets.filter((x) => x !== "GLUTEN_FREE")
+                          : [...f.diets, "GLUTEN_FREE"],
+                      }))}
+                      style={{ width: 14, height: 14 }}
+                    />
+                    {t("diet_gluten_free")}
+                  </label>
                 </div>
               </div>
               <div className="field-row">

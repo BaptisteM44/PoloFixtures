@@ -22,6 +22,12 @@ function toLocalDateString(dateInput?: string | Date | null): string {
   return `${y}-${m}-${day}`;
 }
 
+// Extract HH:mm in the browser's local timezone from a UTC ISO string
+function utcIsoToLocalTime(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 export function PoolScheduleEditor({
   tournamentId,
   gameDurationMin,
@@ -33,12 +39,12 @@ export function PoolScheduleEditor({
   const router = useRouter();
   const t = useTranslations("tournament");
   const [isPending, startTransition] = useTransition();
-  const [poolATime, setPoolATime] = useState(poolAStart?.slice(11, 16) ?? "09:00");
-  const [poolBTime, setPoolBTime] = useState(poolBStart?.slice(11, 16) ?? "12:00");
+  const [poolATime, setPoolATime] = useState(poolAStart ? utcIsoToLocalTime(poolAStart) : "09:00");
+  const [poolBTime, setPoolBTime] = useState(poolBStart ? utcIsoToLocalTime(poolBStart) : "12:00");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  useEffect(() => { if (poolAStart) setPoolATime(poolAStart.slice(11, 16)); }, [poolAStart]);
-  useEffect(() => { if (poolBStart) setPoolBTime(poolBStart.slice(11, 16)); }, [poolBStart]);
+  useEffect(() => { if (poolAStart) setPoolATime(utcIsoToLocalTime(poolAStart)); }, [poolAStart]);
+  useEffect(() => { if (poolBStart) setPoolBTime(utcIsoToLocalTime(poolBStart)); }, [poolBStart]);
 
   const baseDate = toLocalDateString(tournamentDateStart);
 

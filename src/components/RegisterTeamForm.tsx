@@ -506,12 +506,28 @@ function PlayerSlotInput({
           <input placeholder={t("field_country")} value={manualCountry} onChange={(e) => { setManualCountry(e.target.value); onChange({ type: "manual", name: manualName, city: manualCity, country: e.target.value, diets: currentDiets }); }} required />
         </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          {(["OMNIVORE", "VEGETARIAN", "VEGAN", "GLUTEN_FREE"] as const).map((d) => (
-            <label key={d} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
-              <input type="checkbox" checked={currentDiets.includes(d)} onChange={() => toggleDiet(d)} style={{ width: 12, height: 12 }} />
-              {DIET_LABELS[d]}
-            </label>
-          ))}
+          {(["OMNIVORE", "VEGETARIAN", "VEGAN"] as const).map((d) => {
+            const mainDiet = currentDiets.find((x) => x !== "GLUTEN_FREE") ?? null;
+            return (
+              <label key={d} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                <input
+                  type="radio"
+                  name={`diet-${slot.type}-main`}
+                  checked={mainDiet === d}
+                  onChange={() => {
+                    const hasGlutenFree = currentDiets.includes("GLUTEN_FREE");
+                    onChange({ type: "manual", name: manualName, city: manualCity, country: manualCountry, diets: hasGlutenFree ? [d, "GLUTEN_FREE"] : [d] });
+                  }}
+                  style={{ width: 12, height: 12 }}
+                />
+                {DIET_LABELS[d]}
+              </label>
+            );
+          })}
+          <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11, fontWeight: 600, marginLeft: 4, borderLeft: "1px solid var(--border)", paddingLeft: 12 }}>
+            <input type="checkbox" checked={currentDiets.includes("GLUTEN_FREE")} onChange={() => toggleDiet("GLUTEN_FREE")} style={{ width: 12, height: 12 }} />
+            {DIET_LABELS["GLUTEN_FREE"]}
+          </label>
           {showAccommodation && (
             <label style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11, fontWeight: 600, marginLeft: 8 }}>
               <input type="checkbox" checked={!!needsAccommodation} onChange={() => onToggleAccommodation?.()} style={{ accentColor: "var(--teal)", width: 12, height: 12 }} />
