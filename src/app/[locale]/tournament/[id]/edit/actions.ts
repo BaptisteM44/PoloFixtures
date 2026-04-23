@@ -193,6 +193,8 @@ export async function updateTournamentAction(formData: FormData) {
         scoringSystem: data.scoringSystem,
         thirdPlaceMatch: data.thirdPlaceMatch,
         gfReset: data.gfReset,
+        testMode: data.testMode,
+        hidden: data.hidden,
       }
     });
   } catch (err) {
