@@ -288,7 +288,7 @@ export function TournamentBrowser({
         const heading = (
           <>
             {group.label}
-            <span className="agenda-month__count"> · {group.tournaments.length} tournoi{group.tournaments.length > 1 ? "s" : ""}</span>
+            <span className="agenda-month__count"> · {group.tournaments.length} {group.tournaments.length > 1 ? t("count_plural") : t("count_singular")}</span>
           </>
         );
         const grid = (
