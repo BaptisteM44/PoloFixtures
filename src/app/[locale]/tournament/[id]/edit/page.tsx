@@ -19,7 +19,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       pools: { include: { teams: { include: { team: { select: { id: true, name: true, seed: true } } } } } },
       matches: { select: { id: true, phase: true, roundIndex: true, status: true, winnerTeamId: true, poolId: true, poolSessionIndex: true, teamAId: true, teamBId: true, dayIndex: true } },
       sponsors: { orderBy: { name: "asc" } },
-      coOrganizers: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true } } }, orderBy: { addedAt: "asc" } }
+      coOrganizers: { where: { role: "ORGA" }, include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true } } }, orderBy: { addedAt: "asc" } }
     }
   });
 
