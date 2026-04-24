@@ -337,12 +337,14 @@ export function TournamentRefereePanel({
       });
       return next;
     });
-    postEvent("GOAL", { teamId, delta, ...(playerId ? { playerId } : {}) });
+    const playerName = playerId ? tournament.teams.flatMap((t) => t.players).find((p) => p.id === playerId)?.name : undefined;
+    postEvent("GOAL", { teamId, delta, ...(playerId ? { playerId, ...(playerName ? { playerName } : {}) } : {}) });
   };
 
   const onPenaltyConfirmed = (teamId: string, playerId: string, delta: number) => {
     setTimeout(() => setPenaltyModal(null), 0);
-    postEvent("PENALTY", { teamId, playerId, delta });
+    const playerName = tournament.teams.flatMap((t) => t.players).find((p) => p.id === playerId)?.name;
+    postEvent("PENALTY", { teamId, playerId, ...(playerName ? { playerName } : {}), delta });
   };
 
   const onTimeoutConfirmed = (teamId: string, type: "normal" | "mechanical") => {
@@ -370,7 +372,8 @@ export function TournamentRefereePanel({
       });
       return next;
     });
-    postEvent("GOLDEN_GOAL", { teamId, ...(playerId ? { playerId } : {}) });
+    const playerName = playerId ? tournament.teams.flatMap((t) => t.players).find((p) => p.id === playerId)?.name : undefined;
+    postEvent("GOLDEN_GOAL", { teamId, ...(playerId ? { playerId, ...(playerName ? { playerName } : {}) } : {}) });
   };
 
   // ── Computed stats ────────────────────────────────────────────────────────
