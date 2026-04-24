@@ -399,6 +399,9 @@
     "diet_not_specified": "No especificado",
     "orga_mark_completed": "Cerrar torneo",
     "orga_marked_completed": "¡Torneo cerrado!",
+    "overlay_title": "Overlay para Stream",
+    "overlay_hint": "Copia el enlace para OBS",
+    "live_all_courts": "Todas las canchas",
     "orga_recap_title": "Resumen:",
     "orga_players": "jugador(es)",
     "orga_accommodation_total": "{count} alojamiento(s) solicitado(s)",
@@ -2257,6 +2260,25 @@
     "phase_bracket": "Cuadro",
     "day_sat": "Sáb",
     "day_sun": "Dom",
-    "btn_plus_one_goal": "+1 Gol"
+    "btn_plus_one_goal": "+1 Gol",
+    "swap_sides": "Invertir lados"
+  },
+  "overlay": {
+    "title": "Overlay para Stream",
+    "subtitle": "Muestra los resultados en vivo en tu stream de OBS / YouTube / Twitch.",
+    "how_title": "Como funciona?",
+    "step1_title": "Copia el enlace",
+    "step1_desc": "Elige el torneo y la cancha, luego copia la URL del overlay.",
+    "step2_title": "Agrega en OBS",
+    "step2_desc": "En OBS/Streamlabs, agrega una fuente 'Navegador' y pega la URL. Tamano recomendado: 800x200.",
+    "step3_title": "Transmite!",
+    "step3_desc": "El overlay se actualiza en tiempo real: cronometro, marcador, goles, faltas. Fondo transparente.",
+    "tournaments_title": "Torneos disponibles",
+    "no_tournaments": "No hay torneos en curso o proximos.",
+    "theme": "Tema",
+    "copy": "Copiar",
+    "copied": "Copiado!",
+    "preview": "Vista previa",
+    "hide_preview": "Ocultar"
   }
 }

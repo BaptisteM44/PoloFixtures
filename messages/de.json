@@ -400,6 +400,9 @@
     "diet_not_specified": "Nicht angegeben",
     "orga_mark_completed": "Turnier abschließen",
     "orga_marked_completed": "Turnier abgeschlossen!",
+    "overlay_title": "Stream-Overlay",
+    "overlay_hint": "Link fur OBS kopieren",
+    "live_all_courts": "Alle Platze",
     "orga_recap_title": "Übersicht:",
     "orga_players": "Spieler",
     "orga_accommodation_total": "{count} Unterkunft(en) angefragt",
@@ -2258,6 +2261,25 @@
     "phase_bracket": "Tableau",
     "day_sat": "Sa",
     "day_sun": "So",
-    "btn_plus_one_goal": "+1 Tor"
+    "btn_plus_one_goal": "+1 Tor",
+    "swap_sides": "Seiten tauschen"
+  },
+  "overlay": {
+    "title": "Stream-Overlay",
+    "subtitle": "Zeige Live-Ergebnisse auf deinem OBS / YouTube / Twitch Stream.",
+    "how_title": "Wie funktioniert es?",
+    "step1_title": "Link kopieren",
+    "step1_desc": "Wahle das Turnier und den Platz, dann kopiere die Overlay-URL.",
+    "step2_title": "In OBS einfugen",
+    "step2_desc": "In OBS/Streamlabs eine 'Browser'-Quelle hinzufugen und die URL einfugen. Empfohlene Grosse: 800x200.",
+    "step3_title": "Streamen!",
+    "step3_desc": "Das Overlay aktualisiert sich in Echtzeit: Timer, Ergebnisse, Tore, Fouls. Transparenter Hintergrund.",
+    "tournaments_title": "Verfugbare Turniere",
+    "no_tournaments": "Keine laufenden oder kommenden Turniere.",
+    "theme": "Design",
+    "copy": "Kopieren",
+    "copied": "Kopiert!",
+    "preview": "Vorschau",
+    "hide_preview": "Ausblenden"
   }
 }

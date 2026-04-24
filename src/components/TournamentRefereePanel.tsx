@@ -426,8 +426,17 @@ export function TournamentRefereePanel({
     );
   }, [sortedMatches, selectedMatchId, selectedMatch?.courtName]);
 
-  const teamA = tournament.teams.find((t) => t.id === selectedMatch?.teamAId);
-  const teamB = tournament.teams.find((t) => t.id === selectedMatch?.teamBId);
+  // Swap sides: count SWAP_SIDES events — odd = swapped
+  const sidesSwapped = useMemo(() => {
+    if (!selectedMatch) return false;
+    const swapCount = selectedMatch.events.filter((e) => e.type === "SWAP_SIDES").length;
+    return swapCount % 2 === 1;
+  }, [selectedMatch?.events]);
+
+  const rawTeamA = tournament.teams.find((t) => t.id === selectedMatch?.teamAId);
+  const rawTeamB = tournament.teams.find((t) => t.id === selectedMatch?.teamBId);
+  const teamA = sidesSwapped ? rawTeamB : rawTeamA;
+  const teamB = sidesSwapped ? rawTeamA : rawTeamB;
   const clockColor = displaySec <= 60 ? "var(--red)" : displaySec <= 120 ? "#f59e0b" : "var(--teal)";
   // Tous les joueurs du tournoi (pour la sélection d'arbitres)
   const allPlayers = useMemo(() => {
@@ -656,6 +665,13 @@ export function TournamentRefereePanel({
                 <button className="ghost ref-btn-lg" onClick={onPause}>⏸ Pause</button>
               )}
               <button className="ghost ref-btn-sm" onClick={onReset} disabled={running}>↺ Reset</button>
+              <button
+                className="ghost ref-btn-sm"
+                onClick={() => postEvent("SWAP_SIDES")}
+                title={t("swap_sides")}
+              >
+                ⇄ {t("swap_sides")}
+              </button>
             </div>
           </div>
 
@@ -663,8 +679,8 @@ export function TournamentRefereePanel({
           {!matchEnded ? (
             <div className="ref-score-grid">
               {[
-                { team: teamA, score: selectedMatch.scoreA, side: "A" as const },
-                { team: teamB, score: selectedMatch.scoreB, side: "B" as const },
+                { team: teamA, score: sidesSwapped ? selectedMatch.scoreB : selectedMatch.scoreA, side: "A" as const },
+                { team: teamB, score: sidesSwapped ? selectedMatch.scoreA : selectedMatch.scoreB, side: "B" as const },
               ].map(({ team, score, side }) => {
                 if (!team) return (
                   <div key={side} className="ref-team-panel ref-team--tbd">

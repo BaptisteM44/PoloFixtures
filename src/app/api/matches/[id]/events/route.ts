@@ -7,7 +7,7 @@ import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/ac
 import { z } from "zod";
 
 const schema = z.object({
-  type: z.enum(["START", "PAUSE", "GOAL", "GOLDEN_GOAL", "PENALTY", "TIMEOUT", "TIME_ADJUST", "END"]),
+  type: z.enum(["START", "PAUSE", "GOAL", "GOLDEN_GOAL", "PENALTY", "TIMEOUT", "TIME_ADJUST", "END", "SWAP_SIDES"]),
   matchClockSec: z.number().min(0),
   teamId: z.string().optional().nullable(),
   playerId: z.string().optional().nullable(),

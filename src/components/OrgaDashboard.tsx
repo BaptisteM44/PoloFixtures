@@ -517,6 +517,34 @@ export function OrgaDashboard({
         </div>
       </div>
 
+      {/* ── Overlay links ── */}
+      {(isLive || tournament.status === "UPCOMING") && (
+        <div className="panel" style={{ padding: "12px 16px", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>🎬 {t("overlay_title")}</span>
+            <span className="meta" style={{ fontSize: 12 }}>{t("overlay_hint")}</span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {Array.from({ length: tournament.courtsCount ?? 1 }, (_, i) => {
+              const url = `${typeof window !== "undefined" ? window.location.origin : ""}/fr/tournament/${tournament.slug || tournament.id}/overlay?court=${i + 1}&theme=dark`;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  className="btn btn--sm btn--ghost"
+                  onClick={() => {
+                    navigator.clipboard.writeText(url);
+                  }}
+                  style={{ fontSize: 12 }}
+                >
+                  📋 Court {i + 1}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ── Tab bar ── */}
       <div className="tabs-bar" style={{ marginTop: 0 }}>
         <div className="tabs">

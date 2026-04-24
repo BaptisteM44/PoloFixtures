@@ -884,7 +884,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </label>
           <label className="field-row">
             {t("field_stream_youtube")}
-            <input name="streamYoutubeUrl" defaultValue={tournament.streamYoutubeUrl ?? ""} />
+            <input id="streamYoutubeUrl" name="streamYoutubeUrl" defaultValue={tournament.streamYoutubeUrl ?? ""} />
           </label>
           <label className="field-row">
             {t("field_telegram")}

@@ -399,6 +399,9 @@
     "diet_not_specified": "Not specified",
     "orga_mark_completed": "Close tournament",
     "orga_marked_completed": "Tournament closed!",
+    "overlay_title": "Stream Overlay",
+    "overlay_hint": "Copy the link for OBS",
+    "live_all_courts": "All courts",
     "orga_recap_title": "Summary:",
     "orga_players": "player(s)",
     "orga_accommodation_total": "{count} accommodation(s) requested",
@@ -2253,6 +2256,25 @@
     "phase_bracket": "Bracket",
     "day_sat": "Sat",
     "day_sun": "Sun",
-    "btn_plus_one_goal": "+1 Goal"
+    "btn_plus_one_goal": "+1 Goal",
+    "swap_sides": "Swap sides"
+  },
+  "overlay": {
+    "title": "Stream Overlay",
+    "subtitle": "Display live scores on your OBS / YouTube / Twitch stream.",
+    "how_title": "How does it work?",
+    "step1_title": "Copy the link",
+    "step1_desc": "Choose the tournament and court, then copy the overlay URL.",
+    "step2_title": "Add to OBS",
+    "step2_desc": "In OBS/Streamlabs, add a 'Browser' source and paste the URL. Recommended size: 800x200.",
+    "step3_title": "Stream!",
+    "step3_desc": "The overlay updates in real time: timer, scores, goals, fouls. Transparent background.",
+    "tournaments_title": "Available tournaments",
+    "no_tournaments": "No upcoming or live tournaments.",
+    "theme": "Theme",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "preview": "Preview",
+    "hide_preview": "Hide"
   }
 }

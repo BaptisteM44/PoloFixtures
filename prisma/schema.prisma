@@ -92,6 +92,7 @@ enum MatchEventType {
   TIMEOUT
   TIME_ADJUST
   END
+  SWAP_SIDES
 }
 
 enum PoolSession {
