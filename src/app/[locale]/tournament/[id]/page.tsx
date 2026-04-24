@@ -27,6 +27,7 @@ import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { TournamentCompletionWatcher } from "@/components/TournamentCompletionWatcher";
 import { BracketActions } from "@/components/BracketActions";
 import { AccommodationPublicView } from "@/components/AccommodationPublicView";
+import { LiveTabView } from "@/components/LiveTabView";
 
 function summarizeCities(players: { player: { city: string | null } }[]): string {
   const counts = new Map<string, number>();
@@ -54,10 +55,11 @@ export default async function TournamentPage({
   const activeTab = searchParams.tab;
 
   // Les onglets "equipes" et "recap" ont besoin des joueurs complets.
+  // "hebergement" aussi : myTeam est calculé via team.players, nécessaire pour afficher le tab.
   // Pas de tab = page chargée sans ?tab= : on charge les players par précaution (recap default pour COMPLETED).
-  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap";
+  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap" || activeTab === "hebergement";
   // L'onglet "equipes" a besoin des events pour les badges.
-  const needsEvents = activeTab === "equipes";
+  const needsEvents = activeTab === "equipes" || activeTab === "live";
   // Les onglets sans matches : info, inscription, recap, communaute, equipes (matches via events)
   const noMatchesNeeded = ["inscription", "recap", "communaute", "chat"].includes(activeTab ?? "");
 
@@ -1347,62 +1349,22 @@ export default async function TournamentPage({
 
       {/* ── ONGLET LIVE ── */}
       {tab === "live" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Stream en grand — pleine largeur */}
-          {youtubeEmbed ? (
-            <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
-              <iframe
-                src={youtubeEmbed}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                title="Stream live"
-                style={{ width: "100%", aspectRatio: "16/9", height: "auto", display: "block", border: "none" }}
-              />
-            </div>
-          ) : (
-            <div className="panel" style={{ textAlign: "center", padding: "32px 0" }}>
-              <p className="meta">{t("stream_empty")}</p>
-              {canEdit && (
-                <Link href={`/tournament/${params.id}/edit`} className="ghost" style={{ fontSize: 13, marginTop: 10, display: "inline-block" }}>
-                  {t("stream_add")}
-                </Link>
-              )}
-            </div>
-          )}
-
-          {/* Scores live + Chat — 2 colonnes */}
-          <div className="two-col-grid">
-            {/* Scores live */}
-            <div className="panel">
-              <LiveMatchTile
-                tournamentId={tournament.id}
-                initialMatches={tournament.matches}
-                gameDurationMin={tournament.gameDurationMin}
-                isLive={tournament.status === "LIVE"}
-              />
-            </div>
-
-            {/* Chat */}
-            {t_.chatMode !== "DISABLED" ? (
-              <div className="panel" style={{ minHeight: 400 }}>
-                <TournamentChat
-                  tournamentId={tournament.id}
-                  chatMode={t_.chatMode}
-                  currentPlayerId={currentPlayerId}
-                  currentPlayerName={currentPlayerName}
-                  isOrga={isOrga}
-                  creatorId={tournament.creatorId}
-                  charterAccepted={charterAccepted}
-                  fullPage
-                />
-              </div>
-            ) : (
-              <div className="panel" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200 }}>
-                <p className="meta" style={{ textAlign: "center" }}>{t("chat_disabled")}</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <LiveTabView
+          tournamentId={tournament.id}
+          tournamentSlug={params.id}
+          matches={tournament.matches}
+          gameDurationMin={tournament.gameDurationMin}
+          isLive={tournament.status === "LIVE"}
+          courtsCount={tournament.courtsCount}
+          youtubeEmbed={youtubeEmbed}
+          chatMode={t_.chatMode as "OPEN" | "ORG_ONLY" | "DISABLED"}
+          currentPlayerId={currentPlayerId}
+          currentPlayerName={currentPlayerName}
+          isOrga={isOrga}
+          creatorId={tournament.creatorId}
+          charterAccepted={charterAccepted}
+          canEdit={canEdit}
+        />
       )}
 
       {/* ── ONGLET ZONE FREE AGENT ── */}
