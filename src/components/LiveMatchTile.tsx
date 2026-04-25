@@ -178,7 +178,7 @@ function LiveCard({
             const ep = e.payload as Record<string, unknown>;
             const teamId = String(ep.teamId ?? "");
             const teamName = teamNames[teamId] ?? teamId;
-            const playerName = String(ep.playerName ?? ep.playerId ?? "");
+            const playerName = ep.playerName ? String(ep.playerName) : "";
             return (
               <div key={e.id} className="match-card__event-row">
                 <span className="match-card__event-time">{fmtClock(e.matchClockSec)}</span>
