@@ -3367,16 +3367,14 @@ details.agenda-month--past > summary::-webkit-details-marker {
 
 /* — Referees row — */
 .match-card__referees {
-  position: absolute;
-  bottom: 30px;
-  left: 12px;
-  right: 12px;
   display: flex;
   justify-content: center;
   gap: 10px;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
-  opacity: 0.8;
+  opacity: 0.7;
+  margin-top: 4px;
+  white-space: nowrap;
 }
 
 /* — Center (teams + score) — */

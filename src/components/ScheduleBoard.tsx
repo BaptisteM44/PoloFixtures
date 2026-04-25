@@ -271,14 +271,13 @@ export function ScheduleBoard({
           <div className={`match-card__team${match.status === "FINISHED" && match.scoreB > match.scoreA ? " match-winner" : ""}`}>
             {teamName(match.teamBId)}
           </div>
+          {(match.referee || match.coReferee) && (
+            <div className="match-card__referees">
+              {match.referee && <span title="Referee">🦓 {match.referee.name}</span>}
+              {match.coReferee && <span title="Co-referee">🦓 {match.coReferee.name}</span>}
+            </div>
+          )}
         </div>
-
-        {(match.referee || match.coReferee) && (
-          <div className="match-card__referees">
-            {match.referee && <span title="Referee">🦓 {match.referee.name}</span>}
-            {match.coReferee && <span title="Co-referee">🦓 {match.coReferee.name}</span>}
-          </div>
-        )}
 
         <div className="match-card__corner match-card__corner--bl">
           <span className="pill">{PHASE_LABEL[match.phase] ?? match.phase} R{match.roundIndex}</span>
