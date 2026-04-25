@@ -39,6 +39,11 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Overlay pages: allow framing (for preview iframe + OBS browser source)
+        source: "/:locale/tournament/:id/overlay",
+        headers: securityHeaders.filter((h) => h.key !== "X-Frame-Options"),
+      },
+      {
         source: "/(.*)",
         headers: securityHeaders,
       },
