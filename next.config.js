@@ -22,7 +22,7 @@ const securityHeaders = [
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https:",
-      "frame-src https://t.me https://telegram.org https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://youtube-nocookie.com",
+      "frame-src 'self' https://t.me https://telegram.org https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://youtube-nocookie.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
