@@ -6338,7 +6338,8 @@ textarea {
 .bracket-match-referees {
   font-size: 10px;
   color: var(--text-muted);
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
   padding: 2px 4px 0;
   white-space: nowrap;
   overflow: hidden;
