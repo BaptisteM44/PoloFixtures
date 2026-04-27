@@ -273,8 +273,8 @@ export function ScheduleBoard({
           </div>
           {(match.referee || match.coReferee) && (
             <div className="match-card__referees">
-              {match.referee && <span title="Referee">🦓 {match.referee.name}</span>}
-              {match.coReferee && <span title="Co-referee">🦓 {match.coReferee.name}</span>}
+              {match.referee && <span title="Referee">🏁 {match.referee.name}</span>}
+              {match.coReferee && <span title="Co-referee">📱 {match.coReferee.name}</span>}
             </div>
           )}
         </div>

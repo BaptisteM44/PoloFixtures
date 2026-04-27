@@ -154,6 +154,14 @@ function LiveCard({
         <span className="match-card__status--live">🔴 Live</span>
       </div>
 
+      {/* Referees */}
+      {(match.referee || match.coReferee) && (
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "0 12px", fontSize: 11, color: "var(--text-muted)" }}>
+          <span>{match.referee ? `🏁 ${match.referee.name}` : ""}</span>
+          <span>{match.coReferee ? `📱 ${match.coReferee.name}` : ""}</span>
+        </div>
+      )}
+
       {/* Score principal */}
       <div className="match-card__center">
         <div className={`match-card__team${match.winnerTeamId === teamAId ? " match-winner" : ""}`}>
@@ -190,14 +198,6 @@ function LiveCard({
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* Referees */}
-      {(match.referee || match.coReferee) && (
-        <div className="match-card__referees">
-          {match.referee && <span>🦓 {match.referee.name}</span>}
-          {match.coReferee && <span>🦓 {match.coReferee.name}</span>}
         </div>
       )}
 
