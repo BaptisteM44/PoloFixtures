@@ -44,7 +44,12 @@ export async function POST(req: Request) {
   if (isMailerConfigured()) {
     const lang = getLangFromCountry(account.player?.country);
     const { subject, html } = resetPasswordEmail(lang, { resetUrl });
-    await sendMail({ to: account.email, subject, html });
+    try {
+      await sendMail({ to: account.email, subject, html });
+    } catch (err) {
+      console.error("[reset-password] Échec envoi email:", err);
+      return Response.json({ error: "Échec d'envoi de l'email. Contactez l'administrateur." }, { status: 500 });
+    }
   } else {
     // Dev : affiche le lien dans les logs serveur
     console.info("[reset-password] Lien (SMTP non configuré):", resetUrl);

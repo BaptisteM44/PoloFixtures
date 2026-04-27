@@ -8,7 +8,6 @@ import { routing } from "@/i18n/routing";
 import SessionProvider from "@/components/SessionProvider";
 import { Header } from "@/components/Header";
 import { SiteFooter } from "@/components/SiteFooter";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import Script from "next/script";
 
 const space = Space_Grotesk({
@@ -61,7 +60,6 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
             <SiteFooter />
           </SessionProvider>
         </NextIntlClientProvider>
-        <SpeedInsights />
         <Script defer src="https://cloud.umami.is/script.js" data-website-id="7cfea7de-a1f5-4085-a45a-886bb62a83fe" strategy="afterInteractive" />
       </body>
     </html>
