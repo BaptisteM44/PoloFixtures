@@ -21,6 +21,7 @@ import { OrgaLinkBoard } from "@/components/OrgaLinkBoard";
 import { SelectionManager } from "@/components/SelectionManager";
 import { DrawPanel } from "@/components/DrawPanel";
 import { AccommodationManager } from "@/components/AccommodationManager";
+import { QRCodeSVG } from "qrcode.react";
 
 
 // ─── GrazPlanning ────────────────────────────────────────────────────────────
@@ -543,6 +544,73 @@ export function OrgaDashboard({
             })}
           </div>
         </div>
+      )}
+
+      {/* ── QR Codes ── */}
+      {(isLive || tournament.status === "UPCOMING") && (
+        <details className="panel" style={{ padding: "12px 16px", marginBottom: 16 }}>
+          <summary style={{ fontWeight: 700, fontSize: 14, cursor: "pointer" }}>📱 {t("qr_title")}</summary>
+          <p className="meta" style={{ margin: "8px 0 12px" }}>{t("qr_desc")}</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
+            {/* Public tournament QR */}
+            <div style={{ textAlign: "center" }}>
+              <QRCodeSVG
+                value={`${typeof window !== "undefined" ? window.location.origin : ""}/fr/tournament/${tournament.slug || tournament.id}`}
+                size={140}
+                level="M"
+              />
+              <p style={{ fontSize: 12, fontWeight: 600, marginTop: 6 }}>{t("qr_public")}</p>
+            </div>
+            {/* Per-court referee QRs */}
+            {Array.from({ length: tournament.courtsCount ?? 1 }, (_, i) => (
+              <div key={i} style={{ textAlign: "center" }}>
+                <QRCodeSVG
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/fr/tournament/${tournament.slug || tournament.id}/referee?court=Court ${i + 1}`}
+                  size={140}
+                  level="M"
+                />
+                <p style={{ fontSize: 12, fontWeight: 600, marginTop: 6 }}>{t("qr_referee_court", { court: i + 1 })}</p>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="ghost"
+            style={{ marginTop: 12, fontSize: 12 }}
+            onClick={() => {
+              const el = document.createElement("div");
+              el.innerHTML = document.querySelector(".panel details[open] .qr-print-area")?.innerHTML ?? "";
+              const w = window.open("", "_blank");
+              if (w) {
+                w.document.write(`<html><head><title>QR Codes - ${tournament.name}</title><style>body{font-family:sans-serif;display:flex;flex-wrap:wrap;gap:32px;padding:24px;justify-content:center}div{text-align:center}svg{display:block;margin:0 auto}p{margin:6px 0 0;font-weight:600;font-size:14px}</style></head><body>`);
+                // Re-render QR codes for print
+                const origin = window.location.origin;
+                const slug = tournament.slug || tournament.id;
+                // Public QR
+                w.document.write(`<div><p>${t("qr_public")}</p><p style="font-size:11px;color:#666">${origin}/fr/tournament/${slug}</p></div>`);
+                for (let c = 0; c < (tournament.courtsCount ?? 1); c++) {
+                  w.document.write(`<div><p>${t("qr_referee_court", { court: c + 1 })}</p><p style="font-size:11px;color:#666">${origin}/fr/tournament/${slug}/referee?court=Court ${c + 1}</p></div>`);
+                }
+                w.document.write("</body></html>");
+                w.document.close();
+                // Copy SVGs into print window
+                const svgs = document.querySelectorAll("details[open] svg");
+                const printDivs = w.document.querySelectorAll("div");
+                svgs.forEach((svg, idx) => {
+                  if (printDivs[idx]) {
+                    const clone = svg.cloneNode(true) as SVGElement;
+                    clone.setAttribute("width", "200");
+                    clone.setAttribute("height", "200");
+                    printDivs[idx].insertBefore(clone, printDivs[idx].firstChild);
+                  }
+                });
+                setTimeout(() => w.print(), 300);
+              }
+            }}
+          >
+            🖨 {t("qr_print")}
+          </button>
+        </details>
       )}
 
       {/* ── Tab bar ── */}

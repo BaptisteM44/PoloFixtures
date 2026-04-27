@@ -402,6 +402,11 @@
     "orga_marked_completed": "Turnier abgeschlossen!",
     "overlay_title": "Stream-Overlay",
     "overlay_hint": "Link fur OBS kopieren",
+    "qr_title": "QR-Codes",
+    "qr_desc": "Drucke diese QR-Codes: einen für Zuschauer (Turnierseite) und einen pro Feld für Schiedsrichter.",
+    "qr_public": "Turnierseite",
+    "qr_referee_court": "Schiedsrichter Feld {court}",
+    "qr_print": "QR-Codes drucken",
     "live_all_courts": "Alle Platze",
     "orga_recap_title": "Übersicht:",
     "orga_players": "Spieler",
@@ -2265,7 +2270,13 @@
     "day_sat": "Sa",
     "day_sun": "So",
     "btn_plus_one_goal": "+1 Tor",
-    "swap_sides": "Seiten tauschen"
+    "swap_sides": "Seiten tauschen",
+    "select_court_title": "Welches Feld leitest du?",
+    "select_court_desc": "Wähle dein Feld aus, um nur deine Spiele zu sehen.",
+    "court_scheduled": "geplant",
+    "court_finished": "beendet",
+    "show_all_courts": "Alle Felder anzeigen",
+    "change_court": "Feld wechseln"
   },
   "overlay": {
     "title": "Stream-Overlay",

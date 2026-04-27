@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useWakeLock } from "@/lib/useWakeLock";
 
@@ -89,18 +90,41 @@ export function TournamentRefereePanel({
   tournament, canManageRefs,
 }: { tournament: TournamentData; canManageRefs: boolean }) {
   const t = useTranslations("referee_panel");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [matchMap, setMatchMap] = useState<Map<string, MatchInfo>>(() => new Map(tournament.matches.map((m) => [m.id, m])));
 
-  // Matches triés depuis matchMap (réactif aux mises à jour SSE)
+  // Court selection: read from ?court=X URL param
+  const courtFromUrl = searchParams.get("court");
+  const [selectedCourt, setSelectedCourt] = useState<string | null>(courtFromUrl);
+
+  // Available courts (sorted)
+  const availableCourts = useMemo(() => {
+    const courts = new Set<string>();
+    for (const m of matchMap.values()) if (m.courtName) courts.add(m.courtName);
+    return [...courts].sort((a, b) => a.localeCompare(b));
+  }, [matchMap]);
+
+  const selectCourt = (court: string) => {
+    setSelectedCourt(court);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("court", court);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  // Matches triés depuis matchMap (réactif aux mises à jour SSE), filtrés par terrain
   const sortedMatches = useMemo(() => {
     const order: Record<string, number> = { LIVE: 0, SCHEDULED: 1, FINISHED: 2 };
-    return [...matchMap.values()].sort(
-      (a, b) =>
-        (order[a.status] ?? 1) - (order[b.status] ?? 1) ||
-        a.courtName.localeCompare(b.courtName) ||
-        a.startAt.localeCompare(b.startAt)
-    );
-  }, [matchMap]);
+    return [...matchMap.values()]
+      .filter((m) => !selectedCourt || selectedCourt === "__all__" || m.courtName === selectedCourt)
+      .sort(
+        (a, b) =>
+          (order[a.status] ?? 1) - (order[b.status] ?? 1) ||
+          a.courtName.localeCompare(b.courtName) ||
+          a.startAt.localeCompare(b.startAt)
+      );
+  }, [matchMap, selectedCourt]);
   const [selectedMatchId, setSelectedMatchId] = useState<string>(() => sortedMatches.find((m) => m.status === "LIVE" || m.status === "SCHEDULED")?.id ?? sortedMatches[0]?.id ?? "");
   const [clockSec, setClockSec] = useState(0);
   const [running, setRunning] = useState(false);
@@ -450,6 +474,67 @@ export function TournamentRefereePanel({
   const cannotEndBracketDraw = !!selectedMatch && selectedMatch.phase === "BRACKET" && selectedMatch.scoreA === selectedMatch.scoreB;
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  // Court picker screen — shown when no court is selected and there are multiple courts
+  if (!selectedCourt && availableCourts.length > 1) {
+    return (
+      <div className="ref-page">
+        <div className="ref-topbar">
+          <Link href={`/tournament/${tournament.slug ?? tournament.id}?tab=schedule`} className="ref-back">
+            {t("back_to_tournament")}
+          </Link>
+          <span className="ref-tourney-name">{tournament.name}</span>
+        </div>
+        <div style={{ padding: "48px 16px", textAlign: "center" }}>
+          <h2 style={{ marginBottom: 8 }}>{t("select_court_title")}</h2>
+          <p style={{ color: "var(--text-muted)", marginBottom: 24 }}>{t("select_court_desc")}</p>
+          <div style={{ display: "grid", gap: 12, maxWidth: 320, margin: "0 auto" }}>
+            {availableCourts.map((court) => {
+              const courtMatches = [...matchMap.values()].filter((m) => m.courtName === court);
+              const live = courtMatches.filter((m) => m.status === "LIVE").length;
+              const scheduled = courtMatches.filter((m) => m.status === "SCHEDULED").length;
+              const finished = courtMatches.filter((m) => m.status === "FINISHED").length;
+              return (
+                <button key={court} className="primary" style={{ padding: "16px 24px", fontSize: 16, justifyContent: "center" }}
+                  onClick={() => selectCourt(court)}>
+                  {court}
+                  <span style={{ display: "block", fontSize: 12, opacity: 0.8, marginTop: 4 }}>
+                    {live > 0 && `${live} live · `}{scheduled} {t("court_scheduled")} · {finished} {t("court_finished")}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <button className="ghost" style={{ marginTop: 24, fontSize: 13 }}
+            onClick={() => setSelectedCourt("__all__")}>
+            {t("show_all_courts")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Auto-select if single court
+  useEffect(() => {
+    if (!selectedCourt && availableCourts.length === 1) {
+      setSelectedCourt(availableCourts[0]);
+    }
+  }, [selectedCourt, availableCourts]);
+
+  // When court changes, select the first relevant match
+  useEffect(() => {
+    if (!selectedCourt) return;
+    const first = sortedMatches.find((m) => m.status === "LIVE" || m.status === "SCHEDULED") ?? sortedMatches[0];
+    if (first && first.id !== selectedMatchId) {
+      lastMatchId.current = "";
+      setClockSec(0);
+      setRunning(false);
+      setBuzzerPlayed(false);
+      setMatchEnded(false);
+      setSelectedMatchId(first.id);
+    }
+  }, [selectedCourt]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div className="ref-page">
       {/* ── Timeout overlay ──────────────────────────────────────────────── */}
@@ -575,10 +660,19 @@ export function TournamentRefereePanel({
           {t("back_to_tournament")}
         </Link>
         <span className="ref-tourney-name">{tournament.name}</span>
-        <button className="ghost" style={{ fontSize: 12, padding: "4px 10px" }}
-          onClick={() => setMuted((v) => !v)} title={muted ? t("buzzer_enable") : t("buzzer_mute")}>
-          {muted ? "🔇" : "🔔"}
-        </button>
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          {selectedCourt && selectedCourt !== "__all__" && availableCourts.length > 1 && (
+            <button className="ghost" style={{ fontSize: 11, padding: "4px 8px" }}
+              onClick={() => { setSelectedCourt(null); router.replace(pathname, { scroll: false }); }}
+              title={t("change_court")}>
+              {selectedCourt} ▾
+            </button>
+          )}
+          <button className="ghost" style={{ fontSize: 12, padding: "4px 10px" }}
+            onClick={() => setMuted((v) => !v)} title={muted ? t("buzzer_enable") : t("buzzer_mute")}>
+            {muted ? "🔇" : "🔔"}
+          </button>
+        </div>
       </div>
 
       {/* ── Match selector ───────────────────────────────────────────────── */}

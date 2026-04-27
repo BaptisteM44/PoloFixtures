@@ -401,6 +401,11 @@
     "orga_marked_completed": "Tournoi clôturé !",
     "overlay_title": "Overlay Stream",
     "overlay_hint": "Copiez le lien pour OBS",
+    "qr_title": "QR Codes",
+    "qr_desc": "Imprimez ces QR codes : un pour les spectateurs (page du tournoi) et un par terrain pour les arbitres.",
+    "qr_public": "Page du tournoi",
+    "qr_referee_court": "Arbitrage Court {court}",
+    "qr_print": "Imprimer les QR",
     "live_all_courts": "Tous les terrains",
     "orga_recap_title": "Récap :",
     "orga_players": "joueur(s)",
@@ -2261,7 +2266,13 @@
     "day_sat": "Sam",
     "day_sun": "Dim",
     "btn_plus_one_goal": "+1 But",
-    "swap_sides": "Inverser côtés"
+    "swap_sides": "Inverser côtés",
+    "select_court_title": "Quel terrain arbitrez-vous ?",
+    "select_court_desc": "Sélectionnez votre terrain pour ne voir que vos matchs.",
+    "court_scheduled": "à venir",
+    "court_finished": "terminés",
+    "show_all_courts": "Voir tous les terrains",
+    "change_court": "Changer de terrain"
   },
   "overlay": {
     "title": "Overlay Stream",

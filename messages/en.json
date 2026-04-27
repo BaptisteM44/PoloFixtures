@@ -401,6 +401,11 @@
     "orga_marked_completed": "Tournament closed!",
     "overlay_title": "Stream Overlay",
     "overlay_hint": "Copy the link for OBS",
+    "qr_title": "QR Codes",
+    "qr_desc": "Print these QR codes: one for spectators (tournament page) and one per court for referees.",
+    "qr_public": "Tournament page",
+    "qr_referee_court": "Referee Court {court}",
+    "qr_print": "Print QR codes",
     "live_all_courts": "All courts",
     "orga_recap_title": "Summary:",
     "orga_players": "player(s)",
@@ -2260,7 +2265,13 @@
     "day_sat": "Sat",
     "day_sun": "Sun",
     "btn_plus_one_goal": "+1 Goal",
-    "swap_sides": "Swap sides"
+    "swap_sides": "Swap sides",
+    "select_court_title": "Which court are you refereeing?",
+    "select_court_desc": "Select your court to only see your matches.",
+    "court_scheduled": "upcoming",
+    "court_finished": "finished",
+    "show_all_courts": "Show all courts",
+    "change_court": "Change court"
   },
   "overlay": {
     "title": "Stream Overlay",
