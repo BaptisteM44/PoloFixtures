@@ -286,7 +286,6 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             }}
             teams={t_.teams}
             freeAgents={t_.freeAgents}
-            soloEntries={t_.soloEntries ?? []}
             pools={t_.pools}
             matches={t_.matches}
             sponsors={t_.sponsors}
