@@ -87,7 +87,7 @@ export default async function TournamentPage({
       freeAgents: (activeTab === "info" || activeTab === "communaute" || !activeTab)
         ? true
         : { select: { id: true } },
-      soloEntries: activeTab === "inscription"
+      soloEntries: (activeTab === "inscription" || activeTab === "equipes")
         ? { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true } } }, orderBy: { createdAt: "asc" as const } }
         : false,
     }
@@ -181,7 +181,7 @@ export default async function TournamentPage({
   const tabs = [
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
     { label: t("tab_info"), value: "info", href: `/tournament/${params.id}?tab=info` },
-    ...(!registrationClosed ? [{ label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` }] : []),
+    ...((!registrationClosed || tournament.format === "ABC Chapeau") ? [{ label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` }] : []),
     ...(isLaunched ? [{ label: t("tab_schedule"), value: "schedule", href: `/tournament/${params.id}?tab=schedule` }] : []),
     // Berlin Mixed tabs
     ...(isLaunched && isBerlinMixed && berlinFriMatches.length > 0 ? [{ label: "Vendredi", value: "berlin_fri", href: `/tournament/${params.id}?tab=berlin_fri` }] : []),

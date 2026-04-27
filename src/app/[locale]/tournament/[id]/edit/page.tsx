@@ -19,7 +19,8 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       pools: { include: { teams: { include: { team: { select: { id: true, name: true, seed: true } } } } } },
       matches: { select: { id: true, phase: true, roundIndex: true, status: true, winnerTeamId: true, poolId: true, poolSessionIndex: true, teamAId: true, teamBId: true, dayIndex: true } },
       sponsors: { orderBy: { name: "asc" } },
-      coOrganizers: { where: { role: "ORGA" }, include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true } } }, orderBy: { addedAt: "asc" } }
+      coOrganizers: { where: { role: "ORGA" }, include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true } } }, orderBy: { addedAt: "asc" } },
+      soloEntries: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true } } }, orderBy: { createdAt: "asc" } },
     }
   });
 
@@ -281,9 +282,11 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               hidden: (t_ as any).hidden ?? false,
               saturdayPoolAStart: t_.saturdayPoolAStart?.toISOString() ?? null,
               saturdayPoolBStart: t_.saturdayPoolBStart?.toISOString() ?? null,
+              soloEntries: t_.soloEntries ?? [],
             }}
             teams={t_.teams}
             freeAgents={t_.freeAgents}
+            soloEntries={t_.soloEntries ?? []}
             pools={t_.pools}
             matches={t_.matches}
             sponsors={t_.sponsors}
