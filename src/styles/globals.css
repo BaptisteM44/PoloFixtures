@@ -2219,7 +2219,7 @@ details.agenda-month--past > summary::-webkit-details-marker {
 /* --mvp-card-w = largeur d'une mini carte MVP (scale 0.5 → 170px) */
 .recap-middle-row {
   display: grid;
-  grid-template-columns: calc(2 * 170px + 10px + 32px) 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
   align-items: start;
 }
@@ -2468,7 +2468,7 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 
 .recap-mvp-mini-wrap {
-  --mini-scale: 0.5;
+  --mini-scale: 0.43;
   width: calc(340px * var(--mini-scale));
   height: calc(520px * var(--mini-scale));
   flex-shrink: 0;
@@ -2488,6 +2488,10 @@ details.agenda-month--past > summary::-webkit-details-marker {
   transform-origin: top left;
   width: 340px;
   height: 520px;
+}
+
+.recap-mvp-cards-row {
+  align-items: flex-start;
 }
 
 /* ── Photo finish upload zone ── */

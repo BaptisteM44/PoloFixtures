@@ -14,7 +14,7 @@ const FIRST_COL_CARD_W = 146;
 const CARD_H = 64;
 const COL_GAP = 48;
 const FIRST_COL_GAP = 28;
-const CELL_BASE = 76;
+const CELL_BASE = 88;
 const CARD_OFFSET_X = 0;
 
 // Returns a translation key + params instead of a hardcoded string

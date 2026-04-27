@@ -245,9 +245,18 @@ export function RefereePanel() {
               <button onClick={onPause} className="ghost">{t("btn_pause")}</button>
               <button onClick={onReset} className="ghost">{t("btn_reset")}</button>
             </div>
-            <div className="button-row">
-              <button onClick={() => onAdjust(30)}>+30s</button>
-              <button onClick={() => onAdjust(-30)} className="ghost">-30s</button>
+            <div className="button-row" style={{ alignItems: "center", gap: 6 }}>
+              <button
+                onClick={() => onAdjust(5)}
+                title="+5s"
+                style={{ width: 32, height: 32, borderRadius: "50%", padding: 0, fontSize: 11, fontWeight: 700, flexShrink: 0 }}
+              >+5s</button>
+              <button
+                onClick={() => onAdjust(-5)}
+                className="ghost"
+                title="-5s"
+                style={{ width: 32, height: 32, borderRadius: "50%", padding: 0, fontSize: 11, fontWeight: 700, flexShrink: 0 }}
+              >-5s</button>
             </div>
             <div className="button-row">
               <button className="ghost" onClick={() => setMuted((prev) => !prev)}>

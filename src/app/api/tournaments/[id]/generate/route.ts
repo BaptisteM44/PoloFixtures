@@ -92,7 +92,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     await prisma.$transaction(async (tx) => {
       await tx.match.deleteMany({ where: { tournamentId: tournament.id, phase: "BRACKET" } });
 
-      const createdMatches = [] as Array<{ id: string; roundIndex: number; bracketSide: string | null; startAt: Date }>;
+      const createdMatches = [] as Array<{ id: string; roundIndex: number; positionInRound: number; bracketSide: string | null; startAt: Date }>;
       for (const match of matches) {
         const created = await tx.match.create({
           data: {
@@ -111,17 +111,31 @@ export async function POST(request: Request, { params }: { params: { id: string 
             scoreB: 0
           }
         });
-        createdMatches.push({ id: created.id, roundIndex: match.roundIndex, bracketSide: created.bracketSide, startAt: created.startAt });
+        createdMatches.push({ id: created.id, roundIndex: match.roundIndex, positionInRound: match.positionInRound ?? 0, bracketSide: created.bracketSide, startAt: created.startAt });
       }
 
       if (createdMatches.length > 1 && tournament.sundayFormat === "SE") {
-        const final = createdMatches.reduce((prev, current) => (current.roundIndex > prev.roundIndex ? current : prev));
-        const firstRound = createdMatches.filter((m) => m.roundIndex === 1);
-        for (let i = 0; i < firstRound.length; i += 1) {
-          await tx.match.update({
-            where: { id: firstRound[i].id },
-            data: { nextMatchWinId: final.id, nextSlotWin: i === 0 ? "A" : "B" }
-          });
+        // Wire each SE match to the next round match based on positionInRound
+        // Only include W/G bracketSide matches (exclude "L" = 3rd place)
+        const mainMatches = createdMatches.filter((m) => m.bracketSide !== "L");
+        const roundNums = [...new Set(mainMatches.map((m) => m.roundIndex))].sort((a, b) => a - b);
+
+        for (let ri = 0; ri < roundNums.length - 1; ri++) {
+          const curRound = mainMatches.filter((m) => m.roundIndex === roundNums[ri])
+            .sort((a, b) => a.positionInRound - b.positionInRound);
+          const nextRound = mainMatches.filter((m) => m.roundIndex === roundNums[ri + 1])
+            .sort((a, b) => a.positionInRound - b.positionInRound);
+
+          for (let i = 0; i < curRound.length; i++) {
+            const nextPos = Math.floor(i / 2);
+            const nextMatch = nextRound[nextPos];
+            if (nextMatch) {
+              await tx.match.update({
+                where: { id: curRound[i].id },
+                data: { nextMatchWinId: nextMatch.id, nextSlotWin: i % 2 === 0 ? "A" : "B" }
+              });
+            }
+          }
         }
       }
 

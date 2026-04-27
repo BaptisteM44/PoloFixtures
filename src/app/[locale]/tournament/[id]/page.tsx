@@ -228,11 +228,11 @@ export default async function TournamentPage({
       podium.first  = toTeam(isAWinner ? grandFinal.teamA : grandFinal.teamB);
       podium.second = toTeam(isAWinner ? grandFinal.teamB : grandFinal.teamA);
     }
-    // 3ème : perdant du Lower Final — bracketSide "L", roundIndex le plus élevé
+    // 3ème : gagnant de la petite finale — bracketSide "L", roundIndex le plus élevé
     const lowerFinal = bracketMatches.filter((m) => m.bracketSide === "L")[0];
     if (lowerFinal) {
       const isAWinner = lowerFinal.winnerTeamId === lowerFinal.teamAId;
-      podium.third = toTeam(isAWinner ? lowerFinal.teamB : lowerFinal.teamA);
+      podium.third = toTeam(isAWinner ? lowerFinal.teamA : lowerFinal.teamB);
     }
   }
 
