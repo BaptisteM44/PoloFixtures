@@ -3258,6 +3258,12 @@ details.agenda-month--past > summary::-webkit-details-marker {
   border-color: var(--border-light);
 }
 
+.schedule-round--truncated {
+  opacity: 0.35;
+  border-style: dashed;
+  pointer-events: none;
+}
+
 .schedule-round__header {
   display: flex;
   align-items: center;

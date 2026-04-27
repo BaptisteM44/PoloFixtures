@@ -14,14 +14,17 @@ export function PoolTables({
   tournamentId,
   scoringSystem,
   isLive = false,
+  poolRounds = null,
 }: {
   pools: PoolWithTeams[];
   matches: MatchWithTeams[];
   tournamentId: string;
   scoringSystem?: string | null;
   isLive?: boolean;
+  poolRounds?: number | null;
 }) {
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
+  const activeMatches = poolRounds !== null ? matches.filter((m) => m.roundIndex <= poolRounds) : matches;
 
   useEffect(() => {
     if (!isLive) return;
@@ -35,7 +38,7 @@ export function PoolTables({
     return () => es.close();
   }, [tournamentId, isLive]);
   // Combined standings across all pools — shown when all pool matches are finished
-  const allPoolMatches = matches.filter((m) => pools.some((p) => p.id === m.poolId));
+  const allPoolMatches = activeMatches.filter((m) => pools.some((p) => p.id === m.poolId));
   const allPoolTeams = pools.flatMap((p) => p.teams.map((pt) => pt.team));
   const allFinished = allPoolMatches.length > 0 && allPoolMatches.every((m) => m.status === "FINISHED");
   const showCombined = pools.length >= 2 && allFinished;
@@ -86,10 +89,10 @@ export function PoolTables({
         const poolTeamIds = pool.teams.map((pt) => pt.teamId);
         const poolTeams = pool.teams.map((pt) => pt.team);
         const isRegroupPool = pool.name.startsWith("Regroup-");
-        const poolMatches = matches.filter((m) => m.poolId === pool.id);
+        const poolMatches = activeMatches.filter((m) => m.poolId === pool.id);
         // For Regroup pools, include recycled intra-pool RR matches (both teams in group)
         const recycledRR = isRegroupPool
-          ? matches.filter(
+          ? activeMatches.filter(
               (m) =>
                 (m as any).phase === "GRAZ_RR" &&
                 m.teamAId && m.teamBId &&

@@ -57,6 +57,7 @@ const updateSchema = z.object({
   poolCount: z.coerce.number().int().min(1).max(4).default(1),
   crossPool: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   swissRounds: z.coerce.number().int().min(1).max(20).default(5),
+  poolRounds: z.coerce.number().int().min(1).max(50).optional().nullable(),
   bracketSize: z.coerce.number().int().min(2).max(64).default(16),
   sundayFormat: z.enum(["SE", "DE", "RR", "SWISS_SPLIT_SE"]),
   scoringSystem: z.string().default("3/1"),
@@ -129,7 +130,7 @@ export async function updateTournamentAction(formData: FormData) {
   try { faqJson = data.faq ? JSON.parse(data.faq) : null; } catch { /* ignore */ }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, status: _statusFromForm, ...rest } = data;
+  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, poolRounds: _pr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, status: _statusFromForm, ...rest } = data;
 
   // Status transitions allowed via edit form (all directions allowed for orga flexibility)
   let statusUpdate: "UPCOMING" | "LIVE" | "COMPLETED" | undefined;
@@ -184,6 +185,7 @@ export async function updateTournamentAction(formData: FormData) {
         telegramUrl: data.telegramUrl || null,
         streamYoutubeUrl: data.streamYoutubeUrl || null,
         swissRounds: data.swissRounds,
+        poolRounds: data.poolRounds ?? null,
         bracketSize: data.bracketSize,
         chatMode: data.chatMode,
         saturdayFormat: data.saturdayFormat,

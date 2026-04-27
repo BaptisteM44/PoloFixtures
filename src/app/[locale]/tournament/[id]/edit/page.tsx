@@ -259,6 +259,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               poolCount: t_.poolCount,
               crossPool: t_.crossPool,
               swissRounds: t_.swissRounds,
+              poolRounds: (t_ as any).poolRounds ?? null,
               bracketSize: t_.bracketSize,
               sundayFormat: t_.sundayFormat,
               thirdPlaceMatch: (t_ as any).thirdPlaceMatch ?? false,

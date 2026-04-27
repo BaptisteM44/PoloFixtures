@@ -44,7 +44,8 @@ const nextConfig = {
         headers: securityHeaders.filter((h) => h.key !== "X-Frame-Options"),
       },
       {
-        source: "/(.*)",
+        // All other pages: full security headers including X-Frame-Options: DENY
+        source: "/((?!.*/tournament/.*/overlay).*)",
         headers: securityHeaders,
       },
     ];

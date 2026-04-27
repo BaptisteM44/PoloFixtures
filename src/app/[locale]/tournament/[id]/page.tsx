@@ -728,12 +728,12 @@ export default async function TournamentPage({
 
       {tab === "schedule" && (isTestMode
         ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
-        : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} pools={(tournament.pools ?? []).map((p: any) => ({ id: p.id, name: p.name }))} isOrganizer={isOrga} />
+        : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} pools={(tournament.pools ?? []).map((p: any) => ({ id: p.id, name: p.name }))} isOrganizer={isOrga} poolRounds={(tournament as any).poolRounds ?? null} />
       )}
 
       {tab === "pools" && (isTestMode
         ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
-        : <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} scoringSystem={tournament.scoringSystem} isLive={tournament.status === "LIVE"} />
+        : <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} scoringSystem={tournament.scoringSystem} isLive={tournament.status === "LIVE"} poolRounds={(tournament as any).poolRounds ?? null} />
       )}
 
       {tab === "bracket" && isTestMode && (
@@ -756,10 +756,21 @@ export default async function TournamentPage({
       {tab === "bracket" && !isTestMode && !isGraz && (() => {
         const bracketMatches = tournament.matches.filter((m) => m.phase === "BRACKET");
         const swissAll = tournament.matches.filter((m) => m.phase === "SWISS");
+        const poolRoundsLimit = (tournament as any).poolRounds ?? null;
+        const poolAll = tournament.matches.filter((m) => m.phase === "POOL" && (poolRoundsLimit === null || m.roundIndex <= poolRoundsLimit));
         const bracketTeams = (() => {
           const selectedTeams = tournament.teams.filter((t) => t.selected);
           if (tournament.saturdayFormat === "SWISS" && swissAll.length > 0) {
             const standings = computeStandings(selectedTeams, swissAll, tournament.scoringSystem);
+            const rankByTeamId = new Map(standings.map((row, index) => [row.teamId, index + 1]));
+            return selectedTeams.map((team) => ({
+              id: team.id,
+              name: team.name,
+              bracketNumber: rankByTeamId.get(team.id) ?? team.seed,
+            }));
+          }
+          if ((tournament.saturdayFormat === "ALL_DAY" || tournament.saturdayFormat === "SPLIT_POOLS") && poolAll.length > 0) {
+            const standings = computeStandings(selectedTeams, poolAll, tournament.scoringSystem);
             const rankByTeamId = new Map(standings.map((row, index) => [row.teamId, index + 1]));
             return selectedTeams.map((team) => ({
               id: team.id,
@@ -850,7 +861,11 @@ export default async function TournamentPage({
         }
         const maxSwissRound = swissAll.length > 0 ? Math.max(...swissAll.map((m: any) => m.roundIndex)) : 0;
         const swissDone = maxSwissRound >= (t_.swissRounds ?? 5) && swissAll.every((m: any) => m.status === "FINISHED");
-        const canLaunch = isOrga && isLaunched && (swissDone || tournament.saturdayFormat !== "SWISS");
+        const poolDone = poolRoundsLimit === null
+          ? tournament.matches.filter((m: any) => m.phase === "POOL").every((m: any) => m.status === "FINISHED")
+          : poolAll.every((m: any) => m.status === "FINISHED");
+        const isPool = tournament.saturdayFormat === "ALL_DAY" || tournament.saturdayFormat === "SPLIT_POOLS";
+        const canLaunch = isOrga && isLaunched && (swissDone || poolDone || (!isPool && tournament.saturdayFormat !== "SWISS"));
         return (
           <div className="panel" style={{ textAlign: "center", padding: 48, marginTop: 16 }}>
             {canLaunch ? (

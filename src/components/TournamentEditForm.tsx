@@ -49,6 +49,7 @@ type Tournament = {
   poolCount?: number | null;
   crossPool?: boolean;
   swissRounds?: number | null;
+  poolRounds?: number | null;
   bracketSize?: number | null;
   sundayFormat: string;
   scoringSystem?: string | null;
@@ -216,6 +217,11 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     (tournament as { rushRegistration?: boolean }).rushRegistration ?? false
   );
 
+  // Pool rounds limit
+  const [poolRounds, setPoolRounds] = useState<string>(
+    tournament.poolRounds != null ? String(tournament.poolRounds) : ""
+  );
+
   // Test mode
   const [testMode, setTestMode] = useState(tournament.testMode ?? false);
   const [hidden, setHidden] = useState((tournament as { hidden?: boolean }).hidden ?? false);
@@ -379,6 +385,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           <input type="hidden" name="courtsCount" value={tournament.courtsCount} />
           <input type="hidden" name="saturdayFormat" value={presetConfig.saturdayFormat} />
           <input type="hidden" name="swissRounds" value={presetConfig.swissRounds} />
+          <input type="hidden" name="poolRounds" value={poolRounds} />
           <input type="hidden" name="bracketSize" value={presetConfig.bracketSize} />
           <input type="hidden" name="sundayFormat" value={presetConfig.sundayFormat} />
           <input type="hidden" name="scoringSystem" value={tournament.scoringSystem ?? "3/1"} />
@@ -690,6 +697,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
               <input type="hidden" name="saturdayFormat" value={presetConfig.saturdayFormat} />
               <input type="hidden" name="poolCount" value={presetConfig.poolCount} />
               <input type="hidden" name="swissRounds" value={presetConfig.swissRounds} />
+              <input type="hidden" name="poolRounds" value={poolRounds} />
               <input type="hidden" name="bracketSize" value={presetConfig.bracketSize} />
               <input type="hidden" name="sundayFormat" value={presetConfig.sundayFormat} />
               <input type="hidden" name="crossPool" value={presetConfig.crossPool ? "true" : ""} />
@@ -780,6 +788,25 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                   <input type="checkbox" name="gfReset" value="true" checked={presetConfig.gfReset} onChange={(e) => setPresetConfig((p) => ({ ...p, gfReset: e.target.checked }))} style={{ width: "auto" }} />
                   {t("option_gf_reset")}
                 </label>
+              </div>
+            )}
+
+            {/* Pool rounds limit — visible for POOL formats */}
+            {(presetConfig.saturdayFormat === "ALL_DAY" || presetConfig.saturdayFormat === "SPLIT_POOLS") && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
+                  {t("field_pool_rounds")}
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={poolRounds}
+                    onChange={(e) => setPoolRounds(e.target.value)}
+                    placeholder={t("field_pool_rounds_placeholder")}
+                    style={{ width: 70 }}
+                  />
+                </label>
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("field_pool_rounds_hint")}</span>
               </div>
             )}
 

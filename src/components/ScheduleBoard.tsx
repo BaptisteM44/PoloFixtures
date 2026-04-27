@@ -45,12 +45,14 @@ export function ScheduleBoard({
   teams,
   pools,
   isOrganizer,
+  poolRounds = null,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
   teams: Team[];
   pools?: { id: string; name: string }[];
   isOrganizer?: boolean;
+  poolRounds?: number | null;
 }) {
   const t = useTranslations("tournament");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
@@ -367,10 +369,12 @@ export function ScheduleBoard({
           }
         }
 
+        const isTruncated = poolRounds !== null && group.phase === "POOL" && group.roundIndex > poolRounds;
+
         return (
           <div
             key={`${group.phase}-R${group.roundIndex}${sessionLabel.replace(/\s/g, "")}${bracketSide ?? ""}`}
-            className={`schedule-round${finished ? " schedule-round--finished" : ""}${active ? " schedule-round--active" : ""}`}
+            className={`schedule-round${finished ? " schedule-round--finished" : ""}${active ? " schedule-round--active" : ""}${isTruncated ? " schedule-round--truncated" : ""}`}
           >
             <div className="schedule-round__header">
               <span className="schedule-round__label">
