@@ -1626,6 +1626,15 @@ export async function launchTournamentAction(
   // Format-specific guards
   const poolCount = (tournament as any).poolCount ?? 2;
 
+  // MTP_OPEN: lancer via les actions dédiées (launchMtpPoolAction, etc.)
+  if ((tournament as any).saturdayFormat === "MTP_OPEN") {
+    // Just set status to LIVE, no match generation here
+    await prisma.tournament.update({ where: { id }, data: { status: "LIVE" } });
+    revalidatePath(`/tournament/${id}`);
+    revalidatePath(`/tournament/${id}/edit`);
+    return { ok: true };
+  }
+
   // Saturday format guards
   if (tournament.saturdayFormat === "SWISS" && selectedCount % 2 !== 0) {
     return { error: `Le format Swiss requiert un nombre pair d'équipes. Vous avez ${selectedCount} équipes sélectionnées.` };
