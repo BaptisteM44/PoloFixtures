@@ -697,7 +697,8 @@ export function OrgaDashboard({
   const deGenerated = bracketMatches.some((m: any) => m.bracketSide === "L");
   const hasAnyMatches = matches.length > 0;
   const hasBracketMatches = bracketMatches.length > 0;
-  const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0)) && teams.some((t) => t.selected === true);
+  const isMtpOpen = (tournament as any).saturdayFormat === "MTP_OPEN";
+  const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0 && !isMtpOpen)) && teams.some((t) => t.selected === true);
   const isLive = tournament.status === "LIVE";
 
   // Pool rounds control
