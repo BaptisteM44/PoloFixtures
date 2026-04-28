@@ -17,6 +17,7 @@ export type MatchWithTeams = Match & {
 const PHASE_LABEL: Record<string, string> = {
   POOL: "Poule", SWISS: "Swiss", CROSS_POOL: "Cross-pool", BRACKET: "Tableau",
   GRAZ_RR: "RR", GRAZ_REGROUP: "Regroup", GRAZ_SE: "SE",
+  MTP_POOL_A: "Pool A", MTP_POOL_B: "Pool B", MTP_BARRAGE: "Barrage", MTP_DE: "DE",
 };
 
 function positionLabel(match: MatchWithTeams, courtMatches: MatchWithTeams[]) {
