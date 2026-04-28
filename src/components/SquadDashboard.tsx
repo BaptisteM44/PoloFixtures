@@ -136,20 +136,23 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ playerId }),
     });
-    if (res.ok) {
-      const inv = await res.json();
-      const player = searchResults.find((p) => p.id === playerId);
-      if (player) {
-        setPendingInvitations((prev) => [...prev, {
-          id: inv.id,
-          invitedPlayer: { id: player.id, name: player.name, photoPath: player.photoPath, country: player.country, city: player.city },
-          invitedBy: { id: currentPlayerId, name: t("you") },
-          createdAt: new Date().toISOString(),
-        }]);
-        setSearchResults((prev) => prev.filter((p) => p.id !== playerId));
-      }
-      setSearchQ("");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      alert(err.error ?? "Error sending invitation");
+      return;
     }
+    const inv = await res.json();
+    const player = searchResults.find((p) => p.id === playerId);
+    if (player) {
+      setPendingInvitations((prev) => [...prev, {
+        id: inv.id,
+        invitedPlayer: { id: player.id, name: player.name, photoPath: player.photoPath, country: player.country, city: player.city },
+        invitedBy: { id: currentPlayerId, name: t("you") },
+        createdAt: new Date().toISOString(),
+      }]);
+      setSearchResults((prev) => prev.filter((p) => p.id !== playerId));
+    }
+    setSearchQ("");
   };
 
   const handleRoleChange = async (playerId: string, role: "CAPTAIN" | "MEMBER") => {

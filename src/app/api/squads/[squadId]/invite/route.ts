@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { sendMail } from "@/lib/mailer";
-import { getLangFromCountry, squadInviteEmail } from "@/lib/email-templates";
 import { createNotification } from "@/lib/notify";
 import { z } from "zod";
 
@@ -40,15 +38,6 @@ export async function POST(req: Request, { params }: { params: { squadId: string
   // Recréer l'invitation si elle avait été refusée
   const squad = await prisma.squad.findUnique({ where: { id: params.squadId }, select: { name: true } });
   const inviter = await prisma.player.findUnique({ where: { id: currentPlayerId }, select: { name: true } });
-  const invitedPlayer = await prisma.player.findUnique({
-    where: { id: invitedPlayerId },
-    select: { name: true, country: true, account: { select: { email: true } } },
-  });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const invitedPlayerPrefs = await (prisma as any).notificationPreference.findUnique({
-    where: { playerId: invitedPlayerId },
-    select: { notifySquadInvite: true },
-  });
 
   const invitation = await prisma.squadInvitation.upsert({
     where: { squadId_invitedPlayerId: { squadId: params.squadId, invitedPlayerId } },
@@ -56,27 +45,14 @@ export async function POST(req: Request, { params }: { params: { squadId: string
     update: { status: "PENDING", invitedById: currentPlayerId, updatedAt: new Date() },
   });
 
-  // Notification in-app (respecte notifySquadInvite + enabled via createNotification)
-  await createNotification(invitedPlayerId, "SQUAD_INVITE", {
+  // Notification in-app (fire-and-forget)
+  createNotification(invitedPlayerId, "SQUAD_INVITE", {
     invitationId: invitation.id,
     squadId: params.squadId,
     squadName: squad?.name ?? "",
     invitedById: currentPlayerId,
     invitedByName: inviter?.name ?? "",
-  });
-
-  // Email au joueur invité (sauf si désactivé dans ses prefs)
-  const wantsSquadInviteEmail = invitedPlayerPrefs?.notifySquadInvite !== false;
-  const invitedEmail = invitedPlayer?.account?.email;
-  if (invitedEmail && wantsSquadInviteEmail) {
-    const lang = getLangFromCountry(invitedPlayer?.country);
-    const { subject, html } = squadInviteEmail(lang, {
-      inviterName: inviter?.name ?? "Someone",
-      squadName: squad?.name ?? "",
-      playerName: invitedPlayer?.name ?? "",
-    });
-    await sendMail({ to: invitedEmail, subject, html });
-  }
+  }).catch((e) => console.error("[squad invite] notification error:", e));
 
   return NextResponse.json(invitation, { status: 201 });
 }
