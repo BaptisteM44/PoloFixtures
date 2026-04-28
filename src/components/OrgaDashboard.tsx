@@ -309,6 +309,186 @@ function BerlinMixedPlanning({ tournament, teams, matches }: { tournament: any; 
   );
 }
 
+// ─── MtpOpenPlanning ─────────────────────────────────────────────────────────
+
+type MtpTab = "samedi" | "dimanche";
+
+function MtpOpenPlanning({
+  tournament,
+  matches,
+  launchMtpPoolAction,
+  launchMtpBarrageAction,
+  launchMtpDEAction,
+  resetMtpPhaseAction,
+}: {
+  tournament: any;
+  matches: any[];
+  launchMtpPoolAction?: (pool: "A" | "B") => Promise<{ ok?: boolean; error?: string }>;
+  launchMtpBarrageAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchMtpDEAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  resetMtpPhaseAction?: (phase: "POOL_A" | "POOL_B" | "BARRAGE" | "DE") => Promise<{ ok?: boolean; error?: string }>;
+}) {
+  const t = useTranslations("tournament");
+  const [tab, setTab] = useState<MtpTab>("samedi");
+  const [pending, setPending] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const poolAMatches = matches.filter((m: any) => m.phase === "MTP_POOL_A");
+  const poolBMatches = matches.filter((m: any) => m.phase === "MTP_POOL_B");
+  const barrageMatches = matches.filter((m: any) => m.phase === "MTP_BARRAGE");
+  const deMatches = matches.filter((m: any) => m.phase === "MTP_DE");
+
+  const done = (arr: any[]) => arr.length > 0 && arr.every((m: any) => m.status === "FINISHED");
+  const matchCount = (arr: any[]) => ({ done: arr.filter((m: any) => m.status === "FINISHED").length, total: arr.length });
+
+  function StatusLine({ arr }: { arr: any[] }) {
+    const { done: d, total } = matchCount(arr);
+    if (total === 0) return <p className="meta">{t("orga_matches_not_generated")}</p>;
+    return (
+      <p style={{ fontSize: 13, margin: 0, color: d === total ? "var(--teal)" : "var(--text)" }}>
+        {t("orga_matches_finished_count", { done: d, total })}{d === total ? " ✓" : ""}
+      </p>
+    );
+  }
+
+  async function run(key: string, fn: () => Promise<{ ok?: boolean; error?: string }>) {
+    setPending(key);
+    setError(null);
+    const res = await fn();
+    if (res?.error) setError(res.error);
+    setPending(null);
+  }
+
+  const poolADone = done(poolAMatches);
+  const poolBDone = done(poolBMatches);
+  const barrageDone = done(barrageMatches);
+  const bothPoolsDone = poolADone && poolBDone;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      <div className="tabs-bar" style={{ marginTop: 0 }}>
+        <div className="tabs">
+          {(["samedi", "dimanche"] as MtpTab[]).map((v) => (
+            <button key={v} type="button" onClick={() => setTab(v)} className={`tab${tab === v ? " active" : ""}`}>
+              {v === "samedi" ? t("orga_day1_label") : t("orga_day2_label")}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && <p style={{ color: "var(--danger)", fontSize: 12, padding: "8px 0" }}>{error}</p>}
+
+      {tab === "samedi" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Pool A — matin */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              {t("mtp_pool_a_label" as any)}
+            </p>
+            <StatusLine arr={poolAMatches} />
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {poolAMatches.length === 0 && launchMtpPoolAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pending === "POOL_A"}
+                  onClick={() => run("POOL_A", () => launchMtpPoolAction("A"))}>
+                  {pending === "POOL_A" ? "..." : t("mtp_launch_pool_a" as any)}
+                </button>
+              )}
+              {poolAMatches.length > 0 && resetMtpPhaseAction && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pending === "RESET_POOL_A"}
+                  onClick={async () => {
+                    if (!window.confirm(t("mtp_reset_confirm_pool_a" as any))) return;
+                    run("RESET_POOL_A", () => resetMtpPhaseAction("POOL_A"));
+                  }}>
+                  {pending === "RESET_POOL_A" ? "..." : "↺ Reset"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Pool B — après-midi */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              {t("mtp_pool_b_label" as any)}
+            </p>
+            <StatusLine arr={poolBMatches} />
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {poolAMatches.length > 0 && poolBMatches.length === 0 && launchMtpPoolAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pending === "POOL_B"}
+                  onClick={() => run("POOL_B", () => launchMtpPoolAction("B"))}>
+                  {pending === "POOL_B" ? "..." : t("mtp_launch_pool_b" as any)}
+                </button>
+              )}
+              {poolBMatches.length > 0 && resetMtpPhaseAction && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pending === "RESET_POOL_B"}
+                  onClick={async () => {
+                    if (!window.confirm(t("mtp_reset_confirm_pool_b" as any))) return;
+                    run("RESET_POOL_B", () => resetMtpPhaseAction("POOL_B"));
+                  }}>
+                  {pending === "RESET_POOL_B" ? "..." : "↺ Reset"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === "dimanche" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Barrage SE ×4 */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              {t("mtp_barrage_label" as any)}
+            </p>
+            <StatusLine arr={barrageMatches} />
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {barrageMatches.length === 0 && bothPoolsDone && launchMtpBarrageAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pending === "BARRAGE"}
+                  onClick={() => run("BARRAGE", launchMtpBarrageAction!)}>
+                  {pending === "BARRAGE" ? "..." : t("mtp_launch_barrage" as any)}
+                </button>
+              )}
+              {barrageMatches.length > 0 && resetMtpPhaseAction && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pending === "RESET_BARRAGE"}
+                  onClick={async () => {
+                    if (!window.confirm(t("mtp_reset_confirm_barrage" as any))) return;
+                    run("RESET_BARRAGE", () => resetMtpPhaseAction("BARRAGE"));
+                  }}>
+                  {pending === "RESET_BARRAGE" ? "..." : "↺ Reset"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* DE ×16 */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              {t("mtp_de_label" as any)}
+            </p>
+            <StatusLine arr={deMatches} />
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {deMatches.length === 0 && barrageDone && launchMtpDEAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pending === "DE"}
+                  onClick={() => run("DE", launchMtpDEAction!)}>
+                  {pending === "DE" ? "..." : t("mtp_launch_de" as any)}
+                </button>
+              )}
+              {deMatches.length > 0 && resetMtpPhaseAction && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pending === "RESET_DE"}
+                  onClick={async () => {
+                    if (!window.confirm(t("mtp_reset_confirm_de" as any))) return;
+                    run("RESET_DE", () => resetMtpPhaseAction("DE"));
+                  }}>
+                  {pending === "RESET_DE" ? "..." : "↺ Reset"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type OrgaDashboardProps = {
@@ -342,6 +522,10 @@ type OrgaDashboardProps = {
   launchGrazRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchGrazSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetGrazPhaseAction?: (phase: "SUNDAY_RR" | "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
+  launchMtpPoolAction?: (pool: "A" | "B") => Promise<{ ok?: boolean; error?: string }>;
+  launchMtpBarrageAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchMtpDEAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  resetMtpPhaseAction?: (phase: "POOL_A" | "POOL_B" | "BARRAGE" | "DE") => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -354,6 +538,7 @@ type OrgaDashboardProps = {
   drawOneWaitlistAction: (tId: string, candidateIds: string[]) => Promise<any>;
   removeFromWaitlistAction: (tId: string, teamId: string) => Promise<any>;
   createTeamAction: (...args: any[]) => Promise<any>;
+  updatePoolRoundsAction?: (tId: string, poolRounds: number | null) => Promise<{ ok?: boolean; error?: string }>;
   accommodationHosts?: Array<{
     id: string; playerId: string | null; name: string; contact: string | null; notes: string | null;
     player: { id: string; name: string; photoPath: string | null } | null;
@@ -405,6 +590,10 @@ export function OrgaDashboard({
   launchGrazRegroupAction,
   launchGrazSEAction,
   resetGrazPhaseAction,
+  launchMtpPoolAction,
+  launchMtpBarrageAction,
+  launchMtpDEAction,
+  resetMtpPhaseAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -416,6 +605,7 @@ export function OrgaDashboard({
   drawOneWaitlistAction,
   removeFromWaitlistAction,
   createTeamAction,
+  updatePoolRoundsAction,
   accommodationHosts = [],
 }: OrgaDashboardProps) {
   const t = useTranslations("tournament");
@@ -448,6 +638,13 @@ export function OrgaDashboard({
   const hasBracketMatches = bracketMatches.length > 0;
   const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0)) && teams.some((t) => t.selected === true);
   const isLive = tournament.status === "LIVE";
+
+  // Pool rounds control
+  const maxPoolRound = Math.max(0, ...poolMatches.map((m) => m.roundIndex));
+  const [localPoolRounds, setLocalPoolRounds] = useState<string>(
+    tournament.poolRounds != null ? String(tournament.poolRounds) : maxPoolRound > 0 ? String(maxPoolRound) : ""
+  );
+  const [poolRoundsSaving, setPoolRoundsSaving] = useState(false);
 
   // All bracket matches finished → show "mark as completed" button
   const allBracketFinished = bracketMatches.length > 0 && bracketMatches.every((m) => m.status === "FINISHED");
@@ -706,7 +903,16 @@ export function OrgaDashboard({
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
               {t("orga_planning_format_configured")}
             </p>
-            {tournament.saturdayFormat === "GRAZ" ? (
+            {tournament.saturdayFormat === "MTP_OPEN" ? (
+              <>
+                <p style={{ fontSize: 13, margin: 0 }}>
+                  <strong>{t("orga_format_mtp_open_title" as any)}</strong> — {t("orga_format_mtp_open_days" as any)}
+                </p>
+                <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--text-muted)" }}>
+                  {t("orga_format_mtp_open_desc" as any)}
+                </p>
+              </>
+            ) : tournament.saturdayFormat === "GRAZ" ? (
               <>
                 <p style={{ fontSize: 13, margin: 0 }}>
                   <strong>{t("orga_format_graz_title")}</strong> — {t("orga_format_graz_days")}
@@ -826,6 +1032,40 @@ export function OrgaDashboard({
             })()}
           </div>
 
+          {/* Pool rounds limit — visible when pool matches exist */}
+          {isLive && poolMatches.length > 0 && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "MTP_OPEN" && updatePoolRoundsAction && (
+            <div className="panel" style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, margin: 0 }}>
+                {t("field_pool_rounds")}
+                <input
+                  type="number"
+                  min={1}
+                  max={maxPoolRound || 50}
+                  value={localPoolRounds}
+                  onChange={(e) => setLocalPoolRounds(e.target.value)}
+                  style={{ width: 60, fontSize: 13 }}
+                />
+                <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 400 }}>/ {maxPoolRound}</span>
+              </label>
+              <button
+                type="button"
+                className="ghost"
+                style={{ fontSize: 12, padding: "4px 12px" }}
+                disabled={poolRoundsSaving}
+                onClick={async () => {
+                  setPoolRoundsSaving(true);
+                  const val = localPoolRounds.trim();
+                  const num = val === "" || Number(val) >= maxPoolRound ? null : Number(val);
+                  await updatePoolRoundsAction(tournament.id, num);
+                  setPoolRoundsSaving(false);
+                }}
+              >
+                {poolRoundsSaving ? "…" : t("btn_save_pool_rounds")}
+              </button>
+              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("field_pool_rounds_hint")}</span>
+            </div>
+          )}
+
           {/* Lancer / Reset */}
           {canLaunch && (
             <ConfirmFormButton
@@ -883,8 +1123,20 @@ export function OrgaDashboard({
             />
           )}
 
-          {/* ── Planning standard (non-Berlin, non-Graz) ── */}
-          {tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && (
+          {/* ── MTP Open Format planning ── */}
+          {tournament.saturdayFormat === "MTP_OPEN" && (isLive || tournament.status === "COMPLETED") && (
+            <MtpOpenPlanning
+              tournament={tournament}
+              matches={matches}
+              launchMtpPoolAction={launchMtpPoolAction}
+              launchMtpBarrageAction={launchMtpBarrageAction}
+              launchMtpDEAction={launchMtpDEAction}
+              resetMtpPhaseAction={resetMtpPhaseAction}
+            />
+          )}
+
+          {/* ── Planning standard (non-Berlin, non-Graz, non-MTP) ── */}
+          {tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "MTP_OPEN" && (
             <>
               {/* Pools — séparés par pool pour format multi-poule */}
               {hasAnyMatches && (tournament.poolCount ?? 1) > 1 && (

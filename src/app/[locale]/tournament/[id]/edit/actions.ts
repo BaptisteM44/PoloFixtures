@@ -8,6 +8,7 @@ import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
 import { generatePools, generatePoolMatches, generateBracket, generateSwissRound, generateCrossPoolMatches, nextPowerOf2 } from "@/lib/bracket";
 import { generateGrazPools, generateGrazPoolRounds, assignRegroupTeamIds, buildPlayedPairs, generateRegroupMatches, selectSETeams, generateGrazSE } from "@/lib/graz";
+import { splitMtpPools, generateMtpPool, generateMtpBarrage, generateMtpDE, combineMtpStandings } from "@/lib/mtp";
 import { computeStandings } from "@/lib/standings";
 import { computeCareerBadges } from "@/lib/achievements";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
@@ -53,11 +54,11 @@ const updateSchema = z.object({
   bannerPath: z.string().optional().nullable(),
   streamYoutubeUrl: z.string().optional().nullable(),
   chatMode: z.enum(["OPEN", "ORG_ONLY", "DISABLED"]).default("DISABLED"),
-  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED", "GRAZ"]),
+  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED", "GRAZ", "MTP_OPEN"]),
   poolCount: z.coerce.number().int().min(1).max(4).default(1),
   crossPool: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   swissRounds: z.coerce.number().int().min(1).max(20).default(5),
-  poolRounds: z.coerce.number().int().min(1).max(50).optional().nullable(),
+  poolRounds: z.preprocess((v) => (v === "" || v === null || v === undefined ? null : Number(v)), z.number().int().min(1).max(50).nullable().default(null)),
   bracketSize: z.coerce.number().int().min(2).max(64).default(16),
   sundayFormat: z.enum(["SE", "DE", "RR", "SWISS_SPLIT_SE"]),
   scoringSystem: z.string().default("3/1"),
@@ -2198,6 +2199,338 @@ export async function saveInfoTilesLayoutAction(
   await prisma.tournament.update({
     where: { id: tournamentId },
     data: { infoTilesLayout: clean },
+  });
+  revalidatePath(`/tournament/${tournamentId}`);
+  return { ok: true };
+}
+
+// ─── MTP Open actions ─────────────────────────────────────────────────────────
+
+export async function launchMtpPoolAction(
+  id: string,
+  pool: "A" | "B"
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: { teams: { where: { selected: true } } },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
+
+  const phase = pool === "A" ? "MTP_POOL_A" : "MTP_POOL_B";
+  const poolName = `Pool ${pool}`;
+
+  const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase } });
+  if (existing) return { error: `${poolName} déjà générée.` };
+
+  const { poolA, poolB } = splitMtpPools(tournament.teams);
+  const teams = pool === "A" ? poolA : poolB;
+  if (teams.length < 2) return { error: "Pas assez d'équipes." };
+
+  const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
+  const t = tournament as any;
+  const baseDate = new Date(tournament.dateStart);
+  const startAt = pool === "A"
+    ? (t.mtpPoolAStart ? new Date(t.mtpPoolAStart) : baseDate)
+    : (t.mtpPoolBStart ? new Date(t.mtpPoolBStart) : new Date(baseDate.getTime() + 3 * 60 * 60 * 1000));
+
+  const matches = generateMtpPool(teams, phase as any, poolName, courtNames, startAt, tournament.gameDurationMin);
+
+  await prisma.$transaction(async (tx) => {
+    // Create pool record
+    let poolRecord = await tx.pool.findFirst({ where: { tournamentId: id, name: poolName } });
+    if (!poolRecord) {
+      poolRecord = await tx.pool.create({ data: { tournamentId: id, name: poolName, session: null } });
+      await tx.poolTeam.createMany({ data: teams.map((t) => ({ poolId: poolRecord!.id, teamId: t.id })) });
+    }
+    for (const m of matches) {
+      await tx.match.create({
+        data: {
+          tournamentId: id, phase, poolId: poolRecord.id,
+          bracketSide: null, roundIndex: m.roundIndex, positionInRound: m.positionInRound,
+          courtName: m.courtName, startAt: m.startAt, dayIndex: "SAT",
+          status: "SCHEDULED", teamAId: m.teamAId, teamBId: m.teamBId,
+        },
+      });
+    }
+  }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+export async function launchMtpBarrageAction(id: string): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      matches: { where: { phase: { in: ["MTP_POOL_A", "MTP_POOL_B"] } } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
+
+  const existingBarrage = await prisma.match.findFirst({ where: { tournamentId: id, phase: "MTP_BARRAGE" } });
+  if (existingBarrage) return { error: "Le barrage a déjà été généré." };
+
+  const poolAMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_A");
+  const poolBMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_B");
+  if (poolAMatches.length === 0 || poolBMatches.length === 0) return { error: "Générez d'abord les deux pools." };
+  if (!poolAMatches.every((m) => m.status === "FINISHED") || !poolBMatches.every((m) => m.status === "FINISHED")) {
+    return { error: "Tous les matchs des pools doivent être terminés." };
+  }
+
+  const { poolA, poolB } = splitMtpPools(tournament.teams);
+  const poolAStandings = computeStandings(poolA, poolAMatches as any, (tournament as any).scoringSystem);
+  const poolBStandings = computeStandings(poolB, poolBMatches as any, (tournament as any).scoringSystem);
+  const combined = combineMtpStandings(poolAStandings, poolBStandings);
+
+  if (combined.length < 16) return { error: "Il faut au moins 16 équipes classées." };
+  const seeds13to20 = combined.slice(12, 20);
+  const teamMap = new Map(tournament.teams.map((t) => [t.id, t]));
+  const barrageTeams = seeds13to20.map((s) => teamMap.get(s.teamId)!).filter(Boolean);
+  if (barrageTeams.length < 8) return { error: "Données insuffisantes pour le barrage." };
+
+  const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
+  const t = tournament as any;
+  const sundayStart = t.mtpSundayStart ? new Date(t.mtpSundayStart) : new Date(tournament.dateEnd);
+  const matches = generateMtpBarrage(barrageTeams, courtNames, sundayStart, tournament.gameDurationMin);
+
+  await prisma.$transaction(async (tx) => {
+    for (const m of matches) {
+      await tx.match.create({
+        data: {
+          tournamentId: id, phase: "MTP_BARRAGE", bracketSide: null,
+          roundIndex: m.roundIndex, positionInRound: m.positionInRound,
+          courtName: m.courtName, startAt: m.startAt, dayIndex: "SUN",
+          status: "SCHEDULED", teamAId: m.teamAId, teamBId: m.teamBId,
+        },
+      });
+    }
+  }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      matches: { where: { phase: { in: ["MTP_POOL_A", "MTP_POOL_B", "MTP_BARRAGE"] } } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
+
+  const existingDE = await prisma.match.findFirst({ where: { tournamentId: id, phase: "MTP_DE" } });
+  if (existingDE) return { error: "Le bracket DE a déjà été généré." };
+
+  const barrageMatches = tournament.matches.filter((m) => m.phase === "MTP_BARRAGE");
+  if (barrageMatches.length < 4) return { error: "Générez d'abord le barrage." };
+  if (!barrageMatches.every((m) => m.status === "FINISHED")) return { error: "Tous les matchs du barrage doivent être terminés." };
+
+  const poolAMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_A");
+  const poolBMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_B");
+  const { poolA, poolB } = splitMtpPools(tournament.teams);
+  const poolAStandings = computeStandings(poolA, poolAMatches as any, (tournament as any).scoringSystem);
+  const poolBStandings = computeStandings(poolB, poolBMatches as any, (tournament as any).scoringSystem);
+  const combined = combineMtpStandings(poolAStandings, poolBStandings);
+
+  const teamMap = new Map(tournament.teams.map((t) => [t.id, t]));
+
+  // Top 12 direct qualifiers
+  const top12 = combined.slice(0, 12).map((s) => teamMap.get(s.teamId)!).filter(Boolean);
+
+  // 4 barrage winners (by original pool rank = combined rank index 12-19 of winner)
+  const seeds13to20 = combined.slice(12, 20);
+  const barrageWinners: Array<{ team: typeof tournament.teams[0]; originalRank: number }> = [];
+  for (const bm of barrageMatches) {
+    if (!bm.winnerTeamId) continue;
+    const winner = teamMap.get(bm.winnerTeamId);
+    if (!winner) continue;
+    const originalRank = seeds13to20.findIndex((s) => s.teamId === bm.winnerTeamId);
+    barrageWinners.push({ team: winner, originalRank });
+  }
+  // Sort barrage winners by their original pool rank (better rank = higher seed)
+  barrageWinners.sort((a, b) => a.originalRank - b.originalRank);
+  const barrageWinnerTeams = barrageWinners.map((w) => w.team);
+
+  const seeded16 = [...top12, ...barrageWinnerTeams];
+  if (seeded16.length < 16) return { error: `Seulement ${seeded16.length} équipes disponibles, il en faut 16.` };
+
+  const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
+  const t = tournament as any;
+  // DE starts after barrage — estimate from last barrage match startAt + some buffer
+  const lastBarrage = barrageMatches.reduce((latest, m) => m.startAt > latest ? m.startAt : latest, new Date(0));
+  const deStart = t.mtpSundayStart
+    ? new Date(new Date(t.mtpSundayStart).getTime() + (tournament.gameDurationMin + 5) * 60 * 1000 * 3) // after 4 barrage rounds
+    : new Date(lastBarrage.getTime() + (tournament.gameDurationMin + 30) * 60 * 1000);
+
+  const matches = generateMtpDE(seeded16, courtNames, deStart, tournament.gameDurationMin, (tournament as any).gfReset ?? false);
+
+  await prisma.$transaction(async (tx) => {
+    const createdIds: string[] = [];
+    for (const m of matches) {
+      const created = await tx.match.create({
+        data: {
+          tournamentId: id, phase: "MTP_DE",
+          bracketSide: m.bracketSide as any,
+          roundIndex: m.roundIndex, positionInRound: m.positionInRound,
+          courtName: m.courtName, startAt: m.startAt, dayIndex: "SUN",
+          status: "SCHEDULED", teamAId: m.teamAId, teamBId: m.teamBId,
+        },
+      });
+      createdIds.push(created.id);
+    }
+
+    // Wire nextMatchWinId / nextMatchLoseId for winners bracket
+    // WB: R1→R2→R3→R4(WBF), LB: losers drop down
+    const wbMatches = matches.map((m, i) => ({ ...m, dbId: createdIds[i] })).filter((m) => m.bracketSide === "W");
+    const lbMatches = matches.map((m, i) => ({ ...m, dbId: createdIds[i] })).filter((m) => m.bracketSide === "L");
+    const gfMatch = matches.map((m, i) => ({ ...m, dbId: createdIds[i] })).find((m) => m.bracketSide === "G");
+
+    // WB round wiring
+    const wbRounds = [1, 2, 3, 4];
+    for (let ri = 0; ri < wbRounds.length - 1; ri++) {
+      const cur = wbMatches.filter((m) => m.roundIndex === wbRounds[ri]).sort((a, b) => a.positionInRound - b.positionInRound);
+      const next = wbMatches.filter((m) => m.roundIndex === wbRounds[ri + 1]).sort((a, b) => a.positionInRound - b.positionInRound);
+      for (let i = 0; i < cur.length; i++) {
+        const nextPos = Math.floor(i / 2);
+        const nextM = next[nextPos];
+        if (nextM) {
+          await tx.match.update({ where: { id: cur[i].dbId }, data: { nextMatchWinId: nextM.dbId, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
+        }
+      }
+    }
+
+    // WB Final → Grand Final (slot A = WB winner)
+    const wbFinal = wbMatches.find((m) => m.roundIndex === 4);
+    if (wbFinal && gfMatch) {
+      await tx.match.update({ where: { id: wbFinal.dbId }, data: { nextMatchWinId: gfMatch.dbId, nextSlotWin: "A" } });
+    }
+
+    // LB Final (roundIndex 5) → Grand Final (slot B = LB winner)
+    const lbFinal = lbMatches.find((m) => m.roundIndex === 5);
+    if (lbFinal && gfMatch) {
+      await tx.match.update({ where: { id: lbFinal.dbId }, data: { nextMatchWinId: gfMatch.dbId, nextSlotWin: "B" } });
+    }
+
+    // LB round wiring (L1→L2→L3→L4→L5)
+    const lbRounds = [1, 2, 3, 4, 5];
+    for (let ri = 0; ri < lbRounds.length - 1; ri++) {
+      const cur = lbMatches.filter((m) => m.roundIndex === lbRounds[ri]).sort((a, b) => a.positionInRound - b.positionInRound);
+      const next = lbMatches.filter((m) => m.roundIndex === lbRounds[ri + 1]).sort((a, b) => a.positionInRound - b.positionInRound);
+      for (let i = 0; i < cur.length; i++) {
+        const nextPos = Math.floor(i / 2);
+        const nextM = next[nextPos] ?? next[0];
+        if (nextM) {
+          await tx.match.update({ where: { id: cur[i].dbId }, data: { nextMatchWinId: nextM.dbId, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
+        }
+      }
+    }
+
+    // WB R1 losers → LB R1
+    const wbR1 = wbMatches.filter((m) => m.roundIndex === 1).sort((a, b) => a.positionInRound - b.positionInRound);
+    const lbR1 = lbMatches.filter((m) => m.roundIndex === 1).sort((a, b) => a.positionInRound - b.positionInRound);
+    // LB1[0]: loser(WBR1[4]) vs loser(WBR1[5]) → first 4 seeds' losers cross
+    // Standard DE: WB1 losers 4-7 drop to LB1 (positions 0-3), 0-3 drop to LB2 facing LB1 winners
+    for (let i = 0; i < lbR1.length; i++) {
+      const wbLoserA = wbR1[4 + i * 2 - 4] ?? wbR1[i]; // simplified
+      const wbLoserB = wbR1[4 + i * 2 + 1 - 4] ?? wbR1[i + 1];
+      if (wbR1[i + 4]) await tx.match.update({ where: { id: wbR1[i + 4].dbId }, data: { nextMatchLoseId: lbR1[i]?.dbId ?? null, nextSlotLose: "A" } });
+      if (wbR1[i]) await tx.match.update({ where: { id: wbR1[i].dbId }, data: { nextMatchLoseId: lbR1[i]?.dbId ?? null, nextSlotLose: "B" } });
+    }
+
+    // WB R2 losers → LB R2
+    const wbR2 = wbMatches.filter((m) => m.roundIndex === 2).sort((a, b) => a.positionInRound - b.positionInRound);
+    const lbR2 = lbMatches.filter((m) => m.roundIndex === 2).sort((a, b) => a.positionInRound - b.positionInRound);
+    for (let i = 0; i < wbR2.length; i++) {
+      if (lbR2[i]) await tx.match.update({ where: { id: wbR2[i].dbId }, data: { nextMatchLoseId: lbR2[i].dbId, nextSlotLose: "A" } });
+    }
+
+    // WB R3 losers → LB R4
+    const wbR3 = wbMatches.filter((m) => m.roundIndex === 3).sort((a, b) => a.positionInRound - b.positionInRound);
+    const lbR4 = lbMatches.filter((m) => m.roundIndex === 4).sort((a, b) => a.positionInRound - b.positionInRound);
+    for (let i = 0; i < wbR3.length; i++) {
+      if (lbR4[i]) await tx.match.update({ where: { id: wbR3[i].dbId }, data: { nextMatchLoseId: lbR4[i].dbId, nextSlotLose: "A" } });
+    }
+
+    // WB Final loser → LB R5
+    if (wbFinal && lbFinal) {
+      await tx.match.update({ where: { id: wbFinal.dbId }, data: { nextMatchLoseId: lbFinal.dbId, nextSlotLose: "A" } });
+    }
+  }, { timeout: 20000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+export async function resetMtpPhaseAction(
+  id: string,
+  phase: "POOL_A" | "POOL_B" | "BARRAGE" | "DE"
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const phaseMap: Record<string, string[]> = {
+    POOL_A: ["MTP_POOL_A"],
+    POOL_B: ["MTP_POOL_B"],
+    BARRAGE: ["MTP_BARRAGE"],
+    DE: ["MTP_DE"],
+  };
+
+  // Cascading reset: resetting POOL_A also clears BARRAGE and DE; BARRAGE clears DE
+  const toClear: string[] = [];
+  if (phase === "POOL_A" || phase === "POOL_B") {
+    toClear.push("MTP_POOL_A", "MTP_POOL_B", "MTP_BARRAGE", "MTP_DE");
+  } else if (phase === "BARRAGE") {
+    toClear.push("MTP_BARRAGE", "MTP_DE");
+  } else {
+    toClear.push(...phaseMap[phase]);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.match.deleteMany({ where: { tournamentId: id, phase: { in: toClear as any[] } } });
+    if (phase === "POOL_A" || phase === "POOL_B") {
+      // Also remove pool records for MTP pools
+      const poolName = phase === "POOL_A" ? "Pool A" : "Pool B";
+      const pool = await tx.pool.findFirst({ where: { tournamentId: id, name: poolName } });
+      if (pool) {
+        await tx.poolTeam.deleteMany({ where: { poolId: pool.id } });
+        await tx.pool.delete({ where: { id: pool.id } });
+      }
+    }
+  });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+export async function updatePoolRoundsAction(tournamentId: string, poolRounds: number | null) {
+  "use server";
+  const session = await auth();
+  if (!session?.user) return { error: "Non autorisé" };
+  if (poolRounds !== null && (poolRounds < 1 || poolRounds > 50 || !Number.isInteger(poolRounds))) {
+    return { error: "Valeur invalide" };
+  }
+  await prisma.tournament.update({
+    where: { id: tournamentId },
+    data: { poolRounds },
   });
   revalidatePath(`/tournament/${tournamentId}`);
   return { ok: true };

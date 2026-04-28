@@ -42,6 +42,7 @@ enum SaturdayFormat {
   SWISS
   BERLIN_MIXED
   GRAZ
+  MTP_OPEN
 }
 
 enum SundayFormat {
@@ -66,6 +67,10 @@ enum MatchPhase {
   GRAZ_RR
   GRAZ_REGROUP
   GRAZ_SE
+  MTP_POOL_A
+  MTP_POOL_B
+  MTP_BARRAGE
+  MTP_DE
 }
 
 enum BracketSide {
@@ -147,6 +152,7 @@ enum NotificationType {
   CLUB_SESSION           // nouvelle session ajoutée dans le club
   CLUB_SESSION_JOIN      // des joueurs se sont inscrits à une session
   CLUB_ANNOUNCEMENT      // nouvelle annonce dans le club
+  COMMUNITY_STATUS_CHANGED // statut d'un item communauté a changé
 }
 
 enum TaskPriority {
@@ -250,6 +256,10 @@ model Tournament {
   locked                  Boolean          @default(false)
   saturdayPoolAStart      DateTime?        // Pool A session start time (for match scheduling)
   saturdayPoolBStart      DateTime?        // Pool B session start time (for match scheduling)
+  // MTP Open format
+  mtpPoolAStart           DateTime?        // MTP: Pool A start (Sat morning)
+  mtpPoolBStart           DateTime?        // MTP: Pool B start (Sat afternoon)
+  mtpSundayStart          DateTime?        // MTP: Barrage + DE start (Sunday)
   testMode                Boolean          @default(false)        // Test tournament: excluded from badge calculations
   hidden                  Boolean          @default(false)        // Hidden from public tournament list (organizer-controlled)
   approved                Boolean          @default(false)
@@ -416,6 +426,10 @@ model Player {
   notificationPreference  NotificationPreference?
   tournamentFollows       TournamentFollow[]
   hostedAccommodations    AccommodationHost[] @relation("AccommodationHostPlayer")
+  communityItems      CommunityItem[]
+  communityVotes      CommunityVote[]
+  communityReplies    CommunityReply[]
+  communityReplyLikes CommunityReplyLike[]
 }
 
 model PlayerAccount {
@@ -1049,4 +1063,66 @@ model LoginDay {
 
   @@unique([accountId, date])
   @@index([accountId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Community / Labs
+// ─────────────────────────────────────────────────────────────────────────────
+
+model CommunityItem {
+  id         String   @id @default(cuid())
+  type       String   // "idea" | "bug" | "translation"
+  title      String
+  body       String
+  authorId   String?
+  authorName String?  // pour les posts anonymes
+  status     String   @default("open") // open | thinking | in_progress | done | rejected
+  pinned     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  author  Player?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  votes   CommunityVote[]
+  replies CommunityReply[]
+}
+
+model CommunityVote {
+  id        String   @id @default(cuid())
+  itemId    String
+  playerId  String?
+  vote      String   // "up" | "meh" | "down"
+  comment   String?  // obligatoire si vote = "meh"
+  createdAt DateTime @default(now())
+
+  item   CommunityItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  player Player?       @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@unique([itemId, playerId])
+}
+
+model CommunityReply {
+  id         String   @id @default(cuid())
+  itemId     String
+  authorId   String?
+  authorName String?  // pour les posts anonymes
+  body       String
+  isKeyReply Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  item   CommunityItem      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  author Player?            @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  likes  CommunityReplyLike[]
+}
+
+model CommunityReplyLike {
+  id        String   @id @default(cuid())
+  replyId   String
+  playerId  String?
+  createdAt DateTime @default(now())
+
+  reply  CommunityReply @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  player Player?        @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@unique([replyId, playerId])
 }

@@ -54,6 +54,7 @@ export function Header() {
         <Link href="/tournaments">{t("nav.tournaments")}</Link>
         <Link href="/calendar">{t("nav.calendar")}</Link>
         <Link href={clubId ? `/club/${clubId}` : "/clubs"}>{clubId ? t("nav.my_club") : t("nav.clubs")}</Link>
+        <Link href="/labs">🧪 Labs</Link>
         <Link href="/about">{t("nav.about")}</Link>
         {isAdmin && <Link href="/admin">{t("nav.admin")}</Link>}
       </nav>
@@ -100,6 +101,7 @@ export function Header() {
               <Link href="/tournaments" onClick={() => setMenuOpen(false)}>{t("nav.tournaments")}</Link>
               <Link href="/calendar" onClick={() => setMenuOpen(false)}>{t("nav.calendar")}</Link>
               <Link href="/clubs" onClick={() => setMenuOpen(false)}>{t("nav.clubs")}</Link>
+              <Link href="/labs" onClick={() => setMenuOpen(false)}>🧪 Labs</Link>
               <Link href="/about" onClick={() => setMenuOpen(false)}>{t("nav.about")}</Link>
               {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)}>{t("nav.admin")}</Link>}
             </div>

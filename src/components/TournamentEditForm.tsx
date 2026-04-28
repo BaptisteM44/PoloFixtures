@@ -137,6 +137,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     cross_pool_bcn: { saturdayFormat: "SPLIT_POOLS",  poolCount: 2, swissRounds: 5, bracketSize: 8,  sundayFormat: "DE", crossPool: true,  thirdPlaceMatch: false, gfReset: false },
     berlin_mixed:   { saturdayFormat: "BERLIN_MIXED", poolCount: 2, swissRounds: 5, bracketSize: 32, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
     graz:           { saturdayFormat: "GRAZ",         poolCount: 2, swissRounds: 7, bracketSize: 8,  sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
+    mtp_open:       { saturdayFormat: "MTP_OPEN",     poolCount: 2, swissRounds: 9, bracketSize: 16, sundayFormat: "DE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
   };
 
   function detectPreset(tn: Tournament): FormatPreset {
@@ -743,6 +744,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                     <option value="SPLIT_POOLS">{t("saturday_split_pools")}</option>
                     <option value="SWISS">{t("saturday_swiss")}</option>
                     <option value="GRAZ">Graz (RR + Regroup)</option>
+                    <option value="MTP_OPEN">MTP Open (Pool A/B + Barrage + DE×16)</option>
                   </select>
                 </label>
                 <label className="field-row">

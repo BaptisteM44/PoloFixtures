@@ -1166,6 +1166,16 @@ button:focus-visible,
   outline-offset: 2px;
 }
 
+button:disabled,
+.primary:disabled,
+.ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
 .theme-toggle {
   background: var(--gray);
   border: 2px solid var(--border);

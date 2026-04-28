@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction } from "./actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
@@ -161,6 +161,28 @@ export default async function TournamentEditPage({ params }: { params: { id: str
     return await createTeamAction(...args);
   };
 
+  const updatePoolRounds = async (tId: string, poolRounds: number | null) => {
+    "use server";
+    return await updatePoolRoundsAction(tId, poolRounds);
+  };
+
+  const launchMtpPool = async (pool: "A" | "B") => {
+    "use server";
+    return await launchMtpPoolAction(t_.id, pool);
+  };
+  const launchMtpBarrage = async () => {
+    "use server";
+    return await launchMtpBarrageAction(t_.id);
+  };
+  const launchMtpDE = async () => {
+    "use server";
+    return await launchMtpDEAction(t_.id);
+  };
+  const resetMtpPhase = async (phase: "POOL_A" | "POOL_B" | "BARRAGE" | "DE") => {
+    "use server";
+    return await resetMtpPhaseAction(t_.id, phase);
+  };
+
   const submissionStatus = (t_.submissionStatus ?? (t_.approved ? "APPROVED" : "PENDING")) as "PENDING" | "APPROVED" | "REJECTED";
   const t = await getTranslations("tournament");
 
@@ -282,6 +304,9 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               hidden: (t_ as any).hidden ?? false,
               saturdayPoolAStart: t_.saturdayPoolAStart?.toISOString() ?? null,
               saturdayPoolBStart: t_.saturdayPoolBStart?.toISOString() ?? null,
+              mtpPoolAStart: (t_ as any).mtpPoolAStart?.toISOString() ?? null,
+              mtpPoolBStart: (t_ as any).mtpPoolBStart?.toISOString() ?? null,
+              mtpSundayStart: (t_ as any).mtpSundayStart?.toISOString() ?? null,
               soloEntries: t_.soloEntries ?? [],
             }}
             teams={t_.teams}
@@ -335,6 +360,10 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               "use server";
               return await resetGrazPhaseAction(t_.id, phase);
             }}
+            launchMtpPoolAction={launchMtpPool}
+            launchMtpBarrageAction={launchMtpBarrage}
+            launchMtpDEAction={launchMtpDE}
+            resetMtpPhaseAction={resetMtpPhase}
             orgaTasks={orgaTasks.map((t) => ({ ...t, priority: t.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT", deadline: t.deadline?.toISOString() ?? null, createdAt: t.createdAt.toISOString() }))}
             orgaNotes={orgaNotes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString() }))}
             orgaLinks={orgaLinks.map((l) => ({ ...l, createdAt: l.createdAt.toISOString() }))}
@@ -346,6 +375,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             drawOneWaitlistAction={drawOneWaitlist}
             removeFromWaitlistAction={removeFromWaitlist}
             createTeamAction={createTeam}
+            updatePoolRoundsAction={updatePoolRounds}
             accommodationHosts={accommodationHosts as any}
           />
         </div>

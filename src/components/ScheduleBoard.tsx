@@ -46,6 +46,7 @@ export function ScheduleBoard({
   pools,
   isOrganizer,
   poolRounds = null,
+  testMode = false,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
@@ -53,6 +54,7 @@ export function ScheduleBoard({
   pools?: { id: string; name: string }[];
   isOrganizer?: boolean;
   poolRounds?: number | null;
+  testMode?: boolean;
 }) {
   const t = useTranslations("tournament");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
@@ -61,6 +63,7 @@ export function ScheduleBoard({
   const [filterPhase, setFilterPhase] = useState("ALL");
   const [editMatch, setEditMatch] = useState<MatchForEdit | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loadingRound, setLoadingRound] = useState<string | null>(null);
 
   const STATUS_LABEL: Record<string, string> = {
     SCHEDULED: t("status_scheduled"),
@@ -146,6 +149,28 @@ export function ScheduleBoard({
       })
     );
     closePanel();
+  };
+
+  const generateRoundScores = async (groupKey: string, groupMatches: MatchWithTeams[]) => {
+    const toGenerate = groupMatches.filter((m) => m.status !== "FINISHED");
+    if (toGenerate.length === 0) return;
+    setLoadingRound(groupKey);
+    for (const match of toGenerate) {
+      let sA = Math.floor(Math.random() * 6);
+      let sB = Math.floor(Math.random() * 6);
+      while (sA === sB) sB = Math.floor(Math.random() * 6);
+      await fetch(`/api/matches/${match.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scoreA: sA, scoreB: sB, status: "FINISHED" }),
+      });
+      setMatches((prev) =>
+        prev.map((m) =>
+          m.id === match.id ? { ...m, scoreA: sA, scoreB: sB, status: "FINISHED" as Match["status"] } : m
+        )
+      );
+    }
+    setLoadingRound(null);
   };
 
   const filtered = useMemo(() => {
@@ -370,10 +395,11 @@ export function ScheduleBoard({
         }
 
         const isTruncated = poolRounds !== null && group.phase === "POOL" && group.roundIndex > poolRounds;
+        const groupKey = `${group.phase}-R${group.roundIndex}${sessionLabel.replace(/\s/g, "")}${bracketSide ?? ""}`;
 
         return (
           <div
-            key={`${group.phase}-R${group.roundIndex}${sessionLabel.replace(/\s/g, "")}${bracketSide ?? ""}`}
+            key={groupKey}
             className={`schedule-round${finished ? " schedule-round--finished" : ""}${active ? " schedule-round--active" : ""}${isTruncated ? " schedule-round--truncated" : ""}`}
           >
             <div className="schedule-round__header">
@@ -383,6 +409,26 @@ export function ScheduleBoard({
               {finished && <span className="schedule-round__badge schedule-round__badge--done">{t("status_completed")}</span>}
               {active && <span className="schedule-round__badge schedule-round__badge--live">{t("status_live")}</span>}
               {!finished && !active && <span className="schedule-round__badge schedule-round__badge--scheduled">{t("status_upcoming")}</span>}
+              {isOrganizer && testMode && !finished && (
+                <button
+                  type="button"
+                  title="Générer des scores aléatoires"
+                  disabled={loadingRound === groupKey}
+                  onClick={() => generateRoundScores(groupKey, group.matches)}
+                  style={{
+                    marginLeft: "auto",
+                    background: "none",
+                    border: "1px solid var(--border)",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    fontSize: 14,
+                    padding: "2px 8px",
+                    opacity: loadingRound === groupKey ? 0.5 : 1,
+                  }}
+                >
+                  {loadingRound === groupKey ? "⏳" : "🎲"}
+                </button>
+              )}
             </div>
 
             {courtCount > 1 ? (
