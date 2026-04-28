@@ -703,6 +703,11 @@
     "mtp_reset_confirm_pool_b": "¿Reiniciar Pool B (y las fases siguientes)?",
     "mtp_reset_confirm_barrage": "¿Reiniciar la Barrera (y el DE)?",
     "mtp_reset_confirm_de": "¿Reiniciar el DE?",
+    "mtp_start_times_label": "Horas de inicio MTP Open",
+    "mtp_pool_a_start": "Pool A (sáb. mañana)",
+    "mtp_pool_b_start": "Pool B (sáb. tarde)",
+    "mtp_sunday_start": "Domingo (barrera + DE)",
+    "mtp_start_times_hint": "Estas horas se usarán al generar los partidos.",
     "orga_schedule_title": "Hora de inicio",
     "orga_schedule_pool_a": "Pool A — Hora de inicio",
     "orga_schedule_pool_b": "Pool B — Hora de inicio",
@@ -2059,7 +2064,12 @@
     "contact_message": "Describe el formato deseado",
     "contact_message_placeholder": "Ej: Swiss 5 rondas + DE 8 equipos con 3er lugar…",
     "contact_send": "Enviar",
-    "contact_cancel": "Cancelar"
+    "contact_cancel": "Cancelar",
+    "mtp_start_times_label": "Horas de inicio MTP Open",
+    "mtp_pool_a_start": "Pool A (sáb. mañana)",
+    "mtp_pool_b_start": "Pool B (sáb. tarde)",
+    "mtp_sunday_start": "Domingo (barrera + DE)",
+    "mtp_start_times_hint": "Estas horas se usarán al generar los partidos."
   },
   "team_manager": {
     "registered_teams": "Equipos inscritos ({count})",

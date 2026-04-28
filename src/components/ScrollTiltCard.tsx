@@ -16,8 +16,8 @@ export function ScrollTiltCard(props: Props) {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    // Detect touch device
-    setIsMobile("ontouchstart" in window || navigator.maxTouchPoints > 0);
+    // Detect touch-only device (not a laptop with touchscreen)
+    setIsMobile(window.matchMedia("(hover: none) and (pointer: coarse)").matches);
   }, []);
 
   useEffect(() => {

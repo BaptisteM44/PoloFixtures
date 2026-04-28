@@ -90,6 +90,9 @@ const updateSchema = z.object({
     (v) => v === "true" || v === true,
     z.boolean().default(false)
   ),
+  mtpPoolAStart: z.string().optional().nullable(),
+  mtpPoolBStart: z.string().optional().nullable(),
+  mtpSundayStart: z.string().optional().nullable(),
 });
 
 export async function updateTournamentAction(formData: FormData) {
@@ -131,7 +134,7 @@ export async function updateTournamentAction(formData: FormData) {
   try { faqJson = data.faq ? JSON.parse(data.faq) : null; } catch { /* ignore */ }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, poolRounds: _pr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, status: _statusFromForm, ...rest } = data;
+  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, poolRounds: _pr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, status: _statusFromForm, mtpPoolAStart: _mpa, mtpPoolBStart: _mpb, mtpSundayStart: _mps, ...rest } = data;
 
   // Status transitions allowed via edit form (all directions allowed for orga flexibility)
   let statusUpdate: "UPCOMING" | "LIVE" | "COMPLETED" | undefined;
@@ -198,6 +201,9 @@ export async function updateTournamentAction(formData: FormData) {
         gfReset: data.gfReset,
         testMode: data.testMode,
         hidden: data.hidden,
+        mtpPoolAStart: data.mtpPoolAStart ? new Date(data.mtpPoolAStart) : null,
+        mtpPoolBStart: data.mtpPoolBStart ? new Date(data.mtpPoolBStart) : null,
+        mtpSundayStart: data.mtpSundayStart ? new Date(data.mtpSundayStart) : null,
       }
     });
   } catch (err) {
@@ -2521,10 +2527,32 @@ export async function resetMtpPhaseAction(
   return { ok: true };
 }
 
+export async function updateMtpTimesAction(
+  tournamentId: string,
+  mtpPoolAStart: string | null,
+  mtpPoolBStart: string | null,
+  mtpSundayStart: string | null
+): Promise<{ ok?: boolean; error?: string }> {
+  "use server";
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+  await (prisma.tournament.update as any)({
+    where: { id: tournamentId },
+    data: {
+      mtpPoolAStart: mtpPoolAStart ? new Date(mtpPoolAStart) : null,
+      mtpPoolBStart: mtpPoolBStart ? new Date(mtpPoolBStart) : null,
+      mtpSundayStart: mtpSundayStart ? new Date(mtpSundayStart) : null,
+    },
+  });
+  revalidatePath(`/tournament/${tournamentId}`);
+  revalidatePath(`/tournament/${tournamentId}/edit`);
+  return { ok: true };
+}
+
 export async function updatePoolRoundsAction(tournamentId: string, poolRounds: number | null) {
   "use server";
-  const session = await auth();
-  if (!session?.user) return { error: "Non autorisé" };
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
   if (poolRounds !== null && (poolRounds < 1 || poolRounds > 50 || !Number.isInteger(poolRounds))) {
     return { error: "Valeur invalide" };
   }

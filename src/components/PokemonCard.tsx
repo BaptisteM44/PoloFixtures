@@ -49,7 +49,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
 
   // Mobile scroll tilt
   useEffect(() => {
-    const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    const isMobile = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
     if (!isMobile) return;
     const el = cardRef.current;
     if (!el) return;

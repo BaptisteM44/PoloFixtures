@@ -313,6 +313,11 @@ function BerlinMixedPlanning({ tournament, teams, matches }: { tournament: any; 
 
 type MtpTab = "samedi" | "dimanche";
 
+function utcIsoToLocalTime(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 function MtpOpenPlanning({
   tournament,
   matches,
@@ -320,6 +325,7 @@ function MtpOpenPlanning({
   launchMtpBarrageAction,
   launchMtpDEAction,
   resetMtpPhaseAction,
+  updateMtpTimesAction,
 }: {
   tournament: any;
   matches: any[];
@@ -327,11 +333,21 @@ function MtpOpenPlanning({
   launchMtpBarrageAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchMtpDEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetMtpPhaseAction?: (phase: "POOL_A" | "POOL_B" | "BARRAGE" | "DE") => Promise<{ ok?: boolean; error?: string }>;
+  updateMtpTimesAction?: (a: string | null, b: string | null, s: string | null) => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const t = useTranslations("tournament");
   const [tab, setTab] = useState<MtpTab>("samedi");
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Horaires
+  const baseDate = tournament.dateStart ? new Date(tournament.dateStart).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+  const sundayDate = tournament.dateEnd ? new Date(tournament.dateEnd).toISOString().slice(0, 10) : baseDate;
+  const [poolATime, setPoolATime] = useState(tournament.mtpPoolAStart ? utcIsoToLocalTime(tournament.mtpPoolAStart) : "09:00");
+  const [poolBTime, setPoolBTime] = useState(tournament.mtpPoolBStart ? utcIsoToLocalTime(tournament.mtpPoolBStart) : "13:00");
+  const [sundayTime, setSundayTime] = useState(tournament.mtpSundayStart ? utcIsoToLocalTime(tournament.mtpSundayStart) : "09:00");
+  const [timesSaving, setTimesSaving] = useState(false);
+  const [timesSaved, setTimesSaved] = useState(false);
 
   const poolAMatches = matches.filter((m: any) => m.phase === "MTP_POOL_A");
   const poolBMatches = matches.filter((m: any) => m.phase === "MTP_POOL_B");
@@ -365,7 +381,49 @@ function MtpOpenPlanning({
   const bothPoolsDone = poolADone && poolBDone;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+      {/* Horaires de début */}
+      {updateMtpTimesAction && (
+        <div className="panel" style={{ padding: "12px 16px" }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
+            ⏰ {t("mtp_start_times_label" as any)}
+          </p>
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+              <span style={{ fontWeight: 600 }}>{t("mtp_pool_a_start" as any)}</span>
+              <input type="time" value={poolATime} onChange={(e) => setPoolATime(e.target.value)} style={{ width: 110 }} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+              <span style={{ fontWeight: 600 }}>{t("mtp_pool_b_start" as any)}</span>
+              <input type="time" value={poolBTime} onChange={(e) => setPoolBTime(e.target.value)} style={{ width: 110 }} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+              <span style={{ fontWeight: 600 }}>{t("mtp_sunday_start" as any)}</span>
+              <input type="time" value={sundayTime} onChange={(e) => setSundayTime(e.target.value)} style={{ width: 110 }} />
+            </label>
+            <button
+              type="button"
+              className="ghost"
+              style={{ fontSize: 12, padding: "6px 14px" }}
+              disabled={timesSaving}
+              onClick={async () => {
+                setTimesSaving(true);
+                setTimesSaved(false);
+                const toIso = (date: string, time: string) => new Date(`${date}T${time}:00`).toISOString();
+                await updateMtpTimesAction(toIso(baseDate, poolATime), toIso(baseDate, poolBTime), toIso(sundayDate, sundayTime));
+                setTimesSaving(false);
+                setTimesSaved(true);
+                setTimeout(() => setTimesSaved(false), 2500);
+              }}
+            >
+              {timesSaving ? "…" : timesSaved ? "✓" : t("orga_schedule_apply")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ gap: 0 }}>
       <div className="tabs-bar" style={{ marginTop: 0 }}>
         <div className="tabs">
           {(["samedi", "dimanche"] as MtpTab[]).map((v) => (
@@ -485,6 +543,7 @@ function MtpOpenPlanning({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -526,6 +585,7 @@ type OrgaDashboardProps = {
   launchMtpBarrageAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchMtpDEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetMtpPhaseAction?: (phase: "POOL_A" | "POOL_B" | "BARRAGE" | "DE") => Promise<{ ok?: boolean; error?: string }>;
+  updateMtpTimesAction?: (a: string | null, b: string | null, s: string | null) => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -594,6 +654,7 @@ export function OrgaDashboard({
   launchMtpBarrageAction,
   launchMtpDEAction,
   resetMtpPhaseAction,
+  updateMtpTimesAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -1132,6 +1193,7 @@ export function OrgaDashboard({
               launchMtpBarrageAction={launchMtpBarrageAction}
               launchMtpDEAction={launchMtpDEAction}
               resetMtpPhaseAction={resetMtpPhaseAction}
+              updateMtpTimesAction={updateMtpTimesAction}
             />
           )}
 

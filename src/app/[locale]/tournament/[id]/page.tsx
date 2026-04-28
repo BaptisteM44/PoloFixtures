@@ -150,15 +150,18 @@ export default async function TournamentPage({
   const swissSplitSeBottom8 = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL") && tournament.sundayFormat === "SWISS_SPLIT_SE");
   const allEvents = (tournament.matches ?? []).flatMap((m: any) => m.events ?? []);
 
-  // Find current player's team (as captain or member) for this tournament
-  const myTeam = currentPlayerId
-    ? (tournament.teams as any[]).find((team: any) =>
-        team.players?.some((tp: any) => tp.playerId === currentPlayerId || tp.player?.id === currentPlayerId)
-      ) ?? null
+  // Find current player's team — lightweight separate query so tab visibility is
+  // always correct regardless of which tab is active (needsPlayers or not).
+  const myTeamRecord = currentPlayerId
+    ? await (prisma as any).teamPlayer.findFirst({
+        where: { playerId: currentPlayerId, team: { tournamentId: tournament.id } },
+        select: { teamId: true, isCaptain: true },
+      })
     : null;
-  const isCaptainOfMyTeam = myTeam
-    ? (myTeam.players ?? []).some((tp: any) => (tp.playerId === currentPlayerId || tp.player?.id === currentPlayerId) && tp.isCaptain)
-    : false;
+  const myTeam = myTeamRecord
+    ? (tournament.teams as any[]).find((team: any) => team.id === myTeamRecord.teamId) ?? null
+    : null;
+  const isCaptainOfMyTeam = myTeamRecord?.isCaptain ?? false;
 
   // When tournament is launched (LIVE/COMPLETED), show selected teams count instead of total registered
   const isLaunched = tournament.status === "LIVE" || tournament.status === "COMPLETED";

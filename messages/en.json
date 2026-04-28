@@ -704,6 +704,11 @@
     "mtp_reset_confirm_pool_b": "Reset Pool B (and following phases)?",
     "mtp_reset_confirm_barrage": "Reset Barrage (and DE)?",
     "mtp_reset_confirm_de": "Reset DE?",
+    "mtp_start_times_label": "MTP Open start times",
+    "mtp_pool_a_start": "Pool A (Sat. morning)",
+    "mtp_pool_b_start": "Pool B (Sat. afternoon)",
+    "mtp_sunday_start": "Sunday (barrage + DE)",
+    "mtp_start_times_hint": "These times will be used when generating matches.",
     "orga_schedule_title": "Start time",
     "orga_schedule_pool_a": "Pool A — Start time",
     "orga_schedule_pool_b": "Pool B — Start time",
@@ -2055,7 +2060,12 @@
     "contact_message": "Describe the format you need",
     "contact_message_placeholder": "e.g. Swiss 5 rounds + DE 8 teams with third place match…",
     "contact_send": "Send",
-    "contact_cancel": "Cancel"
+    "contact_cancel": "Cancel",
+    "mtp_start_times_label": "MTP Open start times",
+    "mtp_pool_a_start": "Pool A (Sat. morning)",
+    "mtp_pool_b_start": "Pool B (Sat. afternoon)",
+    "mtp_sunday_start": "Sunday (barrage + DE)",
+    "mtp_start_times_hint": "These times will be used when generating matches."
   },
   "team_manager": {
     "registered_teams": "Registered teams ({count})",

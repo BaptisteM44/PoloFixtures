@@ -704,6 +704,11 @@
     "mtp_reset_confirm_pool_b": "Pool B zurücksetzen (und folgende Phasen)?",
     "mtp_reset_confirm_barrage": "Barrage zurücksetzen (und DE)?",
     "mtp_reset_confirm_de": "DE zurücksetzen?",
+    "mtp_start_times_label": "MTP Open Startzeiten",
+    "mtp_pool_a_start": "Pool A (Sa. Morgen)",
+    "mtp_pool_b_start": "Pool B (Sa. Nachmittag)",
+    "mtp_sunday_start": "Sonntag (Barrage + DE)",
+    "mtp_start_times_hint": "Diese Zeiten werden bei der Spielgenerierung verwendet.",
     "orga_schedule_title": "Startzeit",
     "orga_schedule_pool_a": "Pool A — Startzeit",
     "orga_schedule_pool_b": "Pool B — Startzeit",
@@ -2060,7 +2065,12 @@
     "contact_message": "Beschreibe das gewünschte Format",
     "contact_message_placeholder": "z.B. Swiss 5 Runden + DE 8 Teams mit Spiel um Platz 3…",
     "contact_send": "Senden",
-    "contact_cancel": "Abbrechen"
+    "contact_cancel": "Abbrechen",
+    "mtp_start_times_label": "MTP Open Startzeiten",
+    "mtp_pool_a_start": "Pool A (Sa. Morgen)",
+    "mtp_pool_b_start": "Pool B (Sa. Nachmittag)",
+    "mtp_sunday_start": "Sonntag (Barrage + DE)",
+    "mtp_start_times_hint": "Diese Zeiten werden bei der Spielgenerierung verwendet."
   },
   "team_manager": {
     "registered_teams": "Angemeldete Teams ({count})",

@@ -123,7 +123,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const [currentFormat, setCurrentFormat] = useState(tournament.format);
 
   // Format preset
-  type FormatPreset = "pool_de" | "pool_se" | "2pools_de" | "2pools_se" | "swiss_de" | "swiss_se" | "swiss6_split_se" | "cross_pool_bcn" | "berlin_mixed" | "graz" | "custom";
+  type FormatPreset = "pool_de" | "pool_se" | "2pools_de" | "2pools_se" | "swiss_de" | "swiss_se" | "swiss6_split_se" | "cross_pool_bcn" | "berlin_mixed" | "graz" | "mtp_open" | "custom";
   type PresetConfig = { saturdayFormat: string; poolCount: number; swissRounds: number; bracketSize: number; sundayFormat: string; crossPool: boolean; thirdPlaceMatch: boolean; gfReset: boolean };
 
   const PRESETS: Record<Exclude<FormatPreset, "custom">, PresetConfig> = {
@@ -137,7 +137,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     cross_pool_bcn: { saturdayFormat: "SPLIT_POOLS",  poolCount: 2, swissRounds: 5, bracketSize: 8,  sundayFormat: "DE", crossPool: true,  thirdPlaceMatch: false, gfReset: false },
     berlin_mixed:   { saturdayFormat: "BERLIN_MIXED", poolCount: 2, swissRounds: 5, bracketSize: 32, sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
     graz:           { saturdayFormat: "GRAZ",         poolCount: 2, swissRounds: 7, bracketSize: 8,  sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
-    mtp_open:       { saturdayFormat: "MTP_OPEN",     poolCount: 2, swissRounds: 9, bracketSize: 16, sundayFormat: "DE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    mtp_open:       { saturdayFormat: "MTP_OPEN",     poolCount: 2, swissRounds: 9, bracketSize: 16, sundayFormat: "DE", crossPool: false, thirdPlaceMatch: false, gfReset: true  },
   };
 
   function detectPreset(tn: Tournament): FormatPreset {
@@ -404,7 +404,6 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         <input type="hidden" name="rushRegistration" value={rushRegistration ? "true" : "false"} />
         <input type="hidden" name="testMode" value={testMode ? "true" : "false"} />
         <input type="hidden" name="hidden" value={hidden ? "true" : "false"} />
-
         {/* Hidden fields for new data */}
         <input type="hidden" name="accommodationAvailable" value={accommodation ? "true" : "false"} />
         <input type="hidden" name="accommodationType" value={accommodationType} />
@@ -647,6 +646,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                   ["cross_pool_bcn", t("preset_cross_pool_bcn"), t("preset_cross_pool_bcn_desc")],
                   ["berlin_mixed",   "🐻 Berlin Mixed",          "3 jours · 2×Swiss Ven · 2×Swiss Sam · Grand Swiss + Top32/Bottom16 Dim"],
                   ["graz",           "🇦🇹 Graz",                  "2 jours · 2×RR Poules · Regroup 4 groupes · SE Top 8"],
+                  ["mtp_open",       "MTP Open",                 "2 jours · Pool A + Pool B (sam.) · Barrage SE×4 + DE×16 (dim.)"],
                   ["custom",         t("format_custom"),         t("format_custom_desc")],
                 ] as [FormatPreset, string, string][]).map(([key, label, sub]) => {
                   const active = formatPreset === key;
@@ -817,7 +817,9 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
               {formatPreset !== "custom" && (
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                   <strong>{t("format_summary_label")}</strong>{" "}
-                  {presetConfig.saturdayFormat === "GRAZ"
+                  {presetConfig.saturdayFormat === "MTP_OPEN"
+                    ? "Pool A (sam. matin) + Pool B (sam. après-midi) → Barrage SE×4 → DE×16"
+                    : presetConfig.saturdayFormat === "GRAZ"
                     ? "2×RR Poules → Regroup 4 groupes → SE Top 8"
                     : presetConfig.saturdayFormat === "ALL_DAY"
                     ? t("format_summary_pool1")
