@@ -2275,7 +2275,19 @@
     "court_scheduled": "pendientes",
     "court_finished": "terminados",
     "show_all_courts": "Ver todas las canchas",
-    "change_court": "Cambiar cancha"
+    "change_court": "Cambiar cancha",
+    "referees_label": "Árbitros",
+    "main_referee": "Árbitro principal",
+    "co_referee_phone": "Co-árbitro (teléfono)",
+    "not_assigned": "— No asignado —",
+    "saving": "Guardando…"
+  },
+  "pool_tables": {
+    "overall_standings": "Clasificación general",
+    "rounds_1_5": "Rondas 1–5",
+    "rounds_6_7": "Rondas 6–7",
+    "recycled_score": "Resultado reciclado (Fase 1)",
+    "new_matches": "Nuevos partidos"
   },
   "overlay": {
     "title": "Overlay para Stream",

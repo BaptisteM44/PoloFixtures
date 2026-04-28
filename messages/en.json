@@ -2271,7 +2271,19 @@
     "court_scheduled": "upcoming",
     "court_finished": "finished",
     "show_all_courts": "Show all courts",
-    "change_court": "Change court"
+    "change_court": "Change court",
+    "referees_label": "Referees",
+    "main_referee": "Main referee",
+    "co_referee_phone": "Co-referee (phone)",
+    "not_assigned": "— Not assigned —",
+    "saving": "Saving…"
+  },
+  "pool_tables": {
+    "overall_standings": "Overall standings",
+    "rounds_1_5": "Rounds 1–5",
+    "rounds_6_7": "Rounds 6–7",
+    "recycled_score": "Recycled score (Phase 1)",
+    "new_matches": "New matches"
   },
   "overlay": {
     "title": "Stream Overlay",

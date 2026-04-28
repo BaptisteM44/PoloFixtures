@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Pool, PoolTeam, Match, Team } from "@prisma/client";
 import { computeStandings } from "@/lib/standings";
 
@@ -23,6 +24,7 @@ export function PoolTables({
   isLive?: boolean;
   poolRounds?: number | null;
 }) {
+  const t = useTranslations("pool_tables");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
   const activeMatches = poolRounds !== null ? matches.filter((m) => m.roundIndex <= poolRounds) : matches;
 
@@ -48,7 +50,7 @@ export function PoolTables({
     <div className="pool-tables">
       {showCombined && (
         <div className="pool-card">
-          <h4>Classement général</h4>
+          <h4>{t("overall_standings")}</h4>
           <table>
             <thead>
               <tr>
@@ -156,7 +158,7 @@ export function PoolTables({
             {isGraz && day1Matches.length > 0 && (
               <>
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: "12px 0 6px" }}>
-                  Rounds 1–5
+                  {t("rounds_1_5")}
                 </p>
                 <MatchList ms={day1Matches} />
               </>
@@ -164,7 +166,7 @@ export function PoolTables({
             {isGraz && day2Matches.length > 0 && (
               <>
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: "12px 0 6px" }}>
-                  Rounds 6–7
+                  {t("rounds_6_7")}
                 </p>
                 <MatchList ms={day2Matches} />
               </>
@@ -172,7 +174,7 @@ export function PoolTables({
             {isRegroup && recycledRR.length > 0 && (
               <>
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: "12px 0 6px" }}>
-                  Score recyclé (Phase 1)
+                  {t("recycled_score")}
                 </p>
                 <MatchList ms={recycledRR as MatchWithTeams[]} />
               </>
@@ -180,7 +182,7 @@ export function PoolTables({
             {isRegroup && (
               <>
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: "12px 0 6px" }}>
-                  Nouveaux matchs
+                  {t("new_matches")}
                 </p>
                 <MatchList ms={poolMatches} />
               </>

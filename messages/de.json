@@ -2276,7 +2276,19 @@
     "court_scheduled": "geplant",
     "court_finished": "beendet",
     "show_all_courts": "Alle Felder anzeigen",
-    "change_court": "Feld wechseln"
+    "change_court": "Feld wechseln",
+    "referees_label": "Schiedsrichter",
+    "main_referee": "Hauptschiedsrichter",
+    "co_referee_phone": "Co-Schiedsrichter (Telefon)",
+    "not_assigned": "— Nicht zugewiesen —",
+    "saving": "Speichern…"
+  },
+  "pool_tables": {
+    "overall_standings": "Gesamtklassement",
+    "rounds_1_5": "Runden 1–5",
+    "rounds_6_7": "Runden 6–7",
+    "recycled_score": "Übernommene Ergebnisse (Phase 1)",
+    "new_matches": "Neue Spiele"
   },
   "overlay": {
     "title": "Stream-Overlay",

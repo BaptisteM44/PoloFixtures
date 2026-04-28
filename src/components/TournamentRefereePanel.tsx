@@ -710,38 +710,38 @@ export function TournamentRefereePanel({
           {/* ── Assignation arbitres ───────────────────────────────────── */}
           {!matchEnded && (
             <div className="ref-section" style={{ padding: "12px 16px", display: "grid", gap: 10 }}>
-              <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>🦺 Arbitres</p>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>🦺 {t("referees_label")}</p>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <label style={{ fontSize: 12, display: "grid", gap: 4 }}>
-                  <span>Arbitre principal</span>
+                  <span>{t("main_referee")}</span>
                   <select
                     value={localRefereeId}
                     onChange={(e) => { setLocalRefereeId(e.target.value); saveReferees(e.target.value, localCoRefereeId); }}
                     disabled={refSaving}
                     style={{ fontSize: 13 }}
                   >
-                    <option value="">— Non assigné —</option>
+                    <option value="">{t("not_assigned")}</option>
                     {allPlayers.map((p) => (
                       <option key={p.id} value={p.id} disabled={p.id === localCoRefereeId}>{p.name}</option>
                     ))}
                   </select>
                 </label>
                 <label style={{ fontSize: 12, display: "grid", gap: 4 }}>
-                  <span>Co-arbitre (téléphone)</span>
+                  <span>{t("co_referee_phone")}</span>
                   <select
                     value={localCoRefereeId}
                     onChange={(e) => { setLocalCoRefereeId(e.target.value); saveReferees(localRefereeId, e.target.value); }}
                     disabled={refSaving}
                     style={{ fontSize: 13 }}
                   >
-                    <option value="">— Non assigné —</option>
+                    <option value="">{t("not_assigned")}</option>
                     {allPlayers.map((p) => (
                       <option key={p.id} value={p.id} disabled={p.id === localRefereeId}>{p.name}</option>
                     ))}
                   </select>
                 </label>
               </div>
-              {refSaving && <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>Enregistrement…</p>}
+              {refSaving && <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>{t("saving")}</p>}
             </div>
           )}
 

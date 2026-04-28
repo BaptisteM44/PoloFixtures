@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
+import { useRef, useState, useCallback, useImperativeHandle, forwardRef, useEffect } from "react";
 import { getBadgeInfo, getCardRarity } from "@/lib/badge-catalog";
 import { COUNTRIES } from "@/lib/countries";
 import { HoloEffect } from "./HoloEffect";
@@ -45,6 +45,47 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
   const [isHovered, setIsHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
   const mousePos = useRef({ x: 0.5, y: 0.5 });
+  const rafRef = useRef<number | null>(null);
+
+  // Mobile scroll tilt
+  useEffect(() => {
+    const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    if (!isMobile) return;
+    const el = cardRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const centerY = rect.top + rect.height / 2;
+      const relative = (centerY - vh / 2) / (vh / 2);
+      const clamped = Math.max(-1, Math.min(1, relative));
+      const rotateX = clamped * 8;
+      const rotateY = Math.sin(clamped * Math.PI) * 4;
+      const translateY = (1 - Math.abs(clamped)) * -6;
+      const gx = 50 + clamped * 30;
+      const gy = 50 - clamped * 30;
+      setCardStyle({
+        transform: `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(${translateY}px)`,
+        transition: "transform 0.15s ease-out",
+        "--gx": `${gx}%`,
+        "--gy": `${gy}%`,
+      } as React.CSSProperties);
+    };
+
+    const onScroll = () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    update();
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;

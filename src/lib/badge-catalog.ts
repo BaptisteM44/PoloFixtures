@@ -171,6 +171,15 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   head_ref:        { id: "head_ref",        name: "Head Ref",       emoji: "🏁", description: "Arbitrer une finale de tournoi",                                        category: "secret",     rarity: "epic",       iconUrl: "/badges/head-ref.svg" },
   grand_referee:   { id: "grand_referee",   name: "Grand Referee",  emoji: "👑", description: "Arbitrer 12 matchs dont la finale dans un seul tournoi",               category: "secret",     rarity: "legendary",  iconUrl: "/badges/grand-referee.svg" },
   golden_whistle:  { id: "golden_whistle",  name: "Golden Whistle", emoji: "🎖️", description: "100 matchs arbitrés + 5 finales en carrière",                          category: "secret",     rarity: "mythic",     iconUrl: "/badges/golden-whistle.svg" },
+
+  // ─────────────────────────────────────────────────────
+  // 🗣️ Communauté / Labs
+  // ─────────────────────────────────────────────────────
+  first_feedback:    { id: "first_feedback",    name: "First Feedback",  emoji: "💡", description: "Poster ton 1er retour dans le Lab communautaire",               category: "engagement", rarity: "common" },
+  early_backer:      { id: "early_backer",      name: "Early Backer",    emoji: "🚀", description: "Être parmi les 5 premiers votants d'une idée qui passe en Fait", category: "engagement", rarity: "rare" },
+  constructive:      { id: "constructive",      name: "Constructive",    emoji: "🔄", description: "Voter « Bonne idée mais… » et voir son retour adopté",           category: "social",     rarity: "rare" },
+  debate_starter:    { id: "debate_starter",    name: "Debate Starter",  emoji: "🗣️", description: "Générer 10+ réponses sur une de tes idées",                     category: "social",     rarity: "rare" },
+  community_voice:   { id: "community_voice",   name: "Community Voice", emoji: "📣", description: "Avoir une idée passée en statut Fait par l'équipe",             category: "engagement", rarity: "epic" },
 };
 
 /**
