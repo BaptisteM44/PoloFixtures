@@ -1077,14 +1077,12 @@ export function OrgaDashboard({
                 const se = 7;
                 day2Matches = day2RR + phase2 + se;
               } else if ((tournament as any).saturdayFormat === "MTP_OPEN") {
-                // Samedi : 2 pools × swissRounds rounds × 5 matchs/round
+                // Format fixe: 2 pools de 10 équipes
                 const rounds = (tournament as any).swissRounds ?? 6;
-                day1Matches = 2 * rounds * Math.floor(n / 2 / 2); // 2 pools de n/2 équipes
-                // Dimanche : cross (n/2 matchs) + barrage (4) + DE ×16 (30 + gfReset)
-                const crossMatches = n / 2; // 10 matchs pour 20 équipes
-                const barrageM = 4;
+                day1Matches = 2 * rounds * 5; // 2 pools × rounds × 5 matchs/round
+                // Dimanche : 10 cross + 4 barrage + DE×16
                 const deM = 2 * 16 - 2 + ((tournament as any).gfReset ? 1 : 0);
-                day2Matches = crossMatches + barrageM + deM;
+                day2Matches = 10 + 4 + deM;
               } else if (tournament.saturdayFormat === "SWISS") {
                 const rounds = tournament.swissRounds ?? 5;
                 day1Matches = rounds * Math.floor(n / 2);
