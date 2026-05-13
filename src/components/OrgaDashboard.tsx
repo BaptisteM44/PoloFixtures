@@ -1130,7 +1130,12 @@ export function OrgaDashboard({
               }
 
               const totalMatches = Math.round(day1Matches + day2Matches);
-              const day1Dur = Math.ceil(day1Matches / courts) * slot;
+              // MTP_OPEN: Pool A matin + Pool B après-midi en séquentiel sur 2 terrains
+              // chaque pool dure (30 matchs / courts) * slot, les 2 se suivent
+              const isMtpOpenPreview = (tournament as any).saturdayFormat === "MTP_OPEN";
+              const day1Dur = isMtpOpenPreview
+                ? Math.ceil((day1Matches / 2) / courts) * slot * 2  // 2 sessions séquentielles
+                : Math.ceil(day1Matches / courts) * slot;
               const day2Dur = Math.ceil(day2Matches / courts) * slot;
               const fmtTime = (mins: number) => `${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, "0")}`;
 
