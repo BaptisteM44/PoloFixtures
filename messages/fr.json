@@ -694,6 +694,7 @@
     "orga_format_mtp_open_desc": "Sam. matin : Pool A (10 éq.) — Sam. après-midi : Pool B (10 éq.) — Dim. : Barrage SE×4 + DE×16",
     "mtp_pool_a_label": "Pool A — Samedi matin",
     "mtp_pool_b_label": "Pool B — Samedi après-midi",
+        "mtp_launch_next_round": "🎯 Générer round {round}/{total}",
     "mtp_cross_label": "Cross-pool (classement combiné)",
     "mtp_launch_cross": "🚀 Générer le Cross-pool",
     "mtp_reset_confirm_cross": "Réinitialiser le Cross-pool (et le Barrage + DE) ?",

@@ -322,6 +322,7 @@ function MtpOpenPlanning({
   tournament,
   matches,
   launchMtpPoolAction,
+  launchMtpNextRoundAction,
   launchMtpCrossPoolAction,
   launchMtpBarrageAction,
   launchMtpDEAction,
@@ -331,6 +332,7 @@ function MtpOpenPlanning({
   tournament: any;
   matches: any[];
   launchMtpPoolAction?: (pool: "A" | "B") => Promise<{ ok?: boolean; error?: string }>;
+  launchMtpNextRoundAction?: (pool: "A" | "B") => Promise<{ ok?: boolean; error?: string }>;
   launchMtpCrossPoolAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchMtpBarrageAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchMtpDEAction?: () => Promise<{ ok?: boolean; error?: string }>;
@@ -378,8 +380,13 @@ function MtpOpenPlanning({
     setPending(null);
   }
 
-  const poolADone = done(poolAMatches);
-  const poolBDone = done(poolBMatches);
+  const swissRounds = tournament.swissRounds ?? 6;
+  const poolAMaxRound = Math.max(0, ...poolAMatches.map((m: any) => m.roundIndex));
+  const poolBMaxRound = Math.max(0, ...poolBMatches.map((m: any) => m.roundIndex));
+  const poolACurrentRoundDone = poolAMatches.length > 0 && poolAMatches.filter((m: any) => m.roundIndex === poolAMaxRound).every((m: any) => m.status === "FINISHED");
+  const poolBCurrentRoundDone = poolBMatches.length > 0 && poolBMatches.filter((m: any) => m.roundIndex === poolBMaxRound).every((m: any) => m.status === "FINISHED");
+  const poolADone = poolAMatches.length > 0 && poolAMaxRound >= swissRounds && poolACurrentRoundDone;
+  const poolBDone = poolBMatches.length > 0 && poolBMaxRound >= swissRounds && poolBCurrentRoundDone;
   const crossDone = done(crossMatches);
   const barrageDone = done(barrageMatches);
   const bothPoolsDone = poolADone && poolBDone;
@@ -455,6 +462,12 @@ function MtpOpenPlanning({
                   {pending === "POOL_A" ? "..." : t("mtp_launch_pool_a" as any)}
                 </button>
               )}
+              {poolACurrentRoundDone && poolAMaxRound < swissRounds && launchMtpNextRoundAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pending === "NEXT_A"}
+                  onClick={() => run("NEXT_A", () => launchMtpNextRoundAction("A"))}>
+                  {pending === "NEXT_A" ? "..." : t("mtp_launch_next_round" as any, { round: poolAMaxRound + 1, total: swissRounds })}
+                </button>
+              )}
               {poolAMatches.length > 0 && resetMtpPhaseAction && (
                 <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pending === "RESET_POOL_A"}
                   onClick={async () => {
@@ -478,6 +491,12 @@ function MtpOpenPlanning({
                 <button className="primary" style={{ fontSize: 13 }} disabled={pending === "POOL_B"}
                   onClick={() => run("POOL_B", () => launchMtpPoolAction("B"))}>
                   {pending === "POOL_B" ? "..." : t("mtp_launch_pool_b" as any)}
+                </button>
+              )}
+              {poolBCurrentRoundDone && poolBMaxRound < swissRounds && launchMtpNextRoundAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pending === "NEXT_B"}
+                  onClick={() => run("NEXT_B", () => launchMtpNextRoundAction("B"))}>
+                  {pending === "NEXT_B" ? "..." : t("mtp_launch_next_round" as any, { round: poolBMaxRound + 1, total: swissRounds })}
                 </button>
               )}
               {poolBMatches.length > 0 && resetMtpPhaseAction && (
@@ -611,6 +630,7 @@ type OrgaDashboardProps = {
   launchGrazSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetGrazPhaseAction?: (phase: "SUNDAY_RR" | "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
   launchMtpPoolAction?: (pool: "A" | "B") => Promise<{ ok?: boolean; error?: string }>;
+  launchMtpNextRoundAction?: (pool: "A" | "B") => Promise<{ ok?: boolean; error?: string }>;
   launchMtpCrossPoolAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchMtpBarrageAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchMtpDEAction?: () => Promise<{ ok?: boolean; error?: string }>;
@@ -681,6 +701,7 @@ export function OrgaDashboard({
   launchGrazSEAction,
   resetGrazPhaseAction,
   launchMtpPoolAction,
+  launchMtpNextRoundAction,
   launchMtpCrossPoolAction,
   launchMtpBarrageAction,
   launchMtpDEAction,
@@ -1227,6 +1248,7 @@ export function OrgaDashboard({
               tournament={tournament}
               matches={matches}
               launchMtpPoolAction={launchMtpPoolAction}
+              launchMtpNextRoundAction={launchMtpNextRoundAction}
               launchMtpCrossPoolAction={launchMtpCrossPoolAction}
               launchMtpBarrageAction={launchMtpBarrageAction}
               launchMtpDEAction={launchMtpDEAction}

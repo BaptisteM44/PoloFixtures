@@ -120,7 +120,10 @@ export function splitMtpPools(teams: Team[]): { poolA: Team[]; poolB: Team[] } {
   return { poolA, poolB };
 }
 
-/** Generate Swiss matches for one MTP pool (swissRounds rounds) */
+/**
+ * Generate round 1 of MTP pool (seed-based: 1v10, 2v9, 3v8, 4v7, 5v6)
+ * Subsequent rounds are generated on-demand via generateMtpSwissNextRound.
+ */
 export function generateMtpPool(
   teams: Team[],
   phase: MatchPhase,
@@ -128,66 +131,87 @@ export function generateMtpPool(
   courtNames: string[],
   startAt: Date,
   gameDurationMin: number,
-  dayIndex: MatchDay = "SAT",
-  swissRounds = 6
+  dayIndex: MatchDay = "SAT"
 ): MtpMatch[] {
   const slotMin = gameDurationMin + 5;
-  const roundBreak = 5;
+  const seedSorted = [...teams].sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999));
+  const n = seedSorted.length;
+  const courtFree: Date[] = courtNames.map(() => new Date(startAt));
   const matches: MtpMatch[] = [];
 
-  const standings = new Map<string, { pts: number }>(
-    teams.map((t) => [t.id, { pts: 0 }])
-  );
-  const played = new Set<string>();
-
-  // Round 1: seed-based 1v10, 2v9, 3v8, 4v7, 5v6
-  const seedSorted = [...teams].sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999));
-
-  let courtFree: Date[] = courtNames.map(() => new Date(startAt));
-
-  for (let r = 0; r < swissRounds; r++) {
-    let roundPairs: Array<[Team, Team]>;
-
-    if (r === 0) {
-      roundPairs = [];
-      const n = seedSorted.length;
-      for (let i = 0; i < Math.floor(n / 2); i++) {
-        roundPairs.push([seedSorted[i], seedSorted[n - 1 - i]]);
-      }
-    } else {
-      roundPairs = swissRound(teams, standings, played);
+  for (let i = 0; i < Math.floor(n / 2); i++) {
+    const teamA = seedSorted[i];
+    const teamB = seedSorted[n - 1 - i];
+    let bestIdx = 0;
+    for (let c = 1; c < courtNames.length; c++) {
+      if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
     }
-
-    for (const [a, b] of roundPairs) {
-      played.add([a.id, b.id].sort().join("_"));
-    }
-
-    if (r > 0) {
-      const roundStart = new Date(Math.max(...courtFree.map((d) => d.getTime())));
-      courtFree = courtNames.map(() => addMinutes(roundStart, roundBreak));
-    }
-
-    roundPairs.forEach(([teamA, teamB], posInRound) => {
-      let bestIdx = 0;
-      for (let c = 1; c < courtNames.length; c++) {
-        if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
-      }
-      matches.push({
-        phase,
-        roundIndex: r + 1,
-        positionInRound: posInRound,
-        courtName: courtNames[bestIdx],
-        startAt: new Date(courtFree[bestIdx]),
-        dayIndex,
-        status: "SCHEDULED",
-        teamAId: teamA.id,
-        teamBId: teamB.id,
-        bracketSide: null,
-        poolName,
-      });
-      courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
+    matches.push({
+      phase,
+      roundIndex: 1,
+      positionInRound: i,
+      courtName: courtNames[bestIdx],
+      startAt: new Date(courtFree[bestIdx]),
+      dayIndex,
+      status: "SCHEDULED",
+      teamAId: teamA.id,
+      teamBId: teamB.id,
+      bracketSide: null,
+      poolName,
     });
+    courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
   }
+
+  return matches;
+}
+
+/**
+ * Generate next Swiss round for a pool.
+ * standings: current standings for the pool (sorted by rank)
+ * existingMatches: all matches already played in this pool (to avoid rematches)
+ * nextRoundIndex: the round number to generate (e.g. 2, 3, 4, 5, 6)
+ * startAt: scheduled start time for this round
+ */
+export function generateMtpSwissNextRound(
+  teams: Team[],
+  standings: { teamId: string; points: number }[],
+  playedPairs: Set<string>,
+  phase: MatchPhase,
+  poolName: string,
+  courtNames: string[],
+  startAt: Date,
+  gameDurationMin: number,
+  nextRoundIndex: number,
+  dayIndex: MatchDay = "SAT"
+): MtpMatch[] {
+  const standingsMap = new Map<string, { pts: number }>(
+    standings.map((s) => [s.teamId, { pts: s.points }])
+  );
+  const pairs = swissRound(teams, standingsMap, playedPairs);
+  const slotMin = gameDurationMin + 5;
+  const courtFree: Date[] = courtNames.map(() => new Date(startAt));
+  const matches: MtpMatch[] = [];
+
+  pairs.forEach(([teamA, teamB], posInRound) => {
+    let bestIdx = 0;
+    for (let c = 1; c < courtNames.length; c++) {
+      if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
+    }
+    matches.push({
+      phase,
+      roundIndex: nextRoundIndex,
+      positionInRound: posInRound,
+      courtName: courtNames[bestIdx],
+      startAt: new Date(courtFree[bestIdx]),
+      dayIndex,
+      status: "SCHEDULED",
+      teamAId: teamA.id,
+      teamBId: teamB.id,
+      bracketSide: null,
+      poolName,
+    });
+    courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
+  });
 
   return matches;
 }

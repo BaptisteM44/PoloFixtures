@@ -8,7 +8,7 @@ import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
 import { generatePools, generatePoolMatches, generateBracket, generateSwissRound, generateCrossPoolMatches, nextPowerOf2 } from "@/lib/bracket";
 import { generateGrazPools, generateGrazPoolRounds, assignRegroupTeamIds, buildPlayedPairs, generateRegroupMatches, selectSETeams, generateGrazSE } from "@/lib/graz";
-import { splitMtpPools, generateMtpPool, generateMtpCrossPool, generateMtpBarrage, generateMtpDE, combineMtpStandings } from "@/lib/mtp";
+import { splitMtpPools, generateMtpPool, generateMtpSwissNextRound, generateMtpCrossPool, generateMtpBarrage, generateMtpDE, combineMtpStandings } from "@/lib/mtp";
 import { computeStandings } from "@/lib/standings";
 import { computeCareerBadges } from "@/lib/achievements";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
@@ -2262,6 +2262,94 @@ export async function launchMtpPoolAction(
       await tx.poolTeam.createMany({ data: teams.map((t) => ({ poolId: poolRecord!.id, teamId: t.id })) });
     }
     for (const m of matches) {
+      await tx.match.create({
+        data: {
+          tournamentId: id, phase, poolId: poolRecord.id,
+          bracketSide: null, roundIndex: m.roundIndex, positionInRound: m.positionInRound,
+          courtName: m.courtName, startAt: m.startAt, dayIndex: "SAT",
+          status: "SCHEDULED", teamAId: m.teamAId, teamBId: m.teamBId,
+        },
+      });
+    }
+  }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+export async function launchMtpNextRoundAction(
+  id: string,
+  pool: "A" | "B"
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const phase = pool === "A" ? "MTP_POOL_A" : "MTP_POOL_B";
+  const poolName = `Pool ${pool}`;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      matches: { where: { phase } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
+
+  const existingMatches = tournament.matches;
+  if (existingMatches.length === 0) return { error: "Aucun match trouvé pour cette pool." };
+
+  const maxRound = Math.max(...existingMatches.map((m) => m.roundIndex));
+  const swissRounds = (tournament as any).swissRounds ?? 6;
+  if (maxRound >= swissRounds) return { error: `Tous les ${swissRounds} rounds ont déjà été générés.` };
+
+  const currentRoundMatches = existingMatches.filter((m) => m.roundIndex === maxRound);
+  const unfinished = currentRoundMatches.filter((m) => m.status !== "FINISHED");
+  if (unfinished.length > 0) return { error: `Le round ${maxRound} n'est pas encore terminé (${unfinished.length} match(s) restant(s)).` };
+
+  // Already have next round?
+  const nextRoundExists = existingMatches.some((m) => m.roundIndex === maxRound + 1);
+  if (nextRoundExists) return { error: `Le round ${maxRound + 1} a déjà été généré.` };
+
+  // Compute standings
+  const { poolA, poolB } = splitMtpPools(tournament.teams);
+  const poolTeams = pool === "A" ? poolA : poolB;
+  const standings = computeStandings(poolTeams, existingMatches as any, (tournament as any).scoringSystem);
+
+  // Build played pairs set
+  const playedPairs = new Set<string>(
+    existingMatches
+      .filter((m) => m.teamAId && m.teamBId)
+      .map((m) => [m.teamAId!, m.teamBId!].sort().join("_"))
+  );
+
+  // Compute start time: last match end time + 5 min break
+  const lastMatchTimes = existingMatches
+    .filter((m) => m.roundIndex === maxRound && m.startAt)
+    .map((m) => new Date(m.startAt!).getTime());
+  const slotMin = tournament.gameDurationMin + 5;
+  const roundBreak = 5;
+  const lastEnd = lastMatchTimes.length > 0
+    ? new Date(Math.max(...lastMatchTimes) + slotMin * 60 * 1000)
+    : new Date();
+  const nextStart = new Date(lastEnd.getTime() + roundBreak * 60 * 1000);
+
+  const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
+
+  const standingsForSwiss = standings.map((s) => ({ teamId: s.teamId, points: s.points }));
+  const newMatches = generateMtpSwissNextRound(
+    poolTeams, standingsForSwiss, playedPairs,
+    phase as any, poolName, courtNames, nextStart,
+    tournament.gameDurationMin, maxRound + 1
+  );
+
+  const poolRecord = await prisma.pool.findFirst({ where: { tournamentId: id, name: poolName } });
+  if (!poolRecord) return { error: "Pool introuvable en base." };
+
+  await prisma.$transaction(async (tx) => {
+    for (const m of newMatches) {
       await tx.match.create({
         data: {
           tournamentId: id, phase, poolId: poolRecord.id,
