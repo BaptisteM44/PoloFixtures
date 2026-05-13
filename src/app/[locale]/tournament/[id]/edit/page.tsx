@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction } from "./actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
@@ -170,6 +170,10 @@ export default async function TournamentEditPage({ params }: { params: { id: str
     "use server";
     return await launchMtpPoolAction(t_.id, pool);
   };
+  const launchMtpCrossPool = async () => {
+    "use server";
+    return await launchMtpCrossPoolAction(t_.id);
+  };
   const launchMtpBarrage = async () => {
     "use server";
     return await launchMtpBarrageAction(t_.id);
@@ -178,7 +182,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
     "use server";
     return await launchMtpDEAction(t_.id);
   };
-  const resetMtpPhase = async (phase: "POOL_A" | "POOL_B" | "BARRAGE" | "DE") => {
+  const resetMtpPhase = async (phase: "POOL_A" | "POOL_B" | "CROSS_POOL" | "BARRAGE" | "DE") => {
     "use server";
     return await resetMtpPhaseAction(t_.id, phase);
   };
@@ -365,6 +369,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               return await resetGrazPhaseAction(t_.id, phase);
             }}
             launchMtpPoolAction={launchMtpPool}
+            launchMtpCrossPoolAction={launchMtpCrossPool}
             launchMtpBarrageAction={launchMtpBarrage}
             launchMtpDEAction={launchMtpDE}
             resetMtpPhaseAction={resetMtpPhase}

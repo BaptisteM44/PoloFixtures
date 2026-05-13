@@ -322,6 +322,7 @@ function MtpOpenPlanning({
   tournament,
   matches,
   launchMtpPoolAction,
+  launchMtpCrossPoolAction,
   launchMtpBarrageAction,
   launchMtpDEAction,
   resetMtpPhaseAction,
@@ -330,9 +331,10 @@ function MtpOpenPlanning({
   tournament: any;
   matches: any[];
   launchMtpPoolAction?: (pool: "A" | "B") => Promise<{ ok?: boolean; error?: string }>;
+  launchMtpCrossPoolAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchMtpBarrageAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchMtpDEAction?: () => Promise<{ ok?: boolean; error?: string }>;
-  resetMtpPhaseAction?: (phase: "POOL_A" | "POOL_B" | "BARRAGE" | "DE") => Promise<{ ok?: boolean; error?: string }>;
+  resetMtpPhaseAction?: (phase: "POOL_A" | "POOL_B" | "CROSS_POOL" | "BARRAGE" | "DE") => Promise<{ ok?: boolean; error?: string }>;
   updateMtpTimesAction?: (a: string | null, b: string | null, s: string | null) => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const t = useTranslations("tournament");
@@ -351,6 +353,7 @@ function MtpOpenPlanning({
 
   const poolAMatches = matches.filter((m: any) => m.phase === "MTP_POOL_A");
   const poolBMatches = matches.filter((m: any) => m.phase === "MTP_POOL_B");
+  const crossMatches = matches.filter((m: any) => m.phase === "CROSS_POOL");
   const barrageMatches = matches.filter((m: any) => m.phase === "MTP_BARRAGE");
   const deMatches = matches.filter((m: any) => m.phase === "MTP_DE");
 
@@ -377,6 +380,7 @@ function MtpOpenPlanning({
 
   const poolADone = done(poolAMatches);
   const poolBDone = done(poolBMatches);
+  const crossDone = done(crossMatches);
   const barrageDone = done(barrageMatches);
   const bothPoolsDone = poolADone && poolBDone;
 
@@ -492,6 +496,31 @@ function MtpOpenPlanning({
 
       {tab === "dimanche" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Cross-pool */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              {t("mtp_cross_label" as any)}
+            </p>
+            <StatusLine arr={crossMatches} />
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {crossMatches.length === 0 && bothPoolsDone && launchMtpCrossPoolAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pending === "CROSS"}
+                  onClick={() => run("CROSS", launchMtpCrossPoolAction!)}>
+                  {pending === "CROSS" ? "..." : t("mtp_launch_cross" as any)}
+                </button>
+              )}
+              {crossMatches.length > 0 && resetMtpPhaseAction && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pending === "RESET_CROSS"}
+                  onClick={async () => {
+                    if (!window.confirm(t("mtp_reset_confirm_cross" as any))) return;
+                    run("RESET_CROSS", () => resetMtpPhaseAction("CROSS_POOL"));
+                  }}>
+                  {pending === "RESET_CROSS" ? "..." : "↺ Reset"}
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Barrage SE ×4 */}
           <div className="panel">
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
@@ -499,7 +528,7 @@ function MtpOpenPlanning({
             </p>
             <StatusLine arr={barrageMatches} />
             <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-              {barrageMatches.length === 0 && bothPoolsDone && launchMtpBarrageAction && (
+              {barrageMatches.length === 0 && crossDone && launchMtpBarrageAction && (
                 <button className="primary" style={{ fontSize: 13 }} disabled={pending === "BARRAGE"}
                   onClick={() => run("BARRAGE", launchMtpBarrageAction!)}>
                   {pending === "BARRAGE" ? "..." : t("mtp_launch_barrage" as any)}
@@ -582,9 +611,10 @@ type OrgaDashboardProps = {
   launchGrazSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetGrazPhaseAction?: (phase: "SUNDAY_RR" | "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
   launchMtpPoolAction?: (pool: "A" | "B") => Promise<{ ok?: boolean; error?: string }>;
+  launchMtpCrossPoolAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchMtpBarrageAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchMtpDEAction?: () => Promise<{ ok?: boolean; error?: string }>;
-  resetMtpPhaseAction?: (phase: "POOL_A" | "POOL_B" | "BARRAGE" | "DE") => Promise<{ ok?: boolean; error?: string }>;
+  resetMtpPhaseAction?: (phase: "POOL_A" | "POOL_B" | "CROSS_POOL" | "BARRAGE" | "DE") => Promise<{ ok?: boolean; error?: string }>;
   updateMtpTimesAction?: (a: string | null, b: string | null, s: string | null) => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
@@ -651,6 +681,7 @@ export function OrgaDashboard({
   launchGrazSEAction,
   resetGrazPhaseAction,
   launchMtpPoolAction,
+  launchMtpCrossPoolAction,
   launchMtpBarrageAction,
   launchMtpDEAction,
   resetMtpPhaseAction,
@@ -1191,6 +1222,7 @@ export function OrgaDashboard({
               tournament={tournament}
               matches={matches}
               launchMtpPoolAction={launchMtpPoolAction}
+              launchMtpCrossPoolAction={launchMtpCrossPoolAction}
               launchMtpBarrageAction={launchMtpBarrageAction}
               launchMtpDEAction={launchMtpDEAction}
               resetMtpPhaseAction={resetMtpPhaseAction}

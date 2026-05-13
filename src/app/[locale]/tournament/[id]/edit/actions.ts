@@ -8,7 +8,7 @@ import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
 import { generatePools, generatePoolMatches, generateBracket, generateSwissRound, generateCrossPoolMatches, nextPowerOf2 } from "@/lib/bracket";
 import { generateGrazPools, generateGrazPoolRounds, assignRegroupTeamIds, buildPlayedPairs, generateRegroupMatches, selectSETeams, generateGrazSE } from "@/lib/graz";
-import { splitMtpPools, generateMtpPool, generateMtpBarrage, generateMtpDE, combineMtpStandings } from "@/lib/mtp";
+import { splitMtpPools, generateMtpPool, generateMtpCrossPool, generateMtpBarrage, generateMtpDE, combineMtpStandings } from "@/lib/mtp";
 import { computeStandings } from "@/lib/standings";
 import { computeCareerBadges } from "@/lib/achievements";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
@@ -2278,7 +2278,7 @@ export async function launchMtpPoolAction(
   return { ok: true };
 }
 
-export async function launchMtpBarrageAction(id: string): Promise<{ ok?: boolean; error?: string }> {
+export async function launchMtpCrossPoolAction(id: string): Promise<{ ok?: boolean; error?: string }> {
   const denied = await requireTournamentOrgaAccess(id);
   if (denied) return denied;
 
@@ -2292,14 +2292,74 @@ export async function launchMtpBarrageAction(id: string): Promise<{ ok?: boolean
   if (!tournament) return { error: "Tournoi introuvable." };
   if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
 
-  const existingBarrage = await prisma.match.findFirst({ where: { tournamentId: id, phase: "MTP_BARRAGE" } });
-  if (existingBarrage) return { error: "Le barrage a déjà été généré." };
+  const existingCross = await prisma.match.findFirst({ where: { tournamentId: id, phase: "CROSS_POOL" } });
+  if (existingCross) return { error: "Le cross-pool a déjà été généré." };
 
   const poolAMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_A");
   const poolBMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_B");
   if (poolAMatches.length === 0 || poolBMatches.length === 0) return { error: "Générez d'abord les deux pools." };
   if (!poolAMatches.every((m) => m.status === "FINISHED") || !poolBMatches.every((m) => m.status === "FINISHED")) {
     return { error: "Tous les matchs des pools doivent être terminés." };
+  }
+
+  const { poolA, poolB } = splitMtpPools(tournament.teams);
+  const poolAStandings = computeStandings(poolA, poolAMatches as any, (tournament as any).scoringSystem);
+  const poolBStandings = computeStandings(poolB, poolBMatches as any, (tournament as any).scoringSystem);
+  const combined = combineMtpStandings(poolAStandings, poolBStandings);
+
+  if (combined.length < 20) return { error: "Il faut 20 équipes classées pour le cross-pool." };
+
+  const teamMap = new Map(tournament.teams.map((t) => [t.id, t]));
+  const rankedTeams = combined.map((s) => teamMap.get(s.teamId)!).filter(Boolean);
+  if (rankedTeams.length < 20) return { error: "Données insuffisantes pour le cross-pool." };
+
+  const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
+  const t = tournament as any;
+  const sundayStart = t.mtpSundayStart ? new Date(t.mtpSundayStart) : new Date(tournament.dateEnd);
+  const matches = generateMtpCrossPool(rankedTeams, courtNames, sundayStart, tournament.gameDurationMin);
+
+  await prisma.$transaction(async (tx) => {
+    for (const m of matches) {
+      await tx.match.create({
+        data: {
+          tournamentId: id, phase: "CROSS_POOL", bracketSide: null,
+          roundIndex: m.roundIndex, positionInRound: m.positionInRound,
+          courtName: m.courtName, startAt: m.startAt, dayIndex: "SUN",
+          status: "SCHEDULED", teamAId: m.teamAId, teamBId: m.teamBId,
+        },
+      });
+    }
+  }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+export async function launchMtpBarrageAction(id: string): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      matches: { where: { phase: { in: ["MTP_POOL_A", "MTP_POOL_B", "CROSS_POOL"] } } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
+
+  const existingBarrage = await prisma.match.findFirst({ where: { tournamentId: id, phase: "MTP_BARRAGE" } });
+  if (existingBarrage) return { error: "Le barrage a déjà été généré." };
+
+  const poolAMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_A");
+  const poolBMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_B");
+  const crossMatches = tournament.matches.filter((m) => m.phase === "CROSS_POOL");
+  if (poolAMatches.length === 0 || poolBMatches.length === 0) return { error: "Générez d'abord les deux pools." };
+  if (crossMatches.length === 0) return { error: "Générez d'abord le cross-pool." };
+  if (!crossMatches.every((m) => m.status === "FINISHED")) {
+    return { error: "Tous les matchs cross-pool doivent être terminés." };
   }
 
   const { poolA, poolB } = splitMtpPools(tournament.teams);
@@ -2316,7 +2376,11 @@ export async function launchMtpBarrageAction(id: string): Promise<{ ok?: boolean
   const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
   const t = tournament as any;
   const sundayStart = t.mtpSundayStart ? new Date(t.mtpSundayStart) : new Date(tournament.dateEnd);
-  const matches = generateMtpBarrage(barrageTeams, courtNames, sundayStart, tournament.gameDurationMin);
+  // Barrage starts after cross-pool: offset by (10 matches / 2 courts) * slotMin
+  const slotMin = tournament.gameDurationMin + 5;
+  const crossDuration = Math.ceil(10 / Math.max(tournament.courtsCount, 1)) * slotMin;
+  const barrageStart = new Date(sundayStart.getTime() + crossDuration * 60 * 1000);
+  const matches = generateMtpBarrage(barrageTeams, courtNames, barrageStart, tournament.gameDurationMin);
 
   await prisma.$transaction(async (tx) => {
     for (const m of matches) {
@@ -2496,7 +2560,7 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
 
 export async function resetMtpPhaseAction(
   id: string,
-  phase: "POOL_A" | "POOL_B" | "BARRAGE" | "DE"
+  phase: "POOL_A" | "POOL_B" | "CROSS_POOL" | "BARRAGE" | "DE"
 ): Promise<{ ok?: boolean; error?: string }> {
   const denied = await requireTournamentOrgaAccess(id);
   if (denied) return denied;
@@ -2504,14 +2568,17 @@ export async function resetMtpPhaseAction(
   const phaseMap: Record<string, string[]> = {
     POOL_A: ["MTP_POOL_A"],
     POOL_B: ["MTP_POOL_B"],
+    CROSS_POOL: ["CROSS_POOL"],
     BARRAGE: ["MTP_BARRAGE"],
     DE: ["MTP_DE"],
   };
 
-  // Cascading reset: resetting POOL_A also clears BARRAGE and DE; BARRAGE clears DE
+  // Cascading reset: resetting POOL_A/B clears everything; CROSS_POOL clears barrage+DE; BARRAGE clears DE
   const toClear: string[] = [];
   if (phase === "POOL_A" || phase === "POOL_B") {
-    toClear.push("MTP_POOL_A", "MTP_POOL_B", "MTP_BARRAGE", "MTP_DE");
+    toClear.push("MTP_POOL_A", "MTP_POOL_B", "CROSS_POOL", "MTP_BARRAGE", "MTP_DE");
+  } else if (phase === "CROSS_POOL") {
+    toClear.push("CROSS_POOL", "MTP_BARRAGE", "MTP_DE");
   } else if (phase === "BARRAGE") {
     toClear.push("MTP_BARRAGE", "MTP_DE");
   } else {
