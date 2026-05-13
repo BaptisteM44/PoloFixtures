@@ -120,7 +120,8 @@ export default function TournamentMapClient({ tournaments, stats, userContinent 
           <TournamentMap
             tournaments={filtered}
             onSelect={setSelectedTournament}
-            {...(continent && CONTINENT_VIEW[continent] ? { center: CONTINENT_VIEW[continent].center, zoom: CONTINENT_VIEW[continent].zoom } : {})}
+            center={continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].center : [20, 10]}
+            zoom={continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].zoom : 1}
           />
         </div>
 

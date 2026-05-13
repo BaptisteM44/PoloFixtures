@@ -83,7 +83,8 @@ export function ClubMapClient({ clubs, userContinent }: { clubs: MapClub[]; user
         <GenericMap
           markers={markers}
           onSelect={(id) => setSelectedClub(filtered.find((c) => c.id === id) ?? null)}
-          {...(continent && CONTINENT_VIEW[continent] ? { center: CONTINENT_VIEW[continent].center, zoom: CONTINENT_VIEW[continent].zoom } : {})}
+          center={continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].center : [20, 10]}
+          zoom={continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].zoom : 1}
         />
       </div>
 
