@@ -121,9 +121,14 @@ export default function MyTournamentsPage() {
 
   if (!playerId) return null;
 
-  const upcoming = entries.filter((e) => e.tournament.status === "UPCOMING");
-  const live = entries.filter((e) => e.tournament.status === "LIVE");
-  const completed = entries.filter((e) => e.tournament.status === "COMPLETED");
+  const asc = (a: Entry, b: Entry) => new Date(a.tournament.dateStart).getTime() - new Date(b.tournament.dateStart).getTime();
+  const desc = (a: Entry, b: Entry) => new Date(b.tournament.dateStart).getTime() - new Date(a.tournament.dateStart).getTime();
+  const ascT = (a: CreatedTournament, b: CreatedTournament) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime();
+  const descT = (a: CreatedTournament, b: CreatedTournament) => new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime();
+
+  const upcoming = entries.filter((e) => e.tournament.status === "UPCOMING").sort(asc);
+  const live = entries.filter((e) => e.tournament.status === "LIVE").sort(asc);
+  const completed = entries.filter((e) => e.tournament.status === "COMPLETED").sort(desc);
 
   const playerSections = [
     { title: `🔴  ${ts("status_live")}`, entries: live, collapsible: false },
@@ -131,9 +136,9 @@ export default function MyTournamentsPage() {
     { title: `✅  ${ts("status_completed")}`, entries: completed, collapsible: true },
   ].filter((s) => s.entries.length > 0);
 
-  const createdUpcoming = created.filter((t) => t.status === "UPCOMING");
-  const createdLive = created.filter((t) => t.status === "LIVE");
-  const createdCompleted = created.filter((t) => t.status === "COMPLETED");
+  const createdUpcoming = created.filter((t) => t.status === "UPCOMING").sort(ascT);
+  const createdLive = created.filter((t) => t.status === "LIVE").sort(ascT);
+  const createdCompleted = created.filter((t) => t.status === "COMPLETED").sort(descT);
 
   const orgSections = [
     { title: `🔴  ${ts("status_live")}`, items: createdLive, collapsible: false },
