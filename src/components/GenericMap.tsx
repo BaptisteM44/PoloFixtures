@@ -40,9 +40,6 @@ function MapInvalidator() {
   useEffect(() => {
     setTimeout(() => {
       map.invalidateSize();
-      if (map.getContainer().clientWidth < 600) {
-        map.setZoom(1, { animate: false });
-      }
     }, 0);
   }, [map]);
   return null;
