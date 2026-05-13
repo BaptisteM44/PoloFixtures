@@ -1071,13 +1071,20 @@ export function OrgaDashboard({
               } else if (tournament.saturdayFormat === "GRAZ") {
                 const poolSize = Math.ceil(n / 2);
                 const matchesPerRound = Math.floor(poolSize / 2);
-                // Day 1: 5 rounds × 2 pools
                 day1Matches = 5 * matchesPerRound * 2;
-                // Day 2: 2 remaining RR rounds + phase 2 (2 new matches/team = n matches) + SE 7 matches
                 const day2RR = 2 * matchesPerRound * 2;
-                const phase2 = n; // each team plays 2 new matches, n/2 pairs per group × 4 groups ≈ n
-                const se = 7; // QF×4 + SF×2 + F×1
+                const phase2 = n;
+                const se = 7;
                 day2Matches = day2RR + phase2 + se;
+              } else if ((tournament as any).saturdayFormat === "MTP_OPEN") {
+                // Samedi : 2 pools × swissRounds rounds × 5 matchs/round
+                const rounds = (tournament as any).swissRounds ?? 6;
+                day1Matches = 2 * rounds * Math.floor(n / 2 / 2); // 2 pools de n/2 équipes
+                // Dimanche : cross (n/2 matchs) + barrage (4) + DE ×16 (30 + gfReset)
+                const crossMatches = n / 2; // 10 matchs pour 20 équipes
+                const barrageM = 4;
+                const deM = 2 * 16 - 2 + ((tournament as any).gfReset ? 1 : 0);
+                day2Matches = crossMatches + barrageM + deM;
               } else if (tournament.saturdayFormat === "SWISS") {
                 const rounds = tournament.swissRounds ?? 5;
                 day1Matches = rounds * Math.floor(n / 2);
@@ -1088,7 +1095,7 @@ export function OrgaDashboard({
                 day1Matches = poolCount * (perPool * (perPool - 1) / 2);
               }
 
-              if (tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ") {
+              if (tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && (tournament as any).saturdayFormat !== "MTP_OPEN") {
                 const bracketSize = tournament.bracketSize ?? 16;
                 const qualified = Math.min(bracketSize, n);
                 if (tournament.sundayFormat === "DE") {

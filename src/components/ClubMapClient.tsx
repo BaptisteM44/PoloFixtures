@@ -22,12 +22,12 @@ export type MapClub = {
 const CONTINENT_CODES = ["", "EU", "NA", "SA", "AS", "OC", "AF"] as const;
 
 const CONTINENT_VIEW: Record<string, { center: [number, number]; zoom: number }> = {
-  EU: { center: [50, 10], zoom: 4 },
-  NA: { center: [40, -100], zoom: 3 },
-  SA: { center: [-15, -60], zoom: 3 },
-  AS: { center: [30, 100], zoom: 3 },
-  OC: { center: [-30, 155], zoom: 3 },
-  AF: { center: [5, 20], zoom: 3 },
+  EU: { center: [52, 15], zoom: 3 },
+  NA: { center: [45, -100], zoom: 2 },
+  SA: { center: [-15, -60], zoom: 2 },
+  AS: { center: [30, 95], zoom: 2 },
+  OC: { center: [-28, 148], zoom: 2 },
+  AF: { center: [5, 20], zoom: 2 },
 };
 
 function FilterBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
