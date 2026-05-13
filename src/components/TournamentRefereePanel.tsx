@@ -473,6 +473,27 @@ export function TournamentRefereePanel({
   }, [tournament.teams]);
   const cannotEndBracketDraw = !!selectedMatch && selectedMatch.phase === "BRACKET" && selectedMatch.scoreA === selectedMatch.scoreB;
 
+  // Auto-select if single court
+  useEffect(() => {
+    if (!selectedCourt && availableCourts.length === 1) {
+      setSelectedCourt(availableCourts[0]);
+    }
+  }, [selectedCourt, availableCourts]);
+
+  // When court changes, select the first relevant match
+  useEffect(() => {
+    if (!selectedCourt) return;
+    const first = sortedMatches.find((m) => m.status === "LIVE" || m.status === "SCHEDULED") ?? sortedMatches[0];
+    if (first && first.id !== selectedMatchId) {
+      lastMatchId.current = "";
+      setClockSec(0);
+      setRunning(false);
+      setBuzzerPlayed(false);
+      setMatchEnded(false);
+      setSelectedMatchId(first.id);
+    }
+  }, [selectedCourt]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   // Court picker screen — shown when no court is selected and there are multiple courts
@@ -513,27 +534,6 @@ export function TournamentRefereePanel({
       </div>
     );
   }
-
-  // Auto-select if single court
-  useEffect(() => {
-    if (!selectedCourt && availableCourts.length === 1) {
-      setSelectedCourt(availableCourts[0]);
-    }
-  }, [selectedCourt, availableCourts]);
-
-  // When court changes, select the first relevant match
-  useEffect(() => {
-    if (!selectedCourt) return;
-    const first = sortedMatches.find((m) => m.status === "LIVE" || m.status === "SCHEDULED") ?? sortedMatches[0];
-    if (first && first.id !== selectedMatchId) {
-      lastMatchId.current = "";
-      setClockSec(0);
-      setRunning(false);
-      setBuzzerPlayed(false);
-      setMatchEnded(false);
-      setSelectedMatchId(first.id);
-    }
-  }, [selectedCourt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="ref-page">
