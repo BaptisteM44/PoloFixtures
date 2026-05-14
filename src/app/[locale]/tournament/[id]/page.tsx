@@ -15,6 +15,7 @@ import { FreeAgentForm } from "@/components/FreeAgentForm";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { RegisterTeamForm } from "@/components/RegisterTeamForm";
 import { computeStandings } from "@/lib/standings";
+import { splitMtpPools, combineMtpStandings } from "@/lib/mtp";
 import { deleteFreeAgentAction } from "./edit/actions";
 import { TournamentChat } from "@/components/TournamentChat";
 import { TelegramWidget } from "@/components/TelegramWidget";
@@ -774,10 +775,32 @@ export default async function TournamentPage({
 
       {tab === "bracket" && !isTestMode && isMtpOpen && (() => {
         const mtpDeMatches = tournament.matches.filter((m: any) => m.phase === "MTP_DE");
-        const bracketTeams = tournament.teams.filter((t: any) => t.selected).map((team: any) => ({ id: team.id, name: team.name, bracketNumber: team.seed }));
         if (mtpDeMatches.length === 0) {
           return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>{t("mtp_de_not_generated")}</p>;
         }
+        // Compute DE seeding from combined Swiss standings + barrage results
+        const selectedTeams = tournament.teams.filter((t: any) => t.selected);
+        const poolAMs = tournament.matches.filter((m: any) => m.phase === "MTP_POOL_A");
+        const poolBMs = tournament.matches.filter((m: any) => m.phase === "MTP_POOL_B");
+        const barrageMs = tournament.matches.filter((m: any) => m.phase === "MTP_BARRAGE");
+        const { poolA, poolB } = splitMtpPools(selectedTeams);
+        const poolAStandings = computeStandings(poolA, poolAMs, tournament.scoringSystem);
+        const poolBStandings = computeStandings(poolB, poolBMs, tournament.scoringSystem);
+        const combined = combineMtpStandings(poolAStandings, poolBStandings);
+        const teamMap = new Map(selectedTeams.map((t: any) => [t.id, t]));
+        const seeds13to20 = combined.slice(12, 20);
+        const barrageWinnerIds = new Set(barrageMs.filter((m: any) => m.winnerTeamId).map((m: any) => m.winnerTeamId as string));
+        const barrageWinners = seeds13to20
+          .filter((s) => barrageWinnerIds.has(s.teamId))
+          .sort((a, b) => combined.findIndex((c) => c.teamId === a.teamId) - combined.findIndex((c) => c.teamId === b.teamId));
+        const seeded16 = [
+          ...combined.slice(0, 12).map((s) => s.teamId),
+          ...barrageWinners.map((s) => s.teamId),
+        ];
+        const bracketTeams = seeded16.map((id, i) => {
+          const team = teamMap.get(id);
+          return { id, name: team?.name ?? id, bracketNumber: i + 1 };
+        });
         return <BracketView matches={mtpDeMatches as any} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />;
       })()}
 

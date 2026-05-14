@@ -187,9 +187,9 @@ export function BracketView({
     return () => es.close();
   }, [tournamentId, isLive]);
 
-  const bracketMatches = matches.filter((m) => m.phase === "BRACKET" || m.phase === "GRAZ_SE");
-  // SWISS_SPLIT_SE: detect by presence of B/BG/BL bracket sides
-  const isSplitSE = bracketMatches.some((m) => m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL");
+  const bracketMatches = matches.filter((m) => m.phase === "BRACKET" || m.phase === "GRAZ_SE" || m.phase === "MTP_DE");
+  // SWISS_SPLIT_SE: detect by presence of B/BG/BL bracket sides (only for BRACKET phase, not MTP_DE which also uses BG for reset)
+  const isSplitSE = bracketMatches.some((m) => m.phase === "BRACKET" && (m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL"));
   // DE has multiple L matches; SE 3rd place has exactly one L or BL match
   const lMatches = bracketMatches.filter((m) => m.bracketSide === "L" || m.bracketSide === "BL");
   const isDE = !isSplitSE && bracketMatches.some((m) => m.bracketSide === "L") && lMatches.length > 1;
