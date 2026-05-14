@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Pool, PoolTeam, Match, Team } from "@prisma/client";
 import { computeStandings } from "@/lib/standings";
@@ -9,6 +9,8 @@ type PoolWithTeams = Pool & { teams: (PoolTeam & { team: Team })[] };
 
 type MatchWithTeams = Match & { teamA?: Team | null; teamB?: Team | null };
 
+type TeamWithPlayers = Team & { players: { player: { id: string; name: string } }[] };
+
 export function PoolTables({
   pools,
   matches: initialMatches,
@@ -16,6 +18,7 @@ export function PoolTables({
   scoringSystem,
   isLive = false,
   poolRounds = null,
+  teamsWithPlayers = [],
 }: {
   pools: PoolWithTeams[];
   matches: MatchWithTeams[];
@@ -23,9 +26,26 @@ export function PoolTables({
   scoringSystem?: string | null;
   isLive?: boolean;
   poolRounds?: number | null;
+  teamsWithPlayers?: TeamWithPlayers[];
 }) {
   const t = useTranslations("pool_tables");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
+  const [popoverTeamId, setPopoverTeamId] = useState<string | null>(null);
+  const [popoverAnchor, setPopoverAnchor] = useState<{ x: number; y: number } | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!popoverTeamId) return;
+    const handleClick = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setPopoverTeamId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [popoverTeamId]);
+
+  const teamPlayersMap = new Map(teamsWithPlayers.map((t) => [t.id, t.players.map((tp) => tp.player.name)]));
   const activeMatches = poolRounds !== null ? matches.filter((m) => m.roundIndex <= poolRounds) : matches;
 
   useEffect(() => {
@@ -46,8 +66,51 @@ export function PoolTables({
   const showCombined = pools.length >= 2 && allFinished;
   const combinedStandings = showCombined ? computeStandings(allPoolTeams, allPoolMatches as Match[], scoringSystem) : [];
 
+  const TeamCell = ({ teamId, name }: { teamId: string; name: string }) => {
+    const players = teamPlayersMap.get(teamId);
+    if (!players || players.length === 0) return <>{name}</>;
+    return (
+      <span
+        style={{ cursor: "pointer", textDecoration: "underline dotted", textUnderlineOffset: 3 }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (popoverTeamId === teamId) { setPopoverTeamId(null); return; }
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          setPopoverAnchor({ x: rect.left, y: rect.bottom + 6 });
+          setPopoverTeamId(teamId);
+        }}
+      >
+        {name}
+      </span>
+    );
+  };
+
+  const popoverPlayers = popoverTeamId ? (teamPlayersMap.get(popoverTeamId) ?? []) : [];
+
   return (
     <div className="pool-tables">
+      {popoverTeamId && popoverAnchor && (
+        <div
+          ref={popoverRef}
+          style={{
+            position: "fixed",
+            top: popoverAnchor.y,
+            left: popoverAnchor.x,
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            padding: "10px 14px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+            zIndex: 1000,
+            minWidth: 140,
+            fontSize: 13,
+          }}
+        >
+          {popoverPlayers.map((name) => (
+            <div key={name} style={{ padding: "3px 0", color: "var(--text)" }}>{name}</div>
+          ))}
+        </div>
+      )}
       {showCombined && (
         <div className="pool-card">
           <h4>{t("overall_standings")}</h4>
@@ -70,7 +133,7 @@ export function PoolTables({
               {combinedStandings.map((row, i) => (
                 <tr key={row.teamId}>
                   <td style={{ fontWeight: 700, color: "var(--text-muted)", width: 28 }}>{i + 1}</td>
-                  <td>{row.name}</td>
+                  <td><TeamCell teamId={row.teamId} name={row.name} /></td>
                   <td>{row.wins}</td>
                   <td>{row.draws}</td>
                   <td>{row.losses}</td>
@@ -143,7 +206,7 @@ export function PoolTables({
                   .filter((row) => poolTeamIds.includes(row.teamId))
                   .map((row) => (
                     <tr key={row.teamId}>
-                      <td>{row.name}</td>
+                      <td><TeamCell teamId={row.teamId} name={row.name} /></td>
                       <td>{row.wins}</td>
                       <td>{row.draws}</td>
                       <td>{row.losses}</td>

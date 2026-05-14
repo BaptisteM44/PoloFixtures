@@ -742,7 +742,7 @@ export default async function TournamentPage({
 
       {tab === "pools" && (isTestMode
         ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
-        : <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} scoringSystem={tournament.scoringSystem} isLive={tournament.status === "LIVE"} poolRounds={(tournament as any).poolRounds ?? null} />
+        : <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} scoringSystem={tournament.scoringSystem} isLive={tournament.status === "LIVE"} poolRounds={(tournament as any).poolRounds ?? null} teamsWithPlayers={tournament.teams as any} />
       )}
 
       {tab === "mtp_standings" && (isTestMode
