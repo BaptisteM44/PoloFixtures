@@ -1005,15 +1005,17 @@ export function OrgaDashboard({
       {activeTab === "planning" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* Pool Schedule Editor — éditer les horaires de chaque poule */}
-          <PoolScheduleEditor
-            tournamentId={tournament.id}
-            gameDurationMin={tournament.gameDurationMin}
-            poolAStart={(tournament as any).saturdayPoolAStart}
-            poolBStart={(tournament as any).saturdayPoolBStart}
-            poolCount={tournament.poolCount ?? 1}
-            tournamentDateStart={tournament.dateStart}
-          />
+          {/* Pool Schedule Editor — éditer les horaires de chaque poule (non MTP_OPEN qui a son propre panel) */}
+          {!isMtpOpen && (
+            <PoolScheduleEditor
+              tournamentId={tournament.id}
+              gameDurationMin={tournament.gameDurationMin}
+              poolAStart={(tournament as any).saturdayPoolAStart}
+              poolBStart={(tournament as any).saturdayPoolBStart}
+              poolCount={tournament.poolCount ?? 1}
+              tournamentDateStart={tournament.dateStart}
+            />
+          )}
 
           {/* Pool Assignment (pour cross-pool format) */}
           {(tournament.poolCount ?? 1) > 1 && !isLive && (

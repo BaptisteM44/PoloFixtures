@@ -238,24 +238,15 @@ export function ScheduleBoard({
   // Global match ordering for numbering (based on ALL matches, not filtered)
   // Sort by: phase order (POOL→SWISS→BRACKET), then roundIndex, then startAt, then court
   const globalOrder = useMemo(() => {
-    // Global match number = chronological order by startAt per court
-    // Each court has its own sequence: court 1 → 1,2,3... court 2 → 1,2,3...
-    // If only 1 court, it's the true global sequence across all phases
-    const byCourt = new Map<string, MatchWithTeams[]>();
-    for (const m of matches) {
-      const list = byCourt.get(m.courtName) ?? [];
-      list.push(m);
-      byCourt.set(m.courtName, list);
-    }
+    // Global match number = continuous sequence across all courts, sorted by startAt then court then positionInRound
+    const sorted = [...matches].sort(
+      (a, b) =>
+        new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+        || (a.courtName ?? "").localeCompare(b.courtName ?? "")
+        || (a.positionInRound ?? 0) - (b.positionInRound ?? 0)
+    );
     const map = new Map<string, number>();
-    for (const courtMatches of byCourt.values()) {
-      const sorted = [...courtMatches].sort(
-        (a, b) =>
-          new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
-          || (a.positionInRound ?? 0) - (b.positionInRound ?? 0)
-      );
-      sorted.forEach((m, i) => map.set(m.id, i + 1));
-    }
+    sorted.forEach((m, i) => map.set(m.id, i + 1));
     return map;
   }, [matches]);
 
