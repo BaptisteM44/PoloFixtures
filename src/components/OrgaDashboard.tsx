@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { TournamentEditForm } from "@/components/TournamentEditForm";
 import { UnifiedTeamManager } from "@/components/UnifiedTeamManager";
@@ -366,16 +366,21 @@ function MtpOpenPlanning({
   const poolBCurrentRoundDone = poolBMatches.length > 0 && poolBMatches.filter((m: any) => m.roundIndex === poolBMaxRound).every((m: any) => m.status === "FINISHED");
 
   // Auto-generate next Swiss round when current round finishes
+  const autoLaunchingA = useRef(false);
+  const autoLaunchingB = useRef(false);
+
   useEffect(() => {
-    if (poolACurrentRoundDone && poolAMaxRound > 0 && poolAMaxRound < swissRounds && launchMtpNextRoundAction && pending === null) {
-      run("NEXT_A", () => launchMtpNextRoundAction("A"));
+    if (poolACurrentRoundDone && poolAMaxRound > 0 && poolAMaxRound < swissRounds && launchMtpNextRoundAction && !autoLaunchingA.current) {
+      autoLaunchingA.current = true;
+      run("NEXT_A", () => launchMtpNextRoundAction("A")).finally(() => { autoLaunchingA.current = false; });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poolACurrentRoundDone, poolAMaxRound]);
 
   useEffect(() => {
-    if (poolBCurrentRoundDone && poolBMaxRound > 0 && poolBMaxRound < swissRounds && launchMtpNextRoundAction && pending === null) {
-      run("NEXT_B", () => launchMtpNextRoundAction("B"));
+    if (poolBCurrentRoundDone && poolBMaxRound > 0 && poolBMaxRound < swissRounds && launchMtpNextRoundAction && !autoLaunchingB.current) {
+      autoLaunchingB.current = true;
+      run("NEXT_B", () => launchMtpNextRoundAction("B")).finally(() => { autoLaunchingB.current = false; });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poolBCurrentRoundDone, poolBMaxRound]);
