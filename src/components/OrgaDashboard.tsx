@@ -363,9 +363,13 @@ function MtpOpenPlanning({
     return () => es.close();
   }, [tournament.id]);
 
-  // Horaires
-  const baseDate = tournament.dateStart ? new Date(tournament.dateStart).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
-  const sundayDate = tournament.dateEnd ? new Date(tournament.dateEnd).toISOString().slice(0, 10) : baseDate;
+  // Horaires — use local date string to avoid UTC date shifting (e.g. 2025-05-10T00:00Z = May 9 in UTC+2)
+  const toLocalDate = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const baseDate = tournament.dateStart ? toLocalDate(tournament.dateStart) : new Date().toISOString().slice(0, 10);
+  const sundayDate = tournament.dateEnd ? toLocalDate(tournament.dateEnd) : baseDate;
   const [poolATime, setPoolATime] = useState(tournament.mtpPoolAStart ? utcIsoToLocalTime(tournament.mtpPoolAStart) : "09:00");
   const [poolBTime, setPoolBTime] = useState(tournament.mtpPoolBStart ? utcIsoToLocalTime(tournament.mtpPoolBStart) : "13:00");
   const [sundayTime, setSundayTime] = useState(tournament.mtpSundayStart ? utcIsoToLocalTime(tournament.mtpSundayStart) : "09:00");
