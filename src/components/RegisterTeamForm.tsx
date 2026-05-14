@@ -512,7 +512,7 @@ function PlayerSlotInput({
               <label key={d} style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
                 <input
                   type="radio"
-                  name={`diet-${slot.type}-main`}
+                  name={`diet-${index}-main`}
                   checked={mainDiet === d}
                   onChange={() => {
                     const hasGlutenFree = currentDiets.includes("GLUTEN_FREE");
