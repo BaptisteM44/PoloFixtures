@@ -43,7 +43,7 @@ function makeTeams(n: number) {
     contactName: null,
     contactEmail: null,
     contactPhone: null,
-  }));
+  })) as any[];
 }
 
 const COURTS = ["Court 1", "Court 2"];

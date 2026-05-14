@@ -38,7 +38,7 @@ function makeTeams(n: number, offset = 0) {
     contactName: null,
     contactEmail: null,
     contactPhone: null,
-  }));
+  })) as any[];
 }
 
 function makeMatch(overrides: Partial<{

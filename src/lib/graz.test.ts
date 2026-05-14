@@ -28,7 +28,7 @@ function makeTeams(n: number) {
     player2Id: null,
     player3Id: null,
     logo: null,
-  }));
+  })) as any[];
 }
 
 function makeStandings(teamIds: string[]): StandingRow[] {
