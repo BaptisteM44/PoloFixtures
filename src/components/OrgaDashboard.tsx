@@ -359,6 +359,27 @@ function MtpOpenPlanning({
   const barrageMatches = matches.filter((m: any) => m.phase === "MTP_BARRAGE");
   const deMatches = matches.filter((m: any) => m.phase === "MTP_DE");
 
+  const swissRounds = tournament.swissRounds ?? 6;
+  const poolAMaxRound = Math.max(0, ...poolAMatches.map((m: any) => m.roundIndex));
+  const poolBMaxRound = Math.max(0, ...poolBMatches.map((m: any) => m.roundIndex));
+  const poolACurrentRoundDone = poolAMatches.length > 0 && poolAMatches.filter((m: any) => m.roundIndex === poolAMaxRound).every((m: any) => m.status === "FINISHED");
+  const poolBCurrentRoundDone = poolBMatches.length > 0 && poolBMatches.filter((m: any) => m.roundIndex === poolBMaxRound).every((m: any) => m.status === "FINISHED");
+
+  // Auto-generate next Swiss round when current round finishes
+  useEffect(() => {
+    if (poolACurrentRoundDone && poolAMaxRound > 0 && poolAMaxRound < swissRounds && launchMtpNextRoundAction && pending === null) {
+      run("NEXT_A", () => launchMtpNextRoundAction("A"));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poolACurrentRoundDone, poolAMaxRound]);
+
+  useEffect(() => {
+    if (poolBCurrentRoundDone && poolBMaxRound > 0 && poolBMaxRound < swissRounds && launchMtpNextRoundAction && pending === null) {
+      run("NEXT_B", () => launchMtpNextRoundAction("B"));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [poolBCurrentRoundDone, poolBMaxRound]);
+
   const done = (arr: any[]) => arr.length > 0 && arr.every((m: any) => m.status === "FINISHED");
   const matchCount = (arr: any[]) => ({ done: arr.filter((m: any) => m.status === "FINISHED").length, total: arr.length });
 
@@ -380,11 +401,6 @@ function MtpOpenPlanning({
     setPending(null);
   }
 
-  const swissRounds = tournament.swissRounds ?? 6;
-  const poolAMaxRound = Math.max(0, ...poolAMatches.map((m: any) => m.roundIndex));
-  const poolBMaxRound = Math.max(0, ...poolBMatches.map((m: any) => m.roundIndex));
-  const poolACurrentRoundDone = poolAMatches.length > 0 && poolAMatches.filter((m: any) => m.roundIndex === poolAMaxRound).every((m: any) => m.status === "FINISHED");
-  const poolBCurrentRoundDone = poolBMatches.length > 0 && poolBMatches.filter((m: any) => m.roundIndex === poolBMaxRound).every((m: any) => m.status === "FINISHED");
   const poolADone = poolAMatches.length > 0 && poolAMaxRound >= swissRounds && poolACurrentRoundDone;
   const poolBDone = poolBMatches.length > 0 && poolBMaxRound >= swissRounds && poolBCurrentRoundDone;
   const crossDone = done(crossMatches);
