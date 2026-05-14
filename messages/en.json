@@ -2322,6 +2322,7 @@
   },
   "pool_tables": {
     "overall_standings": "Overall standings",
+    "barrage_standings": "Playoff bracket (places 13-20)",
     "rounds_1_5": "Rounds 1–5",
     "rounds_6_7": "Rounds 6–7",
     "recycled_score": "Recycled score (Phase 1)",

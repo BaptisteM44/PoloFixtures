@@ -61,10 +61,29 @@ export function PoolTables({
   }, [tournamentId, isLive]);
   // Combined standings across all pools — shown when all pool matches are finished
   const allPoolMatches = activeMatches.filter((m) => pools.some((p) => p.id === m.poolId));
+  const crossPoolMatches = activeMatches.filter((m) => (m as any).phase === "CROSS_POOL");
+  const barrageMatches = activeMatches.filter((m) => (m as any).phase === "MTP_BARRAGE");
   const allPoolTeams = pools.flatMap((p) => p.teams.map((pt) => pt.team));
   const allFinished = allPoolMatches.length > 0 && allPoolMatches.every((m) => m.status === "FINISHED");
   const showCombined = pools.length >= 2 && allFinished;
-  const combinedStandings = showCombined ? computeStandings(allPoolTeams, allPoolMatches as Match[], scoringSystem) : [];
+  const combinedMatchesForStandings = [...allPoolMatches, ...crossPoolMatches] as Match[];
+  const combinedStandings = showCombined ? computeStandings(allPoolTeams, combinedMatchesForStandings, scoringSystem) : [];
+
+  // Mini-table for seeds 13-20 (barrage teams): pools + cross + barrage
+  // Only shown when barrage matches exist
+  const showBarrageStandings = barrageMatches.length > 0;
+  const barrageTeamIds = showBarrageStandings
+    ? new Set([
+        ...barrageMatches.map((m: any) => m.teamAId).filter(Boolean),
+        ...barrageMatches.map((m: any) => m.teamBId).filter(Boolean),
+      ] as string[])
+    : new Set<string>();
+  // For barrage standings, compute over all 20 teams so inter-group Swiss matches are counted,
+  // then filter the display to only the 8 barrage teams
+  const barrageStandingsFull = showBarrageStandings
+    ? computeStandings(allPoolTeams, [...allPoolMatches, ...crossPoolMatches, ...barrageMatches] as Match[], scoringSystem)
+    : [];
+  const barrageStandings = barrageStandingsFull.filter((row) => barrageTeamIds.has(row.teamId));
 
   const TeamCell = ({ teamId, name }: { teamId: string; name: string }) => {
     const players = teamPlayersMap.get(teamId);
@@ -131,6 +150,45 @@ export function PoolTables({
             </thead>
             <tbody>
               {combinedStandings.map((row, i) => (
+                <tr key={row.teamId}>
+                  <td style={{ fontWeight: 700, color: "var(--text-muted)", width: 28 }}>{i + 1}</td>
+                  <td><TeamCell teamId={row.teamId} name={row.name} /></td>
+                  <td>{row.wins}</td>
+                  <td>{row.draws}</td>
+                  <td>{row.losses}</td>
+                  <td>{row.goalsFor}</td>
+                  <td>{row.goalsAgainst}</td>
+                  <td style={{ color: row.goalDiff > 0 ? "var(--teal)" : row.goalDiff < 0 ? "var(--danger)" : undefined }}>
+                    {row.goalDiff > 0 ? `+${row.goalDiff}` : row.goalDiff}
+                  </td>
+                  <td style={{ fontWeight: 700 }}>{row.points}</td>
+                  <td>{row.buchholz}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {showBarrageStandings && (
+        <div className="pool-card">
+          <h4>{t("barrage_standings" as any)}</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Team</th>
+                <th>W</th>
+                <th>D</th>
+                <th>L</th>
+                <th>GF</th>
+                <th>GA</th>
+                <th>Diff</th>
+                <th>Pts</th>
+                <th title="Buchholz (force adversaires)">Buch.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {barrageStandings.map((row, i) => (
                 <tr key={row.teamId}>
                   <td style={{ fontWeight: 700, color: "var(--text-muted)", width: 28 }}>{i + 1}</td>
                   <td><TeamCell teamId={row.teamId} name={row.name} /></td>

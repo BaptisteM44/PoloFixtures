@@ -2323,6 +2323,7 @@
   },
   "pool_tables": {
     "overall_standings": "Classement général",
+    "barrage_standings": "Repêchage (places 13-20)",
     "rounds_1_5": "Rounds 1–5",
     "rounds_6_7": "Rounds 6–7",
     "recycled_score": "Score recyclé (Phase 1)",
