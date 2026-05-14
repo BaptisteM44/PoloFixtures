@@ -235,16 +235,25 @@ export function ScheduleBoard({
     return entries;
   }, [filtered]);
 
-  // Global match ordering for numbering (based on ALL matches, not filtered)
-  // Sort by: phase order (POOL→SWISS→BRACKET), then roundIndex, then startAt, then court
+  // Global match ordering for numbering — stable, based on logical order not startAt
+  // so numbers don't change when new rounds are generated
   const globalOrder = useMemo(() => {
-    // Global match number = continuous sequence across all courts, sorted by startAt then court then positionInRound
-    const sorted = [...matches].sort(
-      (a, b) =>
-        new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
-        || (a.courtName ?? "").localeCompare(b.courtName ?? "")
-        || (a.positionInRound ?? 0) - (b.positionInRound ?? 0)
-    );
+    const PHASE_ORDER: Record<string, number> = {
+      POOL: 0, MTP_POOL_A: 0, MTP_POOL_B: 1,
+      SWISS: 2, GRAZ_RR: 2,
+      CROSS_POOL: 3, GRAZ_REGROUP: 3,
+      MTP_BARRAGE: 4, GRAZ_SE: 4,
+      BRACKET: 5, MTP_DE: 5,
+      FRIDAY_A: 0, FRIDAY_B: 1, SATURDAY_A: 2, SATURDAY_B: 3, SUNDAY_SWISS: 4, TOP32: 5, BOTTOM16: 6,
+    };
+    const sorted = [...matches].sort((a, b) => {
+      const pa = PHASE_ORDER[a.phase] ?? 99;
+      const pb = PHASE_ORDER[b.phase] ?? 99;
+      if (pa !== pb) return pa - pb;
+      if (a.roundIndex !== b.roundIndex) return a.roundIndex - b.roundIndex;
+      if ((a.positionInRound ?? 0) !== (b.positionInRound ?? 0)) return (a.positionInRound ?? 0) - (b.positionInRound ?? 0);
+      return (a.courtName ?? "").localeCompare(b.courtName ?? "");
+    });
     const map = new Map<string, number>();
     sorted.forEach((m, i) => map.set(m.id, i + 1));
     return map;
