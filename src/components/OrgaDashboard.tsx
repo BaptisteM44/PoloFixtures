@@ -344,6 +344,25 @@ function MtpOpenPlanning({
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Live matches state — updated via SSE so auto-round detection works without page reload
+  const [liveMatches, setLiveMatches] = useState<any[]>(matches);
+  useEffect(() => { setLiveMatches(matches); }, [matches]);
+  useEffect(() => {
+    const es = new EventSource(`/api/sse?tournamentId=${tournament.id}`);
+    es.addEventListener("match", (event) => {
+      const payload = JSON.parse((event as MessageEvent).data);
+      if (payload?.data?.match) {
+        const updated = payload.data.match;
+        setLiveMatches((prev) => {
+          const exists = prev.some((m) => m.id === updated.id);
+          if (exists) return prev.map((m) => m.id === updated.id ? { ...m, ...updated } : m);
+          return [...prev, updated];
+        });
+      }
+    });
+    return () => es.close();
+  }, [tournament.id]);
+
   // Horaires
   const baseDate = tournament.dateStart ? new Date(tournament.dateStart).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
   const sundayDate = tournament.dateEnd ? new Date(tournament.dateEnd).toISOString().slice(0, 10) : baseDate;
@@ -353,11 +372,11 @@ function MtpOpenPlanning({
   const [timesSaving, setTimesSaving] = useState(false);
   const [timesSaved, setTimesSaved] = useState(false);
 
-  const poolAMatches = matches.filter((m: any) => m.phase === "MTP_POOL_A");
-  const poolBMatches = matches.filter((m: any) => m.phase === "MTP_POOL_B");
-  const crossMatches = matches.filter((m: any) => m.phase === "CROSS_POOL");
-  const barrageMatches = matches.filter((m: any) => m.phase === "MTP_BARRAGE");
-  const deMatches = matches.filter((m: any) => m.phase === "MTP_DE");
+  const poolAMatches = liveMatches.filter((m: any) => m.phase === "MTP_POOL_A");
+  const poolBMatches = liveMatches.filter((m: any) => m.phase === "MTP_POOL_B");
+  const crossMatches = liveMatches.filter((m: any) => m.phase === "CROSS_POOL");
+  const barrageMatches = liveMatches.filter((m: any) => m.phase === "MTP_BARRAGE");
+  const deMatches = liveMatches.filter((m: any) => m.phase === "MTP_DE");
 
   const swissRounds = tournament.swissRounds ?? 6;
   const poolAMaxRound = Math.max(0, ...poolAMatches.map((m: any) => m.roundIndex));
