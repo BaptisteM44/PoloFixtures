@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { TournamentEditForm } from "@/components/TournamentEditForm";
 import { UnifiedTeamManager } from "@/components/UnifiedTeamManager";
@@ -340,6 +341,7 @@ function MtpOpenPlanning({
   updateMtpTimesAction?: (a: string | null, b: string | null, s: string | null) => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const t = useTranslations("tournament");
+  const router = useRouter();
   const [tab, setTab] = useState<MtpTab>("samedi");
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -395,7 +397,10 @@ function MtpOpenPlanning({
   useEffect(() => {
     if (poolACurrentRoundDone && poolAMaxRound > 0 && poolAMaxRound < swissRounds && launchMtpNextRoundAction && !autoLaunchingA.current) {
       autoLaunchingA.current = true;
-      run("NEXT_A", () => launchMtpNextRoundAction("A")).finally(() => { autoLaunchingA.current = false; });
+      run("NEXT_A", () => launchMtpNextRoundAction("A")).finally(() => {
+        autoLaunchingA.current = false;
+        router.refresh();
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poolACurrentRoundDone, poolAMaxRound]);
@@ -403,7 +408,10 @@ function MtpOpenPlanning({
   useEffect(() => {
     if (poolBCurrentRoundDone && poolBMaxRound > 0 && poolBMaxRound < swissRounds && launchMtpNextRoundAction && !autoLaunchingB.current) {
       autoLaunchingB.current = true;
-      run("NEXT_B", () => launchMtpNextRoundAction("B")).finally(() => { autoLaunchingB.current = false; });
+      run("NEXT_B", () => launchMtpNextRoundAction("B")).finally(() => {
+        autoLaunchingB.current = false;
+        router.refresh();
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poolBCurrentRoundDone, poolBMaxRound]);
