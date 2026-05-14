@@ -746,6 +746,10 @@
     "de_grand": "Gran Final",
     "teams_count": "{count} / {max} equipos",
     "status_finished": "TERMINADO",
+    "status_ongoing": "EN CURSO",
+    "status_full": "COMPLETO",
+    "countdown_reg_closes": "cierre de inscripciones",
+    "countdown_starts": "inicio del torneo",
     "chat_login_prompt": "Inicia sesión para participar en la discusión.",
     "no_matches_for_day": "No hay partidos generados para este día.",
     "bracket_not_generated_yet": "Bracket aún no generado.",
@@ -952,6 +956,7 @@
     "club_session": "Nueva actividad en tu club",
     "club_session_join": "Jugadores se inscribieron a una sesión",
     "club_announcement": "Nuevo anuncio en {clubName}",
+    "community_reply": "Nueva respuesta en \"{itemTitle}\"",
     "section_pending_invites": "Invitaciones pendientes",
     "btn_accept": "Aceptar",
     "btn_decline": "Rechazar",
@@ -1055,7 +1060,9 @@
     "chat_open": "Chat del equipo",
     "chat_close": "Cerrar chat",
     "registered_teams": "{count} equipos inscritos",
-    "tournaments_count": "{count} torneos"
+    "tournaments_count": "{count} torneos",
+    "section_co_organizer": "Como co-organizador/a",
+    "empty_co_organizer": "Todavía no eres co-organizador/a de ningún torneo."
   },
   "calendar": {
     "page_title": "Calendario de torneos",

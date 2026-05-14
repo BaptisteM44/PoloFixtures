@@ -46,11 +46,11 @@ export function HeroCountdown({ dateStart, dateEnd, registrationEnd, teamCount, 
   if (!isFinished && !isOngoing) {
     if (regEnd && regEnd > now) {
       const label = getCountdownLabel(new Date(regEnd));
-      if (label) { countdownLabel = label; countdownContext = "fermeture inscriptions"; }
+      if (label) { countdownLabel = label; countdownContext = t("countdown_reg_closes"); }
     }
     if (!countdownLabel) {
       const label = getCountdownLabel(new Date(dateStart));
-      if (label) { countdownLabel = label; countdownContext = "début du tournoi"; }
+      if (label) { countdownLabel = label; countdownContext = t("countdown_starts"); }
     }
   }
 
@@ -65,7 +65,7 @@ export function HeroCountdown({ dateStart, dateEnd, registrationEnd, teamCount, 
       <div className="hero-gauge">
         <div className="hero-gauge__label">
           <span>{t("teams_count", { count: teamCount, max: maxTeams })}</span>
-          {pct >= 100 && <span className="hero-gauge__full-badge">COMPLET</span>}
+          {pct >= 100 && <span className="hero-gauge__full-badge">{t("status_full")}</span>}
         </div>
         <div className="hero-gauge__track">
           <div
@@ -86,7 +86,7 @@ export function HeroCountdown({ dateStart, dateEnd, registrationEnd, teamCount, 
       {isOngoing && (
         <div className="hero-countdown hero-countdown--live">
           <span className="hero-countdown__live-dot" />
-          <span className="hero-countdown__value">EN COURS</span>
+          <span className="hero-countdown__value">{t("status_ongoing")}</span>
         </div>
       )}
 

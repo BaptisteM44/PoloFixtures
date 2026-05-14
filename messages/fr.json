@@ -747,6 +747,10 @@
     "de_grand": "Finale",
     "teams_count": "{count} / {max} équipes",
     "status_finished": "TERMINÉ",
+    "status_ongoing": "EN COURS",
+    "status_full": "COMPLET",
+    "countdown_reg_closes": "fermeture inscriptions",
+    "countdown_starts": "début du tournoi",
     "chat_login_prompt": "Connectez-vous pour participer à la discussion.",
     "no_matches_for_day": "Aucun match généré pour ce jour.",
     "bracket_not_generated_yet": "Bracket pas encore généré.",
@@ -948,6 +952,7 @@
     "club_session": "Nouvelle activité dans ton club",
     "club_session_join": "Des joueur·euses se sont inscrit·es à une session",
     "club_announcement": "Nouvelle annonce dans {clubName}",
+    "community_reply": "Nouvelle réponse sur \"{itemTitle}\"",
     "section_pending_invites": "Invitations en attente",
     "btn_accept": "Accepter",
     "btn_decline": "Refuser",
@@ -1051,7 +1056,9 @@
     "chat_open": "Discussion d'équipe",
     "chat_close": "Fermer la discussion",
     "registered_teams": "{count} équipes inscrites",
-    "tournaments_count": "{count} tournois"
+    "tournaments_count": "{count} tournois",
+    "section_co_organizer": "En tant que co-organisateur.trice",
+    "empty_co_organizer": "Tu n'es co-organisateur.trice d'aucun tournoi pour l'instant."
   },
   "calendar": {
     "page_title": "Calendrier des tournois",

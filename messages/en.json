@@ -747,6 +747,10 @@
     "de_grand": "Grand Final",
     "teams_count": "{count} / {max} teams",
     "status_finished": "FINISHED",
+    "status_ongoing": "ONGOING",
+    "status_full": "FULL",
+    "countdown_reg_closes": "registration closes",
+    "countdown_starts": "tournament starts",
     "chat_login_prompt": "Log in to join the discussion.",
     "no_matches_for_day": "No matches generated for this day.",
     "bracket_not_generated_yet": "Bracket not yet generated.",
@@ -948,6 +952,7 @@
     "club_session": "New activity in your club",
     "club_session_join": "Players signed up for a session",
     "club_announcement": "New announcement in {clubName}",
+    "community_reply": "New reply on \"{itemTitle}\"",
     "section_pending_invites": "Pending invitations",
     "btn_accept": "Accept",
     "btn_decline": "Decline",
@@ -1051,7 +1056,9 @@
     "chat_open": "Team discussion",
     "chat_close": "Close discussion",
     "registered_teams": "{count} teams registered",
-    "tournaments_count": "{count} tournaments"
+    "tournaments_count": "{count} tournaments",
+    "section_co_organizer": "As a co-organizer",
+    "empty_co_organizer": "You are not a co-organizer of any tournament yet."
   },
   "calendar": {
     "page_title": "Tournament Calendar",

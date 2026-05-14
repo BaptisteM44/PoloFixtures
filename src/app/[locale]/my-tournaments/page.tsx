@@ -51,6 +51,8 @@ type CreatedTournament = {
   _count: { teams: number };
 };
 
+type CoOrganizedTournament = CreatedTournament;
+
 const STATUS_CLASSES: Record<string, string> = {
   UPCOMING: "badge--upcoming",
   LIVE: "badge--live",
@@ -86,6 +88,7 @@ export default function MyTournamentsPage() {
   const router = useRouter();
   const [entries, setEntries] = useState<Entry[]>([]);
   const [created, setCreated] = useState<CreatedTournament[]>([]);
+  const [coOrganized, setCoOrganized] = useState<CoOrganizedTournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [openChat, setOpenChat] = useState<string | null>(null);
 
@@ -103,6 +106,7 @@ export default function MyTournamentsPage() {
       const data = await res.json();
       setEntries(data.entries ?? []);
       setCreated(data.createdTournaments ?? []);
+      setCoOrganized(data.coOrganizedTournaments ?? []);
     }
     setLoading(false);
   }, []);
@@ -373,6 +377,73 @@ export default function MyTournamentsPage() {
           })
         )}
       </div>
+
+      {/* ── SECTION CO-ORGANISATEUR ── */}
+      {coOrganized.length > 0 && (
+        <div className="my-tournaments__role-section">
+          <div className="my-tournaments__role-heading">
+            <h2>🤝 {t("section_co_organizer")}</h2>
+            <span className="meta">{t("tournaments_count", { count: coOrganized.length })}</span>
+          </div>
+
+          {(() => {
+            const ascCo = (a: CoOrganizedTournament, b: CoOrganizedTournament) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime();
+            const descCo = (a: CoOrganizedTournament, b: CoOrganizedTournament) => new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime();
+            const coUpcoming = coOrganized.filter((t) => t.status === "UPCOMING").sort(ascCo);
+            const coLive = coOrganized.filter((t) => t.status === "LIVE").sort(ascCo);
+            const coCompleted = coOrganized.filter((t) => t.status === "COMPLETED").sort(descCo);
+
+            const coSections = [
+              { title: `🔴  ${ts("status_live")}`, items: coLive, collapsible: false },
+              { title: `📅  ${ts("status_upcoming")}`, items: coUpcoming, collapsible: false },
+              { title: `✅  ${ts("status_completed")}`, items: coCompleted, collapsible: true },
+            ].filter((s) => s.items.length > 0);
+
+            return coSections.map((section) => {
+              const cards = section.items.map((tour) => {
+                const statusCls = STATUS_CLASSES[tour.status] ?? "";
+                return (
+                  <div key={tour.id} className="my-tournaments__card panel">
+                    <div className="my-tournaments__card-header">
+                      <div style={{ flex: 1 }}>
+                        <Link href={`/tournament/${tour.slug}`} className="my-tournaments__tournament-name">{tour.name}</Link>
+                        <div className="my-tournaments__card-sub">
+                          <span>{flagEmoji(tour.country)} {tour.city}, {tour.country}</span>
+                          <span className="my-tournaments__card-dates">{formatDateRange(tour.dateStart, tour.dateEnd, locale)}</span>
+                        </div>
+                      </div>
+                      <span className={`my-tournaments__status-badge ${statusCls}`}>{statusLabel(tour.status)}</span>
+                    </div>
+                    <div className="my-tournaments__team">
+                      <span className="meta" style={{ fontSize: 13 }}>
+                        {t("registered_teams", { count: tour._count.teams })}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                      <Link href={`/tournament/${tour.slug}`} className="ghost" style={{ fontSize: 12 }}>{tc("see_all").replace(" →", "")} →</Link>
+                      <Link href={`/tournament/${tour.slug}/edit`} className="ghost" style={{ fontSize: 12 }}>✏️ {tc("edit")}</Link>
+                    </div>
+                  </div>
+                );
+              });
+
+              return section.collapsible ? (
+                <details key={section.title} className="my-tournaments__section my-tournaments__section--collapsible">
+                  <summary className="my-tournaments__section-title my-tournaments__section-title--summary">
+                    {section.title} <span className="meta">({section.items.length})</span>
+                  </summary>
+                  <div className="my-tournaments__grid" style={{ marginTop: 12 }}>{cards}</div>
+                </details>
+              ) : (
+                <div key={section.title} className="my-tournaments__section">
+                  <h3 className="my-tournaments__section-title">{section.title}</h3>
+                  <div className="my-tournaments__grid">{cards}</div>
+                </div>
+              );
+            });
+          })()}
+        </div>
+      )}
     </div>
   );
 }

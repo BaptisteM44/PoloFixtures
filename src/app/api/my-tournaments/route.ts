@@ -87,5 +87,33 @@ export async function GET() {
     orderBy: { dateStart: "desc" },
   });
 
-  return NextResponse.json({ entries, createdTournaments });
+  // Tournaments where player is a co-organizer (role ORGA, not REF), excluding ones already created
+  const createdIds = new Set(createdTournaments.map((t) => t.id));
+  const coOrgLinks = await prisma.tournamentOrganizer.findMany({
+    where: { playerId, role: "ORGA" },
+    include: {
+      tournament: {
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          city: true,
+          country: true,
+          dateStart: true,
+          dateEnd: true,
+          status: true,
+          approved: true,
+          bannerPath: true,
+          _count: { select: { teams: true } },
+        },
+      },
+    },
+    orderBy: { tournament: { dateStart: "desc" } },
+  });
+
+  const coOrganizedTournaments = coOrgLinks
+    .map((link) => link.tournament)
+    .filter((t) => !createdIds.has(t.id));
+
+  return NextResponse.json({ entries, createdTournaments, coOrganizedTournaments });
 }
