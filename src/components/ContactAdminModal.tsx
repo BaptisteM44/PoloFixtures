@@ -25,7 +25,7 @@ export function ContactAdminModal() {
     setStatus("sending");
     setErrorMsg("");
     try {
-      const res = await fetch("/api/contact-admin", {
+      const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, subject, message }),
