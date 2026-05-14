@@ -192,7 +192,7 @@ export default function NewTournamentPage() {
         {t("new_subtitle")}
       </p>
 
-      <form onSubmit={submit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, alignItems: "start" }}>
+      <form onSubmit={submit} className="tnew-form">
 
         {/* ── Section 1 : Infos de base ── */}
         <section className="panel" style={{ display: "grid", gap: 14, padding: "20px 24px" }}>
@@ -203,7 +203,7 @@ export default function NewTournamentPage() {
             {t("field_name_tournament")}
             <input value={form.name} onChange={set("name")} required placeholder="Paris Open 2026" />
           </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="tnew-grid-2">
             <label className="field-row">
               {t("field_continent")}
               <select value={form.continentCode} onChange={set("continentCode")}>
@@ -257,7 +257,7 @@ export default function NewTournamentPage() {
               <input type="hidden" name="lng" value={form.lng} />
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="tnew-grid-2">
             <label className="field-row">
               {t("field_date_start")}
               <input type="date" value={form.dateStart} onChange={set("dateStart")} required />
@@ -275,7 +275,7 @@ export default function NewTournamentPage() {
           <h3 style={{ margin: "0 0 4px", fontFamily: "var(--font-display)", fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
             {t("section_format")}
           </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+          <div className="tnew-grid-3">
             <label className="field-row">
               {t("field_max_teams")}
               <input type="number" min={2} max={64} value={form.maxTeams} onChange={setNum("maxTeams")} required />
@@ -299,7 +299,7 @@ export default function NewTournamentPage() {
           <h3 style={{ margin: "0 0 4px", fontFamily: "var(--font-display)", fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
             {t("section_registration")}
           </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="tnew-grid-2">
             <label className="field-row">
               {t("field_reg_start")}
               <input type="datetime-local" value={form.registrationStart} onChange={set("registrationStart")} />

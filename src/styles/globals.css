@@ -9835,3 +9835,30 @@ details[open] .club-sessions__past-summary::before {
     width: 100%;
   }
 }
+
+/* ── Tournament New — responsive form ── */
+.tnew-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.tnew-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.tnew-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 700px) {
+  .tnew-form {
+    grid-template-columns: 1fr;
+  }
+  .tnew-grid-2,
+  .tnew-grid-3 {
+    grid-template-columns: 1fr;
+  }
+}

@@ -19,7 +19,7 @@ const CARD_OFFSET_X = 0;
 
 // Returns a translation key + params instead of a hardcoded string
 function getDERoundLabelKey(side: string, roundIndex: number, maxUpperRound: number, maxLowerRound: number, crossPool = false): { key: string; params?: Record<string, string | number> } {
-  if (side === "G") return roundIndex === 2 ? { key: "bracket_reset" } : { key: "bracket_final" };
+  if (side === "G" || side === "BG") return side === "BG" ? { key: "bracket_reset" } : { key: "bracket_final" };
   if (side === "W") {
     if (crossPool && roundIndex === 1) return { key: "bracket_elim" };
     if (roundIndex === maxUpperRound) return { key: "bracket_wb_final" };
@@ -511,7 +511,7 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
   const t = useTranslations("tournament");
   const upper = matches.filter((m) => m.bracketSide === "W");
   const lower = matches.filter((m) => m.bracketSide === "L");
-  const grand = matches.filter((m) => m.bracketSide === "G");
+  const grand = matches.filter((m) => m.bracketSide === "G" || m.bracketSide === "BG");
   const maxUpperRound = upper.length > 0 ? Math.max(...upper.map((m) => m.roundIndex)) : 1;
   const minUpperRound = upper.length > 0 ? Math.min(...upper.map((m) => m.roundIndex)) : 1;
   const maxLowerRound = lower.length > 0 ? Math.max(...lower.map((m) => m.roundIndex)) : 1;
@@ -647,7 +647,8 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
           </svg>
 
           {sortedRounds.map(([roundIdx, roundMatches], colIdx) => {
-            const { key, params } = getDERoundLabelKey(side, roundIdx, maxUpperRound, maxLowerRound, crossPool);
+            const effectiveSide = roundMatches[0]?.bracketSide ?? side;
+            const { key, params } = getDERoundLabelKey(effectiveSide, roundIdx, maxUpperRound, maxLowerRound, crossPool);
             const label = t(key as any, params);
             const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
             const x = colMetrics[colIdx].x;
