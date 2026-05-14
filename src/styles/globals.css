@@ -8240,6 +8240,10 @@ details[open] .my-tournaments__section-title--summary::after {
   font-size: 15px;
 }
 
+.clubs-browser {
+  overflow: hidden; /* Empêche les cartes de déborder la page */
+}
+
 .clubs-browser__filters {
   display: flex;
   flex-wrap: wrap;
@@ -8348,9 +8352,12 @@ details[open] .my-tournaments__section-title--summary::after {
 }
 
 .players-browser__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 16px;
+  justify-content: center; /* Cartes centrées */
+  /* Contenu clippé : pas de débordement horizontal */
+  overflow: hidden;
 }
 
 @media (max-width: 600px) {
@@ -8359,9 +8366,6 @@ details[open] .my-tournaments__section-title--summary::after {
   }
   .clubs-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
-  .players-browser__grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
 }
 

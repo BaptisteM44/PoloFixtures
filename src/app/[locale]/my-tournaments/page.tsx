@@ -156,7 +156,7 @@ export default function MyTournamentsPage() {
       <div className="my-tournaments__role-section">
         <div className="my-tournaments__role-heading">
           <h2>🏑 {t("section_player")}</h2>
-          <span className="meta">{entries.length} tournoi{entries.length !== 1 ? "s" : ""}</span>
+          <span className="meta">{t("tournaments_count", { count: entries.length })}</span>
         </div>
 
         {entries.length === 0 ? (
@@ -312,7 +312,7 @@ export default function MyTournamentsPage() {
       <div className="my-tournaments__role-section">
         <div className="my-tournaments__role-heading">
           <h2>🏗️ {t("section_organizer")}</h2>
-          <span className="meta">{created.length} tournoi{created.length !== 1 ? "s" : ""}</span>
+          <span className="meta">{t("tournaments_count", { count: created.length })}</span>
           <Link href="/tournament/new" className="ghost" style={{ fontSize: 12, marginLeft: "auto" }}>+ {t("btn_create")}</Link>
         </div>
 
@@ -346,7 +346,7 @@ export default function MyTournamentsPage() {
                   </div>
                   <div className="my-tournaments__team">
                     <span className="meta" style={{ fontSize: 13 }}>
-                      {tour._count.teams} équipe{tour._count.teams !== 1 ? "s" : ""} inscrite{tour._count.teams !== 1 ? "s" : ""}
+                      {t("registered_teams", { count: tour._count.teams })}
                     </span>
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Tabs } from "@/components/Tabs";
 import { ScheduleBoard } from "@/components/ScheduleBoard";
 import { PoolTables } from "@/components/PoolTables";
+import { MtpFinalStandings } from "@/components/MtpFinalStandings";
 import { BracketView } from "@/components/BracketView";
 import { PokemonCard } from "@/components/PokemonCard";
 import { toYoutubeEmbed } from "@/lib/youtube";
@@ -57,7 +58,7 @@ export default async function TournamentPage({
   // Les onglets "equipes" et "recap" ont besoin des joueurs complets.
   // "hebergement" aussi : myTeam est calculé via team.players, nécessaire pour afficher le tab.
   // Pas de tab = page chargée sans ?tab= : on charge les players par précaution (recap default pour COMPLETED).
-  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap" || activeTab === "hebergement";
+  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap" || activeTab === "hebergement" || activeTab === "pools";
   // L'onglet "equipes" a besoin des events pour les badges.
   const needsEvents = activeTab === "equipes" || activeTab === "live";
   // Les onglets sans matches : info, inscription, recap, communaute, equipes (matches via events)
@@ -141,6 +142,9 @@ export default async function TournamentPage({
   const hasSwiss = swissMatches.length > 0 || tournament.saturdayFormat === "SWISS";
   const isBerlinMixed = tournament.saturdayFormat === "BERLIN_MIXED";
   const isGraz = tournament.saturdayFormat === "GRAZ";
+  const isMtpOpen = tournament.saturdayFormat === "MTP_OPEN";
+  const mtpBarrageMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "MTP_BARRAGE");
+  const hasMtpBarrage = mtpBarrageMatches.length > 0;
   const berlinFriMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "FRIDAY_A" || m.phase === "FRIDAY_B");
   const berlinSatMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SATURDAY_A" || m.phase === "SATURDAY_B");
   const berlinSunSwissMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SUNDAY_SWISS");
@@ -193,7 +197,9 @@ export default async function TournamentPage({
     ...(isLaunched && isBerlinMixed && berlinTop32Matches.length > 0 ? [{ label: "Top 32", value: "berlin_top32", href: `/tournament/${params.id}?tab=berlin_top32` }] : []),
     ...(isLaunched && isBerlinMixed && berlinBottom16Matches.length > 0 ? [{ label: "Bottom 16", value: "berlin_bot16", href: `/tournament/${params.id}?tab=berlin_bot16` }] : []),
     // Standard tabs (hidden for Berlin Mixed)
-    ...(isLaunched && !isBerlinMixed && tournament.saturdayFormat !== "SWISS" ? [{ label: isGraz ? t("tab_rr_groups") : t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
+    ...(isLaunched && !isBerlinMixed && !isMtpOpen && tournament.saturdayFormat !== "SWISS" ? [{ label: isGraz ? t("tab_rr_groups") : t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
+    ...(isLaunched && isMtpOpen ? [{ label: t("tab_mtp_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
+    ...(isLaunched && isMtpOpen && hasMtpBarrage ? [{ label: t("tab_mtp_standings"), value: "mtp_standings", href: `/tournament/${params.id}?tab=mtp_standings` }] : []),
     ...(isLaunched && !isBerlinMixed && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SWISS_SPLIT_SE" && swissSplitSeTop10.length > 0 ? [{ label: t("bracket_top10"), value: "top10", href: `/tournament/${params.id}?tab=top10` }] : []),
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SWISS_SPLIT_SE" && swissSplitSeBottom8.length > 0 ? [{ label: t("bracket_bottom8"), value: "bottom8", href: `/tournament/${params.id}?tab=bottom8` }] : []),
@@ -739,6 +745,16 @@ export default async function TournamentPage({
         : <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} scoringSystem={tournament.scoringSystem} isLive={tournament.status === "LIVE"} poolRounds={(tournament as any).poolRounds ?? null} />
       )}
 
+      {tab === "mtp_standings" && (isTestMode
+        ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
+        : <MtpFinalStandings
+            teams={tournament.teams.filter((t: any) => t.selected)}
+            matches={tournament.matches}
+            scoringSystem={tournament.scoringSystem}
+            swissRounds={(tournament as any).swissRounds ?? 6}
+          />
+      )}
+
       {tab === "bracket" && isTestMode && (
         <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
       )}
@@ -756,7 +772,16 @@ export default async function TournamentPage({
         );
       })()}
 
-      {tab === "bracket" && !isTestMode && !isGraz && (() => {
+      {tab === "bracket" && !isTestMode && isMtpOpen && (() => {
+        const mtpDeMatches = tournament.matches.filter((m: any) => m.phase === "MTP_DE");
+        const bracketTeams = tournament.teams.filter((t: any) => t.selected).map((team: any) => ({ id: team.id, name: team.name, bracketNumber: team.seed }));
+        if (mtpDeMatches.length === 0) {
+          return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>{t("mtp_de_not_generated")}</p>;
+        }
+        return <BracketView matches={mtpDeMatches as any} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />;
+      })()}
+
+      {tab === "bracket" && !isTestMode && !isGraz && !isMtpOpen && (() => {
         const bracketMatches = tournament.matches.filter((m) => m.phase === "BRACKET");
         const swissAll = tournament.matches.filter((m) => m.phase === "SWISS");
         const poolRoundsLimit = (tournament as any).poolRounds ?? null;

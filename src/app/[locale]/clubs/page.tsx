@@ -70,7 +70,7 @@ export default async function ClubsPage() {
         </section>
       )}
 
-      <ClubsPageTabs clubs={mapped} />
+      <ClubsPageTabs clubs={mapped} userContinent={playerContinent ?? undefined} />
     </div>
   );
 }

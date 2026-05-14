@@ -23,10 +23,10 @@ type Player = {
 
 const CONTINENT_CODES = ["", "EU", "NA", "SA", "AS", "OC", "AF"] as const;
 
-export function PlayersBrowser() {
+export function PlayersBrowser({ userContinent }: { userContinent?: string }) {
   const tClubs = useTranslations("clubs");
   const [search, setSearch] = useState("");
-  const [continent, setContinent] = useState("");
+  const [continent, setContinent] = useState(userContinent ?? "");
   const [country, setCountry] = useState("");
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);

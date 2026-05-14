@@ -31,6 +31,15 @@ type Props = {
   cardFx?: "foil" | "glow" | "glow-champ" | "scanlines";
 };
 
+/** Scale name font-size to always fit on one line regardless of length */
+function getNameFontSize(name: string): number {
+  const len = name.length;
+  if (len <= 15) return 22;
+  if (len <= 20) return 18;
+  if (len <= 26) return 15;
+  return 13;
+}
+
 /** Resolve country name → ISO 2-letter code for flag URL */
 function getCountryCode(name: string): string | null {
   const entry = COUNTRIES.find((c) => c.name.toLowerCase() === name.toLowerCase() || c.code.toLowerCase() === name.toLowerCase());
@@ -193,7 +202,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
           {/* Overlay info at bottom */}
           <div className="pkmn-card__fullart-overlay">
             <div className="pkmn-card__top">
-              <span className="pkmn-card__name">{name}</span>
+              <span className="pkmn-card__name" style={{ fontSize: getNameFontSize(name) }}>{name}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 {rarityLabels[rarity] && (
                   <span className={`pkmn-card__rarity-stars pkmn-card__rarity-stars--${rarity}`}>{rarityLabels[rarity]}</span>
@@ -244,7 +253,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
         {/* Foil glare for holofoil theme */}
         {theme === "holofoil" && <div className="pkmn-card__foil-glare" />}
         <div className="pkmn-card__top">
-          <span className="pkmn-card__name">{name}</span>
+          <span className="pkmn-card__name" style={{ fontSize: getNameFontSize(name) }}>{name}</span>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {rarityLabels[rarity] && (
               <span className={`pkmn-card__rarity-stars pkmn-card__rarity-stars--${rarity}`}>{rarityLabels[rarity]}</span>

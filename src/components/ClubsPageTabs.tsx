@@ -15,7 +15,7 @@ type Club = {
   memberCount: number;
 };
 
-export function ClubsPageTabs({ clubs }: { clubs: Club[] }) {
+export function ClubsPageTabs({ clubs, userContinent }: { clubs: Club[]; userContinent?: string }) {
   const tClubs = useTranslations("clubs");
   const [tab, setTab] = useState<"clubs" | "players">("clubs");
 
@@ -37,9 +37,9 @@ export function ClubsPageTabs({ clubs }: { clubs: Club[] }) {
       </div>
 
       {tab === "clubs" ? (
-        <ClubsBrowser clubs={clubs} />
+        <ClubsBrowser clubs={clubs} userContinent={userContinent} />
       ) : (
-        <PlayersBrowser />
+        <PlayersBrowser userContinent={userContinent} />
       )}
     </div>
   );

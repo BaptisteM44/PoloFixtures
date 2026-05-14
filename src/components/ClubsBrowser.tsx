@@ -17,14 +17,14 @@ type Club = {
 
 const CONTINENT_CODES = ["", "EU", "NA", "SA", "AS", "OC", "AF"] as const;
 
-export function ClubsBrowser({ clubs }: { clubs: Club[] }) {
+export function ClubsBrowser({ clubs, userContinent }: { clubs: Club[]; userContinent?: string }) {
   const t = useTranslations("club");
   const tClubs = useTranslations("clubs");
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const [search, setSearch] = useState("");
-  const [continent, setContinent] = useState(searchParams.get("continent") ?? "");
+  const [continent, setContinent] = useState(searchParams.get("continent") ?? userContinent ?? "");
 
   // Countries available for current continent filter
   const countries = useMemo(() => {
