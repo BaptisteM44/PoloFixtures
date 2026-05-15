@@ -452,7 +452,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </label>
           <label className="field-row">
             {t("field_registration_start")}
-            <input type="datetime-local" name="registrationStart" defaultValue={tournament.registrationStart ? new Date(tournament.registrationStart).toISOString().slice(0, 16) : ""} />
+            <input type="datetime-local" name="registrationStart" defaultValue={tournament.registrationStart ? new Date(new Date(tournament.registrationStart).getTime() - new Date(tournament.registrationStart).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""} />
           </label>
           <label className="field-row">
             {t("field_registration_end")}
@@ -460,7 +460,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
               type="datetime-local"
               name="registrationEnd"
               id="registrationEnd"
-              defaultValue={tournament.registrationEnd ? new Date(tournament.registrationEnd).toISOString().slice(0, 16) : ""}
+              defaultValue={tournament.registrationEnd ? new Date(new Date(tournament.registrationEnd).getTime() - new Date(tournament.registrationEnd).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
             />
           </label>
           <label className="field-row">
