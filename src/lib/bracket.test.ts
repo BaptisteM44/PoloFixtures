@@ -386,10 +386,34 @@ describe("generateBracket — DE (Double Elimination)", () => {
   it("10 équipes — WB R1 a exactement 2 matchs réels (size=16, 6 BYEs)", () => {
     const matches = de(10);
     const wbR1 = matches.filter((m) => m.bracketSide === "W" && m.roundIndex === 1);
-    // size=16 → 8 paires, 10 équipes → 6 BYEs → 10-6=...
-    // En fait: slots pairs où les deux sont non-null = (16 - nextPowerOf2(16) + 10) / 2...
-    // Pour 10 dans 16: seeds 1-6 ont BYE (slots 11-16 sont null), matches réels: (t7,t10) et (t8,t9)
     expect(wbR1.length).toBe(2);
+  });
+
+  it("10 équipes — structure LB correcte: 8 matchs LB total (= N-2)", () => {
+    const matches = de(10);
+    const lb = matches.filter((m) => m.bracketSide === "L");
+    // N=10 teams → N-2=8 LB matches (each eliminated team plays until out)
+    expect(lb.length).toBe(8);
+  });
+
+  it("10 équipes — total matchs = 2*N-2 = 18", () => {
+    expect(de(10).length).toBe(18);
+  });
+
+  it("8 équipes — total matchs = 2*N-2 = 14", () => {
+    expect(de(8).length).toBe(14);
+  });
+
+  it("6 équipes — total matchs = 2*N-2 = 10", () => {
+    expect(de(6).length).toBe(10);
+  });
+
+  it("5 équipes — total matchs = 2*N-2 = 8", () => {
+    expect(de(5).length).toBe(8);
+  });
+
+  it("12 équipes — total matchs = 2*N-2 = 22", () => {
+    expect(de(12).length).toBe(22);
   });
 });
 

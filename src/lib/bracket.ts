@@ -801,45 +801,36 @@ function generateDoubleElim(
 
   // ═══════════════════════════════════════════════════════════════════════
   // LB R1 (Consolidation) — WB R1 losers pair off
-  // Only generate actual matches (skip if 0 or 1 loser — BYE handled implicitly)
+  // Only generate matches where two participants exist.
+  // Unpaired loser (odd count) gets an implicit BYE → still a survivor.
   // ═══════════════════════════════════════════════════════════════════════
   const wbR1LoserCount = wbR1Matches.length;
-  // lbR1 participants = wbR1LoserCount; they pair off → floor(n/2) matches
-  // If odd, 1 gets a BYE (counts as 1 survivor without a match)
   const lbR1Count = Math.floor(wbR1LoserCount / 2);
   const lbR1Matches = lbR1Count > 0 ? createRound("L", 1, lbR1Count) : [];
   if (lbR1Count > 0) advanceTime(lbR1Count);
 
+  // LB R1 survivors: lbR1Count winners + 1 BYE if wbR1LoserCount is odd
+  let lbSurvivors = lbR1Count + (wbR1LoserCount % 2);
+
   // ═══════════════════════════════════════════════════════════════════════
   // LB R2 (Injection) — LB R1 survivors vs WB R2 losers
-  // lbR1Survivors = lbR1Count (winners) + (1 if wbR1LoserCount is odd, BYE)
-  // wbR2Losers = r2Count
-  // LB R2 match count = max(lbR1Survivors, r2Count) is WRONG.
-  // Correct: LB R2 match count = r2Count (each WB R2 loser needs a match).
-  // If lbR1Survivors < r2Count → some LB R2 matches have only 1 team (WB loser vs TBD)
-  //   but only generate match if at least 1 team is known (WB side is always filled at runtime).
+  // Only generate min(lbSurvivors, r2Count) real matches.
+  // Extra WB R2 losers (r2Count - lbSurvivors) advance via BYE to LB R3.
+  // Extra LB survivors (lbSurvivors - r2Count) advance via BYE to LB R3.
   // ═══════════════════════════════════════════════════════════════════════
-  const lbR2Count = r2Count;
+  const lbR2Count = Math.min(lbSurvivors, r2Count);
   const lbR2Matches = lbR2Count > 0 ? createRound("L", 2, lbR2Count) : [];
   if (lbR2Count > 0) advanceTime(lbR2Count);
 
+  // LB R2 survivors: lbR2Count winners + BYEs from both sides
+  lbSurvivors = lbR2Count + Math.abs(r2Count - lbSurvivors);
+
   // ═══════════════════════════════════════════════════════════════════════
   // Remaining rounds: WB R3..Rm interleaved with LB R3..R(2m-2)
-  // Pattern: WB Rk → LB R(2k-3) consolidation → LB R(2k-2) injection
-  //
-  // For non-power-of-2 sizes, the number of LB participants may be fewer
-  // than the "full" bracket size. We track the actual survivor count and
-  // only generate matches that have at least one participant.
-  //   - lbSurvivors after LB R2 = lbR2Count (one winner per LB R2 match)
-  //   - Consolidation Rk: floor(lbSurvivors / 2) real matches + 1 BYE if odd
-  //   - Injection Rk: max(consWinners + byeCount, wbLosers) … always wbCount matches
-  //     because WB losers always fill one side; the other side is LB survivor or TBD.
+  // We track lbSurvivors precisely to only generate necessary matches.
   // ═══════════════════════════════════════════════════════════════════════
   const allWbRounds: GeneratedMatch[][] = [wbR1Matches, wbR2Matches];
-  const allLbRounds: GeneratedMatch[][] = [lbR1Matches, lbR2Matches];
-
-  // lbSurvivors = number of teams alive in LB after LB R2
-  let lbSurvivors = lbR2Count;
+  const allLbRounds: GeneratedMatch[][] = [...(lbR1Count > 0 ? [lbR1Matches] : []), ...(lbR2Count > 0 ? [lbR2Matches] : [])];
 
   for (let k = 3; k <= upperRounds; k++) {
     const wbCount = size / Math.pow(2, k);
@@ -848,7 +839,7 @@ function generateDoubleElim(
     advanceTime(wbMatches.length);
 
     // LB R(2k-3) — Consolidation: pair off lbSurvivors
-    // floor(lbSurvivors / 2) real matches; 1 BYE if odd
+    // floor(lbSurvivors / 2) real matches; odd survivor gets BYE
     const lbConsCount = Math.floor(lbSurvivors / 2);
     const lbConsRound = 2 * k - 3;
     const lbConsMatches = lbConsCount > 0 ? createRound("L", lbConsRound, lbConsCount) : [];
@@ -856,19 +847,22 @@ function generateDoubleElim(
       allLbRounds.push(lbConsMatches);
       advanceTime(lbConsCount);
     }
+    // Survivors after consolidation = winners + BYE
+    const consSurvivors = lbConsCount + (lbSurvivors % 2);
 
-    // Survivors after consolidation = lbConsCount (winners) + (1 if odd, BYE)
-    const conssurvivors = lbConsCount + (lbSurvivors % 2);
-
-    // LB R(2k-2) — Injection: conssurvivors vs wbCount WB losers
-    // Match count = wbCount (each WB loser must have a match slot)
-    // If conssurvivors < wbCount, some LB slots are TBD (filled at runtime)
+    // LB R(2k-2) — Injection: consSurvivors vs wbCount WB losers
+    // Only generate min(consSurvivors, wbCount) real matches.
+    // Surplus from either side advance via BYE.
+    const lbInjCount = Math.min(consSurvivors, wbCount);
     const lbInjRound = 2 * k - 2;
-    const lbInjMatches = createRound("L", lbInjRound, wbCount);
-    allLbRounds.push(lbInjMatches);
-    advanceTime(wbCount);
+    const lbInjMatches = lbInjCount > 0 ? createRound("L", lbInjRound, lbInjCount) : [];
+    if (lbInjCount > 0) {
+      allLbRounds.push(lbInjMatches);
+      advanceTime(lbInjCount);
+    }
 
-    lbSurvivors = wbCount; // injection produces wbCount survivors
+    // Survivors after injection = winners + BYEs from both sides
+    lbSurvivors = lbInjCount + Math.abs(wbCount - consSurvivors);
   }
 
   // ═══════════════════════════════════════════════════════════════════════
