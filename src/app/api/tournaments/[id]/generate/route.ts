@@ -305,9 +305,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
           // Loser → LB
           if (lbR1InjectionR2Pos.includes(r2Pos)) {
-            // Already consumed in LB R1 alongside a WB R1 loser — no separate link needed
+            // WB R2 loser goes to LB R1 slot A (paired with WB R1 loser at slot B)
+            const lbR1Idx = lbR1R2PosOrder.indexOf(r2Pos);
+            const lbR1Match = (byLB.get(1) ?? [])[lbR1Idx];
+            if (lbR1Match) {
+              updates.nextMatchLoseId = lbR1Match.id;
+              updates.nextSlotLose = "A";
+            }
           } else {
-            // Enters LB R2 paired with LB R1 winner[toR2Idx] → LB R2 match[toR2Idx], slot B
+            // Consolidation or BYE branch: WB R2 loser goes to LB R2
             const toR2Idx = wbR2ToLBR2.indexOf(r2Pos);
             const lbR2Match = lbR2Matches[toR2Idx];
             if (lbR2Match) {
