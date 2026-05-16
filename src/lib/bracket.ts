@@ -653,35 +653,22 @@ function generateSingleElim(
 }
 
 /**
- * Double Elimination bracket — Challonge-style.
+ * Double Elimination bracket.
  *
- * Structure for N teams (size = nextPowerOf2(N)):
- *   WB: upperRounds rounds, N-1 real matches total
- *   LB: N-2 matches total
- *   GF: 1 match (+ optional reset)
- *   Total: 2*N - 2 matches (or 2*N-1 with reset)
+ * Rules:
+ *   1. WB = standard single-elim with BYEs for top seeds.
+ *   2. Every WB loser drops to LB. A LB loser is eliminated.
+ *   3. LB alternates: odd rounds = consolidation, even rounds = injection.
+ *      - LB R1 (odd): WB R1 losers pair off among themselves.
+ *      - LB R2 (even): LB R1 survivors face WB R2 losers (injection).
+ *      - LB R3 (odd): consolidation.
+ *      - LB R4 (even): injection of WB R3 losers.
+ *      - ... etc.
+ *   4. When there's a mismatch between LB survivors and WB losers at an
+ *      injection round, the excess teams get a BYE.
+ *   5. GF: WB champion vs LB champion.
  *
- * LB structure depends on WB R1 real match count (w1) vs WB R2 count (w2 = size/4):
- *
- * Case A — w1 > w2 (full/near-full bracket, e.g. 8 teams: w1=4, w2=2):
- *   LB R1: WB R1 losers consolidate (w1/2 matches → w2 survivors)
- *   LB R2: LB R1 survivors vs WB R2 losers, 1:1 injection (w2 matches)
- *   LB R3+: alternate consolidation → injection per WB round
- *
- * Case B — w1 ≤ w2 (BYE-heavy, e.g. 10 teams: w1=2, w2=4):
- *   LB R1: w1 WB R1 losers each face a WB R2 loser (injection, w1 matches)
- *          remaining w2-w1 WB R2 losers get BYE to LB R2
- *   LB R2: consolidation of w2 teams → floor(w2/2) matches
- *   LB R3+: alternate injection per WB round → consolidation
- *
- * After LB R2 in both cases, lbSurvivors = ceil(w2/2) for case B,
- * or w2 for case A (then needs consolidation before each injection).
- *
- * From LB R3 onward we track lbSurvivors and lbRoundIndex explicitly,
- * inserting a consolidation before each injection when needed.
- *
- * Linking (nextMatchLoseId / nextMatchWinId) is done in the API route and
- * uses the wbRoundToLBInjRound map exported alongside the matches.
+ * Total matches = 2*N - 2 (without GF reset).
  */
 function generateDoubleElim(
   teams: Team[],
@@ -701,21 +688,21 @@ function generateDoubleElim(
   const matches: GeneratedMatch[] = [];
   let baseTime = new Date(startAt);
 
-  function advanceTime(matchCount: number) {
-    if (matchCount > 0) {
-      baseTime = addMinutes(baseTime, Math.ceil(matchCount / courtNames.length) * slotMin + roundBreak);
+  function advanceTime(count: number) {
+    if (count > 0) {
+      baseTime = addMinutes(baseTime, Math.ceil(count / courtNames.length) * slotMin + roundBreak);
     }
   }
 
-  function createRound(
+  function emitRound(
     side: "W" | "L" | "G",
     roundIndex: number,
     count: number,
-    preFilledSlots?: Array<{ a: string | null; b: string | null }>
+    preFilled?: Array<{ a: string | null; b: string | null }>
   ): GeneratedMatch[] {
-    const roundMatches: GeneratedMatch[] = [];
+    const out: GeneratedMatch[] = [];
     for (let m = 0; m < count; m++) {
-      const slot = preFilledSlots?.[m] ?? { a: null, b: null };
+      const slot = preFilled?.[m] ?? { a: null, b: null };
       const match: GeneratedMatch = {
         phase: "BRACKET",
         bracketSide: side,
@@ -728,17 +715,15 @@ function generateDoubleElim(
         teamAId: slot.a,
         teamBId: slot.b,
       };
-      roundMatches.push(match);
+      out.push(match);
       matches.push(match);
     }
-    return roundMatches;
+    return out;
   }
 
-  // ── WB R1: determine real matches and BYE advances ──────────────────
+  // ── WB R1 ───────────────────────────────────────────────────────────
   const r1Count = size / 2;
-  const r2Count = size / 4;
-
-  const byeAdvances = new Map<number, string>(); // r2Pos*10 + slot → teamId
+  const byeAdvances = new Map<number, string>();
   const wbR1RealPositions: number[] = [];
 
   for (let m = 0; m < r1Count; m++) {
@@ -747,18 +732,14 @@ function generateDoubleElim(
     if (a && b) {
       wbR1RealPositions.push(m);
     } else {
-      const advancing = a ?? b;
-      if (advancing) {
-        byeAdvances.set(Math.floor(m / 2) * 10 + (m % 2), advancing);
-      }
+      const adv = a ?? b;
+      if (adv) byeAdvances.set(Math.floor(m / 2) * 10 + (m % 2), adv);
     }
   }
 
-  const w1 = wbR1RealPositions.length;
-  const w2 = r2Count;
+  const w1 = wbR1RealPositions.length; // WB R1 real matches = WB R1 losers
 
-  // WB R1 matches
-  const wbR1Matches: GeneratedMatch[] = [];
+  // Emit WB R1 real matches
   for (let ci = 0; ci < w1; ci++) {
     const pos = wbR1RealPositions[ci];
     const a = slots[pos * 2]?.id ?? null;
@@ -770,98 +751,87 @@ function generateDoubleElim(
       startAt: addMinutes(baseTime, Math.floor(ci / courtNames.length) * slotMin),
       dayIndex: "SUN", status: "SCHEDULED", teamAId: a, teamBId: b,
     };
-    wbR1Matches.push(match);
     matches.push(match);
   }
   advanceTime(w1);
 
-  // WB R2 matches (pre-fill BYE teams)
-  const wbR2Slots: Array<{ a: string | null; b: string | null }> = [];
+  // ── WB R2 ───────────────────────────────────────────────────────────
+  const w2 = size / 4;
+  const wbR2Pre: Array<{ a: string | null; b: string | null }> = [];
   for (let m = 0; m < w2; m++) {
-    wbR2Slots.push({ a: byeAdvances.get(m * 10 + 0) ?? null, b: byeAdvances.get(m * 10 + 1) ?? null });
+    wbR2Pre.push({ a: byeAdvances.get(m * 10 + 0) ?? null, b: byeAdvances.get(m * 10 + 1) ?? null });
   }
-  createRound("W", 2, w2, wbR2Slots);
+  emitRound("W", 2, w2, wbR2Pre);
   advanceTime(w2);
 
-  // ── LB R1 ───────────────────────────────────────────────────────────
-  // Case A (w1 > w2): WB R1 losers consolidate among themselves
-  //   → lbR1Count = w1/2 matches, lbSurvivors = w2 (= w1/2 since w1=2*w2 always)
-  // Case B (w1 ≤ w2): WB R1 losers each face a WB R2 loser (injection)
-  //   → lbR1Count = w1 matches, lbSurvivors = w1 (+ w2-w1 WB R2 BYEs enter LB R2)
-  const lbR1IsConsolidation = w1 > w2;
-  const lbR1Count = lbR1IsConsolidation ? Math.floor(w1 / 2) : w1;
+  // ── LB generation — track survivors through alternating rounds ──────
+  // wbLosers[k] = number of losers produced by WB round k
+  // WB R1..upperRounds each produce losers.
+  const wbLosers: number[] = [0]; // index 0 unused
+  wbLosers[1] = w1;
+  wbLosers[2] = w2;
+  for (let k = 3; k <= upperRounds; k++) wbLosers[k] = size / Math.pow(2, k);
 
-  // Track which r2Pos positions have a LB R1 match (injection case)
-  // and which ones are BYEs (their WB R2 losers go directly to LB R2)
-  const lbR1MatchR2Pos: number[] = []; // r2Pos that have a LB R1 match
-  const lbR1ByeR2Pos: number[] = []; // r2Pos whose WB R2 loser bypasses LB R1
+  let lbSurvivors = 0;
+  let lbRoundIdx = 1;
+  let wbRoundForInjection = 2; // next WB round whose losers will be injected
 
-  if (!lbR1IsConsolidation) {
-    // Build which r2Pos has a WB R1 loser feeding into it
-    const r2PosWithR1Loser = new Set<number>();
-    for (const pos of wbR1RealPositions) {
-      r2PosWithR1Loser.add(Math.floor(pos / 2));
-    }
-    for (let r2Pos = 0; r2Pos < w2; r2Pos++) {
-      if (r2PosWithR1Loser.has(r2Pos)) lbR1MatchR2Pos.push(r2Pos);
-      else lbR1ByeR2Pos.push(r2Pos);
-    }
-  }
-
+  // LB R1: WB R1 losers consolidate
+  const lbR1Count = Math.floor(w1 / 2);
   if (lbR1Count > 0) {
-    createRound("L", 1, lbR1Count);
+    emitRound("L", lbRoundIdx++, lbR1Count);
     advanceTime(lbR1Count);
   }
+  lbSurvivors = lbR1Count + (w1 % 2); // odd WB R1 loser gets BYE
 
-  // ── LB R2 ───────────────────────────────────────────────────────────
-  // Case A: injection — lbR1Count survivors vs w2 WB R2 losers → w2 matches
-  //   lbSurvivors = w2
-  // Case B: consolidation — w2 total teams (lbR1Count survivors + (w2-w1) BYEs) → floor(w2/2) matches
-  //   lbSurvivors = ceil(w2/2)
-  const lbR2Count = lbR1IsConsolidation ? w2 : Math.floor(w2 / 2);
-  let lbSurvivors = lbR1IsConsolidation ? w2 : Math.floor(w2 / 2) + (w2 % 2);
+  // Now alternate: even LB round = injection, odd LB round = consolidation
+  // Continue until all WB rounds have been injected and lbSurvivors = 1
+  while (wbRoundForInjection <= upperRounds) {
+    const wbLos = wbLosers[wbRoundForInjection];
 
-  if (lbR2Count > 0) {
-    createRound("L", 2, lbR2Count);
-    advanceTime(lbR2Count);
-  }
+    // Even LB round: injection of WB losers
+    // Number of actual matches = min(lbSurvivors, wbLos)
+    // Surplus from either side gets a BYE to next round
+    const injCount = Math.min(lbSurvivors, wbLos);
+    if (injCount > 0) {
+      emitRound("L", lbRoundIdx++, injCount);
+      advanceTime(injCount);
+    }
+    // After injection: injCount winners + surplus BYEs from both sides
+    lbSurvivors = injCount + Math.abs(lbSurvivors - wbLos);
 
-  // ── LB R3+ with WB R3..upperRounds ──────────────────────────────────
-  // After LB R2, lbSurvivors must reach 1 through alternating
-  // consolidation and injection rounds keyed to WB round losers.
-  // Before each WB Rk injection, consolidate until lbSurvivors == wbCount.
-  let lbRoundIdx = 3;
+    wbRoundForInjection++;
 
-  for (let k = 3; k <= upperRounds; k++) {
-    const wbCount = size / Math.pow(2, k);
+    // Emit the next WB round (if any remain, for timing interleave)
+    if (wbRoundForInjection <= upperRounds) {
+      const wbCount = size / Math.pow(2, wbRoundForInjection);
+      emitRound("W", wbRoundForInjection, wbCount);
+      advanceTime(wbCount);
+    }
 
-    // WB round k
-    createRound("W", k, wbCount);
-    advanceTime(wbCount);
-
-    // Consolidation before injection (if lbSurvivors > wbCount)
-    // For standard brackets this runs exactly once per WB round ≥3
-    while (lbSurvivors > wbCount) {
+    // Odd LB round: consolidation (if more than 1 survivor and more rounds to play)
+    if (lbSurvivors > 1 && wbRoundForInjection <= upperRounds) {
       const consCount = Math.floor(lbSurvivors / 2);
       if (consCount > 0) {
-        createRound("L", lbRoundIdx++, consCount);
+        emitRound("L", lbRoundIdx++, consCount);
         advanceTime(consCount);
       }
       lbSurvivors = consCount + (lbSurvivors % 2);
     }
+  }
 
-    // Injection: lbSurvivors == wbCount, 1:1 pairing
-    if (lbSurvivors > 0) {
-      createRound("L", lbRoundIdx++, lbSurvivors);
-      advanceTime(lbSurvivors);
-      // lbSurvivors stays the same (all injection match winners advance)
-    }
+  // If lbSurvivors > 1 after all injections, one final consolidation
+  while (lbSurvivors > 1) {
+    const consCount = Math.floor(lbSurvivors / 2);
+    emitRound("L", lbRoundIdx++, consCount);
+    advanceTime(consCount);
+    lbSurvivors = consCount + (lbSurvivors % 2);
   }
 
   // Grand Final
-  createRound("G", 1, 1);
+  emitRound("G", 1, 1);
   advanceTime(1);
-  if (gfReset) createRound("G", 2, 1);
+  if (gfReset) emitRound("G", 2, 1);
 
   return matches;
 }
