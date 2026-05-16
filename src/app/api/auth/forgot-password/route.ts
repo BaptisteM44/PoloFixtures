@@ -47,8 +47,10 @@ export async function POST(req: Request) {
     try {
       await sendMail({ to: account.email, subject, html });
     } catch (err) {
+      // L'envoi SMTP peut échouer sur certains hébergeurs (ex. Vercel bloque les ports SMTP).
+      // Le token est déjà sauvegardé — on logue l'URL pour intervention manuelle si besoin.
       console.error("[reset-password] Échec envoi email:", err);
-      return Response.json({ error: "Échec d'envoi de l'email. Contactez l'administrateur." }, { status: 500 });
+      console.warn("[reset-password] URL de réinitialisation (à transmettre manuellement):", resetUrl);
     }
   } else {
     // Dev : affiche le lien dans les logs serveur

@@ -1897,6 +1897,7 @@
     "confirm_kick": "Remove this member?",
     "confirm_delete": "Permanently delete \"{name}\"? This action cannot be undone.",
     "error": "Error",
+    "upload_error": "Error uploading image",
     "me": "me",
     "promote_captain": "→ Cap",
     "kick": "Remove",

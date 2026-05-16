@@ -1898,6 +1898,7 @@
     "confirm_kick": "Exclure ce membre ?",
     "confirm_delete": "Supprimer définitivement \"{name}\" ? Cette action est irréversible.",
     "error": "Erreur",
+    "upload_error": "Erreur lors de l'envoi de l'image",
     "me": "moi",
     "promote_captain": "→ Cap",
     "kick": "Exclure",

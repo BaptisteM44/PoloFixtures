@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { type MatchEvent } from "@prisma/client";
 
 type OverlayMatch = {
@@ -15,6 +15,13 @@ type OverlayMatch = {
   teamA?: { id: string; name: string } | null;
   teamB?: { id: string; name: string } | null;
   events: MatchEvent[];
+};
+
+type FeedItem = {
+  id: string;
+  icon: string;
+  text: string;
+  clockStr: string;
 };
 
 function computeClockFromEvents(events: MatchEvent[]): { clockSec: number; paused: boolean } {
@@ -76,6 +83,8 @@ export function ScoreOverlay({
     currentMatch ? computeClockFromEvents(currentMatch.events ?? []) : { clockSec: 0, paused: true };
   const [clockSec, setClockSec] = useState(() => getInitialClock().clockSec);
   const [paused, setPaused] = useState(() => getInitialClock().paused);
+  const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
+  const initialEventIdsRef = useRef<Set<string>>(new Set());
 
   // Recalculate when match or events change
   const lastEvtId = currentMatch?.events?.[currentMatch.events.length - 1]?.id;
@@ -140,13 +149,55 @@ export function ScoreOverlay({
   const displayScoreA = sidesSwapped ? currentMatch?.scoreB : currentMatch?.scoreA;
   const displayScoreB = sidesSwapped ? currentMatch?.scoreA : currentMatch?.scoreB;
 
-  // Recent events for this match
-  const recentEvents = currentMatch
-    ? [...(currentMatch.events ?? [])]
+  // Feed: events par équipe pour les panneaux latéraux
+  const { feedLeft, feedRight } = useMemo(() => {
+    if (!currentMatch) return { feedLeft: [] as FeedItem[], feedRight: [] as FeedItem[] };
+    const leftTeamId = sidesSwapped ? currentMatch.teamBId : currentMatch.teamAId;
+    const rightTeamId = sidesSwapped ? currentMatch.teamAId : currentMatch.teamBId;
+    const relevant = [...(currentMatch.events ?? [])]
+      .filter((e) => ["GOAL", "GOLDEN_GOAL", "PENALTY"].includes(e.type))
+      .reverse();
+    const mapEvt = (e: MatchEvent): FeedItem => {
+      const p = e.payload as Record<string, unknown>;
+      const playerName = p.playerName ? String(p.playerName) : null;
+      const icon = e.type === "GOAL" ? "⚽" : e.type === "GOLDEN_GOAL" ? "⭐" : "🟨";
+      const text = playerName ?? (e.type === "GOAL" ? "But" : e.type === "GOLDEN_GOAL" ? "But en or" : "Pénalité");
+      return { id: e.id, icon, text, clockStr: fmtClock(e.matchClockSec) };
+    };
+    return {
+      feedLeft: relevant.filter((e) => (e.payload as Record<string, unknown>)?.teamId === leftTeamId).slice(0, 5).map(mapEvt),
+      feedRight: relevant.filter((e) => (e.payload as Record<string, unknown>)?.teamId === rightTeamId).slice(0, 5).map(mapEvt),
+    };
+  }, [lastEvtId, currentMatch?.id, sidesSwapped]);
+
+  // Réinitialise le tracking lors d'un changement de match
+  useEffect(() => {
+    initialEventIdsRef.current = new Set(
+      (currentMatch?.events ?? [])
         .filter((e) => ["GOAL", "GOLDEN_GOAL", "PENALTY"].includes(e.type))
-        .slice(-3)
-        .reverse()
-    : [];
+        .map((e) => e.id)
+    );
+    setHighlightedIds(new Set());
+  }, [currentMatch?.id]);
+
+  // Détecte les nouveaux events arrivant via SSE pour les animer
+  useEffect(() => {
+    if (!currentMatch) return;
+    const newIds = (currentMatch.events ?? [])
+      .filter((e) => ["GOAL", "GOLDEN_GOAL", "PENALTY"].includes(e.type))
+      .map((e) => e.id)
+      .filter((id) => !initialEventIdsRef.current.has(id));
+    if (newIds.length === 0) return;
+    setHighlightedIds((prev) => new Set([...prev, ...newIds]));
+    const timer = setTimeout(() => {
+      setHighlightedIds((prev) => {
+        const next = new Set(prev);
+        newIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [lastEvtId]);
 
   const gameDurSec = gameDurationMin * 60;
   const displaySec = Math.max(0, gameDurSec - clockSec);
@@ -363,35 +414,109 @@ export function ScoreOverlay({
                 )}
               </div>
 
-              {/* Recent events */}
-              {recentEvents.length > 0 && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: 16,
-                    padding: "6px 16px",
-                    background: isDark ? "rgba(15,15,30,0.9)" : "rgba(241,245,249,0.9)",
-                    fontSize: 13,
-                    color: isDark ? "#94a3b8" : "#64748b",
-                  }}
-                >
-                  {recentEvents.map((e) => {
-                    const p = e.payload as Record<string, unknown>;
-                    const icon = e.type === "GOAL" ? "\u26BD" : e.type === "GOLDEN_GOAL" ? "\uD83E\uDD47" : "\u26A0\uFE0F";
-                    const playerName = String(p.playerName ?? "");
-                    return (
-                      <span key={e.id}>
-                        {icon} {fmtClock(e.matchClockSec)}
-                        {playerName ? ` ${playerName}` : ""}
-                      </span>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           )}
         </div>
+
+        {/* ── Panneaux latéraux d'événements ── */}
+        {isLive && [
+          { feed: feedLeft, align: "left" as const, teamName: displayTeamA?.name ?? "" },
+          { feed: feedRight, align: "right" as const, teamName: displayTeamB?.name ?? "" },
+        ].map(({ feed, align, teamName }) =>
+          feed.length > 0 ? (
+            <div
+              key={align}
+              style={{
+                position: "fixed",
+                [align]: 16,
+                top: "50%",
+                transform: "translateY(-50%)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 5,
+                width: 190,
+                pointerEvents: "none",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.8,
+                  color: isDark ? "#475569" : "#94a3b8",
+                  textAlign: align,
+                  paddingLeft: align === "left" ? 8 : 0,
+                  paddingRight: align === "right" ? 8 : 0,
+                  marginBottom: 2,
+                }}
+              >
+                {teamName}
+              </div>
+              {feed.map((item) => {
+                const isNew = highlightedIds.has(item.id);
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      flexDirection: align === "right" ? "row-reverse" : "row",
+                      gap: 7,
+                      padding: "5px 8px",
+                      borderRadius: 8,
+                      background: isNew
+                        ? isDark ? "rgba(34,211,238,0.15)" : "rgba(8,145,178,0.12)"
+                        : isDark ? "rgba(15,15,30,0.75)" : "rgba(241,245,249,0.85)",
+                      border: `1px solid ${isNew
+                        ? isDark ? "rgba(34,211,238,0.35)" : "rgba(8,145,178,0.35)"
+                        : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
+                      boxShadow: isNew ? "0 0 12px rgba(34,211,238,0.25)" : "none",
+                      backdropFilter: "blur(8px)",
+                      transition: "background 0.6s ease, border 0.6s ease, box-shadow 0.6s ease",
+                      animation: isNew
+                        ? `feedItemIn${align === "left" ? "Left" : "Right"} 0.3s ease-out`
+                        : "none",
+                    }}
+                  >
+                    <span style={{ fontSize: 15, flexShrink: 0 }}>{item.icon}</span>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: align === "right" ? "flex-end" : "flex-start",
+                        minWidth: 0,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: isDark ? "#f1f5f9" : "#1e293b",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          maxWidth: 130,
+                        }}
+                      >
+                        {item.text}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: isDark ? "#64748b" : "#94a3b8",
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {item.clockStr}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null
+        )}
 
       <style
         dangerouslySetInnerHTML={{
@@ -399,6 +524,14 @@ export function ScoreOverlay({
             @keyframes pulse-dot {
               0%, 100% { opacity: 1; }
               50% { opacity: 0.3; }
+            }
+            @keyframes feedItemInLeft {
+              from { opacity: 0; transform: translateX(-10px); }
+              to   { opacity: 1; transform: translateX(0); }
+            }
+            @keyframes feedItemInRight {
+              from { opacity: 0; transform: translateX(10px); }
+              to   { opacity: 1; transform: translateX(0); }
             }
           `,
         }}

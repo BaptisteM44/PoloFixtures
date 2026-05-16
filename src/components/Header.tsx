@@ -53,7 +53,7 @@ export function Header() {
       <nav className="nav nav--desktop">
         <Link href="/tournaments">{t("nav.tournaments")}</Link>
         <Link href="/calendar">{t("nav.calendar")}</Link>
-        <Link href={clubId ? `/club/${clubId}` : "/clubs"}>{clubId ? t("nav.my_club") : t("nav.clubs")}</Link>
+        <Link href="/clubs">{t("nav.clubs")}</Link>
         <Link href="/labs">🧪 Labs</Link>
         <Link href="/about">{t("nav.about")}</Link>
         {isAdmin && <Link href="/admin">{t("nav.admin")}</Link>}

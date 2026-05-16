@@ -1902,6 +1902,7 @@
     "confirm_kick": "Dieses Mitglied ausschliessen?",
     "confirm_delete": "\"{name}\" endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "error": "Fehler",
+    "upload_error": "Fehler beim Hochladen des Bildes",
     "me": "ich",
     "promote_captain": "→ Cap",
     "kick": "Ausschliessen",

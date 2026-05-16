@@ -230,16 +230,13 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
       form.append("file", await fixImageOrientation(file));
       form.append("folder", "squads");
       const res = await fetch("/api/upload", { method: "POST", body: form });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => null);
-        throw new Error(txt || `Upload échoué (${res.status})`);
-      }
+      if (!res.ok) throw new Error(t("upload_error"));
       const data = await res.json().catch(() => null);
-      if (!data || !data.url) throw new Error("Réponse d'upload invalide");
-      setEditLogoPath(data.url);
+      if (!data || !data.path) throw new Error(t("upload_error"));
+      setEditLogoPath(data.path);
     } catch (err: any) {
       console.error("Logo upload failed:", err);
-      setLogoUploadError(err?.message ?? "Erreur lors de l'upload");
+      setLogoUploadError(err?.message ?? t("upload_error"));
     } finally {
       setLogoUploading(false);
     }
@@ -281,7 +278,10 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                   {logoUploading ? <span style={{ fontSize: 11 }}>…</span> : editLogoPath ? <img src={editLogoPath} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 22 }}>🏑</span>}
                 </div>
                 <input ref={logoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); }} />
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("logo_hint")}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("logo_hint")}</span>
+                  {logoUploadError && <span style={{ fontSize: 11, color: "var(--danger)" }}>{logoUploadError}</span>}
+                </div>
                 {editLogoPath && (
                   <button type="button" className="ghost" style={{ fontSize: 11, padding: "2px 8px" }} onClick={() => setEditLogoPath(null)}>{t("remove")}</button>
                 )}

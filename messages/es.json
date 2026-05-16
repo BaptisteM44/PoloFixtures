@@ -1901,6 +1901,7 @@
     "confirm_kick": "¿Excluir a este miembro?",
     "confirm_delete": "¿Eliminar definitivamente \"{name}\"? Esta acción es irreversible.",
     "error": "Error",
+    "upload_error": "Error al subir la imagen",
     "me": "yo",
     "promote_captain": "→ Cap",
     "kick": "Excluir",

@@ -332,8 +332,8 @@ export function TournamentRefereePanel({
       return next;
     });
     if (data.match?.status === "FINISHED") { setRunning(false); setMatchEnded(true); }
-    // Don't restart clock after TIMEOUT or PAUSE events
-    if (data.match?.status === "LIVE" && type !== "TIMEOUT" && type !== "PAUSE") setRunning(true);
+    // Don't restart clock after TIMEOUT, PAUSE or SWAP_SIDES events
+    if (data.match?.status === "LIVE" && type !== "TIMEOUT" && type !== "PAUSE" && type !== "SWAP_SIDES") setRunning(true);
   }, [selectedMatchId, clockSec]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
@@ -639,6 +639,7 @@ export function TournamentRefereePanel({
             <p className="ref-modal-sub">{timeoutModal.teamName}</p>
             <div className="ref-modal-list">
               <button className="ghost ref-modal-item"
+                disabled={(timeoutNormal[timeoutModal.teamId] ?? 0) >= 2}
                 onClick={() => onTimeoutConfirmed(timeoutModal.teamId, "normal")}>
                 🟢 {t("timeout_team")}
                 <span className="ref-badge">{timeoutNormal[timeoutModal.teamId] ?? 0}/2</span>
@@ -819,7 +820,6 @@ export function TournamentRefereePanel({
                     {/* Timeout */}
                     <button
                       className="ghost ref-timeoutbtn"
-                      disabled={toCount >= toMax}
                       onClick={() => setTimeoutModal({ teamId: tid, teamName: team.name, type: "normal" })}
                     >
                       ⏱ Timeout ({toCount}/{toMax})
