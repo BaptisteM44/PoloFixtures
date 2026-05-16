@@ -644,13 +644,16 @@ export async function generateBracketAction(id: string) {
           data.nextSlotWin = "A";
         }
 
-        if (lbR1InjectionR2Pos.includes(r2Pos)) {
-          // WB R2 loser goes to LB R1 slot A (paired with WB R1 loser at slot B)
-          const lbR1Idx = lbR1R2PosOrder.indexOf(r2Pos);
-          const lbR1Match = lbR1Matches[lbR1Idx];
-          if (lbR1Match) { data.nextMatchLoseId = lbR1Match.id; data.nextSlotLose = "A"; }
+        // Challonge mirror rule: WB R2 loser at r2Pos goes to LB R1 match whose
+        // WB R1 loser branch is the mirror: mirrorR2Pos = w2-1-r2Pos
+        const mirrorR2Pos = w2 - 1 - r2Pos;
+        const lbR1IdxForThisR2 = lbR1R2PosOrder.indexOf(mirrorR2Pos);
+        if (lbR1IdxForThisR2 >= 0 && lbR1Matches[lbR1IdxForThisR2]) {
+          // WB R2 loser goes to LB R1 slot A (WB R1 loser is slot B)
+          data.nextMatchLoseId = lbR1Matches[lbR1IdxForThisR2].id;
+          data.nextSlotLose = "A";
         } else {
-          // Consolidation or BYE branch: WB R2 loser goes to LB R2
+          // No mirror LB R1 match → BYE directly to LB R2
           const toR2Idx = wbR2ToLBR2.indexOf(r2Pos);
           const lbR2Match = lbR2Matches[toR2Idx];
           if (lbR2Match) { data.nextMatchLoseId = lbR2Match.id; data.nextSlotLose = "B"; }
