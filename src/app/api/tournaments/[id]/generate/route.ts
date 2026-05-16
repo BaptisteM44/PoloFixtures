@@ -140,27 +140,127 @@ export async function POST(request: Request, { params }: { params: { id: string 
       }
 
       if (createdMatches.length > 1 && tournament.sundayFormat === "DE") {
-        const upper1 = createdMatches.filter((m) => m.bracketSide === "W" && m.roundIndex === 1).sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
-        const upperFinal = createdMatches.find((m) => m.bracketSide === "W" && m.roundIndex === 2);
-        const lowerFinal = createdMatches.find((m) => m.bracketSide === "L" && m.roundIndex === 2);
+        // ── Full DE linking for any number of teams ──────────────────────
+        // Groups by side + roundIndex
+        const byWB = new Map<number, typeof createdMatches>();
+        const byLB = new Map<number, typeof createdMatches>();
+        for (const m of createdMatches) {
+          if (m.bracketSide === "W") {
+            if (!byWB.has(m.roundIndex)) byWB.set(m.roundIndex, []);
+            byWB.get(m.roundIndex)!.push(m);
+          } else if (m.bracketSide === "L") {
+            if (!byLB.has(m.roundIndex)) byLB.set(m.roundIndex, []);
+            byLB.get(m.roundIndex)!.push(m);
+          }
+        }
+        // Sort each round by positionInRound
+        for (const arr of [...byWB.values(), ...byLB.values()]) {
+          arr.sort((a, b) => a.positionInRound - b.positionInRound);
+        }
+
+        const wbRounds = [...byWB.keys()].sort((a, b) => a - b);
+        const lbRounds = [...byLB.keys()].sort((a, b) => a - b);
+        const maxWB = Math.max(...wbRounds);
+        const maxLB = lbRounds.length > 0 ? Math.max(...lbRounds) : 0;
         const grandFinal = createdMatches.find((m) => m.bracketSide === "G");
 
-        if (upperFinal && lowerFinal && grandFinal) {
-          for (let i = 0; i < upper1.length; i += 1) {
-            const sourcePos = i;
-            await tx.match.update({
-              where: { id: upper1[i].id },
-              data: {
-                nextMatchWinId: upperFinal.id,
-                nextSlotWin: sourcePos % 2 === 0 ? "A" : "B",
-                nextMatchLoseId: lowerFinal.id,
-                nextSlotLose: sourcePos % 2 === 0 ? "A" : "B"
-              }
-            });
-          }
+        // ── WB: wire winners forward, losers down to LB ─────────────────
+        // WB Rk loser → LB injection round R(2k-2) for k≥2, or LB R1 for k=1
+        // WB Rk winner → WB R(k+1)
+        for (const wbRound of wbRounds) {
+          const wbMatches = byWB.get(wbRound)!;
+          const nextWB = byWB.get(wbRound + 1);
 
-          await tx.match.update({ where: { id: upperFinal.id }, data: { nextMatchWinId: grandFinal.id, nextSlotWin: "A" } });
-          await tx.match.update({ where: { id: lowerFinal.id }, data: { nextMatchWinId: grandFinal.id, nextSlotWin: "B" } });
+          // Determine target LB injection round for losers of WB Rk
+          // WB R1 losers → LB R1 (consolidation)
+          // WB Rk (k≥2) losers → LB R(2k-2) (injection)
+          const lbInjectRound = wbRound === 1 ? 1 : 2 * wbRound - 2;
+          const lbInjectMatches = byLB.get(lbInjectRound);
+
+          for (let i = 0; i < wbMatches.length; i++) {
+            const updates: Record<string, unknown> = {};
+
+            // Winner → next WB round
+            if (nextWB) {
+              const nextPos = Math.floor(i / 2);
+              const target = nextWB[nextPos];
+              if (target) {
+                updates.nextMatchWinId = target.id;
+                updates.nextSlotWin = i % 2 === 0 ? "A" : "B";
+              }
+            } else if (grandFinal && wbRound === maxWB) {
+              // WB Final winner → GF slot A
+              updates.nextMatchWinId = grandFinal.id;
+              updates.nextSlotWin = "A";
+            }
+
+            // Loser → LB injection round
+            if (lbInjectMatches && lbInjectMatches.length > 0) {
+              // Map WB position to LB slot
+              // WB R1: losers pair off in LB R1, position i → match floor(i/2), slot i%2
+              // WB Rk (k≥2): loser at position i → LB inject match i (1:1 mapping)
+              let lbMatchIdx: number;
+              let lbSlot: "A" | "B";
+              if (wbRound === 1) {
+                lbMatchIdx = Math.floor(i / 2);
+                lbSlot = i % 2 === 0 ? "A" : "B";
+              } else {
+                lbMatchIdx = i;
+                lbSlot = "B"; // WB losers always fill slot B in injection rounds
+              }
+              const lbTarget = lbInjectMatches[lbMatchIdx];
+              if (lbTarget) {
+                updates.nextMatchLoseId = lbTarget.id;
+                updates.nextSlotLose = lbSlot;
+              }
+            }
+
+            if (Object.keys(updates).length > 0) {
+              await tx.match.update({ where: { id: wbMatches[i].id }, data: updates });
+            }
+          }
+        }
+
+        // ── LB: wire winners through consolidation → injection → … → GF ─
+        // LB rounds alternate: odd = consolidation (survivors pair off),
+        //                       even = injection (LB survivor vs WB loser)
+        // Winner of LB Rk → LB R(k+1), winner of last LB → GF slot B
+        for (const lbRound of lbRounds) {
+          const lbMatches = byLB.get(lbRound)!;
+          const nextLB = byLB.get(lbRound + 1);
+
+          for (let i = 0; i < lbMatches.length; i++) {
+            const updates: Record<string, unknown> = {};
+
+            if (nextLB && nextLB.length > 0) {
+              // Odd LB round (consolidation): 2 winners → 1 next match
+              // Even LB round (injection): winner → next consolidation match 1:1
+              let nextPos: number;
+              let nextSlot: "A" | "B";
+              if (lbRound % 2 === 1) {
+                // consolidation: pairs feed into injection round
+                nextPos = Math.floor(i / 2);
+                nextSlot = i % 2 === 0 ? "A" : "B";
+              } else {
+                // injection: 1:1 into next consolidation
+                nextPos = i;
+                nextSlot = i % 2 === 0 ? "A" : "B";
+              }
+              const target = nextLB[nextPos];
+              if (target) {
+                updates.nextMatchWinId = target.id;
+                updates.nextSlotWin = nextSlot;
+              }
+            } else if (grandFinal && lbRound === maxLB) {
+              // Last LB match winner → GF slot B
+              updates.nextMatchWinId = grandFinal.id;
+              updates.nextSlotWin = "B";
+            }
+
+            if (Object.keys(updates).length > 0) {
+              await tx.match.update({ where: { id: lbMatches[i].id }, data: updates });
+            }
+          }
         }
       }
     });
