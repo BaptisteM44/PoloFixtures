@@ -281,10 +281,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
         // ── WB R2: wire winners and losers ───────────────────────────────────────
         // Mirror rule: WB R2 loser at r2Pos → LB R1 match for mirrorR2Pos = w2-1-r2Pos
         // If no LB R1 exists for mirror → BYE directly to LB R2.
-        const byeWbR2R2Pos: number[] = [];
+        const rawByeWbR2R2Pos: number[] = [];
         for (let r2Pos = 0; r2Pos < w2; r2Pos++) {
-          if (lbR1R2PosOrder.indexOf(w2 - 1 - r2Pos) < 0) byeWbR2R2Pos.push(r2Pos);
+          if (lbR1R2PosOrder.indexOf(w2 - 1 - r2Pos) < 0) rawByeWbR2R2Pos.push(r2Pos);
         }
+        const byeWbR2R2Pos = [...rawByeWbR2R2Pos].reverse();
         const lbR2RoundIdx = lbR1Count > 0 ? 2 : 1;
         const lbR2Matches = byLB.get(lbR2RoundIdx) ?? [];
 

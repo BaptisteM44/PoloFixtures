@@ -625,11 +625,13 @@ export async function generateBracketAction(id: string) {
       // Mirror rule: WB R2 loser at r2Pos → LB R1 match for mirrorR2Pos = w2-1-r2Pos
       // If no LB R1 match exists for the mirror → BYE, goes to LB R2 directly.
       // BYE r2Pos list (those whose mirror has no LB R1): ordered for LB R2 indexing.
-      const byeWbR2R2Pos: number[] = [];
+      // BYE WB R2 losers that go directly to LB R2.
+      // Challonge pairs LB R1 match[i] with BYE[lbR1Count-1-i] (reversed order).
+      const rawByeWbR2R2Pos: number[] = [];
       for (let r2Pos = 0; r2Pos < w2; r2Pos++) {
-        const mirrorR2Pos = w2 - 1 - r2Pos;
-        if (lbR1R2PosOrder.indexOf(mirrorR2Pos) < 0) byeWbR2R2Pos.push(r2Pos);
+        if (lbR1R2PosOrder.indexOf(w2 - 1 - r2Pos) < 0) rawByeWbR2R2Pos.push(r2Pos);
       }
+      const byeWbR2R2Pos = [...rawByeWbR2R2Pos].reverse();
       const lbR2RoundIdx = lbR1Count > 0 ? 2 : 1;
       const lbR2Matches = lowerByRound.get(lbR2RoundIdx) ?? [];
 
