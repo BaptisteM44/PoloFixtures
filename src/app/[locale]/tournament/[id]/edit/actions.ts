@@ -621,10 +621,14 @@ export async function generateBracketAction(id: string) {
         await tx.match.update({ where: { id: m.id }, data });
       }
 
-      // ── WB R2: winners → WB R3, losers → LB R1 (injection) or LB R2 (cons/bye) ──
-      const wbR2ToLBR2: number[] = [];
+      // ── WB R2: winners → WB R3, losers → LB R1 (mirror) or LB R2 (BYE) ──────
+      // Mirror rule: WB R2 loser at r2Pos → LB R1 match for mirrorR2Pos = w2-1-r2Pos
+      // If no LB R1 match exists for the mirror → BYE, goes to LB R2 directly.
+      // BYE r2Pos list (those whose mirror has no LB R1): ordered for LB R2 indexing.
+      const byeWbR2R2Pos: number[] = [];
       for (let r2Pos = 0; r2Pos < w2; r2Pos++) {
-        if (!lbR1InjectionR2Pos.includes(r2Pos)) wbR2ToLBR2.push(r2Pos);
+        const mirrorR2Pos = w2 - 1 - r2Pos;
+        if (lbR1R2PosOrder.indexOf(mirrorR2Pos) < 0) byeWbR2R2Pos.push(r2Pos);
       }
       const lbR2RoundIdx = lbR1Count > 0 ? 2 : 1;
       const lbR2Matches = lowerByRound.get(lbR2RoundIdx) ?? [];
@@ -644,18 +648,14 @@ export async function generateBracketAction(id: string) {
           data.nextSlotWin = "A";
         }
 
-        // Challonge mirror rule: WB R2 loser at r2Pos goes to LB R1 match whose
-        // WB R1 loser branch is the mirror: mirrorR2Pos = w2-1-r2Pos
         const mirrorR2Pos = w2 - 1 - r2Pos;
         const lbR1IdxForThisR2 = lbR1R2PosOrder.indexOf(mirrorR2Pos);
         if (lbR1IdxForThisR2 >= 0 && lbR1Matches[lbR1IdxForThisR2]) {
-          // WB R2 loser goes to LB R1 slot A (WB R1 loser is slot B)
           data.nextMatchLoseId = lbR1Matches[lbR1IdxForThisR2].id;
           data.nextSlotLose = "A";
         } else {
-          // No mirror LB R1 match → BYE directly to LB R2
-          const toR2Idx = wbR2ToLBR2.indexOf(r2Pos);
-          const lbR2Match = lbR2Matches[toR2Idx];
+          const byeIdx = byeWbR2R2Pos.indexOf(r2Pos);
+          const lbR2Match = lbR2Matches[byeIdx];
           if (lbR2Match) { data.nextMatchLoseId = lbR2Match.id; data.nextSlotLose = "B"; }
         }
 

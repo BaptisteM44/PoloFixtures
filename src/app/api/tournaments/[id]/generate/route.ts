@@ -279,11 +279,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
         }
 
         // ── WB R2: wire winners and losers ───────────────────────────────────────
-        // LB R2 pairing (interleaved): pair[i] = (LBR1winner[i], WBR2loser-entering-LBR2[i])
-        //   WB R2 losers that enter LB R2 = consolidation branches + BYE branches, in r2Pos order
-        const wbR2ToLBR2: number[] = []; // ordered r2Pos of WB R2 losers that enter LB R2
+        // Mirror rule: WB R2 loser at r2Pos → LB R1 match for mirrorR2Pos = w2-1-r2Pos
+        // If no LB R1 exists for mirror → BYE directly to LB R2.
+        const byeWbR2R2Pos: number[] = [];
         for (let r2Pos = 0; r2Pos < w2; r2Pos++) {
-          if (!lbR1InjectionR2Pos.includes(r2Pos)) wbR2ToLBR2.push(r2Pos);
+          if (lbR1R2PosOrder.indexOf(w2 - 1 - r2Pos) < 0) byeWbR2R2Pos.push(r2Pos);
         }
         const lbR2RoundIdx = lbR1Count > 0 ? 2 : 1;
         const lbR2Matches = byLB.get(lbR2RoundIdx) ?? [];
@@ -304,22 +304,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
           }
 
           // Loser → LB
-          // Challonge mirror rule: WB R2 loser at r2Pos goes to LB R1 match whose
-          // WB R1 branch is the mirror: mirrorR2Pos = w2-1-r2Pos
           const mirrorR2Pos = w2 - 1 - r2Pos;
           const lbR1IdxForThisR2 = lbR1R2PosOrder.indexOf(mirrorR2Pos);
           if (lbR1IdxForThisR2 >= 0 && (byLB.get(1) ?? [])[lbR1IdxForThisR2]) {
-            const lbR1Match = (byLB.get(1) ?? [])[lbR1IdxForThisR2];
-            updates.nextMatchLoseId = lbR1Match.id;
+            updates.nextMatchLoseId = (byLB.get(1) ?? [])[lbR1IdxForThisR2].id;
             updates.nextSlotLose = "A";
           } else {
-            // No mirror LB R1 match → BYE directly to LB R2
-            const toR2Idx = wbR2ToLBR2.indexOf(r2Pos);
-            const lbR2Match = lbR2Matches[toR2Idx];
-            if (lbR2Match) {
-              updates.nextMatchLoseId = lbR2Match.id;
-              updates.nextSlotLose = "B";
-            }
+            const byeIdx = byeWbR2R2Pos.indexOf(r2Pos);
+            const lbR2Match = lbR2Matches[byeIdx];
+            if (lbR2Match) { updates.nextMatchLoseId = lbR2Match.id; updates.nextSlotLose = "B"; }
           }
 
           if (Object.keys(updates).length > 0) {
