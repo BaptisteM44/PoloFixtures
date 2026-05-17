@@ -219,12 +219,12 @@ export function generateMtpSwissNextRound(
 // ─── Cross-pool generation ────────────────────────────────────────────────────
 
 /**
- * Generate cross-pool matches from combined ranking:
- * 1v2, 3v4, 5v6, 7v8, 9v10, 11v12, 13v14, 15v16, 17v18, 19v20
- * combinedRanking: 20 teams sorted by combined pool standings (index 0 = rank 1)
+ * Generate cross-pool matches: Pool A rank i vs Pool B rank i.
+ * poolATeams / poolBTeams: teams sorted by their pool standings (index 0 = rank 1).
  */
 export function generateMtpCrossPool(
-  combinedRanking: Team[],
+  poolATeams: Team[],
+  poolBTeams: Team[],
   courtNames: string[],
   startAt: Date,
   gameDurationMin: number
@@ -232,10 +232,11 @@ export function generateMtpCrossPool(
   const slotMin = gameDurationMin + 5;
   const courtFree: Date[] = courtNames.map(() => new Date(startAt));
   const matches: MtpMatch[] = [];
+  const count = Math.min(poolATeams.length, poolBTeams.length);
 
-  for (let i = 0; i < combinedRanking.length - 1; i += 2) {
-    const teamA = combinedRanking[i];
-    const teamB = combinedRanking[i + 1];
+  for (let i = 0; i < count; i++) {
+    const teamA = poolATeams[i];
+    const teamB = poolBTeams[i];
     if (!teamA || !teamB) continue;
 
     let bestIdx = 0;
@@ -246,7 +247,7 @@ export function generateMtpCrossPool(
     matches.push({
       phase: "CROSS_POOL" as MatchPhase,
       roundIndex: 1,
-      positionInRound: i / 2,
+      positionInRound: i,
       courtName: courtNames[bestIdx],
       startAt: new Date(courtFree[bestIdx]),
       dayIndex: "SUN" as MatchDay,

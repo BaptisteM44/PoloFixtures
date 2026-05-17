@@ -2455,18 +2455,18 @@ export async function launchMtpCrossPoolAction(id: string): Promise<{ ok?: boole
   const { poolA, poolB } = splitMtpPools(tournament.teams);
   const poolAStandings = computeStandings(poolA, poolAMatches as any, (tournament as any).scoringSystem);
   const poolBStandings = computeStandings(poolB, poolBMatches as any, (tournament as any).scoringSystem);
-  const combined = combineMtpStandings(poolAStandings, poolBStandings);
 
-  if (combined.length < 20) return { error: "Il faut 20 équipes classées pour le cross-pool." };
+  if (poolAStandings.length === 0 || poolBStandings.length === 0) return { error: "Il faut des équipes classées dans chaque pool pour le cross-pool." };
 
   const teamMap = new Map(tournament.teams.map((t) => [t.id, t]));
-  const rankedTeams = combined.map((s) => teamMap.get(s.teamId)!).filter(Boolean);
-  if (rankedTeams.length < 20) return { error: "Données insuffisantes pour le cross-pool." };
+  const poolATeams = poolAStandings.map((s) => teamMap.get(s.teamId)!).filter(Boolean);
+  const poolBTeams = poolBStandings.map((s) => teamMap.get(s.teamId)!).filter(Boolean);
+  if (poolATeams.length === 0 || poolBTeams.length === 0) return { error: "Données insuffisantes pour le cross-pool." };
 
   const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
   const t = tournament as any;
   const sundayStart = t.mtpSundayStart ? new Date(t.mtpSundayStart) : new Date(tournament.dateEnd);
-  const matches = generateMtpCrossPool(rankedTeams, courtNames, sundayStart, tournament.gameDurationMin);
+  const matches = generateMtpCrossPool(poolATeams, poolBTeams, courtNames, sundayStart, tournament.gameDurationMin);
 
   await prisma.$transaction(async (tx) => {
     for (const m of matches) {
