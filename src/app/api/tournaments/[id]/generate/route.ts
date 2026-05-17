@@ -140,13 +140,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
       }
 
       if (createdMatches.length > 1 && tournament.sundayFormat === "DE") {
-        // ── DE linking — mirrors generateDoubleElim structure exactly ────────────
-        // Per-branch (r2Pos) classification:
-        //   2 WB R1 losers → LB R1 consolidation; WB R2 loser injects at LB R2
-        //   1 WB R1 loser  → WB R1 loser vs WB R2 loser in LB R1
-        //   0 WB R1 losers → WB R2 loser BYEs to LB R2 (no LB R1 match)
-        // WB R3+ losers inject into subsequent LB rounds.
-        // LB winners: consolidation round → floor(i/2), slot i%2; injection → same index, slot A.
+        // ── DE linking — slot-reservation approach ──────────────────────────────
+        // Uses a claimed-slot map to avoid collisions. WB losers claim their LB
+        // slots first, then LB winners fill remaining free slots.
 
         const { nextPowerOf2 } = await import("@/lib/bracket");
         const N = tournament.teams.length;
@@ -175,11 +171,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
         const maxLB = lbRounds.length > 0 ? Math.max(...lbRounds) : 0;
         const grandFinal = createdMatches.find((m) => m.bracketSide === "G");
 
-        // ── Classify r2Pos branches (mirrors generateDoubleElim logic) ──────────
-        const w1 = (byWB.get(1) ?? []).length;
+        // ── Classify r2Pos branches ──────────────────────────────────────────────
         const w2 = size / 4;
-
-        // WB R1 real match positions (by positionInRound, sorted)
         const wbR1Matches = byWB.get(1) ?? [];
         const wbR1RealPositions = wbR1Matches.map((m) => m.positionInRound);
 
@@ -190,86 +183,84 @@ export async function POST(request: Request, { params }: { params: { id: string 
           r2PosWithR1Loser.get(r2Pos)!.push(pos);
         }
 
-        const lbR1ConsolidationR2Pos: number[] = []; // 2 WB R1 losers consolidate; WB R2 loser → LB R2
-        const lbR1InjectionR2Pos: number[] = [];     // 1 WB R1 loser faces WB R2 loser in LB R1
-        const lbR1ByeR2Pos: number[] = [];           // 0 WB R1 losers; WB R2 loser BYEs to LB R2
+        const lbR1InjectionR2Pos: number[] = [];
+        const lbR1R2PosOrder: number[] = [];
+        for (let r2Pos = 0; r2Pos < w2; r2Pos++) {
+          const count = (r2PosWithR1Loser.get(r2Pos) ?? []).length;
+          if (count === 1) lbR1InjectionR2Pos.push(r2Pos);
+          if (count > 0) lbR1R2PosOrder.push(r2Pos);
+        }
+        const lbR1Count = lbR1R2PosOrder.length;
 
+        // ── Slot reservation tracking ────────────────────────────────────────────
+        const claimed = new Set<string>();
+        function claimSlot(matchId: string, slot: "A" | "B") {
+          claimed.add(`${matchId}:${slot}`);
+        }
+        function findFreeSlot(matchId: string): "A" | "B" | null {
+          if (!claimed.has(`${matchId}:A`)) return "A";
+          if (!claimed.has(`${matchId}:B`)) return "B";
+          return null;
+        }
+
+        // ── Build wbToLBRound mapping ────────────────────────────────────────────
+        const lbR1ConsolidationR2Pos: number[] = [];
+        const lbR1ByeR2Pos: number[] = [];
         for (let r2Pos = 0; r2Pos < w2; r2Pos++) {
           const count = (r2PosWithR1Loser.get(r2Pos) ?? []).length;
           if (count >= 2) lbR1ConsolidationR2Pos.push(r2Pos);
-          else if (count === 1) lbR1InjectionR2Pos.push(r2Pos);
-          else lbR1ByeR2Pos.push(r2Pos);
+          else if (count === 0) lbR1ByeR2Pos.push(r2Pos);
         }
-
-        // LB R1 match index: consolidation matches come first (sorted by r2Pos),
-        // then injection matches (sorted by r2Pos) — mirrors emitRound order.
-        // Actually bracket.ts emits lbR1ConsolidationR2Pos + lbR1InjectionR2Pos in r2Pos order combined,
-        // but we need to know which LB R1 match corresponds to which r2Pos.
-        // The order is: all r2Pos with >=1 WB R1 loser, iterated 0..w2-1 → those with count>0.
-        const lbR1R2PosOrder: number[] = []; // ordered list of r2Pos that generated a LB R1 match
-        for (let r2Pos = 0; r2Pos < w2; r2Pos++) {
-          const count = (r2PosWithR1Loser.get(r2Pos) ?? []).length;
-          if (count > 0) lbR1R2PosOrder.push(r2Pos);
-        }
-        // lbR1R2PosOrder[i] → LB R1 match at index i
-
-        // ── Build wbRound → lbRound mapping for WB R2+ losers ───────────────────
-        const lbR1Count = lbR1R2PosOrder.length;
         const lbR2Teams = lbR1Count + lbR1ConsolidationR2Pos.length + lbR1ByeR2Pos.length;
+        const lbR2RoundIdx = lbR1Count > 0 ? 2 : 1;
+        const lbR2Count = (byLB.get(lbR2RoundIdx) ?? []).length;
 
-        const wbToLBRound = new Map<number, number>(); // wbRound → LB round that gets those losers
-        let lbRI = 1;
-        if (lbR1Count > 0) lbRI = 2; // LB R1 exists, so LB R2 is next
-        // WB R2 losers (consolidation and BYE branches) → LB R2
-        wbToLBRound.set(2, lbRI);
-        let lbSurvivors = Math.floor(lbR2Teams / 2) + (lbR2Teams % 2);
-        lbRI++;
-
-        for (let k = 3; k <= upperRounds; k++) {
-          const wbCount = size / Math.pow(2, k);
-          // Injection round
-          wbToLBRound.set(k, lbRI);
-          const injCount = Math.min(lbSurvivors, wbCount);
-          lbSurvivors = injCount + Math.abs(lbSurvivors - wbCount);
-          lbRI++;
-
-          // Consolidation (if more WB rounds remain and lbSurvivors > 1)
-          if (k < upperRounds && lbSurvivors > 1) {
-            const consCount = Math.floor(lbSurvivors / 2);
-            lbSurvivors = consCount + (lbSurvivors % 2);
+        const wbToLBRound = new Map<number, number>();
+        wbToLBRound.set(2, lbR2RoundIdx);
+        {
+          let lbSurvivors = lbR2Count + (lbR2Teams % 2);
+          let lbRI = lbR2RoundIdx + 1;
+          for (let k = 3; k <= upperRounds; k++) {
+            const wbCount = size / Math.pow(2, k);
+            wbToLBRound.set(k, lbRI);
+            const injCount = Math.min(lbSurvivors, wbCount);
+            lbSurvivors = injCount + Math.abs(lbSurvivors - wbCount);
             lbRI++;
+            if (k < upperRounds && lbSurvivors > 1) {
+              lbSurvivors = Math.floor(lbSurvivors / 2) + (lbSurvivors % 2);
+              lbRI++;
+            }
           }
         }
 
         // ── WB R1: wire winners and losers ───────────────────────────────────────
         const wbR2Matches = byWB.get(2) ?? [];
+        const lbR1Matches = byLB.get(1) ?? [];
         for (let i = 0; i < wbR1Matches.length; i++) {
           const m = wbR1Matches[i];
           const pos = m.positionInRound;
           const r2Pos = Math.floor(pos / 2);
-          const nextWBMatch = wbR2Matches[r2Pos]; // WB R2 match this feeds into
           const updates: Record<string, unknown> = {};
 
-          // Winner → WB R2
+          const nextWBMatch = wbR2Matches[r2Pos];
           if (nextWBMatch) {
             updates.nextMatchWinId = nextWBMatch.id;
             updates.nextSlotWin = pos % 2 === 0 ? "A" : "B";
           }
 
-          // Loser → LB R1
-          const lbR1Matches = byLB.get(1) ?? [];
           const lbR1Idx = lbR1R2PosOrder.indexOf(r2Pos);
           if (lbR1Idx >= 0 && lbR1Matches[lbR1Idx]) {
             const r1LosersForR2Pos = r2PosWithR1Loser.get(r2Pos) ?? [];
             if (r1LosersForR2Pos.length >= 2) {
-              // Consolidation: 2 WB R1 losers pair off (slot A = first loser, slot B = second)
               const posInPair = r1LosersForR2Pos.indexOf(pos);
+              const slot: "A" | "B" = posInPair === 0 ? "A" : "B";
               updates.nextMatchLoseId = lbR1Matches[lbR1Idx].id;
-              updates.nextSlotLose = posInPair === 0 ? "A" : "B";
+              updates.nextSlotLose = slot;
+              claimSlot(lbR1Matches[lbR1Idx].id, slot);
             } else {
-              // Injection: this WB R1 loser faces the WB R2 loser (slot B)
               updates.nextMatchLoseId = lbR1Matches[lbR1Idx].id;
               updates.nextSlotLose = "B";
+              claimSlot(lbR1Matches[lbR1Idx].id, "B");
             }
           }
 
@@ -278,50 +269,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
           }
         }
 
-        // ── WB R2: wire winners and losers ───────────────────────────────────────
-        // Mirror rule: WB R2 loser at r2Pos → LB R1 match for mirrorR2Pos = w2-1-r2Pos
-        // If no LB R1 exists for mirror → BYE directly to LB R2.
-        const rawByeWbR2R2Pos: number[] = [];
-        for (let r2Pos = 0; r2Pos < w2; r2Pos++) {
-          if (lbR1R2PosOrder.indexOf(w2 - 1 - r2Pos) < 0) rawByeWbR2R2Pos.push(r2Pos);
-        }
-        const byeWbR2R2Pos = [...rawByeWbR2R2Pos].reverse();
-        const lbR2RoundIdx = lbR1Count > 0 ? 2 : 1;
-        const lbR2Matches = byLB.get(lbR2RoundIdx) ?? [];
-
-        for (let i = 0; i < wbR2Matches.length; i++) {
-          const m = wbR2Matches[i];
-          const r2Pos = i;
-          const updates: Record<string, unknown> = {};
-
-          // Winner → WB R3 (or GF if no WB R3)
-          const nextWB = byWB.get(3);
-          if (nextWB) {
-            const target = nextWB[Math.floor(i / 2)];
-            if (target) { updates.nextMatchWinId = target.id; updates.nextSlotWin = i % 2 === 0 ? "A" : "B"; }
-          } else if (grandFinal && maxWB === 2) {
-            updates.nextMatchWinId = grandFinal.id;
-            updates.nextSlotWin = "A";
-          }
-
-          // Loser → LB
-          const mirrorR2Pos = w2 - 1 - r2Pos;
-          const lbR1IdxForThisR2 = lbR1R2PosOrder.indexOf(mirrorR2Pos);
-          if (lbR1IdxForThisR2 >= 0 && (byLB.get(1) ?? [])[lbR1IdxForThisR2]) {
-            updates.nextMatchLoseId = (byLB.get(1) ?? [])[lbR1IdxForThisR2].id;
-            updates.nextSlotLose = "A";
-          } else {
-            const byeIdx = byeWbR2R2Pos.indexOf(r2Pos);
-            const lbR2Match = lbR2Matches[byeIdx];
-            if (lbR2Match) { updates.nextMatchLoseId = lbR2Match.id; updates.nextSlotLose = "B"; }
-          }
-
-          if (Object.keys(updates).length > 0) {
-            await tx.match.update({ where: { id: m.id }, data: updates });
-          }
-        }
-
-        // ── WB R3+: winners forward, losers to LB injection rounds ───────────────
+        // ── WB R3+ losers → LB injection rounds, slot B (claim first) ───────────
         for (let k = 3; k <= upperRounds; k++) {
           const wbMatches = byWB.get(k) ?? [];
           const nextWB = byWB.get(k + 1);
@@ -340,7 +288,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
             }
 
             const target = lbTargetMatches[i];
-            if (target) { updates.nextMatchLoseId = target.id; updates.nextSlotLose = "B"; }
+            if (target) {
+              updates.nextMatchLoseId = target.id;
+              updates.nextSlotLose = "B";
+              claimSlot(target.id, "B");
+            }
 
             if (Object.keys(updates).length > 0) {
               await tx.match.update({ where: { id: wbMatches[i].id }, data: updates });
@@ -348,30 +300,121 @@ export async function POST(request: Request, { params }: { params: { id: string 
           }
         }
 
-        // ── LB: wire winners forward ─────────────────────────────────────
+        // ── WB R2 losers → LB R1 (injection) or LB R2 (free slot) ───────────────
+        const lbR2Matches = byLB.get(lbR2RoundIdx) ?? [];
+        const wbR2Overflow: string[] = [];
+
+        for (let i = 0; i < wbR2Matches.length; i++) {
+          const m = wbR2Matches[i];
+          const r2Pos = i;
+          const updates: Record<string, unknown> = {};
+
+          // Winner → WB R3 or GF
+          const nextWB = byWB.get(3);
+          if (nextWB) {
+            const target = nextWB[Math.floor(i / 2)];
+            if (target) { updates.nextMatchWinId = target.id; updates.nextSlotWin = i % 2 === 0 ? "A" : "B"; }
+          } else if (grandFinal && maxWB === 2) {
+            updates.nextMatchWinId = grandFinal.id;
+            updates.nextSlotWin = "A";
+          }
+
+          // Loser → LB
+          const mirrorR2Pos = w2 - 1 - r2Pos;
+          const lbR1IdxForMirror = lbR1R2PosOrder.indexOf(mirrorR2Pos);
+
+          if (lbR1IdxForMirror >= 0 && lbR1InjectionR2Pos.includes(mirrorR2Pos)) {
+            const target = lbR1Matches[lbR1IdxForMirror];
+            if (target) {
+              updates.nextMatchLoseId = target.id;
+              updates.nextSlotLose = "A";
+              claimSlot(target.id, "A");
+            }
+          } else {
+            // Find free slot in LB R2 (prefer slot B first, then slot A)
+            let placed = false;
+            for (let j = 0; j < lbR2Matches.length; j++) {
+              const freeSlot = findFreeSlot(lbR2Matches[j].id);
+              if (freeSlot === "B") {
+                updates.nextMatchLoseId = lbR2Matches[j].id;
+                updates.nextSlotLose = "B";
+                claimSlot(lbR2Matches[j].id, "B");
+                placed = true;
+                break;
+              }
+            }
+            if (!placed) {
+              for (let j = 0; j < lbR2Matches.length; j++) {
+                const freeSlot = findFreeSlot(lbR2Matches[j].id);
+                if (freeSlot === "A") {
+                  updates.nextMatchLoseId = lbR2Matches[j].id;
+                  updates.nextSlotLose = "A";
+                  claimSlot(lbR2Matches[j].id, "A");
+                  placed = true;
+                  break;
+                }
+              }
+            }
+            if (!placed) {
+              wbR2Overflow.push(m.id);
+            }
+          }
+
+          if (Object.keys(updates).length > 0) {
+            await tx.match.update({ where: { id: m.id }, data: updates });
+          }
+        }
+
+        // Handle WB R2 overflow: BYE past LB R2 → find first free slot in later LB rounds
+        for (const overflowMatchId of wbR2Overflow) {
+          for (const lr of lbRounds) {
+            if (lr <= lbR2RoundIdx) continue;
+            const roundMatches = byLB.get(lr)!;
+            let placed = false;
+            for (const rm of roundMatches) {
+              const freeSlot = findFreeSlot(rm.id);
+              if (freeSlot) {
+                await tx.match.update({ where: { id: overflowMatchId }, data: { nextMatchLoseId: rm.id, nextSlotLose: freeSlot } });
+                claimSlot(rm.id, freeSlot);
+                placed = true;
+                break;
+              }
+            }
+            if (placed) break;
+          }
+        }
+
+        // ── LB: wire winners forward using slot reservation ──────────────────────
         for (const lbRound of lbRounds) {
           const lbMatches = byLB.get(lbRound)!;
-          const nextLB = byLB.get(lbRound + 1);
 
           for (let i = 0; i < lbMatches.length; i++) {
-            const updates: Record<string, unknown> = {};
-
-            if (nextLB && nextLB.length > 0) {
-              const isConsolidation = nextLB.length < lbMatches.length;
-              if (isConsolidation) {
-                const target = nextLB[Math.floor(i / 2)];
-                if (target) { updates.nextMatchWinId = target.id; updates.nextSlotWin = i % 2 === 0 ? "A" : "B"; }
-              } else {
-                const target = nextLB[i];
-                if (target) { updates.nextMatchWinId = target.id; updates.nextSlotWin = "A"; }
+            if (lbRound === maxLB) {
+              if (grandFinal) {
+                await tx.match.update({ where: { id: lbMatches[i].id }, data: { nextMatchWinId: grandFinal.id, nextSlotWin: "B" } });
               }
-            } else if (grandFinal && lbRound === maxLB) {
-              updates.nextMatchWinId = grandFinal.id;
-              updates.nextSlotWin = "B";
+              continue;
             }
 
-            if (Object.keys(updates).length > 0) {
-              await tx.match.update({ where: { id: lbMatches[i].id }, data: updates });
+            // Find next LB round with a free slot
+            let placed = false;
+            for (const nextRound of lbRounds) {
+              if (nextRound <= lbRound) continue;
+              const nextMatches = byLB.get(nextRound)!;
+              for (const nm of nextMatches) {
+                const freeSlot = findFreeSlot(nm.id);
+                if (freeSlot) {
+                  await tx.match.update({ where: { id: lbMatches[i].id }, data: { nextMatchWinId: nm.id, nextSlotWin: freeSlot } });
+                  claimSlot(nm.id, freeSlot);
+                  placed = true;
+                  break;
+                }
+              }
+              if (placed) break;
+            }
+
+            if (!placed && grandFinal) {
+              await tx.match.update({ where: { id: lbMatches[i].id }, data: { nextMatchWinId: grandFinal.id, nextSlotWin: "B" } });
             }
           }
         }
