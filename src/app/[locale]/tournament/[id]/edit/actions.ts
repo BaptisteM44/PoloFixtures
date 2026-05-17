@@ -2736,9 +2736,11 @@ export async function resetMtpPhaseAction(
   }
 
   await prisma.$transaction(async (tx) => {
+    await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: { in: toClear as any[] } } } });
     await tx.match.deleteMany({ where: { tournamentId: id, phase: { in: toClear as any[] } } });
     if (phase === "POOL_A" || phase === "POOL_B") {
       // Also wipe any legacy POOL/BRACKET matches left over from a standard launch
+      await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: { in: ["POOL", "BRACKET", "CROSS_POOL", "SWISS"] as any[] } } } });
       await tx.match.deleteMany({ where: { tournamentId: id, phase: { in: ["POOL", "BRACKET", "CROSS_POOL", "SWISS"] as any[] } } });
       // Remove all pool records (MTP + legacy standard pools)
       const allPools = await tx.pool.findMany({ where: { tournamentId: id } });
