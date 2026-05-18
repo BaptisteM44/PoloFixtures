@@ -238,11 +238,16 @@ export default async function TournamentPage({
       podium.first  = toTeam(isAWinner ? grandFinal.teamA : grandFinal.teamB);
       podium.second = toTeam(isAWinner ? grandFinal.teamB : grandFinal.teamA);
     }
-    // 3ème : gagnant de la petite finale — bracketSide "L", roundIndex le plus élevé
+    // 3ème : perdant du dernier match LB (le gagnant rejoint la GF comme 2ème)
+    // En DE, podium.second est déjà le perdant de la GF. Le 3ème est le perdant du dernier match LB.
     const lowerFinal = bracketMatches.filter((m) => m.bracketSide === "L")[0];
     if (lowerFinal) {
       const isAWinner = lowerFinal.winnerTeamId === lowerFinal.teamAId;
-      podium.third = toTeam(isAWinner ? lowerFinal.teamA : lowerFinal.teamB);
+      const lbLoser = toTeam(isAWinner ? lowerFinal.teamB : lowerFinal.teamA);
+      // Ne pas mettre en 3ème quelqu'un qui est déjà 1er ou 2ème (cas DE où le LB winner va en GF)
+      if (lbLoser && lbLoser.id !== podium.first?.id && lbLoser.id !== podium.second?.id) {
+        podium.third = lbLoser;
+      }
     }
   }
 
