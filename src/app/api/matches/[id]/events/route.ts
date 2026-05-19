@@ -138,17 +138,24 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
   }
 
-  // GF Reset: if this is the GF (bracketSide=G, roundIndex=1) and the LB winner (teamB) wins,
-  // activate the bracket reset match (bracketSide=G, roundIndex=2) with both teams
+  // GF Reset: if this is the Grand Final and the LB winner (teamB) wins,
+  // activate the bracket reset match with both teams.
+  // Supports both DE (bracketSide=G, roundIndex=1, reset=G/2) and
+  // MTP_DE (bracketSide=G, roundIndex=7, reset=BG/8)
   const isNowFinishedGF = status === "FINISHED" && match.status !== "FINISHED"
-    && match.bracketSide === "G" && match.roundIndex === 1
+    && match.bracketSide === "G"
     && (match as any).tournament?.gfReset;
   if (isNowFinishedGF && winnerTeamId && match.teamAId && match.teamBId) {
     // LB winner is teamB (slot B = LB side). If teamB wins, reset is needed.
     const lbWinnerId = match.teamBId;
     if (winnerTeamId === lbWinnerId) {
+      // Try both reset formats: DE (G/roundIndex+1) and MTP_DE (BG/roundIndex+1)
       const resetMatch = await prisma.match.findFirst({
-        where: { tournamentId: match.tournamentId, bracketSide: "G", roundIndex: 2 },
+        where: {
+          tournamentId: match.tournamentId,
+          bracketSide: { in: ["G", "BG"] },
+          roundIndex: match.roundIndex + 1,
+        },
       });
       if (resetMatch) {
         // WB champ = teamA, LB champ = teamB (same sides as GF)
