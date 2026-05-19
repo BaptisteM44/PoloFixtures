@@ -62,6 +62,11 @@ export function ScoreOverlay({
   gameDurationMin,
   court,
   theme,
+  showClock = true,
+  showScore = true,
+  showTeamNames = true,
+  showEventFeed = true,
+  showHeader = true,
 }: {
   tournamentId: string;
   tournamentName: string;
@@ -69,6 +74,11 @@ export function ScoreOverlay({
   gameDurationMin: number;
   court: string;
   theme: string;
+  showClock?: boolean;
+  showScore?: boolean;
+  showTeamNames?: boolean;
+  showEventFeed?: boolean;
+  showHeader?: boolean;
 }) {
   const [matches, setMatches] = useState<OverlayMatch[]>(initialMatches);
 
@@ -257,6 +267,7 @@ export function ScoreOverlay({
               }}
             >
               {/* Header bar */}
+              {showHeader && (
               <div
                 style={{
                   display: "flex",
@@ -274,6 +285,7 @@ export function ScoreOverlay({
                 <span>{courtName}</span>
                 <span>{tournamentName}</span>
               </div>
+              )}
 
               {/* Main scoreboard */}
               <div
@@ -294,12 +306,15 @@ export function ScoreOverlay({
                     color: isDark ? "#fff" : "#111",
                   }}
                 >
+                  {showTeamNames && (
                   <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.2 }}>
                     {displayTeamA?.name ?? "TBD"}
                   </div>
+                  )}
                 </div>
 
                 {/* Score */}
+                {showScore && (
                 <div
                   style={{
                     display: "flex",
@@ -342,6 +357,7 @@ export function ScoreOverlay({
                     {isLive ? displayScoreB : "-"}
                   </span>
                 </div>
+                )}
 
                 {/* Team B */}
                 <div
@@ -352,13 +368,16 @@ export function ScoreOverlay({
                     color: isDark ? "#fff" : "#111",
                   }}
                 >
+                  {showTeamNames && (
                   <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.2 }}>
                     {displayTeamB?.name ?? "TBD"}
                   </div>
+                  )}
                 </div>
               </div>
 
               {/* Timer bar */}
+              {showClock && (
               <div
                 style={{
                   display: "flex",
@@ -413,13 +432,14 @@ export function ScoreOverlay({
                   <span style={{ fontSize: 14, fontWeight: 700, color: "#eab308" }}>BUT EN OR</span>
                 )}
               </div>
+              )}
 
             </div>
           )}
         </div>
 
         {/* ── Panneaux latéraux d'événements ── */}
-        {isLive && [
+        {showEventFeed && isLive && [
           { feed: feedLeft, align: "left" as const, teamName: displayTeamA?.name ?? "" },
           { feed: feedRight, align: "right" as const, teamName: displayTeamB?.name ?? "" },
         ].map(({ feed, align, teamName }) =>

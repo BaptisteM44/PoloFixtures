@@ -312,7 +312,8 @@ model Tournament {
   orgaLinks           OrgaLink[]
   followers           TournamentFollow[]
   accommodationHosts  AccommodationHost[]
-  soloEntries    TournamentSoloEntry[]
+  soloEntries     TournamentSoloEntry[]
+  overlayChannels OverlayChannel[]
 
   @@index([continentCode])
   @@index([status])
@@ -1125,4 +1126,25 @@ model CommunityReplyLike {
   player Player?        @relation(fields: [playerId], references: [id], onDelete: SetNull)
 
   @@unique([replyId, playerId])
+}
+
+model OverlayChannel {
+  id           String  @id @default(cuid())
+  slug         String  @unique
+  label        String
+  tournamentId String?
+  court        String  @default("1")
+  theme        String  @default("dark")
+
+  // Toggles d'affichage
+  showClock     Boolean @default(true)
+  showScore     Boolean @default(true)
+  showTeamNames Boolean @default(true)
+  showEventFeed Boolean @default(true)
+  showHeader    Boolean @default(true)
+
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
