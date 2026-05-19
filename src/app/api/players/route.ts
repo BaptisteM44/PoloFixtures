@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     ...statusFilter,
     ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
     ...(excludedPlayerIds.length > 0 ? { id: { notIn: excludedPlayerIds } } : {}),
-    ...(hasAccount ? { account: { isNot: null } } : {}),
+    ...(hasAccount ? { account: { email: { not: "" } } } : {}),
     ...(country ? { country: { equals: country, mode: "insensitive" as const } } : {}),
     ...(continentPlayerIds !== undefined ? { id: { in: continentPlayerIds } } : {}),
   };
