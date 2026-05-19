@@ -2715,55 +2715,74 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
       await tx.match.update({ where: { id: wbFinal.dbId }, data: { nextMatchWinId: gfMatch.dbId, nextSlotWin: "A" } });
     }
 
-    // LB Final (roundIndex 5) → Grand Final (slot B = LB winner)
-    const lbFinal = lbMatches.find((m) => m.roundIndex === 5);
+    // LB Final (roundIndex 6) → Grand Final (slot B = LB champion)
+    const lbFinal = lbMatches.find((m) => m.roundIndex === 6);
     if (lbFinal && gfMatch) {
       await tx.match.update({ where: { id: lbFinal.dbId }, data: { nextMatchWinId: gfMatch.dbId, nextSlotWin: "B" } });
     }
 
-    // LB round wiring (L1→L2→L3→L4→L5)
-    const lbRounds = [1, 2, 3, 4, 5];
-    for (let ri = 0; ri < lbRounds.length - 1; ri++) {
-      const cur = lbMatches.filter((m) => m.roundIndex === lbRounds[ri]).sort((a, b) => a.positionInRound - b.positionInRound);
-      const next = lbMatches.filter((m) => m.roundIndex === lbRounds[ri + 1]).sort((a, b) => a.positionInRound - b.positionInRound);
-      for (let i = 0; i < cur.length; i++) {
-        const nextPos = Math.floor(i / 2);
-        const nextM = next[nextPos] ?? next[0];
-        if (nextM) {
-          await tx.match.update({ where: { id: cur[i].dbId }, data: { nextMatchWinId: nextM.dbId, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
-        }
-      }
-    }
-
-    // WB R1 losers → LB R1
-    const wbR1 = wbMatches.filter((m) => m.roundIndex === 1).sort((a, b) => a.positionInRound - b.positionInRound);
+    // LB round wiring
+    // LR1 (4 matches) → LR2 (4 matches): pairs fight each other (floor(i/2))
+    // LR2 (4 matches) → LR3 (2 matches): pairs fight each other
+    // LR3 (2 matches) → LR4 (2 matches): each to slot B (WBR3 losers take slot A)
+    // LR4 (2 matches) → LR5 (1 match): both feed LR5 (LB semis)
+    // LR5 (1 match)   → LR6 (1 match): slot A (WBF loser takes slot B)
     const lbR1 = lbMatches.filter((m) => m.roundIndex === 1).sort((a, b) => a.positionInRound - b.positionInRound);
-    // LB1[0]: loser(WBR1[4]) vs loser(WBR1[5]) → first 4 seeds' losers cross
-    // Standard DE: WB1 losers 4-7 drop to LB1 (positions 0-3), 0-3 drop to LB2 facing LB1 winners
-    for (let i = 0; i < lbR1.length; i++) {
-      const wbLoserA = wbR1[4 + i * 2 - 4] ?? wbR1[i]; // simplified
-      const wbLoserB = wbR1[4 + i * 2 + 1 - 4] ?? wbR1[i + 1];
-      if (wbR1[i + 4]) await tx.match.update({ where: { id: wbR1[i + 4].dbId }, data: { nextMatchLoseId: lbR1[i]?.dbId ?? null, nextSlotLose: "A" } });
-      if (wbR1[i]) await tx.match.update({ where: { id: wbR1[i].dbId }, data: { nextMatchLoseId: lbR1[i]?.dbId ?? null, nextSlotLose: "B" } });
-    }
-
-    // WB R2 losers → LB R2
-    const wbR2 = wbMatches.filter((m) => m.roundIndex === 2).sort((a, b) => a.positionInRound - b.positionInRound);
     const lbR2 = lbMatches.filter((m) => m.roundIndex === 2).sort((a, b) => a.positionInRound - b.positionInRound);
-    for (let i = 0; i < wbR2.length; i++) {
-      if (lbR2[i]) await tx.match.update({ where: { id: wbR2[i].dbId }, data: { nextMatchLoseId: lbR2[i].dbId, nextSlotLose: "A" } });
+    const lbR3 = lbMatches.filter((m) => m.roundIndex === 3).sort((a, b) => a.positionInRound - b.positionInRound);
+    const lbR4 = lbMatches.filter((m) => m.roundIndex === 4).sort((a, b) => a.positionInRound - b.positionInRound);
+    const lbR5 = lbMatches.filter((m) => m.roundIndex === 5).sort((a, b) => a.positionInRound - b.positionInRound);
+    const lbR6 = lbMatches.filter((m) => m.roundIndex === 6).sort((a, b) => a.positionInRound - b.positionInRound);
+
+    // LR1 → LR2 (pairs 0+1→LR2p0, 2+3→LR2p1)
+    for (let i = 0; i < lbR1.length; i++) {
+      const nextM = lbR2[Math.floor(i / 2)];
+      if (nextM) await tx.match.update({ where: { id: lbR1[i].dbId }, data: { nextMatchWinId: nextM.dbId, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
+    }
+    // LR2 → LR3 (pairs 0+1→LR3p0, 2+3→LR3p1)
+    for (let i = 0; i < lbR2.length; i++) {
+      const nextM = lbR3[Math.floor(i / 2)];
+      if (nextM) await tx.match.update({ where: { id: lbR2[i].dbId }, data: { nextMatchWinId: nextM.dbId, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
+    }
+    // LR3 → LR4 slot B (WBR3 losers take slot A)
+    for (let i = 0; i < lbR3.length; i++) {
+      if (lbR4[i]) await tx.match.update({ where: { id: lbR3[i].dbId }, data: { nextMatchWinId: lbR4[i].dbId, nextSlotWin: "B" } });
+    }
+    // LR4 → LR5 (both feed: p0→slotA, p1→slotB)
+    for (let i = 0; i < lbR4.length; i++) {
+      if (lbR5[0]) await tx.match.update({ where: { id: lbR4[i].dbId }, data: { nextMatchWinId: lbR5[0].dbId, nextSlotWin: i === 0 ? "A" : "B" } });
+    }
+    // LR5 → LR6 slot A (WBF loser takes slot B)
+    if (lbR5[0] && lbR6[0]) {
+      await tx.match.update({ where: { id: lbR5[0].dbId }, data: { nextMatchWinId: lbR6[0].dbId, nextSlotWin: "A" } });
     }
 
-    // WB R3 losers → LB R4
+    // WB R1 losers → LB R1 (losers 0-3 → slot B, losers 4-7 → slot A)
+    const wbR1 = wbMatches.filter((m) => m.roundIndex === 1).sort((a, b) => a.positionInRound - b.positionInRound);
+    for (let i = 0; i < lbR1.length; i++) {
+      if (wbR1[i + 4]) await tx.match.update({ where: { id: wbR1[i + 4].dbId }, data: { nextMatchLoseId: lbR1[i].dbId, nextSlotLose: "A" } });
+      if (wbR1[i]) await tx.match.update({ where: { id: wbR1[i].dbId }, data: { nextMatchLoseId: lbR1[i].dbId, nextSlotLose: "B" } });
+    }
+
+    // WB R2 losers → LB R2 (positions 0-1 → LBR2p2/p3 slot B, positions 2-3 → LBR2p2/p3 slot A)
+    const wbR2 = wbMatches.filter((m) => m.roundIndex === 2).sort((a, b) => a.positionInRound - b.positionInRound);
+    const lbR2Injection = lbR2.slice(lbR2.length / 2); // second half of LBR2 receives WBR2 losers
+    for (let i = 0; i < wbR2.length; i++) {
+      const half = Math.floor(wbR2.length / 2);
+      const targetIdx = i % half;
+      const slot = i < half ? "B" : "A";
+      if (lbR2Injection[targetIdx]) await tx.match.update({ where: { id: wbR2[i].dbId }, data: { nextMatchLoseId: lbR2Injection[targetIdx].dbId, nextSlotLose: slot } });
+    }
+
+    // WB R3 losers → LB R4 slot A
     const wbR3 = wbMatches.filter((m) => m.roundIndex === 3).sort((a, b) => a.positionInRound - b.positionInRound);
-    const lbR4 = lbMatches.filter((m) => m.roundIndex === 4).sort((a, b) => a.positionInRound - b.positionInRound);
     for (let i = 0; i < wbR3.length; i++) {
       if (lbR4[i]) await tx.match.update({ where: { id: wbR3[i].dbId }, data: { nextMatchLoseId: lbR4[i].dbId, nextSlotLose: "A" } });
     }
 
-    // WB Final loser → LB R5
-    if (wbFinal && lbFinal) {
-      await tx.match.update({ where: { id: wbFinal.dbId }, data: { nextMatchLoseId: lbFinal.dbId, nextSlotLose: "A" } });
+    // WB Final loser → LB R6 slot B (LB Final)
+    if (wbFinal && lbR6[0]) {
+      await tx.match.update({ where: { id: wbFinal.dbId }, data: { nextMatchLoseId: lbR6[0].dbId, nextSlotLose: "B" } });
     }
   }, { timeout: 20000 });
 

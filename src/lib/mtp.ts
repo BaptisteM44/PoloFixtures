@@ -452,8 +452,8 @@ export function generateMtpDE(
   }
   matches.push(...lr4Matches);
 
-  // LR5: 1 match
-  const lr5Start = addMinutes(new Date(Math.max(...courtFreeLR4.map((d) => d.getTime()), addMinutes(r4Start, slotMin).getTime())), roundBreak - slotMin);
+  // LR5: 1 match (LB semifinal: LR4p0 winner vs LR4p1 winner)
+  const lr5Start = addMinutes(new Date(Math.max(...courtFreeLR4.map((d) => d.getTime()))), roundBreak - slotMin);
   matches.push({
     phase: "MTP_DE" as MatchPhase, roundIndex: 5, positionInRound: 0,
     courtName: courtNames[0], startAt: lr5Start,
@@ -461,10 +461,19 @@ export function generateMtpDE(
     teamAId: null, teamBId: null, bracketSide: "L",
   });
 
-  // Grand Final
-  const gfStart = addMinutes(new Date(Math.max(addMinutes(lr5Start, slotMin).getTime(), addMinutes(r4Start, slotMin).getTime())), roundBreak);
+  // LR6: 1 match (LB Final: LR5 winner vs WB Final loser)
+  const lr6Start = addMinutes(new Date(Math.max(addMinutes(lr5Start, slotMin).getTime(), addMinutes(r4Start, slotMin).getTime())), roundBreak - slotMin);
   matches.push({
-    phase: "MTP_DE" as MatchPhase, roundIndex: 5, positionInRound: 0,
+    phase: "MTP_DE" as MatchPhase, roundIndex: 6, positionInRound: 0,
+    courtName: courtNames[0], startAt: lr6Start,
+    dayIndex: "SUN" as MatchDay, status: "SCHEDULED" as MatchStatus,
+    teamAId: null, teamBId: null, bracketSide: "L",
+  });
+
+  // Grand Final
+  const gfStart = addMinutes(lr6Start, slotMin + roundBreak - slotMin);
+  matches.push({
+    phase: "MTP_DE" as MatchPhase, roundIndex: 7, positionInRound: 0,
     courtName: courtNames[0], startAt: gfStart,
     dayIndex: "SUN" as MatchDay, status: "SCHEDULED" as MatchStatus,
     teamAId: null, teamBId: null, bracketSide: "G",
@@ -472,7 +481,7 @@ export function generateMtpDE(
 
   if (gfReset) {
     matches.push({
-      phase: "MTP_DE" as MatchPhase, roundIndex: 6, positionInRound: 0,
+      phase: "MTP_DE" as MatchPhase, roundIndex: 8, positionInRound: 0,
       courtName: courtNames[0], startAt: addMinutes(gfStart, slotMin),
       dayIndex: "SUN" as MatchDay, status: "SCHEDULED" as MatchStatus,
       teamAId: null, teamBId: null, bracketSide: "BG",
