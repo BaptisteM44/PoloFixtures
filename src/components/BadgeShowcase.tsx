@@ -94,14 +94,33 @@ export function BadgeShowcase({
   pinnedBadges,
   catalog,
   onTogglePin,
+  playerId,
+  onRefresh,
 }: {
   earnedBadges: string[];
   pinnedBadges: string[];
   catalog: Record<string, BadgeInfo>;
   onTogglePin?: (badgeId: string) => void;
+  playerId?: string;
+  onRefresh?: () => Promise<void>;
 }) {
   const t = useTranslations("badges");
   const [expanded, setExpanded] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
+  const [recalcResult, setRecalcResult] = useState<number | null>(null);
+
+  const handleRecalculate = async () => {
+    if (!playerId || recalculating) return;
+    setRecalculating(true);
+    setRecalcResult(null);
+    const res = await fetch(`/api/players/${playerId}/badges`, { method: "POST" });
+    if (res.ok) {
+      const data = await res.json();
+      setRecalcResult(data.newCount ?? 0);
+      await onRefresh?.();
+    }
+    setRecalculating(false);
+  };
 
   const earnedSet = new Set(earnedBadges);
   const total = Object.keys(catalog).length;
@@ -133,14 +152,27 @@ export function BadgeShowcase({
             </span>
           )}
         </div>
-        <button
-          type="button"
-          className="ghost"
-          style={{ fontSize: 13, padding: "4px 12px" }}
-          onClick={() => setExpanded((v) => !v)}
-        >
-          {expanded ? t("btn_collapse") : t("btn_see_all")}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {playerId && onRefresh && (
+            <button
+              type="button"
+              className="ghost"
+              style={{ fontSize: 13, padding: "4px 12px" }}
+              onClick={handleRecalculate}
+              disabled={recalculating}
+            >
+              {recalculating ? "…" : recalcResult !== null ? t("recalculate_done", { count: recalcResult }) : t("btn_recalculate")}
+            </button>
+          )}
+          <button
+            type="button"
+            className="ghost"
+            style={{ fontSize: 13, padding: "4px 12px" }}
+            onClick={() => setExpanded((v) => !v)}
+          >
+            {expanded ? t("btn_collapse") : t("btn_see_all")}
+          </button>
+        </div>
       </div>
 
       {/* ── No badges yet ── */}

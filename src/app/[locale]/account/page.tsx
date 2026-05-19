@@ -657,6 +657,8 @@ export default function AccountPage() {
                 earnedBadges={player.badges}
                 pinnedBadges={player.pinnedBadges}
                 catalog={player.badgeCatalog}
+                playerId={player.id}
+                onRefresh={fetchPlayer}
                 onTogglePin={async (badgeId) => {
                   const isPinned = player.pinnedBadges.includes(badgeId);
                   const next = isPinned

@@ -1759,6 +1759,8 @@
     "category_social": "🎉 Sozial",
     "category_secret": "🔮 Geheim",
     "pinned_count": "{count}/5 auf der Karte angepinnt",
+    "btn_recalculate": "🔄 Neu berechnen",
+    "recalculate_done": "+{count} neu",
     "btn_see_all": "Alle Abzeichen anzeigen ▼",
     "btn_collapse": "Einklappen ▲",
     "empty": "Noch keine Abzeichen. Spiel, organisiere, erkunde!",

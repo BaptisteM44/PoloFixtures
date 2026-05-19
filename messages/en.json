@@ -1754,6 +1754,8 @@
     "category_social": "🎉 Social",
     "category_secret": "🔮 Secret",
     "pinned_count": "{count}/5 pinned on card",
+    "btn_recalculate": "🔄 Recalculate",
+    "recalculate_done": "+{count} new",
     "btn_see_all": "See all badges ▼",
     "btn_collapse": "Collapse ▲",
     "empty": "No badges yet. Play, organize, explore!",

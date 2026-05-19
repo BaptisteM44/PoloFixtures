@@ -1758,6 +1758,8 @@
     "category_social": "🎉 Social",
     "category_secret": "🔮 Secreto",
     "pinned_count": "{count}/5 fijados en la tarjeta",
+    "btn_recalculate": "🔄 Recalcular",
+    "recalculate_done": "+{count} nuevo(s)",
     "btn_see_all": "Ver todas las insignias ▼",
     "btn_collapse": "Contraer ▲",
     "empty": "Aún no hay insignias. ¡Juega, organiza, explora!",
