@@ -190,21 +190,26 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
   });
 
-  // Notifier les joueurs avec compte que leur équipe est inscrite
-  await notifyTeamPlayers(team.id, "TEAM_REGISTERED", {
+  // Répondre immédiatement — notifications et badges en arrière-plan
+  const response = Response.json({ ...team, waitlisted: !selectedTeam, waitlistPosition: waitlistPos }, { status: 201 });
+
+  // Notifier les joueurs (fire-and-forget)
+  notifyTeamPlayers(team.id, "TEAM_REGISTERED", {
     teamName,
     tournamentName: tournament.name,
     tournamentId: params.id,
     tournamentSlug: tournament.slug ?? "",
-  });
+  }).catch(console.error);
 
-  // Recalculer les badges pour les joueurs existants (team_player, patient_zero, etc.)
-  for (const pid of existingAccountPlayerIds) {
-    const newBadges = await computeCareerBadges(pid);
-    await prisma.player.update({ where: { id: pid }, data: { badges: newBadges } });
-  }
+  // Recalculer les badges en parallèle (fire-and-forget)
+  Promise.all(
+    existingAccountPlayerIds.map(async (pid) => {
+      const newBadges = await computeCareerBadges(pid);
+      await prisma.player.update({ where: { id: pid }, data: { badges: newBadges } });
+    })
+  ).catch(console.error);
 
-  return Response.json({ ...team, waitlisted: !selectedTeam, waitlistPosition: waitlistPos }, { status: 201 });
+  return response;
 }
 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
