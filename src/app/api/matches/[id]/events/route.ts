@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const match = await prisma.match.findUnique({ where: { id: params.id } });
+  const match = await prisma.match.findUnique({ where: { id: params.id }, include: { tournament: { select: { gfReset: true } } } });
   if (!match) return new Response("Not found", { status: 404 });
 
   // Auth: allow REF/ADMIN/ORGA roles OR tournament creator/co-organizer
@@ -135,6 +135,30 @@ export async function POST(request: Request, { params }: { params: { id: string 
         include: { teamA: true, teamB: true }
       });
       advancedMatches.push(updatedLose);
+    }
+  }
+
+  // GF Reset: if this is the GF (bracketSide=G, roundIndex=1) and the LB winner (teamB) wins,
+  // activate the bracket reset match (bracketSide=G, roundIndex=2) with both teams
+  const isNowFinishedGF = status === "FINISHED" && match.status !== "FINISHED"
+    && match.bracketSide === "G" && match.roundIndex === 1
+    && (match as any).tournament?.gfReset;
+  if (isNowFinishedGF && winnerTeamId && match.teamAId && match.teamBId) {
+    // LB winner is teamB (slot B = LB side). If teamB wins, reset is needed.
+    const lbWinnerId = match.teamBId;
+    if (winnerTeamId === lbWinnerId) {
+      const resetMatch = await prisma.match.findFirst({
+        where: { tournamentId: match.tournamentId, bracketSide: "G", roundIndex: 2 },
+      });
+      if (resetMatch) {
+        // WB champ = teamA, LB champ = teamB (same sides as GF)
+        const updatedReset = await prisma.match.update({
+          where: { id: resetMatch.id },
+          data: { teamAId: match.teamAId, teamBId: match.teamBId, status: "SCHEDULED" },
+          include: { teamA: true, teamB: true },
+        });
+        advancedMatches.push(updatedReset);
+      }
     }
   }
 
