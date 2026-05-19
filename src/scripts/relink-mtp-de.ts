@@ -47,18 +47,28 @@ async function relinkMtpDE(tournamentId: string) {
   const wbFinal = wb(4)[0];
   if (wbFinal && gfMatch) u(wbFinal.id, { nextMatchWinId: gfMatch.id, nextSlotWin: 'A' });
 
-  // LB R1→R2→R3→R4→R5 winners
-  for (let ri = 1; ri <= 4; ri++) {
+  // LB R1 → LB R2: 1:1 mapping (LBR1[i] → LBR2[i] slot A)
+  const lbR1x = lb(1);
+  const lbR2x = lb(2);
+  for (let i = 0; i < lbR1x.length; i++) {
+    if (lbR2x[i]) u(lbR1x[i].id, { nextMatchWinId: lbR2x[i].id, nextSlotWin: 'A' });
+  }
+
+  // LB R2→R3→R4→R5→R6 winners (standard pairs for consolidation rounds)
+  for (let ri = 2; ri <= 5; ri++) {
     const cur = lb(ri);
     const next = lb(ri + 1);
     for (let i = 0; i < cur.length; i++) {
-      const nextM = next[Math.floor(i / 2)] ?? next[0];
-      if (nextM) u(cur[i].id, { nextMatchWinId: nextM.id, nextSlotWin: i % 2 === 0 ? 'A' : 'B' });
+      // Injection rounds (R4, R6) have 1:1 mapping, consolidation rounds pair up
+      const nextIdx = next.length < cur.length ? Math.floor(i / 2) : i;
+      const nextM = next[nextIdx] ?? next[0];
+      const slot = next.length < cur.length ? (i % 2 === 0 ? 'A' : 'B') : 'A';
+      if (nextM) u(cur[i].id, { nextMatchWinId: nextM.id, nextSlotWin: slot });
     }
   }
 
-  // LB Final (R5) → GF slot B
-  const lbFinal = lb(5)[0];
+  // LB Final (R6) → GF slot B
+  const lbFinal = lb(6)[0];
   if (lbFinal && gfMatch) u(lbFinal.id, { nextMatchWinId: gfMatch.id, nextSlotWin: 'B' });
 
   // WB R1 losers → LB R1 (losers 0-3 → LB R1 slot B, losers 4-7 → LB R1 slot A)
@@ -69,11 +79,12 @@ async function relinkMtpDE(tournamentId: string) {
     if (wbR1[i]) u(wbR1[i].id, { nextMatchLoseId: lbR1[i].id, nextSlotLose: 'B' });
   }
 
-  // WB R2 losers → LB R2 slot A
+  // WB R2 losers → LB R2 slot B (mirror mapping to avoid rematches)
   const wbR2 = wb(2);
   const lbR2 = lb(2);
   for (let i = 0; i < wbR2.length; i++) {
-    if (lbR2[i]) u(wbR2[i].id, { nextMatchLoseId: lbR2[i].id, nextSlotLose: 'A' });
+    const mirrorIdx = wbR2.length - 1 - i;
+    if (lbR2[mirrorIdx]) u(wbR2[i].id, { nextMatchLoseId: lbR2[mirrorIdx].id, nextSlotLose: 'B' });
   }
 
   // WB R3 losers → LB R4 slot A
@@ -83,8 +94,8 @@ async function relinkMtpDE(tournamentId: string) {
     if (lbR4[i]) u(wbR3[i].id, { nextMatchLoseId: lbR4[i].id, nextSlotLose: 'A' });
   }
 
-  // WB Final loser → LB Final (R5) slot A
-  if (wbFinal && lbFinal) u(wbFinal.id, { nextMatchLoseId: lbFinal.id, nextSlotLose: 'A' });
+  // WB Final loser → LB Final (R6) slot B
+  if (wbFinal && lbFinal) u(wbFinal.id, { nextMatchLoseId: lbFinal.id, nextSlotLose: 'B' });
 
   console.log(`Applying ${updates.length} updates...`);
   await prisma.$transaction(updates.map(({ id, data }) => prisma.match.update({ where: { id }, data })));

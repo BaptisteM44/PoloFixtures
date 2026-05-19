@@ -2735,9 +2735,9 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
       await tx.match.update({ where: { id: lbFinal.dbId }, data: { nextMatchWinId: gfMatch.dbId, nextSlotWin: "B" } });
     }
 
-    // LB round wiring
-    // LR1 (4 matches) → LR2 (4 matches): pairs fight each other (floor(i/2))
-    // LR2 (4 matches) → LR3 (2 matches): pairs fight each other
+    // LB round wiring (N=16)
+    // LR1 (4 matches) → LR2 (4 matches): 1:1 mapping, LBR1[i] → LBR2[i] slot A
+    // LR2 (4 matches) → LR3 (2 matches): consolidation pairs (floor(i/2))
     // LR3 (2 matches) → LR4 (2 matches): each to slot B (WBR3 losers take slot A)
     // LR4 (2 matches) → LR5 (1 match): both feed LR5 (LB semis)
     // LR5 (1 match)   → LR6 (1 match): slot A (WBF loser takes slot B)
@@ -2748,10 +2748,11 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
     const lbR5 = lbMatches.filter((m) => m.roundIndex === 5).sort((a, b) => a.positionInRound - b.positionInRound);
     const lbR6 = lbMatches.filter((m) => m.roundIndex === 6).sort((a, b) => a.positionInRound - b.positionInRound);
 
-    // LR1 → LR2 (pairs 0+1→LR2p0, 2+3→LR2p1)
+    // LR1 → LR2: 1:1 mapping (LBR1[i] winner → LBR2[i] slot A)
+    // Each LBR2 match pairs one LBR1 winner (slot A) with one WBR2 loser (slot B)
     for (let i = 0; i < lbR1.length; i++) {
-      const nextM = lbR2[Math.floor(i / 2)];
-      if (nextM) await tx.match.update({ where: { id: lbR1[i].dbId }, data: { nextMatchWinId: nextM.dbId, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
+      const nextM = lbR2[i];
+      if (nextM) await tx.match.update({ where: { id: lbR1[i].dbId }, data: { nextMatchWinId: nextM.dbId, nextSlotWin: "A" } });
     }
     // LR2 → LR3 (pairs 0+1→LR3p0, 2+3→LR3p1)
     for (let i = 0; i < lbR2.length; i++) {
@@ -2778,14 +2779,12 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
       if (wbR1[i]) await tx.match.update({ where: { id: wbR1[i].dbId }, data: { nextMatchLoseId: lbR1[i].dbId, nextSlotLose: "B" } });
     }
 
-    // WB R2 losers → LB R2 (positions 0-1 → LBR2p2/p3 slot B, positions 2-3 → LBR2p2/p3 slot A)
+    // WB R2 losers → LB R2 slot B (mirror mapping to avoid rematches)
+    // WBR2[i] loser → LBR2[w2 - 1 - i] slot B, so they face a LBR1 winner they haven't played
     const wbR2 = wbMatches.filter((m) => m.roundIndex === 2).sort((a, b) => a.positionInRound - b.positionInRound);
-    const lbR2Injection = lbR2.slice(lbR2.length / 2); // second half of LBR2 receives WBR2 losers
     for (let i = 0; i < wbR2.length; i++) {
-      const half = Math.floor(wbR2.length / 2);
-      const targetIdx = i % half;
-      const slot = i < half ? "B" : "A";
-      if (lbR2Injection[targetIdx]) await tx.match.update({ where: { id: wbR2[i].dbId }, data: { nextMatchLoseId: lbR2Injection[targetIdx].dbId, nextSlotLose: slot } });
+      const mirrorIdx = wbR2.length - 1 - i;
+      if (lbR2[mirrorIdx]) await tx.match.update({ where: { id: wbR2[i].dbId }, data: { nextMatchLoseId: lbR2[mirrorIdx].dbId, nextSlotLose: "B" } });
     }
 
     // WB R3 losers → LB R4 slot A
