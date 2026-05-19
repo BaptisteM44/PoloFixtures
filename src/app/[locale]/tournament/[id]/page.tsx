@@ -743,7 +743,7 @@ export default async function TournamentPage({
 
       {tab === "schedule" && (isTestMode
         ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
-        : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} pools={(tournament.pools ?? []).map((p: any) => ({ id: p.id, name: p.name }))} isOrganizer={isOrga} poolRounds={(tournament as any).poolRounds ?? null} testMode={!!(tournament as any).testMode} />
+        : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} pools={(tournament.pools ?? []).map((p: any) => ({ id: p.id, name: p.name }))} isOrganizer={isOrga} poolRounds={(tournament as any).poolRounds ?? null} testMode={!!(tournament as any).testMode} gameDurationMin={tournament.gameDurationMin} />
       )}
 
       {tab === "pools" && (isTestMode

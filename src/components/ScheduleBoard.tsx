@@ -6,6 +6,30 @@ import { useTranslations } from "next-intl";
 import { formatTime } from "@/lib/utils";
 import { MatchEditPanel, type MatchForEdit } from "./MatchEditPanel";
 
+function LiveTimer({ startAt, gameDurationMin }: { startAt: Date | string; gameDurationMin: number }) {
+  const gameDurSec = gameDurationMin * 60;
+  const getElapsed = () => Math.floor((Date.now() - new Date(startAt).getTime()) / 1000);
+  const [elapsed, setElapsed] = useState(getElapsed);
+
+  useEffect(() => {
+    const interval = setInterval(() => setElapsed(getElapsed()), 1000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startAt]);
+
+  const remaining = gameDurSec - elapsed;
+  const isOvertime = remaining < 0;
+  const display = Math.abs(remaining);
+  const mm = String(Math.floor(display / 60)).padStart(2, "0");
+  const ss = String(display % 60).padStart(2, "0");
+
+  return (
+    <span style={{ fontVariantNumeric: "tabular-nums", color: isOvertime ? "var(--color-red, #e53)" : "inherit", fontWeight: 600 }}>
+      {isOvertime ? "+" : ""}{mm}:{ss}
+    </span>
+  );
+}
+
 export type MatchWithTeams = Match & {
   teamA?: Team | null;
   teamB?: Team | null;
@@ -48,6 +72,7 @@ export function ScheduleBoard({
   isOrganizer,
   poolRounds = null,
   testMode = false,
+  gameDurationMin = 15,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
@@ -55,6 +80,7 @@ export function ScheduleBoard({
   pools?: { id: string; name: string }[];
   isOrganizer?: boolean;
   poolRounds?: number | null;
+  gameDurationMin?: number;
   testMode?: boolean;
 }) {
   const t = useTranslations("tournament");
@@ -284,7 +310,10 @@ export function ScheduleBoard({
           <span className="pill">{positionLabel(match, courtMatches)}</span>
         </div>
         <div className="match-card__corner match-card__corner--tr">
-          <span>{formatTime(match.startAt)}</span>
+          {match.status === "LIVE"
+            ? <LiveTimer startAt={match.startAt} gameDurationMin={gameDurationMin} />
+            : <span>{formatTime(match.startAt)}</span>
+          }
         </div>
 
         <div className="match-card__center">
