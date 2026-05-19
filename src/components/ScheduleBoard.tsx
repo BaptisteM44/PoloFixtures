@@ -6,18 +6,44 @@ import { useTranslations } from "next-intl";
 import { formatTime } from "@/lib/utils";
 import { MatchEditPanel, type MatchForEdit } from "./MatchEditPanel";
 
-function LiveTimer({ startAt, gameDurationMin }: { startAt: Date | string; gameDurationMin: number }) {
+function computeClockFromEvents(events: MatchEvent[]): { clockSec: number; paused: boolean } {
+  let clockSec = 0;
+  let lastStartSec = 0;
+  let lastStartReal = 0;
+  let paused = true;
+  for (const e of events) {
+    const t = new Date(e.createdAt as unknown as string).getTime();
+    if (e.type === "START") { lastStartSec = e.matchClockSec; lastStartReal = t; paused = false; }
+    else if (e.type === "PAUSE") { clockSec = e.matchClockSec; paused = true; }
+    else if (e.type === "END") { clockSec = e.matchClockSec; paused = true; }
+  }
+  if (!paused && lastStartReal > 0) {
+    clockSec = lastStartSec + Math.floor((Date.now() - lastStartReal) / 1000);
+  }
+  return { clockSec, paused };
+}
+
+function LiveTimer({ events, gameDurationMin }: { events: MatchEvent[]; gameDurationMin: number }) {
   const gameDurSec = gameDurationMin * 60;
-  const getElapsed = () => Math.floor((Date.now() - new Date(startAt).getTime()) / 1000);
-  const [elapsed, setElapsed] = useState(getElapsed);
+  const lastEvtId = events[events.length - 1]?.id;
+
+  const [clockSec, setClockSec] = useState(() => computeClockFromEvents(events).clockSec);
+  const [paused, setPaused] = useState(() => computeClockFromEvents(events).paused);
 
   useEffect(() => {
-    const interval = setInterval(() => setElapsed(getElapsed()), 1000);
-    return () => clearInterval(interval);
+    const { clockSec: c, paused: p } = computeClockFromEvents(events);
+    setClockSec(c);
+    setPaused(p);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [startAt]);
+  }, [lastEvtId]);
 
-  const remaining = gameDurSec - elapsed;
+  useEffect(() => {
+    if (paused) return;
+    const interval = setInterval(() => setClockSec((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, [paused]);
+
+  const remaining = gameDurSec - clockSec;
   const isOvertime = remaining < 0;
   const display = Math.abs(remaining);
   const mm = String(Math.floor(display / 60)).padStart(2, "0");
@@ -117,9 +143,16 @@ export function ScheduleBoard({
       // or { event, match } (events route from RefereePanel)
       if (payload?.data) {
         const updated: MatchWithTeams = payload.data.match ?? payload.data;
+        const newEvent: MatchEvent | undefined = payload.data.event;
         if (updated.id) {
           setMatches((prev) =>
-            prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
+            prev.map((m) => {
+              if (m.id !== updated.id) return m;
+              const events = newEvent
+                ? [...(m.events ?? []), newEvent]
+                : (m.events ?? []);
+              return { ...m, ...updated, events };
+            })
           );
         }
       }
@@ -311,7 +344,7 @@ export function ScheduleBoard({
         </div>
         <div className="match-card__corner match-card__corner--tr">
           {match.status === "LIVE"
-            ? <LiveTimer startAt={match.startAt} gameDurationMin={gameDurationMin} />
+            ? <LiveTimer events={match.events ?? []} gameDurationMin={gameDurationMin} />
             : <span>{formatTime(match.startAt)}</span>
           }
         </div>

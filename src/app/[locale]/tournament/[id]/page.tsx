@@ -60,8 +60,8 @@ export default async function TournamentPage({
   // "hebergement" aussi : myTeam est calculé via team.players, nécessaire pour afficher le tab.
   // Pas de tab = page chargée sans ?tab= : on charge les players par précaution (recap default pour COMPLETED).
   const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap" || activeTab === "hebergement" || activeTab === "pools";
-  // L'onglet "equipes" a besoin des events pour les badges.
-  const needsEvents = activeTab === "equipes" || activeTab === "live";
+  // L'onglet "equipes" a besoin des events pour les badges. "schedule" pour le chrono live.
+  const needsEvents = activeTab === "equipes" || activeTab === "live" || activeTab === "schedule";
   // Les onglets sans matches : info, inscription, recap, communaute, equipes (matches via events)
   const noMatchesNeeded = ["inscription", "recap", "communaute", "chat"].includes(activeTab ?? "");
 
