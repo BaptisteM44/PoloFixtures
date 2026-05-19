@@ -19,18 +19,24 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 
   const player = await prisma.player.findUnique({
     where: { id: params.id },
-    select: { badges: true, account: { select: { id: true } } },
+    select: { badges: true, pinnedBadges: true, account: { select: { id: true } } },
   });
   if (!player) return NextResponse.json({ error: "Joueur introuvable" }, { status: 404 });
 
   const oldBadges = new Set<string>(player.badges as string[]);
-  const newBadges = await computeCareerBadges(params.id);
+  const computed = await computeCareerBadges(params.id);
+  // Union : badges existants + pinnedBadges (toujours légitimes) + nouveaux calculés
+  const mergedBadges = Array.from(new Set([
+    ...Array.from(oldBadges),
+    ...(player.pinnedBadges as string[]),
+    ...computed,
+  ]));
 
-  await prisma.player.update({ where: { id: params.id }, data: { badges: newBadges } });
+  await prisma.player.update({ where: { id: params.id }, data: { badges: mergedBadges } });
 
   // Notifier les nouveaux badges débloqués
   if (player.account) {
-    for (const badge of newBadges) {
+    for (const badge of mergedBadges) {
       if (!oldBadges.has(badge)) {
         const info = BADGE_CATALOG[badge];
         await createNotification(params.id, "BADGE_UNLOCKED", {
@@ -41,5 +47,5 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     }
   }
 
-  return NextResponse.json({ badges: newBadges, newCount: newBadges.filter((b) => !oldBadges.has(b)).length });
+  return NextResponse.json({ badges: mergedBadges, newCount: mergedBadges.filter((b) => !oldBadges.has(b)).length });
 }

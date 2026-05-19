@@ -201,11 +201,20 @@ export async function POST(request: Request, { params }: { params: { id: string 
     tournamentSlug: tournament.slug ?? "",
   }).catch(console.error);
 
-  // Recalculer les badges en parallèle (fire-and-forget)
+  // Recalculer les badges en parallèle (fire-and-forget, additif)
   Promise.all(
     existingAccountPlayerIds.map(async (pid) => {
-      const newBadges = await computeCareerBadges(pid);
-      await prisma.player.update({ where: { id: pid }, data: { badges: newBadges } });
+      const [computed, playerData] = await Promise.all([
+        computeCareerBadges(pid),
+        prisma.player.findUnique({ where: { id: pid }, select: { badges: true, pinnedBadges: true } }),
+      ]);
+      // Union : badges existants + pinnedBadges (toujours légitimes) + nouveaux calculés
+      const merged = Array.from(new Set([
+        ...(playerData?.badges as string[] ?? []),
+        ...(playerData?.pinnedBadges as string[] ?? []),
+        ...computed,
+      ]));
+      await prisma.player.update({ where: { id: pid }, data: { badges: merged } });
     })
   ).catch(console.error);
 

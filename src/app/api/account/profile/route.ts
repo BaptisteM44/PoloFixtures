@@ -30,7 +30,10 @@ export async function GET() {
   });
 
   if (!player) return new Response("Not found", { status: 404 });
-  return Response.json({ ...player, badgeCatalog: getPublicBadgeCatalog(player.badges) });
+  // Filtrer les pinnedBadges périmés (badges retirés depuis le dernier épinglage)
+  const earnedSet = new Set(player.badges as string[]);
+  const cleanedPinnedBadges = (player.pinnedBadges as string[]).filter((b) => earnedSet.has(b));
+  return Response.json({ ...player, pinnedBadges: cleanedPinnedBadges, badgeCatalog: getPublicBadgeCatalog(player.badges) });
 }
 
 const updateSchema = z.object({
