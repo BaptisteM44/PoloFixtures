@@ -745,7 +745,9 @@ export async function generateBracketAction(id: string) {
         }
       }
 
-      // ── LB: wire winners forward using slot reservation ───────────────
+      // ── LB: wire winners forward ──────────────────────────────────────
+      // LB R1 winners → LB R2 slot A (one-to-one, deterministic)
+      // All other LB rounds → find next round with free slot
       for (const lr of lbRounds) {
         const lMatches = lowerByRound.get(lr) ?? [];
 
@@ -757,7 +759,19 @@ export async function generateBracketAction(id: string) {
             continue;
           }
 
-          // Find next LB round with a free slot
+          // LB R1 → LB R2: deterministic slot A (LBR1[i] → LBR2[i] slotA)
+          // Ensures each LB R2 match pairs one LB R1 winner (slotA) with one WB R2 loser (slotB)
+          if (lr === 1) {
+            const nextMatches = lowerByRound.get(lbR2RoundIdx) ?? [];
+            const target = nextMatches[i];
+            if (target) {
+              await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: target.id, nextSlotWin: "A" } });
+              claimSlot(target.id, "A");
+            }
+            continue;
+          }
+
+          // All other LB rounds: find next round with a free slot
           let placed = false;
           for (const nextRound of lbRounds) {
             if (nextRound <= lr) continue;
