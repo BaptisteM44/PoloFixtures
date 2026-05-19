@@ -180,6 +180,11 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   constructive:      { id: "constructive",      name: "Constructive",    emoji: "🔄", description: "Voter « Bonne idée mais… » et voir son retour adopté",           category: "social",     rarity: "rare" },
   debate_starter:    { id: "debate_starter",    name: "Debate Starter",  emoji: "🗣️", description: "Générer 10+ réponses sur une de tes idées",                     category: "social",     rarity: "rare" },
   community_voice:   { id: "community_voice",   name: "Community Voice", emoji: "📣", description: "Avoir une idée passée en statut Fait par l'équipe",             category: "engagement", rarity: "epic" },
+
+  // ─────────────────────────────────────────────────────
+  // 🏅 Distinctions uniques
+  // ─────────────────────────────────────────────────────
+  grenouille_platine: { id: "grenouille_platine", name: "Grenouille de Platine", emoji: "🐸", iconUrl: "/badges/bordeauxbikepolo.png", description: "Distinction d'honneur pour une légende de Bordeaux Bike Polo", category: "secret", rarity: "legendary" },
 };
 
 /**
