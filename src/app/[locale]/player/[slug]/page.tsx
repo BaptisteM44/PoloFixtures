@@ -39,13 +39,14 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function PlayerPage({ params }: { params: { slug: string } }) {
   const t = await getTranslations("player");
   const player =
-    (await prisma.player.findUnique({ where: { slug: params.slug } })) ??
-    (await prisma.player.findFirst({ where: { id: params.slug } }));
+    (await prisma.player.findUnique({ where: { slug: params.slug }, include: { account: { select: { email: true } } } })) ??
+    (await prisma.player.findFirst({ where: { id: params.slug }, include: { account: { select: { email: true } } } }));
   if (!player) return <div>{t("not_found")}</div>;
 
   const session = await auth();
   const currentPlayerId = (session?.user as any)?.playerId ?? null;
-  const canContact = currentPlayerId && currentPlayerId !== player.id;
+  const hasRealAccount = !!(player.account?.email && player.account.email !== "");
+  const canContact = currentPlayerId && currentPlayerId !== player.id && hasRealAccount;
   const isOwnProfile = currentPlayerId === player.id;
 
   return (

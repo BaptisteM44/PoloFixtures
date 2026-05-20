@@ -3,6 +3,14 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 
+type RegistrationField = {
+  id: string;
+  label: string;
+  required: boolean;
+  target: "PLAYER" | "TEAM" | "CAPTAIN";
+  order: number;
+};
+
 type PlayerResult = {
   id: string;
   name: string;
@@ -51,6 +59,16 @@ export function RegisterTeamForm({
   onSuccess?: () => void;
   accommodationAvailable?: boolean;
 }) {
+  const [regFields, setRegFields] = useState<RegistrationField[]>([]);
+  // answers keyed by `${fieldId}:${playerIndex|"team"}`
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetch(`/api/tournaments/${tournamentId}/registration-fields`)
+      .then((r) => r.json())
+      .then((fields: RegistrationField[]) => setRegFields(fields))
+      .catch(() => {});
+  }, [tournamentId]);
   const isABC = format === "ABC";
   const maxPlayers = isABC ? 3 : maxPlayersFromFormat(format);
   const [open, setOpen] = useState(false);
@@ -168,13 +186,24 @@ export function RegisterTeamForm({
 
     const body: Record<string, unknown> = { teamName, registrationNote: registrationNote || null, players, captainIndex };
     if (isABC && playerAIdx !== null && playerBIdx !== null && playerCIdx !== null) {
-      // Encoder: niveau par position dans filledIndices
-      // filledIndices[i] = slot index du i-ème joueur
       const getFilledPosition = (slotIdx: number) => filledIndices.indexOf(slotIdx);
       body.playerALevel = getFilledPosition(playerAIdx);
       body.playerBLevel = getFilledPosition(playerBIdx);
       body.playerCLevel = getFilledPosition(playerCIdx);
     }
+
+    // Build answers array from state
+    const answersPayload: { fieldId: string; value: string; playerIndex?: number }[] = [];
+    for (const [key, value] of Object.entries(answers)) {
+      if (!value.trim()) continue;
+      const [fieldId, scope] = key.split(":");
+      if (scope === "team") {
+        answersPayload.push({ fieldId, value: value.trim() });
+      } else {
+        answersPayload.push({ fieldId, value: value.trim(), playerIndex: Number(scope) });
+      }
+    }
+    if (answersPayload.length > 0) body.answers = answersPayload;
 
     const res = await fetch(`/api/tournaments/${tournamentId}/register-team`, {
       method: "POST",
@@ -372,6 +401,52 @@ export function RegisterTeamForm({
           />
           <span style={{ fontSize: 11, color: "var(--text-muted)", textAlign: "right" }}>{registrationNote.length}/500</span>
         </label>
+
+        {/* Custom registration fields — TEAM target */}
+        {regFields.filter((f) => f.target === "TEAM").map((field) => (
+          <label key={field.id} className="field-row">
+            {field.label}{field.required && <span style={{ color: "var(--danger, #e53e3e)", marginLeft: 2 }}>*</span>}
+            <input
+              value={answers[`${field.id}:team`] ?? ""}
+              onChange={(e) => setAnswers((prev) => ({ ...prev, [`${field.id}:team`]: e.target.value }))}
+              required={field.required}
+              maxLength={500}
+            />
+          </label>
+        ))}
+
+        {/* Custom registration fields — per-player/captain */}
+        {regFields.some((f) => f.target === "PLAYER" || f.target === "CAPTAIN") && (
+          <div>
+            {slots.map((slot, slotIdx) => {
+              if (slot.type === "empty") return null;
+              const playerName = slot.type === "existing" ? slot.player.name : slot.type === "manual" ? slot.name || t("player_slot", { num: slotIdx + 1 }) : "";
+              const isCaptain = slotIdx === captainIndex;
+              const relevantFields = regFields.filter((f) =>
+                f.target === "PLAYER" || (f.target === "CAPTAIN" && isCaptain)
+              );
+              if (relevantFields.length === 0) return null;
+              const filledIdx = slots.filter((s, i) => s.type !== "empty" && i <= slotIdx).length - 1;
+              return (
+                <div key={slotIdx} style={{ marginTop: 8, padding: "10px 14px", background: "var(--surface-2)", borderRadius: 8, border: "1.5px solid var(--border)" }}>
+                  <p style={{ margin: "0 0 8px", fontWeight: 700, fontSize: 12, fontFamily: "var(--font-display)" }}>{playerName}{isCaptain ? ` (${t("slot_captain")})` : ""}</p>
+                  {relevantFields.map((field) => (
+                    <label key={field.id} className="field-row" style={{ marginBottom: 6 }}>
+                      {field.label}{field.required && <span style={{ color: "var(--danger, #e53e3e)", marginLeft: 2 }}>*</span>}
+                      <input
+                        value={answers[`${field.id}:${filledIdx}`] ?? ""}
+                        onChange={(e) => setAnswers((prev) => ({ ...prev, [`${field.id}:${filledIdx}`]: e.target.value }))}
+                        required={field.required}
+                        maxLength={500}
+                        style={{ fontSize: 13 }}
+                      />
+                    </label>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {error && <p className="error">{error}</p>}
 

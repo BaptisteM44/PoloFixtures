@@ -631,7 +631,20 @@ export default async function TournamentPage({
                       ? ` · ${tournament.teams.length - tournament.maxTeams} ${t("teams_on_waitlist")}`
                       : ` · ${tournament.maxTeams - tournament.teams.length === 1 ? t("teams_spots_available_one", { count: tournament.maxTeams - tournament.teams.length }) : t("teams_spots_available_other", { count: tournament.maxTeams - tournament.teams.length })}`}
                   </p>
-                  {tournament.format === "ABC Chapeau" ? (() => {
+                  {(tournament as any).externalRegistrationUrl ? (
+                    <div style={{ textAlign: "center", padding: "16px 0" }}>
+                      <p className="meta" style={{ marginBottom: 16 }}>{r("external_redirect_desc")}</p>
+                      <a
+                        href={(tournament as any).externalRegistrationUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="primary"
+                        style={{ display: "inline-block", padding: "10px 24px", fontSize: 14, fontWeight: 700, textDecoration: "none" }}
+                      >
+                        {r("external_redirect_btn")}
+                      </a>
+                    </div>
+                  ) : tournament.format === "ABC Chapeau" ? (() => {
                     const soloEntries = (t_ as { soloEntries?: { id: string; player: { id: string; name: string }; level: string; teamId: string | null; waitlisted: boolean }[] }).soloEntries ?? [];
                     const currentEntry = currentPlayerId ? soloEntries.find((e) => e.player.id === currentPlayerId) : null;
                     return (

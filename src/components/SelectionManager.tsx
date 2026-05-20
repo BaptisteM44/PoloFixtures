@@ -3,6 +3,88 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 
+function NotifyModal({
+  tournamentId,
+  onClose,
+  t,
+}: {
+  tournamentId: string;
+  onClose: () => void;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const [sendNotif, setSendNotif] = useState(true);
+  const [sendMail, setSendMail] = useState(true);
+  const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [result, setResult] = useState<{ notifSent: number; mailSent: number } | null>(null);
+
+  async function handleSend() {
+    setStatus("sending");
+    try {
+      const res = await fetch(`/api/tournaments/${tournamentId}/notify-selection`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sendNotif, sendMail }),
+      });
+      const data = await res.json();
+      if (res.ok) { setResult(data); setStatus("ok"); }
+      else setStatus("error");
+    } catch { setStatus("error"); }
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ background: "var(--card-bg, #fff)", borderRadius: 12, padding: 24, maxWidth: 380, width: "90%", display: "grid", gap: 16 }}>
+        <h3 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 16 }}>
+          {t("notify_modal_title")}
+        </h3>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>
+          {t("notify_modal_desc")}
+        </p>
+
+        {status === "idle" || status === "sending" ? (
+          <>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, cursor: "pointer" }}>
+              <input type="checkbox" checked={sendNotif} onChange={(e) => setSendNotif(e.target.checked)} />
+              {t("notify_modal_notif")}
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, cursor: "pointer" }}>
+              <input type="checkbox" checked={sendMail} onChange={(e) => setSendMail(e.target.checked)} />
+              {t("notify_modal_mail")}
+            </label>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button className="ghost" onClick={onClose} disabled={status === "sending"}>{t("notify_modal_cancel")}</button>
+              <button
+                className="primary"
+                onClick={handleSend}
+                disabled={status === "sending" || (!sendNotif && !sendMail)}
+              >
+                {status === "sending" ? t("notify_modal_sending") : t("notify_modal_confirm")}
+              </button>
+            </div>
+          </>
+        ) : status === "ok" && result ? (
+          <>
+            <p style={{ margin: 0, fontSize: 14, color: "var(--success, green)" }}>
+              ✅ {t("notify_modal_success", { notif: result.notifSent, mail: result.mailSent })}
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button className="primary" onClick={onClose}>{t("notify_modal_close")}</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p style={{ margin: 0, fontSize: 14, color: "var(--danger)" }}>{t("notify_modal_error")}</p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button className="ghost" onClick={onClose}>{t("notify_modal_cancel")}</button>
+              <button className="primary" onClick={() => setStatus("idle")}>{t("notify_modal_retry")}</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 type TeamRow = {
   id: string;
   name: string;
@@ -45,6 +127,7 @@ export function SelectionManager({
   const [lastWlWinnerId, setLastWlWinnerId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
 
   const guaranteed = teams.filter((t) => t.guaranteed);
   // Pool = pas guaranteed, pas encore en WL
@@ -232,8 +315,14 @@ export function SelectionManager({
   const drawPoolTeams = pool.filter((t) => drawPool.has(t.id));
   const wlDrawPoolTeams = pool.filter((t) => wlDrawPool.has(t.id));
 
+  const hasClassified = guaranteed.length > 0 || waitlisted.length > 0;
+
   return (
     <div className="selection-manager">
+
+      {showNotifyModal && (
+        <NotifyModal tournamentId={tournamentId} onClose={() => setShowNotifyModal(false)} t={t} />
+      )}
 
       {/* ── Header bilan ──────────────────────────────────────────────── */}
       <div className="selection-manager__header">
@@ -250,6 +339,15 @@ export function SelectionManager({
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          {hasClassified && (
+            <button
+              className="ghost"
+              onClick={() => setShowNotifyModal(true)}
+              style={{ fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}
+            >
+              🔔 {t("notify_btn")}
+            </button>
+          )}
           {allFit ? (
             <button className="primary" onClick={handleSelectAll} disabled={isPending} style={{ fontSize: 13 }}>
               {t("validate_all_btn", { count: teams.length })}

@@ -93,6 +93,10 @@ const updateSchema = z.object({
   mtpPoolAStart: z.string().optional().nullable(),
   mtpPoolBStart: z.string().optional().nullable(),
   mtpSundayStart: z.string().optional().nullable(),
+  externalRegistrationUrl: z.preprocess(
+    (v) => (v === "" || v === undefined || v === null ? null : v),
+    z.string().url().nullable()
+  ),
 });
 
 export async function updateTournamentAction(formData: FormData) {
@@ -204,6 +208,7 @@ export async function updateTournamentAction(formData: FormData) {
         mtpPoolAStart: data.mtpPoolAStart ? new Date(data.mtpPoolAStart) : null,
         mtpPoolBStart: data.mtpPoolBStart ? new Date(data.mtpPoolBStart) : null,
         mtpSundayStart: data.mtpSundayStart ? new Date(data.mtpSundayStart) : null,
+        externalRegistrationUrl: data.externalRegistrationUrl ?? null,
       }
     });
   } catch (err) {

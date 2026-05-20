@@ -5,6 +5,7 @@
  */
 import { prisma } from "@/lib/db";
 import { NotificationType } from "@prisma/client";
+import { sendMail } from "@/lib/mailer";
 
 // Types qui respectent le flag global "enabled" (notifs club)
 const CLUB_TYPES: NotificationType[] = [
@@ -114,5 +115,40 @@ export async function notifyTeamPlayers(
     if (tp.player.status === "ACTIVE" && tp.player.account) {
       await createNotification(tp.player.id, type, payload);
     }
+  }
+}
+
+/**
+ * Envoie un email à tous les joueurs ACTIVE d'une équipe qui ont un email.
+ * Fire-and-forget (ne throw pas).
+ */
+export async function mailTeamPlayers(
+  teamId: string,
+  subject: string,
+  html: string
+) {
+  try {
+    const teamPlayers = await prisma.teamPlayer.findMany({
+      where: { teamId },
+      include: {
+        player: {
+          select: {
+            status: true,
+            account: { select: { email: true } },
+          },
+        },
+      },
+    });
+
+    for (const tp of teamPlayers) {
+      const email = tp.player.account?.email;
+      if (tp.player.status === "ACTIVE" && email) {
+        await sendMail({ to: email, subject, html }).catch((e) =>
+          console.error("[notify] mailTeamPlayers échec:", email, e)
+        );
+      }
+    }
+  } catch (e) {
+    console.error("[notify] mailTeamPlayers error:", e);
   }
 }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { ISO_COUNTRIES } from "@/lib/iso-countries";
 import { CURRENCIES } from "@/lib/currencies";
+import { RegistrationFieldsEditor } from "@/components/RegistrationFieldsEditor";
 
 type MealDay = { day: number; breakfast: boolean; lunch: boolean; dinner: boolean };
 type FaqItem = { question: string; answer: string };
@@ -72,6 +73,7 @@ type Tournament = {
   lunchProvided?: boolean;
   dinnerProvided?: boolean;
   maxSoloPlayers?: number | null;
+  externalRegistrationUrl?: string | null;
 };
 
 type Props = {
@@ -451,19 +453,6 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             <input type="date" name="dateEnd" defaultValue={new Date(tournament.dateEnd).toISOString().slice(0, 10)} />
           </label>
           <label className="field-row">
-            {t("field_registration_start")}
-            <input type="datetime-local" name="registrationStart" defaultValue={tournament.registrationStart ? new Date(new Date(tournament.registrationStart).getTime() - new Date(tournament.registrationStart).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""} />
-          </label>
-          <label className="field-row">
-            {t("field_registration_end")}
-            <input
-              type="datetime-local"
-              name="registrationEnd"
-              id="registrationEnd"
-              defaultValue={tournament.registrationEnd ? new Date(new Date(tournament.registrationEnd).getTime() - new Date(tournament.registrationEnd).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
-            />
-          </label>
-          <label className="field-row">
             {t("field_format")}
             <select name="format" value={currentFormat} onChange={(e) => setCurrentFormat(e.target.value)} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
               <option value="2v2">2v2</option>
@@ -490,49 +479,90 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
               />
             </label>
           )}
-          <label className="field-row">
-            {t("field_max_teams")}
-            <input type="number" name="maxTeams" defaultValue={tournament.maxTeams} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
-          </label>
-          <label className="field-row">
-            {t("field_courts")}
-            <input type="number" name="courtsCount" defaultValue={tournament.courtsCount} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
-          </label>
-          <label className="field-row">
-            {t("field_registration_fee")}
-            <input type="number" name="registrationFeePerTeam" defaultValue={tournament.registrationFeePerTeam} />
-          </label>
-          <label className="field-row">
-            {t("field_currency")}
-            <select name="registrationFeeCurrency" defaultValue={tournament.registrationFeeCurrency ?? "EUR"}>
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field-row">
-            {t("field_contact_email")}
-            <input name="contactEmail" defaultValue={tournament.contactEmail} />
-          </label>
+          {/* ── Bloc inscription ── */}
+          <div style={{ gridColumn: "1 / -1", border: "2px solid var(--teal)", borderRadius: 10, padding: "16px 18px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px", background: "color-mix(in srgb, var(--teal) 4%, var(--surface))" }}>
+            <p style={{ gridColumn: "1 / -1", margin: 0, fontWeight: 700, fontFamily: "var(--font-display)", fontSize: 13, color: "var(--teal)", letterSpacing: "0.03em" }}>
+              {t("section_registration")}
+            </p>
 
-          {/* Rush registration */}
-          <div style={{ gridColumn: "1 / -1" }}>
-            <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontSize: 13 }}>
-              <input
-                type="checkbox"
-                checked={rushRegistration}
-                onChange={(e) => setRushRegistration(e.target.checked)}
-                style={{ marginTop: 2, flexShrink: 0, width: "auto" }}
-              />
-              <span>
-                <strong>{t("rush_registration")}</strong>
-                <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>— {t("rush_registration_desc")}</span>
-                <br />
-                <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
-                  {t("rush_registration_hint")}
-                </span>
-              </span>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_registration_start")}
+              <input type="datetime-local" name="registrationStart" defaultValue={tournament.registrationStart ? new Date(new Date(tournament.registrationStart).getTime() - new Date(tournament.registrationStart).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""} />
             </label>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_registration_end")}
+              <input
+                type="datetime-local"
+                name="registrationEnd"
+                id="registrationEnd"
+                defaultValue={tournament.registrationEnd ? new Date(new Date(tournament.registrationEnd).getTime() - new Date(tournament.registrationEnd).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
+              />
+            </label>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_max_teams")}
+              <input type="number" name="maxTeams" defaultValue={tournament.maxTeams} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
+            </label>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_courts")}
+              <input type="number" name="courtsCount" defaultValue={tournament.courtsCount} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
+            </label>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_registration_fee")}
+              <input type="number" name="registrationFeePerTeam" defaultValue={tournament.registrationFeePerTeam} />
+            </label>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_currency")}
+              <select name="registrationFeeCurrency" defaultValue={tournament.registrationFeeCurrency ?? "EUR"}>
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_contact_email")}
+              <input name="contactEmail" defaultValue={tournament.contactEmail} />
+            </label>
+
+            {/* Lien externe */}
+            <div style={{ gridColumn: "1 / -1", display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <label className="field-row" style={{ flex: 1, margin: 0 }}>
+                {t("field_external_registration_url")}
+                <input
+                  name="externalRegistrationUrl"
+                  type="url"
+                  defaultValue={tournament.externalRegistrationUrl ?? ""}
+                  placeholder={t("field_external_registration_url_placeholder")}
+                />
+              </label>
+              <p style={{ fontSize: 11, color: "var(--text-muted)", maxWidth: 220, marginTop: 22, lineHeight: 1.5 }}>
+                {t("field_external_registration_url_hint")}
+              </p>
+            </div>
+
+            {/* Champs personnalisés */}
+            <div style={{ gridColumn: "1 / -1", padding: "14px 16px", border: "1.5px solid color-mix(in srgb, var(--teal) 30%, var(--border))", borderRadius: 8, background: "var(--surface)" }}>
+              <RegistrationFieldsEditor tournamentId={tournament.id} />
+            </div>
+
+            {/* Rush */}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer", fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={rushRegistration}
+                  onChange={(e) => setRushRegistration(e.target.checked)}
+                  style={{ marginTop: 2, flexShrink: 0, width: "auto" }}
+                />
+                <span>
+                  <strong>{t("rush_registration")}</strong>
+                  <span style={{ color: "var(--text-muted)", marginLeft: 6 }}>— {t("rush_registration_desc")}</span>
+                  <br />
+                  <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
+                    {t("rush_registration_hint")}
+                  </span>
+                </span>
+              </label>
+            </div>
           </div>
 
           {/* ── Test mode toggle ── */}

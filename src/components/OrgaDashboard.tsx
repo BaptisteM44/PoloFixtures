@@ -19,6 +19,7 @@ import { PoolScheduleEditor } from "@/components/PoolScheduleEditor";
 import { OrgaTaskBoard } from "@/components/OrgaTaskBoard";
 import { OrgaNoteBoard } from "@/components/OrgaNoteBoard";
 import { OrgaLinkBoard } from "@/components/OrgaLinkBoard";
+import { AnnouncePanel } from "@/components/AnnouncePanel";
 import { SelectionManager } from "@/components/SelectionManager";
 import { DrawPanel } from "@/components/DrawPanel";
 import { AccommodationManager } from "@/components/AccommodationManager";
@@ -1438,6 +1439,9 @@ export function OrgaDashboard({
             links={orgaLinks}
             tournamentId={tournament.id}
           />
+
+          {/* Message groupé aux capitaines */}
+          <AnnouncePanel tournamentId={tournament.id} />
 
           {/* DrawPanel ABC Chapeau */}
           {tournament.format === "ABC Chapeau" && (() => {

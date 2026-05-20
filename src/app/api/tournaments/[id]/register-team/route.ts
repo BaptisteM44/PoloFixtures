@@ -18,6 +18,14 @@ const playerSlotSchema = z.discriminatedUnion("type", [
   })
 ]);
 
+const answerSchema = z.object({
+  fieldId: z.string(),
+  value: z.string().max(1000),
+  // For PLAYER/CAPTAIN target: playerIndex (0-based in submitted players array)
+  // For TEAM target: omit playerIndex
+  playerIndex: z.number().int().min(0).optional(),
+});
+
 const registerSchema = z.object({
   teamName: z.string().min(2),
   city: z.string().optional().nullable(),
@@ -29,6 +37,7 @@ const registerSchema = z.object({
   playerALevel: z.number().int().min(0).optional(),
   playerBLevel: z.number().int().min(0).optional(),
   playerCLevel: z.number().int().min(0).optional(),
+  answers: z.array(answerSchema).optional(),
 });
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -59,7 +68,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const parsed = dynamicSchema.safeParse(json);
   if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { teamName, city, country, registrationNote, players, captainIndex = 0, playerALevel, playerBLevel, playerCLevel } = parsed.data;
+  const { teamName, city, country, registrationNote, players, captainIndex = 0, playerALevel, playerBLevel, playerCLevel, answers = [] } = parsed.data;
 
   const existingCount = await prisma.team.count({ where: { tournamentId: params.id } });
   const seed = existingCount + 1;
@@ -189,6 +198,23 @@ export async function POST(request: Request, { params }: { params: { id: string 
       players: { include: { player: true } }
     }
   });
+
+  // Save registration answers (fire-and-forget, non-blocking)
+  if (answers.length > 0) {
+    const teamPlayersMap = team.players.reduce((acc, tp, i) => {
+      acc[i] = tp.id;
+      return acc;
+    }, {} as Record<number, string>);
+
+    prisma.registrationAnswer.createMany({
+      data: answers.map((a) => ({
+        fieldId: a.fieldId,
+        value: a.value,
+        teamId: a.playerIndex === undefined ? team.id : null,
+        teamPlayerId: a.playerIndex !== undefined ? (teamPlayersMap[a.playerIndex] ?? null) : null,
+      })).filter((d) => d.teamId !== null || d.teamPlayerId !== null),
+    }).catch(console.error);
+  }
 
   // Répondre immédiatement — notifications et badges en arrière-plan
   const response = Response.json({ ...team, waitlisted: !selectedTeam, waitlistPosition: waitlistPos }, { status: 201 });

@@ -27,6 +27,16 @@ type TeamPlayer = {
   };
 };
 
+type RegistrationAnswer = {
+  id: string;
+  fieldId: string;
+  value: string;
+  teamPlayerId: string | null;
+  teamId: string | null;
+  field: { label: string; target: "PLAYER" | "TEAM" | "CAPTAIN" };
+  teamPlayer?: { player: { name: string } } | null;
+};
+
 type Team = {
   id: string;
   name: string;
@@ -212,6 +222,15 @@ function TeamRow({
   const [manualCountry, setManualCountry] = useState("");
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [regAnswers, setRegAnswers] = useState<RegistrationAnswer[] | null>(null);
+
+  useEffect(() => {
+    if (!showRecap) return;
+    fetch(`/api/teams/${team.id}/answers`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: RegistrationAnswer[]) => setRegAnswers(data))
+      .catch(() => {});
+  }, [team.id, showRecap]);
 
   useEffect(() => {
     if (isEditing) { setEditName(team.name); setRowError(null); setAddMode(null); }
@@ -481,6 +500,20 @@ function TeamRow({
                 {team.registrationNote}
               </div>
             )}
+            {/* Custom registration field answers */}
+            {regAnswers && regAnswers.length > 0 && (
+              <div style={{ display: "grid", gap: 4 }}>
+                {regAnswers.map((a) => (
+                  <div key={a.id} style={{ display: "flex", gap: 8, fontSize: 12, flexWrap: "wrap", alignItems: "baseline" }}>
+                    <span style={{ fontWeight: 700, color: "var(--text-muted)", minWidth: 120 }}>
+                      {a.field.label}{a.teamPlayer ? ` (${a.teamPlayer.player.name})` : ""}
+                    </span>
+                    <span>{a.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Note orga */}
             <OrgaNoteEditor
               teamId={team.id}
