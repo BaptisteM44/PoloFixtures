@@ -929,7 +929,9 @@
     "btn_new": "Neue Anfrage",
     "empty": "Noch keine Free Agents.",
     "error": "Ein Fehler ist aufgetreten, bitte erneut versuchen.",
-    "btn_sending": "Wird gesendet…"
+    "btn_sending": "Wird gesendet…",
+    "withdraw": "Zurückziehen",
+    "withdraw_confirm": "Deine Free-Agent-Anfrage zurückziehen?"
   },
   "notifications": {
     "title": "Benachrichtigungen",

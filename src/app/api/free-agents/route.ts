@@ -25,3 +25,20 @@ export async function POST(request: Request) {
   const created = await prisma.freeAgent.create({ data: { ...parsed.data, playerId } });
   return Response.json(created);
 }
+
+export async function DELETE(request: Request) {
+  const session = await auth();
+  const playerId = session?.user?.playerId;
+  if (!playerId) return new Response("Unauthorized", { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) return Response.json({ error: "Missing id" }, { status: 400 });
+
+  const agent = await prisma.freeAgent.findUnique({ where: { id } });
+  if (!agent) return new Response("Not found", { status: 404 });
+  if (agent.playerId !== playerId) return new Response("Forbidden", { status: 403 });
+
+  await prisma.freeAgent.delete({ where: { id } });
+  return Response.json({ ok: true });
+}

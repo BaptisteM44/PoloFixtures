@@ -1462,6 +1462,7 @@ export default async function TournamentPage({
               deleteAction={deleteFreeAgent}
               title=""
               publicView
+              currentPlayerId={currentPlayerId}
             />
           )}
         </div>

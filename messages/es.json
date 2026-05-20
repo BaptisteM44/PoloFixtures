@@ -928,7 +928,9 @@
     "btn_new": "Nueva solicitud",
     "empty": "Sin agentes libres aún.",
     "error": "Ocurrió un error, inténtalo de nuevo.",
-    "btn_sending": "Enviando…"
+    "btn_sending": "Enviando…",
+    "withdraw": "Retirarse",
+    "withdraw_confirm": "¿Retirar tu solicitud de agente libre?"
   },
   "notifications": {
     "title": "Notificaciones",

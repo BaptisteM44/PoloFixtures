@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { ContactModal } from "./ContactModal";
 
 type FreeAgent = {
@@ -19,9 +20,11 @@ type Props = {
   deleteAction?: (id: string) => Promise<{ ok?: boolean }>;
   title?: string;
   publicView?: boolean;
+  currentPlayerId?: string | null;
 };
 
-export function FreeAgentList({ agents, canDelete, deleteAction, title = "Demandes reçues", publicView = false }: Props) {
+export function FreeAgentList({ agents, canDelete, deleteAction, title = "Demandes reçues", publicView = false, currentPlayerId }: Props) {
+  const t = useTranslations("free_agent");
   const [isPending, startTransition] = useTransition();
 
   if (agents.length === 0) return null;
@@ -31,6 +34,14 @@ export function FreeAgentList({ agents, canDelete, deleteAction, title = "Demand
     if (!confirm("Supprimer cette demande ?")) return;
     startTransition(async () => {
       await deleteAction!(id);
+    });
+  };
+
+  const handleWithdraw = (id: string) => {
+    if (!confirm(t("withdraw_confirm"))) return;
+    startTransition(async () => {
+      const res = await fetch(`/api/free-agents?id=${id}`, { method: "DELETE" });
+      if (res.ok) window.location.reload();
     });
   };
 
@@ -53,12 +64,23 @@ export function FreeAgentList({ agents, canDelete, deleteAction, title = "Demand
               )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-              {publicView && agent.playerId && (
+              {publicView && agent.playerId && agent.playerId !== currentPlayerId && (
                 <ContactModal
                   recipientId={agent.playerId}
                   recipientName={agent.name}
                   freeAgentId={agent.id}
                 />
+              )}
+              {publicView && currentPlayerId && agent.playerId === currentPlayerId && (
+                <button
+                  type="button"
+                  onClick={() => handleWithdraw(agent.id)}
+                  disabled={isPending}
+                  className="ghost"
+                  style={{ fontSize: 12, color: "var(--danger)" }}
+                >
+                  {t("withdraw")}
+                </button>
               )}
               {canDelete && (
                 <button

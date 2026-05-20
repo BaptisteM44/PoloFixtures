@@ -924,7 +924,9 @@
     "success_desc": "Les organisateur.trices ont été notifié.es.",
     "btn_new": "Nouvelle demande",
     "empty": "Aucun free agent pour l'instant.",
-    "error": "Une erreur est survenue, réessaie."
+    "error": "Une erreur est survenue, réessaie.",
+    "withdraw": "Se retirer",
+    "withdraw_confirm": "Retirer ta demande de free agent ?"
   },
   "notifications": {
     "title": "Notifications",

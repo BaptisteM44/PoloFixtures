@@ -924,7 +924,9 @@
     "success_desc": "The organizers have been notified.",
     "btn_new": "New request",
     "empty": "No free agents yet.",
-    "error": "An error occurred, please try again."
+    "error": "An error occurred, please try again.",
+    "withdraw": "Withdraw",
+    "withdraw_confirm": "Withdraw your free agent request?"
   },
   "notifications": {
     "title": "Notifications",
