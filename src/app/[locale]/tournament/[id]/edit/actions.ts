@@ -394,7 +394,7 @@ export async function generateBracketAction(id: string) {
     await tx.match.deleteMany({ where: { tournamentId: id, phase: "BRACKET" } });
 
     // First pass: create all matches
-    const created: Array<{ id: string; roundIndex: number; bracketSide: string | null; positionInRound: number }> = [];
+    const created: Array<{ id: string; roundIndex: number; bracketSide: string | null; positionInRound: number; teamAId: string | null; teamBId: string | null }> = [];
     for (const match of matches) {
       const m = await tx.match.create({
         data: {
@@ -411,7 +411,7 @@ export async function generateBracketAction(id: string) {
           teamBId: match.teamBId,
         }
       });
-      created.push({ id: m.id, roundIndex: m.roundIndex, bracketSide: m.bracketSide, positionInRound: m.positionInRound });
+      created.push({ id: m.id, roundIndex: m.roundIndex, bracketSide: m.bracketSide, positionInRound: m.positionInRound, teamAId: m.teamAId, teamBId: m.teamBId });
     }
 
     // Helper: find a match by side+round+position
@@ -620,11 +620,16 @@ export async function generateBracketAction(id: string) {
         const r2Pos = Math.floor(pos / 2); // absolute r2Pos in size/4 space
         const data: Record<string, unknown> = {};
 
-        // WB R2 match index = floor(wi/2), slot = wi%2
+        // WB R2 match index = floor(wi/2); slot = whichever slot isn't pre-filled by a BYE or already claimed
         const nextWBMatch = wbR2Matches[Math.floor(wi / 2)];
         if (nextWBMatch) {
           data.nextMatchWinId = nextWBMatch.id;
-          data.nextSlotWin = wi % 2 === 0 ? "A" : "B";
+          // Pre-claim slots already filled by BYE advances (teamAId/teamBId set at creation)
+          if (nextWBMatch.teamAId) claimSlot(nextWBMatch.id, "A");
+          if (nextWBMatch.teamBId) claimSlot(nextWBMatch.id, "B");
+          const freeSlot = findFreeSlot(nextWBMatch.id) ?? "B";
+          data.nextSlotWin = freeSlot;
+          claimSlot(nextWBMatch.id, freeSlot);
         }
 
         const lbR1Idx = lbR1R2PosOrder.indexOf(r2Pos);
