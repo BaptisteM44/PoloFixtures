@@ -158,7 +158,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const [presetConfig, setPresetConfig] = useState<PresetConfig>(() =>
     detectPreset(tournament) === "custom"
       ? { saturdayFormat: tournament.saturdayFormat, poolCount: tournament.poolCount ?? 1, swissRounds: tournament.swissRounds ?? 5, bracketSize: tournament.bracketSize ?? 16, sundayFormat: tournament.sundayFormat, crossPool: tournament.crossPool ?? false, thirdPlaceMatch: tournament.thirdPlaceMatch ?? false, gfReset: tournament.gfReset ?? false }
-      : { ...PRESETS[detectPreset(tournament) as Exclude<FormatPreset, "custom">], thirdPlaceMatch: tournament.thirdPlaceMatch ?? true, gfReset: tournament.gfReset ?? false }
+      : { ...PRESETS[detectPreset(tournament) as Exclude<FormatPreset, "custom">], swissRounds: tournament.swissRounds ?? PRESETS[detectPreset(tournament) as Exclude<FormatPreset, "custom">].swissRounds, bracketSize: tournament.bracketSize ?? tournament.maxTeams ?? PRESETS[detectPreset(tournament) as Exclude<FormatPreset, "custom">].bracketSize, thirdPlaceMatch: tournament.thirdPlaceMatch ?? true, gfReset: tournament.gfReset ?? false }
   );
   const [savedCustomConfig, setSavedCustomConfig] = useState<PresetConfig | null>(
     detectPreset(tournament) === "custom" ? presetConfig : null
@@ -732,7 +732,9 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                 <input type="hidden" name="swissRounds" value={presetConfig.swissRounds} />
               )}
               <input type="hidden" name="poolRounds" value={poolRounds} />
-              <input type="hidden" name="bracketSize" value={presetConfig.bracketSize} />
+              {!["swiss_de", "swiss_se"].includes(formatPreset) && (
+                <input type="hidden" name="bracketSize" value={presetConfig.bracketSize} />
+              )}
               <input type="hidden" name="sundayFormat" value={presetConfig.sundayFormat} />
               <input type="hidden" name="crossPool" value={presetConfig.crossPool ? "true" : ""} />
               <input type="hidden" name="thirdPlaceMatch" value={String(presetConfig.thirdPlaceMatch)} />
@@ -742,7 +744,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             {/* Options supplémentaires pour les presets standards (3e place en SE, GF reset en DE) */}
             {!isLocked && formatPreset !== "custom" && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 16, paddingTop: 2, alignItems: "center" }}>
-                {["swiss_de", "swiss_se", "swiss6_split_se", "mtp_open"].includes(formatPreset) && (
+                {["swiss_de", "swiss_se", "swiss6_split_se", "mtp_open"].includes(formatPreset) && (<>
                   <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13 }}>
                     {t("field_swiss_rounds")}
                     <input
@@ -755,7 +757,21 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                       style={{ width: 60 }}
                     />
                   </label>
-                )}
+                  {["swiss_de", "swiss_se"].includes(formatPreset) && (
+                    <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13 }}>
+                      {t("field_bracket_size")}
+                      <input
+                        type="number"
+                        name="bracketSize"
+                        value={presetConfig.bracketSize}
+                        min={2}
+                        max={64}
+                        onChange={(e) => setPresetConfig((p) => ({ ...p, bracketSize: Number(e.target.value) }))}
+                        style={{ width: 60 }}
+                      />
+                    </label>
+                  )}
+                </>)}
                 {presetConfig.sundayFormat === "SE" && (
                   <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
                     <input
