@@ -608,17 +608,23 @@ export async function generateBracketAction(id: string) {
       }
 
       // ── WB R1: winners → WB R2, losers → LB R1 ───────────────────────
+      // WB R1 positionInRound uses absolute bracket positions (0..size/2-1),
+      // but WB R2 uses compact positions (0..w2-1).
+      // Strategy: sort WB R1 by position, then the i-th WB R1 feeds WB R2[floor(i/2)].
       const wbR2Matches = upperByRound.get(2) ?? [];
       const lbR1Matches = lowerByRound.get(1) ?? [];
-      for (const m of wbR1Matches) {
+
+      for (let wi = 0; wi < wbR1Matches.length; wi++) {
+        const m = wbR1Matches[wi]; // already sorted by positionInRound
         const pos = m.positionInRound;
-        const r2Pos = Math.floor(pos / 2);
+        const r2Pos = Math.floor(pos / 2); // absolute r2Pos in size/4 space
         const data: Record<string, unknown> = {};
 
-        const nextWBMatch = wbR2Matches.find(x => x.positionInRound === r2Pos);
+        // WB R2 match index = floor(wi/2), slot = wi%2
+        const nextWBMatch = wbR2Matches[Math.floor(wi / 2)];
         if (nextWBMatch) {
           data.nextMatchWinId = nextWBMatch.id;
-          data.nextSlotWin = pos % 2 === 0 ? "A" : "B";
+          data.nextSlotWin = wi % 2 === 0 ? "A" : "B";
         }
 
         const lbR1Idx = lbR1R2PosOrder.indexOf(r2Pos);
@@ -676,7 +682,7 @@ export async function generateBracketAction(id: string) {
 
       for (let i = 0; i < wbR2Matches.length; i++) {
         const m = wbR2Matches[i];
-        const r2Pos = m.positionInRound;
+        const absR2Pos = i; // WB R2 compact index = absolute r2Pos (0..w2-1)
         const data: Record<string, unknown> = {};
 
         const nextWB = upperByRound.get(3);
@@ -689,7 +695,8 @@ export async function generateBracketAction(id: string) {
           data.nextSlotWin = "A";
         }
 
-        const mirrorR2Pos = w2 - 1 - r2Pos;
+        // Mirror: WB R2 at absR2Pos faces LB R1 at mirrored position (anti-rematch)
+        const mirrorR2Pos = w2 - 1 - absR2Pos;
         const lbR1IdxForMirror = lbR1R2PosOrder.indexOf(mirrorR2Pos);
 
         if (lbR1IdxForMirror >= 0 && lbR1InjectionR2Pos.includes(mirrorR2Pos)) {
