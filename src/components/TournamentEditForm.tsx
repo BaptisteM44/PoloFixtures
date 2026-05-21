@@ -727,7 +727,10 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             {!isLocked && formatPreset !== "custom" && <>
               <input type="hidden" name="saturdayFormat" value={presetConfig.saturdayFormat} />
               <input type="hidden" name="poolCount" value={presetConfig.poolCount} />
-              <input type="hidden" name="swissRounds" value={presetConfig.swissRounds} />
+              {/* swissRounds: hidden by default, overridden by visible input below for swiss presets */}
+              {!["swiss_de", "swiss_se", "swiss6_split_se", "mtp_open"].includes(formatPreset) && (
+                <input type="hidden" name="swissRounds" value={presetConfig.swissRounds} />
+              )}
               <input type="hidden" name="poolRounds" value={poolRounds} />
               <input type="hidden" name="bracketSize" value={presetConfig.bracketSize} />
               <input type="hidden" name="sundayFormat" value={presetConfig.sundayFormat} />
@@ -738,7 +741,21 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
             {/* Options supplémentaires pour les presets standards (3e place en SE, GF reset en DE) */}
             {!isLocked && formatPreset !== "custom" && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 16, paddingTop: 2 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 16, paddingTop: 2, alignItems: "center" }}>
+                {["swiss_de", "swiss_se", "swiss6_split_se", "mtp_open"].includes(formatPreset) && (
+                  <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13 }}>
+                    {t("field_swiss_rounds")}
+                    <input
+                      type="number"
+                      name="swissRounds"
+                      value={presetConfig.swissRounds}
+                      min={1}
+                      max={20}
+                      onChange={(e) => setPresetConfig((p) => ({ ...p, swissRounds: Number(e.target.value) }))}
+                      style={{ width: 60 }}
+                    />
+                  </label>
+                )}
                 {presetConfig.sundayFormat === "SE" && (
                   <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13, cursor: "pointer" }}>
                     <input
