@@ -776,14 +776,28 @@ export async function generateBracketAction(id: string) {
             continue;
           }
 
-          // LB R1 → LB R2: deterministic slot A (LBR1[i] → LBR2[i] slotA)
-          // Ensures each LB R2 match pairs one LB R1 winner (slotA) with one WB R2 loser (slotB)
+          // LB R1 → LB R2
+          // Case A — consolidation branches (2 WB R1 losers): LBR1[i] → LBR2[i] slot A
+          //           WB R2 loser will inject into LBR2[i] slot B
+          // Case B — injection branches (1 WB R1 loser, WB R2 loser already consumed in LBR1):
+          //           LBR1 survivors consolidate → LBR1[0]&[1] → LBR2[0], LBR1[2]&[3] → LBR2[1], etc.
           if (lr === 1) {
             const nextMatches = lowerByRound.get(lbR2RoundIdx) ?? [];
-            const target = nextMatches[i];
+            let target: typeof nextMatches[0] | undefined;
+            if (lbR1ConsolidationR2Pos.length > 0) {
+              // Case A: 1-to-1 mapping
+              target = nextMatches[i];
+            } else {
+              // Case B: consolidation of LB R1 survivors
+              target = nextMatches[Math.floor(i / 2)];
+            }
             if (target) {
-              await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: target.id, nextSlotWin: "A" } });
-              claimSlot(target.id, "A");
+              // Pre-claim slots filled by WB R2 losers (teamBId set)
+              if (target.teamAId) claimSlot(target.id, "A");
+              if (target.teamBId) claimSlot(target.id, "B");
+              const slot = findFreeSlot(target.id) ?? "A";
+              await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: target.id, nextSlotWin: slot } });
+              claimSlot(target.id, slot);
             }
             continue;
           }
