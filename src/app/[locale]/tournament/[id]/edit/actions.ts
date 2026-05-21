@@ -620,8 +620,8 @@ export async function generateBracketAction(id: string) {
         const r2Pos = Math.floor(pos / 2); // absolute r2Pos in size/4 space
         const data: Record<string, unknown> = {};
 
-        // WB R2 match index = floor(wi/2); slot = whichever slot isn't pre-filled by a BYE or already claimed
-        const nextWBMatch = wbR2Matches[Math.floor(wi / 2)];
+        // WB R2 match index = r2Pos (compact index equals absolute r2Pos for WB R2)
+        const nextWBMatch = wbR2Matches[r2Pos];
         if (nextWBMatch) {
           data.nextMatchWinId = nextWBMatch.id;
           // Pre-claim slots already filled by BYE advances (teamAId/teamBId set at creation)
