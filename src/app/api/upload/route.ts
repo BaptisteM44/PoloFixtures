@@ -1,13 +1,19 @@
 import { nanoid } from "nanoid";
 import sharp from "sharp";
-import { createClient } from "@supabase/supabase-js";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const r2 = new S3Client({
+  region: "auto",
+  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+  },
+});
+
+const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!; // e.g. https://pub-xxx.r2.dev
 
 export async function POST(request: Request) {
   const formData = await request.formData();
@@ -31,23 +37,21 @@ export async function POST(request: Request) {
   }
 
   const webpBuffer = await sharp(buffer).webp({ quality: 82 }).toBuffer();
-
   const filename = `${folder}/${nanoid(8)}.webp`;
 
-  const { error } = await supabase.storage
-    .from("uploads")
-    .upload(filename, webpBuffer, {
-      contentType: "image/webp",
-      upsert: false,
-      cacheControl: "31536000",
-    });
-
-  if (error) {
-    console.error("Supabase upload error:", error);
+  try {
+    await r2.send(new PutObjectCommand({
+      Bucket: "uploads",
+      Key: filename,
+      Body: webpBuffer,
+      ContentType: "image/webp",
+      CacheControl: "public, max-age=31536000",
+    }));
+  } catch (err) {
+    console.error("R2 upload error:", err);
     return new Response("Erreur upload", { status: 500 });
   }
 
-  const { data } = supabase.storage.from("uploads").getPublicUrl(filename);
-
-  return Response.json({ path: data.publicUrl, isBase64: false });
+  const publicUrl = `${R2_PUBLIC_URL}/${filename}`;
+  return Response.json({ path: publicUrl, isBase64: false });
 }
