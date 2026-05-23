@@ -456,7 +456,7 @@ export async function generateBracketAction(id: string) {
           const semis = wMatches.filter(m => m.roundIndex === semiRound - 1 ||
             (m.roundIndex === maxWRound - 1 && created.find(x => x.bracketSide === "G" && x.roundIndex === m.roundIndex + 1)));
           // Find the two W matches whose winners go to the G final
-          const gFinal = created.find(m => m.bracketSide === "G");
+          const gFinal = created.filter(m => m.bracketSide === "G").sort((a, b) => a.roundIndex - b.roundIndex)[0];
           const semiMatches = gFinal
             ? wMatches.filter(m => m.roundIndex === gFinal.roundIndex - 1)
             : [];
@@ -529,7 +529,7 @@ export async function generateBracketAction(id: string) {
       const upperRounds = Math.log2(size);
       const w2 = size / 4;
 
-      const grandFinal = created.find(m => m.bracketSide === "G");
+      const grandFinal = created.filter(m => m.bracketSide === "G").sort((a, b) => a.roundIndex - b.roundIndex)[0];
       const maxLR = Math.max(...created.filter(m => m.bracketSide === "L").map(m => m.roundIndex), 0);
 
       const upperByRound = new Map<number, typeof created>();
@@ -1117,7 +1117,7 @@ export async function generateCrossPoolDEAction(id: string) {
     const maxUR = Math.max(...created.filter(m => m.bracketSide === "W").map(m => m.roundIndex), 0);
     const minUR = Math.min(...created.filter(m => m.bracketSide === "W").map(m => m.roundIndex));
     const maxLR = Math.max(...created.filter(m => m.bracketSide === "L").map(m => m.roundIndex), 0);
-    const grandFinal = created.find(m => m.bracketSide === "G");
+    const grandFinal = created.filter(m => m.bracketSide === "G").sort((a, b) => a.roundIndex - b.roundIndex)[0];
 
     const upperByRound = new Map<number, typeof created>();
     const lowerByRound = new Map<number, typeof created>();
