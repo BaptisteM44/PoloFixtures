@@ -486,6 +486,17 @@ function ItemCard({ item, playerId, isAdmin, voting, onVote, onUnvote, onOpen, o
         <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: 4 }}>
           🗣️ {item.replyCount}
         </span>
+      </div>
+
+      {/* Meh comment display */}
+      {item.myVote === "meh" && item.myVoteComment && (
+        <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
+          {t("meh_comment_label", { comment: item.myVoteComment })}
+        </p>
+      )}
+
+      {/* Actions row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
         {(isAdmin || (playerId && item.authorId === playerId)) && (
           <button
             type="button"

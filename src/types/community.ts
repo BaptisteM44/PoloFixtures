@@ -20,6 +20,7 @@ export interface CommunityItem {
   score: number;
   replyCount: number;
   myVote: VoteType | null;
+  myVoteComment: string | null;
 }
 
 export interface CommunityReply {

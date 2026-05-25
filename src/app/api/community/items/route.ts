@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     where: whereStatus,
     include: {
       author: { select: { id: true, name: true, slug: true } },
-      votes: { select: { vote: true, playerId: true } },
+      votes: { select: { vote: true, playerId: true, comment: true } },
       replies: { select: { id: true } },
     },
     orderBy: sort === "new" ? { createdAt: "desc" } : { createdAt: "desc" },
@@ -68,6 +68,9 @@ export async function GET(request: NextRequest) {
       const score = computeScore(up, meh, down, replyCount);
       const myVote = playerId
         ? item.votes.find((v) => v.playerId === playerId)?.vote ?? null
+        : null;
+      const myVoteComment = playerId
+        ? item.votes.find((v) => v.playerId === playerId)?.comment ?? null
         : null;
       return {
         id: item.id,
@@ -87,6 +90,7 @@ export async function GET(request: NextRequest) {
         score,
         replyCount,
         myVote,
+        myVoteComment,
       };
     })
     .sort((a, b) => {
