@@ -5661,6 +5661,7 @@ textarea {
   font-weight: 700;
   color: var(--teal);
   background: var(--gray);
+  border-radius: 8px;
 }
 
 /* Country flag / club logo emblem — centered on corner of photo */
