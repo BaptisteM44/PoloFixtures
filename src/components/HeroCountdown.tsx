@@ -65,7 +65,7 @@ export function HeroCountdown({ dateStart, dateEnd, registrationEnd, teamCount, 
       <div className="hero-gauge">
         <div className="hero-gauge__label">
           <span>{t("teams_count", { count: teamCount, max: maxTeams })}</span>
-          {pct >= 100 && <span className="hero-gauge__full-badge">{t("status_full")}</span>}
+          {pct >= 100 && registrationEnd && new Date(registrationEnd).getTime() < Date.now() && <span className="hero-gauge__full-badge">{t("status_full")}</span>}
         </div>
         <div className="hero-gauge__track">
           <div
