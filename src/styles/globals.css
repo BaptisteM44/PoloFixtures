@@ -100,6 +100,25 @@
 [data-theme="dark"] .about-mockup__badge {
   color: #1a1a1a;
 }
+/* Fond jaune → texte sombre en dark mode */
+[data-theme="dark"] .nav a:hover,
+[data-theme="dark"] .nav-drawer__links a:hover,
+[data-theme="dark"] .hero h1 em,
+[data-theme="dark"] .hero-feature-card,
+[data-theme="dark"] .hero-feature-card h3,
+[data-theme="dark"] .hero-feature-card p,
+[data-theme="dark"] .status.upcoming,
+[data-theme="dark"] .status.announced,
+[data-theme="dark"] .orga-priority-badge--high,
+[data-theme="dark"] .recap-mvp-toggle:hover,
+[data-theme="dark"] .recap-mvp-selector__pill--on,
+[data-theme="dark"] .badge,
+[data-theme="dark"] .de-section--lower .de-section-title,
+[data-theme="dark"] .my-tournaments__teammate-cap,
+[data-theme="dark"] .club-banner__postit--session,
+[data-theme="dark"] .tournament-hero__dates {
+  color: #1a1a1a;
+}
 [data-theme="dark"] .data-loss-notice {
   background: color-mix(in srgb, var(--yellow) 15%, var(--surface));
   border-color: var(--yellow);

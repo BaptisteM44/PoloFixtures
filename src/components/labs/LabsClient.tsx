@@ -331,8 +331,11 @@ function ItemCard({ item, playerId, isAdmin, voting, onVote, onUnvote, onOpen, o
   };
 
   const handleVoteClick = (vote: VoteType) => {
-    if (item.myVote === vote) { onUnvote(item.id); return; }
-    if (vote === "meh") { setShowMehInput(true); return; }
+    if (item.myVote === vote) {
+      if (vote === "meh") { setShowMehInput(true); setMehComment(item.myVoteComment ?? ""); return; }
+      onUnvote(item.id); return;
+    }
+    if (vote === "meh") { setShowMehInput(true); setMehComment(""); return; }
     onVote(item.id, vote);
   };
 
@@ -489,9 +492,17 @@ function ItemCard({ item, playerId, isAdmin, voting, onVote, onUnvote, onOpen, o
       </div>
 
       {/* Meh comment display */}
-      {item.myVote === "meh" && item.myVoteComment && (
-        <p style={{ marginTop: 8, fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
-          {t("meh_comment_label", { comment: item.myVoteComment })}
+      {item.myVote === "meh" && item.myVoteComment && !showMehInput && (
+        <p style={{ marginTop: 8, fontSize: 12, color: "var(--text)", fontStyle: "italic",
+          background: "var(--surface-2)", borderLeft: "3px solid var(--yellow)",
+          padding: "5px 8px", borderRadius: "0 5px 5px 0" }}>
+          💬 {item.myVoteComment}
+        </p>
+      )}
+      {item.myVote === "meh" && !item.myVoteComment && !showMehInput && (
+        <p style={{ marginTop: 6, fontSize: 12, color: "var(--yellow)", cursor: "pointer", fontStyle: "italic" }}
+          onClick={() => setShowMehInput(true)}>
+          ✏️ {t("meh_add_comment" as any) ?? "Ajouter un commentaire"}
         </p>
       )}
 

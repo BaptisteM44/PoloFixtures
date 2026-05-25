@@ -102,8 +102,12 @@ export function LabsItemModal({ item, playerId, isAdmin, charterAccepted, onClos
   };
 
   const handleVoteClick = (vote: VoteType) => {
-    if (item.myVote?.vote === vote) { onUnvote(item.id); return; }
-    if (vote === "meh") { setShowMeh(true); return; }
+    if (item.myVote?.vote === vote) {
+      // Si c'est un vote meh : on rouvre le formulaire pour modifier le commentaire, pas dé-voter
+      if (vote === "meh") { setShowMeh(true); setMehComment(item.myVote?.comment ?? ""); return; }
+      onUnvote(item.id); return;
+    }
+    if (vote === "meh") { setShowMeh(true); setMehComment(""); return; }
     onVote(item.id, vote);
   };
 
@@ -295,9 +299,25 @@ export function LabsItemModal({ item, playerId, isAdmin, charterAccepted, onClos
             })}
           </div>
 
-          {item.myVote?.comment && (
-            <p style={{ marginTop: 10, fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>
-              {t("meh_comment_label", { comment: item.myVote.comment })}
+          {item.myVote?.comment && !showMeh && (
+            <p style={{ marginTop: 10, fontSize: 13, color: "var(--text)", fontStyle: "italic",
+              background: "var(--surface-2)", borderLeft: "3px solid var(--yellow)",
+              padding: "6px 10px", borderRadius: "0 6px 6px 0" }}>
+              💬 {item.myVote.comment}
+              <button
+                type="button"
+                onClick={() => { setShowMeh(true); setMehComment(item.myVote!.comment ?? ""); }}
+                style={{ marginLeft: 8, fontSize: 11, color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}
+              >
+                {t("edit" as any) ?? "✏️"}
+              </button>
+            </p>
+          )}
+
+          {item.myVote?.vote === "meh" && !item.myVote?.comment && !showMeh && (
+            <p style={{ marginTop: 10, fontSize: 12, color: "var(--yellow)", fontStyle: "italic", cursor: "pointer" }}
+              onClick={() => setShowMeh(true)}>
+              ✏️ {t("meh_add_comment" as any) ?? "Ajouter un commentaire"}
             </p>
           )}
 
