@@ -252,6 +252,8 @@ model Tournament {
   fridayRounds            Int              @default(5)
   saturdayRounds          Int              @default(5)
   sundayRounds            Int              @default(2)      // 1 or 2
+  fridayGroupAStart       DateTime?        // Friday group A start time (morning)
+  fridayGroupBStart       DateTime?        // Friday group B start time (afternoon)
   status                  TournamentStatus
   locked                  Boolean          @default(false)
   saturdayPoolAStart      DateTime?        // Pool A session start time (for match scheduling)

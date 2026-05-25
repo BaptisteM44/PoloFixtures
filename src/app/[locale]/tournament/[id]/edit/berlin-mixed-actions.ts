@@ -14,6 +14,26 @@ import {
 } from "@/lib/berlin-mixed";
 import { MatchPhase } from "@prisma/client";
 
+// ─── Schedule helpers ─────────────────────────────────────────────────────────
+
+/**
+ * Compute the start time for the next round.
+ * - Round 1: use the configured start time (fallbackStart).
+ * - Round N+1: latest startAt in the completed round + gameDurationMin + 5 min buffer.
+ */
+function computeNextRoundStart(
+  groupMatches: Array<{ roundIndex: number; startAt: Date | string }>,
+  completedRound: number,
+  gameDurationMin: number,
+  fallbackStart: Date
+): Date {
+  if (completedRound === 0) return fallbackStart;
+  const roundMatches = groupMatches.filter((m) => m.roundIndex === completedRound);
+  if (roundMatches.length === 0) return fallbackStart;
+  const lastMs = Math.max(...roundMatches.map((m) => new Date(m.startAt).getTime()));
+  return new Date(lastMs + (gameDurationMin + 5) * 60 * 1000);
+}
+
 async function requireOrgaAccess(tournamentId: string) {
   const playerId = await getOrgaPlayerId(tournamentId);
   if (!playerId) return { error: "Accès refusé." };
@@ -90,6 +110,10 @@ export async function generateFridaySwissRoundAction(
   );
   const nextRound = existingRounds + 1;
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const fallback = group === "A"
+    ? new Date((tournament as any).fridayGroupAStart ?? tournament.dateStart)
+    : new Date((tournament as any).fridayGroupBStart ?? tournament.dateStart);
+  const roundStart = computeNextRoundStart(groupMatches, existingRounds, tournament.gameDurationMin, fallback);
 
   const newMatches = generateBerlinSwissRound(
     tournament.teams,
@@ -98,7 +122,7 @@ export async function generateFridaySwissRoundAction(
     nextRound,
     `Fri-${group}`,
     courtNames,
-    new Date(tournament.dateStart),
+    roundStart,
     tournament.gameDurationMin,
     "FRI"
   );
@@ -232,6 +256,10 @@ export async function generateSaturdaySwissRoundAction(
   );
   const nextRound = existingRounds + 1;
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const satFallback = group === "A"
+    ? new Date((tournament as any).saturdayPoolAStart ?? tournament.dateEnd)
+    : new Date((tournament as any).saturdayPoolBStart ?? tournament.dateEnd);
+  const roundStart = computeNextRoundStart(groupMatches, existingRounds, tournament.gameDurationMin, satFallback);
 
   const newMatches = generateBerlinSwissRound(
     tournament.teams,
@@ -240,7 +268,7 @@ export async function generateSaturdaySwissRoundAction(
     nextRound,
     `Sat-${group}`,
     courtNames,
-    new Date(tournament.dateEnd), // Saturday = dateEnd day 1 — adjust if needed
+    roundStart,
     tournament.gameDurationMin,
     "SAT"
   );
@@ -319,6 +347,8 @@ export async function generateSundaySwissRoundAction(tournamentId: string) {
 
   const nextRound = existingRounds + 1;
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const sunFallback = new Date(tournament.dateEnd);
+  const roundStart = computeNextRoundStart(sundayMatches, existingRounds, tournament.gameDurationMin, sunFallback);
 
   const newMatches = generateSundaySwissRound(
     tournament.teams,
@@ -326,7 +356,7 @@ export async function generateSundaySwissRoundAction(tournamentId: string) {
     allPrior,
     nextRound,
     courtNames,
-    new Date(tournament.dateEnd),
+    roundStart,
     tournament.gameDurationMin
   );
 

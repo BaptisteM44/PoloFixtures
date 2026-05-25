@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { sendMail } from "@/lib/mailer";
+import { getLangFromCountry, announceEmail } from "@/lib/email-templates";
 import { z } from "zod";
 
 const schema = z.object({
@@ -54,15 +55,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         select: {
           name: true,
           status: true,
+          country: true,
           account: { select: { email: true } },
         },
       },
       team: { select: { name: true } },
     },
   });
-
-  const appUrl = process.env.NEXTAUTH_URL ?? "https://poloperator.com";
-  const tournamentUrl = `${appUrl}/tournament/${tournament.slug ?? tournament.id}`;
 
   const messageHtml = message.replace(/\n/g, "<br>");
 
@@ -73,18 +72,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const email = tp.player.account?.email;
     if (!email || tp.player.status !== "ACTIVE") continue;
 
-    const html = `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-      <h2 style="color:#1a1a1a">📢 ${tournament.name}</h2>
-      <p style="color:#444;font-size:13px">Message de l'organisation · ${target === "captains" ? `Capitaine de ${tp.team.name}` : tp.team.name}</p>
-      <div style="background:#f5f5f5;border-radius:8px;padding:16px;margin:16px 0;font-size:15px;line-height:1.6">
-        ${messageHtml}
-      </div>
-      <p><a href="${tournamentUrl}" style="background:#60c9cf;color:#1a1a1a;padding:10px 20px;text-decoration:none;border-radius:6px;font-weight:bold">Voir le tournoi</a></p>
-      <p style="color:#666;font-size:12px;margin-top:32px">Poloperator — <a href="${appUrl}">poloperator.com</a></p>
-    </div>`;
+    const lang = getLangFromCountry((tp.player as any).country);
+    const recipientLabel = tp.team.name;
+    const appUrl = process.env.NEXTAUTH_URL ?? "https://poloperator.com";
+    const tournamentUrl = `${appUrl}/tournament/${tournament.slug ?? tournament.id}`;
+    const { subject: emailSubject, html } = announceEmail(lang, {
+      tournamentName: tournament.name,
+      tournamentUrl,
+      subject,
+      messageHtml,
+      recipientLabel,
+    });
 
     try {
-      await sendMail({ to: email, subject: `[${tournament.name}] ${subject}`, html });
+      await sendMail({ to: email, subject: emailSubject, html });
       sent++;
     } catch {
       errors.push(email);

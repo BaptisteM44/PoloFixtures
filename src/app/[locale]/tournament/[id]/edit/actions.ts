@@ -2905,6 +2905,26 @@ export async function updateMtpTimesAction(
   return { ok: true };
 }
 
+export async function updateBerlinTimesAction(
+  tournamentId: string,
+  fridayGroupAStart: string | null,
+  fridayGroupBStart: string | null
+): Promise<{ ok?: boolean; error?: string }> {
+  "use server";
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+  await (prisma.tournament.update as any)({
+    where: { id: tournamentId },
+    data: {
+      fridayGroupAStart: fridayGroupAStart ? new Date(fridayGroupAStart) : null,
+      fridayGroupBStart: fridayGroupBStart ? new Date(fridayGroupBStart) : null,
+    },
+  });
+  revalidatePath(`/tournament/${tournamentId}`);
+  revalidatePath(`/tournament/${tournamentId}/edit`);
+  return { ok: true };
+}
+
 export async function updatePoolRoundsAction(tournamentId: string, poolRounds: number | null) {
   "use server";
   const denied = await requireTournamentOrgaAccess(tournamentId);

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { sendMail } from "@/lib/mailer";
 import { createNotification } from "@/lib/notify";
+import { getLangFromCountry, selectionEmail, waitlistEmail } from "@/lib/email-templates";
 import { z } from "zod";
 
 const schema = z.object({
@@ -38,8 +39,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const { sendNotif, sendMail: doMail } = parsed.data;
-  const appUrl = process.env.NEXTAUTH_URL ?? "https://poloperator.com";
-  const tournamentUrl = `${appUrl}/tournament/${tournament.slug ?? tournament.id}`;
 
   // Fetch all teams with their players
   const teams = await prisma.team.findMany({
@@ -52,7 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         include: {
           player: {
             select: {
-              id: true, name: true, status: true,
+              id: true, name: true, status: true, country: true,
               account: { select: { email: true } },
             },
           },
@@ -87,24 +86,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
       if (doMail && p.account?.email) {
         const email = p.account.email;
-        const html = isSelected
-          ? `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-              <h2 style="color:#1a1a1a">🎉 Votre équipe est sélectionnée !</h2>
-              <p>Bonne nouvelle ! L'équipe <strong>${team.name}</strong> a été sélectionnée pour participer à <strong>${tournament.name}</strong>.</p>
-              <p><a href="${tournamentUrl}" style="background:#60c9cf;color:#1a1a1a;padding:10px 20px;text-decoration:none;border-radius:6px;font-weight:bold">Voir le tournoi</a></p>
-              <p style="color:#666;font-size:12px;margin-top:32px">Poloperator — <a href="${appUrl}">poloperator.com</a></p>
-            </div>`
-          : `<div style="font-family:sans-serif;max-width:600px;margin:0 auto">
-              <h2 style="color:#1a1a1a">⏳ Liste d'attente #${team.waitlistPosition}</h2>
-              <p>L'équipe <strong>${team.name}</strong> est en liste d'attente <strong>#${team.waitlistPosition}</strong> pour <strong>${tournament.name}</strong>.</p>
-              <p>Vous serez contactés si une place se libère.</p>
-              <p><a href="${tournamentUrl}" style="background:#60c9cf;color:#1a1a1a;padding:10px 20px;text-decoration:none;border-radius:6px;font-weight:bold">Voir le tournoi</a></p>
-              <p style="color:#666;font-size:12px;margin-top:32px">Poloperator — <a href="${appUrl}">poloperator.com</a></p>
-            </div>`;
-
-        const subject = isSelected
-          ? `✅ ${team.name} — Sélectionnée pour ${tournament.name}`
-          : `⏳ ${team.name} — Liste d'attente #${team.waitlistPosition} pour ${tournament.name}`;
+        const lang = getLangFromCountry((p as any).country);
+        const { subject, html } = isSelected
+          ? selectionEmail(lang, {
+              teamName: team.name,
+              tournamentName: tournament.name,
+              tournamentId: tournament.id,
+              tournamentSlug: tournament.slug ?? "",
+            })
+          : waitlistEmail(lang, {
+              teamName: team.name,
+              tournamentName: tournament.name,
+              tournamentId: tournament.id,
+              tournamentSlug: tournament.slug ?? "",
+              rank: team.waitlistPosition!,
+            });
 
         await sendMail({ to: email, subject, html })
           .then(() => mailSent++)

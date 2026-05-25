@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendMail } from "@/lib/mailer";
+import { getLangFromCountry, tournamentDigestEmail } from "@/lib/email-templates";
 
 export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest) {
             select: {
               id: true,
               name: true,
+              country: true,
               account: { select: { email: true } },
               notificationPreference: true,
             },
@@ -89,6 +91,7 @@ export async function GET(req: NextRequest) {
         select: {
           id: true,
           name: true,
+          country: true,
           account: { select: { email: true } },
         },
       },
@@ -121,89 +124,51 @@ export async function GET(req: NextRequest) {
 
     if (matchingNew.length === 0 && matchingClosing.length === 0) continue;
 
-    const appUrl = process.env.NEXTAUTH_URL ?? "https://poloperator.app";
-
-    const newList = matchingNew
-      .map((t) => `<li><strong>${t.name}</strong> — ${t.city}, ${t.country} (${new Date(t.dateStart).toLocaleDateString("fr-FR")})<br><a href="${appUrl}/tournaments/${t.id}">Voir le tournoi</a></li>`)
-      .join("");
-
-    const closingList = matchingClosing
-      .map((t) => `<li><strong>${t.name}</strong> — ${t.city}, ${t.country} · Inscriptions jusqu'au <strong>${new Date((t as any).registrationEnd).toLocaleDateString("fr-FR")}</strong><br><a href="${appUrl}/tournaments/${t.id}">S'inscrire</a></li>`)
-      .join("");
-
-    const sections = [
-      matchingNew.length > 0 ? `<h3>🆕 Nouveaux tournois</h3><ul>${newList}</ul>` : "",
-      matchingClosing.length > 0 ? `<h3>⏳ Inscriptions qui ferment bientôt</h3><ul>${closingList}</ul>` : "",
-    ].join("");
-
-    const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1a1a1a;">Bike Polo — Actualités tournois</h2>
-        <p>Bonjour ${pref.player.name},</p>
-        ${sections}
-        <p>
-          <a href="${appUrl}/tournaments"
-             style="background: #60c9cf; color: #1a1a1a; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-            Voir tous les tournois
-          </a>
-        </p>
-        <p style="color: #666; font-size: 12px; margin-top: 32px;">
-          Vous recevez cet email car vous avez activé les notifications sur Poloperator.<br>
-          <a href="${appUrl}/settings/notifications">Gérer mes préférences</a>
-        </p>
-      </div>
-    `;
-
-    const subjectParts = [];
-    if (matchingNew.length > 0) subjectParts.push(`${matchingNew.length} nouveau${matchingNew.length > 1 ? "x" : ""} tournoi${matchingNew.length > 1 ? "s" : ""}`);
-    if (matchingClosing.length > 0) subjectParts.push(`${matchingClosing.length} inscription${matchingClosing.length > 1 ? "s" : ""} qui ferme${matchingClosing.length > 1 ? "nt" : ""} bientôt`);
-
-    await sendMail({
-      to: email,
-      subject: `Bike Polo — ${subjectParts.join(" · ")}`,
-      html,
+    const lang = getLangFromCountry(pref.player.country);
+    const { subject, html } = tournamentDigestEmail(lang, {
+      playerName: pref.player.name,
+      newTournaments: matchingNew.map((t) => ({
+        name: t.name,
+        city: t.city,
+        country: t.country,
+        dateStart: t.dateStart.toISOString(),
+        id: t.id,
+      })),
+      closingTournaments: matchingClosing.map((t) => ({
+        name: t.name,
+        city: t.city,
+        country: t.country,
+        registrationEnd: ((t as any).registrationEnd as Date).toISOString(),
+        id: t.id,
+      })),
     });
+
+    await sendMail({ to: email, subject, html });
 
     sentViaGeoFilter.add(pref.player.id);
     sent++;
   }
 
   // ── Passe 3 : envoyer aux joueurs qui suivent des tournois mais n'ont pas déjà reçu l'email ──
-  const appUrl = process.env.NEXTAUTH_URL ?? "https://poloperator.app";
   for (const [playerId, { player, tournaments }] of followedByPlayer.entries()) {
-    // Skip if already notified via geo filter
     if (sentViaGeoFilter.has(playerId)) continue;
     const email = player.account?.email;
     if (!email) continue;
 
-    const closingList = tournaments
-      .map((t: any) => `<li><strong>${t.name}</strong> — ${t.city}, ${t.country} · Inscriptions jusqu'au <strong>${new Date(t.registrationEnd).toLocaleDateString("fr-FR")}</strong><br><a href="${appUrl}/tournament/${t.id}">S'inscrire</a></li>`)
-      .join("");
-
-    const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #1a1a1a;">Bike Polo — Inscriptions qui ferment bientôt</h2>
-        <p>Bonjour ${player.name},</p>
-        <h3>⭐ Tournois que vous suivez</h3>
-        <ul>${closingList}</ul>
-        <p>
-          <a href="${appUrl}/tournaments"
-             style="background: #60c9cf; color: #1a1a1a; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-            Voir tous les tournois
-          </a>
-        </p>
-        <p style="color: #666; font-size: 12px; margin-top: 32px;">
-          Vous recevez cet email car vous suivez ces tournois sur Poloperator.<br>
-          <a href="${appUrl}/settings/notifications">Gérer mes préférences</a>
-        </p>
-      </div>
-    `;
-
-    await sendMail({
-      to: email,
-      subject: `Bike Polo — ${tournaments.length} tournoi${tournaments.length > 1 ? "s suivis ferment" : " suivi ferme"} bientôt`,
-      html,
+    const lang = getLangFromCountry((player as any).country);
+    const { subject, html } = tournamentDigestEmail(lang, {
+      playerName: player.name,
+      newTournaments: [],
+      closingTournaments: tournaments.map((t: any) => ({
+        name: t.name,
+        city: t.city,
+        country: t.country,
+        registrationEnd: t.registrationEnd instanceof Date ? t.registrationEnd.toISOString() : t.registrationEnd,
+        id: t.id,
+      })),
     });
+
+    await sendMail({ to: email, subject, html });
 
     sent++;
   }
