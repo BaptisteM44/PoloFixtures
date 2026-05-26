@@ -342,7 +342,7 @@ export default function MyTournamentsPage() {
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
                       <span className={`my-tournaments__status-badge ${statusCls}`}>{statusLabel(tour.status)}</span>
                       {!tour.approved && (
-                        <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "var(--font-display)", background: "var(--yellow)", border: "1.5px solid var(--border)", borderRadius: 4, padding: "2px 7px" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, fontFamily: "var(--font-display)", background: "var(--yellow)", color: "#1a1a1a", border: "1.5px solid var(--border)", borderRadius: 4, padding: "2px 7px" }}>
                           {t("pending")}
                         </span>
                       )}

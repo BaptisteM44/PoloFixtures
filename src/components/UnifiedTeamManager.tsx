@@ -481,7 +481,7 @@ function TeamRow({
                 <div key={tp.player.id} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 12 }}>
                   <span style={{ fontWeight: 600, minWidth: 100 }}>{tp.player.name}</span>
                   {diets.map((d) => (
-                    <span key={d} style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "var(--yellow)", color: "var(--text)", border: "1.5px solid var(--border)" }}>
+                    <span key={d} style={{ fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 4, background: "var(--yellow)", color: "#1a1a1a", border: "1.5px solid var(--border)" }}>
                       {dietLabels[d] ?? d}
                     </span>
                   ))}

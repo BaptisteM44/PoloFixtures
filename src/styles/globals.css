@@ -115,8 +115,10 @@
 [data-theme="dark"] .badge,
 [data-theme="dark"] .de-section--lower .de-section-title,
 [data-theme="dark"] .my-tournaments__teammate-cap,
-[data-theme="dark"] .club-banner__postit--session,
-[data-theme="dark"] .tournament-hero__dates {
+[data-theme="dark"] .my-tournaments__captain-badge,
+[data-theme="dark"] .clock,
+[data-theme="dark"] .continent-card .continent-stat,
+[data-theme="dark"] .club-banner__postit--session {
   color: #1a1a1a;
 }
 [data-theme="dark"] .data-loss-notice {
