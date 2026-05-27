@@ -256,7 +256,7 @@ export function AccommodationManager({
           <h4 style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>{t("accommodation_unassigned_title")}</h4>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {unassigned.filter((tp) => tp.needsAccommodation).map((tp) => (
-              <span key={tp.id} style={{ fontSize: 12, padding: "3px 10px", background: "var(--warning-muted, #fff3cd)", border: "1px solid var(--warning, #ffc107)", borderRadius: 12 }}>
+              <span key={tp.id} style={{ fontSize: 12, padding: "3px 10px", background: "var(--warning-muted, #fff3cd)", border: "1px solid var(--warning, #ffc107)", borderRadius: 12, color: "#1a1a1a" }}>
                 {tp.player.name} · {tp.team.name}
                 {tp.player.petAllergies && <span title={`🐾 ${tp.player.petAllergies}`}> 🐾</span>}
                 {tp.player.foodAllergies && <span title={`🍽 ${tp.player.foodAllergies}`}> 🍽</span>}
