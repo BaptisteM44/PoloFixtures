@@ -2628,7 +2628,7 @@ function resolveMtpPoolTeams<T extends { id: string }>(
     const poolB = dbPoolB.teams.map((pt) => teams.find((t) => t.id === pt.teamId)!).filter(Boolean);
     return { poolA, poolB };
   }
-  return splitMtpPools(teams as any) as { poolA: T[]; poolB: T[] };
+  return splitMtpPools(teams as any) as unknown as { poolA: T[]; poolB: T[] };
 }
 
 export async function launchMtpCrossPoolAction(id: string): Promise<{ ok?: boolean; error?: string }> {
