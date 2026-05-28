@@ -38,7 +38,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const pools = generatePools(tournament.teams, tournament.saturdayFormat);
     const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
     const startAt = new Date(tournament.dateStart);
-    const matches = generatePoolMatches(pools, courtNames, startAt, tournament.gameDurationMin);
+    const matches = generatePoolMatches(pools, courtNames, startAt, tournament.gameDurationMin, { mazzaSequential: tournament.sundayFormat === "SPLIT_SE" });
 
     await prisma.$transaction(async (tx) => {
       await tx.match.deleteMany({ where: { tournamentId: tournament.id, phase: "POOL" } });

@@ -302,7 +302,8 @@ export async function generatePoolsAction(id: string) {
   }
 
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
-  const matches = generatePoolMatches(pools, courtNames, new Date(tournament.dateStart), tournament.gameDurationMin);
+  const isMazza = tournament.sundayFormat === "SPLIT_SE";
+  const matches = generatePoolMatches(pools, courtNames, new Date(tournament.dateStart), tournament.gameDurationMin, { mazzaSequential: isMazza });
 
   await prisma.$transaction(async (tx) => {
     await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: "POOL" } } });

@@ -287,7 +287,10 @@ export function ScheduleBoard({
         const bLatest = Math.max(...b.matches.map(m => new Date(m.startAt).getTime()));
         return bLatest - aLatest;
       }
-      // Both scheduled: by round index ascending
+      // Both scheduled: by earliest startAt in the group, then roundIndex as tiebreaker
+      const aStart = Math.min(...a.matches.map(m => new Date(m.startAt).getTime()));
+      const bStart = Math.min(...b.matches.map(m => new Date(m.startAt).getTime()));
+      if (aStart !== bStart) return aStart - bStart;
       return a.roundIndex - b.roundIndex;
     });
 

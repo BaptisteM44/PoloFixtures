@@ -114,10 +114,60 @@ export function generatePoolMatches(
   pools: PoolSeed[],
   courtNames: string[],
   startAt: Date,
-  gameDurationMin: number
+  gameDurationMin: number,
+  options?: { mazzaSequential?: boolean }
 ): GeneratedMatch[] {
   const matches: GeneratedMatch[] = [];
   const slotMin = gameDurationMin + 5;
+
+  if (options?.mazzaSequential && pools.length === 2) {
+    // Mazza D'Oro sequential schedule (single court, 8 teams/pool = 7 rounds each):
+    // Bloc 1: Pool A R1-R4
+    // Bloc 2: Pool B R1-R3
+    // Bloc 3: Pool B R4-R7
+    // Bloc 4: Pool A R5-R7
+    const [poolA, poolB] = pools;
+    const roundsA = circleMethodRounds(poolA.teams);
+    const roundsB = circleMethodRounds(poolB.teams);
+
+    const courtFree = courtNames.map(() => new Date(startAt));
+
+    const pushRounds = (pool: PoolSeed, poolIdx: number, rounds: [Team, Team][][], from: number, to: number) => {
+      for (let r = from; r < to && r < rounds.length; r++) {
+        for (const pair of rounds[r]) {
+          let bestIdx = 0;
+          for (let c = 1; c < courtNames.length; c++) {
+            if (courtFree[c] < courtFree[bestIdx]) bestIdx = c;
+          }
+          matches.push({
+            phase: "POOL",
+            poolName: pool.name,
+            poolSessionIndex: poolIdx,
+            bracketSide: null,
+            roundIndex: r + 1,
+            courtName: courtNames[bestIdx],
+            startAt: new Date(courtFree[bestIdx]),
+            dayIndex: "SAT",
+            status: "SCHEDULED",
+            teamAId: pair[0].id,
+            teamBId: pair[1].id,
+          });
+          courtFree[bestIdx] = addMinutes(courtFree[bestIdx], slotMin);
+        }
+      }
+    };
+
+    // Bloc 1: Pool A R1-R4 (indices 0-3)
+    pushRounds(poolA, 0, roundsA, 0, 4);
+    // Bloc 2: Pool B R1-R3 (indices 0-2)
+    pushRounds(poolB, 1, roundsB, 0, 3);
+    // Bloc 3: Pool B R4-R7 (indices 3-6)
+    pushRounds(poolB, 1, roundsB, 3, 7);
+    // Bloc 4: Pool A R5-R7 (indices 4-6)
+    pushRounds(poolA, 0, roundsA, 4, 7);
+
+    return matches;
+  }
 
   // Per-pool courts: each pool gets its own court timeline (separate sessions)
   const poolRounds = pools.map((pool, poolIdx) => ({
@@ -126,8 +176,6 @@ export function generatePoolMatches(
     rounds: circleMethodRounds(pool.teams),
     courtFree: courtNames.map(() => new Date(startAt)), // Each pool starts at same time
   }));
-
-  const maxRounds = Math.max(...poolRounds.map((pr) => pr.rounds.length), 0);
 
   // Schedule each pool's rounds sequentially (no interleaving between pools)
   for (const { poolIdx, pool, rounds, courtFree } of poolRounds) {
