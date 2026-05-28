@@ -2657,8 +2657,8 @@ export async function launchMtpCrossPoolAction(id: string): Promise<{ ok?: boole
   }
 
   const { poolA, poolB } = resolveMtpPoolTeams(tournament.teams, tournament.pools);
-  const poolAStandings = computeStandings(poolA, poolAMatches as any, (tournament as any).scoringSystem);
-  const poolBStandings = computeStandings(poolB, poolBMatches as any, (tournament as any).scoringSystem);
+  const poolAStandings = computeStandings(poolA as any, poolAMatches as any, (tournament as any).scoringSystem);
+  const poolBStandings = computeStandings(poolB as any, poolBMatches as any, (tournament as any).scoringSystem);
 
   if (poolAStandings.length === 0 || poolBStandings.length === 0) return { error: "Il faut des équipes classées dans chaque pool pour le cross-pool." };
 
@@ -2718,8 +2718,8 @@ export async function launchMtpBarrageAction(id: string): Promise<{ ok?: boolean
   }
 
   const { poolA, poolB } = resolveMtpPoolTeams(tournament.teams, tournament.pools);
-  const poolAStandings = computeStandings(poolA, poolAMatches as any, (tournament as any).scoringSystem);
-  const poolBStandings = computeStandings(poolB, poolBMatches as any, (tournament as any).scoringSystem);
+  const poolAStandings = computeStandings(poolA as any, poolAMatches as any, (tournament as any).scoringSystem);
+  const poolBStandings = computeStandings(poolB as any, poolBMatches as any, (tournament as any).scoringSystem);
   const combined = combineMtpStandings(poolAStandings, poolBStandings);
 
   if (combined.length < 16) return { error: "Il faut au moins 16 équipes classées." };
@@ -2780,8 +2780,8 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
   const poolAMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_A");
   const poolBMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_B");
   const { poolA, poolB } = resolveMtpPoolTeams(tournament.teams, tournament.pools);
-  const poolAStandings = computeStandings(poolA, poolAMatches as any, (tournament as any).scoringSystem);
-  const poolBStandings = computeStandings(poolB, poolBMatches as any, (tournament as any).scoringSystem);
+  const poolAStandings = computeStandings(poolA as any, poolAMatches as any, (tournament as any).scoringSystem);
+  const poolBStandings = computeStandings(poolB as any, poolBMatches as any, (tournament as any).scoringSystem);
   const combined = combineMtpStandings(poolAStandings, poolBStandings);
 
   const teamMap = new Map(tournament.teams.map((t) => [t.id, t]));
