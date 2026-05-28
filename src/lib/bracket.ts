@@ -12,7 +12,7 @@ export type GeneratedMatch = {
   phase: MatchPhase;
   poolName?: string | null;
   poolSessionIndex?: number | null; // 0 = Pool A, 1 = Pool B, etc.
-  bracketSide?: "W" | "L" | "G" | "B" | "BG" | "BL" | null;
+  bracketSide?: "W" | "L" | "G" | "B" | "BG" | "BL" | "R1" | "LG" | null;
   roundIndex: number;
   positionInRound?: number;
   courtName: string;
@@ -463,6 +463,106 @@ function generateSplitSE(
   return result;
 }
 
+// ─── Mazza D'Oro Split SE (R1 → Winners + Losers) ────────────────────────────
+
+/**
+ * SPLIT_SE format: 16 teams
+ * - R1: 8 matches (seeded 1v16, 2v15, ..., 8v9), bracketSide = "R1", roundIndex = 1
+ * - Winners bracket: 3 rounds SE from R1 winners, bracketSide W/W/G, roundIndex 2/3/4
+ * - Losers bracket: 3 rounds SE from R1 losers, bracketSide L/L/LG, roundIndex 2/3/4
+ */
+function generateMazzaSplitSE(
+  teams: Team[],
+  courtNames: string[],
+  startAt: Date,
+  gameDurationMin: number
+): GeneratedMatch[] {
+  const slotMin = gameDurationMin + 5;
+  const roundBreak = gameDurationMin + 15;
+  const allMatches: GeneratedMatch[] = [];
+
+  // Seed slots: 1v16, 2v15, ..., 8v9
+  const n = 16;
+  const sorted = [...teams].slice(0, n);
+  // Pad with nulls if fewer than 16
+  while (sorted.length < n) sorted.push(null as any);
+
+  // ── R1: 8 matches ──
+  const r1Start = new Date(startAt);
+  for (let i = 0; i < 8; i++) {
+    const a = sorted[i]?.id ?? null;
+    const b = sorted[n - 1 - i]?.id ?? null;
+    allMatches.push({
+      phase: "BRACKET",
+      bracketSide: "R1",
+      roundIndex: 1,
+      positionInRound: i,
+      courtName: courtNames[i % courtNames.length],
+      startAt: addMinutes(r1Start, Math.floor(i / courtNames.length) * slotMin),
+      dayIndex: "SUN",
+      status: "SCHEDULED",
+      teamAId: a,
+      teamBId: b,
+    });
+  }
+
+  // ── Winners bracket: 3 rounds (QF=4, SF=2, F=1) ──
+  // QF (round 2): 4 matches, bracketSide W
+  // SF (round 3): 2 matches, bracketSide W
+  // Final (round 4): 1 match, bracketSide G
+  const wRounds = [
+    { count: 4, side: "W" as const, round: 2 },
+    { count: 2, side: "W" as const, round: 3 },
+    { count: 1, side: "G" as const, round: 4 },
+  ];
+  for (const { count, side, round } of wRounds) {
+    const rStart = addMinutes(startAt, (round - 1) * roundBreak);
+    for (let i = 0; i < count; i++) {
+      allMatches.push({
+        phase: "BRACKET",
+        bracketSide: side,
+        roundIndex: round,
+        positionInRound: i,
+        courtName: courtNames[i % courtNames.length],
+        startAt: addMinutes(rStart, Math.floor(i / courtNames.length) * slotMin),
+        dayIndex: "SUN",
+        status: "SCHEDULED",
+        teamAId: null,
+        teamBId: null,
+      });
+    }
+  }
+
+  // ── Losers bracket: 3 rounds (QF=4, SF=2, F=1) ──
+  // QF (round 2): 4 matches, bracketSide L
+  // SF (round 3): 2 matches, bracketSide L
+  // Final (round 4): 1 match, bracketSide LG
+  const lRounds = [
+    { count: 4, side: "L" as const, round: 2 },
+    { count: 2, side: "L" as const, round: 3 },
+    { count: 1, side: "LG" as const, round: 4 },
+  ];
+  for (const { count, side, round } of lRounds) {
+    const rStart = addMinutes(startAt, (round - 1) * roundBreak);
+    for (let i = 0; i < count; i++) {
+      allMatches.push({
+        phase: "BRACKET",
+        bracketSide: side,
+        roundIndex: round,
+        positionInRound: i,
+        courtName: courtNames[i % courtNames.length],
+        startAt: addMinutes(rStart, Math.floor(i / courtNames.length) * slotMin),
+        dayIndex: "SUN",
+        status: "SCHEDULED",
+        teamAId: null,
+        teamBId: null,
+      });
+    }
+  }
+
+  return allMatches;
+}
+
 // ─── Bracket ──────────────────────────────────────────────────────────────────
 
 export function generateBracket(
@@ -481,6 +581,9 @@ export function generateBracket(
   }
   if (format === "SWISS_SPLIT_SE") {
     return generateSplitSE(teams, courtNames, startAt, gameDurationMin);
+  }
+  if (format === "SPLIT_SE") {
+    return generateMazzaSplitSE(teams, courtNames, startAt, gameDurationMin);
   }
   return generateSingleElim(teams, courtNames, startAt, gameDurationMin, options?.thirdPlaceMatch ?? false);
 }

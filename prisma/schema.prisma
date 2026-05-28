@@ -50,6 +50,7 @@ enum SundayFormat {
   DE
   RR
   SWISS_SPLIT_SE
+  SPLIT_SE
 }
 
 enum MatchPhase {
@@ -236,6 +237,9 @@ model Tournament {
   links                   String[]
   bannerPath              String?
   streamYoutubeUrl        String?
+  streamCourt1Url         String?
+  streamCourt2Url         String?
+  streamMultiplexUrl      String?
   chatMode                ChatMode         @default(DISABLED)
   infoTilesLayout         Json?
   saturdayFormat          SaturdayFormat
@@ -1066,7 +1070,7 @@ model LoginDay {
   date      String        // "YYYY-MM-DD" en UTC
   loggedAt  DateTime      @default(now()) // timestamp du 1er login de la journée
 
-  account   PlayerAccount @relation(fields: [accountId], references: [id])
+  account   PlayerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@unique([accountId, date])
   @@index([accountId])

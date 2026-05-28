@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { LiveMatchTile } from "./LiveMatchTile";
 import { TournamentChat } from "./TournamentChat";
 import { Link } from "@/i18n/navigation";
 import { type MatchWithTeams } from "./ScheduleBoard";
+
+type OverlayChannel = { id: string; slug: string; label: string; court: string };
 
 export function LiveTabView({
   tournamentId,
@@ -15,6 +17,10 @@ export function LiveTabView({
   isLive,
   courtsCount,
   youtubeEmbed,
+  court1Embed,
+  court2Embed,
+  multiplexEmbed,
+  overlayChannels,
   chatMode,
   currentPlayerId,
   currentPlayerName,
@@ -30,6 +36,10 @@ export function LiveTabView({
   isLive: boolean;
   courtsCount: number;
   youtubeEmbed: string | null;
+  court1Embed: string | null;
+  court2Embed: string | null;
+  multiplexEmbed: string | null;
+  overlayChannels: OverlayChannel[];
   chatMode: "OPEN" | "ORG_ONLY" | "DISABLED";
   currentPlayerId: string | null;
   currentPlayerName: string | null;
@@ -39,64 +49,199 @@ export function LiveTabView({
   canEdit: boolean;
 }) {
   const t = useTranslations("tournament");
-  const [activeCourt, setActiveCourt] = useState<number | null>(null); // null = all courts
 
-  // Filter matches by court if a specific court is selected
-  const filteredMatches = activeCourt !== null
-    ? matches.filter((m) => m.courtName === `Court ${activeCourt + 1}`)
+  // "multiplex" | "court-1" | "court-2" | ...
+  type TabId = "multiplex" | `court-${number}`;
+  const [activeTab, setActiveTab] = useState<TabId>("multiplex");
+
+  // Overlay toggle per tab: null = aucun, sinon slug du channel
+  const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
+
+  // Drag for overlay iframe
+  const [overlayPos, setOverlayPos] = useState<{ left: number; top: number } | null>(null);
+  const dragRef = useRef<{ isDragging: boolean; startX: number; startY: number; initLeft: number; initTop: number } | null>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLDivElement>(null);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    if (!overlayRef.current) return;
+    const rect = overlayRef.current.getBoundingClientRect();
+    dragRef.current = { isDragging: true, startX: e.clientX, startY: e.clientY, initLeft: rect.left, initTop: rect.top };
+    e.preventDefault();
+  }, []);
+  const onMouseMove = useCallback((e: MouseEvent) => {
+    if (!dragRef.current?.isDragging || !videoRef.current) return;
+    const cr = videoRef.current.getBoundingClientRect();
+    setOverlayPos({
+      left: Math.max(0, dragRef.current.initLeft + (e.clientX - dragRef.current.startX) - cr.left),
+      top: Math.max(0, dragRef.current.initTop + (e.clientY - dragRef.current.startY) - cr.top),
+    });
+  }, []);
+  const onMouseUp = useCallback(() => { if (dragRef.current) dragRef.current.isDragging = false; }, []);
+
+  useEffect(() => {
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [onMouseMove, onMouseUp]);
+
+  // Reset overlay position when switching tab
+  useEffect(() => { setOverlayPos(null); setActiveOverlay(null); }, [activeTab]);
+
+  // Compute which stream URL and matches to show for active tab
+  const getStreamEmbed = (): string | null => {
+    if (activeTab === "multiplex") return multiplexEmbed ?? youtubeEmbed;
+    if (activeTab === "court-1") return court1Embed ?? youtubeEmbed;
+    if (activeTab === "court-2") return court2Embed ?? youtubeEmbed;
+    return youtubeEmbed;
+  };
+
+  const getCourtNumber = (): number | null => {
+    if (activeTab === "multiplex") return null;
+    const m = activeTab.match(/^court-(\d+)$/);
+    return m ? parseInt(m[1]) : null;
+  };
+
+  const courtNumber = getCourtNumber();
+  const filteredMatches = courtNumber !== null
+    ? matches.filter((m) => m.courtName === `Court ${courtNumber}`)
     : matches;
+
+  const streamEmbed = getStreamEmbed();
+
+  // Overlay channels for the active tab
+  const tabOverlayChannels = activeTab === "multiplex"
+    ? overlayChannels // show all overlays for multiplex
+    : overlayChannels.filter((ch) => ch.court === String(courtNumber));
+
+  const overlayStyle: React.CSSProperties = overlayPos
+    ? { position: "absolute", left: overlayPos.left, top: overlayPos.top }
+    : { position: "absolute", bottom: 0, left: 0, right: 0 };
+
+  // Build tabs: QCQC Multiplex first, then courts
+  const tabs: { id: TabId; label: string }[] = [
+    { id: "multiplex", label: "📡 QCQC Multiplex" },
+    ...Array.from({ length: courtsCount }, (_, i) => ({
+      id: `court-${i + 1}` as TabId,
+      label: `Court ${i + 1}`,
+    })),
+  ];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Court sub-tabs (only if multiple courts) */}
-      {courtsCount > 1 && (
-        <div className="tabs-bar" style={{ marginTop: 0 }}>
-          <div className="tabs">
+
+      {/* Tabs: QCQC Multiplex | Court 1 | Court 2 */}
+      <div className="tabs-bar" style={{ marginTop: 0 }}>
+        <div className="tabs">
+          {tabs.map((tab) => (
             <button
+              key={tab.id}
               type="button"
-              onClick={() => setActiveCourt(null)}
-              className={`tab${activeCourt === null ? " active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+              className={`tab${activeTab === tab.id ? " active" : ""}`}
             >
-              {t("live_all_courts")}
+              {tab.label}
             </button>
-            {Array.from({ length: courtsCount }, (_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setActiveCourt(i)}
-                className={`tab${activeCourt === i ? " active" : ""}`}
-              >
-                Court {i + 1}
-              </button>
-            ))}
-          </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Overlay toggles (orga only, si des channels existent) */}
+      {isOrga && tabOverlayChannels.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span className="meta" style={{ fontSize: 12 }}>Overlay :</span>
+          <button
+            type="button"
+            onClick={() => setActiveOverlay(null)}
+            className={`ghost${activeOverlay === null ? " active" : ""}`}
+            style={{ fontSize: 12, padding: "4px 10px" }}
+          >
+            ✕ Off
+          </button>
+          {tabOverlayChannels.map((ch) => (
+            <button
+              key={ch.slug}
+              type="button"
+              onClick={() => setActiveOverlay(activeOverlay === ch.slug ? null : ch.slug)}
+              className={`ghost${activeOverlay === ch.slug ? " active" : ""}`}
+              style={{ fontSize: 12, padding: "4px 10px" }}
+            >
+              {ch.label}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Stream */}
-      {youtubeEmbed ? (
-        <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
+      {/* Video + overlay iframe stacked */}
+      <div ref={videoRef} style={{ position: "relative", borderRadius: 8, overflow: "hidden" }}>
+        {streamEmbed ? (
           <iframe
-            src={youtubeEmbed}
+            src={streamEmbed}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             title="Stream live"
             style={{ width: "100%", aspectRatio: "16/9", height: "auto", display: "block", border: "none" }}
           />
-        </div>
-      ) : (
-        <div className="panel" style={{ textAlign: "center", padding: "32px 0" }}>
-          <p className="meta">{t("stream_empty")}</p>
-          {canEdit && (
-            <Link href={`/tournament/${tournamentSlug}/edit#streamYoutubeUrl`} className="ghost" style={{ fontSize: 13, marginTop: 10, display: "inline-block" }}>
-              {t("stream_add")}
-            </Link>
-          )}
-        </div>
-      )}
+        ) : (
+          <div className="panel" style={{ textAlign: "center", padding: "32px 0" }}>
+            <p className="meta">{t("stream_empty")}</p>
+            {canEdit && (
+              <Link href={`/tournament/${tournamentSlug}/edit#streamYoutubeUrl`} className="ghost" style={{ fontSize: 13, marginTop: 10, display: "inline-block" }}>
+                {t("stream_add")}
+              </Link>
+            )}
+          </div>
+        )}
 
-      {/* Scores live + Chat */}
-      <div className="two-col-grid">
+        {/* Overlay iframe transparent par-dessus la vidéo */}
+        {activeOverlay && streamEmbed && (
+          <div
+            ref={overlayRef}
+            style={{
+              ...overlayStyle,
+              zIndex: 10,
+              pointerEvents: "none",
+              width: "100%",
+              aspectRatio: "16/9",
+            }}
+          >
+            {/* Drag handle (orga seulement) */}
+            {isOrga && (
+              <div
+                onMouseDown={onMouseDown}
+                style={{
+                  pointerEvents: "all",
+                  position: "absolute",
+                  top: 4,
+                  right: 4,
+                  background: "rgba(0,0,0,0.6)",
+                  borderRadius: 6,
+                  padding: "3px 8px",
+                  cursor: "grab",
+                  fontSize: 11,
+                  color: "#aaa",
+                  zIndex: 11,
+                  userSelect: "none",
+                }}
+              >
+                ⠿ déplacer
+              </div>
+            )}
+            <iframe
+              src={`/overlay/${activeOverlay}`}
+              title="Overlay"
+              style={{ width: "100%", height: "100%", border: "none", background: "transparent" }}
+              allowTransparency
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Scores live + Chat en dessous — comme avant */}
+      <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 16 }}>
         <div className="panel">
           <LiveMatchTile
             tournamentId={tournamentId}
@@ -128,3 +273,5 @@ export function LiveTabView({
     </div>
   );
 }
+
+

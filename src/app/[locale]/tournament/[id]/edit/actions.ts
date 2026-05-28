@@ -53,6 +53,9 @@ const updateSchema = z.object({
   links: z.string().optional().nullable(),
   bannerPath: z.string().optional().nullable(),
   streamYoutubeUrl: z.string().optional().nullable(),
+  streamCourt1Url: z.string().optional().nullable(),
+  streamCourt2Url: z.string().optional().nullable(),
+  streamMultiplexUrl: z.string().optional().nullable(),
   chatMode: z.enum(["OPEN", "ORG_ONLY", "DISABLED"]).default("DISABLED"),
   saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED", "GRAZ", "MTP_OPEN"]),
   poolCount: z.coerce.number().int().min(1).max(4).default(1),
@@ -60,7 +63,7 @@ const updateSchema = z.object({
   swissRounds: z.coerce.number().int().min(1).max(20).default(5),
   poolRounds: z.preprocess((v) => (v === "" || v === null || v === undefined ? null : Number(v)), z.number().int().min(1).max(50).nullable().default(null)),
   bracketSize: z.coerce.number().int().min(2).max(64).default(16),
-  sundayFormat: z.enum(["SE", "DE", "RR", "SWISS_SPLIT_SE"]),
+  sundayFormat: z.enum(["SE", "DE", "RR", "SWISS_SPLIT_SE", "SPLIT_SE"]),
   scoringSystem: z.string().default("3/1"),
   thirdPlaceMatch: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   gfReset: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
@@ -192,6 +195,9 @@ export async function updateTournamentAction(formData: FormData) {
         faq: faqJson,
         telegramUrl: data.telegramUrl || null,
         streamYoutubeUrl: data.streamYoutubeUrl || null,
+        streamCourt1Url: data.streamCourt1Url || null,
+        streamCourt2Url: data.streamCourt2Url || null,
+        streamMultiplexUrl: data.streamMultiplexUrl || null,
         swissRounds: data.swissRounds,
         poolRounds: data.poolRounds ?? null,
         bracketSize: data.bracketSize,
@@ -517,6 +523,49 @@ export async function generateBracketAction(id: string) {
         }
       }
 
+    }
+
+    if (tournament.sundayFormat === "SPLIT_SE") {
+      // ── SPLIT_SE Linking ──────────────────────────────────────────────────
+      // R1 (round 1, side R1): 8 matches
+      // R1 winners → Winners bracket round 2 (W), 1v8→W[0], 2v7→W[1], 3v6→W[2], 4v5→W[3]
+      // R1 losers  → Losers bracket round 2 (L), mirrored: L[3], L[2], L[1], L[0]
+      // W round 2 winners → W round 3, W round 3 winners → G round 4
+      // L round 2 winners → L round 3, L round 3 winners → LG round 4
+
+      const r1 = created.filter(m => m.bracketSide === "R1").sort((a, b) => a.positionInRound - b.positionInRound);
+      const wR2 = created.filter(m => m.bracketSide === "W" && m.roundIndex === 2).sort((a, b) => a.positionInRound - b.positionInRound);
+      const wR3 = created.filter(m => m.bracketSide === "W" && m.roundIndex === 3).sort((a, b) => a.positionInRound - b.positionInRound);
+      const gR4 = created.find(m => m.bracketSide === "G" && m.roundIndex === 4);
+      const lR2 = created.filter(m => m.bracketSide === "L" && m.roundIndex === 2).sort((a, b) => a.positionInRound - b.positionInRound);
+      const lR3 = created.filter(m => m.bracketSide === "L" && m.roundIndex === 3).sort((a, b) => a.positionInRound - b.positionInRound);
+      const lgR4 = created.find(m => m.bracketSide === "LG" && m.roundIndex === 4);
+
+      // R1 → W R2 (1:1) and R1 → L R2 (mirrored)
+      for (let i = 0; i < r1.length; i++) {
+        const wNext = wR2[i];
+        const lNext = lR2[r1.length - 1 - i];
+        if (wNext) await tx.match.update({ where: { id: r1[i].id }, data: { nextMatchWinId: wNext.id, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
+        if (lNext) await tx.match.update({ where: { id: r1[i].id }, data: { nextMatchLoseId: lNext.id, nextSlotLose: i % 2 === 0 ? "A" : "B" } });
+      }
+      // W R2 → W R3
+      for (let i = 0; i < wR2.length; i++) {
+        const next = wR3[Math.floor(i / 2)];
+        if (next) await tx.match.update({ where: { id: wR2[i].id }, data: { nextMatchWinId: next.id, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
+      }
+      // W R3 → G R4
+      for (let i = 0; i < wR3.length; i++) {
+        if (gR4) await tx.match.update({ where: { id: wR3[i].id }, data: { nextMatchWinId: gR4.id, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
+      }
+      // L R2 → L R3
+      for (let i = 0; i < lR2.length; i++) {
+        const next = lR3[Math.floor(i / 2)];
+        if (next) await tx.match.update({ where: { id: lR2[i].id }, data: { nextMatchWinId: next.id, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
+      }
+      // L R3 → LG R4
+      for (let i = 0; i < lR3.length; i++) {
+        if (lgR4) await tx.match.update({ where: { id: lR3[i].id }, data: { nextMatchWinId: lgR4.id, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
+      }
     }
 
     if (tournament.sundayFormat === "DE") {

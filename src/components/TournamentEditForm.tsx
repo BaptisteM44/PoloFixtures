@@ -45,6 +45,9 @@ type Tournament = {
   links: string[];
   bannerPath: string | null;
   streamYoutubeUrl: string | null;
+  streamCourt1Url: string | null;
+  streamCourt2Url: string | null;
+  streamMultiplexUrl: string | null;
   chatMode: string;
   saturdayFormat: string;
   poolCount?: number | null;
@@ -832,6 +835,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                   <select name="sundayFormat" value={presetConfig.sundayFormat} onChange={(e) => setPresetConfig((p) => ({ ...p, sundayFormat: e.target.value }))}>
                     <option value="SE">{t("sunday_single_elim")}</option>
                     <option value="DE">{t("sunday_double_elim")}</option>
+                    <option value="SPLIT_SE">{t("sunday_split_se")}</option>
                   </select>
                 </label>
                 <label className="field-row">
@@ -979,6 +983,18 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           <label className="field-row">
             {t("field_stream_youtube")}
             <input id="streamYoutubeUrl" name="streamYoutubeUrl" defaultValue={tournament.streamYoutubeUrl ?? ""} />
+          </label>
+          <label className="field-row">
+            {t("field_stream_court1" as any) ?? "Stream Court 1"}
+            <input id="streamCourt1Url" name="streamCourt1Url" defaultValue={tournament.streamCourt1Url ?? ""} placeholder="https://youtube.com/live/..." />
+          </label>
+          <label className="field-row">
+            {t("field_stream_court2" as any) ?? "Stream Court 2"}
+            <input id="streamCourt2Url" name="streamCourt2Url" defaultValue={tournament.streamCourt2Url ?? ""} placeholder="https://youtube.com/live/..." />
+          </label>
+          <label className="field-row">
+            {t("field_stream_multiplex" as any) ?? "Stream Multiplex (QCQC)"}
+            <input id="streamMultiplexUrl" name="streamMultiplexUrl" defaultValue={tournament.streamMultiplexUrl ?? ""} placeholder="https://youtube.com/live/..." />
           </label>
           <label className="field-row">
             {t("field_telegram")}

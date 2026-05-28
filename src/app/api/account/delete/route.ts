@@ -25,14 +25,8 @@ export async function DELETE() {
     .join(".")
     .concat(".");
 
-  // Get account IDs before deletion (needed to delete LoginDay)
-  const accounts = await prisma.playerAccount.findMany({ where: { playerId }, select: { id: true } });
-  const accountIds = accounts.map((a) => a.id);
-
   await prisma.$transaction([
-    // Delete login days first (FK constraint)
-    prisma.loginDay.deleteMany({ where: { accountId: { in: accountIds } } }),
-    // Delete login credentials
+    // Delete login credentials (LoginDay cascade-deleted via schema)
     prisma.playerAccount.deleteMany({ where: { playerId } }),
     // Anonymize player data
     prisma.player.update({
