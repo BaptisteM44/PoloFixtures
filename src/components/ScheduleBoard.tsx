@@ -90,6 +90,16 @@ function isRoundActive(matches: MatchWithTeams[]) {
   return matches.some((m) => m.status === "LIVE");
 }
 
+function mazzaSequentialOrder(sessionIndex: number | undefined, roundIndex: number): number {
+  const s = sessionIndex ?? 0;
+  // Pool A R1-R4 → 0-3, Pool B R1-R3 → 4-6, Pool B R4-R7 → 7-10, Pool A R5-R7 → 11-13
+  if (s === 0 && roundIndex <= 4) return roundIndex - 1;
+  if (s === 1 && roundIndex <= 3) return 3 + roundIndex;
+  if (s === 1 && roundIndex >= 4) return 4 + roundIndex;
+  if (s === 0 && roundIndex >= 5) return 6 + roundIndex;
+  return 99;
+}
+
 export function ScheduleBoard({
   tournamentId,
   initialMatches,
@@ -99,6 +109,7 @@ export function ScheduleBoard({
   poolRounds = null,
   testMode = false,
   gameDurationMin = 15,
+  sundayFormat,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
@@ -108,6 +119,7 @@ export function ScheduleBoard({
   poolRounds?: number | null;
   gameDurationMin?: number;
   testMode?: boolean;
+  sundayFormat?: string;
 }) {
   const t = useTranslations("tournament");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
@@ -287,7 +299,11 @@ export function ScheduleBoard({
         const bLatest = Math.max(...b.matches.map(m => new Date(m.startAt).getTime()));
         return bLatest - aLatest;
       }
-      // Both scheduled: by earliest startAt in the group, then roundIndex as tiebreaker
+      // Both scheduled: Mazza SPLIT_SE uses fixed logical order (4/3/4/3)
+      if (sundayFormat === "SPLIT_SE" && a.phase === "POOL" && b.phase === "POOL") {
+        return mazzaSequentialOrder(a.poolSessionIndex, a.roundIndex) - mazzaSequentialOrder(b.poolSessionIndex, b.roundIndex);
+      }
+      // Otherwise: by earliest startAt in the group, then roundIndex as tiebreaker
       const aStart = Math.min(...a.matches.map(m => new Date(m.startAt).getTime()));
       const bStart = Math.min(...b.matches.map(m => new Date(m.startAt).getTime()));
       if (aStart !== bStart) return aStart - bStart;
