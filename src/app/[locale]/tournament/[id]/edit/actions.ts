@@ -301,9 +301,15 @@ export async function generatePoolsAction(id: string) {
     pools = generatePools(tournament.teams, tournament.saturdayFormat, tournament.poolCount);
   }
 
-  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
   const isMazza = tournament.sundayFormat === "SPLIT_SE";
-  const matches = generatePoolMatches(pools, courtNames, new Date(tournament.dateStart), tournament.gameDurationMin, { mazzaSequential: isMazza });
+  // Mazza sequential: single court (pools play one after the other, not in parallel)
+  const courtNames = isMazza
+    ? ["Court 1"]
+    : Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const poolStartAt = (tournament as any).saturdayPoolAStart
+    ? new Date((tournament as any).saturdayPoolAStart)
+    : new Date(tournament.dateStart);
+  const matches = generatePoolMatches(pools, courtNames, poolStartAt, tournament.gameDurationMin, { mazzaSequential: isMazza });
 
   await prisma.$transaction(async (tx) => {
     await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: "POOL" } } });
