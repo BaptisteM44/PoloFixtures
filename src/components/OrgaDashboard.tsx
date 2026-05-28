@@ -1440,7 +1440,7 @@ export function OrgaDashboard({
               )}
 
               {/* Jour 2 — bracket standard */}
-              {!tournament.crossPool && (isLive || tournament.status === "COMPLETED") && poolMatchesFinished && (
+              {!tournament.crossPool && (isLive || tournament.status === "COMPLETED") && (poolMatchesFinished || hasBracketMatches) && (
                 <div className="panel">
                   <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
                     {t("orga_day2_label")} — {tournament.sundayFormat === "DE" ? t("orga_format_de") : tournament.sundayFormat === "SE" ? t("orga_format_se") : t("orga_format_rr")}
