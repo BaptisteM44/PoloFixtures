@@ -474,7 +474,7 @@ export function ScheduleBoard({
           >
             <div className="schedule-round__header">
               <span className="schedule-round__label">
-                {PHASE_LABEL[group.phase] ?? group.phase}{bracketLabel}{(bracketSide !== "G" && bracketSide !== "L" && bracketSide !== "BG" && bracketSide !== "BL" && bracketSide !== "LG" && bracketSide !== "WL" && bracketSide !== "LL" && bracketSide !== "R1") ? ` · Round ${group.roundIndex}` : (bracketSide === "W" || bracketSide === "L") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}{grazPoolLabel}
+                {PHASE_LABEL[group.phase] ?? group.phase}{bracketLabel}{(!bracketSide || bracketSide === "W" || bracketSide === "L") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}{grazPoolLabel}
               </span>
               {finished && <span className="schedule-round__badge schedule-round__badge--done">{t("status_completed")}</span>}
               {active && <span className="schedule-round__badge schedule-round__badge--live">{t("status_live")}</span>}
