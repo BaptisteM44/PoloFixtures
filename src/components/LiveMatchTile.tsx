@@ -191,9 +191,13 @@ function LiveCard({
               <div key={e.id} className="match-card__event-row">
                 <span className="match-card__event-time">{fmtClock(e.matchClockSec)}</span>
                 <span>{eventIcon(e.type as string)}</span>
-                <span className="match-card__event-team">{teamName}</span>
-                {playerName && playerName !== "undefined" && (
-                  <span className="match-card__event-player">{playerName}</span>
+                {playerName ? (
+                  <>
+                    <span className="match-card__event-player">{playerName}</span>
+                    <span className="match-card__event-team" style={{ opacity: 0.5, fontSize: 11 }}>({teamName})</span>
+                  </>
+                ) : (
+                  <span className="match-card__event-team">{teamName}</span>
                 )}
               </div>
             );
