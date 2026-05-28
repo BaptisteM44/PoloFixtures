@@ -1309,7 +1309,7 @@ export function OrgaDashboard({
             </ConfirmFormButton>
           )}
 
-          {isLive && (
+          {(isLive || tournament.status === "COMPLETED") && (
             <ConfirmFormButton
               action={resetAction}
               confirmMessage={t("edit_reset_confirm")}
@@ -1320,7 +1320,7 @@ export function OrgaDashboard({
             </ConfirmFormButton>
           )}
 
-          {isLive && (
+          {(isLive || tournament.status === "COMPLETED") && (
             <ConfirmFormButton
               action={resetMatchesAction}
               confirmMessage={t("edit_reset_matches_confirm")}

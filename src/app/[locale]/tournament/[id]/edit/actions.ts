@@ -1936,7 +1936,6 @@ export async function resetMatchesAction(
 
   const tournament = await prisma.tournament.findUnique({ where: { id } });
   if (!tournament) return { error: "Tournoi introuvable." };
-  if (tournament.status === "COMPLETED") return { error: "Impossible de reset un tournoi terminé." };
 
   const teamPlayers = await prisma.teamPlayer.findMany({
     where: { team: { tournamentId: id } },
@@ -1947,6 +1946,9 @@ export async function resetMatchesAction(
   await prisma.$transaction(async (tx) => {
     await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id } } });
     await tx.match.deleteMany({ where: { tournamentId: id } });
+    if (tournament.status === "COMPLETED") {
+      await tx.tournament.update({ where: { id }, data: { status: "LIVE" } });
+    }
   }, { timeout: 15000 });
 
   // Recompute badges for affected players
@@ -1973,7 +1975,6 @@ export async function resetTournamentAction(
 
   const tournament = await prisma.tournament.findUnique({ where: { id } });
   if (!tournament) return { error: "Tournoi introuvable." };
-  if (tournament.status === "COMPLETED") return { error: "Impossible de reset un tournoi terminé." };
 
   // Collect all player IDs from this tournament before deleting
   const teamPlayers = await prisma.teamPlayer.findMany({
