@@ -215,11 +215,15 @@ export function LiveMatchTile({
   initialMatches,
   gameDurationMin = 12,
   isLive = false,
+  maxLive,
+  maxUpcoming,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
   gameDurationMin?: number;
   isLive?: boolean;
+  maxLive?: number;
+  maxUpcoming?: number;
 }) {
   const t = useTranslations("tournament");
   const [matches, setMatches] = useState<EnrichedMatch[]>(
@@ -277,13 +281,13 @@ export function LiveMatchTile({
     return () => es.close();
   }, [tournamentId, isLive]);
 
-  const liveMatches = matches.filter((m) => m.status === "LIVE");
+  const liveMatches = matches.filter((m) => m.status === "LIVE").slice(0, maxLive ?? Infinity);
   const upcomingMatches = matches
     .filter((m) => m.status === "SCHEDULED")
     .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
 
-  const slotsLeft = Math.max(0, 3 - liveMatches.length);
-  const upcomingToShow = upcomingMatches.slice(0, slotsLeft);
+  const defaultSlots = Math.max(0, 3 - liveMatches.length);
+  const upcomingToShow = upcomingMatches.slice(0, maxUpcoming ?? defaultSlots);
 
   if (liveMatches.length === 0 && upcomingToShow.length === 0) {
     return (

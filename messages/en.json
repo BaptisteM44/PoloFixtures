@@ -2098,6 +2098,8 @@
     "preset_swiss_se_desc": "Swiss rounds · Single elim.",
     "preset_swiss6_split_se": "Swiss 6 + 2 SE",
     "preset_swiss6_split_se_desc": "6 Swiss rounds · TOP 10 SE + Bottom 8",
+    "preset_split_se": "Mazza D'Oro",
+    "preset_split_se_desc": "2 pools sat. · R1 ×8 sun. · Winners SE + Losers SE",
     "bracket_top10": "TOP 10",
     "bracket_bottom8": "Bottom 8",
     "preset_cross_pool_bcn": "Cross-pool Barcelona",

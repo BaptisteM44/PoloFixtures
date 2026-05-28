@@ -3,13 +3,18 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const { searchParams } = new URL(req.url);
+  const context = searchParams.get("context") ?? "GENERAL";
+  const isMultiplex = context === "MULTIPLEX";
+
   const tournament = await prisma.tournament.findUnique({
     where: { id: params.id },
     select: { chatMode: true },
   });
   if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (!tournament.chatMode || tournament.chatMode === "DISABLED") {
+  // Multiplex chat is always open; regular chat requires chatMode
+  if (!isMultiplex && (!tournament.chatMode || tournament.chatMode === "DISABLED")) {
     return NextResponse.json([]);
   }
 
@@ -37,7 +42,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   ]);
 
   const messages = await prisma.tournamentMessage.findMany({
-    where: { tournamentId: params.id },
+    where: { tournamentId: params.id, context },
     include: { author: { select: { id: true, name: true, photoPath: true } } },
     orderBy: { createdAt: "asc" },
     take: 200,
@@ -55,33 +60,38 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Non connecté" }, { status: 401 });
   }
 
+  const body = await req.json();
+  const context = (body.context ?? "GENERAL") as string;
+  const isMultiplex = context === "MULTIPLEX";
+
   const tournament = await prisma.tournament.findUnique({
     where: { id: params.id },
     select: { chatMode: true, creatorId: true, coOrganizers: { select: { playerId: true } } },
   });
   if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (tournament.chatMode === "DISABLED") {
-    return NextResponse.json({ error: "Chat désactivé" }, { status: 403 });
+
+  // Multiplex chat is always open; regular chat checks chatMode
+  if (!isMultiplex) {
+    if (tournament.chatMode === "DISABLED") {
+      return NextResponse.json({ error: "Chat désactivé" }, { status: 403 });
+    }
+    const isOrga =
+      session.user.role === "ADMIN" ||
+      (session.user.role === "ORGA" && session.user.tournamentId === params.id) ||
+      tournament.creatorId === session.user.playerId ||
+      tournament.coOrganizers.some((co) => co.playerId === session.user.playerId);
+    if (tournament.chatMode === "ORG_ONLY" && !isOrga) {
+      return NextResponse.json({ error: "Réservé à l'organisateur" }, { status: 403 });
+    }
   }
 
-  const isOrga =
-    session.user.role === "ADMIN" ||
-    (session.user.role === "ORGA" && session.user.tournamentId === params.id) ||
-    tournament.creatorId === session.user.playerId ||
-    tournament.coOrganizers.some((co) => co.playerId === session.user.playerId);
-
-  if (tournament.chatMode === "ORG_ONLY" && !isOrga) {
-    return NextResponse.json({ error: "Réservé à l'organisateur" }, { status: 403 });
-  }
-
-  const body = await req.json();
   const content = (body.content ?? "").trim();
   if (!content || content.length > 1000) {
     return NextResponse.json({ error: "Message invalide" }, { status: 400 });
   }
 
   const message = await prisma.tournamentMessage.create({
-    data: { tournamentId: params.id, authorId: session.user.playerId, content },
+    data: { tournamentId: params.id, authorId: session.user.playerId, content, context },
     include: { author: { select: { id: true, name: true, photoPath: true } } },
   });
 

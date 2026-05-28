@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { LiveMatchTile } from "./LiveMatchTile";
 import { TournamentChat } from "./TournamentChat";
 import { Link } from "@/i18n/navigation";
@@ -49,6 +49,7 @@ export function LiveTabView({
   canEdit: boolean;
 }) {
   const t = useTranslations("tournament");
+  const locale = useLocale();
 
   // "multiplex" | "court-1" | "court-2" | ...
   type TabId = "multiplex" | `court-${number}`;
@@ -231,7 +232,7 @@ export function LiveTabView({
               </div>
             )}
             <iframe
-              src={`/overlay/${activeOverlay}`}
+              src={`/${locale}/overlay/${activeOverlay}`}
               title="Overlay"
               style={{ width: "100%", height: "100%", border: "none", background: "transparent" }}
               allowTransparency
@@ -242,17 +243,51 @@ export function LiveTabView({
 
       {/* Scores live + Chat en dessous — comme avant */}
       <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 16 }}>
-        <div className="panel">
-          <LiveMatchTile
-            tournamentId={tournamentId}
-            initialMatches={filteredMatches}
-            gameDurationMin={gameDurationMin}
-            isLive={isLive}
-          />
+        <div>
+          {activeTab === "multiplex" && courtsCount >= 2 ? (
+            /* Multiplex: 1 panel par terrain */
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {Array.from({ length: courtsCount }, (_, i) => i + 1).map((n) => (
+                <div key={n} className="panel">
+                  <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 13 }}>🏟 Court {n}</div>
+                  <LiveMatchTile
+                    tournamentId={tournamentId}
+                    initialMatches={matches.filter((m) => m.courtName === `Court ${n}`)}
+                    gameDurationMin={gameDurationMin}
+                    isLive={isLive}
+                    maxLive={1}
+                    maxUpcoming={1}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="panel">
+              <LiveMatchTile
+                tournamentId={tournamentId}
+                initialMatches={filteredMatches}
+                gameDurationMin={gameDurationMin}
+                isLive={isLive}
+              />
+            </div>
+          )}
         </div>
 
-        {chatMode !== "DISABLED" ? (
-          <div className="panel" style={{ minHeight: 400 }}>
+        <div className="panel" style={{ minHeight: 400 }}>
+          {activeTab === "multiplex" ? (
+            /* Chat dédié multiplex — toujours ouvert, stocké séparément */
+            <TournamentChat
+              tournamentId={tournamentId}
+              chatMode="OPEN"
+              context="MULTIPLEX"
+              currentPlayerId={currentPlayerId}
+              currentPlayerName={currentPlayerName}
+              isOrga={isOrga}
+              creatorId={creatorId}
+              charterAccepted={charterAccepted}
+              fullPage
+            />
+          ) : chatMode !== "DISABLED" ? (
             <TournamentChat
               tournamentId={tournamentId}
               chatMode={chatMode}
@@ -263,12 +298,12 @@ export function LiveTabView({
               charterAccepted={charterAccepted}
               fullPage
             />
-          </div>
-        ) : (
-          <div className="panel" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200 }}>
-            <p className="meta" style={{ textAlign: "center" }}>{t("chat_disabled")}</p>
-          </div>
-        )}
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200 }}>
+              <p className="meta" style={{ textAlign: "center" }}>{t("chat_disabled")}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

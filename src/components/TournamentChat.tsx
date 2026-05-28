@@ -16,6 +16,7 @@ type Props = {
   creatorId: string | null;
   fullPage?: boolean;
   charterAccepted?: boolean;
+  context?: "GENERAL" | "MULTIPLEX";
 };
 
 const CHAT_COLORS = 12;
@@ -28,7 +29,7 @@ function authorColorIndex(id: string): number {
   return Math.abs(hash) % CHAT_COLORS;
 }
 
-export function TournamentChat({ tournamentId, chatMode, currentPlayerId, currentPlayerName, isOrga, creatorId, fullPage, charterAccepted: initialCharterAccepted }: Props) {
+export function TournamentChat({ tournamentId, chatMode, currentPlayerId, currentPlayerName, isOrga, creatorId, fullPage, charterAccepted: initialCharterAccepted, context = "GENERAL" }: Props) {
   const t = useTranslations("tournament");
   const locale = useLocale();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -36,19 +37,29 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [localCharterAccepted, setLocalCharterAccepted] = useState(initialCharterAccepted ?? false);
   const [showCharter, setShowCharter] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevMessageCountRef = useRef(0);
 
+  const isMultiplex = context === "MULTIPLEX";
+
+  // Persist charter acceptance in localStorage per user
+  const localStorageKey = currentPlayerId ? `charter_accepted_${currentPlayerId}` : null;
+  const [localCharterAccepted, setLocalCharterAccepted] = useState(() => {
+    if (initialCharterAccepted) return true;
+    if (localStorageKey && typeof window !== "undefined") {
+      return localStorage.getItem(localStorageKey) === "true";
+    }
+    return false;
+  });
+
   const canPost =
-    chatMode !== "DISABLED" &&
     !!currentPlayerId &&
-    (chatMode === "OPEN" || isOrga);
+    (isMultiplex || (chatMode !== "DISABLED" && (chatMode === "OPEN" || isOrga)));
 
   const fetchMessages = useCallback(async () => {
-    const res = await fetch(`/api/tournaments/${tournamentId}/messages`);
+    const res = await fetch(`/api/tournaments/${tournamentId}/messages?context=${context}`);
     if (res.ok) {
       const data: Message[] = await res.json();
       setMessages((prev) => {
@@ -90,7 +101,7 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
     const res = await fetch(`/api/tournaments/${tournamentId}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, context }),
     });
     setSending(false);
     if (res.ok) {
@@ -112,15 +123,19 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
     }
   };
 
-  if (chatMode === "DISABLED") return null;
+  if (!isMultiplex && chatMode === "DISABLED") return null;
 
   return (
     <>
-    {showCharter && <CharterModal onAccepted={() => { setLocalCharterAccepted(true); setShowCharter(false); }} />}
+    {showCharter && <CharterModal onAccepted={() => {
+      setLocalCharterAccepted(true);
+      if (localStorageKey) localStorage.setItem(localStorageKey, "true");
+      setShowCharter(false);
+    }} />}
     <div className={`tournament-chat ${fullPage ? "tournament-chat--full" : ""}`}>
       <div className="tournament-chat__header">
         <h3 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 15 }}>
-          💬 Discussion
+          {isMultiplex ? "💬 Chat Multiplex" : "💬 Discussion"}
         </h3>
         {chatMode === "ORG_ONLY" && (
           <span style={{ fontSize: 11, fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--text-muted)", background: "var(--surface-2)", border: "1.5px solid var(--border-light)", borderRadius: 4, padding: "2px 8px" }}>
