@@ -76,11 +76,13 @@ enum MatchPhase {
 
 enum BracketSide {
   W  // Top bracket / standard SE: normal round
-  L  // Top bracket / standard SE: 3rd place match
+  L  // Top bracket / standard SE: 3rd place match / SPLIT_SE losers rounds
   G  // Top bracket / standard SE: final
   B  // Bottom bracket (SWISS_SPLIT_SE): normal round
   BG // Bottom bracket (SWISS_SPLIT_SE): final
   BL // Bottom bracket (SWISS_SPLIT_SE): 3rd place match
+  R1 // SPLIT_SE: first round (all 16 teams)
+  LG // SPLIT_SE: losers bracket final
 }
 
 enum MatchStatus {
@@ -593,6 +595,7 @@ model TournamentMessage {
   tournamentId        String
   authorId            String
   content             String
+  context             String   @default("GENERAL")
   deletedByModeration Boolean  @default(false)
   createdAt           DateTime @default(now())
 
