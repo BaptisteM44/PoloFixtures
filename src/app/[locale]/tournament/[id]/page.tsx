@@ -154,8 +154,8 @@ export default async function TournamentPage({
   const swissSplitSeTop10 = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "W" || m.bracketSide === "G" || m.bracketSide === "L") && tournament.sundayFormat === "SWISS_SPLIT_SE");
   const swissSplitSeBottom8 = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL") && tournament.sundayFormat === "SWISS_SPLIT_SE");
   const splitSeR1Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && m.bracketSide === "R1");
-  const splitSeWinnersMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "W" || m.bracketSide === "G") && tournament.sundayFormat === "SPLIT_SE");
-  const splitSeLosersMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "L" || m.bracketSide === "LG") && tournament.sundayFormat === "SPLIT_SE");
+  const splitSeWinnersMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "W" || m.bracketSide === "G" || m.bracketSide === "WL") && tournament.sundayFormat === "SPLIT_SE");
+  const splitSeLosersMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "L" || m.bracketSide === "LG" || m.bracketSide === "LL") && tournament.sundayFormat === "SPLIT_SE");
   const allEvents = (tournament.matches ?? []).flatMap((m: any) => m.events ?? []);
 
   // Find current player's team — lightweight separate query so tab visibility is

@@ -12,7 +12,7 @@ export type GeneratedMatch = {
   phase: MatchPhase;
   poolName?: string | null;
   poolSessionIndex?: number | null; // 0 = Pool A, 1 = Pool B, etc.
-  bracketSide?: "W" | "L" | "G" | "B" | "BG" | "BL" | "R1" | "LG" | null;
+  bracketSide?: "W" | "L" | "G" | "B" | "BG" | "BL" | "R1" | "LG" | "WL" | "LL" | null;
   roundIndex: number;
   positionInRound?: number;
   courtName: string;
@@ -558,6 +558,25 @@ function generateMazzaSplitSE(
         teamBId: null,
       });
     }
+  }
+
+  // ── 3rd place matches (round 5) ──
+  // WL: losers of the 2 Winners SF matches
+  // LL: losers of the 2 Losers SF matches
+  const r5Start = addMinutes(startAt, 4 * roundBreak);
+  for (const side of ["WL" as const, "LL" as const]) {
+    allMatches.push({
+      phase: "BRACKET",
+      bracketSide: side,
+      roundIndex: 5,
+      positionInRound: 0,
+      courtName: courtNames[0],
+      startAt: r5Start,
+      dayIndex: "SUN",
+      status: "SCHEDULED",
+      teamAId: null,
+      teamBId: null,
+    });
   }
 
   return allMatches;

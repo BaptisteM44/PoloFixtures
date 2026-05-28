@@ -566,6 +566,16 @@ export async function generateBracketAction(id: string) {
       for (let i = 0; i < lR3.length; i++) {
         if (lgR4) await tx.match.update({ where: { id: lR3[i].id }, data: { nextMatchWinId: lgR4.id, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
       }
+      // W R3 losers → WL R5 (3rd place Winners bracket)
+      const wlR5 = created.find(m => m.bracketSide === "WL" && m.roundIndex === 5);
+      for (let i = 0; i < wR3.length; i++) {
+        if (wlR5) await tx.match.update({ where: { id: wR3[i].id }, data: { nextMatchLoseId: wlR5.id, nextSlotLose: i % 2 === 0 ? "A" : "B" } });
+      }
+      // L R3 losers → LL R5 (3rd place Losers bracket)
+      const llR5 = created.find(m => m.bracketSide === "LL" && m.roundIndex === 5);
+      for (let i = 0; i < lR3.length; i++) {
+        if (llR5) await tx.match.update({ where: { id: lR3[i].id }, data: { nextMatchLoseId: llR5.id, nextSlotLose: i % 2 === 0 ? "A" : "B" } });
+      }
     }
 
     if (tournament.sundayFormat === "DE") {

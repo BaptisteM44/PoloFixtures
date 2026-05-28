@@ -314,14 +314,25 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
 }) {
   const t = useTranslations("tournament");
 
-  // Separate 3rd place match from main bracket (only when there's also a "G" final — not SPLIT_SE losers bracket)
+  // Separate 3rd place match from main bracket
   const hasGFinal = matches.some((m) => m.bracketSide === "G");
   const hasLGFinal = matches.some((m) => m.bracketSide === "LG");
-  const thirdPlaceMatch = (!hasLGFinal && hasGFinal) ? matches.find((m) => m.bracketSide === "L") : undefined;
-  // For SPLIT_SE losers bracket: treat LG as final, L as normal rounds
-  const mainMatches = thirdPlaceMatch
-    ? matches.filter((m) => m.bracketSide !== "L")
-    : matches.map((m) => m.bracketSide === "LG" ? { ...m, bracketSide: "G" as const } : m);
+  const hasWLThird = matches.some((m) => m.bracketSide === "WL");
+  const hasLLThird = matches.some((m) => m.bracketSide === "LL");
+  // WL = Winners bracket 3rd place, LL = Losers bracket 3rd place
+  // L alone (no LG) = standard SE 3rd place
+  const thirdPlaceMatch =
+    hasWLThird ? matches.find((m) => m.bracketSide === "WL") :
+    hasLLThird ? matches.find((m) => m.bracketSide === "LL") :
+    (!hasLGFinal && hasGFinal) ? matches.find((m) => m.bracketSide === "L") :
+    undefined;
+  const mainMatches = (() => {
+    let ms = matches.filter((m) => m.bracketSide !== "WL" && m.bracketSide !== "LL");
+    if (thirdPlaceMatch?.bracketSide === "L") ms = ms.filter((m) => m.bracketSide !== "L");
+    // For SPLIT_SE losers bracket: treat LG as final (G), L as normal rounds
+    ms = ms.map((m) => m.bracketSide === "LG" ? { ...m, bracketSide: "G" as const } : m);
+    return ms;
+  })();
 
   const rounds = new Map<number, MatchWithTeams[]>();
   mainMatches.forEach((m) => {

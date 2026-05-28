@@ -83,6 +83,8 @@ enum BracketSide {
   BL // Bottom bracket (SWISS_SPLIT_SE): 3rd place match
   R1 // SPLIT_SE: first round (all 16 teams)
   LG // SPLIT_SE: losers bracket final
+  WL // SPLIT_SE: winners bracket 3rd place match
+  LL // SPLIT_SE: losers bracket 3rd place match
 }
 
 enum MatchStatus {
