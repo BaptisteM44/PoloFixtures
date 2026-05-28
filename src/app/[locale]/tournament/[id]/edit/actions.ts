@@ -2617,10 +2617,10 @@ export async function launchMtpNextRoundAction(
 }
 
 /** Resolve MTP pool teams: use manually assigned DB pool if available, else splitMtpPools */
-function resolveMtpPoolTeams(
-  teams: { id: string; seed?: number | null; [key: string]: any }[],
+function resolveMtpPoolTeams<T extends { id: string }>(
+  teams: T[],
   pools: { name: string; teams: { teamId: string }[] }[]
-): { poolA: typeof teams; poolB: typeof teams } {
+): { poolA: T[]; poolB: T[] } {
   const dbPoolA = pools.find((p) => p.name === "Pool A");
   const dbPoolB = pools.find((p) => p.name === "Pool B");
   if (dbPoolA && dbPoolA.teams.length > 0 && dbPoolB && dbPoolB.teams.length > 0) {
@@ -2628,7 +2628,7 @@ function resolveMtpPoolTeams(
     const poolB = dbPoolB.teams.map((pt) => teams.find((t) => t.id === pt.teamId)!).filter(Boolean);
     return { poolA, poolB };
   }
-  return splitMtpPools(teams as any);
+  return splitMtpPools(teams as any) as { poolA: T[]; poolB: T[] };
 }
 
 export async function launchMtpCrossPoolAction(id: string): Promise<{ ok?: boolean; error?: string }> {
