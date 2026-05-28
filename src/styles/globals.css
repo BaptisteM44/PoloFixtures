@@ -9881,3 +9881,35 @@ details[open] .club-sessions__past-summary::before {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Live tab responsive layout ── */
+.live-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 16px;
+}
+@media (max-width: 768px) {
+  .live-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Live multiplex court panels ── */
+.live-mux-courts {
+  display: flex;
+  gap: 12px;
+}
+@media (max-width: 768px) {
+  .live-mux-courts {
+    flex-direction: column;
+  }
+}
+
+/* ── Referee scorer picker ── */
+.scorer-picker {
+  background: var(--panel-bg, #1a1a2e);
+  border: 1px solid var(--border, #333);
+  border-radius: 8px;
+  padding: 8px;
+  margin: 6px 0;
+}

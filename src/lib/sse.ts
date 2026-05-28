@@ -19,6 +19,12 @@ export type TournamentUpdatePayload = {
   status: string;
 };
 
+export type ChannelUpdatePayload = {
+  channelSlug: string;
+  activeCourt: string;
+  showChat: boolean;
+};
+
 const globalForSse = globalThis as unknown as { sseEmitter?: EventEmitter };
 
 export const sseEmitter = globalForSse.sseEmitter ?? new EventEmitter();
@@ -37,4 +43,8 @@ export function publishNewMatches(payload: NewMatchesPayload) {
 
 export function publishTournamentUpdate(payload: TournamentUpdatePayload) {
   sseEmitter.emit("tournament", payload);
+}
+
+export function publishChannelUpdate(payload: ChannelUpdatePayload) {
+  sseEmitter.emit("channel", payload);
 }

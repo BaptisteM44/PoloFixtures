@@ -1150,6 +1150,8 @@ model OverlayChannel {
   tournamentId String?
   court        String  @default("1")
   theme        String  @default("dark")
+  activeCourt  String  @default("1")
+  showChat     Boolean @default(false)
 
   // Toggles d'affichage
   showClock     Boolean @default(true)

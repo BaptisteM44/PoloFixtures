@@ -28,6 +28,8 @@ export function RefereePanel() {
   const [matchError, setMatchError] = useState<string | null>(null);
   const [volume, setVolume] = useState(0.4);
   const [buzzerPlayed, setBuzzerPlayed] = useState(false);
+  // null = fermé, teamId = picker ouvert pour cette équipe
+  const [scorerPickerTeamId, setScorerPickerTeamId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/tournaments")
@@ -137,12 +139,22 @@ export function RefereePanel() {
     postEvent("TIME_ADJUST", { delta });
   };
 
-  const onScore = (teamId: string, delta: number) => {
+  const onScore = (teamId: string, delta: number, playerId?: string) => {
     if (!selectedMatch) return;
     const nextA = teamId === selectedMatch.teamAId ? clampScore(selectedMatch.scoreA + delta) : selectedMatch.scoreA;
     const nextB = teamId === selectedMatch.teamBId ? clampScore(selectedMatch.scoreB + delta) : selectedMatch.scoreB;
     setSelectedMatch({ ...selectedMatch, scoreA: nextA, scoreB: nextB });
-    postEvent("GOAL", { teamId, delta });
+    postEvent("GOAL", { teamId, delta, ...(playerId ? { playerId } : {}) });
+    setScorerPickerTeamId(null);
+  };
+
+  const openScorerPicker = (teamId: string, delta: number) => {
+    if (!selectedMatch) return;
+    const team = teamId === selectedMatch.teamAId ? selectedMatch.teamA : selectedMatch.teamB;
+    // Si pas de joueurs connus, scorer directement sans picker
+    if (!team?.players?.length) { onScore(teamId, delta); return; }
+    if (delta < 0) { onScore(teamId, delta); return; } // annulation directe
+    setScorerPickerTeamId(teamId);
   };
 
   const onGoldenGoal = (teamId: string) => {
@@ -283,9 +295,28 @@ export function RefereePanel() {
                 <h4>{selectedMatch.teamA?.name ?? "Team A"}</h4>
                 <div className="score">{selectedMatch.scoreA}</div>
                 <div className="button-row">
-                  <button onClick={() => selectedMatch.teamAId && onScore(selectedMatch.teamAId, 1)}>+1</button>
+                  <button onClick={() => selectedMatch.teamAId && openScorerPicker(selectedMatch.teamAId, 1)}>+1</button>
                   <button className="ghost" onClick={() => selectedMatch.teamAId && onScore(selectedMatch.teamAId, -1)}>-1</button>
                 </div>
+                {scorerPickerTeamId === selectedMatch.teamAId && (
+                  <div className="scorer-picker">
+                    <p className="meta" style={{ marginBottom: 4 }}>Buteur :</p>
+                    {selectedMatch.teamA?.players?.map((tp) => (
+                      <button key={tp.player.id} className="ghost" style={{ width: "100%", marginBottom: 2, textAlign: "left" }}
+                        onClick={() => onScore(selectedMatch.teamAId!, 1, tp.player.id)}>
+                        {tp.player.name}
+                      </button>
+                    ))}
+                    <button className="ghost" style={{ width: "100%", marginTop: 4, opacity: 0.6 }}
+                      onClick={() => onScore(selectedMatch.teamAId!, 1)}>
+                      Sans buteur
+                    </button>
+                    <button className="ghost danger" style={{ width: "100%", marginTop: 2, opacity: 0.6 }}
+                      onClick={() => setScorerPickerTeamId(null)}>
+                      Annuler
+                    </button>
+                  </div>
+                )}
                 <div className="button-row">
                   <button className="ghost" onClick={() => selectedMatch.teamAId && onTimeout(selectedMatch.teamAId, "normal")}>{t("btn_timeout")}</button>
                   <button className="ghost" onClick={() => selectedMatch.teamAId && onTimeout(selectedMatch.teamAId, "normal", -1)}>{t("btn_undo")}</button>
@@ -298,9 +329,28 @@ export function RefereePanel() {
                 <h4>{selectedMatch.teamB?.name ?? "Team B"}</h4>
                 <div className="score">{selectedMatch.scoreB}</div>
                 <div className="button-row">
-                  <button onClick={() => selectedMatch.teamBId && onScore(selectedMatch.teamBId, 1)}>+1</button>
+                  <button onClick={() => selectedMatch.teamBId && openScorerPicker(selectedMatch.teamBId, 1)}>+1</button>
                   <button className="ghost" onClick={() => selectedMatch.teamBId && onScore(selectedMatch.teamBId, -1)}>-1</button>
                 </div>
+                {scorerPickerTeamId === selectedMatch.teamBId && (
+                  <div className="scorer-picker">
+                    <p className="meta" style={{ marginBottom: 4 }}>Buteur :</p>
+                    {selectedMatch.teamB?.players?.map((tp) => (
+                      <button key={tp.player.id} className="ghost" style={{ width: "100%", marginBottom: 2, textAlign: "left" }}
+                        onClick={() => onScore(selectedMatch.teamBId!, 1, tp.player.id)}>
+                        {tp.player.name}
+                      </button>
+                    ))}
+                    <button className="ghost" style={{ width: "100%", marginTop: 4, opacity: 0.6 }}
+                      onClick={() => onScore(selectedMatch.teamBId!, 1)}>
+                      Sans buteur
+                    </button>
+                    <button className="ghost danger" style={{ width: "100%", marginTop: 2, opacity: 0.6 }}
+                      onClick={() => setScorerPickerTeamId(null)}>
+                      Annuler
+                    </button>
+                  </div>
+                )}
                 <div className="button-row">
                   <button className="ghost" onClick={() => selectedMatch.teamBId && onTimeout(selectedMatch.teamBId, "normal")}>{t("btn_timeout")}</button>
                   <button className="ghost" onClick={() => selectedMatch.teamBId && onTimeout(selectedMatch.teamBId, "normal", -1)}>{t("btn_undo")}</button>

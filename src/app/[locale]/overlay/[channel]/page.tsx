@@ -88,6 +88,9 @@ export default async function ChannelOverlayPage({
       showTeamNames={channel.showTeamNames}
       showEventFeed={channel.showEventFeed}
       showHeader={channel.showHeader}
+      channelSlug={channel.slug}
+      initialActiveCourt={channel.activeCourt}
+      initialShowChat={channel.showChat}
     />
   );
 }

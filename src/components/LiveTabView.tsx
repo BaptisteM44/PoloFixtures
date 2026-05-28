@@ -7,7 +7,7 @@ import { TournamentChat } from "./TournamentChat";
 import { Link } from "@/i18n/navigation";
 import { type MatchWithTeams } from "./ScheduleBoard";
 
-type OverlayChannel = { id: string; slug: string; label: string; court: string };
+type OverlayChannel = { id: string; slug: string; label: string; court: string; activeCourt?: string; showChat?: boolean };
 
 export function LiveTabView({
   tournamentId,
@@ -57,6 +57,35 @@ export function LiveTabView({
 
   // Overlay toggle per tab: null = aucun, sinon slug du channel
   const [activeOverlay, setActiveOverlay] = useState<string | null>(null);
+
+  // Multiplex overlay switcher state (orga only)
+  const multiplexChannel = overlayChannels.find((ch) => ch.court === "multiplex" || ch.slug.includes("multiplex")) ?? null;
+  const [muxActiveCourt, setMuxActiveCourt] = useState(multiplexChannel ? (multiplexChannel as any).activeCourt ?? "1" : "1");
+  const [muxShowChat, setMuxShowChat] = useState(multiplexChannel ? (multiplexChannel as any).showChat ?? false : false);
+  const [muxSwitching, setMuxSwitching] = useState(false);
+
+  const switchMuxCourt = async (court: string) => {
+    if (!multiplexChannel || muxSwitching) return;
+    setMuxSwitching(true);
+    setMuxActiveCourt(court);
+    await fetch(`/api/overlay/channels/${multiplexChannel.slug}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ activeCourt: court, showChat: muxShowChat }),
+    });
+    setMuxSwitching(false);
+  };
+
+  const toggleMuxChat = async () => {
+    if (!multiplexChannel || muxSwitching) return;
+    const next = !muxShowChat;
+    setMuxShowChat(next);
+    await fetch(`/api/overlay/channels/${multiplexChannel.slug}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ activeCourt: muxActiveCourt, showChat: next }),
+    });
+  };
 
   // Drag for overlay iframe
   const [overlayPos, setOverlayPos] = useState<{ left: number; top: number } | null>(null);
@@ -176,6 +205,37 @@ export function LiveTabView({
         </div>
       )}
 
+      {/* Multiplex overlay switcher (orga only, onglet QCQC uniquement) */}
+      {isOrga && activeTab === "multiplex" && multiplexChannel && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--surface-alt, #1e1e2e)", borderRadius: 10, flexWrap: "wrap" }}>
+          <span style={{ fontWeight: 600, fontSize: 13 }}>📡 OBS Overlay actif :</span>
+          {Array.from({ length: courtsCount }, (_, i) => i + 1).map((n) => (
+            <button
+              key={n}
+              type="button"
+              disabled={muxSwitching}
+              onClick={() => switchMuxCourt(String(n))}
+              className={`ghost${muxActiveCourt === String(n) ? " active" : ""}`}
+              style={{ fontSize: 13, padding: "5px 14px" }}
+            >
+              Court {n}
+            </button>
+          ))}
+          <div style={{ width: 1, height: 20, background: "var(--border-color, #333)", margin: "0 4px" }} />
+          <button
+            type="button"
+            onClick={toggleMuxChat}
+            className={`ghost${muxShowChat ? " active" : ""}`}
+            style={{ fontSize: 13, padding: "5px 14px" }}
+          >
+            💬 Chat {muxShowChat ? "ON" : "OFF"}
+          </button>
+          <span className="meta" style={{ fontSize: 11, marginLeft: "auto" }}>
+            URL OBS fixe : <code style={{ fontSize: 11 }}>/overlay/{multiplexChannel.slug}</code>
+          </span>
+        </div>
+      )}
+
       {/* Video + overlay iframe stacked */}
       <div ref={videoRef} style={{ position: "relative", borderRadius: 8, overflow: "hidden" }}>
         {streamEmbed ? (
@@ -242,13 +302,13 @@ export function LiveTabView({
       </div>
 
       {/* Scores live + Chat en dessous — comme avant */}
-      <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 16 }}>
+      <div className="live-grid">
         <div>
           {activeTab === "multiplex" && courtsCount >= 2 ? (
-            /* Multiplex: 1 panel par terrain */
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            /* Multiplex: 1 panel par terrain côte à côte (colonne sur mobile) */
+            <div className="live-mux-courts">
               {Array.from({ length: courtsCount }, (_, i) => i + 1).map((n) => (
-                <div key={n} className="panel">
+                <div key={n} className="panel" style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, marginBottom: 6, fontSize: 13 }}>🏟 Court {n}</div>
                   <LiveMatchTile
                     tournamentId={tournamentId}
@@ -257,6 +317,7 @@ export function LiveTabView({
                     isLive={isLive}
                     maxLive={1}
                     maxUpcoming={1}
+                    courtName={`Court ${n}`}
                   />
                 </div>
               ))}
@@ -268,6 +329,7 @@ export function LiveTabView({
                 initialMatches={filteredMatches}
                 gameDurationMin={gameDurationMin}
                 isLive={isLive}
+                courtName={courtNumber !== null ? `Court ${courtNumber}` : undefined}
               />
             </div>
           )}

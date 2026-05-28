@@ -542,12 +542,14 @@ export async function generateBracketAction(id: string) {
       const lR3 = created.filter(m => m.bracketSide === "L" && m.roundIndex === 3).sort((a, b) => a.positionInRound - b.positionInRound);
       const lgR4 = created.find(m => m.bracketSide === "LG" && m.roundIndex === 4);
 
-      // R1 → W R2 (1:1) and R1 → L R2 (mirrored)
+      // R1 (8 matches) → W R2 (4 matches): pairs 0+1→wR2[0], 2+3→wR2[1], 4+5→wR2[2], 6+7→wR2[3]
+      // R1 (8 matches) → L R2 (4 matches): mirrored pairs 6+7→lR2[0], 4+5→lR2[1], 2+3→lR2[2], 0+1→lR2[3]
       for (let i = 0; i < r1.length; i++) {
-        const wNext = wR2[i];
-        const lNext = lR2[r1.length - 1 - i];
+        const wNext = wR2[Math.floor(i / 2)];
+        const mirrorI = r1.length - 1 - i;
+        const lNext = lR2[Math.floor(mirrorI / 2)];
         if (wNext) await tx.match.update({ where: { id: r1[i].id }, data: { nextMatchWinId: wNext.id, nextSlotWin: i % 2 === 0 ? "A" : "B" } });
-        if (lNext) await tx.match.update({ where: { id: r1[i].id }, data: { nextMatchLoseId: lNext.id, nextSlotLose: i % 2 === 0 ? "A" : "B" } });
+        if (lNext) await tx.match.update({ where: { id: r1[i].id }, data: { nextMatchLoseId: lNext.id, nextSlotLose: mirrorI % 2 === 0 ? "A" : "B" } });
       }
       // W R2 → W R3
       for (let i = 0; i < wR2.length; i++) {
@@ -2461,7 +2463,10 @@ export async function launchMtpPoolAction(
 
   const tournament = await prisma.tournament.findUnique({
     where: { id },
-    include: { teams: { where: { selected: true } } },
+    include: {
+      teams: { where: { selected: true } },
+      pools: { include: { teams: true } },
+    },
   });
   if (!tournament) return { error: "Tournoi introuvable." };
   if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
@@ -2472,8 +2477,15 @@ export async function launchMtpPoolAction(
   const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase } });
   if (existing) return { error: `${poolName} déjà générée.` };
 
-  const { poolA, poolB } = splitMtpPools(tournament.teams);
-  const teams = pool === "A" ? poolA : poolB;
+  // Use manually assigned pool if it exists in DB, otherwise fallback to splitMtpPools
+  const dbPool = tournament.pools.find((p) => p.name === poolName);
+  let teams: typeof tournament.teams;
+  if (dbPool && dbPool.teams.length > 0) {
+    teams = dbPool.teams.map((pt) => tournament.teams.find((t) => t.id === pt.teamId)!).filter(Boolean);
+  } else {
+    const { poolA, poolB } = splitMtpPools(tournament.teams);
+    teams = pool === "A" ? poolA : poolB;
+  }
   if (teams.length < 2) return { error: "Pas assez d'équipes." };
 
   const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
@@ -2524,6 +2536,7 @@ export async function launchMtpNextRoundAction(
     include: {
       teams: { where: { selected: true } },
       matches: { where: { phase } },
+      pools: { include: { teams: true } },
     },
   });
   if (!tournament) return { error: "Tournoi introuvable." };
@@ -2544,9 +2557,15 @@ export async function launchMtpNextRoundAction(
   const nextRoundExists = existingMatches.some((m) => m.roundIndex === maxRound + 1);
   if (nextRoundExists) return { error: `Le round ${maxRound + 1} a déjà été généré.` };
 
-  // Compute standings
-  const { poolA, poolB } = splitMtpPools(tournament.teams);
-  const poolTeams = pool === "A" ? poolA : poolB;
+  // Compute standings — use manually assigned pool if available
+  const dbPool = tournament.pools.find((p) => p.name === poolName);
+  let poolTeams: typeof tournament.teams;
+  if (dbPool && dbPool.teams.length > 0) {
+    poolTeams = dbPool.teams.map((pt) => tournament.teams.find((t) => t.id === pt.teamId)!).filter(Boolean);
+  } else {
+    const { poolA, poolB } = splitMtpPools(tournament.teams);
+    poolTeams = pool === "A" ? poolA : poolB;
+  }
   const standings = computeStandings(poolTeams, existingMatches as any, (tournament as any).scoringSystem);
 
   // Build played pairs set
@@ -2597,6 +2616,21 @@ export async function launchMtpNextRoundAction(
   return { ok: true };
 }
 
+/** Resolve MTP pool teams: use manually assigned DB pool if available, else splitMtpPools */
+function resolveMtpPoolTeams(
+  teams: { id: string; seed?: number | null; [key: string]: any }[],
+  pools: { name: string; teams: { teamId: string }[] }[]
+): { poolA: typeof teams; poolB: typeof teams } {
+  const dbPoolA = pools.find((p) => p.name === "Pool A");
+  const dbPoolB = pools.find((p) => p.name === "Pool B");
+  if (dbPoolA && dbPoolA.teams.length > 0 && dbPoolB && dbPoolB.teams.length > 0) {
+    const poolA = dbPoolA.teams.map((pt) => teams.find((t) => t.id === pt.teamId)!).filter(Boolean);
+    const poolB = dbPoolB.teams.map((pt) => teams.find((t) => t.id === pt.teamId)!).filter(Boolean);
+    return { poolA, poolB };
+  }
+  return splitMtpPools(teams as any);
+}
+
 export async function launchMtpCrossPoolAction(id: string): Promise<{ ok?: boolean; error?: string }> {
   const denied = await requireTournamentOrgaAccess(id);
   if (denied) return denied;
@@ -2606,6 +2640,7 @@ export async function launchMtpCrossPoolAction(id: string): Promise<{ ok?: boole
     include: {
       teams: { where: { selected: true } },
       matches: { where: { phase: { in: ["MTP_POOL_A", "MTP_POOL_B"] } } },
+      pools: { include: { teams: true } },
     },
   });
   if (!tournament) return { error: "Tournoi introuvable." };
@@ -2621,7 +2656,7 @@ export async function launchMtpCrossPoolAction(id: string): Promise<{ ok?: boole
     return { error: "Tous les matchs des pools doivent être terminés." };
   }
 
-  const { poolA, poolB } = splitMtpPools(tournament.teams);
+  const { poolA, poolB } = resolveMtpPoolTeams(tournament.teams, tournament.pools);
   const poolAStandings = computeStandings(poolA, poolAMatches as any, (tournament as any).scoringSystem);
   const poolBStandings = computeStandings(poolB, poolBMatches as any, (tournament as any).scoringSystem);
 
@@ -2664,6 +2699,7 @@ export async function launchMtpBarrageAction(id: string): Promise<{ ok?: boolean
     include: {
       teams: { where: { selected: true } },
       matches: { where: { phase: { in: ["MTP_POOL_A", "MTP_POOL_B", "CROSS_POOL"] } } },
+      pools: { include: { teams: true } },
     },
   });
   if (!tournament) return { error: "Tournoi introuvable." };
@@ -2681,7 +2717,7 @@ export async function launchMtpBarrageAction(id: string): Promise<{ ok?: boolean
     return { error: "Tous les matchs cross-pool doivent être terminés." };
   }
 
-  const { poolA, poolB } = splitMtpPools(tournament.teams);
+  const { poolA, poolB } = resolveMtpPoolTeams(tournament.teams, tournament.pools);
   const poolAStandings = computeStandings(poolA, poolAMatches as any, (tournament as any).scoringSystem);
   const poolBStandings = computeStandings(poolB, poolBMatches as any, (tournament as any).scoringSystem);
   const combined = combineMtpStandings(poolAStandings, poolBStandings);
@@ -2728,6 +2764,7 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
     include: {
       teams: { where: { selected: true } },
       matches: { where: { phase: { in: ["MTP_POOL_A", "MTP_POOL_B", "MTP_BARRAGE"] } } },
+      pools: { include: { teams: true } },
     },
   });
   if (!tournament) return { error: "Tournoi introuvable." };
@@ -2742,7 +2779,7 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
 
   const poolAMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_A");
   const poolBMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_B");
-  const { poolA, poolB } = splitMtpPools(tournament.teams);
+  const { poolA, poolB } = resolveMtpPoolTeams(tournament.teams, tournament.pools);
   const poolAStandings = computeStandings(poolA, poolAMatches as any, (tournament as any).scoringSystem);
   const poolBStandings = computeStandings(poolB, poolBMatches as any, (tournament as any).scoringSystem);
   const combined = combineMtpStandings(poolAStandings, poolBStandings);

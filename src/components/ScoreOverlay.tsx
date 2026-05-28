@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type MatchEvent } from "@prisma/client";
+import { TournamentChat } from "./TournamentChat";
 
 type OverlayMatch = {
   id: string;
@@ -67,6 +68,9 @@ export function ScoreOverlay({
   showTeamNames = true,
   showEventFeed = true,
   showHeader = true,
+  channelSlug,
+  initialActiveCourt,
+  initialShowChat = false,
 }: {
   tournamentId: string;
   tournamentName: string;
@@ -79,11 +83,17 @@ export function ScoreOverlay({
   showTeamNames?: boolean;
   showEventFeed?: boolean;
   showHeader?: boolean;
+  channelSlug?: string;
+  initialActiveCourt?: string;
+  initialShowChat?: boolean;
 }) {
   const [matches, setMatches] = useState<OverlayMatch[]>(initialMatches);
+  // activeCourt can be overridden via SSE (multiplex switcher)
+  const [activeCourt, setActiveCourt] = useState(initialActiveCourt ?? court);
+  const [showChat, setShowChat] = useState(initialShowChat);
 
   // Find the current match on the specified court
-  const courtName = `Court ${court}`;
+  const courtName = `Court ${activeCourt}`;
   const liveMatch = matches.find((m) => m.status === "LIVE" && m.courtName === courtName);
   const scheduledMatch = matches.find((m) => m.status === "SCHEDULED" && m.courtName === courtName);
   const currentMatch = liveMatch ?? scheduledMatch;
@@ -112,7 +122,7 @@ export function ScoreOverlay({
     return () => clearInterval(interval);
   }, [paused, currentMatch?.id, currentMatch?.status]);
 
-  // SSE listener
+  // SSE listener for match updates + channel switcher (activeCourt/showChat)
   useEffect(() => {
     const es = new EventSource(`/api/sse?tournamentId=${tournamentId}`);
     es.addEventListener("match", (event) => {
@@ -146,8 +156,23 @@ export function ScoreOverlay({
         }
       }
     });
+
+    // Channel switcher: listen for activeCourt/showChat updates from orga
+    if (channelSlug) {
+      es.addEventListener("channel", (event) => {
+        const payload = JSON.parse((event as MessageEvent).data) as {
+          channelSlug: string;
+          activeCourt: string;
+          showChat: boolean;
+        };
+        if (payload.channelSlug !== channelSlug) return;
+        setActiveCourt(payload.activeCourt);
+        setShowChat(payload.showChat);
+      });
+    }
+
     return () => es.close();
-  }, [tournamentId]);
+  }, [tournamentId, channelSlug]);
 
   // Swap sides: count SWAP_SIDES events — odd = swapped
   const sidesSwapped = currentMatch
@@ -537,6 +562,33 @@ export function ScoreOverlay({
             </div>
           ) : null
         )}
+
+      {/* Multiplex chat — shown on overlay when showChat is enabled */}
+      {showChat && (
+        <div
+          style={{
+            marginTop: 16,
+            width: 400,
+            maxWidth: "90vw",
+            maxHeight: 280,
+            overflow: "hidden",
+            borderRadius: 10,
+            background: isDark ? "rgba(0,0,0,0.75)" : "rgba(255,255,255,0.85)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <TournamentChat
+            tournamentId={tournamentId}
+            chatMode="OPEN"
+            context="MULTIPLEX"
+            currentPlayerId={null}
+            currentPlayerName={null}
+            isOrga={false}
+            creatorId={null}
+            fullPage
+          />
+        </div>
+      )}
 
       <style
         dangerouslySetInnerHTML={{

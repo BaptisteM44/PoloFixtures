@@ -187,7 +187,7 @@ export default async function TournamentPage({
   // Fetch overlay channels for this tournament
   const overlayChannels = await prisma.overlayChannel.findMany({
     where: { tournamentId: tournament.id },
-    select: { id: true, slug: true, label: true, court: true },
+    select: { id: true, slug: true, label: true, court: true, activeCourt: true, showChat: true },
     orderBy: { court: "asc" },
   });
 

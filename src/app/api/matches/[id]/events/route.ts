@@ -45,12 +45,21 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const payload = {
+  const payload: Record<string, unknown> = {
     teamId: parsed.data.teamId ?? undefined,
     playerId: parsed.data.playerId ?? undefined,
     delta: parsed.data.delta ?? undefined,
     timeoutType: parsed.data.timeoutType ?? undefined
   };
+
+  // Resolve player name to store in payload for display in live feed
+  if (parsed.data.playerId) {
+    const player = await prisma.player.findUnique({
+      where: { id: parsed.data.playerId },
+      select: { name: true }
+    });
+    if (player?.name) payload.playerName = player.name;
+  }
 
   let scoreA = match.scoreA;
   let scoreB = match.scoreB;
@@ -100,7 +109,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       matchId: match.id,
       type: parsed.data.type,
       matchClockSec: parsed.data.matchClockSec,
-      payload
+      payload: payload as Parameters<typeof prisma.matchEvent.create>[0]["data"]["payload"]
     }
   });
 

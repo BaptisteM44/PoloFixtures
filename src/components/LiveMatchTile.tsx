@@ -60,18 +60,18 @@ function buildMatchStats(match: EnrichedMatch) {
   for (const e of match.events ?? []) {
     const p = e.payload as Record<string, unknown>;
     const teamId = String(p.teamId ?? "");
-    const playerId = String(p.playerId ?? "");
+    const playerName = p.playerName ? String(p.playerName) : "";
     const delta = Number(p.delta ?? 1);
 
     if ((e.type === "GOAL" || e.type === "GOLDEN_GOAL") && teamId) {
       if (!goalsByTeam[teamId]) goalsByTeam[teamId] = { count: 0, scorers: [] };
       goalsByTeam[teamId].count += delta;
-      if (playerId && playerId !== "undefined") goalsByTeam[teamId].scorers.push(playerId);
+      if (playerName) goalsByTeam[teamId].scorers.push(playerName);
     }
     if (e.type === "PENALTY" && teamId) {
       if (!penaltiesByTeam[teamId]) penaltiesByTeam[teamId] = { count: 0, players: [] };
       penaltiesByTeam[teamId].count += delta;
-      if (playerId && playerId !== "undefined") penaltiesByTeam[teamId].players.push(playerId);
+      if (playerName) penaltiesByTeam[teamId].players.push(playerName);
     }
   }
 
@@ -217,6 +217,7 @@ export function LiveMatchTile({
   isLive = false,
   maxLive,
   maxUpcoming,
+  courtName: courtNameFilter,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
@@ -224,6 +225,7 @@ export function LiveMatchTile({
   isLive?: boolean;
   maxLive?: number;
   maxUpcoming?: number;
+  courtName?: string; // if set, filter matches to this court after polling
 }) {
   const t = useTranslations("tournament");
   const [matches, setMatches] = useState<EnrichedMatch[]>(
@@ -243,9 +245,27 @@ export function LiveMatchTile({
     if (m.teamBId && m.teamB?.name) teamNames[m.teamBId] = m.teamB.name;
   });
 
-  // SSE listener
+  // SSE listener + polling fallback (SSE may not work on Vercel serverless multi-instance)
   useEffect(() => {
     if (!isLive) return;
+
+    const fetchMatches = async () => {
+      try {
+        const res = await fetch(`/api/tournaments/${tournamentId}/live-matches`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data.matches)) {
+          const filtered = courtNameFilter
+            ? data.matches.filter((m: MatchWithTeams) => m.courtName === courtNameFilter)
+            : data.matches;
+          setMatches(filtered.map((m: MatchWithTeams) => ({
+            ...m,
+            events: (m.events ?? []) as MatchEvent[]
+          })));
+        }
+      } catch { /* ignore */ }
+    };
+
     const es = new EventSource(`/api/sse?tournamentId=${tournamentId}`);
     es.addEventListener("match", (event) => {
       const payload = JSON.parse((event as MessageEvent).data);
@@ -254,7 +274,7 @@ export function LiveMatchTile({
         setMatches((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
           const newOnes = (payload.matches as MatchWithTeams[])
-            .filter((m) => !existingIds.has(m.id))
+            .filter((m) => !existingIds.has(m.id) && (!courtNameFilter || m.courtName === courtNameFilter))
             .map((m) => ({ ...m, events: [] as MatchEvent[] }));
           return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
         });
@@ -264,6 +284,9 @@ export function LiveMatchTile({
       if (payload?.data) {
         const updatedMatch: Partial<MatchWithTeams> = payload.data.match ?? payload.data;
         const newEvent: MatchEvent | undefined = payload.data.event;
+
+        // Ignore updates for matches on other courts
+        if (courtNameFilter && updatedMatch.courtName && updatedMatch.courtName !== courtNameFilter) return;
 
         if (updatedMatch.id) {
           setMatches((prev) =>
@@ -278,7 +301,11 @@ export function LiveMatchTile({
         }
       }
     });
-    return () => es.close();
+
+    // Polling fallback every 8s in case SSE misses events (Vercel multi-instance)
+    const poll = setInterval(fetchMatches, 8000);
+
+    return () => { es.close(); clearInterval(poll); };
   }, [tournamentId, isLive]);
 
   const liveMatches = matches.filter((m) => m.status === "LIVE").slice(0, maxLive ?? Infinity);

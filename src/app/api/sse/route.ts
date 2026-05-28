@@ -22,18 +22,24 @@ export async function GET(request: Request) {
         sendEvent("tournament", payload);
       };
 
+      const channelHandler = (payload: unknown) => {
+        sendEvent("channel", payload);
+      };
+
       const keepAlive = setInterval(() => {
         controller.enqueue(encoder.encode(`: ping\n\n`));
       }, 15000);
 
       sseEmitter.on("match", matchHandler);
       sseEmitter.on("tournament", tournamentHandler);
+      sseEmitter.on("channel", channelHandler);
       controller.enqueue(encoder.encode(`: connected\n\n`));
 
       const close = () => {
         clearInterval(keepAlive);
         sseEmitter.off("match", matchHandler);
         sseEmitter.off("tournament", tournamentHandler);
+        sseEmitter.off("channel", channelHandler);
         controller.close();
       };
 

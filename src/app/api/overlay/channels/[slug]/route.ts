@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { publishChannelUpdate } from "@/lib/sse";
 
 const patchSchema = z.object({
   label:        z.string().min(1).max(64).optional(),
@@ -11,6 +12,8 @@ const patchSchema = z.object({
   showTeamNames: z.boolean().optional(),
   showEventFeed: z.boolean().optional(),
   showHeader:   z.boolean().optional(),
+  activeCourt:  z.string().optional(),
+  showChat:     z.boolean().optional(),
 });
 
 // GET /api/overlay/channels/[slug]
@@ -36,6 +39,16 @@ export async function PATCH(req: Request, { params }: { params: { slug: string }
     data: parsed.data,
     include: { tournament: { select: { id: true, name: true, status: true } } },
   });
+
+  // Broadcast channel update via SSE so ScoreOverlay updates in real-time
+  if (parsed.data.activeCourt !== undefined || parsed.data.showChat !== undefined) {
+    publishChannelUpdate({
+      channelSlug: params.slug,
+      activeCourt: channel.activeCourt,
+      showChat: channel.showChat,
+    });
+  }
+
   return Response.json(channel);
 }
 
