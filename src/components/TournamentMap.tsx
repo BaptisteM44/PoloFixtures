@@ -105,8 +105,28 @@ function MapFlyTo({ center, zoom }: { center: [number, number]; zoom: number }) 
   return null;
 }
 
+// Spread overlapping markers in a small spiral so none are hidden
+function jitterPositions(tournaments: MapTournament[]): Map<string, [number, number]> {
+  const positions = new Map<string, [number, number]>();
+  const counts = new Map<string, number>();
+  for (const t of tournaments) {
+    const key = `${t.lat.toFixed(4)},${t.lng.toFixed(4)}`;
+    const idx = counts.get(key) ?? 0;
+    counts.set(key, idx + 1);
+    if (idx === 0) {
+      positions.set(t.id, [t.lat, t.lng]);
+    } else {
+      const angle = (idx - 1) * 2.4; // golden angle spread
+      const radius = 0.015 * Math.ceil(idx / 6);
+      positions.set(t.id, [t.lat + radius * Math.sin(angle), t.lng + radius * Math.cos(angle)]);
+    }
+  }
+  return positions;
+}
+
 export default function TournamentMap({ tournaments, onSelect, center = [25, 20], zoom = 2 }: Props) {
   const tr = useTranslations("tournament");
+  const positions = jitterPositions(tournaments);
   return (
     <MapContainer
       center={center}
@@ -122,7 +142,7 @@ export default function TournamentMap({ tournaments, onSelect, center = [25, 20]
       {tournaments.map((t) => (
         <Marker
           key={t.id}
-          position={[t.lat, t.lng]}
+          position={positions.get(t.id) ?? [t.lat, t.lng]}
           icon={createCircleIcon(getMarkerColor(t))}
           eventHandlers={{ click: () => onSelect?.(t) }}
         >
