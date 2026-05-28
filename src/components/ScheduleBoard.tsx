@@ -453,10 +453,14 @@ export function ScheduleBoard({
             else if (bracketSide === "BG") bracketLabel = " · Bottom 8 · Finale";
             else if (bracketSide === "BL") bracketLabel = " · Bottom 8 · Manche des perdants";
           } else {
-            // Standard DE or cross-pool DE
-            if (bracketSide === "W") bracketLabel = "";
-            else if (bracketSide === "L") bracketLabel = " · Repêchage";
-            else if (bracketSide === "G") bracketLabel = " · Finale";
+            // SPLIT_SE sides
+            if (bracketSide === "R1") bracketLabel = " · R1";
+            else if (bracketSide === "W") bracketLabel = " · Winners";
+            else if (bracketSide === "G") bracketLabel = " · Winners · Finale";
+            else if (bracketSide === "WL") bracketLabel = " · Winners · 3ème place";
+            else if (bracketSide === "L") bracketLabel = " · Losers";
+            else if (bracketSide === "LG") bracketLabel = " · Losers · Finale";
+            else if (bracketSide === "LL") bracketLabel = " · Losers · 3ème place";
           }
         }
 
@@ -470,7 +474,7 @@ export function ScheduleBoard({
           >
             <div className="schedule-round__header">
               <span className="schedule-round__label">
-                {PHASE_LABEL[group.phase] ?? group.phase}{bracketLabel}{(bracketSide !== "G" && bracketSide !== "L" && bracketSide !== "BG" && bracketSide !== "BL") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}{grazPoolLabel}
+                {PHASE_LABEL[group.phase] ?? group.phase}{bracketLabel}{(bracketSide !== "G" && bracketSide !== "L" && bracketSide !== "BG" && bracketSide !== "BL" && bracketSide !== "LG" && bracketSide !== "WL" && bracketSide !== "LL" && bracketSide !== "R1") ? ` · Round ${group.roundIndex}` : (bracketSide === "W" || bracketSide === "L") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}{grazPoolLabel}
               </span>
               {finished && <span className="schedule-round__badge schedule-round__badge--done">{t("status_completed")}</span>}
               {active && <span className="schedule-round__badge schedule-round__badge--live">{t("status_live")}</span>}

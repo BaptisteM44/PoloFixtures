@@ -254,15 +254,21 @@ export default async function TournamentPage({
       podium.first  = toTeam(isAWinner ? grandFinal.teamA : grandFinal.teamB);
       podium.second = toTeam(isAWinner ? grandFinal.teamB : grandFinal.teamA);
     }
-    // 3ème : perdant du dernier match LB (le gagnant rejoint la GF comme 2ème)
-    // En DE, podium.second est déjà le perdant de la GF. Le 3ème est le perdant du dernier match LB.
-    const lowerFinal = bracketMatches.filter((m) => m.bracketSide === "L")[0];
-    if (lowerFinal) {
-      const isAWinner = lowerFinal.winnerTeamId === lowerFinal.teamAId;
-      const lbLoser = toTeam(isAWinner ? lowerFinal.teamB : lowerFinal.teamA);
-      // Ne pas mettre en 3ème quelqu'un qui est déjà 1er ou 2ème (cas DE où le LB winner va en GF)
-      if (lbLoser && lbLoser.id !== podium.first?.id && lbLoser.id !== podium.second?.id) {
-        podium.third = lbLoser;
+    // 3ème : SPLIT_SE → gagnant du match WL (3ème place Winners bracket)
+    //         DE      → perdant du dernier match LB
+    //         SE      → perdant du match L (petite finale)
+    const wlMatch = bracketMatches.find((m) => m.bracketSide === "WL");
+    if (wlMatch) {
+      const isAWinner = wlMatch.winnerTeamId === wlMatch.teamAId;
+      podium.third = toTeam(isAWinner ? wlMatch.teamA : wlMatch.teamB);
+    } else {
+      const lowerFinal = bracketMatches.filter((m) => m.bracketSide === "L")[0];
+      if (lowerFinal) {
+        const isAWinner = lowerFinal.winnerTeamId === lowerFinal.teamAId;
+        const lbLoser = toTeam(isAWinner ? lowerFinal.teamB : lowerFinal.teamA);
+        if (lbLoser && lbLoser.id !== podium.first?.id && lbLoser.id !== podium.second?.id) {
+          podium.third = lbLoser;
+        }
       }
     }
   }
