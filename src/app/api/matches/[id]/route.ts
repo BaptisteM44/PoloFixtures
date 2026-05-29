@@ -129,48 +129,53 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     }
   }
 
-  // Auto-advance + cascade reschedule: when a match finishes, shift all upcoming matches on same court
+  // Auto-advance + cascade reschedule: fire-and-forget in background
   if (isNowFinished) {
-    const tournament = await prisma.tournament.findUnique({
-      where: { id: match.tournamentId },
-      select: { gameDurationMin: true },
-    });
-    const slotMin = (tournament?.gameDurationMin ?? 15) + 4; // game + 4min break
-
-    const upcomingOnCourt = await prisma.match.findMany({
-      where: {
-        tournamentId: match.tournamentId,
-        courtName: match.courtName,
-        status: { in: ["SCHEDULED", "LIVE"] },
-      },
-      orderBy: { startAt: "asc" },
-    });
-
-    if (upcomingOnCourt.length > 0) {
-      // Real finish time = now. Next match starts after break.
-      const realFinishTime = new Date();
-      let cursor = new Date(realFinishTime.getTime() + 4 * 60 * 1000);
-
-      for (let i = 0; i < upcomingOnCourt.length; i++) {
-        const m = upcomingOnCourt[i];
-        const isFirst = i === 0;
-        const newData: Record<string, unknown> = { startAt: new Date(cursor) };
-        if (isFirst && m.status === "SCHEDULED") newData.status = "LIVE";
-
-        const updated = await prisma.match.update({
-          where: { id: m.id },
-          data: newData,
+    (async () => {
+      try {
+        const tournament = await prisma.tournament.findUnique({
+          where: { id: match.tournamentId },
+          select: { gameDurationMin: true },
         });
-        publishMatchUpdate({
-          matchId: updated.id,
-          tournamentId: updated.tournamentId,
-          type: "match_update",
-          data: updated,
+        const slotMin = (tournament?.gameDurationMin ?? 15) + 4;
+
+        const upcomingOnCourt = await prisma.match.findMany({
+          where: {
+            tournamentId: match.tournamentId,
+            courtName: match.courtName,
+            status: { in: ["SCHEDULED", "LIVE"] },
+          },
+          orderBy: { startAt: "asc" },
         });
 
-        cursor = new Date(cursor.getTime() + slotMin * 60 * 1000);
+        if (upcomingOnCourt.length > 0) {
+          const realFinishTime = new Date();
+          let cursor = new Date(realFinishTime.getTime() + 4 * 60 * 1000);
+
+          for (let i = 0; i < upcomingOnCourt.length; i++) {
+            const m = upcomingOnCourt[i];
+            const isFirst = i === 0;
+            const newData: Record<string, unknown> = { startAt: new Date(cursor) };
+            if (isFirst && m.status === "SCHEDULED") newData.status = "LIVE";
+
+            const updated = await prisma.match.update({
+              where: { id: m.id },
+              data: newData,
+            });
+            publishMatchUpdate({
+              matchId: updated.id,
+              tournamentId: updated.tournamentId,
+              type: "match_update",
+              data: updated,
+            });
+
+            cursor = new Date(cursor.getTime() + slotMin * 60 * 1000);
+          }
+        }
+      } catch {
+        // Non-blocking: reschedule failure doesn't affect the save response
       }
-    }
+    })();
   }
 
   // Auto-generate next Swiss round when all matches of current round are finished
