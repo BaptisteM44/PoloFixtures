@@ -4,12 +4,28 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { TournamentRefereePanel } from "@/components/TournamentRefereePanelLoader";
 
-export default async function RefereeMatchPage({ params }: { params: { id: string } }) {
+export default async function RefereeMatchPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { token?: string };
+}) {
   const session = await auth();
   const role = session?.user?.role;
   const playerId = session?.user?.playerId ?? null;
+  const tokenParam = searchParams?.token ?? null;
 
-  if (!role && !playerId) {
+  // Token URL access: bypass auth if token matches
+  const tokenTournament = tokenParam
+    ? await prisma.tournament.findFirst({
+        where: { OR: [{ id: params.id }, { slug: params.id }], refToken: tokenParam },
+        select: { id: true },
+      })
+    : null;
+  const hasTokenAccess = !!tokenTournament;
+
+  if (!hasTokenAccess && !role && !playerId) {
     redirect(`/login?next=/tournament/${params.id}/referee`);
   }
 
@@ -45,7 +61,7 @@ export default async function RefereeMatchPage({ params }: { params: { id: strin
     playerId && tournament.coOrganizers.some((co) => co.playerId === playerId);
 
   const hasAccess =
-    isAdmin || isOrgaForTournament || isRefForTournament || isCreator || isCoOrga;
+    hasTokenAccess || isAdmin || isOrgaForTournament || isRefForTournament || isCreator || isCoOrga;
 
   if (!hasAccess) {
     redirect(`/tournament/${params.id}?error=unauthorized`);

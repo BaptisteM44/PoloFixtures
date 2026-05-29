@@ -3043,3 +3043,28 @@ export async function updatePoolRoundsAction(tournamentId: string, poolRounds: n
   revalidatePath(`/tournament/${tournamentId}`);
   return { ok: true };
 }
+
+export async function generateRefTokenAction(tournamentId: string) {
+  "use server";
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+  const token = crypto.randomUUID();
+  await prisma.tournament.update({
+    where: { id: tournamentId },
+    data: { refToken: token },
+  });
+  revalidatePath(`/tournament/${tournamentId}/edit`);
+  return { ok: true, token };
+}
+
+export async function revokeRefTokenAction(tournamentId: string) {
+  "use server";
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+  await prisma.tournament.update({
+    where: { id: tournamentId },
+    data: { refToken: null },
+  });
+  revalidatePath(`/tournament/${tournamentId}/edit`);
+  return { ok: true };
+}

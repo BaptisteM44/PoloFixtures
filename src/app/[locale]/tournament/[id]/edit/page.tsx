@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction } from "./actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
@@ -19,7 +19,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       pools: { include: { teams: { include: { team: { select: { id: true, name: true, seed: true } } } } } },
       matches: { select: { id: true, phase: true, roundIndex: true, status: true, winnerTeamId: true, poolId: true, poolSessionIndex: true, teamAId: true, teamBId: true, dayIndex: true } },
       sponsors: { orderBy: { name: "asc" } },
-      coOrganizers: { where: { role: "ORGA" }, include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true } } }, orderBy: { addedAt: "asc" } },
+      coOrganizers: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true } } }, orderBy: { addedAt: "asc" } },
       soloEntries: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true } } }, orderBy: { createdAt: "asc" } },
     }
   });
@@ -164,6 +164,16 @@ export default async function TournamentEditPage({ params }: { params: { id: str
   const updatePoolRounds = async (tId: string, poolRounds: number | null) => {
     "use server";
     return await updatePoolRoundsAction(tId, poolRounds);
+  };
+
+  const generateRefToken = async () => {
+    "use server";
+    return await generateRefTokenAction(t_.id);
+  };
+
+  const revokeRefToken = async () => {
+    "use server";
+    return await revokeRefTokenAction(t_.id);
   };
 
   const launchMtpPool = async (pool: "A" | "B") => {
@@ -401,6 +411,8 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             removeFromWaitlistAction={removeFromWaitlist}
             createTeamAction={createTeam}
             updatePoolRoundsAction={updatePoolRounds}
+            generateRefTokenAction={generateRefToken}
+            revokeRefTokenAction={revokeRefToken}
             accommodationHosts={accommodationHosts as any}
           />
         </div>

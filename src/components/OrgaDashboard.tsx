@@ -753,6 +753,8 @@ type OrgaDashboardProps = {
   removeFromWaitlistAction: (tId: string, teamId: string) => Promise<any>;
   createTeamAction: (...args: any[]) => Promise<any>;
   updatePoolRoundsAction?: (tId: string, poolRounds: number | null) => Promise<{ ok?: boolean; error?: string }>;
+  generateRefTokenAction?: () => Promise<{ ok?: boolean; token?: string; error?: string }>;
+  revokeRefTokenAction?: () => Promise<{ ok?: boolean; error?: string }>;
   accommodationHosts?: Array<{
     id: string; playerId: string | null; name: string; contact: string | null; notes: string | null;
     player: { id: string; name: string; photoPath: string | null } | null;
@@ -824,6 +826,8 @@ export function OrgaDashboard({
   removeFromWaitlistAction,
   createTeamAction,
   updatePoolRoundsAction,
+  generateRefTokenAction,
+  revokeRefTokenAction,
   accommodationHosts = [],
 }: OrgaDashboardProps) {
   const t = useTranslations("tournament");
@@ -1557,6 +1561,9 @@ export function OrgaDashboard({
             tournamentId={tournament.id}
             referees={coOrganizers.filter((co) => co.role === "REF").map((co) => co.player)}
             canManage={isCreator || isAdmin || isOrgaForThis}
+            refToken={tournament.refToken ?? null}
+            generateRefTokenAction={generateRefTokenAction}
+            revokeRefTokenAction={revokeRefTokenAction}
           />
         </div>
       )}

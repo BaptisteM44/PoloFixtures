@@ -29,8 +29,7 @@ export function RegistrationFieldsEditor({ tournamentId }: { tournamentId: strin
 
   useEffect(() => { load(); }, [tournamentId]);
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAdd = async () => {
     if (!addLabel.trim()) return;
     setAdding(true);
     setAddError(null);
@@ -115,10 +114,16 @@ export function RegistrationFieldsEditor({ tournamentId }: { tournamentId: strin
         </div>
       )}
 
-      <form onSubmit={handleAdd} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
         <input
           value={addLabel}
           onChange={(e) => setAddLabel(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void handleAdd();
+            }
+          }}
           placeholder={t("field_label_placeholder")}
           style={{ flex: 1, minWidth: 160, fontSize: 13 }}
           maxLength={200}
@@ -141,10 +146,10 @@ export function RegistrationFieldsEditor({ tournamentId }: { tournamentId: strin
           />
           {t("required")}
         </label>
-        <button type="submit" className="ghost" disabled={adding || !addLabel.trim()} style={{ fontSize: 12 }}>
+        <button type="button" onClick={() => void handleAdd()} className="ghost" disabled={adding || !addLabel.trim()} style={{ fontSize: 12 }}>
           {adding ? "…" : t("btn_add")}
         </button>
-      </form>
+      </div>
       {addError && <p className="error" style={{ fontSize: 12, marginTop: 4 }}>{addError}</p>}
     </div>
   );

@@ -484,7 +484,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             </label>
           )}
           {/* ── Bloc inscription ── */}
-          <div style={{ gridColumn: "1 / -1", border: "2px solid var(--teal)", borderRadius: 10, padding: "16px 18px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 24px", background: "color-mix(in srgb, var(--teal) 4%, var(--surface))" }}>
+          <div className="edit-grid-2" style={{ gridColumn: "1 / -1", border: "2px solid var(--teal)", borderRadius: 10, padding: "16px 18px", gap: "16px 24px", background: "color-mix(in srgb, var(--teal) 4%, var(--surface))" }}>
             <p style={{ gridColumn: "1 / -1", margin: 0, fontWeight: 700, fontFamily: "var(--font-display)", fontSize: 13, color: "var(--teal)", letterSpacing: "0.03em" }}>
               {t("section_registration")}
             </p>
@@ -528,7 +528,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             </label>
 
             {/* Lien externe */}
-            <div style={{ gridColumn: "1 / -1", display: "flex", gap: 12, alignItems: "flex-start" }}>
+            <div style={{ gridColumn: "1 / -1", display: "flex", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
               <label className="field-row" style={{ flex: 1, margin: 0 }}>
                 {t("field_external_registration_url")}
                 <input
@@ -940,7 +940,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                     <p style={{ ...subTitleStyle, marginBottom: 0 }}>{t("format_request_custom")}</p>
                     <button type="button" onClick={() => setShowFormatContact(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 15, lineHeight: 1 }}>✕</button>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div className="edit-grid-2" style={{ gap: 10 }}>
                     <label className="field-row">
                       {t("contact_name")}
                       <input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder={t("contact_name_placeholder")} required />

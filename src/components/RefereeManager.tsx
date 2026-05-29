@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { QRCodeSVG } from "qrcode.react";
 
 type RefPlayer = {
   id: string;
@@ -22,13 +23,21 @@ export function RefereeManager({
   tournamentId,
   referees: initial,
   canManage,
+  refToken: initialToken,
+  generateRefTokenAction,
+  revokeRefTokenAction,
 }: {
   tournamentId: string;
   referees: RefPlayer[];
   canManage: boolean;
+  refToken?: string | null;
+  generateRefTokenAction?: () => Promise<{ ok?: boolean; token?: string; error?: string }>;
+  revokeRefTokenAction?: () => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const t = useTranslations("referee");
   const [referees, setReferees] = useState<RefPlayer[]>(initial);
+  const [refToken, setRefToken] = useState<string | null>(initialToken ?? null);
+  const [tokenLoading, setTokenLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -95,6 +104,73 @@ export function RefereeManager({
           />
         </div>
       </div>
+
+      {/* QR Token accès arbitre sans compte */}
+      {canManage && (
+        <div style={{ marginBottom: 16, padding: "12px 14px", background: "var(--surface-2)", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-light)" }}>
+          <p style={{ margin: "0 0 8px", fontWeight: 600, fontSize: 13 }}>Accès arbitre sans compte (QR)</p>
+          {refToken ? (
+            <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <QRCodeSVG
+                value={`${typeof window !== "undefined" ? window.location.origin : ""}/fr/tournament/${tournamentId}/referee?token=${refToken}`}
+                size={120}
+                style={{ borderRadius: 6, border: "2px solid var(--border)", background: "#fff", padding: 4 }}
+              />
+              <div style={{ flex: 1, minWidth: 180 }}>
+                <p style={{ margin: "0 0 4px", fontSize: 11, color: "var(--text-muted)" }}>Scannez ce QR pour accéder au reffing sans connexion.</p>
+                <code style={{ fontSize: 10, wordBreak: "break-all", color: "var(--text-muted)" }}>
+                  {`/tournament/${tournamentId}/referee?token=${refToken}`}
+                </code>
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <button
+                    className="ghost"
+                    style={{ fontSize: 12, padding: "4px 10px", color: "var(--danger)" }}
+                    disabled={tokenLoading}
+                    onClick={async () => {
+                      if (!revokeRefTokenAction) return;
+                      setTokenLoading(true);
+                      await revokeRefTokenAction();
+                      setRefToken(null);
+                      setTokenLoading(false);
+                    }}
+                  >
+                    Révoquer
+                  </button>
+                  <button
+                    className="ghost"
+                    style={{ fontSize: 12, padding: "4px 10px" }}
+                    disabled={tokenLoading}
+                    onClick={async () => {
+                      if (!generateRefTokenAction) return;
+                      setTokenLoading(true);
+                      const res = await generateRefTokenAction();
+                      if (res.token) setRefToken(res.token);
+                      setTokenLoading(false);
+                    }}
+                  >
+                    Regénérer
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="btn-secondary"
+              style={{ fontSize: 13 }}
+              disabled={tokenLoading}
+              onClick={async () => {
+                if (!generateRefTokenAction) return;
+                setTokenLoading(true);
+                const res = await generateRefTokenAction();
+                if (res.token) setRefToken(res.token);
+                setTokenLoading(false);
+              }}
+            >
+              Générer un lien QR
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Liste des arbitres */}
       {referees.length === 0 ? (

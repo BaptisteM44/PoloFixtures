@@ -289,6 +289,7 @@ model Tournament {
   faq                     Json?
   // Telegram group/channel link (t.me/...)
   telegramUrl             String?
+  refToken                String?   @unique  // Token URL pour accès arbitre sans compte
   // Récap post-tournoi
   recapText               String?   // markdown
   photoFinishPath         String?   // URL upload photo finish

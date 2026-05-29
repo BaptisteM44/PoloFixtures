@@ -445,7 +445,7 @@ function TeamRow({
 
               {addMode === "manual" && (
                 <div style={{ display: "grid", gap: 8 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                  <div className="edit-grid-3" style={{ gap: 8 }}>
                     <input placeholder={t("manual_name_placeholder")} value={manualName} onChange={(e) => setManualName(e.target.value)} autoFocus />
                     <input placeholder={t("manual_city_placeholder")} value={manualCity} onChange={(e) => setManualCity(e.target.value)} />
                     <input placeholder={t("manual_country_placeholder")} value={manualCountry} onChange={(e) => setManualCountry(e.target.value)} />
