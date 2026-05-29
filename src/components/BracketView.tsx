@@ -190,9 +190,11 @@ export function BracketView({
   const bracketMatches = matches.filter((m) => m.phase === "BRACKET" || m.phase === "GRAZ_SE" || m.phase === "MTP_DE");
   // SWISS_SPLIT_SE: detect by presence of B/BG/BL bracket sides (only for BRACKET phase, not MTP_DE which also uses BG for reset)
   const isSplitSE = bracketMatches.some((m) => m.phase === "BRACKET" && (m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL"));
-  // DE has multiple L matches; SE 3rd place has exactly one L or BL match
+  // DE has multiple L matches AND W matches; SE 3rd place has exactly one L or BL match
+  // SPLIT_SE losers bracket: only L/LG/LL matches (no W) → treat as SEBracket not DEBracket
   const lMatches = bracketMatches.filter((m) => m.bracketSide === "L" || m.bracketSide === "BL");
-  const isDE = !isSplitSE && bracketMatches.some((m) => m.bracketSide === "L") && lMatches.length > 1;
+  const hasWMatches = bracketMatches.some((m) => m.bracketSide === "W" || m.bracketSide === "G");
+  const isDE = !isSplitSE && hasWMatches && bracketMatches.some((m) => m.bracketSide === "L") && lMatches.length > 1;
   const has3rdPlace = !isDE && lMatches.length === 1;
   const teamNumberById = new Map((teams ?? []).map((team) => [team.id, team.bracketNumber]));
 
