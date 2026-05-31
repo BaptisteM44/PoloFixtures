@@ -985,11 +985,12 @@ export function OrgaDashboard({
             {Array.from({ length: tournament.courtsCount ?? 1 }, (_, i) => (
               <div key={i} style={{ textAlign: "center" }}>
                 <QRCodeSVG
-                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/fr/tournament/${tournament.slug || tournament.id}/referee?court=Court ${i + 1}`}
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/fr/tournament/${tournament.slug || tournament.id}/referee${tournament.refToken ? `?token=${tournament.refToken}` : ""}${tournament.refToken ? `&court=Court ${i + 1}` : `?court=Court ${i + 1}`}`}
                   size={140}
                   level="M"
                 />
                 <p style={{ fontSize: 12, fontWeight: 600, marginTop: 6 }}>{t("qr_referee_court", { court: i + 1 })}</p>
+                {!tournament.refToken && <p style={{ fontSize: 10, color: "var(--danger)", marginTop: 2 }}>Sans token — connexion requise</p>}
               </div>
             ))}
           </div>

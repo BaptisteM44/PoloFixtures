@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { QRCodeSVG } from "qrcode.react";
 
 type RefPlayer = {
   id: string;
@@ -105,68 +104,25 @@ export function RefereeManager({
         </div>
       </div>
 
-      {/* QR Token accès arbitre sans compte */}
+      {/* Token QR accès sans compte */}
       {canManage && (
-        <div style={{ marginBottom: 16, padding: "12px 14px", background: "var(--surface-2)", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-light)" }}>
-          <p style={{ margin: "0 0 8px", fontWeight: 600, fontSize: 13 }}>Accès arbitre sans compte (QR)</p>
+        <div style={{ marginBottom: 16, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
           {refToken ? (
-            <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
-              <QRCodeSVG
-                value={`${typeof window !== "undefined" ? window.location.origin : ""}/fr/tournament/${tournamentId}/referee?token=${refToken}`}
-                size={120}
-                style={{ borderRadius: 6, border: "2px solid var(--border)", background: "#fff", padding: 4 }}
-              />
-              <div style={{ flex: 1, minWidth: 180 }}>
-                <p style={{ margin: "0 0 4px", fontSize: 11, color: "var(--text-muted)" }}>Scannez ce QR pour accéder au reffing sans connexion.</p>
-                <code style={{ fontSize: 10, wordBreak: "break-all", color: "var(--text-muted)" }}>
-                  {`/tournament/${tournamentId}/referee?token=${refToken}`}
-                </code>
-                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                  <button
-                    className="ghost"
-                    style={{ fontSize: 12, padding: "4px 10px", color: "var(--danger)" }}
-                    disabled={tokenLoading}
-                    onClick={async () => {
-                      if (!revokeRefTokenAction) return;
-                      setTokenLoading(true);
-                      await revokeRefTokenAction();
-                      setRefToken(null);
-                      setTokenLoading(false);
-                    }}
-                  >
-                    Révoquer
-                  </button>
-                  <button
-                    className="ghost"
-                    style={{ fontSize: 12, padding: "4px 10px" }}
-                    disabled={tokenLoading}
-                    onClick={async () => {
-                      if (!generateRefTokenAction) return;
-                      setTokenLoading(true);
-                      const res = await generateRefTokenAction();
-                      if (res.token) setRefToken(res.token);
-                      setTokenLoading(false);
-                    }}
-                  >
-                    Regénérer
-                  </button>
-                </div>
-              </div>
-            </div>
+            <>
+              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Token QR actif</span>
+              <button className="ghost" style={{ fontSize: 12, padding: "4px 10px" }} disabled={tokenLoading}
+                onClick={async () => { if (!generateRefTokenAction) return; setTokenLoading(true); const res = await generateRefTokenAction(); if (res.token) setRefToken(res.token); setTokenLoading(false); }}>
+                Regénérer
+              </button>
+              <button className="ghost" style={{ fontSize: 12, padding: "4px 10px", color: "var(--danger)" }} disabled={tokenLoading}
+                onClick={async () => { if (!revokeRefTokenAction) return; setTokenLoading(true); await revokeRefTokenAction(); setRefToken(null); setTokenLoading(false); }}>
+                Révoquer
+              </button>
+            </>
           ) : (
-            <button
-              className="btn-secondary"
-              style={{ fontSize: 13 }}
-              disabled={tokenLoading}
-              onClick={async () => {
-                if (!generateRefTokenAction) return;
-                setTokenLoading(true);
-                const res = await generateRefTokenAction();
-                if (res.token) setRefToken(res.token);
-                setTokenLoading(false);
-              }}
-            >
-              Générer un lien QR
+            <button className="btn-secondary" style={{ fontSize: 12 }} disabled={tokenLoading}
+              onClick={async () => { if (!generateRefTokenAction) return; setTokenLoading(true); const res = await generateRefTokenAction(); if (res.token) setRefToken(res.token); setTokenLoading(false); }}>
+              Activer accès QR sans compte
             </button>
           )}
         </div>

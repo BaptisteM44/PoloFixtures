@@ -31,6 +31,7 @@ export const sseEmitter = globalForSse.sseEmitter ?? new EventEmitter();
 
 if (!globalForSse.sseEmitter) {
   globalForSse.sseEmitter = sseEmitter;
+  sseEmitter.setMaxListeners(200); // allow many concurrent SSE clients
 }
 
 export function publishMatchUpdate(payload: MatchUpdatePayload) {

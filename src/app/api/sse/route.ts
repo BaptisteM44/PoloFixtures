@@ -9,7 +9,11 @@ export async function GET(request: Request) {
       const encoder = new TextEncoder();
 
       const sendEvent = (event: string, payload: unknown) => {
-        controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`));
+        } catch {
+          close();
+        }
       };
 
       const matchHandler = (payload: { tournamentId: string }) => {
@@ -27,21 +31,28 @@ export async function GET(request: Request) {
       };
 
       const keepAlive = setInterval(() => {
-        controller.enqueue(encoder.encode(`: ping\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`: ping\n\n`));
+        } catch {
+          close();
+        }
       }, 15000);
+
+      let closed = false;
+      const close = () => {
+        if (closed) return;
+        closed = true;
+        clearInterval(keepAlive);
+        sseEmitter.off("match", matchHandler);
+        sseEmitter.off("tournament", tournamentHandler);
+        sseEmitter.off("channel", channelHandler);
+        try { controller.close(); } catch { /* already closed */ }
+      };
 
       sseEmitter.on("match", matchHandler);
       sseEmitter.on("tournament", tournamentHandler);
       sseEmitter.on("channel", channelHandler);
       controller.enqueue(encoder.encode(`: connected\n\n`));
-
-      const close = () => {
-        clearInterval(keepAlive);
-        sseEmitter.off("match", matchHandler);
-        sseEmitter.off("tournament", tournamentHandler);
-        sseEmitter.off("channel", channelHandler);
-        controller.close();
-      };
 
       request.signal.addEventListener("abort", close);
     }
