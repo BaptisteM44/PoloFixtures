@@ -335,7 +335,7 @@ export function LiveTabView({
           )}
         </div>
 
-        <div className="panel" style={{ minHeight: 400 }}>
+        <div className="panel" style={{ minHeight: 400, maxHeight: 600, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {activeTab === "multiplex" ? (
             /* Chat dédié multiplex — toujours ouvert, stocké séparément */
             <TournamentChat

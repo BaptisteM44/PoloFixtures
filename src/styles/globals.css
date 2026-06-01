@@ -7161,8 +7161,8 @@ textarea {
 }
 
 .tournament-chat--full .tournament-chat__messages {
-  max-height: none;
-  min-height: 400px;
+  max-height: 500px;
+  min-height: 200px;
 }
 
 .tournament-chat__header {
