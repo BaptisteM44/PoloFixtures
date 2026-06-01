@@ -68,6 +68,7 @@ function VenueForm({
       </div>
       <div style={{ display: "flex", gap: 8 }}>
         <button
+          type="button"
           className="primary"
           style={{ fontSize: 13 }}
           onClick={() => onSave({ name, address, mapLink, notes, color })}
@@ -75,7 +76,7 @@ function VenueForm({
         >
           {initial ? t("venues_btn_save") : t("venues_btn_add")}
         </button>
-        <button className="ghost" style={{ fontSize: 13 }} onClick={onCancel}>
+        <button type="button" className="ghost" style={{ fontSize: 13 }} onClick={onCancel}>
           {t("venues_btn_cancel")}
         </button>
       </div>
@@ -97,23 +98,30 @@ export function ClubVenues({
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [venueError, setVenueError] = useState<string | null>(null);
 
   function handleCreate(data: { name: string; address: string; mapLink: string; notes: string; color: string }) {
+    setVenueError(null);
     startTransition(async () => {
       const res = await createVenueAction(clubId, data);
       if ("ok" in res) {
         setShowAdd(false);
         window.location.reload();
+      } else {
+        setVenueError((res as any).error ?? "Erreur lors de l'enregistrement.");
       }
     });
   }
 
   function handleUpdate(venueId: string, data: { name: string; address: string; mapLink: string; notes: string; color: string }) {
+    setVenueError(null);
     startTransition(async () => {
       const res = await updateVenueAction(clubId, venueId, data);
       if ("ok" in res) {
         setEditingId(null);
         window.location.reload();
+      } else {
+        setVenueError((res as any).error ?? "Erreur lors de l'enregistrement.");
       }
     });
   }
@@ -140,10 +148,12 @@ export function ClubVenues({
       {showAdd && (
         <VenueForm
           onSave={handleCreate}
-          onCancel={() => setShowAdd(false)}
+          onCancel={() => { setShowAdd(false); setVenueError(null); }}
           isPending={isPending}
         />
       )}
+
+      {venueError && <p style={{ color: "var(--danger)", fontSize: 13, margin: "8px 0" }}>{venueError}</p>}
 
       {venues.length === 0 && !showAdd && (
         <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("venues_empty")}</p>

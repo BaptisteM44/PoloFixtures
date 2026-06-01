@@ -52,10 +52,10 @@ function VenueForm({
         <input type="color" value={color} onChange={(e) => setColor(e.target.value)} style={{ width: 36, height: 28, border: "none", padding: 0, cursor: "pointer" }} />
       </div>
       <div style={{ display: "flex", gap: 8 }}>
-        <button className="primary" style={{ fontSize: 13 }} onClick={() => onSave({ name, address: address || null, mapLink: mapLink || null, notes: notes || null, color: color || null })} disabled={saving || !name.trim()}>
+        <button type="button" className="primary" style={{ fontSize: 13 }} onClick={() => onSave({ name, address: address || null, mapLink: mapLink || null, notes: notes || null, color: color || null })} disabled={saving || !name.trim()}>
           {initial ? t("venues_btn_save") : t("venues_btn_add")}
         </button>
-        <button className="ghost" style={{ fontSize: 13 }} onClick={onCancel}>{t("venues_btn_cancel")}</button>
+        <button type="button" className="ghost" style={{ fontSize: 13 }} onClick={onCancel}>{t("venues_btn_cancel")}</button>
       </div>
     </div>
   );
@@ -84,6 +84,7 @@ export default function EditClubPage() {
   const [showAddVenue, setShowAddVenue] = useState(false);
   const [editingVenueId, setEditingVenueId] = useState<string | null>(null);
   const [venueSaving, setVenueSaving] = useState(false);
+  const [venueError, setVenueError] = useState<string | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -153,32 +154,50 @@ export default function EditClubPage() {
 
   async function handleAddVenue(data: Omit<Venue, "id">) {
     setVenueSaving(true);
-    const res = await fetch(`/api/clubs/${id}/venues`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (res.ok) {
-      const venue = await res.json();
-      setVenues((prev) => [...prev, venue]);
-      setShowAddVenue(false);
+    setVenueError(null);
+    try {
+      const res = await fetch(`/api/clubs/${id}/venues`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const venue = await res.json();
+        setVenues((prev) => [...prev, venue]);
+        setShowAddVenue(false);
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setVenueError(body?.error ?? `Erreur ${res.status}`);
+      }
+    } catch {
+      setVenueError("Erreur réseau, veuillez réessayer.");
+    } finally {
+      setVenueSaving(false);
     }
-    setVenueSaving(false);
   }
 
   async function handleUpdateVenue(venueId: string, data: Omit<Venue, "id">) {
     setVenueSaving(true);
-    const res = await fetch(`/api/clubs/${id}/venues/${venueId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setVenues((prev) => prev.map((v) => v.id === venueId ? updated : v));
-      setEditingVenueId(null);
+    setVenueError(null);
+    try {
+      const res = await fetch(`/api/clubs/${id}/venues/${venueId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setVenues((prev) => prev.map((v) => v.id === venueId ? updated : v));
+        setEditingVenueId(null);
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setVenueError(body?.error ?? `Erreur ${res.status}`);
+      }
+    } catch {
+      setVenueError("Erreur réseau, veuillez réessayer.");
+    } finally {
+      setVenueSaving(false);
     }
-    setVenueSaving(false);
   }
 
   async function handleDeleteVenue(venueId: string) {
@@ -292,7 +311,10 @@ export default function EditClubPage() {
           )}
         </div>
         <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
-          {t("edit_venues_description")}
+          {t("edit_venues_desc")}
+        </p>
+
+        {venueError && <p style={{ color: "var(--danger)", fontSize: 13, marginBottom: 10 }}>{venueError}</p>}
         </p>
 
         {showAddVenue && (
