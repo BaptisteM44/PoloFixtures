@@ -138,10 +138,12 @@ export function MtpFinalStandings({ teams, matches, scoringSystem, swissRounds }
 
   // 1-16: DE participants (top12 + barrage winners)
   const top12 = combined.slice(0, 12).map((s) => teamMap.get(s.teamId)!).filter(Boolean);
-  const barrageWinners = seeds13to20
-    .filter((s) => barrageWinnerIds.has(s.teamId))
-    .sort((a, b) => combined.findIndex((c) => c.teamId === a.teamId) - combined.findIndex((c) => c.teamId === b.teamId))
-    .map((s) => teamMap.get(s.teamId)!).filter(Boolean);
+  // Barrage winners inherit best seed of their match (sorted by positionInRound)
+  const barrageWinners = barrageMatches
+    .filter((m) => m.winnerTeamId && barrageWinnerIds.has(m.winnerTeamId))
+    .sort((a, b) => (a as any).positionInRound - (b as any).positionInRound)
+    .map((m) => teamMap.get(m.winnerTeamId!)!)
+    .filter(Boolean);
 
   const de16 = [...top12, ...barrageWinners];
 

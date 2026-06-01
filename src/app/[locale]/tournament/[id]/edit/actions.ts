@@ -2796,18 +2796,16 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
   // Top 12 direct qualifiers
   const top12 = combined.slice(0, 12).map((s) => teamMap.get(s.teamId)!).filter(Boolean);
 
-  // 4 barrage winners (by original pool rank = combined rank index 12-19 of winner)
-  const seeds13to20 = combined.slice(12, 20);
-  const barrageWinners: Array<{ team: typeof tournament.teams[0]; originalRank: number }> = [];
+  // 4 barrage winners — inherit the best seed of their match (13v20→seed 13, 14v19→seed 14, etc.)
+  const barrageWinners: Array<{ team: typeof tournament.teams[0]; matchPosition: number }> = [];
   for (const bm of barrageMatches) {
     if (!bm.winnerTeamId) continue;
     const winner = teamMap.get(bm.winnerTeamId);
     if (!winner) continue;
-    const originalRank = seeds13to20.findIndex((s) => s.teamId === bm.winnerTeamId);
-    barrageWinners.push({ team: winner, originalRank });
+    barrageWinners.push({ team: winner, matchPosition: bm.positionInRound });
   }
-  // Sort barrage winners by their original pool rank (better rank = higher seed)
-  barrageWinners.sort((a, b) => a.originalRank - b.originalRank);
+  // Sort by match position (0→seed 13, 1→seed 14, 2→seed 15, 3→seed 16)
+  barrageWinners.sort((a, b) => a.matchPosition - b.matchPosition);
   const barrageWinnerTeams = barrageWinners.map((w) => w.team);
 
   const seeded16 = [...top12, ...barrageWinnerTeams];

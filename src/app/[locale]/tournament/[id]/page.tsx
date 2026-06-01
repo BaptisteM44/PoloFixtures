@@ -825,14 +825,14 @@ export default async function TournamentPage({
         const barrageMs = tournament.matches.filter((m: any) => m.phase === "MTP_BARRAGE");
         const combined = computeStandings(selectedTeams, [...poolAMs, ...poolBMs, ...crossMs] as any, tournament.scoringSystem);
         const teamMap = new Map(selectedTeams.map((t: any) => [t.id, t]));
-        const seeds13to20 = combined.slice(12, 20);
-        const barrageWinnerIds = new Set(barrageMs.filter((m: any) => m.winnerTeamId).map((m: any) => m.winnerTeamId as string));
-        const barrageWinners = seeds13to20
-          .filter((s) => barrageWinnerIds.has(s.teamId))
-          .sort((a, b) => combined.findIndex((c) => c.teamId === a.teamId) - combined.findIndex((c) => c.teamId === b.teamId));
+        // Barrage winners inherit best seed of their match (13v20→seed 13, etc.)
+        const barrageWinners = barrageMs
+          .filter((m: any) => m.winnerTeamId)
+          .sort((a: any, b: any) => a.positionInRound - b.positionInRound)
+          .map((m: any) => m.winnerTeamId as string);
         const seeded16 = [
           ...combined.slice(0, 12).map((s) => s.teamId),
-          ...barrageWinners.map((s) => s.teamId),
+          ...barrageWinners,
         ];
         const bracketTeams = seeded16.map((id, i) => {
           const team = teamMap.get(id);
