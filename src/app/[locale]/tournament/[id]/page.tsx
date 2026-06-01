@@ -235,7 +235,7 @@ export default async function TournamentPage({
 
   if (isCompleted) {
     const bracketMatches = await prisma.match.findMany({
-      where: { tournamentId: tournament.id, phase: "BRACKET", status: "FINISHED" },
+      where: { tournamentId: tournament.id, phase: { in: ["BRACKET", "MTP_DE"] }, status: "FINISHED" },
       include: {
         teamA: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
         teamB: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
