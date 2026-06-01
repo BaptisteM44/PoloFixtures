@@ -7155,6 +7155,9 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .tournament-chat--full .tournament-chat__messages {
@@ -7172,6 +7175,8 @@ textarea {
 .tournament-chat__messages {
   min-height: 120px;
   max-height: 360px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;

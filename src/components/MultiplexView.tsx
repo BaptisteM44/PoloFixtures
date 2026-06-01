@@ -307,7 +307,7 @@ export function MultiplexView({
 
               {/* Chat body */}
               {!chatMinimized && (
-                <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 0 }}>
                   <TournamentChat
                     tournamentId={tournamentId}
                     chatMode={chatMode}
