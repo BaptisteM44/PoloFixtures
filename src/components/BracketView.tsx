@@ -529,7 +529,8 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
   const t = useTranslations("tournament");
   const upper = matches.filter((m) => m.bracketSide === "W");
   const lower = matches.filter((m) => m.bracketSide === "L");
-  const grand = matches.filter((m) => m.bracketSide === "G" || m.bracketSide === "BG");
+  // Hide BG (reset) match if it has no teams yet (GF hasn't triggered a reset)
+  const grand = matches.filter((m) => m.bracketSide === "G" || (m.bracketSide === "BG" && (m.teamAId || m.teamBId)));
   const maxUpperRound = upper.length > 0 ? Math.max(...upper.map((m) => m.roundIndex)) : 1;
   const minUpperRound = upper.length > 0 ? Math.min(...upper.map((m) => m.roundIndex)) : 1;
   const maxLowerRound = lower.length > 0 ? Math.max(...lower.map((m) => m.roundIndex)) : 1;
