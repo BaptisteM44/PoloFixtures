@@ -5800,6 +5800,16 @@ textarea {
   background: transparent;
 }
 
+@media (max-width: 768px) {
+  .pkmn-card__attacks {
+    gap: 1px;
+    margin-top: 0;
+  }
+  .pkmn-card__attack {
+    padding: 5px 10px;
+  }
+}
+
 .pkmn-card__attack-icon {
   font-size: 15px;
 }

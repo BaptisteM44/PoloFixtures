@@ -2,7 +2,6 @@
 
 import { useTranslations } from "next-intl";
 import { computeStandings } from "@/lib/standings";
-import { splitMtpPools, combineMtpStandings } from "@/lib/mtp";
 import type { Team, Match } from "@prisma/client";
 
 type Props = {
@@ -35,10 +34,10 @@ export function MtpFinalStandings({ teams, matches, scoringSystem, swissRounds }
     );
   }
 
-  const { poolA, poolB } = splitMtpPools(teams);
-  const poolAStandings = computeStandings(poolA, poolAMatches as Match[], scoringSystem);
-  const poolBStandings = computeStandings(poolB, poolBMatches as Match[], scoringSystem);
-  const combined = combineMtpStandings(poolAStandings, poolBStandings);
+  // Use overall standings (pool + cross-pool) — matches the public "Overall standings" table
+  const crossPoolMatches = matches.filter((m) => m.phase === "CROSS_POOL");
+  const allStandingsMatches = [...poolAMatches, ...poolBMatches, ...crossPoolMatches] as Match[];
+  const combined = computeStandings(teams, allStandingsMatches, scoringSystem);
 
   const teamMap = new Map(teams.map((t) => [t.id, t]));
 

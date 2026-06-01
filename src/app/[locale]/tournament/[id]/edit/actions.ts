@@ -8,7 +8,7 @@ import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
 import { generatePools, generatePoolMatches, generateBracket, generateSwissRound, generateCrossPoolMatches, nextPowerOf2 } from "@/lib/bracket";
 import { generateGrazPools, generateGrazPoolRounds, assignRegroupTeamIds, buildPlayedPairs, generateRegroupMatches, selectSETeams, generateGrazSE } from "@/lib/graz";
-import { splitMtpPools, generateMtpPool, generateMtpSwissNextRound, generateMtpCrossPool, generateMtpBarrage, generateMtpDE, combineMtpStandings } from "@/lib/mtp";
+import { splitMtpPools, generateMtpPool, generateMtpSwissNextRound, generateMtpCrossPool, generateMtpBarrage, generateMtpDE } from "@/lib/mtp";
 import { computeStandings } from "@/lib/standings";
 import { computeCareerBadges } from "@/lib/achievements";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
@@ -2724,10 +2724,10 @@ export async function launchMtpBarrageAction(id: string): Promise<{ ok?: boolean
     return { error: "Tous les matchs cross-pool doivent être terminés." };
   }
 
-  const { poolA, poolB } = resolveMtpPoolTeams(tournament.teams, tournament.pools);
-  const poolAStandings = computeStandings(poolA as any, poolAMatches as any, (tournament as any).scoringSystem);
-  const poolBStandings = computeStandings(poolB as any, poolBMatches as any, (tournament as any).scoringSystem);
-  const combined = combineMtpStandings(poolAStandings, poolBStandings);
+  // Use overall standings (pool + cross-pool) — same as public "Overall standings" table
+  const allTeams = tournament.teams;
+  const allMatches = [...poolAMatches, ...poolBMatches, ...crossMatches];
+  const combined = computeStandings(allTeams as any, allMatches as any, (tournament as any).scoringSystem);
 
   if (combined.length < 16) return { error: "Il faut au moins 16 équipes classées." };
   const seeds13to20 = combined.slice(12, 20);
@@ -2770,7 +2770,7 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
     where: { id },
     include: {
       teams: { where: { selected: true } },
-      matches: { where: { phase: { in: ["MTP_POOL_A", "MTP_POOL_B", "MTP_BARRAGE"] } } },
+      matches: { where: { phase: { in: ["MTP_POOL_A", "MTP_POOL_B", "CROSS_POOL", "MTP_BARRAGE"] } } },
       pools: { include: { teams: true } },
     },
   });
@@ -2784,12 +2784,12 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
   if (barrageMatches.length < 4) return { error: "Générez d'abord le barrage." };
   if (!barrageMatches.every((m) => m.status === "FINISHED")) return { error: "Tous les matchs du barrage doivent être terminés." };
 
+  // Use overall standings (pool + cross-pool) — same as public "Overall standings" table
   const poolAMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_A");
   const poolBMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_B");
-  const { poolA, poolB } = resolveMtpPoolTeams(tournament.teams, tournament.pools);
-  const poolAStandings = computeStandings(poolA as any, poolAMatches as any, (tournament as any).scoringSystem);
-  const poolBStandings = computeStandings(poolB as any, poolBMatches as any, (tournament as any).scoringSystem);
-  const combined = combineMtpStandings(poolAStandings, poolBStandings);
+  const crossMatches = tournament.matches.filter((m) => m.phase === "CROSS_POOL");
+  const allMatches = [...poolAMatches, ...poolBMatches, ...crossMatches];
+  const combined = computeStandings(tournament.teams as any, allMatches as any, (tournament as any).scoringSystem);
 
   const teamMap = new Map(tournament.teams.map((t) => [t.id, t]));
 
