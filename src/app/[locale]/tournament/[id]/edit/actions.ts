@@ -2905,11 +2905,11 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
       await tx.match.update({ where: { id: lbR5[0].dbId }, data: { nextMatchWinId: lbR6[0].dbId, nextSlotWin: "A" } });
     }
 
-    // WB R1 losers → LB R1 (losers 0-3 → slot B, losers 4-7 → slot A)
+    // WB R1 losers → LB R1 (standard DE: adjacent pairs 0+1→LB[0], 2+3→LB[1], 4+5→LB[2], 6+7→LB[3])
     const wbR1 = wbMatches.filter((m) => m.roundIndex === 1).sort((a, b) => a.positionInRound - b.positionInRound);
-    for (let i = 0; i < lbR1.length; i++) {
-      if (wbR1[i + 4]) await tx.match.update({ where: { id: wbR1[i + 4].dbId }, data: { nextMatchLoseId: lbR1[i].dbId, nextSlotLose: "A" } });
-      if (wbR1[i]) await tx.match.update({ where: { id: wbR1[i].dbId }, data: { nextMatchLoseId: lbR1[i].dbId, nextSlotLose: "B" } });
+    for (let i = 0; i < wbR1.length; i++) {
+      const lbIdx = Math.floor(i / 2);
+      if (lbR1[lbIdx]) await tx.match.update({ where: { id: wbR1[i].dbId }, data: { nextMatchLoseId: lbR1[lbIdx].dbId, nextSlotLose: i % 2 === 0 ? "A" : "B" } });
     }
 
     // WB R2 losers → LB R2 slot B (mirror mapping to avoid rematches)
