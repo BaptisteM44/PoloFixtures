@@ -315,7 +315,6 @@ export default function EditClubPage() {
         </p>
 
         {venueError && <p style={{ color: "var(--danger)", fontSize: 13, marginBottom: 10 }}>{venueError}</p>}
-        </p>
 
         {showAddVenue && (
           <VenueForm
