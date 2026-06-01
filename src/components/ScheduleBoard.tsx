@@ -247,6 +247,8 @@ export function ScheduleBoard({
 
   const filtered = useMemo(() => {
     return matches.filter((match) => {
+      // Hide GF reset match until it has teams (i.e. LB champion actually won the GF)
+      if ((match as any).bracketSide === "BG" && !match.teamAId && !match.teamBId) return false;
       if (filterTeamId && match.teamAId !== filterTeamId && match.teamBId !== filterTeamId) return false;
       if (filterDay !== "ALL" && match.dayIndex !== filterDay) return false;
       if (filterPhase !== "ALL" && match.phase !== filterPhase) return false;
