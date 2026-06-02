@@ -307,10 +307,12 @@ model Tournament {
   lng                     Float?
   creatorId               String?
   externalRegistrationUrl String?
+  hostClubId              String?
   createdAt               DateTime         @default(now())
   updatedAt               DateTime         @updatedAt
 
   creator     Player?      @relation("CreatedTournaments", fields: [creatorId], references: [id])
+  hostClub    Club?        @relation("HostedTournaments", fields: [hostClubId], references: [id])
   sponsors    Sponsor[]
   teams       Team[]
   pools       Pool[]
@@ -331,6 +333,7 @@ model Tournament {
   @@index([continentCode])
   @@index([status])
   @@index([creatorId])
+  @@index([hostClubId])
 }
 
 model Sponsor {
@@ -774,6 +777,7 @@ model Club {
   venues        ClubVenue[]
   equipment     ClubEquipment[]
   announcements ClubAnnouncement[]
+  hostedTournaments Tournament[]    @relation("HostedTournaments")
 
   @@index([continentCode])
   @@index([country])

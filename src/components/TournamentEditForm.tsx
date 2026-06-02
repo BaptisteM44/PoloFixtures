@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useState, useRef } from "react";
+import { useTransition, useState, useRef, useEffect } from "react";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
@@ -77,6 +77,7 @@ type Tournament = {
   dinnerProvided?: boolean;
   maxSoloPlayers?: number | null;
   externalRegistrationUrl?: string | null;
+  hostClubId?: string | null;
 };
 
 type Props = {
@@ -232,6 +233,13 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   // Test mode
   const [testMode, setTestMode] = useState(tournament.testMode ?? false);
   const [hidden, setHidden] = useState((tournament as { hidden?: boolean }).hidden ?? false);
+
+  // Club hôte
+  const [hostClubId, setHostClubId] = useState<string>(tournament.hostClubId ?? "");
+  const [managedClubs, setManagedClubs] = useState<{ id: string; name: string; city: string; logoPath: string | null }[]>([]);
+  useEffect(() => {
+    fetch("/api/clubs?mine=true").then((r) => r.json()).then((data) => { if (Array.isArray(data)) setManagedClubs(data); }).catch(() => {});
+  }, []);
 
   const handleTestModeChange = (checked: boolean) => {
     setTestMode(checked);
@@ -410,6 +418,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         <input type="hidden" name="rushRegistration" value={rushRegistration ? "true" : "false"} />
         <input type="hidden" name="testMode" value={testMode ? "true" : "false"} />
         <input type="hidden" name="hidden" value={hidden ? "true" : "false"} />
+        <input type="hidden" name="hostClubId" value={hostClubId ?? ""} />
         {/* Hidden fields for new data */}
         <input type="hidden" name="accommodationAvailable" value={accommodation ? "true" : "false"} />
         <input type="hidden" name="accommodationType" value={accommodationType} />
@@ -448,6 +457,19 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             {t("field_city")}
             <input name="city" defaultValue={tournament.city} required />
           </label>
+
+          {/* Club hôte */}
+          {managedClubs.length > 0 && (
+            <label className="field-row" style={{ gridColumn: "1 / -1" }}>
+              {t("field_host_club")}
+              <select value={hostClubId} onChange={(e) => setHostClubId(e.target.value)}>
+                <option value="">{t("field_host_club_none")}</option>
+                {managedClubs.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name} — {c.city}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="field-row">
             {t("field_date_start")}
             <input type="date" name="dateStart" defaultValue={new Date(tournament.dateStart).toISOString().slice(0, 10)} />
@@ -811,8 +833,6 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                     <option value="ALL_DAY">{t("saturday_all_day")}</option>
                     <option value="SPLIT_POOLS">{t("saturday_split_pools")}</option>
                     <option value="SWISS">{t("saturday_swiss")}</option>
-                    <option value="GRAZ">Graz (RR + Regroup)</option>
-                    <option value="MTP_OPEN">MTP Open (Pool A/B + Barrage + DE×16)</option>
                   </select>
                 </label>
                 <label className="field-row">

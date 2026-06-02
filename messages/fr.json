@@ -1994,6 +1994,8 @@
     "field_external_registration_url": "Lien d'inscription externe",
     "field_external_registration_url_placeholder": "https://... (remplace le formulaire du site)",
     "field_external_registration_url_hint": "Si renseigné, le formulaire d'inscription du site est remplacé par un bouton renvoyant vers ce lien. Les équipes s'inscrivent en dehors de la plateforme.",
+    "field_host_club": "Club hôte",
+    "field_host_club_none": "— Aucun club —",
     "rush_registration": "Inscription au rush",
     "rush_registration_desc": "premier arrivé, premier servi. Les inscriptions au-delà du max seront en liste d'attente.",
     "rush_registration_hint": "Si décoché, toutes les inscriptions sont admises et le départ / tirage se fait après la clôture.",

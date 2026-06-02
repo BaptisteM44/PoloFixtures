@@ -1997,6 +1997,8 @@
     "field_external_registration_url": "Enlace de inscripción externo",
     "field_external_registration_url_placeholder": "https://... (reemplaza el formulario del sitio)",
     "field_external_registration_url_hint": "Si se rellena, el formulario de inscripción del sitio se reemplaza por un botón que redirige a este enlace. Los equipos se inscriben fuera de la plataforma.",
+    "field_host_club": "Club anfitrión",
+    "field_host_club_none": "— Sin club —",
     "rush_registration": "Inscripción al rush",
     "rush_registration_desc": "primero en llegar, primero en servirse. Las inscripciones más allá del máximo estarán en lista de espera.",
     "rush_registration_hint": "Si está desactivado, todas las inscripciones son aceptadas y el sorteo se realiza después del cierre.",

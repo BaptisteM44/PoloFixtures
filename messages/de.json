@@ -1998,6 +1998,8 @@
     "field_external_registration_url": "Externer Anmeldelink",
     "field_external_registration_url_placeholder": "https://... (ersetzt das Anmeldeformular der Website)",
     "field_external_registration_url_hint": "Wenn ausgefüllt, wird das Anmeldeformular der Website durch einen Button ersetzt, der auf diesen Link weiterleitet. Teams melden sich außerhalb der Plattform an.",
+    "field_host_club": "Gastgeberclub",
+    "field_host_club_none": "— Kein Club —",
     "rush_registration": "Rush-Anmeldung",
     "rush_registration_desc": "Wer zuerst kommt, mahlt zuerst. Anmeldungen über dem Maximum werden auf die Warteliste gesetzt.",
     "rush_registration_hint": "Wenn deaktiviert, werden alle Anmeldungen akzeptiert und die Auslosung erfolgt nach Anmeldeschluss.",

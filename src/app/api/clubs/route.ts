@@ -18,6 +18,25 @@ export async function GET(request: NextRequest) {
   const continentCode = searchParams.get("continent");
   const country = searchParams.get("country");
   const search = searchParams.get("search");
+  const mine = searchParams.get("mine");
+
+  // ?mine=true → clubs où l'utilisateur est manager ou admin
+  if (mine === "true") {
+    const session = await auth();
+    const playerId = (session?.user as any)?.playerId;
+    if (!playerId) return Response.json([]);
+    const clubs = await prisma.club.findMany({
+      where: {
+        OR: [
+          { managerId: playerId },
+          { admins: { some: { playerId } } },
+        ],
+      },
+      select: { id: true, name: true, city: true, country: true, logoPath: true },
+      orderBy: { name: "asc" },
+    });
+    return Response.json(clubs);
+  }
 
   const clubs = await prisma.club.findMany({
     where: {

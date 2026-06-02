@@ -23,7 +23,7 @@ export function PlayerCard({ id, slug, name, country, city, photoPath, badges = 
         <h4>{name}</h4>
         <p>{city ? `${city}, ${country}` : country}</p>
         {stats && (
-          <p className="meta">Goals {stats.goals} · Penalties {stats.penalties}</p>
+          <p className="meta">Goals {stats.goals} · Fouls {stats.penalties}</p>
         )}
         {badges.length > 0 && (
           <div className="badges">

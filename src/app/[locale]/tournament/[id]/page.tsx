@@ -91,6 +91,7 @@ export default async function TournamentPage({
       soloEntries: (activeTab === "inscription" || activeTab === "equipes")
         ? { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true } } }, orderBy: { createdAt: "asc" as const } }
         : false,
+      hostClub: { select: { id: true, name: true, logoPath: true } },
     }
   }) as any;
 
@@ -305,16 +306,39 @@ export default async function TournamentPage({
       {/* ── HERO ── */}
       <section className="tournament-hero">
         <div className="tournament-hero__main">
-          <h1>{tournament.name}</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div className="tournament-hero__dates">
-              <span>📅 {dateStart} — {dateEnd}</span>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+            <div style={{ minWidth: 0 }}>
+              <h1>{tournament.name}</h1>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div className="tournament-hero__dates">
+                  <span>📅 {dateStart} — {dateEnd}</span>
+                </div>
+                <FollowButton
+                  tournamentId={tournament.id}
+                  initialFollowing={isFollowing}
+                  isLoggedIn={!!currentPlayerId}
+                />
+              </div>
             </div>
-            <FollowButton
-              tournamentId={tournament.id}
-              initialFollowing={isFollowing}
-              isLoggedIn={!!currentPlayerId}
-            />
+            {tournament.hostClub && (
+              <Link
+                href={`/club/${(tournament.hostClub as any).id}`}
+                title={(tournament.hostClub as any).name}
+                style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
+              >
+                {(tournament.hostClub as any).logoPath ? (
+                  <img
+                    src={(tournament.hostClub as any).logoPath}
+                    alt={(tournament.hostClub as any).name}
+                    style={{ height: "100%", maxHeight: 110, minHeight: 64, width: "auto", maxWidth: 110, borderRadius: 10, objectFit: "contain", background: "var(--surface)", border: "1px solid var(--border)", padding: 4 }}
+                  />
+                ) : (
+                  <div style={{ height: "100%", maxHeight: 110, minHeight: 64, width: 100, borderRadius: 10, background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: 8 }}>
+                    {(tournament.hostClub as any).name}
+                  </div>
+                )}
+              </Link>
+            )}
           </div>
           <p style={{ color: "var(--text-muted)", margin: "4px 0 8px", fontSize: 14 }}>
             {tournament.city}, {tournament.country} · {tournament.format} · {tournament.courtsCount === 1 ? t("courts_count_one", { count: tournament.courtsCount }) : t("courts_count_other", { count: tournament.courtsCount })}

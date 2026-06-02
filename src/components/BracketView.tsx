@@ -356,39 +356,20 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
   }
   if (thirdPlaceMatch) matchNumbers.set(thirdPlaceMatch.id, matchCounter++);
 
-  // Position matches: R1 uses CELL_BASE grid, then each later round is centered
-  // between its two feeders (avoids large empty spaces when R1 count is not power-of-2)
+  // Position matches using tree-based formula derived from positionInRound.
+  // R1 has spacing CELL_BASE. Each subsequent round doubles the cell height.
+  // This ensures R2 matches are always visually centered between their two R1 feeders,
+  // even when some slots are byes (positionInRound must be set correctly in the DB).
   const matchPositions = new Map<string, { colIdx: number; y: number }>();
 
-  // Step 1: place R1 (or earliest round) using simple grid
   sortedRounds.forEach(([, roundMatches], colIdx) => {
-    if (colIdx !== 0) return;
-    const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
-    sorted.forEach((m, i) => {
-      matchPositions.set(m.id, { colIdx: 0, y: i * CELL_BASE + (CELL_BASE - CARD_H) / 2 });
-    });
-  });
-
-  // Step 2: for each subsequent round, center each match between its two feeders
-  // Build a map: matchId -> list of matches that feed into it
-  const feedersOf = new Map<string, MatchWithTeams[]>();
-  mainMatches.forEach((m) => {
-    if (!m.nextMatchWinId) return;
-    const list = feedersOf.get(m.nextMatchWinId) ?? [];
-    list.push(m);
-    feedersOf.set(m.nextMatchWinId, list);
-  });
-
-  sortedRounds.forEach(([, roundMatches], colIdx) => {
-    if (colIdx === 0) return;
+    // Cell height doubles each round: R1=CELL_BASE, R2=2*CELL_BASE, R3=4*CELL_BASE, ...
+    const cellH = CELL_BASE * Math.pow(2, colIdx);
     const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
     sorted.forEach((m) => {
-      const feeders = feedersOf.get(m.id) ?? [];
-      const feederYs = feeders.map((f) => matchPositions.get(f.id)?.y ?? 0).filter((y) => y !== undefined);
-      const centerY = feederYs.length > 0
-        ? (Math.min(...feederYs) + Math.max(...feederYs)) / 2
-        : (m.positionInRound ?? 0) * CELL_BASE + (CELL_BASE - CARD_H) / 2;
-      matchPositions.set(m.id, { colIdx, y: centerY });
+      const pos = m.positionInRound ?? 0;
+      const y = pos * cellH + (cellH - CARD_H) / 2;
+      matchPositions.set(m.id, { colIdx, y });
     });
   });
 
@@ -396,6 +377,15 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
   let maxY = 0;
   matchPositions.forEach(({ y }) => { if (y + CARD_H > maxY) maxY = y + CARD_H; });
   const mainHeight = Math.max(maxY, CELL_BASE);
+
+  // Build connector lines using nextMatchWinId
+  const feedersOf = new Map<string, MatchWithTeams[]>();
+  mainMatches.forEach((m) => {
+    if (!m.nextMatchWinId) return;
+    const list = feedersOf.get(m.nextMatchWinId) ?? [];
+    list.push(m);
+    feedersOf.set(m.nextMatchWinId, list);
+  });
 
   const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
   mainMatches.forEach((m) => {

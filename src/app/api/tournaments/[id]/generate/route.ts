@@ -87,7 +87,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
   if (parsed.data.type === "bracket") {
     const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
     const startAt = new Date(tournament.dateEnd);
-    const matches = generateBracket(tournament.teams, tournament.sundayFormat, courtNames, startAt, tournament.gameDurationMin);
+    const matches = generateBracket(tournament.teams, tournament.sundayFormat, courtNames, startAt, tournament.gameDurationMin, {
+      thirdPlaceMatch: tournament.thirdPlaceMatch ?? false,
+      gfReset: tournament.gfReset ?? false,
+    });
 
     await prisma.$transaction(async (tx) => {
       await tx.match.deleteMany({ where: { tournamentId: tournament.id, phase: "BRACKET" } });

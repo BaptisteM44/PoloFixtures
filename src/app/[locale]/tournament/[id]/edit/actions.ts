@@ -100,6 +100,7 @@ const updateSchema = z.object({
     (v) => (v === "" || v === undefined || v === null ? null : v),
     z.string().url().nullable()
   ),
+  hostClubId: z.string().optional().nullable(),
 });
 
 export async function updateTournamentAction(formData: FormData) {
@@ -141,7 +142,7 @@ export async function updateTournamentAction(formData: FormData) {
   try { faqJson = data.faq ? JSON.parse(data.faq) : null; } catch { /* ignore */ }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, poolRounds: _pr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, status: _statusFromForm, mtpPoolAStart: _mpa, mtpPoolBStart: _mpb, mtpSundayStart: _mps, ...rest } = data;
+  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, poolRounds: _pr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, status: _statusFromForm, mtpPoolAStart: _mpa, mtpPoolBStart: _mpb, mtpSundayStart: _mps, hostClubId: _hcid, ...rest } = data;
 
   // Status transitions allowed via edit form (all directions allowed for orga flexibility)
   let statusUpdate: "UPCOMING" | "LIVE" | "COMPLETED" | undefined;
@@ -215,6 +216,7 @@ export async function updateTournamentAction(formData: FormData) {
         mtpPoolBStart: data.mtpPoolBStart ? new Date(data.mtpPoolBStart) : null,
         mtpSundayStart: data.mtpSundayStart ? new Date(data.mtpSundayStart) : null,
         externalRegistrationUrl: data.externalRegistrationUrl ?? null,
+        hostClubId: data.hostClubId || null,
       }
     });
   } catch (err) {
