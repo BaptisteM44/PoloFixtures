@@ -213,11 +213,12 @@ function GrazPlanning({
 // ─── KiosquePlanning ─────────────────────────────────────────────────────────
 
 function KiosquePoolPanel({
-  poolName, poolMatches, swissRounds, pending, act, launchPoolRound,
+  poolName, poolMatches, swissRounds, pending, act, launchPoolRound, t,
 }: {
   poolName: string; poolMatches: any[]; swissRounds: number; pending: string | null;
   act: (key: string, fn: () => Promise<{ ok?: boolean; error?: string }>) => void;
   launchPoolRound?: (poolName: "Pool A" | "Pool B") => Promise<{ ok?: boolean; error?: string }>;
+  t: (key: string, values?: Record<string, any>) => string;
 }) {
   const maxRound = poolMatches.length > 0 ? Math.max(...poolMatches.map((m: any) => m.roundIndex)) : 0;
   const currentRoundMatches = poolMatches.filter((m: any) => m.roundIndex === maxRound);
@@ -231,17 +232,17 @@ function KiosquePoolPanel({
     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
       <span style={{ fontSize: 13, fontWeight: 600, minWidth: 60 }}>{poolName}</span>
       {maxRound === 0 ? (
-        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Aucun round</span>
+        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("kiosque_pool_no_round" as any)}</span>
       ) : (
         <span style={{ fontSize: 12, color: allDone ? "var(--teal)" : currentRoundDone ? "var(--teal)" : "var(--text-muted)" }}>
-          Round {maxRound}/{swissRounds} — {currentRoundMatches.filter((m: any) => m.status === "FINISHED").length}/{currentRoundMatches.length} matchs
-          {allDone ? " — terminé" : currentRoundDone ? " ✓" : ""}
+          {t("kiosque_pool_round_status" as any, { current: maxRound, total: swissRounds, done: currentRoundMatches.filter((m: any) => m.status === "FINISHED").length, count: currentRoundMatches.length })}
+          {allDone ? ` — ${t("kiosque_pool_done" as any)}` : currentRoundDone ? " ✓" : ""}
         </span>
       )}
       {canLaunchNext && launchPoolRound && (
         <button className="ghost" disabled={pending === key}
           onClick={() => act(key, () => launchPoolRound(poolName as "Pool A" | "Pool B"))}>
-          {pending === key ? "..." : `▶ Round ${nextRound}`}
+          {pending === key ? "..." : t("kiosque_launch_round" as any, { round: nextRound })}
         </button>
       )}
     </div>
@@ -269,6 +270,7 @@ function KiosquePlanning({
   resetKiosquePhaseAction?: (phase: "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
   resetKiosqueJ1Action?: () => Promise<{ ok?: boolean; error?: string }>;
 }) {
+  const t = useTranslations("tournament");
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -306,32 +308,32 @@ function KiosquePlanning({
       <div className="panel">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
           <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: 0 }}>
-            Jour 1 — Pools Swiss ({swissRounds} rounds)
+            {t("kiosque_j1_title" as any, { rounds: swissRounds })}
           </p>
           {resetKiosqueJ1Action && j1Matches.length > 0 && (
             <button className="ghost" style={{ fontSize: 11, color: "var(--danger)", padding: "2px 8px" }}
               disabled={pending === "reset-j1"}
-              onClick={async () => { if (!window.confirm("Reset le Jour 1 et tous les matchs Kiosque ?")) return; act("reset-j1", resetKiosqueJ1Action); }}>
-              {pending === "reset-j1" ? "..." : "↺ Reset J1"}
+              onClick={async () => { if (!window.confirm(t("kiosque_reset_j1_confirm" as any))) return; act("reset-j1", resetKiosqueJ1Action); }}>
+              {pending === "reset-j1" ? "..." : t("kiosque_reset_j1" as any)}
             </button>
           )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {poolARecord ? (
             <KiosquePoolPanel poolName="Pool A" poolMatches={poolAMatches} swissRounds={swissRounds}
-              pending={pending} act={act} launchPoolRound={launchKiosquePoolRoundAction} />
-          ) : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Pool A non créée</span>}
+              pending={pending} act={act} launchPoolRound={launchKiosquePoolRoundAction} t={t as any} />
+          ) : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("kiosque_pool_not_created" as any, { pool: "Pool A" })}</span>}
           {poolBRecord ? (
             <KiosquePoolPanel poolName="Pool B" poolMatches={poolBMatches} swissRounds={swissRounds}
-              pending={pending} act={act} launchPoolRound={launchKiosquePoolRoundAction} />
-          ) : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Pool B non créée</span>}
+              pending={pending} act={act} launchPoolRound={launchKiosquePoolRoundAction} t={t as any} />
+          ) : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("kiosque_pool_not_created" as any, { pool: "Pool B" })}</span>}
         </div>
       </div>
 
       {/* Regroup */}
       <div className="panel">
         <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
-          Regroup — Top 4 (2 rounds) + Bottom 12 (3 rounds)
+          {t("kiosque_regroup_title" as any)}
         </p>
 
         {top4Matches.length === 0 && bottom12Matches.length === 0 ? (
@@ -339,46 +341,46 @@ function KiosquePlanning({
             {j1Done && launchKiosqueRegroupAction && (
               <button className="ghost" disabled={pending === "regroup"}
                 onClick={() => act("regroup", launchKiosqueRegroupAction)}>
-                {pending === "regroup" ? "..." : "▶ Lancer Regroup Round 1"}
+                {pending === "regroup" ? "..." : t("kiosque_regroup_launch" as any)}
               </button>
             )}
-            {!j1Done && <p className="meta" style={{ margin: 0 }}>Terminer le Jour 1 d&apos;abord.</p>}
+            {!j1Done && <p className="meta" style={{ margin: 0 }}>{t("kiosque_regroup_wait_j1" as any)}</p>}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {/* Top 4 */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, minWidth: 120 }}>Top 4 — Round {top4Rounds}/2</span>
+              <span style={{ fontSize: 13, minWidth: 120 }}>{t("kiosque_group_round_status" as any, { group: "Top 4", current: top4Rounds, total: 2 })}</span>
               <span style={{ fontSize: 12, color: top4CurrentDone ? "var(--teal)" : "var(--text-muted)" }}>
-                {top4Matches.filter((m: any) => m.roundIndex === top4Rounds && m.status === "FINISHED").length}/{top4Matches.filter((m: any) => m.roundIndex === top4Rounds).length} matchs
-                {top4CurrentDone && top4Rounds < 2 ? " ✓" : top4CurrentDone && top4Rounds >= 2 ? " ✓ terminé" : ""}
+                {t("kiosque_group_matches" as any, { done: top4Matches.filter((m: any) => m.roundIndex === top4Rounds && m.status === "FINISHED").length, count: top4Matches.filter((m: any) => m.roundIndex === top4Rounds).length })}
+                {top4CurrentDone && top4Rounds < 2 ? " ✓" : top4CurrentDone && top4Rounds >= 2 ? ` ✓ ${t("kiosque_group_done" as any)}` : ""}
               </span>
               {top4CurrentDone && top4Rounds < 2 && launchKiosqueNextRoundAction && (
                 <button className="ghost" disabled={pending === "top4-next"}
                   onClick={() => act("top4-next", () => launchKiosqueNextRoundAction("Top 4"))}>
-                  {pending === "top4-next" ? "..." : `▶ Round ${top4Rounds + 1}`}
+                  {pending === "top4-next" ? "..." : t("kiosque_launch_round" as any, { round: top4Rounds + 1 })}
                 </button>
               )}
             </div>
             {/* Bottom 12 */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 13, minWidth: 120 }}>Bottom 12 — Round {bottom12Rounds}/3</span>
+              <span style={{ fontSize: 13, minWidth: 120 }}>{t("kiosque_group_round_status" as any, { group: "Bottom 12", current: bottom12Rounds, total: 3 })}</span>
               <span style={{ fontSize: 12, color: bottom12CurrentDone ? "var(--teal)" : "var(--text-muted)" }}>
-                {bottom12Matches.filter((m: any) => m.roundIndex === bottom12Rounds && m.status === "FINISHED").length}/{bottom12Matches.filter((m: any) => m.roundIndex === bottom12Rounds).length} matchs
-                {bottom12CurrentDone && bottom12Rounds < 3 ? " ✓" : bottom12CurrentDone && bottom12Rounds >= 3 ? " ✓ terminé" : ""}
+                {t("kiosque_group_matches" as any, { done: bottom12Matches.filter((m: any) => m.roundIndex === bottom12Rounds && m.status === "FINISHED").length, count: bottom12Matches.filter((m: any) => m.roundIndex === bottom12Rounds).length })}
+                {bottom12CurrentDone && bottom12Rounds < 3 ? " ✓" : bottom12CurrentDone && bottom12Rounds >= 3 ? ` ✓ ${t("kiosque_group_done" as any)}` : ""}
               </span>
               {bottom12CurrentDone && bottom12Rounds < 3 && launchKiosqueNextRoundAction && (
                 <button className="ghost" disabled={pending === "bottom12-next"}
                   onClick={() => act("bottom12-next", () => launchKiosqueNextRoundAction("Bottom 12"))}>
-                  {pending === "bottom12-next" ? "..." : `▶ Round ${bottom12Rounds + 1}`}
+                  {pending === "bottom12-next" ? "..." : t("kiosque_launch_round" as any, { round: bottom12Rounds + 1 })}
                 </button>
               )}
             </div>
             {resetKiosquePhaseAction && (top4Matches.length > 0 || bottom12Matches.length > 0) && seMatches.length === 0 && (
               <button className="ghost" style={{ fontSize: 12, color: "var(--danger)", marginTop: 4, width: "fit-content" }}
                 disabled={pending === "reset-regroup"}
-                onClick={async () => { if (!window.confirm("Reset le regroup ?")) return; act("reset-regroup", () => resetKiosquePhaseAction("REGROUP")); }}>
-                {pending === "reset-regroup" ? "..." : "↺ Reset Regroup"}
+                onClick={async () => { if (!window.confirm(t("kiosque_reset_regroup_confirm" as any))) return; act("reset-regroup", () => resetKiosquePhaseAction("REGROUP")); }}>
+                {pending === "reset-regroup" ? "..." : t("kiosque_reset_regroup" as any)}
               </button>
             )}
           </div>
@@ -388,30 +390,30 @@ function KiosquePlanning({
       {/* SE */}
       <div className="panel">
         <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
-          SE × 8 — Classement final
+          {t("kiosque_se_title" as any)}
         </p>
         {seMatches.length === 0 ? (
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {top4Rounds >= 2 && top4CurrentDone && bottom12Rounds >= 3 && bottom12CurrentDone && launchKiosqueSEAction ? (
               <button className="ghost" disabled={pending === "se"}
                 onClick={() => act("se", launchKiosqueSEAction)}>
-                {pending === "se" ? "..." : "▶ Lancer SE × 8"}
+                {pending === "se" ? "..." : t("kiosque_se_launch" as any)}
               </button>
             ) : (
-              <p className="meta" style={{ margin: 0 }}>Terminer tous les rounds du regroup d&apos;abord.</p>
+              <p className="meta" style={{ margin: 0 }}>{t("kiosque_se_wait_regroup" as any)}</p>
             )}
           </div>
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <p style={{ fontSize: 13, margin: 0, color: seMatches.every((m: any) => m.status === "FINISHED") ? "var(--teal)" : "var(--text)" }}>
-              {seMatches.filter((m: any) => m.status === "FINISHED").length} / {seMatches.length} matchs terminés
+              {t("kiosque_se_matches" as any, { done: seMatches.filter((m: any) => m.status === "FINISHED").length, total: seMatches.length })}
               {seMatches.every((m: any) => m.status === "FINISHED") ? " ✓" : ""}
             </p>
             {resetKiosquePhaseAction && (
               <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }}
                 disabled={pending === "reset-se"}
-                onClick={async () => { if (!window.confirm("Reset la SE ?")) return; act("reset-se", () => resetKiosquePhaseAction("SE")); }}>
-                {pending === "reset-se" ? "..." : "↺ Reset SE"}
+                onClick={async () => { if (!window.confirm(t("kiosque_reset_se_confirm" as any))) return; act("reset-se", () => resetKiosquePhaseAction("SE")); }}>
+                {pending === "reset-se" ? "..." : t("kiosque_reset_se" as any)}
               </button>
             )}
           </div>
@@ -1374,10 +1376,10 @@ export function OrgaDashboard({
             ) : (tournament as any).saturdayFormat === "KIOSQUE" ? (
               <>
                 <p style={{ fontSize: 13, margin: 0 }}>
-                  <strong>Kiosque</strong> — 2 jours
+                  <strong>{t("orga_format_kiosque_title" as any)}</strong> — {t("orga_format_kiosque_days" as any)}
                 </p>
                 <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--text-muted)" }}>
-                  2 pools Swiss J1 → Top 4 (2 rounds) + Bottom 12 (3 rounds) → SE × 8
+                  {t("orga_format_kiosque_desc" as any)}
                 </p>
               </>
             ) : tournament.saturdayFormat === "BERLIN_MIXED" ? (

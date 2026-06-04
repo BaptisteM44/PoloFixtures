@@ -215,10 +215,10 @@ export default async function TournamentPage({
     ...(isLaunched && isBerlinMixed && berlinTop32Matches.length > 0 ? [{ label: "Top 32", value: "berlin_top32", href: `/tournament/${params.id}?tab=berlin_top32` }] : []),
     ...(isLaunched && isBerlinMixed && berlinBottom16Matches.length > 0 ? [{ label: "Bottom 16", value: "berlin_bot16", href: `/tournament/${params.id}?tab=berlin_bot16` }] : []),
     // Kiosque tabs
-    ...(isLaunched && isKiosque ? [{ label: "J1 Pools", value: "kiosque_j1", href: `/tournament/${params.id}?tab=kiosque_j1` }] : []),
-    ...(isLaunched && isKiosque && kiosqueTop4Matches.length > 0 ? [{ label: "Top 4", value: "kiosque_top4", href: `/tournament/${params.id}?tab=kiosque_top4` }] : []),
-    ...(isLaunched && isKiosque && kiosqueBottom12Matches.length > 0 ? [{ label: "Bottom 12", value: "kiosque_bot12", href: `/tournament/${params.id}?tab=kiosque_bot12` }] : []),
-    ...(isLaunched && isKiosque && kiosqueSEMatches.length > 0 ? [{ label: "SE × 8", value: "kiosque_se", href: `/tournament/${params.id}?tab=kiosque_se` }] : []),
+    ...(isLaunched && isKiosque ? [{ label: t("tab_kiosque_j1"), value: "kiosque_j1", href: `/tournament/${params.id}?tab=kiosque_j1` }] : []),
+    ...(isLaunched && isKiosque && kiosqueTop4Matches.length > 0 ? [{ label: t("tab_kiosque_top4"), value: "kiosque_top4", href: `/tournament/${params.id}?tab=kiosque_top4` }] : []),
+    ...(isLaunched && isKiosque && kiosqueBottom12Matches.length > 0 ? [{ label: t("tab_kiosque_bot12"), value: "kiosque_bot12", href: `/tournament/${params.id}?tab=kiosque_bot12` }] : []),
+    ...(isLaunched && isKiosque && kiosqueSEMatches.length > 0 ? [{ label: t("tab_kiosque_se"), value: "kiosque_se", href: `/tournament/${params.id}?tab=kiosque_se` }] : []),
     // Standard tabs (hidden for Berlin Mixed and Kiosque)
     ...(isLaunched && !isBerlinMixed && !isMtpOpen && !isKiosque && tournament.saturdayFormat !== "SWISS" ? [{ label: isGraz ? t("tab_rr_groups") : t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
     ...(isLaunched && isMtpOpen ? [{ label: t("tab_mtp_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
@@ -837,7 +837,7 @@ export default async function TournamentPage({
         ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
         : (() => {
             const seMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "KIOSQUE_SE");
-            if (seMatches.length === 0) return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>Le SE n&apos;a pas encore été généré.</p>;
+            if (seMatches.length === 0) return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>{t("kiosque_se_not_generated")}</p>;
             const bracketTeams = tournament.teams.filter((t: any) => t.selected).map((team: any) => ({ id: team.id, name: team.name, bracketNumber: team.seed }));
             return <BracketView matches={seMatches as any} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />;
           })()
