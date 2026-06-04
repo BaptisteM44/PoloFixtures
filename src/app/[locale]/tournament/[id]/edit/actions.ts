@@ -3105,6 +3105,13 @@ export async function launchKiosquePoolsAction(
   const slotMin = (tournament as any).gameDurationMin + 5;
 
   await prisma.$transaction(async (tx) => {
+    // Clean up any pre-existing pools created via the planning UI
+    const existingPools = await tx.pool.findMany({ where: { tournamentId: id } });
+    for (const p of existingPools) {
+      await tx.poolTeam.deleteMany({ where: { poolId: p.id } });
+      await tx.pool.delete({ where: { id: p.id } });
+    }
+
     for (const pool of pools) {
       const poolRecord = await tx.pool.create({
         data: { tournamentId: id, name: pool.name, session: null },
@@ -3391,6 +3398,31 @@ export async function launchKiosqueSEAction(
       await tx.match.update({ where: { id: sf[i].id }, data: updates });
     }
   }, { timeout: 20000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+/**
+ * Reset J1 Kiosque — supprime les pools Pool A/B et leurs matchs pour relancer proprement.
+ */
+export async function resetKiosqueJ1Action(
+  id: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  await prisma.$transaction(async (tx) => {
+    // Delete all J1 matches
+    await tx.match.deleteMany({ where: { tournamentId: id, phase: { in: ["KIOSQUE_POOL", "KIOSQUE_TOP4", "KIOSQUE_BOTTOM12", "KIOSQUE_SE"] } } });
+    // Delete all Kiosque pools
+    const pools = await tx.pool.findMany({ where: { tournamentId: id } });
+    for (const pool of pools) {
+      await tx.poolTeam.deleteMany({ where: { poolId: pool.id } });
+      await tx.pool.delete({ where: { id: pool.id } });
+    }
+  }, { timeout: 15000 });
 
   revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);

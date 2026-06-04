@@ -220,6 +220,7 @@ function KiosquePlanning({
   launchKiosqueNextRoundAction,
   launchKiosqueSEAction,
   resetKiosquePhaseAction,
+  resetKiosqueJ1Action,
 }: {
   tournament: any;
   pools: any[];
@@ -228,6 +229,7 @@ function KiosquePlanning({
   launchKiosqueNextRoundAction?: (group: "Top 4" | "Bottom 12") => Promise<{ ok?: boolean; error?: string }>;
   launchKiosqueSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetKiosquePhaseAction?: (phase: "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
+  resetKiosqueJ1Action?: () => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -260,9 +262,18 @@ function KiosquePlanning({
         <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
           Jour 1 — Pools Swiss
         </p>
-        <p style={{ fontSize: 13, margin: 0, color: j1Done ? "var(--teal)" : "var(--text)" }}>
-          {j1Matches.length === 0 ? "Aucun match généré" : `${j1Matches.filter((m: any) => m.status === "FINISHED").length} / ${j1Matches.length} matchs terminés${j1Done ? " ✓" : ""}`}
-        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <p style={{ fontSize: 13, margin: 0, color: j1Done ? "var(--teal)" : "var(--text)" }}>
+            {j1Matches.length === 0 ? "Aucun match généré" : `${j1Matches.filter((m: any) => m.status === "FINISHED").length} / ${j1Matches.length} matchs terminés${j1Done ? " ✓" : ""}`}
+          </p>
+          {resetKiosqueJ1Action && j1Matches.length > 0 && (
+            <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }}
+              disabled={pending === "reset-j1"}
+              onClick={async () => { if (!window.confirm("Reset le Jour 1 et tous les matchs Kiosque ?")) return; act("reset-j1", resetKiosqueJ1Action); }}>
+              {pending === "reset-j1" ? "..." : "↺ Reset J1"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Regroup */}
@@ -892,6 +903,7 @@ type OrgaDashboardProps = {
   launchKiosqueNextRoundAction?: (group: "Top 4" | "Bottom 12") => Promise<{ ok?: boolean; error?: string }>;
   launchKiosqueSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetKiosquePhaseAction?: (phase: "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
+  resetKiosqueJ1Action?: () => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -970,6 +982,7 @@ export function OrgaDashboard({
   launchKiosqueNextRoundAction,
   launchKiosqueSEAction,
   resetKiosquePhaseAction,
+  resetKiosqueJ1Action,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -1304,6 +1317,15 @@ export function OrgaDashboard({
                   {t("orga_format_graz_desc")}
                 </p>
               </>
+            ) : (tournament as any).saturdayFormat === "KIOSQUE" ? (
+              <>
+                <p style={{ fontSize: 13, margin: 0 }}>
+                  <strong>Kiosque</strong> — 2 jours
+                </p>
+                <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--text-muted)" }}>
+                  2 pools Swiss J1 → Top 4 (2 rounds) + Bottom 12 (3 rounds) → SE × 8
+                </p>
+              </>
             ) : tournament.saturdayFormat === "BERLIN_MIXED" ? (
               <>
                 <p style={{ fontSize: 13, margin: 0 }}>
@@ -1513,6 +1535,7 @@ export function OrgaDashboard({
               launchKiosqueNextRoundAction={launchKiosqueNextRoundAction}
               launchKiosqueSEAction={launchKiosqueSEAction}
               resetKiosquePhaseAction={resetKiosquePhaseAction}
+              resetKiosqueJ1Action={resetKiosqueJ1Action}
             />
           )}
 
