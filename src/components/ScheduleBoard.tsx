@@ -68,6 +68,7 @@ const PHASE_LABEL: Record<string, string> = {
   POOL: "Poule", SWISS: "Swiss", CROSS_POOL: "Cross-pool", BRACKET: "Tableau",
   GRAZ_RR: "RR", GRAZ_REGROUP: "Regroup", GRAZ_SE: "SE",
   MTP_POOL_A: "Pool A", MTP_POOL_B: "Pool B", MTP_BARRAGE: "Barrage", MTP_DE: "DE",
+  KIOSQUE_POOL: "J1", KIOSQUE_TOP4: "Top 4", KIOSQUE_BOTTOM12: "Bottom 12", KIOSQUE_SE: "SE",
 };
 
 function positionLabel(match: MatchWithTeams, courtMatches: MatchWithTeams[]) {
@@ -274,7 +275,9 @@ export function ScheduleBoard({
       const grazPoolSuffix = match.phase === "GRAZ_RR" && match.poolId ? `-P${match.poolId}` : "";
       // For GRAZ_REGROUP matches, separate by pool (Top / Mid1 / Mid2 / Bottom)
       const grazRegroupSuffix = match.phase === "GRAZ_REGROUP" && match.poolId ? `-P${match.poolId}` : "";
-      const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}${bracketSuffix}${grazPoolSuffix}${grazRegroupSuffix}`;
+      // For Kiosque pool phases, separate by poolId (Pool A vs Pool B, Top 4 vs Bottom 12)
+      const kiosquePoolSuffix = (match.phase === "KIOSQUE_POOL" || match.phase === "KIOSQUE_TOP4" || match.phase === "KIOSQUE_BOTTOM12") && match.poolId ? `-P${match.poolId}` : "";
+      const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}${bracketSuffix}${grazPoolSuffix}${grazRegroupSuffix}${kiosquePoolSuffix}`;
       if (!groups.has(key)) {
         groups.set(key, { phase: match.phase, roundIndex: match.roundIndex, poolSessionIndex: match.poolSessionIndex ?? undefined, bracketSide: match.bracketSide ?? undefined, poolId: match.poolId ?? null, matches: [] });
       }
@@ -454,6 +457,8 @@ export function ScheduleBoard({
           ? ` · ${pools?.find((p) => p.id === group.poolId)?.name ?? "Pool"}`
           : group.phase === "GRAZ_REGROUP" && group.poolId
           ? ` · ${pools?.find((p) => p.id === group.poolId)?.name?.replace("Regroup-", "") ?? "Groupe"}`
+          : (group.phase === "KIOSQUE_POOL" || group.phase === "KIOSQUE_TOP4" || group.phase === "KIOSQUE_BOTTOM12") && group.poolId
+          ? ` · ${pools?.find((p) => p.id === group.poolId)?.name ?? ""}`
           : "";
 
         // For BRACKET phase, show which bracket + match type based on bracketSide
