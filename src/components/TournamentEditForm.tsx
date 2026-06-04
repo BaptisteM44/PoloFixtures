@@ -129,7 +129,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const [currentFormat, setCurrentFormat] = useState(tournament.format);
 
   // Format preset
-  type FormatPreset = "pool_de" | "pool_se" | "2pools_de" | "2pools_se" | "swiss_de" | "swiss_se" | "swiss6_split_se" | "cross_pool_bcn" | "berlin_mixed" | "graz" | "mtp_open" | "split_se" | "custom";
+  type FormatPreset = "pool_de" | "pool_se" | "2pools_de" | "2pools_se" | "swiss_de" | "swiss_se" | "swiss6_split_se" | "cross_pool_bcn" | "berlin_mixed" | "graz" | "mtp_open" | "split_se" | "kiosque" | "custom";
   type PresetConfig = { saturdayFormat: string; poolCount: number; swissRounds: number; bracketSize: number; sundayFormat: string; crossPool: boolean; thirdPlaceMatch: boolean; gfReset: boolean };
 
   const PRESETS: Record<Exclude<FormatPreset, "custom">, PresetConfig> = {
@@ -145,6 +145,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     graz:           { saturdayFormat: "GRAZ",         poolCount: 2, swissRounds: 7, bracketSize: 8,  sundayFormat: "SE", crossPool: false, thirdPlaceMatch: true,  gfReset: false },
     mtp_open:       { saturdayFormat: "MTP_OPEN",     poolCount: 2, swissRounds: 9, bracketSize: 16, sundayFormat: "DE",       crossPool: false, thirdPlaceMatch: false, gfReset: true  },
     split_se:       { saturdayFormat: "SPLIT_POOLS",  poolCount: 2, swissRounds: 5, bracketSize: 16, sundayFormat: "SPLIT_SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    kiosque:        { saturdayFormat: "KIOSQUE",      poolCount: 2, swissRounds: 5, bracketSize: 8,  sundayFormat: "SE",       crossPool: false, thirdPlaceMatch: false, gfReset: false },
   };
 
   function detectPreset(tn: Tournament): FormatPreset {
@@ -704,6 +705,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                   ["graz",           "🇦🇹 Graz",                  "2 jours · 2×RR Poules · Regroup 4 groupes · SE Top 8"],
                   ["mtp_open",       "MTP Open",                 "2 jours · Pool A + Pool B (sam.) · Barrage SE×4 + DE×16 (dim.)"],
                   ["split_se",       t("preset_split_se"),       t("preset_split_se_desc")],
+                  ["kiosque",        "Kiosque",                  "2 pools Swiss J1 → Top 4 (2 rounds) + Bottom 12 (3 rounds) → SE × 8"],
                   ["custom",         t("format_custom"),         t("format_custom_desc")],
                 ] as [FormatPreset, string, string][]).map(([key, label, sub]) => {
                   const active = formatPreset === key;

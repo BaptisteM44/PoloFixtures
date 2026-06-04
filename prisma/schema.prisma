@@ -43,6 +43,7 @@ enum SaturdayFormat {
   BERLIN_MIXED
   GRAZ
   MTP_OPEN
+  KIOSQUE
 }
 
 enum SundayFormat {
@@ -72,6 +73,10 @@ enum MatchPhase {
   MTP_POOL_B
   MTP_BARRAGE
   MTP_DE
+  KIOSQUE_POOL
+  KIOSQUE_TOP4
+  KIOSQUE_BOTTOM12
+  KIOSQUE_SE
 }
 
 enum BracketSide {

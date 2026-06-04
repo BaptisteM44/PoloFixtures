@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction } from "./actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
@@ -400,6 +400,22 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             resetMtpPhaseAction={resetMtpPhase}
             updateMtpTimesAction={updateMtpTimes}
             updateBerlinTimesAction={updateBerlinTimes}
+            launchKiosqueRegroupAction={async () => {
+              "use server";
+              return await launchKiosqueRegroupAction(t_.id);
+            }}
+            launchKiosqueNextRoundAction={async (group) => {
+              "use server";
+              return await launchKiosqueNextRoundAction(t_.id, group);
+            }}
+            launchKiosqueSEAction={async () => {
+              "use server";
+              return await launchKiosqueSEAction(t_.id);
+            }}
+            resetKiosquePhaseAction={async (phase) => {
+              "use server";
+              return await resetKiosquePhaseAction(t_.id, phase);
+            }}
             orgaTasks={orgaTasks.map((t) => ({ ...t, priority: t.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT", deadline: t.deadline?.toISOString() ?? null, createdAt: t.createdAt.toISOString() }))}
             orgaNotes={orgaNotes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString() }))}
             orgaLinks={orgaLinks.map((l) => ({ ...l, createdAt: l.createdAt.toISOString() }))}

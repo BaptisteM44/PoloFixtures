@@ -210,6 +210,154 @@ function GrazPlanning({
   );
 }
 
+// ─── KiosquePlanning ─────────────────────────────────────────────────────────
+
+function KiosquePlanning({
+  tournament,
+  pools,
+  matches,
+  launchKiosqueRegroupAction,
+  launchKiosqueNextRoundAction,
+  launchKiosqueSEAction,
+  resetKiosquePhaseAction,
+}: {
+  tournament: any;
+  pools: any[];
+  matches: any[];
+  launchKiosqueRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchKiosqueNextRoundAction?: (group: "Top 4" | "Bottom 12") => Promise<{ ok?: boolean; error?: string }>;
+  launchKiosqueSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  resetKiosquePhaseAction?: (phase: "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
+}) {
+  const [pending, setPending] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const j1Matches = matches.filter((m: any) => m.phase === "KIOSQUE_POOL");
+  const top4Matches = matches.filter((m: any) => m.phase === "KIOSQUE_TOP4");
+  const bottom12Matches = matches.filter((m: any) => m.phase === "KIOSQUE_BOTTOM12");
+  const seMatches = matches.filter((m: any) => m.phase === "KIOSQUE_SE");
+
+  const j1Done = j1Matches.length > 0 && j1Matches.every((m: any) => m.status === "FINISHED");
+
+  const top4Rounds = top4Matches.length > 0 ? Math.max(...top4Matches.map((m: any) => m.roundIndex)) : 0;
+  const bottom12Rounds = bottom12Matches.length > 0 ? Math.max(...bottom12Matches.map((m: any) => m.roundIndex)) : 0;
+  const top4CurrentDone = top4Matches.filter((m: any) => m.roundIndex === top4Rounds).every((m: any) => m.status === "FINISHED");
+  const bottom12CurrentDone = bottom12Matches.filter((m: any) => m.roundIndex === bottom12Rounds).every((m: any) => m.status === "FINISHED");
+
+  const act = async (key: string, fn: () => Promise<{ ok?: boolean; error?: string }>) => {
+    setPending(key); setError(null);
+    const res = await fn();
+    if (res?.error) setError(res.error);
+    setPending(null);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {error && <p style={{ color: "var(--danger)", fontSize: 13 }}>{error}</p>}
+
+      {/* J1 */}
+      <div className="panel">
+        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+          Jour 1 — Pools Swiss
+        </p>
+        <p style={{ fontSize: 13, margin: 0, color: j1Done ? "var(--teal)" : "var(--text)" }}>
+          {j1Matches.length === 0 ? "Aucun match généré" : `${j1Matches.filter((m: any) => m.status === "FINISHED").length} / ${j1Matches.length} matchs terminés${j1Done ? " ✓" : ""}`}
+        </p>
+      </div>
+
+      {/* Regroup */}
+      <div className="panel">
+        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+          Regroup — Top 4 (2 rounds) + Bottom 12 (3 rounds)
+        </p>
+
+        {top4Matches.length === 0 && bottom12Matches.length === 0 ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {j1Done && launchKiosqueRegroupAction && (
+              <button className="ghost" disabled={pending === "regroup"}
+                onClick={() => act("regroup", launchKiosqueRegroupAction)}>
+                {pending === "regroup" ? "..." : "▶ Lancer Regroup Round 1"}
+              </button>
+            )}
+            {!j1Done && <p className="meta" style={{ margin: 0 }}>Terminer le Jour 1 d'abord.</p>}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* Top 4 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, minWidth: 120 }}>Top 4 — Round {top4Rounds}/2</span>
+              <span style={{ fontSize: 12, color: top4CurrentDone ? "var(--teal)" : "var(--text-muted)" }}>
+                {top4Matches.filter((m: any) => m.roundIndex === top4Rounds && m.status === "FINISHED").length}/{top4Matches.filter((m: any) => m.roundIndex === top4Rounds).length} matchs
+                {top4CurrentDone && top4Rounds < 2 ? " ✓" : top4CurrentDone && top4Rounds >= 2 ? " ✓ terminé" : ""}
+              </span>
+              {top4CurrentDone && top4Rounds < 2 && launchKiosqueNextRoundAction && (
+                <button className="ghost" disabled={pending === "top4-next"}
+                  onClick={() => act("top4-next", () => launchKiosqueNextRoundAction("Top 4"))}>
+                  {pending === "top4-next" ? "..." : `▶ Round ${top4Rounds + 1}`}
+                </button>
+              )}
+            </div>
+            {/* Bottom 12 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, minWidth: 120 }}>Bottom 12 — Round {bottom12Rounds}/3</span>
+              <span style={{ fontSize: 12, color: bottom12CurrentDone ? "var(--teal)" : "var(--text-muted)" }}>
+                {bottom12Matches.filter((m: any) => m.roundIndex === bottom12Rounds && m.status === "FINISHED").length}/{bottom12Matches.filter((m: any) => m.roundIndex === bottom12Rounds).length} matchs
+                {bottom12CurrentDone && bottom12Rounds < 3 ? " ✓" : bottom12CurrentDone && bottom12Rounds >= 3 ? " ✓ terminé" : ""}
+              </span>
+              {bottom12CurrentDone && bottom12Rounds < 3 && launchKiosqueNextRoundAction && (
+                <button className="ghost" disabled={pending === "bottom12-next"}
+                  onClick={() => act("bottom12-next", () => launchKiosqueNextRoundAction("Bottom 12"))}>
+                  {pending === "bottom12-next" ? "..." : `▶ Round ${bottom12Rounds + 1}`}
+                </button>
+              )}
+            </div>
+            {resetKiosquePhaseAction && (top4Matches.length > 0 || bottom12Matches.length > 0) && seMatches.length === 0 && (
+              <button className="ghost" style={{ fontSize: 12, color: "var(--danger)", marginTop: 4, width: "fit-content" }}
+                disabled={pending === "reset-regroup"}
+                onClick={async () => { if (!window.confirm("Reset le regroup ?")) return; act("reset-regroup", () => resetKiosquePhaseAction("REGROUP")); }}>
+                {pending === "reset-regroup" ? "..." : "↺ Reset Regroup"}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* SE */}
+      <div className="panel">
+        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+          SE × 8 — Classement final
+        </p>
+        {seMatches.length === 0 ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {top4Rounds >= 2 && top4CurrentDone && bottom12Rounds >= 3 && bottom12CurrentDone && launchKiosqueSEAction ? (
+              <button className="ghost" disabled={pending === "se"}
+                onClick={() => act("se", launchKiosqueSEAction)}>
+                {pending === "se" ? "..." : "▶ Lancer SE × 8"}
+              </button>
+            ) : (
+              <p className="meta" style={{ margin: 0 }}>Terminer tous les rounds du regroup d'abord.</p>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <p style={{ fontSize: 13, margin: 0, color: seMatches.every((m: any) => m.status === "FINISHED") ? "var(--teal)" : "var(--text)" }}>
+              {seMatches.filter((m: any) => m.status === "FINISHED").length} / {seMatches.length} matchs terminés
+              {seMatches.every((m: any) => m.status === "FINISHED") ? " ✓" : ""}
+            </p>
+            {resetKiosquePhaseAction && (
+              <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }}
+                disabled={pending === "reset-se"}
+                onClick={async () => { if (!window.confirm("Reset la SE ?")) return; act("reset-se", () => resetKiosquePhaseAction("SE")); }}>
+                {pending === "reset-se" ? "..." : "↺ Reset SE"}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── BerlinMixedPlanning ─────────────────────────────────────────────────────
 
 type BerlinTab = "groupes" | "vendredi" | "samedi" | "dimanche" | "brackets";
@@ -740,6 +888,10 @@ type OrgaDashboardProps = {
   resetMtpPhaseAction?: (phase: "POOL_A" | "POOL_B" | "CROSS_POOL" | "BARRAGE" | "DE") => Promise<{ ok?: boolean; error?: string }>;
   updateMtpTimesAction?: (a: string | null, b: string | null, s: string | null) => Promise<{ ok?: boolean; error?: string }>;
   updateBerlinTimesAction?: (a: string | null, b: string | null) => Promise<{ ok?: boolean; error?: string }>;
+  launchKiosqueRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchKiosqueNextRoundAction?: (group: "Top 4" | "Bottom 12") => Promise<{ ok?: boolean; error?: string }>;
+  launchKiosqueSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  resetKiosquePhaseAction?: (phase: "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -859,7 +1011,8 @@ export function OrgaDashboard({
   const hasAnyMatches = matches.length > 0;
   const hasBracketMatches = bracketMatches.length > 0;
   const isMtpOpen = (tournament as any).saturdayFormat === "MTP_OPEN";
-  const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0 && !isMtpOpen)) && teams.some((t) => t.selected === true);
+  const isKiosque = (tournament as any).saturdayFormat === "KIOSQUE";
+  const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0 && !isMtpOpen && !isKiosque)) && teams.some((t) => t.selected === true);
   const isLive = tournament.status === "LIVE";
 
   // Pool rounds control
@@ -1099,8 +1252,8 @@ export function OrgaDashboard({
       {activeTab === "planning" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* Pool Schedule Editor — éditer les horaires de chaque poule (non MTP_OPEN qui a son propre panel) */}
-          {!isMtpOpen && (
+          {/* Pool Schedule Editor — éditer les horaires de chaque poule (non MTP_OPEN, non Kiosque) */}
+          {!isMtpOpen && !isKiosque && (
             <PoolScheduleEditor
               tournamentId={tournament.id}
               gameDurationMin={tournament.gameDurationMin}
@@ -1226,7 +1379,7 @@ export function OrgaDashboard({
                 day1Matches = poolCount * (perPool * (perPool - 1) / 2);
               }
 
-              if (tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && (tournament as any).saturdayFormat !== "MTP_OPEN") {
+              if (tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && (tournament as any).saturdayFormat !== "MTP_OPEN" && (tournament as any).saturdayFormat !== "KIOSQUE") {
                 const bracketSize = tournament.bracketSize ?? 16;
                 const qualified = Math.min(bracketSize, n);
                 if (tournament.sundayFormat === "DE") {
@@ -1269,7 +1422,7 @@ export function OrgaDashboard({
           </div>
 
           {/* Pool rounds limit — visible when pool matches exist */}
-          {isLive && poolMatches.length > 0 && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "MTP_OPEN" && updatePoolRoundsAction && (
+          {isLive && poolMatches.length > 0 && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && updatePoolRoundsAction && (
             <div className="panel" style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, margin: 0 }}>
                 {t("field_pool_rounds")}
@@ -1346,6 +1499,19 @@ export function OrgaDashboard({
             />
           )}
 
+          {/* ── Kiosque Format planning ── */}
+          {tournament.saturdayFormat === "KIOSQUE" && (isLive || tournament.status === "COMPLETED") && (
+            <KiosquePlanning
+              tournament={tournament}
+              pools={pools}
+              matches={matches}
+              launchKiosqueRegroupAction={launchKiosqueRegroupAction}
+              launchKiosqueNextRoundAction={launchKiosqueNextRoundAction}
+              launchKiosqueSEAction={launchKiosqueSEAction}
+              resetKiosquePhaseAction={resetKiosquePhaseAction}
+            />
+          )}
+
           {/* ── Graz Format planning ── */}
           {tournament.saturdayFormat === "GRAZ" && (isLive || tournament.status === "COMPLETED") && (
             <GrazPlanning
@@ -1375,8 +1541,8 @@ export function OrgaDashboard({
             />
           )}
 
-          {/* ── Planning standard (non-Berlin, non-Graz, non-MTP) ── */}
-          {tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "MTP_OPEN" && (
+          {/* ── Planning standard (non-Berlin, non-Graz, non-MTP, non-Kiosque) ── */}
+          {tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && (
             <>
               {/* Pools — séparés par pool pour format multi-poule */}
               {hasAnyMatches && (tournament.poolCount ?? 1) > 1 && (

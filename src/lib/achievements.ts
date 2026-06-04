@@ -866,16 +866,32 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     include: { club: { select: { id: true, city: true, country: true } } },
   });
 
-  if (clubMemberships.length > 0) {
+  // Also include clubs where player is manager (may not have a ClubMember entry)
+  const managedClubs = await prisma.club.findMany({
+    where: { managerId: playerId },
+    select: { id: true, city: true, country: true },
+  });
+
+  // Merge into a deduplicated list of player's clubs
+  const playerClubsMap = new Map<string, { id: string; city: string; country: string }>();
+  for (const cm of clubMemberships) playerClubsMap.set(cm.club.id, cm.club);
+  for (const c of managedClubs) playerClubsMap.set(c.id, c);
+  const playerClubs = [...playerClubsMap.values()];
+
+  if (playerClubs.length > 0) {
     // club_champion: gagner un tournoi dans la ville de son club
+    //   OR un tournoi officiellement hébergé par son club (hostClubId)
     if (wonTournamentIds.length > 0) {
-      const clubCities = new Set(clubMemberships.map((cm) => cm.club.city.toLowerCase().trim()));
+      const clubCities = new Set(playerClubs.map((c) => c.city.toLowerCase().trim()));
+      const clubIds    = new Set(playerClubs.map((c) => c.id));
       const wonDetails = await prisma.tournament.findMany({
         where: { id: { in: wonTournamentIds } },
-        select: { id: true, city: true },
+        select: { id: true, city: true, hostClubId: true },
       });
-      if (wonDetails.some((t) => clubCities.has(t.city.toLowerCase().trim())))
-        badges.add("club_champion");
+      if (wonDetails.some((t) =>
+        clubCities.has(t.city.toLowerCase().trim()) ||
+        (t.hostClubId != null && clubIds.has(t.hostClubId))
+      )) badges.add("club_champion");
     }
 
     // represent: tournoi à l'étranger avec équipe 100% membres du même club
@@ -889,13 +905,20 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
           select: { playerId: true },
         });
         const teammateIds = teammates.map((t) => t.playerId);
-        for (const cm of clubMemberships) {
+        for (const c of playerClubs) {
           const clubMemberIds = new Set(
             (await prisma.clubMember.findMany({
-              where: { clubId: cm.club.id, status: "MEMBER" },
+              where: { clubId: c.id, status: "MEMBER" },
               select: { playerId: true },
             })).map((m) => m.playerId)
           );
+          // also include the manager
+          clubMemberIds.add(playerId);
+          const managerClub = managedClubs.find((mc) => mc.id === c.id);
+          if (managerClub) {
+            const mgr = await prisma.club.findUnique({ where: { id: c.id }, select: { managerId: true } });
+            if (mgr) clubMemberIds.add(mgr.managerId);
+          }
           if (teammateIds.length >= 2 && teammateIds.every((id) => clubMemberIds.has(id))) {
             badges.add("represent");
             break represent;
@@ -907,9 +930,9 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     // club_derby: affronter une équipe avec 2+ membres de ton club
     if (allTeamMatches.length > 0 && !badges.has("club_derby")) {
       const allClubMemberIds = new Set<string>();
-      for (const cm of clubMemberships) {
+      for (const c of playerClubs) {
         const members = await prisma.clubMember.findMany({
-          where: { clubId: cm.club.id, status: "MEMBER", NOT: { playerId } },
+          where: { clubId: c.id, status: "MEMBER", NOT: { playerId } },
           select: { playerId: true },
         });
         for (const m of members) allClubMemberIds.add(m.playerId);
