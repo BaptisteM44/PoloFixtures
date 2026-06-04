@@ -3083,8 +3083,9 @@ export async function revokeRefTokenAction(tournamentId: string) {
 // ─── Kiosque ──────────────────────────────────────────────────────────────────
 
 /**
- * Génère les matchs des pools J1 Kiosque (Pool A + Pool B, Swiss rounds).
+ * Crée les pools J1 Kiosque (Pool A + Pool B) et assigne les équipes.
  * Appelée automatiquement au lancement du tournoi.
+ * Ne génère PAS de matchs — chaque pool est lancée manuellement round par round.
  */
 export async function launchKiosquePoolsAction(
   id: string
@@ -3095,14 +3096,7 @@ export async function launchKiosquePoolsAction(
   });
   if (!tournament) return { error: "Tournoi introuvable." };
 
-  const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "KIOSQUE_POOL" } });
-  if (existing) return { error: "Les matchs J1 ont déjà été générés." };
-
   const pools = generateKiosquePools(tournament.teams);
-  const courtNames = Array.from({ length: (tournament as any).courtsCount }, (_, i) => `Court ${i + 1}`);
-  const startAt = new Date((tournament as any).dateStart);
-  const swissRounds = (tournament as any).swissRounds ?? 5;
-  const slotMin = (tournament as any).gameDurationMin + 5;
 
   await prisma.$transaction(async (tx) => {
     // Clean up any pre-existing pools created via the planning UI
@@ -3119,37 +3113,87 @@ export async function launchKiosquePoolsAction(
       await tx.poolTeam.createMany({
         data: pool.teams.map((t) => ({ poolId: poolRecord.id, teamId: t.id })),
       });
-
-      // Generate all Swiss rounds upfront using circle method (like RR)
-      // We use generateSwissRound sequentially, tracking played pairs
-      const played = new Set<string>();
-      let courtFree = courtNames.map(() => new Date(startAt));
-
-      for (let round = 1; round <= swissRounds; round++) {
-        const standings = computeStandings(pool.teams, [], (tournament as any).scoringSystem);
-        const roundMatches = generateSwissRound(
-          pool.teams, standings,
-          Array.from(played).map((k) => { const [a, b] = k.split(":"); return { teamAId: a, teamBId: b }; }),
-          round, courtNames, new Date(Math.max(...courtFree.map((d) => d.getTime()))), (tournament as any).gameDurationMin, "SAT"
-        );
-
-        for (const m of roundMatches) {
-          await tx.match.create({ data: {
-            tournamentId: id, phase: "KIOSQUE_POOL", poolId: poolRecord.id,
-            bracketSide: null, roundIndex: round, positionInRound: m.positionInRound ?? 0,
-            courtName: m.courtName, startAt: m.startAt, dayIndex: "SAT",
-            status: "SCHEDULED", teamAId: m.teamAId ?? null, teamBId: m.teamBId ?? null,
-          }});
-          if (m.teamAId && m.teamBId) {
-            const key = m.teamAId < m.teamBId ? `${m.teamAId}:${m.teamBId}` : `${m.teamBId}:${m.teamAId}`;
-            played.add(key);
-          }
-          const courtIdx = courtNames.indexOf(m.courtName);
-          if (courtIdx >= 0) courtFree[courtIdx] = new Date(m.startAt.getTime() + slotMin * 60000);
-        }
-      }
     }
-  }, { timeout: 30000 });
+  }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+/**
+ * Génère le prochain Swiss round pour une pool Kiosque (Pool A ou Pool B).
+ * Appariement basé sur les standings réels du round précédent.
+ */
+export async function launchKiosquePoolRoundAction(
+  id: string,
+  poolName: "Pool A" | "Pool B"
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      pools: { include: { teams: { include: { team: true } } } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+
+  const poolRecord = tournament.pools.find((p) => p.name === poolName);
+  if (!poolRecord) return { error: `Pool "${poolName}" introuvable.` };
+
+  const poolTeams = poolRecord.teams.map((pt) => pt.team);
+  const swissRounds = (tournament as any).swissRounds ?? 5;
+
+  // Existing matches for this pool
+  const poolMatches = await prisma.match.findMany({
+    where: { tournamentId: id, phase: "KIOSQUE_POOL", poolId: poolRecord.id },
+    orderBy: { startAt: "asc" },
+  });
+
+  const maxRound = poolMatches.length > 0 ? Math.max(...poolMatches.map((m) => m.roundIndex)) : 0;
+  const nextRound = maxRound + 1;
+
+  if (nextRound > swissRounds) return { error: `Tous les ${swissRounds} rounds sont déjà générés pour ${poolName}.` };
+
+  // Check current round is finished before generating next
+  if (maxRound > 0) {
+    const currentRoundMatches = poolMatches.filter((m) => m.roundIndex === maxRound);
+    const unfinished = currentRoundMatches.filter((m) => m.status !== "FINISHED");
+    if (unfinished.length > 0) return { error: `${unfinished.length} match(s) du Round ${maxRound} non terminé(s).` };
+  }
+
+  // Compute standings from all finished pool matches
+  const standings = computeStandings(poolTeams, poolMatches as any, (tournament as any).scoringSystem);
+
+  const courtNames = Array.from({ length: (tournament as any).courtsCount }, (_, i) => `Court ${i + 1}`);
+  const slotMin = (tournament as any).gameDurationMin + 5;
+
+  // Determine start time: 5 min from now, or after last match in this pool
+  const lastMatchEnd = poolMatches.length > 0
+    ? new Date(Math.max(...poolMatches.map((m) => new Date(m.startAt).getTime())) + slotMin * 60000)
+    : null;
+  const fromNow = new Date(Date.now() + 5 * 60 * 1000);
+  const startAt = lastMatchEnd && lastMatchEnd > fromNow ? lastMatchEnd : fromNow;
+
+  const roundMatches = generateSwissRound(
+    poolTeams, standings,
+    poolMatches.map((m) => ({ teamAId: m.teamAId, teamBId: m.teamBId, courtName: m.courtName })),
+    nextRound, courtNames, startAt, (tournament as any).gameDurationMin, "SAT"
+  );
+
+  await prisma.$transaction(async (tx) => {
+    for (const m of roundMatches) {
+      await tx.match.create({ data: {
+        tournamentId: id, phase: "KIOSQUE_POOL", poolId: poolRecord.id,
+        bracketSide: null, roundIndex: nextRound, positionInRound: m.positionInRound ?? 0,
+        courtName: m.courtName, startAt: m.startAt, dayIndex: "SAT",
+        status: "SCHEDULED", teamAId: m.teamAId ?? null, teamBId: m.teamBId ?? null,
+      }});
+    }
+  });
 
   revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);

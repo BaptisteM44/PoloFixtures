@@ -212,10 +212,47 @@ function GrazPlanning({
 
 // ─── KiosquePlanning ─────────────────────────────────────────────────────────
 
+function KiosquePoolPanel({
+  poolName, poolMatches, swissRounds, pending, act, launchPoolRound,
+}: {
+  poolName: string; poolMatches: any[]; swissRounds: number; pending: string | null;
+  act: (key: string, fn: () => Promise<{ ok?: boolean; error?: string }>) => void;
+  launchPoolRound?: (poolName: "Pool A" | "Pool B") => Promise<{ ok?: boolean; error?: string }>;
+}) {
+  const maxRound = poolMatches.length > 0 ? Math.max(...poolMatches.map((m: any) => m.roundIndex)) : 0;
+  const currentRoundMatches = poolMatches.filter((m: any) => m.roundIndex === maxRound);
+  const currentRoundDone = currentRoundMatches.length > 0 && currentRoundMatches.every((m: any) => m.status === "FINISHED");
+  const allDone = poolMatches.length > 0 && poolMatches.every((m: any) => m.status === "FINISHED") && maxRound >= swissRounds;
+  const canLaunchNext = (maxRound === 0 || currentRoundDone) && maxRound < swissRounds;
+  const nextRound = maxRound + 1;
+  const key = `pool-${poolName}`;
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <span style={{ fontSize: 13, fontWeight: 600, minWidth: 60 }}>{poolName}</span>
+      {maxRound === 0 ? (
+        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Aucun round</span>
+      ) : (
+        <span style={{ fontSize: 12, color: allDone ? "var(--teal)" : currentRoundDone ? "var(--teal)" : "var(--text-muted)" }}>
+          Round {maxRound}/{swissRounds} — {currentRoundMatches.filter((m: any) => m.status === "FINISHED").length}/{currentRoundMatches.length} matchs
+          {allDone ? " — terminé" : currentRoundDone ? " ✓" : ""}
+        </span>
+      )}
+      {canLaunchNext && launchPoolRound && (
+        <button className="ghost" disabled={pending === key}
+          onClick={() => act(key, () => launchPoolRound(poolName as "Pool A" | "Pool B"))}>
+          {pending === key ? "..." : `▶ Round ${nextRound}`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function KiosquePlanning({
   tournament,
   pools,
   matches,
+  launchKiosquePoolRoundAction,
   launchKiosqueRegroupAction,
   launchKiosqueNextRoundAction,
   launchKiosqueSEAction,
@@ -225,6 +262,7 @@ function KiosquePlanning({
   tournament: any;
   pools: any[];
   matches: any[];
+  launchKiosquePoolRoundAction?: (poolName: "Pool A" | "Pool B") => Promise<{ ok?: boolean; error?: string }>;
   launchKiosqueRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchKiosqueNextRoundAction?: (group: "Top 4" | "Bottom 12") => Promise<{ ok?: boolean; error?: string }>;
   launchKiosqueSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
@@ -239,7 +277,14 @@ function KiosquePlanning({
   const bottom12Matches = matches.filter((m: any) => m.phase === "KIOSQUE_BOTTOM12");
   const seMatches = matches.filter((m: any) => m.phase === "KIOSQUE_SE");
 
+  const swissRounds = tournament.swissRounds ?? 5;
   const j1Done = j1Matches.length > 0 && j1Matches.every((m: any) => m.status === "FINISHED");
+
+  // Split J1 matches by pool
+  const poolARecord = pools.find((p: any) => p.name === "Pool A");
+  const poolBRecord = pools.find((p: any) => p.name === "Pool B");
+  const poolAMatches = j1Matches.filter((m: any) => m.poolId === poolARecord?.id);
+  const poolBMatches = j1Matches.filter((m: any) => m.poolId === poolBRecord?.id);
 
   const top4Rounds = top4Matches.length > 0 ? Math.max(...top4Matches.map((m: any) => m.roundIndex)) : 0;
   const bottom12Rounds = bottom12Matches.length > 0 ? Math.max(...bottom12Matches.map((m: any) => m.roundIndex)) : 0;
@@ -257,22 +302,29 @@ function KiosquePlanning({
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {error && <p style={{ color: "var(--danger)", fontSize: 13 }}>{error}</p>}
 
-      {/* J1 */}
+      {/* J1 — Pool A + Pool B */}
       <div className="panel">
-        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
-          Jour 1 — Pools Swiss
-        </p>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <p style={{ fontSize: 13, margin: 0, color: j1Done ? "var(--teal)" : "var(--text)" }}>
-            {j1Matches.length === 0 ? "Aucun match généré" : `${j1Matches.filter((m: any) => m.status === "FINISHED").length} / ${j1Matches.length} matchs terminés${j1Done ? " ✓" : ""}`}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", margin: 0 }}>
+            Jour 1 — Pools Swiss ({swissRounds} rounds)
           </p>
           {resetKiosqueJ1Action && j1Matches.length > 0 && (
-            <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }}
+            <button className="ghost" style={{ fontSize: 11, color: "var(--danger)", padding: "2px 8px" }}
               disabled={pending === "reset-j1"}
               onClick={async () => { if (!window.confirm("Reset le Jour 1 et tous les matchs Kiosque ?")) return; act("reset-j1", resetKiosqueJ1Action); }}>
               {pending === "reset-j1" ? "..." : "↺ Reset J1"}
             </button>
           )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {poolARecord ? (
+            <KiosquePoolPanel poolName="Pool A" poolMatches={poolAMatches} swissRounds={swissRounds}
+              pending={pending} act={act} launchPoolRound={launchKiosquePoolRoundAction} />
+          ) : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Pool A non créée</span>}
+          {poolBRecord ? (
+            <KiosquePoolPanel poolName="Pool B" poolMatches={poolBMatches} swissRounds={swissRounds}
+              pending={pending} act={act} launchPoolRound={launchKiosquePoolRoundAction} />
+          ) : <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Pool B non créée</span>}
         </div>
       </div>
 
@@ -290,7 +342,7 @@ function KiosquePlanning({
                 {pending === "regroup" ? "..." : "▶ Lancer Regroup Round 1"}
               </button>
             )}
-            {!j1Done && <p className="meta" style={{ margin: 0 }}>Terminer le Jour 1 d'abord.</p>}
+            {!j1Done && <p className="meta" style={{ margin: 0 }}>Terminer le Jour 1 d&apos;abord.</p>}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -346,7 +398,7 @@ function KiosquePlanning({
                 {pending === "se" ? "..." : "▶ Lancer SE × 8"}
               </button>
             ) : (
-              <p className="meta" style={{ margin: 0 }}>Terminer tous les rounds du regroup d'abord.</p>
+              <p className="meta" style={{ margin: 0 }}>Terminer tous les rounds du regroup d&apos;abord.</p>
             )}
           </div>
         ) : (
@@ -900,6 +952,7 @@ type OrgaDashboardProps = {
   updateMtpTimesAction?: (a: string | null, b: string | null, s: string | null) => Promise<{ ok?: boolean; error?: string }>;
   updateBerlinTimesAction?: (a: string | null, b: string | null) => Promise<{ ok?: boolean; error?: string }>;
   launchKiosqueRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchKiosquePoolRoundAction?: (poolName: "Pool A" | "Pool B") => Promise<{ ok?: boolean; error?: string }>;
   launchKiosqueNextRoundAction?: (group: "Top 4" | "Bottom 12") => Promise<{ ok?: boolean; error?: string }>;
   launchKiosqueSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetKiosquePhaseAction?: (phase: "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
@@ -978,6 +1031,7 @@ export function OrgaDashboard({
   resetMtpPhaseAction,
   updateMtpTimesAction,
   updateBerlinTimesAction,
+  launchKiosquePoolRoundAction,
   launchKiosqueRegroupAction,
   launchKiosqueNextRoundAction,
   launchKiosqueSEAction,
@@ -1531,6 +1585,7 @@ export function OrgaDashboard({
               tournament={tournament}
               pools={pools}
               matches={matches}
+              launchKiosquePoolRoundAction={launchKiosquePoolRoundAction}
               launchKiosqueRegroupAction={launchKiosqueRegroupAction}
               launchKiosqueNextRoundAction={launchKiosqueNextRoundAction}
               launchKiosqueSEAction={launchKiosqueSEAction}

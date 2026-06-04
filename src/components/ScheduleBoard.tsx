@@ -328,6 +328,7 @@ export function ScheduleBoard({
       MTP_BARRAGE: 4, GRAZ_SE: 4,
       BRACKET: 5, MTP_DE: 5,
       FRIDAY_A: 0, FRIDAY_B: 1, SATURDAY_A: 2, SATURDAY_B: 3, SUNDAY_SWISS: 4, TOP32: 5, BOTTOM16: 6,
+      KIOSQUE_POOL: 0, KIOSQUE_TOP4: 1, KIOSQUE_BOTTOM12: 1, KIOSQUE_SE: 2,
     };
     const sorted = [...matches].sort((a, b) => {
       const pa = PHASE_ORDER[a.phase] ?? 99;
