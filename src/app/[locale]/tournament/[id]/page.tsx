@@ -245,7 +245,7 @@ export default async function TournamentPage({
 
   if (isCompleted) {
     const bracketMatches = await prisma.match.findMany({
-      where: { tournamentId: tournament.id, phase: { in: ["BRACKET", "MTP_DE"] }, status: "FINISHED" },
+      where: { tournamentId: tournament.id, phase: { in: ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE"] }, status: "FINISHED" },
       include: {
         teamA: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
         teamB: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
@@ -271,12 +271,18 @@ export default async function TournamentPage({
       const isAWinner = wlMatch.winnerTeamId === wlMatch.teamAId;
       podium.third = toTeam(isAWinner ? wlMatch.teamA : wlMatch.teamB);
     } else {
-      const lowerFinal = bracketMatches.filter((m) => m.bracketSide === "L")[0];
-      if (lowerFinal) {
-        const isAWinner = lowerFinal.winnerTeamId === lowerFinal.teamAId;
-        const lbLoser = toTeam(isAWinner ? lowerFinal.teamB : lowerFinal.teamA);
-        if (lbLoser && lbLoser.id !== podium.first?.id && lbLoser.id !== podium.second?.id) {
-          podium.third = lbLoser;
+      const lMatches = bracketMatches.filter((m) => m.bracketSide === "L");
+      if (lMatches.length > 0) {
+        const lFinal = lMatches[0]; // sorted by roundIndex desc
+        const isAWinner = lFinal.winnerTeamId === lFinal.teamAId;
+        // SE formats (only 1 "L" match = 3rd place match): winner is 3rd
+        // DE formats (multiple "L" matches = losers bracket): loser of last LB match is 3rd
+        const isSE = lMatches.length === 1;
+        const thirdTeam = toTeam(isSE
+          ? (isAWinner ? lFinal.teamA : lFinal.teamB)
+          : (isAWinner ? lFinal.teamB : lFinal.teamA));
+        if (thirdTeam && thirdTeam.id !== podium.first?.id && thirdTeam.id !== podium.second?.id) {
+          podium.third = thirdTeam;
         }
       }
     }
