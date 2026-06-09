@@ -117,11 +117,6 @@ export default async function TournamentPage({
   const isCompleted = tournament.status === "COMPLETED";
   const tab = activeTab ?? (isCompleted ? "recap" : "info");
 
-  const isFollowing = currentPlayerId
-    ? await (prisma as any).tournamentFollow.findUnique({
-        where: { playerId_tournamentId: { playerId: currentPlayerId, tournamentId: tournament.id } },
-      }) !== null
-    : false;
   const currentPlayerName = session?.user?.name ?? null;
   const charterAccepted = !!((session?.user as { charterAccepted?: boolean } | undefined)?.charterAccepted);
   const canEdit =
@@ -162,14 +157,27 @@ export default async function TournamentPage({
   const splitSeLosersMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "L" || m.bracketSide === "LG" || m.bracketSide === "LL") && tournament.sundayFormat === "SPLIT_SE");
   const allEvents = (tournament.matches ?? []).flatMap((m: any) => m.events ?? []);
 
-  // Find current player's team — lightweight separate query so tab visibility is
-  // always correct regardless of which tab is active (needsPlayers or not).
-  const myTeamRecord = currentPlayerId
-    ? await (prisma as any).teamPlayer.findFirst({
-        where: { playerId: currentPlayerId, team: { tournamentId: tournament.id } },
-        select: { teamId: true, isCaptain: true },
-      })
-    : null;
+  // Parallel queries: isFollowing + myTeam + overlayChannels
+  const [followRecord, myTeamRecord, overlayChannels] = await Promise.all([
+    currentPlayerId
+      ? (prisma as any).tournamentFollow.findUnique({
+          where: { playerId_tournamentId: { playerId: currentPlayerId, tournamentId: tournament.id } },
+        })
+      : Promise.resolve(null),
+    currentPlayerId
+      ? (prisma as any).teamPlayer.findFirst({
+          where: { playerId: currentPlayerId, team: { tournamentId: tournament.id } },
+          select: { teamId: true, isCaptain: true },
+        })
+      : Promise.resolve(null),
+    prisma.overlayChannel.findMany({
+      where: { tournamentId: tournament.id },
+      select: { id: true, slug: true, label: true, court: true, activeCourt: true, showChat: true },
+      orderBy: { court: "asc" },
+    }),
+  ]);
+
+  const isFollowing = followRecord !== null;
   const myTeam = myTeamRecord
     ? (tournament.teams as any[]).find((team: any) => team.id === myTeamRecord.teamId) ?? null
     : null;
@@ -187,13 +195,6 @@ export default async function TournamentPage({
   const court1Embed = toYoutubeEmbed(t_.streamCourt1Url);
   const court2Embed = toYoutubeEmbed(t_.streamCourt2Url);
   const multiplexEmbed = toYoutubeEmbed(t_.streamMultiplexUrl);
-
-  // Fetch overlay channels for this tournament
-  const overlayChannels = await prisma.overlayChannel.findMany({
-    where: { tournamentId: tournament.id },
-    select: { id: true, slug: true, label: true, court: true, activeCourt: true, showChat: true },
-    orderBy: { court: "asc" },
-  });
 
   const now = new Date();
   const registrationOpen =

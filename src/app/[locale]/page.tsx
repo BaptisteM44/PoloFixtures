@@ -22,35 +22,10 @@ export default async function HomePage() {
   const session = await auth();
   const currentPlayerId = (session?.user as any)?.playerId ?? null;
 
-  // Get player country for map auto-focus
-  let playerContinent: string | null = null;
-  if (currentPlayerId) {
-    const player = await prisma.player.findUnique({ where: { id: currentPlayerId }, select: { country: true } });
-    if (player) playerContinent = countryToContinent(player.country);
-  }
-
-  // Fetch upcoming tournaments for logged-in player
-  let myUpcomingTournaments: { id: string; slug: string | null; name: string; city: string; country: string; dateStart: Date; dateEnd: Date; format: string }[] = [];
-  if (currentPlayerId) {
-    const entries = await prisma.teamPlayer.findMany({
-      where: { playerId: currentPlayerId, team: { tournament: { status: "UPCOMING", approved: true } } },
-      include: { team: { include: { tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true } } } } },
-    });
-    const soloEntries = await prisma.tournamentSoloEntry.findMany({
-      where: { playerId: currentPlayerId, tournament: { status: "UPCOMING", approved: true }, waitlisted: false },
-      include: { tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true } } },
-    });
-    const seen = new Set<string>();
-    for (const e of entries) {
-      if (!seen.has(e.team.tournament.id)) { seen.add(e.team.tournament.id); myUpcomingTournaments.push(e.team.tournament); }
-    }
-    for (const e of soloEntries) {
-      if (!seen.has(e.tournament.id)) { seen.add(e.tournament.id); myUpcomingTournaments.push(e.tournament); }
-    }
-    myUpcomingTournaments.sort((a, b) => a.dateStart.getTime() - b.dateStart.getTime());
-  }
-
-  const [activeTournaments, allTournaments, countryCounts, mapTournaments, recentPlayers, totalPlayers, totalCountries] = await Promise.all([
+  const [
+    activeTournaments, allTournaments, countryCounts, mapTournaments, recentPlayers, totalPlayers, totalCountries,
+    playerForContinent, teamEntries, soloEntries, followsRaw,
+  ] = await Promise.all([
     prisma.tournament.findMany({
       where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true, hidden: false },
       include: { teams: { where: { selected: true } } },
@@ -84,17 +59,48 @@ export default async function HomePage() {
       select: { country: true },
       distinct: ["country"],
     }),
+    // Player country for map auto-focus
+    currentPlayerId
+      ? prisma.player.findUnique({ where: { id: currentPlayerId }, select: { country: true } })
+      : Promise.resolve(null),
+    // Upcoming tournaments for logged-in player (team entries)
+    currentPlayerId
+      ? prisma.teamPlayer.findMany({
+          where: { playerId: currentPlayerId, team: { tournament: { status: "UPCOMING", approved: true } } },
+          include: { team: { include: { tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true } } } } },
+        })
+      : Promise.resolve([]),
+    // Solo entries
+    currentPlayerId
+      ? prisma.tournamentSoloEntry.findMany({
+          where: { playerId: currentPlayerId, tournament: { status: "UPCOMING", approved: true }, waitlisted: false },
+          include: { tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true } } },
+        })
+      : Promise.resolve([]),
+    // Followed tournament IDs
+    currentPlayerId
+      ? (prisma as any).tournamentFollow.findMany({
+          where: { playerId: currentPlayerId },
+          select: { tournamentId: true },
+        })
+      : Promise.resolve([]),
   ]);
 
-  // Fetch followed tournament IDs for current player
-  let followedTournamentIds = new Set<string>();
-  if (currentPlayerId) {
-    const follows = await (prisma as any).tournamentFollow.findMany({
-      where: { playerId: currentPlayerId },
-      select: { tournamentId: true },
-    });
-    followedTournamentIds = new Set(follows.map((f: any) => f.tournamentId));
+  const playerContinent = playerForContinent ? countryToContinent(playerForContinent.country) : null;
+
+  const myUpcomingTournaments: { id: string; slug: string | null; name: string; city: string; country: string; dateStart: Date; dateEnd: Date; format: string }[] = [];
+  {
+    const seen = new Set<string>();
+    for (const e of teamEntries) {
+      if (!seen.has(e.team.tournament.id)) { seen.add(e.team.tournament.id); myUpcomingTournaments.push(e.team.tournament); }
+    }
+    for (const e of soloEntries) {
+      if (!seen.has(e.tournament.id)) { seen.add(e.tournament.id); myUpcomingTournaments.push(e.tournament); }
+    }
+    myUpcomingTournaments.sort((a, b) => a.dateStart.getTime() - b.dateStart.getTime());
   }
+
+  const followedTournamentIds = new Set<string>((followsRaw as any[]).map((f: any) => f.tournamentId));
 
   // Merge followed tournaments into active list
   const activeIds = new Set(activeTournaments.map((t) => t.id));
