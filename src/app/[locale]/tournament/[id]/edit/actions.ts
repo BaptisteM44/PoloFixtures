@@ -1885,9 +1885,7 @@ export async function launchTournamentAction(
   }
 
   // Saturday format guards
-  if (tournament.saturdayFormat === "SWISS" && selectedCount % 2 !== 0) {
-    return { error: `Le format Swiss requiert un nombre pair d'équipes. Vous avez ${selectedCount} équipes sélectionnées.` };
-  }
+  // Swiss supporte les nombres impairs (BYE automatique)
   if (tournament.saturdayFormat === "SPLIT_POOLS" && selectedCount < poolCount * 2) {
     return { error: `Le format ${poolCount} poules requiert au minimum ${poolCount * 2} équipes (2 par poule). Vous avez ${selectedCount} équipes.` };
   }
