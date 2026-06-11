@@ -344,7 +344,7 @@ export function generateSwissRound(
     assigned.push({ teamA: sortedPairs[bestPairIdx].teamA, teamB: sortedPairs[bestPairIdx].teamB, courtIdx });
   }
 
-  const realMatches = assigned.map(({ teamA, teamB, courtIdx }) => {
+  const realMatches: GeneratedMatch[] = assigned.map(({ teamA, teamB, courtIdx }) => {
     const slot = new Date(courtFree[courtIdx]);
     courtFree[courtIdx] = addMinutes(courtFree[courtIdx], slotMin);
 
