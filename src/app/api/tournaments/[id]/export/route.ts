@@ -8,7 +8,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   if (!tournament) return new Response("Not found", { status: 404 });
 
   const matches = await prisma.match.findMany({
-    where: { tournamentId: params.id },
+    where: { tournamentId: tournament.id },
     include: {
       teamA: { select: { id: true, name: true } },
       teamB: { select: { id: true, name: true } },
