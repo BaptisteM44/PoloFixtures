@@ -1729,10 +1729,13 @@ export function OrgaDashboard({
           <OrgaTaskBoard
             tasks={orgaTasks}
             tournamentId={tournament.id}
-            coOrganizers={coOrganizers.map((co) => ({
-              playerId: co.playerId,
-              playerName: co.player.name,
-            }))}
+            coOrganizers={[
+              ...(tournament.creator ? [{ playerId: tournament.creator.id, playerName: tournament.creator.name }] : []),
+              ...coOrganizers.filter((co) => co.role !== "REF").map((co) => ({
+                playerId: co.playerId,
+                playerName: co.player.name,
+              })),
+            ]}
           />
 
           {/* Note board */}

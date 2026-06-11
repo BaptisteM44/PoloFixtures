@@ -96,7 +96,8 @@ export function OrgaTaskBoard({
           title: title.trim(),
           priority,
           assigneeIds: assigneeIds.length > 0 ? assigneeIds : undefined,
-          deadline: deadline || undefined,
+          // datetime-local gives local time without timezone — convert to ISO with offset
+          deadline: deadline ? new Date(deadline).toISOString() : undefined,
         }),
       });
       if (res.ok) {
