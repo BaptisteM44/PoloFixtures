@@ -1,10 +1,14 @@
 import { prisma } from "@/lib/db";
-import { createClient } from "@supabase/supabase-js";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const r2 = new S3Client({
+  region: "auto",
+  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+  },
+});
 
 export const maxDuration = 60;
 
@@ -34,11 +38,6 @@ export async function GET(request: Request) {
     prisma.directMessage.findMany(),
   ]);
 
-  // List all files in uploads bucket (images, photos, banners, etc.)
-  const { data: uploadedFiles } = await supabase.storage
-    .from("uploads")
-    .list("", { limit: 10000 });
-
   const backup = {
     exportedAt: new Date().toISOString(),
     players,
@@ -53,22 +52,21 @@ export async function GET(request: Request) {
     squadMessages,
     directConversations,
     directMessages,
-    uploadedFiles: uploadedFiles || [],
   };
 
   const json = JSON.stringify(backup, null, 2);
   const filename = `backups/backup_${new Date().toISOString().slice(0, 10)}.json`;
 
-  const { error } = await supabase.storage
-    .from("uploads")
-    .upload(filename, Buffer.from(json), {
-      contentType: "application/json",
-      upsert: true,
-    });
-
-  if (error) {
-    console.error("Backup upload error:", error);
-    return Response.json({ error: error.message }, { status: 500 });
+  try {
+    await r2.send(new PutObjectCommand({
+      Bucket: "uploads",
+      Key: filename,
+      Body: Buffer.from(json),
+      ContentType: "application/json",
+    }));
+  } catch (err) {
+    console.error("Backup upload error:", err);
+    return Response.json({ error: String(err) }, { status: 500 });
   }
 
   return Response.json({
@@ -84,7 +82,6 @@ export async function GET(request: Request) {
       squadMessages: squadMessages.length,
       directConversations: directConversations.length,
       directMessages: directMessages.length,
-      uploadedFiles: uploadedFiles?.length || 0,
     },
   });
 }
