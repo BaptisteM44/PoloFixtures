@@ -912,7 +912,7 @@ function generateDoubleElim(
   }
 
   function emitRound(
-    side: "W" | "L" | "G",
+    side: "W" | "L" | "G" | "BG",
     roundIndex: number,
     count: number,
     preFilled?: Array<{ a: string | null; b: string | null }>
@@ -1084,7 +1084,7 @@ function generateDoubleElim(
   // Grand Final
   emitRound("G", 1, 1);
   advanceTime(1);
-  if (gfReset) emitRound("G", 2, 1);
+  if (gfReset) emitRound("BG", 2, 1);
 
   return matches;
 }

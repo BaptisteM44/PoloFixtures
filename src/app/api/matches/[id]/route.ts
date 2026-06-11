@@ -94,6 +94,27 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const winnerId = scoreA > scoreB ? existing.teamAId : existing.teamBId;
     const loserId = winnerId === existing.teamAId ? existing.teamBId : existing.teamAId;
     await propagateBracket(winnerId, loserId);
+
+    // GF Reset: if this is the Grand Final (bracketSide "G") and the LB player wins,
+    // activate the reset match (bracketSide "BG") with both teams.
+    // Convention: WB player = slot A, LB player = slot B in the GF.
+    if (existing.bracketSide === "G") {
+      const lbPlayerId = existing.teamBId; // LB always feeds GF slot B
+      const lbPlayerWon = winnerId === lbPlayerId;
+      if (lbPlayerWon) {
+        const resetMatch = await prisma.match.findFirst({
+          where: { tournamentId: existing.tournamentId, bracketSide: "BG" },
+        });
+        if (resetMatch) {
+          const updated = await prisma.match.update({
+            where: { id: resetMatch.id },
+            data: { teamAId: existing.teamAId, teamBId: existing.teamBId },
+            include: { teamA: true, teamB: true },
+          });
+          advancedMatchesPut.push(updated);
+        }
+      }
+    }
   } else if (isNowFinished) {
     // Non-bracket: original logic (draw allowed)
     const winnerId = scoreA > scoreB ? existing.teamAId : scoreB > scoreA ? existing.teamBId : null;

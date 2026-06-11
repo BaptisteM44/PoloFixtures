@@ -601,6 +601,7 @@ export async function generateBracketAction(id: string) {
       const w2 = size / 4;
 
       const grandFinal = created.filter(m => m.bracketSide === "G").sort((a, b) => a.roundIndex - b.roundIndex)[0];
+      const gfReset = created.find(m => m.bracketSide === "BG") ?? null;
       const maxLR = Math.max(...created.filter(m => m.bracketSide === "L").map(m => m.roundIndex), 0);
 
       const upperByRound = new Map<number, typeof created>();
@@ -884,6 +885,14 @@ export async function generateBracketAction(id: string) {
             await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: grandFinal.id, nextSlotWin: "B" } });
           }
         }
+      }
+
+      // ── GF Reset: wire GF1 → GF2 ─────────────────────────────────────
+      // GF2 (bracketSide "BG") is only played if the LB player wins GF1.
+      // We pre-wire GF1.nextMatchWinId → GF2 so BracketView draws the connection.
+      // The route.ts finish handler activates GF2 with both teams only if needed.
+      if (grandFinal && gfReset) {
+        await tx.match.update({ where: { id: grandFinal.id }, data: { nextMatchWinId: gfReset.id, nextSlotWin: "A" } });
       }
     }
   });

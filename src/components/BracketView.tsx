@@ -189,7 +189,9 @@ export function BracketView({
 
   const bracketMatches = matches.filter((m) => m.phase === "BRACKET" || m.phase === "GRAZ_SE" || m.phase === "MTP_DE" || m.phase === "KIOSQUE_SE");
   // SWISS_SPLIT_SE: detect by presence of B/BG/BL bracket sides (only for BRACKET phase, not MTP_DE which also uses BG for reset)
-  const isSplitSE = bracketMatches.some((m) => m.phase === "BRACKET" && (m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL"));
+  // A DE with gfReset also has a "BG" match but always has "W" matches too — SPLIT_SE never has "W" matches
+  const isSplitSE = bracketMatches.some((m) => m.phase === "BRACKET" && (m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL"))
+    && !bracketMatches.some((m) => m.phase === "BRACKET" && m.bracketSide === "W");
   // DE has multiple L matches AND W matches; SE 3rd place has exactly one L or BL match
   // SPLIT_SE losers bracket: only L/LG/LL matches (no W) → treat as SEBracket not DEBracket
   const lMatches = bracketMatches.filter((m) => m.bracketSide === "L" || m.bracketSide === "BL");
