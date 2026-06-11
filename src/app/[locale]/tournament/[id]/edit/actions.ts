@@ -847,30 +847,20 @@ export async function generateBracketAction(id: string) {
             continue;
           }
 
-          // LB R1 → LB R2
-          // Case A — consolidation branches (2 WB R1 losers): LBR1[i] → LBR2[i] slot A
-          //           WB R2 loser will inject into LBR2[i] slot B
-          // Case B — injection branches (1 WB R1 loser, WB R2 loser already consumed in LBR1):
-          //           LBR1 survivors consolidate → LBR1[0]&[1] → LBR2[0], LBR1[2]&[3] → LBR2[1], etc.
+          // LB R1 → LB R2: always 1-to-1 (LBR1[i] → LBR2[i]).
+          // WB R2 losers have already pre-claimed slot B via the else-branch above,
+          // so findFreeSlot will assign slot A to the LB R1 winner.
+          // If LBR2[i] doesn't exist (overflow), fall through to generic slot-finding.
           if (lr === 1) {
             const nextMatches = lowerByRound.get(lbR2RoundIdx) ?? [];
-            let target: typeof nextMatches[0] | undefined;
-            if (lbR1ConsolidationR2Pos.length > 0) {
-              // Case A: 1-to-1 mapping
-              target = nextMatches[i];
-            } else {
-              // Case B: consolidation of LB R1 survivors
-              target = nextMatches[Math.floor(i / 2)];
-            }
+            const target = nextMatches[i];
             if (target) {
-              // Pre-claim slots filled by WB R2 losers (teamBId set)
-              if (target.teamAId) claimSlot(target.id, "A");
-              if (target.teamBId) claimSlot(target.id, "B");
               const slot = findFreeSlot(target.id) ?? "A";
               await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: target.id, nextSlotWin: slot } });
               claimSlot(target.id, slot);
+              continue;
             }
-            continue;
+            // LBR2[i] doesn't exist → fall through to generic slot-finding below
           }
 
           // All other LB rounds: find next round with a free slot
