@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/db";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: params.id },
+  const tournament = await prisma.tournament.findFirst({
+    where: { OR: [{ id: params.id }, { slug: params.id }] },
     select: { id: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, slug: true },
   });
   if (!tournament) return new Response("Not found", { status: 404 });
