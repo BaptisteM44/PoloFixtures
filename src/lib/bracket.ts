@@ -236,6 +236,12 @@ export function generateSwissRound(
     }
   }
 
+  // Teams that already received a BYE in a previous round
+  const hadBye = new Set<string>();
+  for (const m of existingMatches) {
+    if (m.teamAId && !m.teamBId) hadBye.add(m.teamAId);
+  }
+
   // Count how many times each team has played on each court (for equitable distribution)
   const teamCourtCount = new Map<string, Map<string, number>>();
   for (const team of teams) {
@@ -255,20 +261,43 @@ export function generateSwissRound(
     (a, b) => (byRank.get(a.id) ?? 999) - (byRank.get(b.id) ?? 999)
   );
 
-  // Greedy pairing
+  // Greedy pairing — avoids rematches; falls back to rematch only if no fresh opponent exists
   const unpaired = [...sorted];
   const pairs: [Team, Team][] = [];
   while (unpaired.length >= 2) {
     const teamA = unpaired.shift()!;
-    let opponentIdx = 0;
-    // Find first opponent not already faced
+    // Find best available opponent: prefer unplayed, then fall back to already-played
+    let freshIdx = -1;
+    let rematchIdx = 0; // fallback: first remaining (lowest extra distance from teamA)
     for (let i = 0; i < unpaired.length; i++) {
       if (!played.has(`${teamA.id}|${unpaired[i].id}`)) {
-        opponentIdx = i;
+        freshIdx = i;
         break;
       }
     }
-    pairs.push([teamA, unpaired.splice(opponentIdx, 1)[0]]);
+    pairs.push([teamA, unpaired.splice(freshIdx >= 0 ? freshIdx : rematchIdx, 1)[0]]);
+  }
+
+  // ── BYE constraint: prefer teams that have NOT yet had a BYE ────────────
+  // If the leftover team already had a BYE, try to swap with a paired team that
+  // hasn't had one yet, provided the swap doesn't create a new rematch.
+  if (unpaired.length === 1 && hadBye.has(unpaired[0].id)) {
+    // Scan pairs from the end (lowest-ranked first) to find a valid swap
+    swapSearch: for (let pi = pairs.length - 1; pi >= 0; pi--) {
+      const [teamA, teamB] = pairs[pi];
+      // Try releasing teamB (lower-ranked of the pair) to take the BYE
+      if (!hadBye.has(teamB.id) && !played.has(`${unpaired[0].id}|${teamA.id}`)) {
+        pairs[pi] = [teamA, unpaired[0]];
+        unpaired[0] = teamB;
+        break swapSearch;
+      }
+      // Try releasing teamA
+      if (!hadBye.has(teamA.id) && !played.has(`${unpaired[0].id}|${teamB.id}`)) {
+        pairs[pi] = [unpaired[0], teamB];
+        unpaired[0] = teamA;
+        break swapSearch;
+      }
+    }
   }
 
   const courtFree: Date[] = courtNames.map(() => new Date(startAt));
@@ -315,7 +344,7 @@ export function generateSwissRound(
     assigned.push({ teamA: sortedPairs[bestPairIdx].teamA, teamB: sortedPairs[bestPairIdx].teamB, courtIdx });
   }
 
-  return assigned.map(({ teamA, teamB, courtIdx }) => {
+  const realMatches = assigned.map(({ teamA, teamB, courtIdx }) => {
     const slot = new Date(courtFree[courtIdx]);
     courtFree[courtIdx] = addMinutes(courtFree[courtIdx], slotMin);
 
@@ -331,11 +360,29 @@ export function generateSwissRound(
       courtName: courtNames[courtIdx],
       startAt: slot,
       dayIndex: day,
-      status: "SCHEDULED",
+      status: "SCHEDULED" as MatchStatus,
       teamAId: teamA.id,
       teamBId: teamB.id,
     };
   });
+
+  // Odd number of teams: the last unpaired team gets a BYE (free win, no match to play)
+  if (unpaired.length === 1) {
+    realMatches.push({
+      phase: "SWISS" as MatchPhase,
+      poolName: `Swiss R${roundIndex}`,
+      bracketSide: null,
+      roundIndex,
+      courtName: courtNames[0],
+      startAt,
+      dayIndex: day,
+      status: "FINISHED" as MatchStatus, // immediately done — no real game
+      teamAId: unpaired[0].id,
+      teamBId: null,
+    });
+  }
+
+  return realMatches;
 }
 
 // ─── Cross-Pool ──────────────────────────────────────────────────────────────

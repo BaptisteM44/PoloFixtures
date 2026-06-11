@@ -52,6 +52,12 @@ export function computeStandings(teams: Team[], matches: Match[], scoringSystem?
   matches
     .filter((m) => m.status === "FINISHED")
     .forEach((match) => {
+      // BYE match (teamBId is null): award a free win to teamA, no stats
+      if (match.teamAId && !match.teamBId) {
+        const rowA = rows.get(match.teamAId);
+        if (rowA) rowA.points += scoring.win;
+        return;
+      }
       if (!match.teamAId || !match.teamBId) return;
       const rowA = rows.get(match.teamAId);
       const rowB = rows.get(match.teamBId);

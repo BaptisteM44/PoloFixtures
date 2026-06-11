@@ -1361,10 +1361,6 @@ export async function generateSwissRoundAction(id: string) {
   });
   if (!tournament) return { error: "Tournoi introuvable" };
 
-  if (tournament.teams.length % 2 !== 0) {
-    return { error: `Le format Swiss requiert un nombre pair d'équipes. Vous avez ${tournament.teams.length} équipes sélectionnées.` };
-  }
-
   const swissMatches = tournament.matches.filter((m) => m.phase === "SWISS");
   const existingRounds = swissMatches.length > 0
     ? Math.max(...swissMatches.map((m) => m.roundIndex))
@@ -1402,8 +1398,9 @@ export async function generateSwissRoundAction(id: string) {
     tournament.gameDurationMin
   );
 
-  if (newMatches.length === 0) {
-    return { error: "Impossible de générer des pairings (nombre impair d'équipes ou toutes les combinaisons déjà jouées)." };
+  const realMatches = newMatches.filter((m) => m.teamBId !== null);
+  if (realMatches.length === 0) {
+    return { error: "Impossible de générer des pairings (toutes les combinaisons ont déjà été jouées)." };
   }
 
   await prisma.$transaction(
@@ -1418,7 +1415,7 @@ export async function generateSwissRoundAction(id: string) {
           courtName: match.courtName,
           startAt: match.startAt,
           dayIndex: match.dayIndex,
-          status: "SCHEDULED",
+          status: match.teamBId === null ? "FINISHED" : "SCHEDULED", // BYE = immédiatement terminé
           teamAId: match.teamAId,
           teamBId: match.teamBId,
         }
