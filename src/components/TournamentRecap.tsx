@@ -13,6 +13,7 @@ type PodiumPlayer = {
   city?: string | null;
   photoPath?: string | null;
   badges?: string[];
+  pinnedBadges?: string[];
   startYear?: number | null;
   hand?: string | null;
   gender?: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY" | null;
@@ -29,6 +30,7 @@ type Player = {
   city?: string | null;
   photoPath?: string | null;
   badges?: string[];
+  pinnedBadges?: string[];
   startYear?: number | null;
   hand?: string | null;
   gender?: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY" | null;
@@ -128,6 +130,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                           city={p.city}
                           photoPath={p.photoPath}
                           badges={p.badges ?? []}
+                          pinnedBadges={p.pinnedBadges}
                           startYear={p.startYear}
                           hand={p.hand}
                           gender={p.gender ?? undefined}
@@ -329,6 +332,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                       city={p.city}
                       photoPath={p.photoPath}
                       badges={p.badges ?? []}
+                      pinnedBadges={p.pinnedBadges}
                       startYear={p.startYear}
                       hand={p.hand}
                       gender={p.gender ?? undefined}

@@ -238,6 +238,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   // Club hôte
   const [hostClubId, setHostClubId] = useState<string>(tournament.hostClubId ?? "");
   const [managedClubs, setManagedClubs] = useState<{ id: string; name: string; city: string; logoPath: string | null }[]>([]);
+  const [clubSearch, setClubSearch] = useState<string>("");
   useEffect(() => {
     fetch("/api/clubs?mine=true").then((r) => r.json()).then((data) => { if (Array.isArray(data)) setManagedClubs(data); }).catch(() => {});
   }, []);
@@ -461,15 +462,26 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
           {/* Club hôte */}
           {managedClubs.length > 0 && (
-            <label className="field-row" style={{ gridColumn: "1 / -1" }}>
-              {t("field_host_club")}
+            <div className="field-row" style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6 }}>
+              <span>{t("field_host_club")}</span>
+              {managedClubs.length > 10 && (
+                <input
+                  type="text"
+                  placeholder="Rechercher un club..."
+                  value={clubSearch}
+                  onChange={(e) => setClubSearch(e.target.value)}
+                  style={{ fontSize: 13 }}
+                />
+              )}
               <select value={hostClubId} onChange={(e) => setHostClubId(e.target.value)}>
                 <option value="">{t("field_host_club_none")}</option>
-                {managedClubs.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name} — {c.city}</option>
-                ))}
+                {managedClubs
+                  .filter((c) => !clubSearch || `${c.name} ${c.city}`.toLowerCase().includes(clubSearch.toLowerCase()))
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>{c.name} — {c.city}</option>
+                  ))}
               </select>
-            </label>
+            </div>
           )}
           <label className="field-row">
             {t("field_date_start")}
