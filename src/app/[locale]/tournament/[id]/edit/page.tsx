@@ -340,6 +340,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               mtpSundayStart: (t_ as any).mtpSundayStart?.toISOString() ?? null,
               soloEntries: t_.soloEntries ?? [],
               hostClubId: (t_ as any).hostClubId ?? null,
+              creator: t_.creator ? { id: t_.creator.id, name: t_.creator.name } : null,
             }}
             teams={t_.teams}
             freeAgents={t_.freeAgents}
