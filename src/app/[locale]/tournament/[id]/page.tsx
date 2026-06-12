@@ -240,7 +240,7 @@ export default async function TournamentPage({
 
 
   // Podium (extrait du bracket si tournoi terminé)
-  type PodiumPlayer = { id: string; name: string; country: string; city?: string | null; photoPath?: string | null; badges?: string[]; pinnedBadges?: string[]; startYear?: number | null; hand?: string | null; gender?: string | null; slug?: string | null };
+  type PodiumPlayer = { id: string; name: string; country: string; city?: string | null; photoPath?: string | null; clubLogoPath?: string | null; teamLogoPath?: string | null; badges?: string[]; pinnedBadges?: string[]; startYear?: number | null; hand?: string | null; gender?: string | null; slug?: string | null };
   type PodiumTeam = { id: string; name: string; players?: PodiumPlayer[] } | null;
   let podium: { first: PodiumTeam; second: PodiumTeam; third: PodiumTeam } = { first: null, second: null, third: null };
 
@@ -248,13 +248,13 @@ export default async function TournamentPage({
     const bracketMatches = await prisma.match.findMany({
       where: { tournamentId: tournament.id, phase: { in: ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE"] }, status: "FINISHED" },
       include: {
-        teamA: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
-        teamB: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
+        teamA: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
+        teamB: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
       },
       orderBy: { roundIndex: "desc" },
     });
     const extractPlayers = (team: any): PodiumPlayer[] =>
-      (team?.players ?? []).map((tp: any) => ({ id: tp.player.id, name: tp.player.name, country: tp.player.country ?? "", city: tp.player.city ?? null, photoPath: tp.player.photoPath ?? null, badges: tp.player.badges ?? [], pinnedBadges: tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : undefined, startYear: tp.player.startYear ?? null, hand: tp.player.hand ?? null, gender: tp.player.gender ?? null, slug: tp.player.slug ?? null }));
+      (team?.players ?? []).map((tp: any) => ({ id: tp.player.id, name: tp.player.name, country: tp.player.country ?? "", city: tp.player.city ?? null, photoPath: tp.player.photoPath ?? null, clubLogoPath: tp.player.clubLogoPath ?? null, teamLogoPath: tp.player.teamLogoPath ?? null, badges: tp.player.badges ?? [], pinnedBadges: tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : undefined, startYear: tp.player.startYear ?? null, hand: tp.player.hand ?? null, gender: tp.player.gender ?? null, slug: tp.player.slug ?? null }));
     const toTeam = (t: any): PodiumTeam => t ? { id: t.id, name: t.name, players: extractPlayers(t) } : null;
     // GF : en cas de reset (plusieurs matchs G), prendre celui avec le roundIndex le plus élevé
     const gfMatches = bracketMatches.filter((m) => m.bracketSide === "G");
@@ -427,6 +427,8 @@ export default async function TournamentPage({
             photoPath: tp.player.photoPath ?? null,
             badges: tp.player.badges ?? [],
             pinnedBadges: tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : undefined,
+            clubLogoPath: tp.player.clubLogoPath ?? null,
+            teamLogoPath: tp.player.teamLogoPath ?? null,
             startYear: tp.player.startYear ?? null,
             hand: tp.player.hand ?? null,
             gender: tp.player.gender ?? null,

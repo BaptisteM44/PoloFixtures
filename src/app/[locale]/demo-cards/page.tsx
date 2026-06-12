@@ -32,7 +32,7 @@ const PLAYERS = {
     startYear: 2024,
     hand: "LEFT" as const,
     badges: ["team_player", "welcome", "say_cheese", "first_blood"],
-    photoPath: "/uploads/NN-4CYaU.jpeg",
+    photoPath: "/uploads/AddvmWVW.jpeg",
   },
   solid: {
     name: "Jordan Swift",
@@ -103,11 +103,11 @@ const BERLIN_THEMES = [
 ];
 
 const TIERS = [
-  { key: "rookie", tier: "UNCOMMON", color: "#60c9cf", stars: "★", desc: "1–2 badges" },
-  { key: "rising", tier: "RARE", color: "#ffa2af", stars: "★★", desc: "3–7 badges" },
-  { key: "solid", tier: "EPIC", color: "#a855f7", stars: "★★★", desc: "8–14 badges" },
-  { key: "veteran", tier: "MYTHIC", color: "#c77dff", stars: "★★★★", desc: "15–24 badges" },
-  { key: "legend", tier: "LEGENDARY", color: "#fffc8a", stars: "★★★★★", desc: "25+ badges" },
+  { key: "rookie",  tier: "UNCOMMON",  color: "#60c9cf", stars: "★",     desc: "2+ badges",           holoVariant: undefined,       holoFull: undefined,    cardFx: undefined,       metalBorder: undefined    },
+  { key: "rising",  tier: "RARE",      color: "#ffa2af", stars: "★★",    desc: "6+ dont 3 rares",      holoVariant: "glitter",       holoFull: undefined,    cardFx: undefined,       metalBorder: undefined    },
+  { key: "solid",   tier: "EPIC",      color: "#a855f7", stars: "★★★",   desc: "12+ dont 4 épiques",   holoVariant: "iris",          holoFull: undefined,    cardFx: "scanlines",     metalBorder: undefined    },
+  { key: "veteran", tier: "MYTHIC",    color: "#c77dff", stars: "★★★★",  desc: "24+ dont 5 mythiques", holoVariant: undefined,       holoFull: "aurora",     cardFx: "foil",          metalBorder: "platinum"   },
+  { key: "legend",  tier: "LEGENDARY", color: "#fffc8a", stars: "★★★★★", desc: "35+ dont 4 légendaires", holoVariant: undefined,     holoFull: "constellation", cardFx: "glow-champ", metalBorder: "diamond"   },
 ] as const;
 
 const PAGE: React.CSSProperties = {
@@ -219,10 +219,16 @@ export default function DemoCardsPage() {
           <p style={MUTED}>
             Plus tu collectes de badges, plus ta carte évolue.
           </p>
-          <div style={{ display: "flex", gap: 24, justifyContent: "center", flexWrap: "wrap" }}>
-            {TIERS.map(({ key, tier, color, stars, desc }) => (
-              <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                <PokemonCard {...PLAYERS[key as keyof typeof PLAYERS]} />
+          <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap", alignItems: "flex-end" }}>
+            {TIERS.map(({ key, tier, color, stars, desc, holoVariant, holoFull, cardFx, metalBorder }) => (
+              <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+                <PokemonCard
+                  {...PLAYERS[key as keyof typeof PLAYERS]}
+                  holoVariant={holoVariant as any}
+                  holoFull={holoFull as any}
+                  cardFx={cardFx as any}
+                  metalBorder={metalBorder as any}
+                />
                 <div style={{ textAlign: "center" }}>
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color, textTransform: "uppercase" }}>{tier}</div>
                   <div style={{ color, fontSize: 10, opacity: 0.65 }}>{stars} · {desc}</div>

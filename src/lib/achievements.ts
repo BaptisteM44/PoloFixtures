@@ -2,6 +2,10 @@ import { prisma } from "@/lib/db";
 import { createNotification } from "@/lib/notify";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
 
+// All match phases that represent a bracket (used to detect finals, champions, etc.)
+const BRACKET_PHASES = ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE"] as const;
+type BracketPhase = typeof BRACKET_PHASES[number];
+
 // ---------------------------------------------------------------------------
 // Per-tournament helpers (used for live display on tournament page)
 // These are lightweight, computed from already-loaded data.
@@ -209,7 +213,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     if (played.length === 0) continue;
 
     // Determine tournament champion: the Grand Final (bracketSide === "G")
-    const finalMatch = played.find((m) => m.phase === "BRACKET" && m.bracketSide === "G");
+    const finalMatch = played.find((m) => BRACKET_PHASES.includes(m.phase as BracketPhase) && m.bracketSide === "G");
     const isChampion = !!finalMatch && finalMatch.winnerTeamId === tp.teamId;
     if (isChampion) {
       badges.add("champion");
@@ -290,7 +294,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   }
 
   // poulidor: 3+ finals lost, never won one
-  const finals = allTeamMatches.filter((m) => m.phase === "BRACKET" && m.bracketSide === "G");
+  const finals = allTeamMatches.filter((m) => BRACKET_PHASES.includes(m.phase as BracketPhase) && m.bracketSide === "G");
   let finalsWon = 0, finalsLost = 0;
   for (const m of finals) {
     const teamId = playerTeamIdSet.has(m.teamAId ?? "") ? m.teamAId : m.teamBId;
@@ -392,7 +396,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
 
   // hype_train: 10+ messages in the 30 min before a tournament final
   const tournamentFinals = await prisma.match.findMany({
-    where: { status: "FINISHED", phase: "BRACKET", bracketSide: "G" },
+    where: { status: "FINISHED", phase: { in: [...BRACKET_PHASES] }, bracketSide: "G" },
     select: { tournamentId: true, startAt: true },
   });
   hype: for (const tf of tournamentFinals) {
@@ -461,7 +465,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
 
   // final_oracle: prédire le score exact de la finale avant qu'elle soit jouée
   const finalsForOracle = await prisma.match.findMany({
-    where: { status: "FINISHED", phase: "BRACKET", bracketSide: "G" },
+    where: { status: "FINISHED", phase: { in: [...BRACKET_PHASES] }, bracketSide: "G" },
     select: { tournamentId: true, startAt: true, scoreA: true, scoreB: true },
   });
   finalOracle: for (const final of finalsForOracle) {
@@ -654,7 +658,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     const tournamentWinners = new Map<string, string>();
     for (const ct of allCompletedTournaments) {
       const final = await prisma.match.findFirst({
-        where: { tournamentId: ct.id, phase: "BRACKET", bracketSide: "G", status: "FINISHED" },
+        where: { tournamentId: ct.id, phase: { in: [...BRACKET_PHASES] }, bracketSide: "G", status: "FINISHED" },
         select: { winnerTeamId: true },
       });
       if (final?.winnerTeamId) tournamentWinners.set(ct.id, final.winnerTeamId);
@@ -702,7 +706,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
       // Simplified: team won at least one bracket match OR reached finals
       const bracketWins = allTeamMatches.filter(
         (m) => m.tournamentId === tp.team.tournament.id &&
-          m.phase === "BRACKET" &&
+          BRACKET_PHASES.includes(m.phase as BracketPhase) &&
           m.winnerTeamId === tp.teamId
       ).length;
       if (bracketWins >= 1) { badges.add("wild_card"); break wildCard; }
@@ -814,7 +818,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
 
     // Finales = match BRACKET sans nextMatchWinId (dernier match du bracket)
     const finalesArbitrees = allRefMatches.filter(
-      (m) => m.phase === "BRACKET" && !m.nextMatchWinId
+      (m) => BRACKET_PHASES.includes(m.phase as BracketPhase) && !m.nextMatchWinId
     );
 
     // head_ref — arbitrer au moins une finale
@@ -834,7 +838,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
       // full_ref_day — 5+ matchs arbitrés dans un même tournoi
       if (matches.length >= 5) badges.add("full_ref_day");
       // grand_referee — 12+ matchs arbitrés + au moins une finale dans un même tournoi
-      const hasFinale = matches.some((m) => m.phase === "BRACKET" && !m.nextMatchWinId);
+      const hasFinale = matches.some((m) => BRACKET_PHASES.includes(m.phase as BracketPhase) && !m.nextMatchWinId);
       if (matches.length >= 12 && hasFinale) { badges.add("grand_referee"); }
       void tid; // évite le warning "unused variable"
     }

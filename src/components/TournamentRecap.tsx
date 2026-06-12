@@ -12,6 +12,8 @@ type PodiumPlayer = {
   country: string;
   city?: string | null;
   photoPath?: string | null;
+  clubLogoPath?: string | null;
+  teamLogoPath?: string | null;
   badges?: string[];
   pinnedBadges?: string[];
   startYear?: number | null;
@@ -29,6 +31,8 @@ type Player = {
   country: string;
   city?: string | null;
   photoPath?: string | null;
+  clubLogoPath?: string | null;
+  teamLogoPath?: string | null;
   badges?: string[];
   pinnedBadges?: string[];
   startYear?: number | null;
@@ -129,6 +133,8 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                           country={p.country}
                           city={p.city}
                           photoPath={p.photoPath}
+                          clubLogoPath={p.clubLogoPath}
+                          teamLogoPath={p.teamLogoPath}
                           badges={p.badges ?? []}
                           pinnedBadges={p.pinnedBadges}
                           startYear={p.startYear}
@@ -331,6 +337,8 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                       country={p.country}
                       city={p.city}
                       photoPath={p.photoPath}
+                      clubLogoPath={p.clubLogoPath}
+                      teamLogoPath={p.teamLogoPath}
                       badges={p.badges ?? []}
                       pinnedBadges={p.pinnedBadges}
                       startYear={p.startYear}
