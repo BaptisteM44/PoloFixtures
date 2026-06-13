@@ -1184,11 +1184,9 @@ export default async function TournamentPage({
           if (gm.length === 0) return null;
           const gTeamIds = new Set([...gm.map((m: any) => m.teamAId), ...gm.map((m: any) => m.teamBId)].filter(Boolean));
           const gTeams = selectedTeams.filter((t: any) => gTeamIds.has(t.id));
-          // Pour Samedi : cumule avec Vendredi. Pour Dimanche : cumule tout.
+          // Pour Samedi : cumule avec Vendredi. Dimanche : points du dimanche seulement (seeding brackets).
           const priorMatches = isSat
             ? friMatches.filter((m: any) => gTeamIds.has(m.teamAId) || gTeamIds.has(m.teamBId))
-            : !isFri
-            ? [...friMatches, ...satMatches].filter((m: any) => gTeamIds.has(m.teamAId) || gTeamIds.has(m.teamBId))
             : [];
           const standings = computeStandings(gTeams, [...priorMatches, ...gm], tournament.scoringSystem);
           const maxRound = Math.max(...gm.map((m: any) => m.roundIndex));
@@ -1310,6 +1308,7 @@ export default async function TournamentPage({
               {isTop32 ? "Top 32 — Élimination simple" : "Bottom 16 — Élimination simple"}
             </p>
             <BracketView
+              key={phase}
               matches={bracketMatches}
               tournamentId={tournament.id}
               teams={bracketTeams}
