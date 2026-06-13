@@ -187,7 +187,7 @@ export function BracketView({
     return () => es.close();
   }, [tournamentId, isLive]);
 
-  const bracketMatches = matches.filter((m) => m.phase === "BRACKET" || m.phase === "GRAZ_SE" || m.phase === "MTP_DE" || m.phase === "KIOSQUE_SE");
+  const bracketMatches = matches.filter((m) => m.phase === "BRACKET" || m.phase === "GRAZ_SE" || m.phase === "MTP_DE" || m.phase === "KIOSQUE_SE" || m.phase === "TOP32" || m.phase === "BOTTOM16");
   // SWISS_SPLIT_SE: detect by presence of B/BG/BL bracket sides (only for BRACKET phase, not MTP_DE which also uses BG for reset)
   // A DE with gfReset also has a "BG" match but always has "W" matches too — SPLIT_SE never has "W" matches
   const isSplitSE = bracketMatches.some((m) => m.phase === "BRACKET" && (m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL"))

@@ -1158,12 +1158,16 @@ export default async function TournamentPage({
       {(tab === "berlin_fri" || tab === "berlin_sat" || tab === "berlin_sun") && (() => {
         const isFri = tab === "berlin_fri";
         const isSat = tab === "berlin_sat";
+        const allBerlinMatches = (tournament.matches ?? []) as any[];
+        const friMatches = allBerlinMatches.filter((m: any) => m.phase === "FRIDAY_A" || m.phase === "FRIDAY_B");
+        const satMatches = allBerlinMatches.filter((m: any) => m.phase === "SATURDAY_A" || m.phase === "SATURDAY_B");
+        const sunMatches = allBerlinMatches.filter((m: any) => m.phase === "SUNDAY_SWISS");
         const phases = isFri
           ? ["FRIDAY_A", "FRIDAY_B"]
           : isSat
           ? ["SATURDAY_A", "SATURDAY_B"]
           : ["SUNDAY_SWISS"];
-        const groupMatches = (tournament.matches ?? []).filter((m: any) => phases.includes(m.phase));
+        const groupMatches = allBerlinMatches.filter((m: any) => phases.includes(m.phase));
         const selectedTeams = tournament.teams.filter((t: any) => t.selected);
 
         if (groupMatches.length === 0) {
@@ -1174,12 +1178,19 @@ export default async function TournamentPage({
           );
         }
 
+        // Points cumulatifs : on inclut tous les matchs des jours précédents
         const renderGroup = (phase: string, label: string) => {
           const gm = groupMatches.filter((m: any) => m.phase === phase);
           if (gm.length === 0) return null;
           const gTeamIds = new Set([...gm.map((m: any) => m.teamAId), ...gm.map((m: any) => m.teamBId)].filter(Boolean));
           const gTeams = selectedTeams.filter((t: any) => gTeamIds.has(t.id));
-          const standings = computeStandings(gTeams, gm, tournament.scoringSystem);
+          // Pour Samedi : cumule avec Vendredi. Pour Dimanche : cumule tout.
+          const priorMatches = isSat
+            ? friMatches.filter((m: any) => gTeamIds.has(m.teamAId) || gTeamIds.has(m.teamBId))
+            : !isFri
+            ? [...friMatches, ...satMatches].filter((m: any) => gTeamIds.has(m.teamAId) || gTeamIds.has(m.teamBId))
+            : [];
+          const standings = computeStandings(gTeams, [...priorMatches, ...gm], tournament.scoringSystem);
           const maxRound = Math.max(...gm.map((m: any) => m.roundIndex));
           return (
             <div key={phase}>
@@ -1227,11 +1238,50 @@ export default async function TournamentPage({
           );
         };
 
+        // Tableau global Dimanche : tous les matchs Ven+Sam+Sun
+        const renderGlobalStandings = () => {
+          const allMatches = [...friMatches, ...satMatches, ...sunMatches];
+          if (allMatches.length === 0) return null;
+          const standings = computeStandings(selectedTeams, allMatches, tournament.scoringSystem);
+          return (
+            <div style={{ marginTop: 32 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
+                Classement général — Total Ven + Sam + Dim
+              </p>
+              <div className="panel" style={{ overflowX: "auto" }}>
+                <table className="swiss-standings" style={{ width: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th>#</th><th>Équipe</th><th>Pts</th><th>J</th><th>V</th><th>N</th><th>D</th><th>Diff</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((row: any, i: number) => (
+                      <tr key={row.teamId}>
+                        <td className="swiss-standing-rank">{i + 1}</td>
+                        <td style={{ fontWeight: 600 }}>{row.name}</td>
+                        <td style={{ fontFamily: "var(--font-display)", fontWeight: 900 }}>{row.points}</td>
+                        <td>{row.played}</td>
+                        <td style={{ color: "var(--success)" }}>{row.wins}</td>
+                        <td style={{ color: "var(--text-muted)" }}>{row.draws}</td>
+                        <td style={{ color: "var(--danger)" }}>{row.losses}</td>
+                        <td style={{ color: row.goalDiff >= 0 ? "var(--success)" : "var(--danger)" }}>
+                          {row.goalDiff >= 0 ? "+" : ""}{row.goalDiff}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        };
+
         return (
           <div style={{ padding: "24px 0" }}>
             {isFri && <>{renderGroup("FRIDAY_A", "Groupe A — Vendredi")}{renderGroup("FRIDAY_B", "Groupe B — Vendredi")}</>}
             {isSat && <>{renderGroup("SATURDAY_A", "Groupe A — Samedi")}{renderGroup("SATURDAY_B", "Groupe B — Samedi")}</>}
-            {!isFri && !isSat && renderGroup("SUNDAY_SWISS", "Swiss Dimanche — Classement global")}
+            {!isFri && !isSat && <>{renderGroup("SUNDAY_SWISS", "Swiss Dimanche")}{renderGlobalStandings()}</>}
           </div>
         );
       })()}

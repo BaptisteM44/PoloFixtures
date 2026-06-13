@@ -1085,7 +1085,8 @@ export function OrgaDashboard({
   const hasBracketMatches = bracketMatches.length > 0;
   const isMtpOpen = (tournament as any).saturdayFormat === "MTP_OPEN";
   const isKiosque = (tournament as any).saturdayFormat === "KIOSQUE";
-  const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0 && !isMtpOpen && !isKiosque)) && teams.some((t) => t.selected === true);
+  const isBerlinMixed = tournament.saturdayFormat === "BERLIN_MIXED";
+  const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0 && !isMtpOpen && !isKiosque && !isBerlinMixed)) && teams.some((t) => t.selected === true);
   const isLive = tournament.status === "LIVE";
 
   // Pool rounds control
