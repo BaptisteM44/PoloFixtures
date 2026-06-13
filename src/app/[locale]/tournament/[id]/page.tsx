@@ -71,7 +71,7 @@ export default async function TournamentPage({
       coOrganizers: { include: { player: { select: { id: true, name: true } } } },
       teams: needsPlayers
         ? { include: { players: { include: { player: { include: { account: { select: { id: true } } } } } } } }
-        : { select: { id: true, name: true, seed: true, selected: true, guaranteed: true, waitlistPosition: true, city: true, country: true, registrationNote: true, orgaNote: true, tournamentId: true, color: true, playerALevel: true, playerBLevel: true, playerCLevel: true } },
+        : { select: { id: true, name: true, seed: true, selected: true, guaranteed: true, waitlistPosition: true, city: true, country: true, registrationNote: true, orgaNote: true, tournamentId: true, color: true, playerALevel: true, playerBLevel: true, playerCLevel: true, globalRank: true, saturdayGroup: true, fridayGroup: true } },
       pools: activeTab === "pools" || activeTab === "kiosque_j1" || activeTab === "kiosque_top4" || activeTab === "kiosque_bot12" || activeTab === "schedule"
         ? { include: { teams: { include: { team: true } } } }
         : false,
