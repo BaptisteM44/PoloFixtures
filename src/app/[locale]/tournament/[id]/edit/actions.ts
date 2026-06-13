@@ -1959,6 +1959,10 @@ export async function resetMatchesAction(
   await prisma.$transaction(async (tx) => {
     await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id } } });
     await tx.match.deleteMany({ where: { tournamentId: id } });
+    await tx.team.updateMany({
+      where: { tournamentId: id },
+      data: { fridayGroup: null, saturdayGroup: null, globalRank: null },
+    });
     if (tournament.status === "COMPLETED") {
       await tx.tournament.update({ where: { id }, data: { status: "LIVE" } });
     }
@@ -2001,6 +2005,10 @@ export async function resetTournamentAction(
     await tx.match.deleteMany({ where: { tournamentId: id } });
     await tx.poolTeam.deleteMany({ where: { pool: { tournamentId: id } } });
     await tx.pool.deleteMany({ where: { tournamentId: id } });
+    await tx.team.updateMany({
+      where: { tournamentId: id },
+      data: { fridayGroup: null, saturdayGroup: null, globalRank: null },
+    });
     await tx.tournament.update({
       where: { id },
       data: { status: "UPCOMING", locked: false },

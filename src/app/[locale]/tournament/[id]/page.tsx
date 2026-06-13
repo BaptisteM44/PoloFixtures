@@ -1184,11 +1184,8 @@ export default async function TournamentPage({
           if (gm.length === 0) return null;
           const gTeamIds = new Set([...gm.map((m: any) => m.teamAId), ...gm.map((m: any) => m.teamBId)].filter(Boolean));
           const gTeams = selectedTeams.filter((t: any) => gTeamIds.has(t.id));
-          // Pour Samedi : cumule avec Vendredi. Dimanche : points du dimanche seulement (seeding brackets).
-          const priorMatches = isSat
-            ? friMatches.filter((m: any) => gTeamIds.has(m.teamAId) || gTeamIds.has(m.teamBId))
-            : [];
-          const standings = computeStandings(gTeams, [...priorMatches, ...gm], tournament.scoringSystem);
+          // Chaque jour affiche uniquement ses propres points. Le tableau global en bas du dimanche cumule tout.
+          const standings = computeStandings(gTeams, gm, tournament.scoringSystem);
           const maxRound = Math.max(...gm.map((m: any) => m.roundIndex));
           return (
             <div key={phase}>
