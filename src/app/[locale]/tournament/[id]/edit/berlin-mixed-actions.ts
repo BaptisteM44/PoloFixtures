@@ -216,7 +216,12 @@ export async function computeSaturdayGroupsAction(tournamentId: string) {
   ]);
 
   revalidatePath(`/tournament/${tournamentId}`);
-  return { ok: true, satA: satA.map((t) => t.id), satB: satB.map((t) => t.id) };
+  return {
+    ok: true,
+    satA: satA.map((t) => t.id),
+    satB: satB.map((t) => t.id),
+    globalRanking: globalRanking.map(r => `${r.globalRank}. ${r.team.name}`),
+  };
 }
 
 // ─── Saturday Swiss round ─────────────────────────────────────────────────────
