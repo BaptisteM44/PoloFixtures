@@ -20,6 +20,7 @@ const schema = z.object({
   teamBId: z.string().nullable().optional(),
   refereePlayerId: z.string().nullable().optional(),
   coRefereePlayerId: z.string().nullable().optional(),
+  courtName: z.string().optional(),
 });
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {

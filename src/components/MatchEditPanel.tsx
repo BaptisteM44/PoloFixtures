@@ -46,11 +46,16 @@ type Props = {
   match: MatchForEdit | null;
   onClose: () => void;
   onSaved: (updated: SavePayload) => void;
+  onReset?: (matchId: string) => void;
+  onSwapped?: (matchAId: string, matchBId: string, courtA: string, startAtA: string, courtB: string, startAtB: string) => void;
   isOrganizer?: boolean;
   teams?: TeamOption[];
+  /** Tous les matchs du tournoi pour le swap */
+  allMatches?: { id: string; courtName: string; roundIndex: number; phase: string; teamAName: string; teamBName: string; startAt: string }[];
+  courtNames?: string[];
 };
 
-export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: Props) {
+export function MatchEditPanel({ match, onClose, onSaved, onReset, onSwapped, isOrganizer, teams, allMatches, courtNames }: Props) {
   const { data: session } = useSession();
   const t = useTranslations("match");
   const [scoreA, setScoreA] = useState(0);
@@ -62,7 +67,20 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Sync scores when selected match changes
+  // Reset
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+
+  // Swap
+  const [swapMatchId, setSwapMatchId] = useState("");
+  const [swapping, setSwapping] = useState(false);
+  const [swapError, setSwapError] = useState<string | null>(null);
+  const [swapSuccess, setSwapSuccess] = useState<string | null>(null);
+
+  // Court change
+  const [courtName, setCourtName] = useState("");
+  const [savingCourt, setSavingCourt] = useState(false);
+
   useEffect(() => {
     if (match) {
       setScoreA(match.scoreA);
@@ -70,8 +88,13 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
       setStatus(match.status);
       setTeamAId(match.teamAId);
       setTeamBId(match.teamBId);
+      setCourtName(match.courtName);
       setError(null);
       setSuccess(null);
+      setResetError(null);
+      setSwapError(null);
+      setSwapSuccess(null);
+      setSwapMatchId("");
     }
   }, [match?.id]);
 
@@ -86,12 +109,14 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
     session?.user?.role === "ADMIN" ||
     session?.user?.role === "ORGA";
 
+  // Un match a une suite si son vainqueur a été propagé dans le match suivant
+  const hasPropagatedSuite = !!(match.nextMatchWinId && match.status === "FINISHED");
+
   const handleSave = async () => {
     setSaving(true);
     setError(null);
     setSuccess(null);
     try {
-      // Auto-set status to FINISHED when scores have been entered
       const finalStatus = (scoreA > 0 || scoreB > 0) && status !== "FINISHED" ? "FINISHED" : status;
       const teamChanged = teamAId !== match.teamAId || teamBId !== match.teamBId;
       const body: Record<string, unknown> = { scoreA, scoreB, status: finalStatus };
@@ -119,13 +144,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
         id: match.id, scoreA: updated.scoreA, scoreB: updated.scoreB, status: updated.status,
         ...(teamChanged ? { teamAId: updated.teamAId, teamBId: updated.teamBId } : {}),
         ...(winnerTeamId && match.phase === "BRACKET" && match.nextMatchWinId && (match.nextSlotWin === "A" || match.nextSlotWin === "B")
-          ? {
-              advance: {
-                nextMatchId: match.nextMatchWinId,
-                slot: match.nextSlotWin,
-                winnerTeamId,
-              }
-            }
+          ? { advance: { nextMatchId: match.nextMatchWinId, slot: match.nextSlotWin, winnerTeamId } }
           : {}),
       };
 
@@ -138,27 +157,91 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
     }
   };
 
+  const handleReset = async () => {
+    if (!window.confirm("Réinitialiser ce match ? Les scores seront effacés.")) return;
+    setResetting(true);
+    setResetError(null);
+    try {
+      const res = await fetch(`/api/matches/${match.id}/reset`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setResetError(data?.error ?? "Erreur lors de la réinitialisation.");
+        return;
+      }
+      onReset?.(match.id);
+      setScoreA(0);
+      setScoreB(0);
+      setStatus("SCHEDULED");
+    } catch {
+      setResetError("Erreur réseau.");
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleCourtChange = async (newCourt: string) => {
+    setCourtName(newCourt);
+    setSavingCourt(true);
+    try {
+      await fetch(`/api/matches/${match.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courtName: newCourt }),
+      });
+    } finally {
+      setSavingCourt(false);
+    }
+  };
+
+  const handleSwap = async () => {
+    if (!swapMatchId) return;
+    setSwapping(true);
+    setSwapError(null);
+    setSwapSuccess(null);
+    try {
+      const res = await fetch("/api/matches/swap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ matchAId: match.id, matchBId: swapMatchId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSwapError(data?.error ?? "Erreur lors du swap.");
+        return;
+      }
+      onSwapped?.(
+        data.matchA.id, data.matchB.id,
+        data.matchA.courtName, data.matchA.startAt,
+        data.matchB.courtName, data.matchB.startAt
+      );
+      setSwapSuccess("Swap effectué !");
+      setSwapMatchId("");
+    } catch {
+      setSwapError("Erreur réseau.");
+    } finally {
+      setSwapping(false);
+    }
+  };
+
+  const swappableMatches = (allMatches ?? []).filter(
+    (m) => m.id !== match.id && m.phase === match.phase
+  );
+
   return (
     <div className="match-edit-panel">
       <div className="match-edit-panel__inner">
-        {/* Header row */}
+        {/* Header */}
         <div className="match-edit-panel__header">
           <span className="pill" style={{ fontSize: 11 }}>
             {PHASE_LABEL[match.phase] ?? match.phase} · R{match.roundIndex} · {match.courtName}
           </span>
-          <button
-            className="ghost"
-            onClick={onClose}
-            type="button"
-            style={{ padding: "4px 12px", marginLeft: "auto", fontSize: 13 }}
-          >
+          <button className="ghost" onClick={onClose} type="button" style={{ padding: "4px 12px", marginLeft: "auto", fontSize: 13 }}>
             {t("btn_close")}
           </button>
         </div>
 
-        {/* Score editor */}
         <div className="match-edit-panel__body">
-          {/* Team assignment (for bracket matches, always available to organizers) */}
+          {/* Team assignment */}
           {canEdit && teams && teams.length > 0 && (
             <div className="match-team-selectors">
               <div className="match-team-select-row">
@@ -182,8 +265,8 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
             </div>
           )}
 
+          {/* Score editor */}
           <div className="match-score-editor">
-            {/* Team A */}
             <div className="match-score-team">
               <span className="match-score-team-name">{teams?.find((t) => t.id === teamAId)?.name ?? match.teamAName}</span>
               {canEdit ? (
@@ -196,10 +279,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
                 <span className="score-value">{scoreA}</span>
               )}
             </div>
-
             <span className="match-score-vs">VS</span>
-
-            {/* Team B */}
             <div className="match-score-team">
               <span className="match-score-team-name">{teams?.find((t) => t.id === teamBId)?.name ?? match.teamBName}</span>
               {canEdit ? (
@@ -214,7 +294,7 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
             </div>
           </div>
 
-          {/* Actions */}
+          {/* Actions scores */}
           <div className="match-edit-panel__actions">
             {canEdit ? (
               <>
@@ -236,6 +316,80 @@ export function MatchEditPanel({ match, onClose, onSaved, isOrganizer, teams }: 
               <span className="meta" style={{ fontSize: 12 }}>{t("readonly_hint")}</span>
             )}
           </div>
+
+          {/* Actions orga : reset + terrain + swap */}
+          {isOrganizer && (
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 12 }}>
+
+              {/* Reset */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={handleReset}
+                  disabled={resetting || hasPropagatedSuite}
+                  title={hasPropagatedSuite ? "Ce match a une suite — modifiez les scores plutôt." : "Remet le match à zéro (SCHEDULED, scores effacés)"}
+                  style={{ fontSize: 12, padding: "5px 12px", color: hasPropagatedSuite ? "var(--text-muted)" : "var(--danger)", opacity: hasPropagatedSuite ? 0.5 : 1 }}
+                >
+                  {resetting ? "Réinitialisation..." : "Réinitialiser le match"}
+                </button>
+                {hasPropagatedSuite && (
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Suite déjà propagée — modifier les scores</span>
+                )}
+                {resetError && <span style={{ fontSize: 12, color: "var(--danger)" }}>{resetError}</span>}
+              </div>
+
+              {/* Changer de terrain */}
+              {courtNames && courtNames.length > 1 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>Changer de terrain :</label>
+                  <select
+                    value={courtName}
+                    onChange={(e) => handleCourtChange(e.target.value)}
+                    disabled={savingCourt}
+                    style={{ fontSize: 12 }}
+                  >
+                    {courtNames.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  {savingCourt && <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Sauvegarde...</span>}
+                </div>
+              )}
+
+              {/* Swap avec un autre match */}
+              {swappableMatches.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600 }}>Swapper terrain + heure avec :</label>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <select
+                      value={swapMatchId}
+                      onChange={(e) => setSwapMatchId(e.target.value)}
+                      style={{ fontSize: 12, flex: 1, minWidth: 160 }}
+                    >
+                      <option value="">— Choisir un match —</option>
+                      {swappableMatches.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          R{m.roundIndex} · {m.courtName} · {m.teamAName} vs {m.teamBName}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={handleSwap}
+                      disabled={!swapMatchId || swapping}
+                      style={{ fontSize: 12, padding: "5px 12px" }}
+                    >
+                      {swapping ? "Swap..." : "Swap"}
+                    </button>
+                  </div>
+                  {swapError && <span style={{ fontSize: 12, color: "var(--danger)" }}>{swapError}</span>}
+                  {swapSuccess && <span style={{ fontSize: 12, color: "var(--teal)", fontWeight: 700 }}>{swapSuccess}</span>}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

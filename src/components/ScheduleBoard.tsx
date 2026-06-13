@@ -560,6 +560,31 @@ export function ScheduleBoard({
         onSaved={handleSaved}
         isOrganizer={isOrganizer}
         teams={teams.map((tm) => ({ id: tm.id, name: tm.name }))}
+        courtNames={Array.from(new Set(matches.map((m) => m.courtName))).sort()}
+        allMatches={matches.map((m) => ({
+          id: m.id,
+          courtName: m.courtName,
+          roundIndex: m.roundIndex,
+          phase: m.phase,
+          teamAName: teamName(m.teamAId),
+          teamBName: teamName(m.teamBId),
+          startAt: m.startAt instanceof Date ? m.startAt.toISOString() : String(m.startAt),
+        }))}
+        onReset={(matchId) => {
+          setMatches((prev) =>
+            prev.map((m) => m.id === matchId ? { ...m, status: "SCHEDULED" as Match["status"], scoreA: 0, scoreB: 0 } : m)
+          );
+          closePanel();
+        }}
+        onSwapped={(matchAId, matchBId, courtA, startAtA, courtB, startAtB) => {
+          setMatches((prev) =>
+            prev.map((m) => {
+              if (m.id === matchAId) return { ...m, courtName: courtA, startAt: new Date(startAtA) };
+              if (m.id === matchBId) return { ...m, courtName: courtB, startAt: new Date(startAtB) };
+              return m;
+            })
+          );
+        }}
       />
     </div>
   );
