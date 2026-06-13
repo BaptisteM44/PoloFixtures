@@ -254,19 +254,22 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             const sundayRounds = (tournament as any)?.sundayRounds ?? 2;
 
             let result: any = null;
-            if (phase === "FRIDAY_A") {
-              if (match.roundIndex < fridayRounds) result = await generateFridaySwissRoundAction(tid, "A");
-              // When both Fri groups fully done (all matches finished), auto-compute Saturday groups
-              const friAUnfinished = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_A", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
-              const friBUnfinished = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_B", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
-              const friBExists = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_B", roundIndex: fridayRounds } });
-              if (friAUnfinished === 0 && friBUnfinished === 0 && friBExists > 0) await computeSaturdayGroupsAction(tid);
-            } else if (phase === "FRIDAY_B") {
-              if (match.roundIndex < fridayRounds) result = await generateFridaySwissRoundAction(tid, "B");
-              const friAUnfinished = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_A", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
-              const friBUnfinished = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_B", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
-              const friAExists = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_A", roundIndex: fridayRounds } });
-              if (friAUnfinished === 0 && friBUnfinished === 0 && friAExists > 0) await computeSaturdayGroupsAction(tid);
+            if (phase === "FRIDAY_A" || phase === "FRIDAY_B") {
+              if (match.roundIndex < fridayRounds) {
+                result = await generateFridaySwissRoundAction(tid, phase === "FRIDAY_A" ? "A" : "B");
+              } else {
+                // Last round finished — check if both groups are fully done and sat groups not yet assigned
+                const alreadyAssigned = await prisma.team.count({ where: { tournamentId: tid, saturdayGroup: { not: null } } });
+                if (alreadyAssigned === 0) {
+                  const friAUnfinished = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_A", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
+                  const friBUnfinished = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_B", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
+                  const friAExists = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_A", roundIndex: fridayRounds } });
+                  const friBExists = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_B", roundIndex: fridayRounds } });
+                  if (friAUnfinished === 0 && friBUnfinished === 0 && friAExists > 0 && friBExists > 0) {
+                    await computeSaturdayGroupsAction(tid);
+                  }
+                }
+              }
             } else if (phase === "SATURDAY_A" && match.roundIndex < saturdayRounds) {
               result = await generateSaturdaySwissRoundAction(tid, "A");
             } else if (phase === "SATURDAY_B" && match.roundIndex < saturdayRounds) {
