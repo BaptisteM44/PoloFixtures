@@ -168,7 +168,7 @@ export async function computeSaturdayGroupsAction(tournamentId: string) {
     where: { id: tournamentId },
     include: {
       teams: { where: { selected: true } },
-      matches: { where: { phase: { in: ["FRIDAY_A", "FRIDAY_B"] } } },
+      matches: { where: { phase: { in: ["FRIDAY_A", "FRIDAY_B"] }, status: "FINISHED" } },
     },
   });
   if (!tournament) return { error: "Tournoi introuvable" };
@@ -178,6 +178,15 @@ export async function computeSaturdayGroupsAction(tournamentId: string) {
   const matchesA = tournament.matches.filter((m) => m.phase === "FRIDAY_A");
   const matchesB = tournament.matches.filter((m) => m.phase === "FRIDAY_B");
 
+  console.log("[computeSaturdayGroups] teamsA:", teamsA.length, "teamsB:", teamsB.length, "matchesA:", matchesA.length, "matchesB:", matchesB.length);
+
+  if (teamsA.length === 0 || teamsB.length === 0) {
+    return { error: `Groupes vendredi incomplets: A=${teamsA.length}, B=${teamsB.length}` };
+  }
+  if (matchesA.length === 0 || matchesB.length === 0) {
+    return { error: `Matchs vendredi incomplets: A=${matchesA.length}, B=${matchesB.length}` };
+  }
+
   const globalRanking = computeGlobalRanking(
     teamsA,
     teamsB,
@@ -186,7 +195,10 @@ export async function computeSaturdayGroupsAction(tournamentId: string) {
     tournament.scoringSystem
   );
 
+  console.log("[computeSaturdayGroups] globalRanking:", globalRanking.slice(0, 10).map(r => `${r.globalRank}. ${r.team.name}`));
+
   const { satA, satB } = assignSaturdayGroups(globalRanking);
+  console.log("[computeSaturdayGroups] satA:", satA.slice(0, 5).map(t => t.name), "satB:", satB.slice(0, 5).map(t => t.name));
 
   await prisma.$transaction([
     ...globalRanking.map(({ team, globalRank }) =>
