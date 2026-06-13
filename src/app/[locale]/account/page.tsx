@@ -313,6 +313,7 @@ export default function AccountPage() {
             city={player.city}
             photoPath={player.photoPath}
             clubLogoPath={player.clubLogoPath}
+            clubName={clubMemberships.find(m => m.status === "MEMBER")?.club?.name ?? null}
             teamLogoPath={player.teamLogoPath}
             badges={player.badges}
             pinnedBadges={player.pinnedBadges}

@@ -38,9 +38,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export default async function PlayerPage({ params }: { params: { slug: string } }) {
   const t = await getTranslations("player");
+  const playerInclude = { account: { select: { email: true } }, clubMemberships: { include: { club: { select: { name: true } } }, take: 1 } };
   const player =
-    (await prisma.player.findUnique({ where: { slug: params.slug }, include: { account: { select: { email: true } } } })) ??
-    (await prisma.player.findFirst({ where: { id: params.slug }, include: { account: { select: { email: true } } } }));
+    (await prisma.player.findUnique({ where: { slug: params.slug }, include: playerInclude })) ??
+    (await prisma.player.findFirst({ where: { id: params.slug }, include: playerInclude }));
   if (!player) return <div>{t("not_found")}</div>;
 
   const session = await auth();
@@ -58,6 +59,7 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
           city={player.city}
           photoPath={player.photoPath}
           clubLogoPath={player.clubLogoPath}
+          clubName={(player as any).clubMemberships?.[0]?.club?.name ?? null}
           teamLogoPath={player.teamLogoPath}
           badges={player.badges}
           pinnedBadges={player.pinnedBadges}

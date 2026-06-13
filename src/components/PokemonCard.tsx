@@ -12,6 +12,7 @@ type Props = {
   city?: string | null;
   photoPath?: string | null;
   clubLogoPath?: string | null;
+  clubName?: string | null;
   teamLogoPath?: string | null;
   badges?: string[];
   pinnedBadges?: string[];
@@ -47,7 +48,7 @@ function getCountryCode(name: string): string | null {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCard({ name, country, city, photoPath, clubLogoPath, teamLogoPath, badges = [], pinnedBadges, startYear, hand: _hand, gender: _gender, showGender: _showGender, theme = "default", variant = "classic", metalBorder, holoVariant, holoFull, cardFx }, externalRef) {
+export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCard({ name, country, city, photoPath, clubLogoPath, clubName, teamLogoPath, badges = [], pinnedBadges, startYear, hand: _hand, gender: _gender, showGender: _showGender, theme = "default", variant = "classic", metalBorder, holoVariant, holoFull, cardFx }, externalRef) {
   const cardRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(externalRef, () => cardRef.current!, []);
   const [cardStyle, setCardStyle] = useState<React.CSSProperties>({});
@@ -211,7 +212,8 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
               </div>
             </div>
             <div className="pkmn-card__strip">
-              <span className="pkmn-card__location" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{city ? `${city}, ${country}` : country}</span>
+              <span className="pkmn-card__location">{city ? `${city}, ${country}` : country}</span>
+              {clubName && <span className="pkmn-card__club-info-name">{clubName}</span>}
             </div>
             {displayedBadges.length > 0 && (
               <div className="pkmn-card__attacks">
@@ -288,7 +290,8 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
         </div>
 
         <div className="pkmn-card__strip">
-          <span className="pkmn-card__location" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{city ? `${city}, ${country}` : country}</span>
+          <span className="pkmn-card__location">{city ? `${city}, ${country}` : country}</span>
+          {clubName && <span className="pkmn-card__club-info-name">{clubName}</span>}
         </div>
 
         {displayedBadges.length > 0 && (
