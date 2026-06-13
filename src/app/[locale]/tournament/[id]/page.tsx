@@ -1241,16 +1241,30 @@ export default async function TournamentPage({
           );
         };
 
-        // Tableau global Dimanche : tous les matchs Ven+Sam+Sun
+        // Tableau global Dimanche : tous les matchs Ven+Sam+Sun (cumulatif, sert de base aux brackets)
         const renderGlobalStandings = () => {
           const allMatches = [...friMatches, ...satMatches, ...sunMatches];
           if (allMatches.length === 0) return null;
           const standings = computeStandings(selectedTeams, allMatches, tournament.scoringSystem);
+          const maxSunRound = sunMatches.length > 0 ? Math.max(...sunMatches.map((m: any) => m.roundIndex)) : 0;
           return (
-            <div style={{ marginTop: 32 }}>
+            <div style={{ marginTop: 0 }}>
               <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 10 }}>
-                Classement général — Total Ven + Sam + Dim
+                Swiss Dimanche — Classement cumulé Ven + Sam + Dim
               </p>
+              {maxSunRound > 0 && (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                  {Array.from({ length: maxSunRound }, (_, i) => i + 1).map((r) => {
+                    const rMatches = sunMatches.filter((m: any) => m.roundIndex === r);
+                    const done = rMatches.filter((m: any) => m.status === "FINISHED").length;
+                    return (
+                      <span key={r} style={{ fontFamily: "var(--font-display)", fontSize: 12, padding: "4px 12px", borderRadius: 20, background: done === rMatches.length ? "var(--teal)" : "var(--gray)", border: "1.5px solid var(--border)", fontWeight: 700 }}>
+                        Tour {r} — {done}/{rMatches.length}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
               <div className="panel" style={{ overflowX: "auto" }}>
                 <table className="swiss-standings" style={{ width: "100%" }}>
                   <thead>
@@ -1284,7 +1298,7 @@ export default async function TournamentPage({
           <div style={{ padding: "24px 0" }}>
             {isFri && <>{renderGroup("FRIDAY_A", "Groupe A — Vendredi")}{renderGroup("FRIDAY_B", "Groupe B — Vendredi")}</>}
             {isSat && <>{renderGroup("SATURDAY_A", "Groupe A — Samedi")}{renderGroup("SATURDAY_B", "Groupe B — Samedi")}</>}
-            {!isFri && !isSat && <>{renderGroup("SUNDAY_SWISS", "Swiss Dimanche")}{renderGlobalStandings()}</>}
+            {!isFri && !isSat && renderGlobalStandings()}
           </div>
         );
       })()}
