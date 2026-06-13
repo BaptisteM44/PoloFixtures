@@ -361,10 +361,13 @@ export async function generateSundaySwissRoundAction(tournamentId: string) {
   );
   const allPrior: BerlinMatchInput[] = [...fridaySatMatches, ...sundayMatches] as unknown as BerlinMatchInput[];
 
-  // Sunday standings: start fresh (only Sunday matches count for the ranking)
+  // Sunday standings: cumul Ven + Sam + Dim pour que le seeding Swiss soit correct
+  const allMatchesForStandings = tournament.matches.filter((m) =>
+    ["FRIDAY_A", "FRIDAY_B", "SATURDAY_A", "SATURDAY_B", "SUNDAY_SWISS"].includes(m.phase)
+  );
   const standings = computeStandings(
     tournament.teams,
-    sundayMatches as any,
+    allMatchesForStandings as any,
     tournament.scoringSystem
   );
 
