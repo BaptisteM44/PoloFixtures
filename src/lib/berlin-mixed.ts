@@ -80,17 +80,27 @@ export function computeGlobalRanking(
  * Rank 1→A, 2→B, 3→A, 4→B, 5→A, 6→B…
  * Each group gets 24 teams, evenly spread across the ranking.
  */
+/**
+ * Assign Saturday groups from Friday standings (per-group, not merged).
+ * Odd ranks (1st, 3rd, 5th…) from each Friday group → Saturday A (morning).
+ * Even ranks (2nd, 4th, 6th…) from each Friday group → Saturday B (afternoon).
+ */
 export function assignSaturdayGroups(
-  globalRanking: Array<{ team: Team; globalRank: number }>
+  standingsA: StandingRow[],
+  standingsB: StandingRow[],
+  teamMap: Map<string, Team>
 ): { satA: Team[]; satB: Team[] } {
-  const sorted = [...globalRanking].sort((a, b) => a.globalRank - b.globalRank);
   const satA: Team[] = [];
   const satB: Team[] = [];
 
-  sorted.forEach(({ team }, idx) => {
-    if (idx % 2 === 0) satA.push(team);
-    else satB.push(team);
-  });
+  for (const standings of [standingsA, standingsB]) {
+    standings.forEach((row, idx) => {
+      const team = teamMap.get(row.teamId);
+      if (!team) return;
+      if (idx % 2 === 0) satA.push(team); // rank 1,3,5… (idx 0,2,4…)
+      else satB.push(team);               // rank 2,4,6… (idx 1,3,5…)
+    });
+  }
 
   return { satA, satB };
 }

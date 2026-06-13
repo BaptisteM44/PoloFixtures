@@ -80,9 +80,6 @@ export function BerlinMixedActions({ tournamentId, teams, matches, tournament, p
       if (res && "error" in res) {
         setMessage(t("error_prefix") + res.error);
       } else {
-        if (res?.globalRanking) {
-          setMessage("Classement global: " + res.globalRanking.join(" | "));
-        }
         router.refresh();
       }
     });

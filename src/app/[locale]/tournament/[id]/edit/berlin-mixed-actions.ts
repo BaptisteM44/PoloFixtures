@@ -6,7 +6,6 @@ import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { computeStandings } from "@/lib/standings";
 import {
   generateBerlinSwissRound,
-  computeGlobalRanking,
   assignSaturdayGroups,
   generateSundaySwissRound,
   generateBerlinFinalBrackets,
@@ -178,8 +177,6 @@ export async function computeSaturdayGroupsAction(tournamentId: string) {
   const matchesA = tournament.matches.filter((m) => m.phase === "FRIDAY_A");
   const matchesB = tournament.matches.filter((m) => m.phase === "FRIDAY_B");
 
-  console.log("[computeSaturdayGroups] teamsA:", teamsA.length, "teamsB:", teamsB.length, "matchesA:", matchesA.length, "matchesB:", matchesB.length);
-
   if (teamsA.length === 0 || teamsB.length === 0) {
     return { error: `Groupes vendredi incomplets: A=${teamsA.length}, B=${teamsB.length}` };
   }
@@ -187,24 +184,29 @@ export async function computeSaturdayGroupsAction(tournamentId: string) {
     return { error: `Matchs vendredi incomplets: A=${matchesA.length}, B=${matchesB.length}` };
   }
 
-  const globalRanking = computeGlobalRanking(
-    teamsA,
-    teamsB,
-    matchesA as unknown as BerlinMatchInput[],
-    matchesB as unknown as BerlinMatchInput[],
-    tournament.scoringSystem
-  );
+  // Standings per Friday group
+  const standA = computeStandings(teamsA, matchesA as any, tournament.scoringSystem);
+  const standB = computeStandings(teamsB, matchesB as any, tournament.scoringSystem);
 
-  console.log("[computeSaturdayGroups] globalRanking:", globalRanking.slice(0, 10).map(r => `${r.globalRank}. ${r.team.name}`));
+  // Build team map
+  const teamMap = new Map<string, typeof teamsA[0]>();
+  [...teamsA, ...teamsB].forEach((t) => teamMap.set(t.id, t));
 
-  const { satA, satB } = assignSaturdayGroups(globalRanking);
-  console.log("[computeSaturdayGroups] satA:", satA.slice(0, 5).map(t => t.name), "satB:", satB.slice(0, 5).map(t => t.name));
+  // Odd ranks (1st,3rd,5th…) → Saturday A (morning), even ranks → Saturday B (afternoon)
+  const { satA, satB } = assignSaturdayGroups(standA, standB, teamMap as any);
+
+  // Global ranking for seeding: merge standings by points
+  const allRows = [...standA, ...standB].sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
+    return b.goalsFor - a.goalsFor;
+  });
 
   await prisma.$transaction([
-    ...globalRanking.map(({ team, globalRank }) =>
+    ...allRows.map((row, i) =>
       prisma.team.update({
-        where: { id: team.id },
-        data: { globalRank },
+        where: { id: row.teamId },
+        data: { globalRank: i + 1 },
       })
     ),
     ...satA.map((team) =>
@@ -216,12 +218,7 @@ export async function computeSaturdayGroupsAction(tournamentId: string) {
   ]);
 
   revalidatePath(`/tournament/${tournamentId}`);
-  return {
-    ok: true,
-    satA: satA.map((t) => t.id),
-    satB: satB.map((t) => t.id),
-    globalRanking: globalRanking.map(r => `${r.globalRank}. ${r.team.name}`),
-  };
+  return { ok: true, satA: satA.map((t) => t.id), satB: satB.map((t) => t.id) };
 }
 
 // ─── Saturday Swiss round ─────────────────────────────────────────────────────
