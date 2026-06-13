@@ -429,13 +429,13 @@ export async function generateBerlinFinalBracketsAction(tournamentId: string) {
   });
   if (!tournament) return { error: "Tournoi introuvable" };
 
-  // Sunday Swiss standings determine final seeding
-  const sundayMatches = tournament.matches.filter((m) => m.phase === "SUNDAY_SWISS");
-  // Also include Fri + Sat for points total? No: Sunday Swiss is self-contained.
-  // The global Sunday ranking is used for seeding into brackets.
+  // Classement cumulatif Ven + Sam + Dim pour le seeding des brackets
+  const allCumulativeMatches = tournament.matches.filter((m) =>
+    ["FRIDAY_A", "FRIDAY_B", "SATURDAY_A", "SATURDAY_B", "SUNDAY_SWISS"].includes(m.phase)
+  );
   const standings = computeStandings(
     tournament.teams,
-    sundayMatches as any,
+    allCumulativeMatches as any,
     tournament.scoringSystem
   );
 
