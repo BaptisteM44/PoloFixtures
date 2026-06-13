@@ -454,6 +454,11 @@ export async function generateBerlinFinalBracketsAction(tournamentId: string) {
   );
 
   await prisma.$transaction(async (tx) => {
+    // Mettre à jour le globalRank final (cumulatif Ven+Sam+Dim) sur chaque équipe
+    for (const { team, globalRank } of globalRanking) {
+      await tx.team.update({ where: { id: team.id }, data: { globalRank } });
+    }
+
     // Remove existing bracket matches for this format
     await tx.match.deleteMany({
       where: { tournamentId, phase: { in: ["TOP32", "BOTTOM16"] } },
