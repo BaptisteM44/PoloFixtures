@@ -1184,11 +1184,16 @@ export default async function TournamentPage({
           if (gm.length === 0) return null;
           const gTeamIds = new Set([...gm.map((m: any) => m.teamAId), ...gm.map((m: any) => m.teamBId)].filter(Boolean));
           const gTeams = selectedTeams.filter((t: any) => gTeamIds.has(t.id));
-          // Samedi : cumule avec les matchs vendredi des mêmes équipes pour garder les points acquis
-          const priorMatches = isSat
-            ? [...friMatches].filter((m: any) => gTeamIds.has(m.teamAId) || gTeamIds.has(m.teamBId))
-            : [];
-          const standings = computeStandings(gTeams, [...priorMatches, ...gm], tournament.scoringSystem);
+          // Samedi : les points sont cumulés depuis le vendredi.
+          // Les adversaires vendredi sont dans un groupe vendredi différent du groupe samedi,
+          // donc on passe TOUTES les équipes sélectionnées à computeStandings avec tous les matchs
+          // vendredi + les matchs du groupe samedi courant, puis on filtre l'affichage.
+          const allStandings = isSat
+            ? computeStandings(selectedTeams, [...friMatches, ...gm], tournament.scoringSystem)
+            : computeStandings(gTeams, gm, tournament.scoringSystem);
+          const standings = isSat
+            ? allStandings.filter((row: any) => gTeamIds.has(row.teamId))
+            : allStandings;
           const maxRound = Math.max(...gm.map((m: any) => m.roundIndex));
           return (
             <div key={phase}>
