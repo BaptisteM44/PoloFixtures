@@ -256,15 +256,17 @@ export async function PUT(request: Request, { params }: { params: { id: string }
             let result: any = null;
             if (phase === "FRIDAY_A") {
               if (match.roundIndex < fridayRounds) result = await generateFridaySwissRoundAction(tid, "A");
-              // When both Fri groups done, auto-compute Saturday groups
-              const friBDone = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_B", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
-              const friADone = match.roundIndex >= fridayRounds;
-              if (friADone && friBDone === 0) await computeSaturdayGroupsAction(tid);
+              // When both Fri groups fully done (all matches finished), auto-compute Saturday groups
+              const friAUnfinished = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_A", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
+              const friBUnfinished = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_B", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
+              const friBExists = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_B", roundIndex: fridayRounds } });
+              if (friAUnfinished === 0 && friBUnfinished === 0 && friBExists > 0) await computeSaturdayGroupsAction(tid);
             } else if (phase === "FRIDAY_B") {
               if (match.roundIndex < fridayRounds) result = await generateFridaySwissRoundAction(tid, "B");
-              const friADone = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_A", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
-              const friBDone = match.roundIndex >= fridayRounds;
-              if (friBDone && friADone === 0) await computeSaturdayGroupsAction(tid);
+              const friAUnfinished = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_A", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
+              const friBUnfinished = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_B", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
+              const friAExists = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_A", roundIndex: fridayRounds } });
+              if (friAUnfinished === 0 && friBUnfinished === 0 && friAExists > 0) await computeSaturdayGroupsAction(tid);
             } else if (phase === "SATURDAY_A" && match.roundIndex < saturdayRounds) {
               result = await generateSaturdaySwissRoundAction(tid, "A");
             } else if (phase === "SATURDAY_B" && match.roundIndex < saturdayRounds) {
