@@ -131,26 +131,35 @@ export function generateBerlinSwissRound(
     (a, b) => (byRank.get(a.id) ?? 999) - (byRank.get(b.id) ?? 999)
   );
 
-  // Greedy pairing: prefer no rematch, fallback to closest rank
-  const unpaired = [...sorted];
-  const pairs: [Team, Team][] = [];
-
-  while (unpaired.length >= 2) {
-    const teamA = unpaired.shift()!;
-    let opponentIdx = -1;
-
-    // First try: find first opponent not already faced
-    for (let i = 0; i < unpaired.length; i++) {
-      if (!played.has(`${teamA.id}|${unpaired[i].id}`)) {
-        opponentIdx = i;
-        break;
-      }
+  // Backtracking pairing: find a perfect matching with no rematches.
+  // Falls back to minimum-rematch if no perfect solution exists.
+  function backtrack(remaining: Team[]): [Team, Team][] | null {
+    if (remaining.length < 2) return [];
+    const teamA = remaining[0];
+    const rest = remaining.slice(1);
+    for (let i = 0; i < rest.length; i++) {
+      if (played.has(`${teamA.id}|${rest[i].id}`)) continue;
+      const partner = rest[i];
+      const next = rest.filter((_, j) => j !== i);
+      const sub = backtrack(next);
+      if (sub !== null) return [[teamA, partner], ...sub];
     }
+    return null; // no perfect solution from this branch
+  }
 
-    // Fallback: already faced everyone — just take the closest by rank (index 0)
-    if (opponentIdx === -1) opponentIdx = 0;
+  let pairs = backtrack(sorted);
 
-    pairs.push([teamA, unpaired.splice(opponentIdx, 1)[0]]);
+  if (!pairs) {
+    // Fallback: greedy accepting rematches (mathematically unavoidable)
+    const unpaired = [...sorted];
+    pairs = [];
+    while (unpaired.length >= 2) {
+      const teamA = unpaired.shift()!;
+      // Prefer no rematch, else take closest rank
+      let idx = unpaired.findIndex((t) => !played.has(`${teamA.id}|${t.id}`));
+      if (idx === -1) idx = 0;
+      pairs.push([teamA, unpaired.splice(idx, 1)[0]]);
+    }
   }
 
   // If odd team count, last team gets a BYE (not added as a match)
@@ -226,22 +235,31 @@ export function generateSundaySwissRound(
     (a, b) => (byRank.get(b.id) ?? 0) - (byRank.get(a.id) ?? 0)
   );
 
-  const unpaired = [...sorted];
-  const pairs: [Team, Team][] = [];
-
-  while (unpaired.length >= 2) {
-    const teamA = unpaired.shift()!;
-    let opponentIdx = -1;
-
-    for (let i = 0; i < unpaired.length; i++) {
-      if (!played.has(`${teamA.id}|${unpaired[i].id}`)) {
-        opponentIdx = i;
-        break;
-      }
+  function backtrackSun(remaining: Team[]): [Team, Team][] | null {
+    if (remaining.length < 2) return [];
+    const teamA = remaining[0];
+    const rest = remaining.slice(1);
+    for (let i = 0; i < rest.length; i++) {
+      if (played.has(`${teamA.id}|${rest[i].id}`)) continue;
+      const partner = rest[i];
+      const next = rest.filter((_, j) => j !== i);
+      const sub = backtrackSun(next);
+      if (sub !== null) return [[teamA, partner], ...sub];
     }
+    return null;
+  }
 
-    if (opponentIdx === -1) opponentIdx = 0;
-    pairs.push([teamA, unpaired.splice(opponentIdx, 1)[0]]);
+  let pairs = backtrackSun(sorted);
+
+  if (!pairs) {
+    const unpaired = [...sorted];
+    pairs = [];
+    while (unpaired.length >= 2) {
+      const teamA = unpaired.shift()!;
+      let idx = unpaired.findIndex((t) => !played.has(`${teamA.id}|${t.id}`));
+      if (idx === -1) idx = 0;
+      pairs.push([teamA, unpaired.splice(idx, 1)[0]]);
+    }
   }
 
   const courtFree: Date[] = courtNames.map(() => new Date(startAt));

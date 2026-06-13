@@ -4,6 +4,12 @@ import { hasAtLeastRole } from "@/lib/rbac";
 import { publishMatchUpdate, publishNewMatches, publishTournamentUpdate } from "@/lib/sse";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
+import {
+  generateFridaySwissRoundAction,
+  generateSaturdaySwissRoundAction,
+  generateSundaySwissRoundAction,
+  computeSaturdayGroupsAction,
+} from "@/app/[locale]/tournament/[id]/edit/berlin-mixed-actions";
 import { z } from "zod";
 
 const schema = z.object({
@@ -221,6 +227,66 @@ export async function PUT(request: Request, { params }: { params: { id: string }
           });
         }
       }
+    }
+  }
+
+  // Auto-generate next Berlin Mixed round when all matches of current round are finished
+  const berlinPhases = ["FRIDAY_A", "FRIDAY_B", "SATURDAY_A", "SATURDAY_B", "SUNDAY_SWISS"] as const;
+  type BerlinPhase = typeof berlinPhases[number];
+  if (isNowFinished && berlinPhases.includes(match.phase as BerlinPhase)) {
+    const tid = match.tournamentId;
+    const phase = match.phase as BerlinPhase;
+    const roundMatches = await prisma.match.findMany({
+      where: { tournamentId: tid, phase, roundIndex: match.roundIndex },
+    });
+    const allDone = roundMatches.every((m) => m.status === "FINISHED");
+    if (allDone) {
+      (() => {
+        // Run in background — non-blocking
+        (async () => {
+          try {
+            const tournament = await prisma.tournament.findUnique({
+              where: { id: tid },
+              select: { fridayRounds: true, saturdayRounds: true, sundayRounds: true },
+            });
+            const fridayRounds = (tournament as any)?.fridayRounds ?? 5;
+            const saturdayRounds = (tournament as any)?.saturdayRounds ?? 5;
+            const sundayRounds = (tournament as any)?.sundayRounds ?? 2;
+
+            let result: any = null;
+            if (phase === "FRIDAY_A") {
+              if (match.roundIndex < fridayRounds) result = await generateFridaySwissRoundAction(tid, "A");
+              // When both Fri groups done, auto-compute Saturday groups
+              const friBDone = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_B", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
+              const friADone = match.roundIndex >= fridayRounds;
+              if (friADone && friBDone === 0) await computeSaturdayGroupsAction(tid);
+            } else if (phase === "FRIDAY_B") {
+              if (match.roundIndex < fridayRounds) result = await generateFridaySwissRoundAction(tid, "B");
+              const friADone = await prisma.match.count({ where: { tournamentId: tid, phase: "FRIDAY_A", roundIndex: fridayRounds, status: { not: "FINISHED" } } });
+              const friBDone = match.roundIndex >= fridayRounds;
+              if (friBDone && friADone === 0) await computeSaturdayGroupsAction(tid);
+            } else if (phase === "SATURDAY_A" && match.roundIndex < saturdayRounds) {
+              result = await generateSaturdaySwissRoundAction(tid, "A");
+            } else if (phase === "SATURDAY_B" && match.roundIndex < saturdayRounds) {
+              result = await generateSaturdaySwissRoundAction(tid, "B");
+            } else if (phase === "SUNDAY_SWISS" && match.roundIndex < sundayRounds) {
+              result = await generateSundaySwissRoundAction(tid);
+            }
+
+            if (result && !("error" in result)) {
+              const newPhase = phase;
+              const newRound = match.roundIndex + 1;
+              const newMatches = await prisma.match.findMany({
+                where: { tournamentId: tid, phase: newPhase, roundIndex: newRound },
+                include: { teamA: true, teamB: true },
+              });
+              if (newMatches.length > 0) {
+                publishNewMatches({ tournamentId: tid, type: "new_matches", matches: newMatches as unknown as Record<string, unknown>[] });
+              }
+            }
+          } catch { /* non-blocking */ }
+        })();
+      })();
     }
   }
 

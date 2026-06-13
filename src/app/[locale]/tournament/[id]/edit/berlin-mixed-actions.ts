@@ -249,11 +249,20 @@ export async function generateSaturdaySwissRoundAction(
   );
   const allPrior: BerlinMatchInput[] = [...fridayMatches, ...groupMatches] as unknown as BerlinMatchInput[];
 
-  const standings = computeStandings(
+  // Round 1 of Saturday: no sat matches yet → seed by globalRank (set from Friday standings).
+  // Round 2+: use actual Saturday standings, with globalRank as tiebreaker.
+  const satStandings = computeStandings(
     tournament.teams,
     groupMatches as any,
     tournament.scoringSystem
   );
+  const standings = existingRounds === 0
+    ? [...satStandings].sort((a, b) => {
+        const ra = (tournament.teams.find((t) => t.id === a.teamId) as any)?.globalRank ?? 999;
+        const rb = (tournament.teams.find((t) => t.id === b.teamId) as any)?.globalRank ?? 999;
+        return ra - rb;
+      })
+    : satStandings;
   const nextRound = existingRounds + 1;
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
   const satFallback = group === "A"
