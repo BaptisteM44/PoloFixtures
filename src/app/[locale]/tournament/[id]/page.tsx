@@ -202,7 +202,7 @@ export default async function TournamentPage({
     (!tournament.registrationEnd || now <= new Date(tournament.registrationEnd));
   const registrationClosed = !!tournament.registrationEnd && now > new Date(tournament.registrationEnd);
 
-  const hasCommunity = !registrationClosed && tournament.freeAgents.length > 0;
+  const hasCommunity = !isCompleted;
 
   const tabs = [
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
@@ -595,7 +595,7 @@ export default async function TournamentPage({
               </div>
             )}
 
-            {!registrationClosed && tournament.freeAgents.length > 0 && (
+            {!isCompleted && tournament.freeAgents.length > 0 && (
               <div className="panel">
                 <h3 style={{ marginBottom: 4 }}>
                   {t("tab_free_agent")}{" "}
