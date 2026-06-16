@@ -427,6 +427,7 @@ model Player {
   receivedInvitations     SquadInvitation[]     @relation("ReceivedInvitations")
   squadMessages           SquadMessage[]
   notifications           Notification[]
+  pushSubscriptions       PushSubscription[]
   conversationsAsA        DirectConversation[]  @relation("ConversationPlayerA")
   conversationsAsB        DirectConversation[]  @relation("ConversationPlayerB")
   directMessages          DirectMessage[]
@@ -709,6 +710,19 @@ model Notification {
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@index([playerId, read])
+  @@index([playerId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  playerId  String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
   @@index([playerId])
 }
 

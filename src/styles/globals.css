@@ -9944,3 +9944,28 @@ details[open] .club-sessions__past-summary::before {
   padding: 8px;
   margin: 6px 0;
 }
+
+/* ── PWA Install Banner ── */
+.pwa-install-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-top: 2px solid var(--border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  font-size: 13px;
+  font-weight: 600;
+  animation: pwa-slide-up 0.3s ease-out;
+}
+
+@keyframes pwa-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}

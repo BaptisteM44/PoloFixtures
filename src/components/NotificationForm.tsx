@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { saveNotificationPreferences } from "@/app/[locale]/settings/actions";
+import { subscribeToPush } from "@/components/PwaManager";
 
 const GEO = [
   { continent: "EU", label: "Europe", flag: "🌍", countries: [
@@ -71,6 +72,51 @@ export function NotificationForm({
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
+  // Push notification state
+  const [pushSupported, setPushSupported] = useState(false);
+  const [pushPermission, setPushPermission] = useState<"default" | "granted" | "denied">("default");
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+
+  useEffect(() => {
+    if ("Notification" in window && "serviceWorker" in navigator && "PushManager" in window) {
+      setPushSupported(true);
+      setPushPermission(Notification.permission as any);
+      // Check if already subscribed
+      navigator.serviceWorker.ready.then((reg) => {
+        reg.pushManager.getSubscription().then((sub) => {
+          setPushSubscribed(!!sub);
+        });
+      });
+    }
+  }, []);
+
+  const handleTogglePush = useCallback(async () => {
+    if (!pushSupported) return;
+
+    if (pushSubscribed) {
+      // Unsubscribe
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await fetch("/api/push-subscription", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: sub.endpoint }),
+        });
+        await sub.unsubscribe();
+      }
+      setPushSubscribed(false);
+    } else {
+      // Subscribe
+      const permission = await Notification.requestPermission();
+      setPushPermission(permission as any);
+      if (permission === "granted") {
+        await subscribeToPush();
+        setPushSubscribed(true);
+      }
+    }
+  }, [pushSupported, pushSubscribed]);
+
   function toggleContinent(continent: string, countries: { code: string }[]) {
     const allSelected = countries.every((c) => selectedCountries.has(c.code));
     const newContinents = new Set(selectedContinents);
@@ -136,6 +182,25 @@ export function NotificationForm({
           <span>{t("enable_notifications")}</span>
         </label>
       </div>
+
+      {enabled && pushSupported && (
+        <div className="settings-toggle-row" style={{ marginBottom: 12 }}>
+          <label className="settings-toggle-label">
+            <input
+              type="checkbox"
+              checked={pushSubscribed}
+              disabled={pushPermission === "denied"}
+              onChange={handleTogglePush}
+            />
+            <span>{t("push_notifications")}</span>
+          </label>
+          {pushPermission === "denied" && (
+            <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0", lineHeight: 1.4 }}>
+              {t("push_denied_hint")}
+            </p>
+          )}
+        </div>
+      )}
 
       {enabled && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 24px", marginBottom: 24 }}>

@@ -14,6 +14,7 @@ import { BadgeShowcase } from "@/components/BadgeShowcase";
 import { ClubPicker } from "@/components/ClubPicker";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { NotificationForm } from "@/components/NotificationForm";
+import { InstallAppButton } from "@/components/InstallAppButton";
 import { MessagesClient } from "@/app/[locale]/messages/MessagesClient";
 import { Tabs } from "@/components/Tabs";
 import type { BadgeInfo } from "@/lib/badge-catalog";
@@ -704,6 +705,12 @@ export default function AccountPage() {
                 ) : (
                   <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("loading")}</p>
                 )}
+              </div>
+
+              <div className="panel" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <h3 style={{ margin: 0 }}>{t("install_app_title")}</h3>
+                <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>{t("install_app_desc")}</p>
+                <InstallAppButton variant="settings" />
               </div>
 
               <div className="panel">

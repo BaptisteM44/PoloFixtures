@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { subscribeToPush } from "./PwaManager";
 
 type Notification = {
   id: string;
@@ -65,6 +66,22 @@ export function NotificationBell() {
   const [closing, setClosing] = useState(false);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+
+  const [pushState, setPushState] = useState<"unknown" | "default" | "granted" | "denied">("unknown");
+
+  useEffect(() => {
+    if ("Notification" in window) {
+      setPushState(Notification.permission as any);
+    }
+  }, []);
+
+  const enablePush = useCallback(async () => {
+    const permission = await Notification.requestPermission();
+    setPushState(permission as any);
+    if (permission === "granted") {
+      await subscribeToPush();
+    }
+  }, []);
 
   const unread = notifications.filter((n) => !n.read).length;
 
@@ -148,8 +165,16 @@ export function NotificationBell() {
           borderRadius: "var(--radius)", boxShadow: "var(--shadow-lg)",
           zIndex: 1000, overflow: "hidden", transformOrigin: "top right",
         }}>
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-light)" }}>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border-light)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13 }}>{t("title")}</span>
+            {pushState === "default" && (
+              <button
+                onClick={enablePush}
+                style={{ fontSize: 11, padding: "3px 10px", background: "var(--teal)", color: "#fff", border: "none", borderRadius: 4, cursor: "pointer", fontWeight: 600 }}
+              >
+                {t("enable_push")}
+              </button>
+            )}
           </div>
           {notifications.length === 0 ? (
             <p style={{ padding: 16, textAlign: "center", color: "var(--text-muted)", fontSize: 13, margin: 0 }}>{t("empty")}</p>

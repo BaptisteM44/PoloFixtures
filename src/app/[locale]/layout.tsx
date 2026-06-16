@@ -8,6 +8,7 @@ import { routing } from "@/i18n/routing";
 import SessionProvider from "@/components/SessionProvider";
 import { Header } from "@/components/Header";
 import { SiteFooter } from "@/components/SiteFooter";
+import { PwaManager } from "@/components/PwaManager";
 import Script from "next/script";
 
 const space = Space_Grotesk({
@@ -51,6 +52,12 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
       <head>
         {/* Script bloquant : applique le thème AVANT le premier paint pour éviter le flash */}
         <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}})();` }} />
+        {/* PWA */}
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#60c9cf" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body>
         <NextIntlClientProvider messages={messages}>
@@ -58,6 +65,7 @@ export default async function LocaleLayout({ children, params: { locale } }: Pro
             <Header />
             <main className="page">{children}</main>
             <SiteFooter />
+            <PwaManager />
           </SessionProvider>
         </NextIntlClientProvider>
         <Script defer src="https://cloud.umami.is/script.js" data-website-id="7cfea7de-a1f5-4085-a45a-886bb62a83fe" strategy="afterInteractive" />

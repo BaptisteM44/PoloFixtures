@@ -4,6 +4,7 @@ import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { RecomputeBadgesBtn } from "@/components/RecomputeBadgesBtn";
 import { FixBracketSidesBtn } from "@/components/FixBracketSidesBtn";
+import { TestPushBtn } from "@/components/TestPushBtn";
 import { AdminTournamentsPanel } from "@/components/AdminTournamentsPanel";
 
 export default async function AdminPage() {
@@ -64,6 +65,10 @@ export default async function AdminPage() {
         <div className="panel" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <p className="meta" style={{ marginBottom: 0 }}>Corriger bracketSide des finales</p>
           <FixBracketSidesBtn />
+        </div>
+        <div className="panel" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <p className="meta" style={{ marginBottom: 0 }}>Push Notifications</p>
+          <TestPushBtn />
         </div>
       </div>
 

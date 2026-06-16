@@ -1029,7 +1029,8 @@
     "section_pending_invites": "Ausstehende Einladungen",
     "btn_accept": "Annehmen",
     "btn_decline": "Ablehnen",
-    "default": "Mitteilung"
+    "default": "Mitteilung",
+    "enable_push": "Benachrichtigungen aktivieren"
   },
   "contact": {
     "btn_open": "Kontakt",
@@ -1055,7 +1056,8 @@
     "legal_mentions": "Impressum",
     "privacy": "Datenschutz",
     "terms": "AGB",
-    "charter": "Charta"
+    "charter": "Charta",
+    "install_app": "App installieren"
   },
   "player": {
     "page_title": "Spielerprofil",
@@ -1664,7 +1666,13 @@
     "tab_settings": "Einstellungen",
     "messages_empty": "Noch keine Unterhaltungen.",
     "messages_open_all": "Alle Nachrichten anzeigen",
-    "settings_notifications_title": "Benachrichtigungen"
+    "settings_notifications_title": "Benachrichtigungen",
+    "install_app_title": "App installieren",
+    "install_app_desc": "Installiere Poloperator auf deinem Gerät für schnellen Zugriff.",
+    "install_app_btn": "Installieren",
+    "install_app_safari_mac": "In Safari Mac: Menü Ablage → Zum Dock hinzufügen",
+    "install_app_safari_ios": "In Safari iOS: Teilen antippen, dann \"Zum Home-Bildschirm\"",
+    "install_app_installed": "App installiert"
   },
   "charter": {
     "title": "Community-Charta",
@@ -1924,6 +1932,8 @@
     "geo_zones": "Geografische Zonen",
     "geo_hint": "Wähle die Regionen aus, über die du benachrichtigt werden möchtest. Wenn keine Zone ausgewählt ist, wirst du über alle Turniere benachrichtigt.",
     "all_continent": "Ganz {label}",
+    "push_notifications": "Push-Benachrichtigungen (Handy/Browser)",
+    "push_denied_hint": "Benachrichtigungen sind in deinen Browsereinstellungen blockiert. Aktiviere sie in den Seiteneinstellungen.",
     "save": "Speichern",
     "saving": "Speichern…",
     "saved": "Einstellungen gespeichert!"

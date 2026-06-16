@@ -1028,7 +1028,8 @@
     "section_pending_invites": "Invitaciones pendientes",
     "btn_accept": "Aceptar",
     "btn_decline": "Rechazar",
-    "default": "Notificación"
+    "default": "Notificación",
+    "enable_push": "Activar notificaciones"
   },
   "contact": {
     "btn_open": "Contacto",
@@ -1054,7 +1055,8 @@
     "legal_mentions": "Aviso legal",
     "privacy": "Privacidad",
     "terms": "Condiciones de uso",
-    "charter": "Carta"
+    "charter": "Carta",
+    "install_app": "Instalar app"
   },
   "player": {
     "page_title": "Perfil de jugador",
@@ -1663,7 +1665,13 @@
     "tab_settings": "Ajustes",
     "messages_empty": "Aún no hay conversaciones.",
     "messages_open_all": "Ver todos los mensajes",
-    "settings_notifications_title": "Notificaciones"
+    "settings_notifications_title": "Notificaciones",
+    "install_app_title": "Instalar la app",
+    "install_app_desc": "Instala Poloperator en tu dispositivo para un acceso rápido.",
+    "install_app_btn": "Instalar",
+    "install_app_safari_mac": "En Safari Mac: menú Archivo → Agregar al Dock",
+    "install_app_safari_ios": "En Safari iOS: toca Compartir y luego \"Agregar a inicio\"",
+    "install_app_installed": "App instalada"
   },
   "charter": {
     "title": "Carta de la Comunidad",
@@ -1923,6 +1931,8 @@
     "geo_zones": "Zonas geográficas",
     "geo_hint": "Selecciona las regiones sobre las que deseas ser notificado. Si no se selecciona ninguna zona, serás notificado de todos los torneos.",
     "all_continent": "Todo {label}",
+    "push_notifications": "Notificaciones push (teléfono/navegador)",
+    "push_denied_hint": "Las notificaciones están bloqueadas en la configuración de tu navegador. Reactívalas en los ajustes del sitio.",
     "save": "Guardar",
     "saving": "Guardando…",
     "saved": "¡Preferencias guardadas!"

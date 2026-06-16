@@ -1024,7 +1024,8 @@
     "section_pending_invites": "Pending invitations",
     "btn_accept": "Accept",
     "btn_decline": "Decline",
-    "default": "Notification"
+    "default": "Notification",
+    "enable_push": "Enable notifications"
   },
   "contact": {
     "btn_open": "Contact",
@@ -1050,7 +1051,8 @@
     "legal_mentions": "Legal notices",
     "privacy": "Privacy",
     "terms": "Terms of use",
-    "charter": "Charter"
+    "charter": "Charter",
+    "install_app": "Install app"
   },
   "player": {
     "page_title": "Player profile",
@@ -1659,7 +1661,13 @@
     "tab_settings": "Settings",
     "messages_empty": "No conversations yet.",
     "messages_open_all": "See all messages",
-    "settings_notifications_title": "Notifications"
+    "settings_notifications_title": "Notifications",
+    "install_app_title": "Install the app",
+    "install_app_desc": "Install Poloperator on your device for quick access.",
+    "install_app_btn": "Install",
+    "install_app_safari_mac": "On Safari Mac: File menu → Add to Dock",
+    "install_app_safari_ios": "On Safari iOS: tap Share then \"Add to Home Screen\"",
+    "install_app_installed": "App installed"
   },
   "charter": {
     "title": "Community Charter",
@@ -1919,6 +1927,8 @@
     "geo_zones": "Geographic Zones",
     "geo_hint": "Select the regions you want to be notified about. If no zone is selected, you will be notified for all tournaments.",
     "all_continent": "All {label}",
+    "push_notifications": "Push notifications (phone/browser)",
+    "push_denied_hint": "Notifications are blocked in your browser settings. Re-enable them in site settings.",
     "save": "Save",
     "saving": "Saving…",
     "saved": "Preferences saved!"

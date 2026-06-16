@@ -1024,7 +1024,8 @@
     "section_pending_invites": "Invitations en attente",
     "btn_accept": "Accepter",
     "btn_decline": "Refuser",
-    "default": "Notification"
+    "default": "Notification",
+    "enable_push": "Activer les notifs"
   },
   "contact": {
     "btn_open": "Contact",
@@ -1050,7 +1051,8 @@
     "legal_mentions": "Mentions légales",
     "privacy": "Confidentialité",
     "terms": "CGU",
-    "charter": "Charte"
+    "charter": "Charte",
+    "install_app": "Installer l'app"
   },
   "player": {
     "page_title": "Profil joueur·euse",
@@ -1660,7 +1662,13 @@
     "tab_settings": "Paramètres",
     "messages_empty": "Aucune conversation pour l'instant.",
     "messages_open_all": "Voir tous les messages",
-    "settings_notifications_title": "Notifications"
+    "settings_notifications_title": "Notifications",
+    "install_app_title": "Installer l'application",
+    "install_app_desc": "Installez Poloperator sur votre appareil pour un accès rapide.",
+    "install_app_btn": "Installer",
+    "install_app_safari_mac": "Sur Safari Mac : menu Fichier → Ajouter au Dock",
+    "install_app_safari_ios": "Sur Safari iOS : touchez Partager puis \"Sur l'écran d'accueil\"",
+    "install_app_installed": "Application installée"
   },
   "charter": {
     "title": "Charte de bonne conduite",
@@ -1920,6 +1928,8 @@
     "geo_zones": "Zones géographiques",
     "geo_hint": "Sélectionnez les régions pour lesquelles vous souhaitez être notifié. Si aucune zone n'est sélectionnée, vous serez notifié pour tous les tournois.",
     "all_continent": "Tout(e) {label}",
+    "push_notifications": "Notifications push (sur le téléphone/navigateur)",
+    "push_denied_hint": "Les notifications sont bloquées dans les paramètres de ton navigateur. Réactive-les dans les réglages du site.",
     "save": "Enregistrer",
     "saving": "Enregistrement…",
     "saved": "Préférences sauvegardées !"

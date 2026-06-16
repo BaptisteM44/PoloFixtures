@@ -6,6 +6,38 @@
 import { prisma } from "@/lib/db";
 import { NotificationType } from "@prisma/client";
 import { sendMail } from "@/lib/mailer";
+import { sendPushToPlayer } from "@/lib/web-push";
+
+/** Build a human-readable push payload from notification type + payload */
+function toPushPayload(
+  type: NotificationType,
+  payload: Record<string, string | number>
+): { title: string; body: string; url: string; tag: string } {
+  const p = payload as Record<string, string>;
+  switch (type) {
+    case "SQUAD_INVITE":
+      return { title: "Team Invite", body: `${p.invitedByName} invited you to ${p.squadName}`, url: "/my-teams", tag: `squad-${p.squadId}` };
+    case "SQUAD_INVITE_ACCEPTED":
+      return { title: "Invite Accepted", body: `${p.playerName} joined ${p.squadName}`, url: `/my-teams/${p.squadId}`, tag: `squad-${p.squadId}` };
+    case "TEAM_REGISTERED":
+      return { title: "Team Registered", body: `${p.teamName} — ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=inscription`, tag: `reg-${p.tournamentId}` };
+    case "TEAM_SELECTED":
+      return { title: "You're In!", body: `${p.teamName} selected for ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}`, tag: `sel-${p.tournamentId}` };
+    case "TEAM_WAITLISTED":
+      return { title: "Waitlisted", body: `${p.teamName} is #${p.rank} on waitlist — ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}`, tag: `wl-${p.tournamentId}` };
+    case "BADGE_UNLOCKED":
+      return { title: "Badge Unlocked!", body: p.badgeName, url: "/account", tag: `badge-${p.badgeKey}` };
+    case "DIRECT_MESSAGE_REQUEST":
+    case "DIRECT_MESSAGE_RECEIVED":
+      return { title: p.senderName, body: p.preview ?? "New message", url: "/messages", tag: `dm-${p.conversationId}` };
+    case "CLUB_ANNOUNCEMENT":
+      return { title: p.clubName, body: p.announcementTitle ?? "New announcement", url: p.clubId ? `/club/${p.clubId}?tab=announcements` : "/clubs", tag: `club-${p.clubId}` };
+    case "CLUB_SESSION":
+      return { title: "New Session", body: p.message ?? "New club session", url: p.clubId ? `/club/${p.clubId}?tab=sessions` : "/clubs", tag: `session-${p.clubId}` };
+    default:
+      return { title: "Poloperator", body: "New notification", url: "/", tag: type };
+  }
+}
 
 // Types qui respectent le flag global "enabled" (notifs club)
 const CLUB_TYPES: NotificationType[] = [
@@ -42,6 +74,9 @@ export async function createNotification(
     await prisma.notification.create({
       data: { playerId, type, payload },
     });
+
+    // Fire-and-forget push notification
+    sendPushToPlayer(playerId, toPushPayload(type, payload)).catch(() => {});
   } catch (e) {
     console.error("[notify] Failed to create notification:", type, e);
   }
