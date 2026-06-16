@@ -63,7 +63,7 @@ export async function PATCH(req: Request, { params }: { params: { invitationId: 
         playerId,
         playerName: invitedPlayer?.name ?? "",
       }
-    });
+    );
   }
 
   return NextResponse.json({ ok: true });
