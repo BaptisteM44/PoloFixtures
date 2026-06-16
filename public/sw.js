@@ -23,9 +23,10 @@ self.addEventListener("activate", (event) => {
 
 // Fetch: network-first, fallback to cache
 self.addEventListener("fetch", (event) => {
-  // Skip non-GET and API/auth requests
+  // Skip non-GET, non-http(s), and API/auth requests
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
+  if (!url.protocol.startsWith("http")) return;
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) return;
 
   event.respondWith(

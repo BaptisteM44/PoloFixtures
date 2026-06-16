@@ -1,11 +1,16 @@
 import webpush from "web-push";
 import { prisma } from "@/lib/db";
 
-webpush.setVapidDetails(
-  "mailto:contact@bikepolo.app",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+function getWebPush() {
+  const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const vapidPrivate = process.env.VAPID_PRIVATE_KEY;
+  if (!vapidPublic || !vapidPrivate) {
+    console.warn("[web-push] VAPID keys not configured, push disabled");
+    return null;
+  }
+  webpush.setVapidDetails("mailto:contact@bikepolo.app", vapidPublic, vapidPrivate);
+  return webpush;
+}
 
 /**
  * Send a push notification to all subscriptions of a player.
@@ -15,6 +20,9 @@ export async function sendPushToPlayer(
   playerId: string,
   payload: { title: string; body: string; url?: string; tag?: string }
 ) {
+  const wp = getWebPush();
+  if (!wp) return;
+
   const subscriptions = await prisma.pushSubscription.findMany({
     where: { playerId },
   });
@@ -26,7 +34,7 @@ export async function sendPushToPlayer(
   await Promise.allSettled(
     subscriptions.map(async (sub) => {
       try {
-        await webpush.sendNotification(
+        await wp.sendNotification(
           {
             endpoint: sub.endpoint,
             keys: { p256dh: sub.p256dh, auth: sub.auth },
@@ -34,7 +42,6 @@ export async function sendPushToPlayer(
           data
         );
       } catch (err: any) {
-        // 410 Gone or 404 = subscription expired, remove it
         if (err.statusCode === 410 || err.statusCode === 404) {
           await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
         }
