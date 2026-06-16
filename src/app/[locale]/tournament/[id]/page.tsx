@@ -1269,7 +1269,7 @@ export default async function TournamentPage({
                 <table className="swiss-standings" style={{ width: "100%" }}>
                   <thead>
                     <tr>
-                      <th>#</th><th>Équipe</th><th>Pts</th><th>J</th><th>V</th><th>N</th><th>D</th><th>Diff</th>
+                      <th>#</th><th>Équipe</th><th>Pts</th><th>J</th><th>V</th><th>N</th><th>D</th><th>Diff</th><th title="Buchholz">Buch.</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1285,6 +1285,7 @@ export default async function TournamentPage({
                         <td style={{ color: row.goalDiff >= 0 ? "var(--success)" : "var(--danger)" }}>
                           {row.goalDiff >= 0 ? "+" : ""}{row.goalDiff}
                         </td>
+                        <td style={{ color: "var(--text-muted)" }}>{row.buchholz}</td>
                       </tr>
                     ))}
                   </tbody>

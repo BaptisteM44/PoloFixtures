@@ -306,6 +306,14 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     setSaved(false);
     setError(null);
     const formData = new FormData(e.currentTarget);
+    // Convert datetime-local values to proper ISO strings so the server
+    // interprets them in the user's local timezone, not UTC.
+    for (const key of ["registrationStart", "registrationEnd"]) {
+      const val = formData.get(key);
+      if (typeof val === "string" && val) {
+        formData.set(key, new Date(val).toISOString());
+      }
+    }
     startTransition(async () => {
       const result = await action(formData);
       if (result?.ok) {

@@ -2850,8 +2850,8 @@ details.agenda-month--past > summary::-webkit-details-marker {
 
 .tournament-hero__sponsors {
   grid-area: sponsors;
-  min-width: 160px;
-  max-width: 280px;
+  min-width: 180px;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -2899,7 +2899,7 @@ details.agenda-month--past > summary::-webkit-details-marker {
 .sponsors-strip {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 8px;
   align-items: center;
   justify-content: flex-end;
 }
@@ -2916,13 +2916,13 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 
 .sponsor-logo {
-  height: 72px;
+  height: 56px;
   width: auto;
-  max-width: 220px;
+  max-width: 180px;
   object-fit: contain;
   border-radius: 6px;
-  border: 2px solid var(--border-light);
-  padding: 8px 14px;
+  border: 1.5px solid var(--border-light);
+  padding: 6px 10px;
   background: var(--surface);
   transition: box-shadow var(--transition), transform var(--transition);
 }

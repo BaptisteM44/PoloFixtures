@@ -162,11 +162,15 @@ export default function NewTournamentPage() {
     setSubmitting(true);
     setError(null);
 
+    // Convert datetime-local values to proper ISO strings (user's local tz → UTC)
+    const toIso = (v: string) => v ? new Date(v).toISOString() : "";
     const res = await fetch("/api/tournaments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        registrationStart: toIso(form.registrationStart),
+        registrationEnd: toIso(form.registrationEnd),
         lat: form.lat !== "" ? Number(form.lat) : undefined,
         lng: form.lng !== "" ? Number(form.lng) : undefined,
         maxSoloPlayers: form.maxSoloPlayers !== "" ? Number(form.maxSoloPlayers) : undefined,
