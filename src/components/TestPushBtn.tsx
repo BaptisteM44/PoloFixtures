@@ -12,10 +12,12 @@ export function TestPushBtn() {
     try {
       const res = await fetch("/api/admin/test-push", { method: "POST" });
       const data = await res.json();
-      if (res.ok) {
-        setStatus(`OK — ${data.sent} envoyé(s), ${data.failed} échoué(s)`);
+      if (data.error) {
+        setStatus(`${data.error}`);
+      } else if (data.failed > 0) {
+        setStatus(`${data.sent}/${data.total} OK, ${data.failed} erreur(s): ${data.errors?.join(", ")}`);
       } else {
-        setStatus(`Erreur: ${data.error ?? res.statusText}`);
+        setStatus(`OK — ${data.sent} envoyé(s) sur ${data.total} subscription(s)`);
       }
     } catch (e: any) {
       setStatus(`Erreur: ${e.message}`);
@@ -29,7 +31,7 @@ export function TestPushBtn() {
       <button className="primary" onClick={handleTest} disabled={sending} style={{ fontSize: 12 }}>
         {sending ? "Envoi..." : "Test Push Notif"}
       </button>
-      {status && <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0, textAlign: "center" }}>{status}</p>}
+      {status && <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0, textAlign: "center", maxWidth: 200, wordBreak: "break-word" }}>{status}</p>}
     </div>
   );
 }

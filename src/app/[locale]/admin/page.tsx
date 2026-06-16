@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { RecomputeBadgesBtn } from "@/components/RecomputeBadgesBtn";
 import { FixBracketSidesBtn } from "@/components/FixBracketSidesBtn";
 import { TestPushBtn } from "@/components/TestPushBtn";
+import { InstallAppButton } from "@/components/InstallAppButton";
 import { AdminTournamentsPanel } from "@/components/AdminTournamentsPanel";
 
 export default async function AdminPage() {
@@ -69,6 +70,10 @@ export default async function AdminPage() {
         <div className="panel" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
           <p className="meta" style={{ marginBottom: 0 }}>Push Notifications</p>
           <TestPushBtn />
+        </div>
+        <div className="panel" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <p className="meta" style={{ marginBottom: 0 }}>Installer l&apos;app (PWA)</p>
+          <InstallAppButton variant="settings" />
         </div>
       </div>
 
