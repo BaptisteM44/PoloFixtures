@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { createNotification } from "@/lib/notify";
 
 // PATCH /api/invitations/[invitationId] — accepter ou refuser
 export async function PATCH(req: Request, { params }: { params: { invitationId: string } }) {
@@ -36,18 +37,16 @@ export async function PATCH(req: Request, { params }: { params: { invitationId: 
     ]);
 
     // Notifier l'invitant
-    await prisma.notification.create({
-      data: {
-        playerId: invitation.invitedById,
-        type: "SQUAD_INVITE_ACCEPTED",
-        payload: {
-          squadId: invitation.squadId,
-          squadName: invitation.squad.name,
-          playerId,
-          playerName: invitedPlayer?.name ?? "",
-        },
-      },
-    });
+    await createNotification(
+      invitation.invitedById,
+      "SQUAD_INVITE_ACCEPTED",
+      {
+        squadId: invitation.squadId,
+        squadName: invitation.squad.name,
+        playerId,
+        playerName: invitedPlayer?.name ?? "",
+      }
+    );
   } else {
     await prisma.squadInvitation.update({
       where: { id: params.invitationId },
@@ -55,17 +54,15 @@ export async function PATCH(req: Request, { params }: { params: { invitationId: 
     });
 
     // Notifier l'invitant
-    await prisma.notification.create({
-      data: {
-        playerId: invitation.invitedById,
-        type: "SQUAD_INVITE_DECLINED",
-        payload: {
-          squadId: invitation.squadId,
-          squadName: invitation.squad.name,
-          playerId,
-          playerName: invitedPlayer?.name ?? "",
-        },
-      },
+    await createNotification(
+      invitation.invitedById,
+      "SQUAD_INVITE_DECLINED",
+      {
+        squadId: invitation.squadId,
+        squadName: invitation.squad.name,
+        playerId,
+        playerName: invitedPlayer?.name ?? "",
+      }
     });
   }
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { createNotification } from "@/lib/notify";
 
 async function getConvAndPlayer(id: string) {
   const session = await auth();
@@ -61,18 +62,16 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     select: { name: true },
   });
 
-  await prisma.notification.create({
-    data: {
-      playerId: ctx.recipientId,
-      type: "DIRECT_MESSAGE_RECEIVED",
-      payload: {
-        conversationId: params.id,
-        senderId: ctx.playerId,
-        senderName: sender?.name ?? "Quelqu'un",
-        preview: parsed.data.content.slice(0, 80),
-      },
-    },
-  });
+  await createNotification(
+    ctx.recipientId,
+    "DIRECT_MESSAGE_RECEIVED",
+    {
+      conversationId: params.id,
+      senderId: ctx.playerId,
+      senderName: sender?.name ?? "Quelqu'un",
+      preview: parsed.data.content.slice(0, 80),
+    }
+  );
 
   return NextResponse.json(message);
 }

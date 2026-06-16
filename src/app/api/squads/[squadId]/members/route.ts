@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { createNotification } from "@/lib/notify";
 
 // PATCH /api/squads/[squadId]/members — changer rôle d'un membre (capitaine only)
 // body: { playerId, role: "CAPTAIN" | "MEMBER" }
@@ -35,13 +36,11 @@ export async function PATCH(req: Request, { params }: { params: { squadId: strin
       }),
     ]);
     // Notification au nouveau capitaine
-    await prisma.notification.create({
-      data: {
-        playerId: parsed.data.playerId,
-        type: "SQUAD_ROLE_CHANGED",
-        payload: { squadId: params.squadId, role: "CAPTAIN" },
-      },
-    });
+    await createNotification(
+      parsed.data.playerId,
+      "SQUAD_ROLE_CHANGED",
+      { squadId: params.squadId, role: "CAPTAIN" }
+    );
   } else {
     await prisma.squadMember.update({
       where: { squadId_playerId: { squadId: params.squadId, playerId: parsed.data.playerId } },

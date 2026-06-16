@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { createNotification } from "@/lib/notify";
 
 const schema = z.object({
   recipientId: z.string(),
@@ -82,18 +83,16 @@ export async function POST(req: Request) {
   const isFirstMessage =
     (await prisma.directMessage.count({ where: { conversationId: conversation.id } })) === 1;
 
-  await prisma.notification.create({
-    data: {
-      playerId: recipientId,
-      type: isFirstMessage ? "DIRECT_MESSAGE_REQUEST" : "DIRECT_MESSAGE_RECEIVED",
-      payload: {
-        conversationId: conversation.id,
-        senderId: playerId,
-        senderName: sender?.name ?? "Quelqu'un",
-        preview: message.slice(0, 80),
-      },
-    },
-  });
+  await createNotification(
+    recipientId,
+    isFirstMessage ? "DIRECT_MESSAGE_REQUEST" : "DIRECT_MESSAGE_RECEIVED",
+    {
+      conversationId: conversation.id,
+      senderId: playerId,
+      senderName: sender?.name ?? "Quelqu'un",
+      preview: message.slice(0, 80),
+    }
+  );
 
   return NextResponse.json({ conversation, message: newMessage });
 }
