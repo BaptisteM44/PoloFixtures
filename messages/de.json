@@ -1025,6 +1025,7 @@
     "club_session": "Neue Aktivität in deinem Club",
     "club_session_join": "Spieler haben sich für eine Session angemeldet",
     "club_announcement": "Neue Ankündigung in {clubName}",
+    "team_fee_confirmed": "Zahlung bestätigt — {teamName}",
     "community_reply": "Neue Antwort auf \"{itemTitle}\"",
     "section_pending_invites": "Ausstehende Einladungen",
     "btn_accept": "Annehmen",

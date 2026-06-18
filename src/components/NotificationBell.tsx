@@ -49,6 +49,8 @@ function useNotifLabel() {
         return { title: p.message ?? t("club_session_join"), sub: "", href: p.clubId ? `/club/${p.clubId}?tab=sessions` : "/clubs" };
       case "CLUB_ANNOUNCEMENT":
         return { title: t("club_announcement", { clubName: p.clubName }), sub: p.announcementTitle ?? "", href: p.clubId ? `/club/${p.clubId}?tab=announcements` : "/clubs" };
+      case "TEAM_FEE_CONFIRMED":
+        return { title: t("team_fee_confirmed", { teamName: p.teamName }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}` };
       case "COMMUNITY_STATUS_CHANGED":
         return { title: t("community_reply", { itemTitle: p.itemTitle ?? "" }), sub: p.message ?? "", href: p.itemId ? `/labs?id=${p.itemId}` : "/labs" };
       default:

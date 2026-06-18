@@ -30,6 +30,8 @@ function toPushPayload(
     case "DIRECT_MESSAGE_REQUEST":
     case "DIRECT_MESSAGE_RECEIVED":
       return { title: p.senderName, body: p.preview ?? "New message", url: "/messages", tag: `dm-${p.conversationId}` };
+    case "TEAM_FEE_CONFIRMED":
+      return { title: "Payment confirmed", body: `${p.teamName} — ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}`, tag: `fee-${p.teamId}` };
     case "CLUB_ANNOUNCEMENT":
       return { title: p.clubName, body: p.announcementTitle ?? "New announcement", url: p.clubId ? `/club/${p.clubId}?tab=announcements` : "/clubs", tag: `club-${p.clubId}` };
     case "CLUB_SESSION":

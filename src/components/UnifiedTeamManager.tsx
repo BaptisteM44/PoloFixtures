@@ -283,6 +283,10 @@ function TeamRow({
   };
 
   const handleTogglePayment = async () => {
+    if (!team.feePaid) {
+      const ok = window.confirm(`Confirmer le paiement de ${team.name} ?`);
+      if (!ok) return;
+    }
     try {
       await fetch(`/api/teams/${team.id}/fee-paid`, {
         method: "PATCH",

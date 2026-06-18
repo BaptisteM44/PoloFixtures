@@ -1020,6 +1020,7 @@
     "club_session": "Nouvelle activité dans ton club",
     "club_session_join": "Des joueur·euses se sont inscrit·es à une session",
     "club_announcement": "Nouvelle annonce dans {clubName}",
+    "team_fee_confirmed": "Paiement confirmé — {teamName}",
     "community_reply": "Nouvelle réponse sur \"{itemTitle}\"",
     "section_pending_invites": "Invitations en attente",
     "btn_accept": "Accepter",

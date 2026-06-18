@@ -163,6 +163,7 @@ enum NotificationType {
   CLUB_SESSION_JOIN      // des joueurs se sont inscrits à une session
   CLUB_ANNOUNCEMENT      // nouvelle annonce dans le club
   COMMUNITY_STATUS_CHANGED // statut d'un item communauté a changé
+  TEAM_FEE_CONFIRMED       // paiement de l'équipe confirmé par l'orga
 }
 
 enum TaskPriority {

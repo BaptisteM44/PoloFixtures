@@ -28,6 +28,10 @@ export function PaymentTracker({ teams, feePerTeam, currency }: Props) {
   const totalPaid = paidCount * feePerTeam;
 
   const toggle = async (team: Team) => {
+    if (!team.feePaid) {
+      const ok = window.confirm(`Confirmer le paiement de ${team.name} ?`);
+      if (!ok) return;
+    }
     setPending(team.id);
     await fetch(`/api/teams/${team.id}/fee-paid`, {
       method: "PATCH",

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { notifyTeamPlayers } from "@/lib/notify";
 
 // PATCH /api/teams/:teamId/fee-paid — toggle feePaid for a team
 // Only orga/admin of the tournament containing this team
@@ -9,7 +10,17 @@ export async function PATCH(request: Request, { params }: { params: { teamId: st
 
   const team = await prisma.team.findUnique({
     where: { id: params.teamId },
-    include: { tournament: { select: { id: true, creatorId: true, coOrganizers: { select: { playerId: true } } } } },
+    include: {
+      tournament: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          creatorId: true,
+          coOrganizers: { select: { playerId: true } },
+        },
+      },
+    },
   });
   if (!team) return Response.json({ error: "Team not found" }, { status: 404 });
 
@@ -26,6 +37,17 @@ export async function PATCH(request: Request, { params }: { params: { teamId: st
     where: { id: params.teamId },
     data: { feePaid: Boolean(feePaid) },
   });
+
+  // Notify team players when payment is confirmed (not when unchecked)
+  if (updated.feePaid) {
+    notifyTeamPlayers(params.teamId, "TEAM_FEE_CONFIRMED", {
+      teamId: team.id,
+      teamName: team.name,
+      tournamentId: team.tournament.id,
+      tournamentName: team.tournament.name,
+      tournamentSlug: team.tournament.slug ?? "",
+    }).catch(() => {});
+  }
 
   return Response.json({ ok: true, feePaid: updated.feePaid });
 }
