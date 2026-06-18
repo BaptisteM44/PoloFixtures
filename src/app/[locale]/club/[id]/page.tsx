@@ -372,7 +372,7 @@ export default async function ClubPage({
               </div>
             </div>
             {activeMembers.length > 0 ? (
-              <ClubMembersGrid members={activeMembers} emptyLabel={t("members_empty")} />
+              <ClubMembersGrid members={activeMembers} emptyLabel={t("members_empty")} clubName={club.name} />
             ) : (
               <div className="empty-state"><p>{t("members_empty")}</p></div>
             )}

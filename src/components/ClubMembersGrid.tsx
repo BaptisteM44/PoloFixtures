@@ -33,7 +33,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export function ClubMembersGrid({ members, emptyLabel }: { members: Member[]; emptyLabel: string }) {
+export function ClubMembersGrid({ members, emptyLabel, clubName }: { members: Member[]; emptyLabel: string; clubName?: string }) {
   const [shuffled, setShuffled] = useState<Member[]>(members);
 
   useEffect(() => {
@@ -54,6 +54,7 @@ export function ClubMembersGrid({ members, emptyLabel }: { members: Member[]; em
             city={m.player.city}
             photoPath={m.player.photoPath}
             clubLogoPath={m.player.clubLogoPath}
+            clubName={clubName}
             teamLogoPath={m.player.teamLogoPath}
             badges={m.player.badges}
             pinnedBadges={m.player.pinnedBadges}

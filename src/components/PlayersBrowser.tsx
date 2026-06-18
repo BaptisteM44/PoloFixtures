@@ -19,6 +19,7 @@ type Player = {
   gender?: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY" | null;
   showGender: boolean;
   clubLogoPath?: string | null;
+  clubName?: string | null;
 };
 
 const CONTINENT_CODES = ["", "EU", "NA", "SA", "AS", "OC", "AF"] as const;
@@ -119,6 +120,7 @@ export function PlayersBrowser({ userContinent }: { userContinent?: string }) {
                   gender={p.gender ?? undefined}
                   showGender={p.showGender}
                   clubLogoPath={p.clubLogoPath}
+                  clubName={p.clubName}
                 />
               </Link>
             ) : (
@@ -135,6 +137,7 @@ export function PlayersBrowser({ userContinent }: { userContinent?: string }) {
                 gender={p.gender ?? undefined}
                 showGender={p.showGender}
                 clubLogoPath={p.clubLogoPath}
+                clubName={p.clubName}
               />
             )
           )}

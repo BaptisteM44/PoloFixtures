@@ -17,7 +17,7 @@ export default async function SquadPage({ params }: { params: { squadId: string 
     include: {
       members: {
         include: {
-          player: { select: { id: true, name: true, slug: true, photoPath: true, country: true, city: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, clubLogoPath: true, teamLogoPath: true, emblemPosition: true } },
+          player: { select: { id: true, name: true, slug: true, photoPath: true, country: true, city: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, clubLogoPath: true, teamLogoPath: true, emblemPosition: true, clubMemberships: { where: { status: "MEMBER" }, select: { club: { select: { name: true } } }, take: 1 } } },
         },
         orderBy: [{ role: "asc" }, { joinedAt: "asc" }],
       },
@@ -86,6 +86,7 @@ export default async function SquadPage({ params }: { params: { squadId: string 
           gender: m.player.gender,
           showGender: m.player.showGender,
           clubLogoPath: m.player.clubLogoPath,
+          clubName: m.player.clubMemberships[0]?.club.name ?? null,
           teamLogoPath: m.player.teamLogoPath,
           emblemPosition: m.player.emblemPosition,
         }))}

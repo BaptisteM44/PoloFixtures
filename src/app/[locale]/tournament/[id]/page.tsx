@@ -70,7 +70,7 @@ export default async function TournamentPage({
       sponsors: true,
       coOrganizers: { include: { player: { select: { id: true, name: true } } } },
       teams: needsPlayers
-        ? { include: { players: { include: { player: { include: { account: { select: { id: true } } } } } } } }
+        ? { include: { players: { include: { player: { include: { account: { select: { id: true } }, clubMemberships: { where: { status: "MEMBER" }, select: { club: { select: { name: true } } }, take: 1 } } } } } } }
         : { select: { id: true, name: true, seed: true, selected: true, guaranteed: true, waitlistPosition: true, city: true, country: true, registrationNote: true, orgaNote: true, tournamentId: true, color: true, playerALevel: true, playerBLevel: true, playerCLevel: true, globalRank: true, saturdayGroup: true, fridayGroup: true } },
       pools: activeTab === "pools" || activeTab === "kiosque_j1" || activeTab === "kiosque_top4" || activeTab === "kiosque_bot12" || activeTab === "schedule"
         ? { include: { teams: { include: { team: true } } } }
@@ -89,7 +89,7 @@ export default async function TournamentPage({
         ? true
         : { select: { id: true } },
       soloEntries: (activeTab === "inscription" || activeTab === "equipes")
-        ? { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true } } }, orderBy: { createdAt: "asc" as const } }
+        ? { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true, clubMemberships: { where: { status: "MEMBER" }, select: { club: { select: { name: true } } }, take: 1 } } } }, orderBy: { createdAt: "asc" as const } }
         : false,
       hostClub: { select: { id: true, name: true, logoPath: true } },
     }
@@ -240,7 +240,7 @@ export default async function TournamentPage({
 
 
   // Podium (extrait du bracket si tournoi terminé)
-  type PodiumPlayer = { id: string; name: string; country: string; city?: string | null; photoPath?: string | null; clubLogoPath?: string | null; teamLogoPath?: string | null; badges?: string[]; pinnedBadges?: string[]; startYear?: number | null; hand?: string | null; gender?: string | null; slug?: string | null };
+  type PodiumPlayer = { id: string; name: string; country: string; city?: string | null; photoPath?: string | null; clubLogoPath?: string | null; clubName?: string | null; teamLogoPath?: string | null; badges?: string[]; pinnedBadges?: string[]; startYear?: number | null; hand?: string | null; gender?: string | null; slug?: string | null };
   type PodiumTeam = { id: string; name: string; players?: PodiumPlayer[] } | null;
   let podium: { first: PodiumTeam; second: PodiumTeam; third: PodiumTeam } = { first: null, second: null, third: null };
 
@@ -248,13 +248,13 @@ export default async function TournamentPage({
     const bracketMatches = await prisma.match.findMany({
       where: { tournamentId: tournament.id, phase: { in: ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE"] }, status: "FINISHED" },
       include: {
-        teamA: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
-        teamB: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
+        teamA: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true, clubMemberships: { where: { status: "MEMBER" }, select: { club: { select: { name: true } } }, take: 1 } } } } } } },
+        teamB: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true, clubMemberships: { where: { status: "MEMBER" }, select: { club: { select: { name: true } } }, take: 1 } } } } } } },
       },
       orderBy: { roundIndex: "desc" },
     });
     const extractPlayers = (team: any): PodiumPlayer[] =>
-      (team?.players ?? []).map((tp: any) => ({ id: tp.player.id, name: tp.player.name, country: tp.player.country ?? "", city: tp.player.city ?? null, photoPath: tp.player.photoPath ?? null, clubLogoPath: tp.player.clubLogoPath ?? null, teamLogoPath: tp.player.teamLogoPath ?? null, badges: tp.player.badges ?? [], pinnedBadges: tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : undefined, startYear: tp.player.startYear ?? null, hand: tp.player.hand ?? null, gender: tp.player.gender ?? null, slug: tp.player.slug ?? null }));
+      (team?.players ?? []).map((tp: any) => ({ id: tp.player.id, name: tp.player.name, country: tp.player.country ?? "", city: tp.player.city ?? null, photoPath: tp.player.photoPath ?? null, clubLogoPath: tp.player.clubLogoPath ?? null, clubName: tp.player.clubMemberships?.[0]?.club?.name ?? null, teamLogoPath: tp.player.teamLogoPath ?? null, badges: tp.player.badges ?? [], pinnedBadges: tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : undefined, startYear: tp.player.startYear ?? null, hand: tp.player.hand ?? null, gender: tp.player.gender ?? null, slug: tp.player.slug ?? null }));
     const toTeam = (t: any): PodiumTeam => t ? { id: t.id, name: t.name, players: extractPlayers(t) } : null;
     // GF : en cas de reset (plusieurs matchs G), prendre celui avec le roundIndex le plus élevé
     const gfMatches = bracketMatches.filter((m) => m.bracketSide === "G");
@@ -428,6 +428,7 @@ export default async function TournamentPage({
             badges: tp.player.badges ?? [],
             pinnedBadges: tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : undefined,
             clubLogoPath: tp.player.clubLogoPath ?? null,
+            clubName: tp.player.clubMemberships?.[0]?.club?.name ?? null,
             teamLogoPath: tp.player.teamLogoPath ?? null,
             startYear: tp.player.startYear ?? null,
             hand: tp.player.hand ?? null,
@@ -788,6 +789,8 @@ export default async function TournamentPage({
                           country={e.player.country}
                           city={e.player.city}
                           photoPath={e.player.photoPath}
+                          clubLogoPath={e.player.clubLogoPath}
+                          clubName={(e.player as any).clubMemberships?.[0]?.club?.name ?? null}
                           badges={e.player.badges}
                           pinnedBadges={e.player.pinnedBadges}
                           startYear={e.player.startYear}
@@ -1560,6 +1563,8 @@ export default async function TournamentPage({
                               country={tp.player.country}
                               city={tp.player.city}
                               photoPath={tp.player.photoPath}
+                              clubLogoPath={tp.player.clubLogoPath}
+                              clubName={(tp.player as any).clubMemberships?.[0]?.club?.name ?? null}
                               badges={[...(tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : tp.player.badges), ...extraBadges.filter((b: string) => !(tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : tp.player.badges).includes(b))]}
                               startYear={tp.player.startYear}
                               hand={tp.player.hand}

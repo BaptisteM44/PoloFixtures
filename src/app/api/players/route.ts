@@ -56,6 +56,11 @@ export async function GET(request: Request) {
         photoPath: true, badges: true, pinnedBadges: true,
         startYear: true, hand: true, gender: true, showGender: true,
         clubLogoPath: true,
+        clubMemberships: {
+          where: { status: "MEMBER" },
+          select: { club: { select: { name: true } } },
+          take: 1,
+        },
       },
     });
     // Full Fisher-Yates shuffle across all results
@@ -63,7 +68,11 @@ export async function GET(request: Request) {
       const j = Math.floor(Math.random() * (i + 1));
       [players[i], players[j]] = [players[j], players[i]];
     }
-    return Response.json(players);
+    const result = players.map(({ clubMemberships, ...p }) => ({
+      ...p,
+      clubName: clubMemberships[0]?.club.name ?? null,
+    }));
+    return Response.json(result);
   }
 
   const players = await prisma.player.findMany({

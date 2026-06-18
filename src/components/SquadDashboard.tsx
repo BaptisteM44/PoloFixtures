@@ -24,6 +24,7 @@ type Member = {
   gender: "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY" | null;
   showGender: boolean;
   clubLogoPath: string | null;
+  clubName: string | null;
   teamLogoPath: string | null;
   emblemPosition: string | null;
 };
@@ -368,6 +369,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                         city={m.city}
                         photoPath={m.photoPath}
                         clubLogoPath={m.clubLogoPath}
+                        clubName={m.clubName}
                         teamLogoPath={m.teamLogoPath}
                         badges={m.badges}
                         pinnedBadges={m.pinnedBadges}
@@ -384,6 +386,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                       city={m.city}
                       photoPath={m.photoPath}
                       clubLogoPath={m.clubLogoPath}
+                      clubName={m.clubName}
                       teamLogoPath={m.teamLogoPath}
                       badges={m.badges}
                       pinnedBadges={m.pinnedBadges}
