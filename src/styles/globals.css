@@ -3401,7 +3401,7 @@ details.agenda-month--past > summary::-webkit-details-marker {
 .match-card__corner--tl { top: 10px; left: 12px; display: flex; align-items: center; gap: 6px; }
 .match-card__corner--tr { top: 10px; right: 12px; }
 .match-card__corner--bl { bottom: 10px; left: 12px; }
-.match-card__corner--br { bottom: 10px; right: 12px; }
+.match-card__corner--br { bottom: 10px; right: 12px; display: flex; align-items: center; gap: 6px; }
 
 /* — Referees row — */
 .match-card__referees {
@@ -3434,6 +3434,348 @@ details.agenda-month--past > summary::-webkit-details-marker {
   font-family: var(--font-display);
   text-align: center;
 }
+.match-card__compo-toggle {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  border-top: 1px dashed var(--border-light);
+  padding: 3px 0;
+  font-size: 10px;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: center;
+}
+.match-card__compo-toggle:hover { color: var(--text); }
+.match-card__compo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 6px 10px 8px;
+  background: var(--surface-2);
+  border-radius: 0 0 8px 8px;
+  border: 1px solid var(--border-light);
+  border-top: none;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.match-card__compo-side { display: flex; flex-direction: column; }
+.match-card__compo-side strong {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+.match-card__compo-side span { color: var(--text); }
+
+/* ═══ Demo match card variants ═══ */
+
+/* Joueurs sous le nom (variante D) */
+.dmc-players-sub {
+  font-size: 10px; font-weight: 400;
+  font-family: var(--font-body);
+  color: var(--text-muted); opacity: 0.65;
+  margin-top: 1px; line-height: 1.3;
+}
+
+/* Panneau compo depliable (variante A) */
+.dmc-compo-panel {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  padding: 8px 14px 10px;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  font-size: 12px; line-height: 1.6;
+  margin-top: -2px;
+}
+.dmc-compo-panel__side { display: flex; flex-direction: column; }
+.dmc-compo-panel__side strong {
+  font-size: 10px; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 2px;
+  font-family: var(--font-display);
+}
+.dmc-compo-panel__side span { color: var(--text); }
+
+/* ── Variante B : Face a face ── */
+.dmc-v2 {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.dmc-v2--live { border-color: var(--pink); box-shadow: 4px 4px 0 var(--pink); }
+.dmc-v2--finished { border-color: var(--success); }
+.dmc-v2__bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-light);
+  font-size: 10px; color: var(--text-muted);
+  font-family: var(--font-display); letter-spacing: 0.04em; text-transform: uppercase;
+}
+.dmc-v2__live { color: var(--pink); font-weight: 800; }
+.dmc-v2__body {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; gap: 10px;
+  padding: 12px 14px;
+}
+.dmc-v2__team { display: flex; flex-direction: column; gap: 2px; }
+.dmc-v2__team--right { text-align: right; }
+.dmc-v2__team--win .dmc-v2__name { color: var(--success); }
+.dmc-v2__name {
+  font-weight: 700; font-size: 14px;
+  font-family: var(--font-display); line-height: 1.2;
+}
+.dmc-v2__roster {
+  font-size: 10px; color: var(--text-muted); line-height: 1.4;
+}
+.dmc-v2__score {
+  font-size: 26px; font-weight: 900; font-family: var(--font-display);
+  background: var(--surface-2); border: 2px solid var(--border);
+  border-radius: var(--radius-sm); padding: 4px 12px;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+  box-shadow: var(--shadow);
+}
+.dmc-v2__dash { opacity: 0.3; font-size: 18px; }
+.dmc-v2__ref {
+  padding: 4px 12px 6px; font-size: 10px; color: var(--text-muted);
+  border-top: 1px solid var(--border-light);
+}
+
+/* ── Variante C : Bandes ── */
+.dmc-v3 {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.dmc-v3--live { border-color: var(--pink); box-shadow: 4px 4px 0 var(--pink); }
+.dmc-v3--finished { border-color: var(--success); }
+.dmc-v3__header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border-light);
+  font-size: 10px; color: var(--text-muted);
+  font-family: var(--font-display); letter-spacing: 0.04em; text-transform: uppercase;
+}
+.dmc-v3__num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--border); color: #fff;
+  font-size: 10px; font-weight: 800;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.dmc-v3__header > span:last-child { margin-left: auto; }
+.dmc-v3__live { color: var(--pink); font-weight: 800; }
+.dmc-v3__row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+.dmc-v3__row:last-of-type { border-bottom: none; }
+.dmc-v3__row--win { background: color-mix(in srgb, var(--success) 6%, transparent); }
+.dmc-v3__row--win .dmc-v3__name { color: var(--success); }
+.dmc-v3__info { flex: 1; min-width: 0; }
+.dmc-v3__name {
+  font-weight: 700; font-size: 14px;
+  font-family: var(--font-display); display: block; line-height: 1.2;
+}
+.dmc-v3__roster {
+  font-size: 10px; color: var(--text-muted); display: block;
+  margin-top: 1px; line-height: 1.3;
+}
+.dmc-v3__sc {
+  font-size: 28px; font-weight: 900;
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  min-width: 32px; text-align: center;
+}
+.dmc-v3__footer {
+  padding: 4px 12px 6px; font-size: 10px; color: var(--text-muted);
+  border-top: 1px solid var(--border-light);
+}
+
+/* ── Variante E : overlay / voile ── */
+.dmc-v5 {
+  position: relative;
+}
+.dmc-v5__fab {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: none;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  padding: 0;
+  transition: box-shadow var(--transition);
+}
+.dmc-v5__fab:hover {
+  box-shadow: var(--shadow);
+}
+.dmc-v5__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(6px);
+  border-radius: var(--radius, 10px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 14px 16px;
+  gap: 8px;
+  animation: dmc-v5-fade 0.2s ease;
+  cursor: pointer;
+}
+@keyframes dmc-v5-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.dmc-v5__overlay-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dmc-v5__overlay-side strong {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text, #111);
+  text-transform: uppercase;
+}
+.dmc-v5__overlay-side span {
+  font-size: 11px;
+  color: var(--text-muted, #555);
+  line-height: 1.5;
+}
+.dmc-v5__close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: rgba(0,0,0,0.4);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: color 0.15s;
+}
+.dmc-v5__close:hover {
+  color: #000;
+}
+.dmc-v5__overlay-ref {
+  font-size: 10px;
+  color: var(--text-muted, #888);
+  text-align: center;
+  margin-top: 2px;
+}
+/* E2 — split bicolore */
+.dmc-v5__overlay--split {
+  flex-direction: row;
+  padding: 0;
+  gap: 0;
+}
+.dmc-v5__split-half {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 16px 14px;
+}
+.dmc-v5__split-half--left {
+  background: rgba(59,130,246,0.1);
+  border-radius: var(--radius, 10px) 0 0 var(--radius, 10px);
+  align-items: flex-start;
+}
+.dmc-v5__split-half--right {
+  background: rgba(239,68,68,0.1);
+  border-radius: 0 var(--radius, 10px) var(--radius, 10px) 0;
+  align-items: flex-end;
+  text-align: right;
+}
+.dmc-v5__split-half strong {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text, #111);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.dmc-v5__split-half span {
+  font-size: 10px;
+  color: var(--text-muted, #555);
+  line-height: 1.6;
+}
+/* E3 — card style avec VS */
+.dmc-v5__overlay--card {
+  align-items: center;
+  gap: 4px;
+}
+.dmc-v5__card-team {
+  width: 100%;
+  text-align: center;
+}
+.dmc-v5__card-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--text, #111);
+  text-transform: uppercase;
+  display: block;
+}
+.dmc-v5__card-name--left {
+  text-align: left;
+  padding-left: 6px;
+}
+.dmc-v5__card-name--right {
+  text-align: right;
+  padding-right: 6px;
+}
+.dmc-v5__card-players {
+  font-size: 10px;
+  color: var(--text-muted, #555);
+  line-height: 1.6;
+  margin-top: 2px;
+}
+.dmc-v5__card-name--left + .dmc-v5__card-players {
+  text-align: left;
+  padding-left: 6px;
+}
+.dmc-v5__card-name--right + .dmc-v5__card-players {
+  text-align: right;
+  padding-right: 6px;
+}
+.dmc-v5__card-vs {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text-muted, #aaa);
+  letter-spacing: 0.15em;
+}
 
 .match-card__score {
   font-size: 22px;
@@ -3463,7 +3805,26 @@ details.agenda-month--past > summary::-webkit-details-marker {
   font-size: 11px;
   font-weight: 800;
   font-family: var(--font-display);
+}
+.match-card__live-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 22px;
+}
+.match-card__live-dot {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ef4444;
   flex-shrink: 0;
+  animation: live-pulse 1.5s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 /* — Carte LIVE enrichie (layout flex column) — */
