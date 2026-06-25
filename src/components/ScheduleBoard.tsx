@@ -101,6 +101,8 @@ function mazzaSequentialOrder(sessionIndex: number | undefined, roundIndex: numb
   return 99;
 }
 
+type TeamWithPlayers = Team & { players?: { player: { id: string; name: string } }[] };
+
 export function ScheduleBoard({
   tournamentId,
   initialMatches,
@@ -114,7 +116,7 @@ export function ScheduleBoard({
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
-  teams: Team[];
+  teams: TeamWithPlayers[];
   pools?: { id: string; name: string }[];
   isOrganizer?: boolean;
   poolRounds?: number | null;
@@ -129,6 +131,7 @@ export function ScheduleBoard({
   const [filterPhase, setFilterPhase] = useState("ALL");
   const [editMatch, setEditMatch] = useState<MatchForEdit | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [expandedPlayers, setExpandedPlayers] = useState<string | null>(null);
   const [loadingRound, setLoadingRound] = useState<string | null>(null);
 
   const STATUS_LABEL: Record<string, string> = {
@@ -175,6 +178,13 @@ export function ScheduleBoard({
 
   const teamName = (id?: string | null) =>
     teams.find((tm) => tm.id === id)?.name ?? "TBD";
+
+  const teamPlayerNames = (id?: string | null) => {
+    if (!id) return null;
+    const team = teams.find((tm) => tm.id === id);
+    if (!team?.players?.length) return null;
+    return team.players.map((tp) => tp.player.name);
+  };
 
   const openEdit = (match: MatchWithTeams) => {
     if (selectedId === match.id) {
@@ -401,6 +411,27 @@ export function ScheduleBoard({
           <span>{STATUS_LABEL[match.status] ?? match.status}</span>
         </div>
       </button>
+      {(teamPlayerNames(match.teamAId) || teamPlayerNames(match.teamBId)) && (
+        <button
+          type="button"
+          className={`match-card__compo-toggle${expandedPlayers === match.id ? " match-card__compo-toggle--open" : ""}`}
+          onClick={(e) => { e.stopPropagation(); setExpandedPlayers(expandedPlayers === match.id ? null : match.id); }}
+        >
+          {expandedPlayers === match.id ? "▾ compo" : "▸ compo"}
+        </button>
+      )}
+      {expandedPlayers === match.id && (
+        <div className="match-card__compo">
+          <div className="match-card__compo-side">
+            <strong>{teamName(match.teamAId)}</strong>
+            {teamPlayerNames(match.teamAId)?.map((n) => <span key={n}>{n}</span>)}
+          </div>
+          <div className="match-card__compo-side">
+            <strong>{teamName(match.teamBId)}</strong>
+            {teamPlayerNames(match.teamBId)?.map((n) => <span key={n}>{n}</span>)}
+          </div>
+        </div>
+      )}
     </div>
   );
 
