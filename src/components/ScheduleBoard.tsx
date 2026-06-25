@@ -367,7 +367,7 @@ export function ScheduleBoard({
   };
 
   const renderMatchCard = (match: MatchWithTeams, courtMatches: MatchWithTeams[]) => (
-    <div key={match.id}>
+    <div key={match.id} className="dmc-v5">
       <button
         className={`match-card match-card--${match.status.toLowerCase()}${selectedId === match.id ? " match-card--selected" : ""}`}
         onClick={() => openEdit(match)}
@@ -413,22 +413,28 @@ export function ScheduleBoard({
       </button>
       {(teamPlayerNames(match.teamAId) || teamPlayerNames(match.teamBId)) && (
         <button
+          className="dmc-v5__fab"
           type="button"
-          className={`match-card__compo-toggle${expandedPlayers === match.id ? " match-card__compo-toggle--open" : ""}`}
           onClick={(e) => { e.stopPropagation(); setExpandedPlayers(expandedPlayers === match.id ? null : match.id); }}
         >
-          {expandedPlayers === match.id ? "▾ compo" : "▸ compo"}
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 24" width="22" height="18" fill="currentColor">
+            <circle cx="5" cy="12" r="2.5"/>
+            <circle cx="15" cy="12" r="2.5"/>
+            <circle cx="25" cy="12" r="2.5"/>
+          </svg>
         </button>
       )}
       {expandedPlayers === match.id && (
-        <div className="match-card__compo">
-          <div className="match-card__compo-side">
-            <strong>{teamName(match.teamAId)}</strong>
-            {teamPlayerNames(match.teamAId)?.map((n) => <span key={n}>{n}</span>)}
+        <div className="dmc-v5__overlay dmc-v5__overlay--card" onClick={() => setExpandedPlayers(null)}>
+          <button className="dmc-v5__close" type="button" onClick={(e) => { e.stopPropagation(); setExpandedPlayers(null); }}>&times;</button>
+          <div className="dmc-v5__card-team">
+            <strong className="dmc-v5__card-name dmc-v5__card-name--left">{teamName(match.teamAId)}</strong>
+            <div className="dmc-v5__card-players">{teamPlayerNames(match.teamAId)?.join(" · ")}</div>
           </div>
-          <div className="match-card__compo-side">
-            <strong>{teamName(match.teamBId)}</strong>
-            {teamPlayerNames(match.teamBId)?.map((n) => <span key={n}>{n}</span>)}
+          <div className="dmc-v5__card-vs">VS</div>
+          <div className="dmc-v5__card-team">
+            <strong className="dmc-v5__card-name dmc-v5__card-name--right">{teamName(match.teamBId)}</strong>
+            <div className="dmc-v5__card-players">{teamPlayerNames(match.teamBId)?.join(" · ")}</div>
           </div>
         </div>
       )}
