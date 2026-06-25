@@ -58,7 +58,7 @@ export default async function TournamentPage({
   // Les onglets "equipes" et "recap" ont besoin des joueurs complets.
   // "hebergement" aussi : myTeam est calculé via team.players, nécessaire pour afficher le tab.
   // Pas de tab = page chargée sans ?tab= : on charge les players par précaution (recap default pour COMPLETED).
-  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap" || activeTab === "hebergement" || activeTab === "pools" || activeTab === "kiosque_j1" || activeTab === "kiosque_top4" || activeTab === "kiosque_bot12";
+  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap" || activeTab === "hebergement" || activeTab === "pools" || activeTab === "kiosque_j1" || activeTab === "kiosque_top4" || activeTab === "kiosque_bot12" || activeTab === "schedule";
   // L'onglet "equipes" a besoin des events pour les badges. "schedule" pour le chrono live.
   const needsEvents = activeTab === "equipes" || activeTab === "live" || activeTab === "schedule";
   // Les onglets sans matches : info, inscription, recap, communaute, equipes (matches via events)
@@ -1656,19 +1656,17 @@ export default async function TournamentPage({
       )}
 
       {/* ── ONGLET ZONE FREE AGENT ── */}
-      {tab === "communaute" && !registrationClosed && (
+      {tab === "communaute" && !isCompleted && (
         <div className="panel" style={{ maxWidth: 600 }}>
           <h3 style={{ marginBottom: 4 }}>{t("tab_free_agent")}</h3>
           <p className="meta" style={{ marginBottom: 16 }}>
             {t("communaute_free_agents_desc")}
           </p>
 
-          {registrationOpen && (
-            <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid var(--border-light)" }}>
-              <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{t("communaute_looking")}</p>
-              <FreeAgentForm tournamentId={tournament.id} />
-            </div>
-          )}
+          <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: "1px solid var(--border-light)" }}>
+            <p style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>{t("communaute_looking")}</p>
+            <FreeAgentForm tournamentId={tournament.id} />
+          </div>
 
           {tournament.freeAgents.length === 0 ? (
             <p className="meta">{fa("empty")}</p>
