@@ -216,6 +216,8 @@ export function TournamentRefereePanel({
   const selectedMatch = matchMap.get(selectedMatchId) ?? null;
   const gameDurSec = tournament.gameDurationMin * 60;
   const displaySec = Math.max(0, gameDurSec - clockSec);
+  // Dernières 2 minutes : le chrono doit se stopper automatiquement sur but/timeout
+  const isLastTwoMinutes = clockSec >= gameDurSec - 120 && clockSec < gameDurSec;
 
   // Sync état à chaque changement de match sélectionné
   useEffect(() => {
@@ -263,10 +265,25 @@ export function TournamentRefereePanel({
     return () => clearInterval(interval);
   }, [running]);
 
-  // Timer timeout (overlay)
+  // Refs pour accéder aux valeurs courantes dans les callbacks sans stale closure
+  const isLastTwoMinutesRef = useRef(false);
+  useEffect(() => { isLastTwoMinutesRef.current = isLastTwoMinutes; }, [isLastTwoMinutes]);
+  const runningRef = useRef(running);
+  useEffect(() => { runningRef.current = running; }, [running]);
+  const matchEndedRef = useRef(matchEnded);
+  useEffect(() => { matchEndedRef.current = matchEnded; }, [matchEnded]);
+
+  // Timer timeout (overlay) — redémarre le chrono à la fin du timeout si on est dans les 2 dernières minutes
   useEffect(() => {
     if (!timeoutTimer) return;
-    if (timeoutTimer.sec <= 0) { setTimeoutTimer(null); return; }
+    if (timeoutTimer.sec <= 0) {
+      setTimeoutTimer(null);
+      if (isLastTwoMinutesRef.current && !runningRef.current && !matchEndedRef.current) {
+        setRunning(true);
+        postEvent("START");
+      }
+      return;
+    }
     const interval = setInterval(() => setTimeoutTimer((prev) => prev ? { ...prev, sec: prev.sec - 1 } : null), 1000);
     return () => clearInterval(interval);
   }, [timeoutTimer]);
@@ -363,6 +380,11 @@ export function TournamentRefereePanel({
     });
     const playerName = playerId ? tournament.teams.flatMap((t) => t.players).find((p) => p.id === playerId)?.name : undefined;
     postEvent("GOAL", { teamId, delta, ...(playerId ? { playerId, ...(playerName ? { playerName } : {}) } : {}) });
+    // Dernières 2 min : le chrono était pausé pour l'attribution du buteur → on le redémarre
+    if (isLastTwoMinutes && delta > 0) {
+      setRunning(true);
+      postEvent("START");
+    }
   };
 
   const onPenaltyConfirmed = (teamId: string, playerId: string, delta: number) => {
@@ -768,6 +790,12 @@ export function TournamentRefereePanel({
                 ⇄ {t("swap_sides")}
               </button>
             </div>
+            <div className="ref-clock-controls" style={{ marginTop: 6 }}>
+              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => Math.max(0, p - 10)); postEvent("TIME_ADJUST", { delta: -10 }); }}>−10s</button>
+              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => Math.max(0, p - 5)); postEvent("TIME_ADJUST", { delta: -5 }); }}>−5s</button>
+              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => p + 5); postEvent("TIME_ADJUST", { delta: 5 }); }}>+5s</button>
+              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => p + 10); postEvent("TIME_ADJUST", { delta: 10 }); }}>+10s</button>
+            </div>
           </div>
 
           {/* ── Scores ─────────────────────────────────────────────────── */}
@@ -801,7 +829,11 @@ export function TournamentRefereePanel({
                         </button>
                       ) : (
                         <button className="primary ref-bigbtn"
-                          onClick={() => setGoalModal({ teamId: tid, teamName: team.name, delta: 1 })}>
+                          onClick={() => {
+                            // Dernières 2 min : pause auto en attendant l'attribution du buteur
+                            if (isLastTwoMinutes && running) { setRunning(false); postEvent("PAUSE"); }
+                            setGoalModal({ teamId: tid, teamName: team.name, delta: 1 });
+                          }}>
                           {t("btn_plus_one_goal")}
                         </button>
                       )}

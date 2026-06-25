@@ -139,6 +139,11 @@ export function RefereePanel() {
     postEvent("TIME_ADJUST", { delta });
   };
 
+  // Dans les 2 dernières minutes, on détermine si le chrono doit se stopper automatiquement
+  const isLastTwoMinutes = currentTournament
+    ? clockSec >= currentTournament.gameDurationMin * 60 - 120
+    : false;
+
   const onScore = (teamId: string, delta: number, playerId?: string) => {
     if (!selectedMatch) return;
     const nextA = teamId === selectedMatch.teamAId ? clampScore(selectedMatch.scoreA + delta) : selectedMatch.scoreA;
@@ -146,14 +151,26 @@ export function RefereePanel() {
     setSelectedMatch({ ...selectedMatch, scoreA: nextA, scoreB: nextB });
     postEvent("GOAL", { teamId, delta, ...(playerId ? { playerId } : {}) });
     setScorerPickerTeamId(null);
+    // Redémarre le chrono après attribution du but (si on était en pause cause dernières 2 min)
+    if (isLastTwoMinutes && !running) {
+      setRunning(true);
+      postEvent("START");
+    }
   };
 
   const openScorerPicker = (teamId: string, delta: number) => {
     if (!selectedMatch) return;
     const team = teamId === selectedMatch.teamAId ? selectedMatch.teamA : selectedMatch.teamB;
     // Si pas de joueurs connus, scorer directement sans picker
-    if (!team?.players?.length) { onScore(teamId, delta); return; }
+    if (!team?.players?.length) {
+      // Dernières 2 min : pause auto avant d'enregistrer le but
+      if (isLastTwoMinutes && running && delta > 0) { setRunning(false); postEvent("PAUSE"); }
+      onScore(teamId, delta);
+      return;
+    }
     if (delta < 0) { onScore(teamId, delta); return; } // annulation directe
+    // Dernières 2 min : pause le chrono en attendant l'attribution du buteur
+    if (isLastTwoMinutes && running) { setRunning(false); postEvent("PAUSE"); }
     setScorerPickerTeamId(teamId);
   };
 
@@ -170,6 +187,11 @@ export function RefereePanel() {
   };
 
   const onTimeout = (teamId: string, timeoutType: "normal" | "mechanical", delta = 1) => {
+    // Dernières 2 min : pause le chrono quand on prend un timeout
+    if (delta > 0 && isLastTwoMinutes && running) {
+      setRunning(false);
+      postEvent("PAUSE");
+    }
     postEvent("TIMEOUT", { teamId, timeoutType, delta });
   };
 
@@ -259,16 +281,27 @@ export function RefereePanel() {
             </div>
             <div className="button-row" style={{ alignItems: "center", gap: 6 }}>
               <button
+                onClick={() => onAdjust(10)}
+                title="+10s"
+                style={{ width: 36, height: 32, borderRadius: 6, padding: 0, fontSize: 11, fontWeight: 700, flexShrink: 0 }}
+              >+10s</button>
+              <button
                 onClick={() => onAdjust(5)}
                 title="+5s"
-                style={{ width: 32, height: 32, borderRadius: "50%", padding: 0, fontSize: 11, fontWeight: 700, flexShrink: 0 }}
+                style={{ width: 32, height: 32, borderRadius: 6, padding: 0, fontSize: 11, fontWeight: 700, flexShrink: 0 }}
               >+5s</button>
               <button
                 onClick={() => onAdjust(-5)}
                 className="ghost"
                 title="-5s"
-                style={{ width: 32, height: 32, borderRadius: "50%", padding: 0, fontSize: 11, fontWeight: 700, flexShrink: 0 }}
+                style={{ width: 32, height: 32, borderRadius: 6, padding: 0, fontSize: 11, fontWeight: 700, flexShrink: 0 }}
               >-5s</button>
+              <button
+                onClick={() => onAdjust(-10)}
+                className="ghost"
+                title="-10s"
+                style={{ width: 36, height: 32, borderRadius: 6, padding: 0, fontSize: 11, fontWeight: 700, flexShrink: 0 }}
+              >-10s</button>
             </div>
             <div className="button-row">
               <button className="ghost" onClick={() => setMuted((prev) => !prev)}>
