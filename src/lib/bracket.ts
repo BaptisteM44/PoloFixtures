@@ -1032,24 +1032,13 @@ function generateDoubleElim(
   }
   lbSurvivors = lbR2Count + (lbR2Teams % 2);
 
-  // ── WB R3+ with interleaved LB injection + consolidation ────────────
+  // ── WB R3+ with interleaved LB consolidation + injection ────────────
+  // MTP Open pattern: consolidation FIRST (LB survivors pair up), THEN injection (WB losers enter)
   for (let k = 3; k <= upperRounds; k++) {
     const wbCount = size / Math.pow(2, k);
 
-    // WB round k
-    emitRound("W", k, wbCount);
-    advanceTime(wbCount);
-
-    // Injection: lbSurvivors face wbCount WB losers (with BYEs if uneven)
-    const injCount = Math.min(lbSurvivors, wbCount);
-    if (injCount > 0) {
-      emitRound("L", lbRoundIdx++, injCount);
-      advanceTime(injCount);
-    }
-    lbSurvivors = injCount + Math.abs(lbSurvivors - wbCount);
-
-    // Consolidation (if more rounds remain and lbSurvivors > 1)
-    if (k < upperRounds && lbSurvivors > 1) {
+    // Consolidation: LB survivors from previous round pair up
+    if (lbSurvivors > 1) {
       const consCount = Math.floor(lbSurvivors / 2);
       if (consCount > 0) {
         emitRound("L", lbRoundIdx++, consCount);
@@ -1057,6 +1046,18 @@ function generateDoubleElim(
       }
       lbSurvivors = consCount + (lbSurvivors % 2);
     }
+
+    // WB round k
+    emitRound("W", k, wbCount);
+    advanceTime(wbCount);
+
+    // Injection: LB survivors face WB R(k) losers (with BYEs if uneven)
+    const injCount = Math.min(lbSurvivors, wbCount);
+    if (injCount > 0) {
+      emitRound("L", lbRoundIdx++, injCount);
+      advanceTime(injCount);
+    }
+    lbSurvivors = injCount + Math.abs(lbSurvivors - wbCount);
   }
 
   // Final consolidations if needed

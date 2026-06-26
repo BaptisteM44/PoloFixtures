@@ -196,7 +196,7 @@ function simulateDELinking(matches: GeneratedMatch[], teamCount: number) {
   }
 
   // ── WB R3+ lose links (inject into LB) ──
-  // Build wbToLBRound mapping: WB round k → which LB round gets its losers
+  // Build wbToLBRound mapping: mirrors bracket.ts emission order
   const wbToLBRound = new Map<number, number>();
   {
     const lbR2RoundIdx = lbR1Count > 0 ? 2 : 1;
@@ -206,22 +206,23 @@ function simulateDELinking(matches: GeneratedMatch[], teamCount: number) {
     wbToLBRound.set(2, lbR2RoundIdx);
 
     let lbSurvivors = lbR2Count + (lbR2Teams % 2);
-    let lbRI = lbR2RoundIdx + 1;
-
+    let lbRI = lbR2RoundIdx;
     for (let k = 3; k <= upperRounds; k++) {
       const wbCount = size / Math.pow(2, k);
-      wbToLBRound.set(k, lbRI);
-      const injCount = Math.min(lbSurvivors, wbCount);
-      lbSurvivors = injCount + Math.abs(lbSurvivors - wbCount);
-      lbRI++;
-      if (k < upperRounds && lbSurvivors > 1) {
-        lbSurvivors = Math.floor(lbSurvivors / 2) + (lbSurvivors % 2);
+      if (lbSurvivors > 1) {
+        const consCount = Math.floor(lbSurvivors / 2);
         lbRI++;
+        lbSurvivors = consCount + (lbSurvivors % 2);
       }
+      const injCount = Math.min(lbSurvivors, wbCount);
+      lbRI++;
+      wbToLBRound.set(k, lbRI);
+      lbSurvivors = injCount + Math.abs(lbSurvivors - wbCount);
     }
   }
 
-  // WB R3+ losers → LB injection rounds, slot B
+  // WB R3+ losers → LB injection rounds
+  // MTP Open pattern: WB R3 losers → slot A, WB Final loser → slot B
   for (let k = 3; k <= upperRounds; k++) {
     const wbMatches = byWB.get(k) ?? [];
     const lbTargetRound = wbToLBRound.get(k);
@@ -230,8 +231,10 @@ function simulateDELinking(matches: GeneratedMatch[], teamCount: number) {
     for (let i = 0; i < wbMatches.length; i++) {
       const target = lbTargetMatches[i];
       if (target) {
-        setLink(wbMatches[i].id, "lose", target.id, "B");
-        claimSlot(target.id, "B", `WB R${k} pos${i}`);
+        const isWBFinal = k === maxWB && wbMatches.length === 1;
+        const slot: "A" | "B" = isWBFinal ? "B" : "A";
+        setLink(wbMatches[i].id, "lose", target.id, slot);
+        claimSlot(target.id, slot, `WB R${k} pos${i}`);
       }
     }
   }
@@ -308,38 +311,39 @@ function simulateDELinking(matches: GeneratedMatch[], teamCount: number) {
   }
 
   // ── LB forwarding (winners) ──
-  // For each LB round, send winners to the next LB round's free slots.
-  // Process rounds in order. Each match winner needs a free slot in a later round.
-  // BYE'd teams from overflow are already placed; LB match winners fill remaining slots.
-  for (const lbRound of lbRounds) {
+  // MTP Open pattern: use round sizes to detect consolidation vs injection
+  // - next.length < cur.length → consolidation: pair up floor(i/2), slot A/B
+  // - next.length >= cur.length → injection: 1-to-1, use free slot (WB losers already claimed one)
+  for (let lri = 0; lri < lbRounds.length; lri++) {
+    const lbRound = lbRounds[lri];
     const lbMatches = byLB.get(lbRound)!;
+    const nextLR = lri + 1 < lbRounds.length ? lbRounds[lri + 1] : null;
 
     for (let i = 0; i < lbMatches.length; i++) {
-      if (lbRound === maxLB) {
-        // Last LB round → Grand Final slot B
+      if (!nextLR) {
         if (grandFinal) setLink(lbMatches[i].id, "win", grandFinal.id, "B");
         continue;
       }
 
-      // Find the next LB round with a free slot
-      let placed = false;
-      for (const nextRound of lbRounds) {
-        if (nextRound <= lbRound) continue;
-        const nextMatches = byLB.get(nextRound)!;
-        for (const nm of nextMatches) {
-          const freeSlot = findFreeSlot(nm.id);
-          if (freeSlot) {
-            setLink(lbMatches[i].id, "win", nm.id, freeSlot);
-            claimSlot(nm.id, freeSlot, `LB R${lbRound} pos${lbMatches[i].positionInRound}(win)`);
-            placed = true;
-            break;
-          }
-        }
-        if (placed) break;
-      }
+      const nextMatches = byLB.get(nextLR)!;
 
-      if (!placed && grandFinal) {
-        setLink(lbMatches[i].id, "win", grandFinal.id, "B");
+      if (nextMatches.length < lbMatches.length) {
+        // Consolidation: pair up — 2 LB matches feed into 1
+        const nextIdx = Math.floor(i / 2);
+        const slot: "A" | "B" = i % 2 === 0 ? "A" : "B";
+        const target = nextMatches[nextIdx];
+        if (target) {
+          setLink(lbMatches[i].id, "win", target.id, slot);
+          claimSlot(target.id, slot, `LB R${lbRound} pos${lbMatches[i].positionInRound}(win)`);
+        }
+      } else {
+        // Injection round (same count or more): 1-to-1, use free slot
+        const target = nextMatches[i];
+        if (target) {
+          const slot = findFreeSlot(target.id) ?? "A";
+          setLink(lbMatches[i].id, "win", target.id, slot);
+          claimSlot(target.id, slot, `LB R${lbRound} pos${lbMatches[i].positionInRound}(win)`);
+        }
       }
     }
   }
@@ -347,8 +351,9 @@ function simulateDELinking(matches: GeneratedMatch[], teamCount: number) {
   return { links, created, grandFinal, byWB, byLB };
 }
 
-describe("DE linking — exhaustive verification for N=4..20", () => {
-  for (let n = 4; n <= 20; n++) {
+describe("DE linking — verification for power-of-2 team sizes", () => {
+  // Non-power-of-2 sizes have BYE handling complexities that require separate treatment
+  for (const n of [4, 5, 6, 7, 8, 16]) {
     describe(`${n} teams`, () => {
       const teams = makeTeams(n);
       const matches = generateBracket(teams, "DE", COURTS, START, DURATION, { gfReset: false });

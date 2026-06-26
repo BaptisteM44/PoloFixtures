@@ -555,8 +555,9 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
     numberRound(upperByRound.get(2) ?? []);
     numberRound(lowerByRound.get(2) ?? []);
     for (let k = 3; k <= numUpper; k += 1) {
-      numberRound(upperByRound.get(k) ?? []);
+      // MTP Open order: LB consolidation, WB R(k), LB injection
       numberRound(lowerByRound.get(2 * k - 3) ?? []);
+      numberRound(upperByRound.get(k) ?? []);
       numberRound(lowerByRound.get(2 * k - 2) ?? []);
     }
     for (const m of grand) matchNumbers.set(m.id, matchCounter++);

@@ -661,21 +661,26 @@ export async function generateBracketAction(id: string) {
       const lbR2RoundIdx = lbR1Count > 0 ? 2 : 1;
       const lbR2Count = (lowerByRound.get(lbR2RoundIdx) ?? []).length;
 
+      // WB R(k) losers → LB injection round.
+      // Mirrors bracket.ts emission: for k≥3, consolidation first (if survivors>1), then injection.
       const wbToLBRound = new Map<number, number>();
       wbToLBRound.set(2, lbR2RoundIdx);
       {
         let lbSurvivors = lbR2Count + (lbR2Teams % 2);
-        let lbRI = lbR2RoundIdx + 1;
+        let lbRI = lbR2RoundIdx;
         for (let k = 3; k <= upperRounds; k++) {
           const wbCount = size / Math.pow(2, k);
-          wbToLBRound.set(k, lbRI);
-          const injCount = Math.min(lbSurvivors, wbCount);
-          lbSurvivors = injCount + Math.abs(lbSurvivors - wbCount);
-          lbRI++;
-          if (k < upperRounds && lbSurvivors > 1) {
-            lbSurvivors = Math.floor(lbSurvivors / 2) + (lbSurvivors % 2);
+          // Consolidation round (if survivors > 1) → skip it
+          if (lbSurvivors > 1) {
+            const consCount = Math.floor(lbSurvivors / 2);
             lbRI++;
+            lbSurvivors = consCount + (lbSurvivors % 2);
           }
+          // Injection round → this is where WB R(k) losers go
+          const injCount = Math.min(lbSurvivors, wbCount);
+          lbRI++;
+          wbToLBRound.set(k, lbRI);
+          lbSurvivors = injCount + Math.abs(lbSurvivors - wbCount);
         }
       }
 
@@ -723,7 +728,8 @@ export async function generateBracketAction(id: string) {
         await tx.match.update({ where: { id: m.id }, data });
       }
 
-      // ── WB R3+ losers → LB injection rounds, slot B (claim first) ────
+      // ── WB R3+ winners → next WB, losers → LB injection rounds ────
+      // MTP Open pattern: WB R3 losers → LB injection slot A, WB Final loser → LB Final slot B
       for (let k = 3; k <= upperRounds; k++) {
         const uMatches = upperByRound.get(k) ?? [];
         const nextWB = upperByRound.get(k + 1);
@@ -742,11 +748,14 @@ export async function generateBracketAction(id: string) {
             data.nextSlotWin = "A";
           }
 
-          const target = lbTargetMatches[i];
-          if (target) {
-            data.nextMatchLoseId = target.id;
-            data.nextSlotLose = "B";
-            claimSlot(target.id, "B");
+          // WB losers → LB injection round
+          const lbTarget = lbTargetMatches[i];
+          if (lbTarget) {
+            data.nextMatchLoseId = lbTarget.id;
+            // WB Final loser → slot B (MTP Open pattern), others → slot A
+            const isWBFinal = k === maxWB && uMatches.length === 1;
+            data.nextSlotLose = isWBFinal ? "B" : "A";
+            claimSlot(lbTarget.id, isWBFinal ? "B" : "A");
           }
 
           await tx.match.update({ where: { id: uMatches[i].id }, data });
@@ -834,54 +843,42 @@ export async function generateBracketAction(id: string) {
       }
 
       // ── LB: wire winners forward ──────────────────────────────────────
-      // LB R1 winners → LB R2 slot A (one-to-one, deterministic)
-      // All other LB rounds → find next round with free slot
-      for (const lr of lbRounds) {
+      // MTP Open pattern: use round sizes to detect consolidation vs injection
+      // - next.length < cur.length → consolidation: pair up floor(i/2), slot A/B
+      // - next.length >= cur.length → injection (WB losers enter): 1-to-1, slot A
+      for (let lri = 0; lri < lbRounds.length; lri++) {
+        const lr = lbRounds[lri];
         const lMatches = lowerByRound.get(lr) ?? [];
+        const nextLR = lri + 1 < lbRounds.length ? lbRounds[lri + 1] : null;
 
         for (let i = 0; i < lMatches.length; i++) {
-          if (lr === maxLR) {
+          // Last LB round → Grand Final slot B
+          if (!nextLR) {
             if (grandFinal) {
               await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: grandFinal.id, nextSlotWin: "B" } });
             }
             continue;
           }
 
-          // LB R1 → LB R2: always 1-to-1 (LBR1[i] → LBR2[i]).
-          // WB R2 losers have already pre-claimed slot B via the else-branch above,
-          // so findFreeSlot will assign slot A to the LB R1 winner.
-          // If LBR2[i] doesn't exist (overflow), fall through to generic slot-finding.
-          if (lr === 1) {
-            const nextMatches = lowerByRound.get(lbR2RoundIdx) ?? [];
+          const nextMatches = lowerByRound.get(nextLR) ?? [];
+
+          if (nextMatches.length < lMatches.length) {
+            // Consolidation: pair up — 2 LB matches feed into 1
+            const nextIdx = Math.floor(i / 2);
+            const slot: "A" | "B" = i % 2 === 0 ? "A" : "B";
+            const target = nextMatches[nextIdx];
+            if (target) {
+              await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: target.id, nextSlotWin: slot } });
+              claimSlot(target.id, slot);
+            }
+          } else {
+            // Injection round (same count or more): 1-to-1, use free slot (WB loser already claimed one)
             const target = nextMatches[i];
             if (target) {
               const slot = findFreeSlot(target.id) ?? "A";
               await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: target.id, nextSlotWin: slot } });
               claimSlot(target.id, slot);
-              continue;
             }
-            // LBR2[i] doesn't exist → fall through to generic slot-finding below
-          }
-
-          // All other LB rounds: find next round with a free slot
-          let placed = false;
-          for (const nextRound of lbRounds) {
-            if (nextRound <= lr) continue;
-            const nextMatches = lowerByRound.get(nextRound)!;
-            for (const nm of nextMatches) {
-              const freeSlot = findFreeSlot(nm.id);
-              if (freeSlot) {
-                await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: nm.id, nextSlotWin: freeSlot } });
-                claimSlot(nm.id, freeSlot);
-                placed = true;
-                break;
-              }
-            }
-            if (placed) break;
-          }
-
-          if (!placed && grandFinal) {
-            await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: grandFinal.id, nextSlotWin: "B" } });
           }
         }
       }
