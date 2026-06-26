@@ -897,12 +897,11 @@ function generateDoubleElim(
   const sorted = [...teams];
   const size = nextPowerOf2(sorted.length);
   const upperRounds = Math.log2(size);
-  // Seeding linéaire : pos 0 = seed1 vs seed(size), pos 1 = seed2 vs seed(size-1), etc.
-  // → seed 1 joue toujours contre seed 16 (ou dernier), seed 8 contre seed 9
-  const slots: (Team | null)[] = Array.from({ length: size }, (_, i) => {
-    const m = Math.floor(i / 2);
-    return i % 2 === 0 ? (sorted[m] ?? null) : (sorted[size - 1 - m] ?? null);
-  });
+  // Bracket seeding standard (Challonge-style) :
+  // seed 1 vs seed 16, seed 8 vs seed 9, seed 5 vs seed 12, seed 4 vs seed 13...
+  // Les meilleurs sont séparés et ne se rencontrent qu'en finale.
+  const order = bracketSeeding(size);
+  const slots: (Team | null)[] = order.map((s) => sorted[s - 1] ?? null);
 
   const slotMin = gameDurationMin + 5;
   const roundBreak = 10;
