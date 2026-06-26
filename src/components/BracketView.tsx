@@ -551,8 +551,8 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
     };
 
     numberRound(upperByRound.get(1) ?? []);
-    numberRound(upperByRound.get(2) ?? []);
     numberRound(lowerByRound.get(1) ?? []);
+    numberRound(upperByRound.get(2) ?? []);
     numberRound(lowerByRound.get(2) ?? []);
     for (let k = 3; k <= numUpper; k += 1) {
       numberRound(upperByRound.get(k) ?? []);
