@@ -384,7 +384,7 @@ export async function generateBracketAction(id: string) {
   const qualifyingMatches = tournament.matches.filter(
     (m) => m.phase === "POOL" || m.phase === "SWISS"
   );
-  let seededTeams = tournament.teams;
+  let seededTeams = [...tournament.teams].sort((a, b) => a.seed - b.seed);
   if (qualifyingMatches.length > 0) {
     const standings = computeStandings(tournament.teams, qualifyingMatches, tournament.scoringSystem);
     seededTeams = standings
