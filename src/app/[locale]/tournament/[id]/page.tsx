@@ -58,7 +58,7 @@ export default async function TournamentPage({
   // Les onglets "equipes" et "recap" ont besoin des joueurs complets.
   // "hebergement" aussi : myTeam est calculé via team.players, nécessaire pour afficher le tab.
   // Pas de tab = page chargée sans ?tab= : on charge les players par précaution (recap default pour COMPLETED).
-  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap" || activeTab === "hebergement" || activeTab === "pools" || activeTab === "kiosque_j1" || activeTab === "kiosque_top4" || activeTab === "kiosque_bot12" || activeTab === "schedule";
+  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap" || activeTab === "hebergement" || activeTab === "pools" || activeTab === "kiosque_j1" || activeTab === "kiosque_top4" || activeTab === "kiosque_bot12" || activeTab === "schedule" || activeTab === "split_a" || activeTab === "split_b" || activeTab === "split_standings";
   // L'onglet "equipes" a besoin des events pour les badges. "schedule" pour le chrono live.
   const needsEvents = activeTab === "equipes" || activeTab === "live" || activeTab === "schedule";
   // Les onglets sans matches : info, inscription, recap, communaute, equipes (matches via events)
@@ -137,6 +137,9 @@ export default async function TournamentPage({
   const swissMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SWISS");
   const hasSwiss = swissMatches.length > 0 || tournament.saturdayFormat === "SWISS";
   const isBerlinMixed = tournament.saturdayFormat === "BERLIN_MIXED";
+  const isSplitSwiss = (tournament as any).saturdayFormat === "SPLIT_SWISS";
+  const splitSwissAMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SWISS_A");
+  const splitSwissBMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "SWISS_B");
   const isGraz = tournament.saturdayFormat === "GRAZ";
   const isMtpOpen = tournament.saturdayFormat === "MTP_OPEN";
   const isKiosque = (tournament as any).saturdayFormat === "KIOSQUE";
@@ -220,17 +223,22 @@ export default async function TournamentPage({
     ...(isLaunched && isKiosque && kiosqueTop4Matches.length > 0 ? [{ label: t("tab_kiosque_top4"), value: "kiosque_top4", href: `/tournament/${params.id}?tab=kiosque_top4` }] : []),
     ...(isLaunched && isKiosque && kiosqueBottom12Matches.length > 0 ? [{ label: t("tab_kiosque_bot12"), value: "kiosque_bot12", href: `/tournament/${params.id}?tab=kiosque_bot12` }] : []),
     ...(isLaunched && isKiosque && kiosqueSEMatches.length > 0 ? [{ label: t("tab_kiosque_se"), value: "kiosque_se", href: `/tournament/${params.id}?tab=kiosque_se` }] : []),
-    // Standard tabs (hidden for Berlin Mixed and Kiosque)
-    ...(isLaunched && !isBerlinMixed && !isMtpOpen && !isKiosque && tournament.saturdayFormat !== "SWISS" ? [{ label: isGraz ? t("tab_rr_groups") : t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
+    // Split Swiss tabs
+    ...(isLaunched && isSplitSwiss && splitSwissAMatches.length > 0 ? [{ label: "Groupe A", value: "split_a", href: `/tournament/${params.id}?tab=split_a` }] : []),
+    ...(isLaunched && isSplitSwiss && splitSwissBMatches.length > 0 ? [{ label: "Groupe B", value: "split_b", href: `/tournament/${params.id}?tab=split_b` }] : []),
+    ...(isLaunched && isSplitSwiss && (splitSwissAMatches.length > 0 || splitSwissBMatches.length > 0) ? [{ label: "Classement", value: "split_standings", href: `/tournament/${params.id}?tab=split_standings` }] : []),
+    ...(isLaunched && isSplitSwiss ? [{ label: "Bracket", value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : []),
+    // Standard tabs (hidden for Berlin Mixed, Kiosque, SplitSwiss)
+    ...(isLaunched && !isBerlinMixed && !isMtpOpen && !isKiosque && !isSplitSwiss && tournament.saturdayFormat !== "SWISS" ? [{ label: isGraz ? t("tab_rr_groups") : t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
     ...(isLaunched && isMtpOpen ? [{ label: t("tab_mtp_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
     ...(isLaunched && isMtpOpen && hasMtpBarrage ? [{ label: t("tab_mtp_standings"), value: "mtp_standings", href: `/tournament/${params.id}?tab=mtp_standings` }] : []),
-    ...(isLaunched && !isBerlinMixed && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
+    ...(isLaunched && !isBerlinMixed && !isSplitSwiss && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SWISS_SPLIT_SE" && swissSplitSeTop10.length > 0 ? [{ label: t("bracket_top10"), value: "top10", href: `/tournament/${params.id}?tab=top10` }] : []),
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SWISS_SPLIT_SE" && swissSplitSeBottom8.length > 0 ? [{ label: t("bracket_bottom8"), value: "bottom8", href: `/tournament/${params.id}?tab=bottom8` }] : []),
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SPLIT_SE" ? [{ label: t("bracket_r1"), value: "r1", href: `/tournament/${params.id}?tab=r1` }] : []),
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SPLIT_SE" ? [{ label: t("bracket_winners"), value: "winners", href: `/tournament/${params.id}?tab=winners` }] : []),
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SPLIT_SE" ? [{ label: t("bracket_losers"), value: "losers", href: `/tournament/${params.id}?tab=losers` }] : []),
-    ...(isLaunched && !isBerlinMixed && !isKiosque && tournament.sundayFormat !== "SWISS_SPLIT_SE" && tournament.sundayFormat !== "SPLIT_SE" ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : []),
+    ...(isLaunched && !isBerlinMixed && !isKiosque && !isSplitSwiss && tournament.sundayFormat !== "SWISS_SPLIT_SE" && tournament.sundayFormat !== "SPLIT_SE" ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : []),
     { label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
     ...(youtubeEmbed || court1Embed || court2Embed || multiplexEmbed || t_.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
@@ -925,6 +933,24 @@ export default async function TournamentPage({
         const poolAll = tournament.matches.filter((m) => m.phase === "POOL" && (poolRoundsLimit === null || m.roundIndex <= poolRoundsLimit));
         const bracketTeams = (() => {
           const selectedTeams = tournament.teams.filter((t) => t.selected);
+          if ((tournament as any).saturdayFormat === "SPLIT_SWISS" && (splitSwissAMatches.length > 0 || splitSwissBMatches.length > 0)) {
+            const teamsA = selectedTeams.filter((t: any) => t.saturdayGroup === "A");
+            const teamsB = selectedTeams.filter((t: any) => t.saturdayGroup === "B");
+            const standA = computeStandings(teamsA, splitSwissAMatches, tournament.scoringSystem);
+            const standB = computeStandings(teamsB, splitSwissBMatches, tournament.scoringSystem);
+            const maxLen = Math.max(standA.length, standB.length);
+            const mergedIds: string[] = [];
+            for (let i = 0; i < maxLen; i++) {
+              if (i < standA.length) mergedIds.push(standA[i].teamId);
+              if (i < standB.length) mergedIds.push(standB[i].teamId);
+            }
+            const rankByTeamId = new Map(mergedIds.map((id, index) => [id, index + 1]));
+            return selectedTeams.map((team: any) => ({
+              id: team.id,
+              name: team.name,
+              bracketNumber: rankByTeamId.get(team.id) ?? team.seed,
+            }));
+          }
           if (tournament.saturdayFormat === "SWISS" && swissAll.length > 0) {
             const standings = computeStandings(selectedTeams, swissAll, tournament.scoringSystem);
             const rankByTeamId = new Map(standings.map((row, index) => [row.teamId, index + 1]));
@@ -1344,6 +1370,146 @@ export default async function TournamentPage({
               isOrganizer={isOrga}
               isLive={tournament.status === "LIVE"}
             />
+          </div>
+        );
+      })()}
+
+      {/* ── Split Swiss tabs ── */}
+      {(tab === "split_a" || tab === "split_b") && (() => {
+        const isA = tab === "split_a";
+        const groupMatches = isA ? splitSwissAMatches : splitSwissBMatches;
+        const groupLabel = isA ? "Groupe A (matin)" : "Groupe B (après-midi)";
+        const selectedTeams = tournament.teams.filter((t: any) => t.selected && t.saturdayGroup === (isA ? "A" : "B"));
+
+        if (groupMatches.length === 0) {
+          return (
+            <div className="panel" style={{ textAlign: "center", padding: 48 }}>
+              <p className="meta">Matchs non encore générés.</p>
+            </div>
+          );
+        }
+
+        const standings = computeStandings(selectedTeams, groupMatches, tournament.scoringSystem);
+        const maxRound = Math.max(...groupMatches.map((m: any) => m.roundIndex));
+
+        return (
+          <div style={{ padding: "24px 0" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 16 }}>
+              Swiss — {groupLabel}
+            </p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
+              {Array.from({ length: maxRound }, (_, i) => i + 1).map((r) => {
+                const rMatches = groupMatches.filter((m: any) => m.roundIndex === r);
+                const done = rMatches.filter((m: any) => m.status === "FINISHED").length;
+                return (
+                  <span key={r} style={{ fontFamily: "var(--font-display)", fontSize: 12, padding: "4px 12px", borderRadius: 20, background: done === rMatches.length ? "var(--teal)" : "var(--gray)", border: "1.5px solid var(--border)", fontWeight: 700 }}>
+                    {t("swiss_round_header", { n: r, done, total: rMatches.length })}
+                  </span>
+                );
+              })}
+            </div>
+            <div className="panel">
+              <div className="swiss-standings-wrap">
+                <table className="swiss-standings">
+                  <thead>
+                    <tr>
+                      <th>{t("swiss_col_rank")}</th>
+                      <th>{t("swiss_col_team")}</th>
+                      <th>{t("swiss_col_pts")}</th>
+                      <th>{t("swiss_col_played")}</th>
+                      <th>{t("swiss_col_wins")}</th>
+                      <th>{t("swiss_col_draws")}</th>
+                      <th>{t("swiss_col_losses")}</th>
+                      <th>{t("swiss_col_diff")}</th>
+                      <th title="Buchholz">Buch.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((row, i) => (
+                      <tr key={row.teamId}>
+                        <td className="swiss-standing-rank">{i + 1}</td>
+                        <td style={{ fontWeight: 600 }}>{row.name}</td>
+                        <td style={{ fontFamily: "var(--font-display)", fontWeight: 900 }}>{row.points}</td>
+                        <td>{row.played}</td>
+                        <td style={{ color: "var(--success)" }}>{row.wins}</td>
+                        <td style={{ color: "var(--text-muted)" }}>{row.draws}</td>
+                        <td style={{ color: "var(--danger)" }}>{row.losses}</td>
+                        <td style={{ color: row.goalDiff >= 0 ? "var(--success)" : "var(--danger)" }}>{row.goalDiff >= 0 ? "+" : ""}{row.goalDiff}</td>
+                        <td style={{ color: "var(--text-muted)" }}>{row.buchholz}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {tab === "split_standings" && (() => {
+        const allSwissMatches = [...splitSwissAMatches, ...splitSwissBMatches];
+        if (allSwissMatches.length === 0) {
+          return (
+            <div className="panel" style={{ textAlign: "center", padding: 48 }}>
+              <p className="meta">Matchs non encore générés.</p>
+            </div>
+          );
+        }
+
+        const teamsA = tournament.teams.filter((t: any) => t.selected && t.saturdayGroup === "A");
+        const teamsB = tournament.teams.filter((t: any) => t.selected && t.saturdayGroup === "B");
+        const standA = computeStandings(teamsA, splitSwissAMatches, tournament.scoringSystem);
+        const standB = computeStandings(teamsB, splitSwissBMatches, tournament.scoringSystem);
+
+        // Interleave: A1, B1, A2, B2… for global combined ranking
+        const maxLen = Math.max(standA.length, standB.length);
+        const combined: Array<{ row: any; group: "A" | "B" }> = [];
+        for (let i = 0; i < maxLen; i++) {
+          if (i < standA.length) combined.push({ row: standA[i], group: "A" });
+          if (i < standB.length) combined.push({ row: standB[i], group: "B" });
+        }
+
+        return (
+          <div style={{ padding: "24px 0" }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 16 }}>
+              Classement global combiné — Seeding bracket
+            </p>
+            <div className="panel">
+              <div className="swiss-standings-wrap">
+                <table className="swiss-standings">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>{t("swiss_col_team")}</th>
+                      <th>Grp</th>
+                      <th>{t("swiss_col_pts")}</th>
+                      <th>{t("swiss_col_played")}</th>
+                      <th>{t("swiss_col_wins")}</th>
+                      <th>{t("swiss_col_draws")}</th>
+                      <th>{t("swiss_col_losses")}</th>
+                      <th>{t("swiss_col_diff")}</th>
+                      <th title="Buchholz">Buch.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {combined.map(({ row, group }, i) => (
+                      <tr key={row.teamId}>
+                        <td className="swiss-standing-rank">{i + 1}</td>
+                        <td style={{ fontWeight: 600 }}>{row.name}</td>
+                        <td style={{ color: "var(--text-muted)", fontSize: 11 }}>{group}</td>
+                        <td style={{ fontFamily: "var(--font-display)", fontWeight: 900 }}>{row.points}</td>
+                        <td>{row.played}</td>
+                        <td style={{ color: "var(--success)" }}>{row.wins}</td>
+                        <td style={{ color: "var(--text-muted)" }}>{row.draws}</td>
+                        <td style={{ color: "var(--danger)" }}>{row.losses}</td>
+                        <td style={{ color: row.goalDiff >= 0 ? "var(--success)" : "var(--danger)" }}>{row.goalDiff >= 0 ? "+" : ""}{row.goalDiff}</td>
+                        <td style={{ color: "var(--text-muted)" }}>{row.buchholz}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         );
       })()}

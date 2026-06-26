@@ -423,6 +423,255 @@ function KiosquePlanning({
   );
 }
 
+// ─── SplitSwissPlanning ──────────────────────────────────────────────────────
+
+type SplitSwissTab = "groupes" | "groupe_a" | "groupe_b" | "dimanche";
+
+function SplitSwissPlanning({
+  tournament,
+  teams,
+  matches,
+  generateSplitSwissRoundAction,
+  assignSplitSwissGroupsAction,
+  generateSplitSwissBracketAction,
+  resetSplitSwissPhaseAction,
+}: {
+  tournament: any;
+  teams: any[];
+  matches: any[];
+  generateSplitSwissRoundAction?: (group: "A" | "B") => Promise<{ ok?: boolean; round?: number; error?: string }>;
+  assignSplitSwissGroupsAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  generateSplitSwissBracketAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  resetSplitSwissPhaseAction?: (phase: "SWISS_A" | "SWISS_B" | "BRACKET") => Promise<{ ok?: boolean; error?: string }>;
+}) {
+  const [tab, setTab] = useState<SplitSwissTab>("groupes");
+  const [pending, setPending] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const [liveMatches, setLiveMatches] = useState<any[]>(matches);
+  useEffect(() => { setLiveMatches(matches); }, [matches]);
+  useEffect(() => {
+    const es = new EventSource(`/api/sse?tournamentId=${tournament.id}`);
+    es.addEventListener("match", (event) => {
+      const payload = JSON.parse((event as MessageEvent).data);
+      if (payload?.data?.match) {
+        const updated = payload.data.match;
+        setLiveMatches((prev) => {
+          const exists = prev.some((m) => m.id === updated.id);
+          if (exists) return prev.map((m) => m.id === updated.id ? { ...m, ...updated } : m);
+          return [...prev, updated];
+        });
+      }
+    });
+    return () => es.close();
+  }, [tournament.id]);
+
+  const swissA = liveMatches.filter((m) => m.phase === "SWISS_A");
+  const swissB = liveMatches.filter((m) => m.phase === "SWISS_B");
+  const bracketMatches = liveMatches.filter((m) => m.phase === "BRACKET");
+
+  const roundsA = swissA.length > 0 ? Math.max(...swissA.map((m) => m.roundIndex)) : 0;
+  const roundsB = swissB.length > 0 ? Math.max(...swissB.map((m) => m.roundIndex)) : 0;
+  const maxRounds = tournament.saturdayRounds ?? tournament.swissRounds ?? 5;
+
+  const lastRoundADone = roundsA === 0 || swissA.filter((m) => m.roundIndex === roundsA).every((m) => m.status === "FINISHED");
+  const lastRoundBDone = roundsB === 0 || swissB.filter((m) => m.roundIndex === roundsB).every((m) => m.status === "FINISHED");
+  const allADone = swissA.length > 0 && swissA.every((m) => m.status === "FINISHED");
+  const allBDone = swissB.length > 0 && swissB.every((m) => m.status === "FINISHED");
+  const allSwissDone = allADone && allBDone;
+
+  const teamsA = teams.filter((t) => t.saturdayGroup === "A");
+  const teamsB = teams.filter((t) => t.saturdayGroup === "B");
+  const groupsAssigned = teamsA.length > 0 || teamsB.length > 0;
+
+  function StatusLine({ arr }: { arr: any[] }) {
+    const done = arr.filter((m) => m.status === "FINISHED").length;
+    const total = arr.length;
+    if (total === 0) return <p className="meta">Aucun match généré</p>;
+    return (
+      <p style={{ fontSize: 13, margin: 0, color: done === total ? "var(--teal)" : "var(--text)" }}>
+        {done}/{total} terminés{done === total ? " ✓" : ""}
+      </p>
+    );
+  }
+
+  async function run(key: string, fn: () => Promise<{ ok?: boolean; error?: string }>) {
+    setPending(key);
+    setError(null);
+    const res = await fn();
+    if (res?.error) setError(res.error);
+    setPending(null);
+  }
+
+  const TABS: { value: SplitSwissTab; label: string }[] = [
+    { value: "groupes", label: "Groupes" },
+    { value: "groupe_a", label: "Groupe A (matin)" },
+    { value: "groupe_b", label: "Groupe B (aprèm)" },
+    { value: "dimanche", label: "Dimanche" },
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      <div className="tabs-bar" style={{ marginTop: 0 }}>
+        <div className="tabs">
+          {TABS.map((t) => (
+            <button key={t.value} type="button" onClick={() => setTab(t.value)} className={`tab${tab === t.value ? " active" : ""}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && <p style={{ color: "var(--danger)", fontSize: 12, padding: "8px 16px" }}>{error}</p>}
+
+      {/* ── Onglet Groupes ── */}
+      {tab === "groupes" && (
+        <div className="panel">
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
+            Assignation des groupes
+          </p>
+          {groupsAssigned ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <p style={{ fontSize: 13, margin: 0 }}>
+                <strong>Groupe A (matin) :</strong> {teamsA.map((t) => t.name).join(", ") || "—"}
+              </p>
+              <p style={{ fontSize: 13, margin: 0 }}>
+                <strong>Groupe B (après-midi) :</strong> {teamsB.map((t) => t.name).join(", ") || "—"}
+              </p>
+            </div>
+          ) : (
+            <p className="meta">Groupes non assignés. Cliquez sur "Auto-assigner" pour répartir par seed.</p>
+          )}
+          {assignSplitSwissGroupsAction && (
+            <button
+              className="ghost"
+              style={{ marginTop: 12, fontSize: 12 }}
+              disabled={pending === "assign"}
+              onClick={() => run("assign", assignSplitSwissGroupsAction)}
+            >
+              {pending === "assign" ? "…" : groupsAssigned ? "↺ Ré-assigner par seed" : "Auto-assigner par seed"}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Onglet Groupe A ── */}
+      {tab === "groupe_a" && (
+        <div className="panel">
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+            Groupe A — {roundsA}/{maxRounds} tours
+          </p>
+          <StatusLine arr={swissA} />
+          <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            {lastRoundADone && roundsA < maxRounds && groupsAssigned && generateSplitSwissRoundAction && (
+              <button
+                className="primary"
+                style={{ fontSize: 13 }}
+                disabled={pending === "roundA"}
+                onClick={() => run("roundA", () => generateSplitSwissRoundAction("A"))}
+              >
+                {pending === "roundA" ? "…" : `Générer tour ${roundsA + 1}`}
+              </button>
+            )}
+            {swissA.length > 0 && resetSplitSwissPhaseAction && (
+              <button
+                className="ghost"
+                style={{ fontSize: 12, color: "var(--danger)" }}
+                disabled={pending === "resetA"}
+                onClick={async () => {
+                  if (!window.confirm(`Supprimer le tour ${roundsA} du Groupe A ?`)) return;
+                  run("resetA", () => resetSplitSwissPhaseAction("SWISS_A"));
+                }}
+              >
+                {pending === "resetA" ? "…" : "↺ Annuler dernier tour"}
+              </button>
+            )}
+          </div>
+          {!groupsAssigned && (
+            <p className="meta" style={{ marginTop: 8 }}>Assignez les groupes d'abord.</p>
+          )}
+        </div>
+      )}
+
+      {/* ── Onglet Groupe B ── */}
+      {tab === "groupe_b" && (
+        <div className="panel">
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+            Groupe B — {roundsB}/{maxRounds} tours
+          </p>
+          <StatusLine arr={swissB} />
+          <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            {lastRoundBDone && roundsB < maxRounds && groupsAssigned && generateSplitSwissRoundAction && (
+              <button
+                className="primary"
+                style={{ fontSize: 13 }}
+                disabled={pending === "roundB"}
+                onClick={() => run("roundB", () => generateSplitSwissRoundAction("B"))}
+              >
+                {pending === "roundB" ? "…" : `Générer tour ${roundsB + 1}`}
+              </button>
+            )}
+            {swissB.length > 0 && resetSplitSwissPhaseAction && (
+              <button
+                className="ghost"
+                style={{ fontSize: 12, color: "var(--danger)" }}
+                disabled={pending === "resetB"}
+                onClick={async () => {
+                  if (!window.confirm(`Supprimer le tour ${roundsB} du Groupe B ?`)) return;
+                  run("resetB", () => resetSplitSwissPhaseAction("SWISS_B"));
+                }}
+              >
+                {pending === "resetB" ? "…" : "↺ Annuler dernier tour"}
+              </button>
+            )}
+          </div>
+          {!groupsAssigned && (
+            <p className="meta" style={{ marginTop: 8 }}>Assignez les groupes d'abord.</p>
+          )}
+        </div>
+      )}
+
+      {/* ── Onglet Dimanche ── */}
+      {tab === "dimanche" && (
+        <div className="panel">
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+            Dimanche — {tournament.sundayFormat === "DE" ? "Double Élimination" : "Single Élimination"}
+          </p>
+          {!allSwissDone && (
+            <p className="meta">Terminez tous les tours Swiss des deux groupes pour générer le bracket.</p>
+          )}
+          <StatusLine arr={bracketMatches} />
+          <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            {allSwissDone && bracketMatches.length === 0 && generateSplitSwissBracketAction && (
+              <button
+                className="primary"
+                style={{ fontSize: 13 }}
+                disabled={pending === "bracket"}
+                onClick={() => run("bracket", generateSplitSwissBracketAction)}
+              >
+                {pending === "bracket" ? "…" : "Générer le bracket"}
+              </button>
+            )}
+            {bracketMatches.length > 0 && resetSplitSwissPhaseAction && (
+              <button
+                className="ghost"
+                style={{ fontSize: 12, color: "var(--danger)" }}
+                disabled={pending === "resetBracket"}
+                onClick={async () => {
+                  if (!window.confirm("Supprimer le bracket dimanche ?")) return;
+                  run("resetBracket", () => resetSplitSwissPhaseAction("BRACKET"));
+                }}
+              >
+                {pending === "resetBracket" ? "…" : "↺ Supprimer bracket"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── BerlinMixedPlanning ─────────────────────────────────────────────────────
 
 type BerlinTab = "groupes" | "vendredi" | "samedi" | "dimanche" | "brackets";
@@ -953,6 +1202,10 @@ type OrgaDashboardProps = {
   resetMtpPhaseAction?: (phase: "POOL_A" | "POOL_B" | "CROSS_POOL" | "BARRAGE" | "DE") => Promise<{ ok?: boolean; error?: string }>;
   updateMtpTimesAction?: (a: string | null, b: string | null, s: string | null) => Promise<{ ok?: boolean; error?: string }>;
   updateBerlinTimesAction?: (a: string | null, b: string | null) => Promise<{ ok?: boolean; error?: string }>;
+  generateSplitSwissRoundAction?: (group: "A" | "B") => Promise<{ ok?: boolean; round?: number; error?: string }>;
+  assignSplitSwissGroupsAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  generateSplitSwissBracketAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  resetSplitSwissPhaseAction?: (phase: "SWISS_A" | "SWISS_B" | "BRACKET") => Promise<{ ok?: boolean; error?: string }>;
   launchKiosqueRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchKiosquePoolRoundAction?: (poolName: "Pool A" | "Pool B") => Promise<{ ok?: boolean; error?: string }>;
   launchKiosqueNextRoundAction?: (group: "Top 4" | "Bottom 12") => Promise<{ ok?: boolean; error?: string }>;
@@ -1033,6 +1286,10 @@ export function OrgaDashboard({
   resetMtpPhaseAction,
   updateMtpTimesAction,
   updateBerlinTimesAction,
+  generateSplitSwissRoundAction,
+  assignSplitSwissGroupsAction,
+  generateSplitSwissBracketAction,
+  resetSplitSwissPhaseAction,
   launchKiosquePoolRoundAction,
   launchKiosqueRegroupAction,
   launchKiosqueNextRoundAction,
@@ -1086,7 +1343,8 @@ export function OrgaDashboard({
   const isMtpOpen = (tournament as any).saturdayFormat === "MTP_OPEN";
   const isKiosque = (tournament as any).saturdayFormat === "KIOSQUE";
   const isBerlinMixed = tournament.saturdayFormat === "BERLIN_MIXED";
-  const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0 && !isMtpOpen && !isKiosque && !isBerlinMixed)) && teams.some((t) => t.selected === true);
+  const isSplitSwiss = (tournament as any).saturdayFormat === "SPLIT_SWISS";
+  const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0 && !isMtpOpen && !isKiosque && !isBerlinMixed && !isSplitSwiss)) && teams.some((t) => t.selected === true);
   const isLive = tournament.status === "LIVE";
 
   // Pool rounds control
@@ -1383,6 +1641,15 @@ export function OrgaDashboard({
                   {t("orga_format_kiosque_desc" as any)}
                 </p>
               </>
+            ) : (tournament as any).saturdayFormat === "SPLIT_SWISS" ? (
+              <>
+                <p style={{ fontSize: 13, margin: 0 }}>
+                  <strong>Swiss 2 groupes + DE</strong> — Samedi matin (Groupe A) + Samedi après-midi (Groupe B) + Dimanche DE
+                </p>
+                <p style={{ fontSize: 12, margin: "4px 0 0", color: "var(--text-muted)" }}>
+                  {(tournament as any).saturdayRounds ?? (tournament as any).swissRounds ?? 5} tours Swiss par groupe · Sans rematch · Classement global combiné · {tournament.sundayFormat === "DE" ? "Double Élimination" : "Single Élimination"} dimanche
+                </p>
+              </>
             ) : tournament.saturdayFormat === "BERLIN_MIXED" ? (
               <>
                 <p style={{ fontSize: 13, margin: 0 }}>
@@ -1430,7 +1697,15 @@ export function OrgaDashboard({
               let day1Matches = 0;
               let day2Matches = 0;
 
-              if (tournament.saturdayFormat === "BERLIN_MIXED") {
+              if ((tournament as any).saturdayFormat === "SPLIT_SWISS") {
+                const half = Math.ceil(n / 2);
+                const saturdayRounds = (tournament as any).saturdayRounds ?? (tournament as any).swissRounds ?? 5;
+                day1Matches = saturdayRounds * Math.floor(half / 2) * 2;
+                const bracketSize = (tournament as any).bracketSize ?? n;
+                day2Matches = tournament.sundayFormat === "DE"
+                  ? 2 * bracketSize - 2 + ((tournament as any).gfReset ? 1 : 0)
+                  : bracketSize - 1 + ((tournament as any).thirdPlaceMatch ? 1 : 0);
+              } else if (tournament.saturdayFormat === "BERLIN_MIXED") {
                 const half = Math.ceil(n / 2);
                 const fridayRounds = tournament.fridayRounds ?? 5;
                 const saturdayRounds = tournament.saturdayRounds ?? 5;
@@ -1626,8 +1901,21 @@ export function OrgaDashboard({
             />
           )}
 
-          {/* ── Planning standard (non-Berlin, non-Graz, non-MTP, non-Kiosque) ── */}
-          {tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && (
+          {/* ── Split Swiss Format planning ── */}
+          {isSplitSwiss && (isLive || tournament.status === "COMPLETED") && (
+            <SplitSwissPlanning
+              tournament={tournament}
+              teams={teams.filter((t) => t.selected !== false)}
+              matches={matches}
+              generateSplitSwissRoundAction={generateSplitSwissRoundAction}
+              assignSplitSwissGroupsAction={assignSplitSwissGroupsAction}
+              generateSplitSwissBracketAction={generateSplitSwissBracketAction}
+              resetSplitSwissPhaseAction={resetSplitSwissPhaseAction}
+            />
+          )}
+
+          {/* ── Planning standard (non-Berlin, non-Graz, non-MTP, non-Kiosque, non-SplitSwiss) ── */}
+          {tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && !isSplitSwiss && (
             <>
               {/* Pools — séparés par pool pour format multi-poule */}
               {hasAnyMatches && (tournament.poolCount ?? 1) > 1 && (

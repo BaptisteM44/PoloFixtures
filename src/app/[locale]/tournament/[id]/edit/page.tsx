@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action } from "./actions";
+import { generateSplitSwissRoundAction, assignSplitSwissGroupsAction, generateSplitSwissBracketAction, resetSplitSwissPhaseAction } from "./split-swiss-actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
@@ -424,6 +425,22 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             resetKiosqueJ1Action={async () => {
               "use server";
               return await resetKiosqueJ1Action(t_.id);
+            }}
+            generateSplitSwissRoundAction={async (group) => {
+              "use server";
+              return await generateSplitSwissRoundAction(t_.id, group);
+            }}
+            assignSplitSwissGroupsAction={async () => {
+              "use server";
+              return await assignSplitSwissGroupsAction(t_.id);
+            }}
+            generateSplitSwissBracketAction={async () => {
+              "use server";
+              return await generateSplitSwissBracketAction(t_.id);
+            }}
+            resetSplitSwissPhaseAction={async (phase) => {
+              "use server";
+              return await resetSplitSwissPhaseAction(t_.id, phase);
             }}
             orgaTasks={orgaTasks.map((t) => ({ ...t, priority: t.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT", deadline: t.deadline?.toISOString() ?? null, createdAt: t.createdAt.toISOString() }))}
             orgaNotes={orgaNotes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString() }))}

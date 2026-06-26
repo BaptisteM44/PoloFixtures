@@ -44,6 +44,7 @@ enum SaturdayFormat {
   GRAZ
   MTP_OPEN
   KIOSQUE
+  SPLIT_SWISS
 }
 
 enum SundayFormat {
@@ -77,6 +78,8 @@ enum MatchPhase {
   KIOSQUE_TOP4
   KIOSQUE_BOTTOM12
   KIOSQUE_SE
+  SWISS_A
+  SWISS_B
 }
 
 enum BracketSide {
