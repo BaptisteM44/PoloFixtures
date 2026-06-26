@@ -897,8 +897,12 @@ function generateDoubleElim(
   const sorted = [...teams];
   const size = nextPowerOf2(sorted.length);
   const upperRounds = Math.log2(size);
-  const seedOrder = bracketSeeding(size);
-  const slots: (Team | null)[] = seedOrder.map((s) => sorted[s - 1] ?? null);
+  // Seeding linéaire : pos 0 = seed1 vs seed(size), pos 1 = seed2 vs seed(size-1), etc.
+  // → seed 1 joue toujours contre seed 16 (ou dernier), seed 8 contre seed 9
+  const slots: (Team | null)[] = Array.from({ length: size }, (_, i) => {
+    const m = Math.floor(i / 2);
+    return i % 2 === 0 ? (sorted[m] ?? null) : (sorted[size - 1 - m] ?? null);
+  });
 
   const slotMin = gameDurationMin + 5;
   const roundBreak = 10;

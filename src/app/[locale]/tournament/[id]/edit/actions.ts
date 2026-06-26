@@ -777,34 +777,33 @@ export async function generateBracketAction(id: string) {
         const lbR1IdxForMirror = lbR1R2PosOrder.indexOf(mirrorR2Pos);
 
         if (lbR1IdxForMirror >= 0 && lbR1InjectionR2Pos.includes(mirrorR2Pos)) {
+          // Injection: WB R2 loser va en LB R1 slot A (cas non-puissance-de-2)
           if (lbR1Matches[lbR1IdxForMirror]) {
             data.nextMatchLoseId = lbR1Matches[lbR1IdxForMirror].id;
             data.nextSlotLose = "A";
             claimSlot(lbR1Matches[lbR1IdxForMirror].id, "A");
           }
+        } else if (lbR1ConsolidationR2Pos.includes(mirrorR2Pos)) {
+          // Consolidation (cas 16 teams = toutes branches): WB R2[i] → LB R2[mirrorR2Pos] slot B (anti-rematch 1-à-1)
+          const target = lbR2Matches[mirrorR2Pos];
+          if (target) {
+            data.nextMatchLoseId = target.id;
+            data.nextSlotLose = "B";
+            claimSlot(target.id, "B");
+          } else {
+            wbR2Overflow.push(m.id);
+          }
         } else {
-          // Find free slot in LB R2 (prefer slot B first, then slot A)
+          // Bye branch: chercher le premier slot libre en LB R2
           let placed = false;
           for (let j = 0; j < lbR2Matches.length; j++) {
             const freeSlot = findFreeSlot(lbR2Matches[j].id);
-            if (freeSlot === "B") {
+            if (freeSlot) {
               data.nextMatchLoseId = lbR2Matches[j].id;
-              data.nextSlotLose = "B";
-              claimSlot(lbR2Matches[j].id, "B");
+              data.nextSlotLose = freeSlot;
+              claimSlot(lbR2Matches[j].id, freeSlot);
               placed = true;
               break;
-            }
-          }
-          if (!placed) {
-            for (let j = 0; j < lbR2Matches.length; j++) {
-              const freeSlot = findFreeSlot(lbR2Matches[j].id);
-              if (freeSlot === "A") {
-                data.nextMatchLoseId = lbR2Matches[j].id;
-                data.nextSlotLose = "A";
-                claimSlot(lbR2Matches[j].id, "A");
-                placed = true;
-                break;
-              }
             }
           }
           if (!placed) {

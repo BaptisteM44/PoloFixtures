@@ -260,29 +260,25 @@ function simulateDELinking(matches: GeneratedMatch[], teamCount: number) {
         setLink(m.id, "lose", target.id, "A");
         claimSlot(target.id, "A", `WB R2 pos${r2Pos}`);
       }
+    } else if (lbR1ConsolidationR2Pos.includes(mirrorR2Pos)) {
+      // Consolidation: WB R2[i] → LB R2[mirrorR2Pos] slot B (anti-rematch 1-à-1)
+      const target = lbR2Matches[mirrorR2Pos];
+      if (target) {
+        setLink(m.id, "lose", target.id, "B");
+        claimSlot(target.id, "B", `WB R2 pos${r2Pos}`);
+      } else {
+        wbR2Overflow.push(m.id);
+      }
     } else {
-      // Try to find a free slot in LB R2
+      // Bye branch: chercher le premier slot libre en LB R2
       let placed = false;
       for (let j = 0; j < lbR2Count; j++) {
         const freeSlot = findFreeSlot(lbR2Matches[j].id);
-        if (freeSlot === "B") {
-          // Prefer slot B (slot A is for LB R1 survivors)
-          setLink(m.id, "lose", lbR2Matches[j].id, "B");
-          claimSlot(lbR2Matches[j].id, "B", `WB R2 pos${r2Pos}`);
+        if (freeSlot) {
+          setLink(m.id, "lose", lbR2Matches[j].id, freeSlot);
+          claimSlot(lbR2Matches[j].id, freeSlot, `WB R2 pos${r2Pos}`);
           placed = true;
           break;
-        }
-      }
-      if (!placed) {
-        // Try slot A of any fully-open match
-        for (let j = 0; j < lbR2Count; j++) {
-          const freeSlot = findFreeSlot(lbR2Matches[j].id);
-          if (freeSlot === "A") {
-            setLink(m.id, "lose", lbR2Matches[j].id, "A");
-            claimSlot(lbR2Matches[j].id, "A", `WB R2 pos${r2Pos}`);
-            placed = true;
-            break;
-          }
         }
       }
       if (!placed) {
