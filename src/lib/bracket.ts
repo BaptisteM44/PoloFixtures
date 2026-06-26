@@ -972,33 +972,13 @@ function generateDoubleElim(
   }
   advanceTime(w1);
 
-  // ── WB R2 ───────────────────────────────────────────────────────────
-  const w2 = size / 4;
-  const wbR2Pre: Array<{ a: string | null; b: string | null }> = [];
-  for (let m = 0; m < w2; m++) {
-    wbR2Pre.push({ a: byeAdvances.get(m * 10 + 0) ?? null, b: byeAdvances.get(m * 10 + 1) ?? null });
-  }
-  emitRound("W", 2, w2, wbR2Pre);
-  advanceTime(w2);
-
-  // ── LB generation ───────────────────────────────────────────────────
+  // ── LB classification (needed before emitting any LB rounds) ────────
   // Challonge structure for LB R1 (per r2Pos branch):
   //   - 2 WB R1 losers → they consolidate in LB R1; WB R2 loser injects at LB R2
   //   - 1 WB R1 loser  → WB R1 loser vs WB R2 loser in LB R1 (both consumed)
   //   - 0 WB R1 losers → WB R2 loser BYEs directly to LB R2
-  //
-  // For 8 teams  (w1=4, w2=2): r2Pos 0,1 each have 2 WB R1 losers
-  //   LB R1: 2 consolidation matches → 2 winners
-  //   LB R2: 2 injection matches (2 LB R1 winners vs 2 WB R2 losers)
-  //   LB R3: 1 consolidation
-  //   LB R4: 1 injection (vs WB R3 loser)
-  //   Total LB = 6 = 2*8-2-7 ✓
-  //
-  // For 10 teams (w1=2, w2=4): r2Pos 0,2 each have 1 WB R1 loser; r2Pos 1,3 have 0
-  //   LB R1: 2 matches (WB R1 loser vs WB R2 loser from same branch)
-  //   LB R2: 2 consolidation matches (2 LB R1 winners + 2 WB R2 BYEs)
-  //   LB R3: 2 injection, LB R4: 1 consolidation, LB R5: 1 injection
-  //   Total LB = 8 = N-2 ✓
+
+  const w2 = size / 4;
 
   // Classify each r2Pos branch
   const r2PosWithR1Loser = new Map<number, number[]>(); // r2Pos → [r1Pos, ...]
@@ -1021,24 +1001,26 @@ function generateDoubleElim(
   }
 
   const lbR1Count = lbR1ConsolidationR2Pos.length + lbR1InjectionR2Pos.length;
-  // After LB R1: lbR1Count survivors
-  // Then LB R2 has: lbR1Count + lbR1ConsolidationR2Pos.length (WB R2 losers that inject) + lbR1ByeR2Pos.length (BYEs)
-  // = lbR1Count + (w2 - lbR1InjectionR2Pos.length) teams total entering LB R2
   const lbR2Teams = lbR1Count + lbR1ConsolidationR2Pos.length + lbR1ByeR2Pos.length;
-  // lbR2Teams = lbR1ConsolidationR2Pos.length + lbR1InjectionR2Pos.length + lbR1ConsolidationR2Pos.length + lbR1ByeR2Pos.length
-  //           = 2*lbR1ConsolidationR2Pos.length + lbR1InjectionR2Pos.length + lbR1ByeR2Pos.length
 
   let lbSurvivors = 0;
   let lbRoundIdx = 1;
 
+  // ── LB R1 (from WB R1 losers) — emitted right after WB R1 ───────────
   if (lbR1Count > 0) {
     emitRound("L", lbRoundIdx++, lbR1Count);
     advanceTime(lbR1Count);
   }
 
-  // LB R2: determined by lbR2Teams total
-  // If lbR1ConsolidationR2Pos.length > 0: it's an injection round (lbR1Count survivors vs WB R2 losers)
-  // If lbR1InjectionR2Pos.length > 0 and lbR1ConsolidationR2Pos.length == 0: it's consolidation (lbR1Count + BYEs)
+  // ── WB R2 ───────────────────────────────────────────────────────────
+  const wbR2Pre: Array<{ a: string | null; b: string | null }> = [];
+  for (let m = 0; m < w2; m++) {
+    wbR2Pre.push({ a: byeAdvances.get(m * 10 + 0) ?? null, b: byeAdvances.get(m * 10 + 1) ?? null });
+  }
+  emitRound("W", 2, w2, wbR2Pre);
+  advanceTime(w2);
+
+  // ── LB R2 (injection of WB R2 losers) — emitted right after WB R2 ──
   const lbR2Count = Math.floor(lbR2Teams / 2);
   if (lbR2Count > 0) {
     emitRound("L", lbRoundIdx++, lbR2Count);
@@ -1046,7 +1028,7 @@ function generateDoubleElim(
   }
   lbSurvivors = lbR2Count + (lbR2Teams % 2);
 
-  // LB R3+: for each subsequent WB round, inject its losers then consolidate
+  // ── WB R3+ with interleaved LB injection + consolidation ────────────
   for (let k = 3; k <= upperRounds; k++) {
     const wbCount = size / Math.pow(2, k);
 
