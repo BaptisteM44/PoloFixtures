@@ -30,35 +30,15 @@ function computeNextRoundStart(
   return new Date(lastMs + (gameDurationMin + 5) * 60 * 1000);
 }
 
-// ─── Assign groups A/B (manual or auto by seed) ───────────────────────────────
+// ─── Save manual group assignments A/B ────────────────────────────────────────
 
-/**
- * Assign teams to Saturday group A (morning) or B (afternoon).
- * Uses snake-draft seeding: 1→A, 2→B, 3→B, 4→A, 5→A, 6→B …
- */
-export async function assignSplitSwissGroupsAction(tournamentId: string) {
+export async function saveSplitSwissGroupsAction(
+  tournamentId: string,
+  groupA: string[],
+  groupB: string[]
+) {
   const denied = await requireOrgaAccess(tournamentId);
   if (denied) return denied;
-
-  const tournament = await prisma.tournament.findUnique({
-    where: { id: tournamentId },
-    include: { teams: { where: { selected: true } } },
-  });
-  if (!tournament) return { error: "Tournoi introuvable" };
-
-  const sorted = [...tournament.teams].sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999));
-
-  // Snake draft: 1→A, 2→B, 3→B, 4→A, 5→A…  (same pattern as Berlin Mixed Saturday)
-  const groupA: string[] = [];
-  const groupB: string[] = [];
-  sorted.forEach((team, idx) => {
-    // pairs: 0-1 → A,B; 2-3 → B,A; 4-5 → A,B …
-    const pair = Math.floor(idx / 2);
-    const posInPair = idx % 2;
-    const goesA = (pair % 2 === 0) ? posInPair === 0 : posInPair === 1;
-    if (goesA) groupA.push(team.id);
-    else groupB.push(team.id);
-  });
 
   await prisma.$transaction([
     ...groupA.map((id) => prisma.team.update({ where: { id }, data: { saturdayGroup: "A" } })),
@@ -66,7 +46,7 @@ export async function assignSplitSwissGroupsAction(tournamentId: string) {
   ]);
 
   revalidatePath(`/tournament/${tournamentId}`);
-  return { ok: true, groupA, groupB };
+  return { ok: true };
 }
 
 // ─── Generate next Swiss round for group A or B ───────────────────────────────

@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action } from "./actions";
-import { generateSplitSwissRoundAction, assignSplitSwissGroupsAction, generateSplitSwissBracketAction, resetSplitSwissPhaseAction } from "./split-swiss-actions";
+import { generateSplitSwissRoundAction, saveSplitSwissGroupsAction, generateSplitSwissBracketAction, resetSplitSwissPhaseAction } from "./split-swiss-actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
@@ -430,9 +430,9 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               "use server";
               return await generateSplitSwissRoundAction(t_.id, group);
             }}
-            assignSplitSwissGroupsAction={async () => {
+            saveSplitSwissGroupsAction={async (groupA, groupB) => {
               "use server";
-              return await assignSplitSwissGroupsAction(t_.id);
+              return await saveSplitSwissGroupsAction(t_.id, groupA, groupB);
             }}
             generateSplitSwissBracketAction={async () => {
               "use server";

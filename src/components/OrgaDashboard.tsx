@@ -423,6 +423,105 @@ function KiosquePlanning({
   );
 }
 
+// ─── SplitSwissGroupAssignment ────────────────────────────────────────────────
+
+function SplitSwissGroupAssignment({
+  teams,
+  onSave,
+}: {
+  teams: Array<{ id: string; name: string; seed: number; saturdayGroup?: string | null }>;
+  onSave?: (groupA: string[], groupB: string[]) => Promise<{ ok?: boolean; error?: string }>;
+}) {
+  const router = useRouter();
+  const initGroups = () => {
+    const A: string[] = [];
+    const B: string[] = [];
+    const none: string[] = [];
+    for (const t of teams) {
+      if (t.saturdayGroup === "A") A.push(t.id);
+      else if (t.saturdayGroup === "B") B.push(t.id);
+      else none.push(t.id);
+    }
+    // Unassigned → distribute by seed serpentin
+    none.sort((a, b) => {
+      const ta = teams.find((t) => t.id === a)!;
+      const tb = teams.find((t) => t.id === b)!;
+      return ta.seed - tb.seed;
+    });
+    none.forEach((id, i) => {
+      const round = Math.floor(i / 2);
+      const pos = i % 2;
+      const toA = round % 2 === 0 ? pos === 0 : pos === 1;
+      if (toA) A.push(id);
+      else B.push(id);
+    });
+    return { A, B };
+  };
+
+  const [groups, setGroups] = useState<{ A: string[]; B: string[] }>(initGroups);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const teamMap = new Map(teams.map((t) => [t.id, t]));
+
+  const moveTeam = (teamId: string, to: "A" | "B") => {
+    setGroups((prev) => ({
+      A: to === "A" ? [...prev.A.filter((id) => id !== teamId), teamId] : prev.A.filter((id) => id !== teamId),
+      B: to === "B" ? [...prev.B.filter((id) => id !== teamId), teamId] : prev.B.filter((id) => id !== teamId),
+    }));
+  };
+
+  const handleSave = async () => {
+    if (!onSave) return;
+    setSaving(true);
+    setMessage(null);
+    const res = await onSave(groups.A, groups.B);
+    setSaving(false);
+    if (res?.error) setMessage(`Erreur : ${res.error}`);
+    else { setMessage("Groupes sauvegardés ✓"); router.refresh(); }
+  };
+
+  const renderGroup = (label: "A" | "B", subtitle: string) => {
+    const ids = groups[label];
+    const other: "A" | "B" = label === "A" ? "B" : "A";
+    return (
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+          Groupe {label} — {subtitle} — {ids.length} équipes
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, minHeight: 80 }}>
+          {ids.map((id) => {
+            const team = teamMap.get(id);
+            if (!team) return null;
+            return (
+              <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 10px", background: "var(--bg)", borderRadius: 6, border: "1px solid var(--border)", fontSize: 13 }}>
+                <span>#{team.seed} {team.name}</span>
+                <button type="button" onClick={() => moveTeam(id, other)} style={{ fontSize: 11, padding: "2px 8px", cursor: "pointer", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text-muted)" }}>
+                  → {other}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        {renderGroup("A", "matin")}
+        {renderGroup("B", "après-midi")}
+      </div>
+      <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 12 }}>
+        <button type="button" className="primary" onClick={handleSave} disabled={saving} style={{ fontSize: 13, padding: "8px 20px" }}>
+          {saving ? "…" : "Sauvegarder les groupes"}
+        </button>
+        {message && <span style={{ fontSize: 12, color: message.startsWith("Erreur") ? "var(--danger)" : "var(--teal)" }}>{message}</span>}
+      </div>
+    </div>
+  );
+}
+
 // ─── SplitSwissPlanning ──────────────────────────────────────────────────────
 
 type SplitSwissTab = "groupes" | "groupe_a" | "groupe_b" | "dimanche";
@@ -432,7 +531,7 @@ function SplitSwissPlanning({
   teams,
   matches,
   generateSplitSwissRoundAction,
-  assignSplitSwissGroupsAction,
+  saveSplitSwissGroupsAction,
   generateSplitSwissBracketAction,
   resetSplitSwissPhaseAction,
 }: {
@@ -440,7 +539,7 @@ function SplitSwissPlanning({
   teams: any[];
   matches: any[];
   generateSplitSwissRoundAction?: (group: "A" | "B") => Promise<{ ok?: boolean; round?: number; error?: string }>;
-  assignSplitSwissGroupsAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  saveSplitSwissGroupsAction?: (groupA: string[], groupB: string[]) => Promise<{ ok?: boolean; error?: string }>;
   generateSplitSwissBracketAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetSplitSwissPhaseAction?: (phase: "SWISS_A" | "SWISS_B" | "BRACKET") => Promise<{ ok?: boolean; error?: string }>;
 }) {
@@ -527,31 +626,10 @@ function SplitSwissPlanning({
       {/* ── Onglet Groupes ── */}
       {tab === "groupes" && (
         <div className="panel">
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
-            Assignation des groupes
-          </p>
-          {groupsAssigned ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <p style={{ fontSize: 13, margin: 0 }}>
-                <strong>Groupe A (matin) :</strong> {teamsA.map((t) => t.name).join(", ") || "—"}
-              </p>
-              <p style={{ fontSize: 13, margin: 0 }}>
-                <strong>Groupe B (après-midi) :</strong> {teamsB.map((t) => t.name).join(", ") || "—"}
-              </p>
-            </div>
-          ) : (
-            <p className="meta">Groupes non assignés. Cliquez sur "Auto-assigner" pour répartir par seed.</p>
-          )}
-          {assignSplitSwissGroupsAction && (
-            <button
-              className="ghost"
-              style={{ marginTop: 12, fontSize: 12 }}
-              disabled={pending === "assign"}
-              onClick={() => run("assign", assignSplitSwissGroupsAction)}
-            >
-              {pending === "assign" ? "…" : groupsAssigned ? "↺ Ré-assigner par seed" : "Auto-assigner par seed"}
-            </button>
-          )}
+          <SplitSwissGroupAssignment
+            teams={teams.map((t) => ({ id: t.id, name: t.name, seed: t.seed, saturdayGroup: t.saturdayGroup }))}
+            onSave={saveSplitSwissGroupsAction}
+          />
         </div>
       )}
 
@@ -1203,7 +1281,7 @@ type OrgaDashboardProps = {
   updateMtpTimesAction?: (a: string | null, b: string | null, s: string | null) => Promise<{ ok?: boolean; error?: string }>;
   updateBerlinTimesAction?: (a: string | null, b: string | null) => Promise<{ ok?: boolean; error?: string }>;
   generateSplitSwissRoundAction?: (group: "A" | "B") => Promise<{ ok?: boolean; round?: number; error?: string }>;
-  assignSplitSwissGroupsAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  saveSplitSwissGroupsAction?: (groupA: string[], groupB: string[]) => Promise<{ ok?: boolean; error?: string }>;
   generateSplitSwissBracketAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetSplitSwissPhaseAction?: (phase: "SWISS_A" | "SWISS_B" | "BRACKET") => Promise<{ ok?: boolean; error?: string }>;
   launchKiosqueRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
@@ -1287,7 +1365,7 @@ export function OrgaDashboard({
   updateMtpTimesAction,
   updateBerlinTimesAction,
   generateSplitSwissRoundAction,
-  assignSplitSwissGroupsAction,
+  saveSplitSwissGroupsAction,
   generateSplitSwissBracketAction,
   resetSplitSwissPhaseAction,
   launchKiosquePoolRoundAction,
@@ -1908,7 +1986,7 @@ export function OrgaDashboard({
               teams={teams.filter((t) => t.selected !== false)}
               matches={matches}
               generateSplitSwissRoundAction={generateSplitSwissRoundAction}
-              assignSplitSwissGroupsAction={assignSplitSwissGroupsAction}
+              saveSplitSwissGroupsAction={saveSplitSwissGroupsAction}
               generateSplitSwissBracketAction={generateSplitSwissBracketAction}
               resetSplitSwissPhaseAction={resetSplitSwissPhaseAction}
             />
