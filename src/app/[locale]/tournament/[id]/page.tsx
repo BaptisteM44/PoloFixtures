@@ -998,6 +998,7 @@ export default async function TournamentPage({
                     tournamentId={tournament.id}
                     returnPath={bracketReturnPath}
                     hasQualifyingMatches={hasQualifyingMatches}
+                    saturdayFormat={tournament.saturdayFormat}
                     isRR
                     mode="buttons"
                   />
@@ -1043,6 +1044,7 @@ export default async function TournamentPage({
                   tournamentId={tournament.id}
                   returnPath={bracketReturnPath}
                   hasQualifyingMatches={hasQualifyingMatches}
+                  saturdayFormat={tournament.saturdayFormat}
                   mode="buttons"
                 />
               )}
@@ -1069,6 +1071,7 @@ export default async function TournamentPage({
                   tournamentId={tournament.id}
                   returnPath={bracketReturnPath}
                   hasQualifyingMatches={false}
+                  saturdayFormat={tournament.saturdayFormat}
                   isRR={isRR}
                   mode="launch"
                 />

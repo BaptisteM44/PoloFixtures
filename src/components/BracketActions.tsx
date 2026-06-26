@@ -4,17 +4,19 @@ import { useRouter } from "next/navigation";
 import { useTransition, useState } from "react";
 import { useTranslations } from "next-intl";
 import { generateBracketAction, applySeedingAction } from "@/app/[locale]/tournament/[id]/edit/actions";
+import { generateSplitSwissBracketAction } from "@/app/[locale]/tournament/[id]/edit/split-swiss-actions";
 
 interface Props {
   tournamentId: string;
   returnPath: string;
   hasQualifyingMatches: boolean;
   isRR?: boolean;
+  saturdayFormat?: string;
   /** "buttons" = bracket already exists; "launch" = first-time launch */
   mode: "buttons" | "launch";
 }
 
-export function BracketActions({ tournamentId, returnPath, hasQualifyingMatches, isRR, mode }: Props) {
+export function BracketActions({ tournamentId, returnPath, hasQualifyingMatches, isRR, saturdayFormat, mode }: Props) {
   const t = useTranslations("tournament");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -23,10 +25,15 @@ export function BracketActions({ tournamentId, returnPath, hasQualifyingMatches,
 
   const label = isRR ? "Round Robin" : "bracket";
 
+  const doGenerate = () =>
+    saturdayFormat === "SPLIT_SWISS"
+      ? generateSplitSwissBracketAction(tournamentId)
+      : generateBracketAction(tournamentId);
+
   const handleGenerate = () => {
     startTransition(async () => {
       setMessage(null);
-      const res = await generateBracketAction(tournamentId);
+      const res = await doGenerate();
       if (res && "error" in res) {
         setMessage(`Erreur : ${res.error}`);
       } else {
@@ -44,7 +51,7 @@ export function BracketActions({ tournamentId, returnPath, hasQualifyingMatches,
     setConfirmOpen(false);
     startTransition(async () => {
       setMessage(null);
-      const res = await generateBracketAction(tournamentId);
+      const res = await doGenerate();
       if (res && "error" in res) {
         setMessage(`Erreur : ${res.error}`);
       } else {
