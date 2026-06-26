@@ -10,6 +10,7 @@ import {
   generateSundaySwissRoundAction,
   computeSaturdayGroupsAction,
 } from "@/app/[locale]/tournament/[id]/edit/berlin-mixed-actions";
+import { generateSplitSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/split-swiss-actions";
 import { z } from "zod";
 
 const schema = z.object({
@@ -234,6 +235,42 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   // Auto-generate next Berlin Mixed round when all matches of current round are finished
   const berlinPhases = ["FRIDAY_A", "FRIDAY_B", "SATURDAY_A", "SATURDAY_B", "SUNDAY_SWISS"] as const;
   type BerlinPhase = typeof berlinPhases[number];
+
+  // Auto-generate next Split Swiss round
+  if (isNowFinished && (match.phase === "SWISS_A" || match.phase === "SWISS_B")) {
+    const tid = match.tournamentId;
+    const group = match.phase === "SWISS_A" ? "A" : "B";
+    const roundMatches = await prisma.match.findMany({
+      where: { tournamentId: tid, phase: match.phase, roundIndex: match.roundIndex },
+    });
+    const allDone = roundMatches.every((m) => m.status === "FINISHED");
+    if (allDone) {
+      (() => {
+        (async () => {
+          try {
+            const tournament = await prisma.tournament.findUnique({
+              where: { id: tid },
+              select: { saturdayRounds: true, swissRounds: true },
+            });
+            const maxRounds = (tournament as any)?.saturdayRounds ?? (tournament as any)?.swissRounds ?? 5;
+            if (match.roundIndex < maxRounds) {
+              const result = await generateSplitSwissRoundAction(tid, group);
+              if (result && !("error" in result)) {
+                const newMatches = await prisma.match.findMany({
+                  where: { tournamentId: tid, phase: match.phase, roundIndex: match.roundIndex + 1 },
+                  include: { teamA: true, teamB: true },
+                });
+                if (newMatches.length > 0) {
+                  publishNewMatches({ tournamentId: tid, type: "new_matches", matches: newMatches as unknown as Record<string, unknown>[] });
+                }
+              }
+            }
+          } catch { /* non-blocking */ }
+        })();
+      })();
+    }
+  }
+
   if (isNowFinished && berlinPhases.includes(match.phase as BerlinPhase)) {
     const tid = match.tournamentId;
     const phase = match.phase as BerlinPhase;
