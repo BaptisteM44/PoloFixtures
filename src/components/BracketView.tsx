@@ -198,7 +198,7 @@ export function BracketView({
   const hasWMatches = bracketMatches.some((m) => m.bracketSide === "W" || m.bracketSide === "G");
   const isDE = !isSplitSE && hasWMatches && bracketMatches.some((m) => m.bracketSide === "L") && lMatches.length > 1;
   const has3rdPlace = !isDE && lMatches.length === 1;
-  const teamNumberById = new Map((teams ?? []).map((team) => [team.id, team.seed]));
+  const teamNumberById = new Map((teams ?? []).map((team) => [team.id, team.bracketNumber]));
 
   const openEdit = (m: MatchWithTeams) => {
     if (selectedId === m.id) {
