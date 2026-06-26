@@ -596,7 +596,7 @@ export default async function TournamentPage({
               </div>
             )}
 
-            {!isCompleted && tournament.freeAgents.length > 0 && (
+            {!isCompleted && (
               <div className="panel">
                 <h3 style={{ marginBottom: 4 }}>
                   {t("tab_free_agent")}{" "}
@@ -607,12 +607,18 @@ export default async function TournamentPage({
                 <p className="meta" style={{ marginBottom: 14 }}>
                   {t("info_free_agents_desc")}
                 </p>
-                <FreeAgentList
-                  agents={tournament.freeAgents}
-                  canDelete={false}
-                  title=""
-                  publicView
-                />
+                {tournament.freeAgents.length > 0 ? (
+                  <FreeAgentList
+                    agents={tournament.freeAgents}
+                    canDelete={false}
+                    title=""
+                    publicView
+                  />
+                ) : (
+                  <Link href={`/tournament/${params.id}?tab=communaute`} className="ghost" style={{ fontSize: 13, marginTop: 4 }}>
+                    {r("btn_view_free_agent")}
+                  </Link>
+                )}
               </div>
             )}
 
