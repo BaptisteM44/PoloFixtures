@@ -1927,7 +1927,7 @@ export async function launchTournamentAction(
   } else if (tournament.saturdayFormat === "GRAZ") {
     const res = await launchGrazPoolAction(id, "Pool A");
     if ("error" in res && res.error) return { error: `Lancement OK mais erreur Graz Pool A : ${res.error}` };
-  } else if (tournament.saturdayFormat !== "BERLIN_MIXED") {
+  } else if (tournament.saturdayFormat !== "BERLIN_MIXED" && (tournament as any).saturdayFormat !== "SPLIT_SWISS") {
     const res = await generatePoolsAction(id);
     if ("error" in res && res.error) return { error: `Lancement OK mais erreur Poules : ${res.error}` };
   }
