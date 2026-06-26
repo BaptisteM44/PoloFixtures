@@ -8,7 +8,7 @@ import {
   generateBerlinSwissRound,
   BerlinMatchInput,
 } from "@/lib/berlin-mixed";
-import { generateBracket } from "@/lib/bracket";
+import { generateBracketAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { MatchPhase } from "@prisma/client";
 
 async function requireOrgaAccess(tournamentId: string) {
@@ -138,7 +138,9 @@ export async function generateSplitSwissRoundAction(
   return { ok: true, round: nextRound };
 }
 
-// ─── Generate DE bracket from combined standings ──────────────────────────────
+// ─── Generate bracket from combined standings ─────────────────────────────────
+// Strategy: compute interleaved A1/B1/A2/B2 ranking, update team seeds in DB,
+// then delegate entirely to generateBracketAction which has the full DE/SE linking logic.
 
 export async function generateSplitSwissBracketAction(tournamentId: string) {
   const denied = await requireOrgaAccess(tournamentId);
@@ -150,197 +152,40 @@ export async function generateSplitSwissBracketAction(tournamentId: string) {
   });
   if (!tournament) return { error: "Tournoi introuvable" };
 
-  // All Swiss matches (both groups) for combined standings
   const allSwissMatches = tournament.matches.filter(
     (m) => m.phase === "SWISS_A" || m.phase === "SWISS_B"
   );
-
   if (allSwissMatches.length === 0)
     return { error: "Aucun match Swiss trouvé pour calculer le classement." };
 
-  // Combined standings: compute per-group, then merge by rank (alternating A/B like Berlin)
+  // Compute interleaved A1/B1/A2/B2… seed order
   const teamsA = tournament.teams.filter((t: any) => t.saturdayGroup === "A");
   const teamsB = tournament.teams.filter((t: any) => t.saturdayGroup === "B");
   const matchesA = allSwissMatches.filter((m) => m.phase === "SWISS_A");
   const matchesB = allSwissMatches.filter((m) => m.phase === "SWISS_B");
 
-  let seededTeams = tournament.teams;
+  let mergedIds: string[];
   if (teamsA.length > 0 && teamsB.length > 0 && matchesA.length > 0 && matchesB.length > 0) {
     const standA = computeStandings(teamsA, matchesA as any, tournament.scoringSystem);
     const standB = computeStandings(teamsB, matchesB as any, tournament.scoringSystem);
-    // Interleave: A1, B1, A2, B2, … for fair seeding
     const maxLen = Math.max(standA.length, standB.length);
-    const mergedIds: string[] = [];
+    mergedIds = [];
     for (let i = 0; i < maxLen; i++) {
       if (i < standA.length) mergedIds.push(standA[i].teamId);
       if (i < standB.length) mergedIds.push(standB[i].teamId);
     }
-    const teamMap = new Map(tournament.teams.map((t) => [t.id, t]));
-    seededTeams = mergedIds.map((id) => teamMap.get(id)!).filter(Boolean);
   } else {
-    // Fallback: combined standings
     const combined = computeStandings(tournament.teams, allSwissMatches as any, tournament.scoringSystem);
-    const teamMap = new Map(tournament.teams.map((t) => [t.id, t]));
-    seededTeams = combined.map((r) => teamMap.get(r.teamId)!).filter(Boolean);
+    mergedIds = combined.map((r) => r.teamId);
   }
 
-  const bracketSize = (tournament as any).bracketSize ?? seededTeams.length;
-  if (seededTeams.length > bracketSize) seededTeams = seededTeams.slice(0, bracketSize);
-
-  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
-  const bracketOptions = {
-    thirdPlaceMatch: (tournament as any).thirdPlaceMatch ?? false,
-    gfReset: (tournament as any).gfReset ?? false,
-  };
-  const matches = generateBracket(
-    seededTeams,
-    tournament.sundayFormat,
-    courtNames,
-    new Date(tournament.dateEnd),
-    tournament.gameDurationMin,
-    bracketOptions
+  // Update team seeds so generateBracketAction picks them up correctly
+  await prisma.$transaction(
+    mergedIds.map((id, i) => prisma.team.update({ where: { id }, data: { seed: i + 1 } }))
   );
 
-  await prisma.$transaction(async (tx) => {
-    await tx.matchEvent.deleteMany({ where: { match: { tournamentId, phase: "BRACKET" } } });
-    await tx.match.deleteMany({ where: { tournamentId, phase: "BRACKET" } });
-
-    const created: Array<{
-      id: string;
-      roundIndex: number;
-      bracketSide: string | null;
-      positionInRound: number;
-    }> = [];
-
-    for (const match of matches) {
-      const m = await tx.match.create({
-        data: {
-          tournamentId,
-          phase: "BRACKET",
-          bracketSide: match.bracketSide ?? null,
-          roundIndex: match.roundIndex,
-          courtName: match.courtName,
-          startAt: match.startAt,
-          dayIndex: "SUN",
-          status: "SCHEDULED",
-          positionInRound: match.positionInRound ?? 0,
-          teamAId: match.teamAId,
-          teamBId: match.teamBId,
-        },
-      });
-      created.push({
-        id: m.id,
-        roundIndex: m.roundIndex,
-        bracketSide: m.bracketSide,
-        positionInRound: m.positionInRound,
-      });
-    }
-
-    // Link bracket matches (DE or SE)
-    await linkBracket(created, tournament.sundayFormat, tx);
-  });
-
-  revalidatePath(`/tournament/${tournamentId}`);
-  return { ok: true };
-}
-
-function linkBracket(
-  created: Array<{ id: string; roundIndex: number; bracketSide: string | null; positionInRound: number }>,
-  sundayFormat: string,
-  tx: any
-) {
-  const updates: Promise<any>[] = [];
-
-  if (sundayFormat === "DE") {
-    // DE linking (same logic as generateBracketAction in actions.ts)
-    const upper = created.filter((m) => m.bracketSide === "W" || m.bracketSide === "G");
-    const lower = created.filter((m) => m.bracketSide === "L");
-    const grand = created.find((m) => m.bracketSide === "G");
-
-    const maxUpperRound = upper.length > 0 ? Math.max(...upper.map((m) => m.roundIndex)) : 0;
-    const maxLowerRound = lower.length > 0 ? Math.max(...lower.map((m) => m.roundIndex)) : 0;
-
-    // Upper bracket winners progression
-    for (const m of upper.filter((m) => m.bracketSide === "W")) {
-      const nextPos = Math.floor(m.positionInRound / 2);
-      const nextRound = m.roundIndex + 1;
-      const nextMatch = created.find(
-        (x) => (x.bracketSide === "W" || x.bracketSide === "G") && x.roundIndex === nextRound && x.positionInRound === nextPos
-      );
-      if (nextMatch) {
-        updates.push(tx.match.update({
-          where: { id: m.id },
-          data: { nextMatchWinId: nextMatch.id, nextSlotWin: m.positionInRound % 2 === 0 ? "A" : "B" },
-        }));
-      }
-      // Upper losers → lower bracket
-      const lowerRound = m.roundIndex * 2 - 1;
-      const lowerPos = m.roundIndex === 1
-        ? (m.positionInRound % 2 === 0 ? m.positionInRound / 2 * 2 + 1 : (m.positionInRound - 1) / 2 * 2)
-        : m.positionInRound;
-      const lowerMatch = lower.find(
-        (x) => x.roundIndex === lowerRound && x.positionInRound === lowerPos
-      );
-      if (lowerMatch) {
-        updates.push(tx.match.update({
-          where: { id: m.id },
-          data: { nextMatchLoseId: lowerMatch.id, nextSlotLose: m.positionInRound % 2 === 0 ? "A" : "B" },
-        }));
-      }
-    }
-
-    // Lower bracket progression
-    for (let i = 0; i < lower.length; i++) {
-      const m = lower[i];
-      if (m.roundIndex >= maxLowerRound) {
-        // Lower final → Grand Final
-        if (grand) {
-          updates.push(tx.match.update({
-            where: { id: m.id },
-            data: { nextMatchWinId: grand.id, nextSlotWin: "B" },
-          }));
-        }
-        continue;
-      }
-      const nextLower = lower.find(
-        (x) => x.roundIndex === m.roundIndex + 1 && x.positionInRound === Math.floor(m.positionInRound / 2)
-      );
-      if (nextLower) {
-        updates.push(tx.match.update({
-          where: { id: m.id },
-          data: { nextMatchWinId: nextLower.id, nextSlotWin: m.positionInRound % 2 === 0 ? "A" : "B" },
-        }));
-      }
-    }
-  } else {
-    // SE linking
-    const wMatches = created.filter((m) => m.bracketSide === "W");
-    const maxRound = created.length > 0 ? Math.max(...created.map((m) => m.roundIndex)) : 0;
-    const thirdPlace = created.find((m) => m.bracketSide === "L");
-
-    for (const m of wMatches) {
-      if (m.roundIndex >= maxRound) continue;
-      const nextPos = Math.floor(m.positionInRound / 2);
-      const nextRound = m.roundIndex + 1;
-      const nextMatch = created.find(
-        (x) => (x.bracketSide === "W" || x.bracketSide === "G") && x.roundIndex === nextRound && x.positionInRound === nextPos
-      );
-      if (nextMatch) {
-        updates.push(tx.match.update({
-          where: { id: m.id },
-          data: { nextMatchWinId: nextMatch.id, nextSlotWin: m.positionInRound % 2 === 0 ? "A" : "B" },
-        }));
-      }
-      if (thirdPlace && m.roundIndex === maxRound - 1) {
-        updates.push(tx.match.update({
-          where: { id: m.id },
-          data: { nextMatchLoseId: thirdPlace.id, nextSlotLose: m.positionInRound % 2 === 0 ? "A" : "B" },
-        }));
-      }
-    }
-  }
-
-  return Promise.all(updates);
+  // Delegate to the full generateBracketAction which handles all DE/SE linking
+  return generateBracketAction(tournamentId);
 }
 
 // ─── Reset Split Swiss phase ──────────────────────────────────────────────────
