@@ -184,10 +184,10 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
 
   const tournaments = teamPlayers.map((tp) => tp.team.tournament).filter((t) => !t.testMode);
   const playedTournaments = tournaments.filter((t) => t.status === "COMPLETED");
-  const uniqueTournamentIds = new Set(tournaments.map((t) => t.id));
-  if (uniqueTournamentIds.size >= 1)  badges.add("team_player");
-  if (uniqueTournamentIds.size >= 5)  badges.add("squad_up");
-  if (uniqueTournamentIds.size >= 15) badges.add("veteran");
+  const uniquePlayedIds = new Set(playedTournaments.map((t) => t.id));
+  if (uniquePlayedIds.size >= 1)  badges.add("team_player");
+  if (uniquePlayedIds.size >= 5)  badges.add("squad_up");
+  if (uniquePlayedIds.size >= 15) badges.add("veteran");
 
   // road_warrior / globe_trotter / five_continents (uniquement tournois joués)
   const countries  = new Set(playedTournaments.map((t) => t.country));
@@ -241,9 +241,9 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     }
   }
 
-  // loyal_rider
+  // loyal_rider: jouer avec le même coéquipier dans 3+ tournois complétés
   const coTeammates = new Map<string, Set<string>>();
-  for (const tp of teamPlayers) {
+  for (const tp of completedTournaments) {
     const mates = await prisma.teamPlayer.findMany({
       where: { teamId: tp.teamId, NOT: { playerId } },
       select: { playerId: true },
@@ -560,26 +560,29 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     if (first?.playerId === playerId) { badges.add("patient_zero"); break patientZero; }
   }
 
-  // circus_act: 3+ tournaments in the same calendar month
+  // circus_act: 3+ completed tournaments in the same calendar month
   const monthCounts = new Map<string, number>();
-  for (const t of tournaments) {
-    const d = new Date(t.dateStart);
+  for (const tp of completedTournaments) {
+    const d = new Date(tp.team.tournament.dateStart);
     const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
     monthCounts.set(key, (monthCounts.get(key) ?? 0) + 1);
   }
   if ([...monthCounts.values()].some((c) => c >= 3)) badges.add("circus_act");
 
-  // deja_vu / ritual: participer 2+/4+ fois à la même série de tournoi
+  // deja_vu / ritual: participer 2+/4+ fois à la même série de tournoi (tournois joués uniquement)
   const seriesCount = new Map<string, number>();
-  for (const tp of teamPlayers.filter((tp) => !tp.team.tournament.testMode)) {
+  for (const tp of completedTournaments) {
     const key = normalizeTournamentSeries(tp.team.tournament.name);
     if (key.length >= 3) seriesCount.set(key, (seriesCount.get(key) ?? 0) + 1);
   }
   if ([...seriesCount.values()].some((c) => c >= 2)) badges.add("deja_vu");
   if ([...seriesCount.values()].some((c) => c >= 4)) badges.add("ritual");
 
-  // night_ride: played a match starting after 22:00
-  if (allTeamMatches.some((m) => m.startAt.getHours() >= 22)) badges.add("night_ride");
+  // night_ride: played a match starting after 22:00 (hors tournois test)
+  if (allTeamMatches.filter((m) => {
+    const tp = teamPlayers.find((tp) => tp.teamId === m.teamAId || tp.teamId === m.teamBId);
+    return !tp?.team.tournament.testMode;
+  }).some((m) => m.startAt.getHours() >= 22)) badges.add("night_ride");
 
   // eruption: 5+ goals by the player in a single match (3v3 or 4v4 only)
   if (playerTeamIds.length > 0) {
@@ -740,11 +743,6 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     }
   }
 
-  // ── Collector / Completionist ────────────────────────────────────────────
-  const total = badges.size;
-  if (total >= 20) badges.add("collector");
-  if (total >= 35) badges.add("completionist");
-
   // ── Vague 2 ──────────────────────────────────────────────────────────────
 
   // the_commentator: 50+ messages in a single tournament
@@ -787,8 +785,8 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     const teamId = tp.teamId;
     const allMatches = [...tp.team.matchesA, ...tp.team.matchesB].filter((m) => m.status === "FINISHED");
     if (allMatches.length < 3) continue;
-    const isChampion = allMatches.some((m) => m.winnerTeamId === teamId);
-    if (!isChampion) continue;
+    const finalMatch = allMatches.find((m) => BRACKET_PHASES.includes(m.phase as BracketPhase) && m.bracketSide === "G");
+    if (!finalMatch || finalMatch.winnerTeamId !== teamId) continue;
     const clean = allMatches.every((m) => {
       const goalsAgainst = tp.team.matchesA.includes(m) ? m.scoreB : m.scoreA;
       return goalsAgainst <= 1;
@@ -1006,6 +1004,11 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
       if (hadNightLogin) badges.add("night_owl");
     }
   }
+
+  // ── Collector / Completionist (calculé en dernier pour tout compter) ────
+  const total = badges.size;
+  if (total >= 20) badges.add("collector");
+  if (total >= 35) badges.add("completionist");
 
   return Array.from(badges);
 }
