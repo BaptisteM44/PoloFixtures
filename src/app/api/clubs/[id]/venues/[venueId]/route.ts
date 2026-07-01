@@ -11,12 +11,21 @@ async function checkAdmin(clubId: string, playerId: string, role?: string) {
   return !!adminRole;
 }
 
+async function checkMember(clubId: string, playerId: string, role?: string) {
+  if (role === "ADMIN") return true;
+  const club = await prisma.club.findUnique({ where: { id: clubId } });
+  if (!club) return false;
+  if (club.managerId === playerId) return true;
+  const member = await prisma.clubMember.findUnique({ where: { clubId_playerId: { clubId, playerId } } });
+  return !!member;
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string; venueId: string } }) {
   const session = await auth();
   const playerId = (session?.user as any)?.playerId;
   if (!playerId) return new Response("Non autorisé", { status: 401 });
   const role = (session?.user as any)?.role;
-  if (!await checkAdmin(params.id, playerId, role)) return new Response("Non autorisé", { status: 403 });
+  if (!await checkMember(params.id, playerId, role)) return new Response("Non autorisé", { status: 403 });
 
   const body = await req.json();
   if (!body.name?.trim()) return Response.json({ error: "Nom requis" }, { status: 400 });
