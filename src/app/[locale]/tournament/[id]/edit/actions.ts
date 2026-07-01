@@ -102,6 +102,8 @@ const updateSchema = z.object({
     z.string().url().nullable()
   ),
   hostClubId: z.string().optional().nullable(),
+  lat: z.preprocess((v) => (v === "" || v === undefined || v === null ? null : Number(v)), z.number().nullable().optional()),
+  lng: z.preprocess((v) => (v === "" || v === undefined || v === null ? null : Number(v)), z.number().nullable().optional()),
 });
 
 export async function updateTournamentAction(formData: FormData) {
@@ -157,10 +159,13 @@ export async function updateTournamentAction(formData: FormData) {
     ? await generateTournamentSlug(data.name, data.city, dateStart.getFullYear(), data.id)
     : existing.slug;
 
-  // Auto-geocode if city or country changed, or tournament has no coords yet
+  // Use manual coords if provided, otherwise auto-geocode when city/country changes or coords missing
   let geoLat = tournament.lat;
   let geoLng = tournament.lng;
-  if (tournament.city !== data.city || tournament.country !== data.country || (geoLat == null && geoLng == null)) {
+  if (data.lat != null && data.lng != null) {
+    geoLat = data.lat;
+    geoLng = data.lng;
+  } else if (tournament.city !== data.city || tournament.country !== data.country || (geoLat == null && geoLng == null)) {
     try {
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(data.city + ", " + data.country)}`,

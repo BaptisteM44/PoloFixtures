@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { MapContainer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -105,28 +105,103 @@ function MapFlyTo({ center, zoom }: { center: [number, number]; zoom: number }) 
   return null;
 }
 
-// Spread overlapping markers in a small spiral so none are hidden
-function jitterPositions(tournaments: MapTournament[]): Map<string, [number, number]> {
-  const positions = new Map<string, [number, number]>();
-  const counts = new Map<string, number>();
+// Group tournaments by position key, return groupKey per id and groups map
+function buildGroups(tournaments: MapTournament[]): {
+  groupKey: Map<string, string>;
+  groups: Map<string, MapTournament[]>;
+} {
+  const groupKey = new Map<string, string>();
+  const groups = new Map<string, MapTournament[]>();
   for (const t of tournaments) {
     const key = `${t.lat.toFixed(4)},${t.lng.toFixed(4)}`;
-    const idx = counts.get(key) ?? 0;
-    counts.set(key, idx + 1);
-    if (idx === 0) {
-      positions.set(t.id, [t.lat, t.lng]);
+    groupKey.set(t.id, key);
+    const arr = groups.get(key) ?? [];
+    arr.push(t);
+    groups.set(key, arr);
+  }
+  return { groupKey, groups };
+}
+
+// Compute spread positions for a group given a radius (in degrees)
+function spreadPositions(group: MapTournament[], radius: number): Map<string, [number, number]> {
+  const out = new Map<string, [number, number]>();
+  group.forEach((t, idx) => {
+    if (group.length === 1) {
+      out.set(t.id, [t.lat, t.lng]);
     } else {
-      const angle = (idx - 1) * 2.4; // golden angle spread
-      const radius = 0.015 * Math.ceil(idx / 6);
-      positions.set(t.id, [t.lat + radius * Math.sin(angle), t.lng + radius * Math.cos(angle)]);
+      const angle = (idx / group.length) * 2 * Math.PI - Math.PI / 2;
+      out.set(t.id, [t.lat + radius * Math.cos(angle), t.lng + radius * Math.sin(angle)]);
+    }
+  });
+  return out;
+}
+
+function MarkersLayer({
+  tournaments,
+  onSelect,
+}: {
+  tournaments: MapTournament[];
+  onSelect?: (t: MapTournament) => void;
+}) {
+  const map = useMap();
+  const tr = useTranslations("tournament");
+  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
+
+  const { groupKey, groups } = buildGroups(tournaments);
+
+  // Convert N pixels to degrees latitude at current map zoom/center
+  const pxToDeg = useCallback((px: number) => {
+    const zoom = map.getZoom();
+    const center = map.getCenter();
+    const p1 = map.project(center, zoom);
+    const p2 = L.point(p1.x, p1.y - px);
+    const latLng = map.unproject(p2, zoom);
+    return Math.abs(latLng.lat - center.lat);
+  }, [map]);
+
+  const positions = new Map<string, [number, number]>();
+  for (const [key, group] of groups) {
+    const isHovered = hoveredGroup === key;
+    const radius = pxToDeg(isHovered ? 22 : 10);
+    for (const [id, pos] of spreadPositions(group, radius)) {
+      positions.set(id, pos);
     }
   }
-  return positions;
+
+  return (
+    <>
+      {tournaments.map((t) => {
+        const key = groupKey.get(t.id)!;
+        const isGroup = (groups.get(key)?.length ?? 1) > 1;
+        return (
+          <Marker
+            key={t.id}
+            position={positions.get(t.id) ?? [t.lat, t.lng]}
+            icon={createCircleIcon(getMarkerColor(t))}
+            eventHandlers={{
+              click: () => onSelect?.(t),
+              mouseover: () => { if (isGroup) setHoveredGroup(key); },
+              mouseout: () => { if (isGroup) setHoveredGroup(null); },
+            }}
+          >
+            <Popup>
+              <strong>{t.name}</strong><br />
+              <span style={{ color: "#666", fontSize: "0.85em" }}>{t.city}, {t.country}</span><br />
+              <a
+                href={`/tournament/${t.slug ?? t.id}`}
+                style={{ color: "#60c9cf", fontWeight: 700, fontSize: "0.85em" }}
+              >
+                {tr("edit_view_tournament")} →
+              </a>
+            </Popup>
+          </Marker>
+        );
+      })}
+    </>
+  );
 }
 
 export default function TournamentMap({ tournaments, onSelect, center = [25, 20], zoom = 2 }: Props) {
-  const tr = useTranslations("tournament");
-  const positions = jitterPositions(tournaments);
   return (
     <MapContainer
       center={center}
@@ -139,25 +214,7 @@ export default function TournamentMap({ tournaments, onSelect, center = [25, 20]
       <MapInvalidator />
       <MapFlyTo center={center} zoom={zoom} />
       <TileLayerSwitcher />
-      {tournaments.map((t) => (
-        <Marker
-          key={t.id}
-          position={positions.get(t.id) ?? [t.lat, t.lng]}
-          icon={createCircleIcon(getMarkerColor(t))}
-          eventHandlers={{ click: () => onSelect?.(t) }}
-        >
-          <Popup>
-            <strong>{t.name}</strong><br />
-            <span style={{ color: "#666", fontSize: "0.85em" }}>{t.city}, {t.country}</span><br />
-            <a
-              href={`/tournament/${t.slug ?? t.id}`}
-              style={{ color: "#60c9cf", fontWeight: 700, fontSize: "0.85em" }}
-            >
-              {tr("edit_view_tournament")} →
-            </a>
-          </Popup>
-        </Marker>
-      ))}
+      <MarkersLayer tournaments={tournaments} onSelect={onSelect} />
     </MapContainer>
   );
 }

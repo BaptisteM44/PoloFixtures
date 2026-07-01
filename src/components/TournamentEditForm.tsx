@@ -78,6 +78,8 @@ type Tournament = {
   maxSoloPlayers?: number | null;
   externalRegistrationUrl?: string | null;
   hostClubId?: string | null;
+  lat?: number | null;
+  lng?: number | null;
 };
 
 type Props = {
@@ -467,6 +469,14 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           <label className="field-row">
             {t("field_city")}
             <input name="city" defaultValue={tournament.city} required />
+          </label>
+          <label className="field-row">
+            Lat
+            <input name="lat" type="number" step="any" defaultValue={tournament.lat ?? ""} placeholder="auto" />
+          </label>
+          <label className="field-row">
+            Lng
+            <input name="lng" type="number" step="any" defaultValue={tournament.lng ?? ""} placeholder="auto" />
           </label>
 
           {/* Club hôte */}
