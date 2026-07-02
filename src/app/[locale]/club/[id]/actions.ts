@@ -49,6 +49,22 @@ export async function removeClubAdminAction(clubId: string, playerId: string) {
   return { ok: true };
 }
 
+// ── Transfer manager ─────────────────────────────────────────────────────
+
+export async function transferManagerAction(clubId: string, newManagerPlayerId: string) {
+  const { playerId, isManager } = await getClubRole(clubId);
+  if (!isManager || !playerId) return { error: "Seul le manager peut transférer la gestion." };
+
+  const membership = await prisma.clubMember.findUnique({
+    where: { clubId_playerId: { clubId, playerId: newManagerPlayerId } },
+  });
+  if (membership?.status !== "MEMBER") return { error: "Ce joueur n'est pas membre du club." };
+
+  await prisma.club.update({ where: { id: clubId }, data: { managerId: newManagerPlayerId } });
+  revalidatePath(`/club/${clubId}`);
+  return { ok: true };
+}
+
 // ── Sessions ──────────────────────────────────────────────────────────────
 
 export async function createSessionAction(clubId: string, data: {

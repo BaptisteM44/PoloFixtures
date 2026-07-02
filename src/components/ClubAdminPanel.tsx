@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
-import { addClubAdminAction, removeClubAdminAction } from "@/app/[locale]/club/[id]/actions";
+import { addClubAdminAction, removeClubAdminAction, transferManagerAction } from "@/app/[locale]/club/[id]/actions";
 
 type Admin = {
   id: string;
@@ -32,6 +32,7 @@ export function ClubAdminPanel({
   const [admins, setAdmins] = useState(initialAdmins);
   const [isPending, startTransition] = useTransition();
   const [addPlayerId, setAddPlayerId] = useState("");
+  const [transferPlayerId, setTransferPlayerId] = useState("");
 
   const adminIds = new Set([managerId, ...admins.map((a) => a.playerId)]);
   const eligibleMembers = members.filter((m) => !adminIds.has(m.playerId));
@@ -55,6 +56,17 @@ export function ClubAdminPanel({
     startTransition(async () => {
       await removeClubAdminAction(clubId, playerId);
       setAdmins((prev) => prev.filter((a) => a.playerId !== playerId));
+    });
+  }
+
+  function handleTransfer() {
+    if (!transferPlayerId) return;
+    const name = members.find((m) => m.playerId === transferPlayerId)?.player.name ?? "ce joueur";
+    if (!confirm(`Transférer la gestion du club à ${name} ? Cette action est irréversible.`)) return;
+    startTransition(async () => {
+      const res = await transferManagerAction(clubId, transferPlayerId);
+      if ("ok" in res) window.location.reload();
+      else alert(res.error);
     });
   }
 
@@ -105,6 +117,35 @@ export function ClubAdminPanel({
           <button className="primary" onClick={handleAdd} disabled={isPending || !addPlayerId} style={{ fontSize: 13 }}>
             {t("admin_panel_add_btn")}
           </button>
+        </div>
+      )}
+
+      {isManager && members.filter((m) => m.playerId !== managerId).length > 0 && (
+        <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
+            Transférer la gestion du club
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <select
+              className="form-select"
+              value={transferPlayerId}
+              onChange={(e) => setTransferPlayerId(e.target.value)}
+              style={{ flex: 1, fontSize: 13 }}
+            >
+              <option value="">Choisir un membre…</option>
+              {members.filter((m) => m.playerId !== managerId).map((m) => (
+                <option key={m.playerId} value={m.playerId}>{m.player.name}</option>
+              ))}
+            </select>
+            <button
+              className="danger"
+              onClick={handleTransfer}
+              disabled={isPending || !transferPlayerId}
+              style={{ fontSize: 13 }}
+            >
+              Transférer
+            </button>
+          </div>
         </div>
       )}
     </div>
