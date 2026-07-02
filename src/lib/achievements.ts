@@ -1029,12 +1029,14 @@ export async function recomputeAllBadges(): Promise<{ updated: number; errors: n
   for (const player of players) {
     try {
       const oldBadges = new Set<string>(player.badges);
-      const newBadges = await computeCareerBadges(player.id);
-      await prisma.player.update({ where: { id: player.id }, data: { badges: newBadges } });
+      const computed = await computeCareerBadges(player.id);
+      // Merge : on ajoute les nouveaux badges mais on ne retire jamais les acquis
+      const merged = Array.from(new Set([...player.badges, ...computed]));
+      await prisma.player.update({ where: { id: player.id }, data: { badges: merged } });
 
-      // Notifier les badges nouvellement débloqués (seulement si le joueur a un compte)
+      // Notifier uniquement les badges nouvellement ajoutés
       if (player.account) {
-        for (const badge of newBadges) {
+        for (const badge of merged) {
           if (!oldBadges.has(badge)) {
             const info = BADGE_CATALOG[badge];
             await createNotification(player.id, "BADGE_UNLOCKED", {
