@@ -1020,13 +1020,11 @@
     "club_session": "New activity in your club",
     "club_session_join": "Players signed up for a session",
     "club_announcement": "New announcement in {clubName}",
-    "team_fee_confirmed": "Payment confirmed — {teamName}",
     "community_reply": "New reply on \"{itemTitle}\"",
     "section_pending_invites": "Pending invitations",
     "btn_accept": "Accept",
     "btn_decline": "Decline",
-    "default": "Notification",
-    "enable_push": "Enable notifications"
+    "default": "Notification"
   },
   "contact": {
     "btn_open": "Contact",
@@ -1052,8 +1050,7 @@
     "legal_mentions": "Legal notices",
     "privacy": "Privacy",
     "terms": "Terms of use",
-    "charter": "Charter",
-    "install_app": "Install app"
+    "charter": "Charter"
   },
   "player": {
     "page_title": "Player profile",
@@ -1437,6 +1434,10 @@
     "admin_panel_add_placeholder": "Add an admin…",
     "admin_panel_confirm_remove": "Remove this admin?",
     "admin_panel_add_btn": "Add",
+    "admin_panel_transfer_title": "Transfer club management",
+    "admin_panel_transfer_placeholder": "Choose a member…",
+    "admin_panel_transfer_btn": "Transfer",
+    "admin_panel_transfer_confirm": "Transfer club management to {name}? This action is irreversible.",
     "venues_title": "Venues ({count})",
     "venues_add_btn": "+ Add a venue",
     "venues_empty": "No venues configured.",
@@ -1510,7 +1511,7 @@
     "btn_start": "Start",
     "btn_pause": "Pause",
     "btn_goal": "Goal",
-    "btn_penalty": "Fouls",
+    "btn_penalty": "Foul",
     "btn_end": "End match",
     "team_home": "Home",
     "team_away": "Away",
@@ -1662,13 +1663,7 @@
     "tab_settings": "Settings",
     "messages_empty": "No conversations yet.",
     "messages_open_all": "See all messages",
-    "settings_notifications_title": "Notifications",
-    "install_app_title": "Install the app",
-    "install_app_desc": "Install Poloperator on your device for quick access.",
-    "install_app_btn": "Install",
-    "install_app_safari_mac": "On Safari Mac: File menu → Add to Dock",
-    "install_app_safari_ios": "On Safari iOS: tap Share then \"Add to Home Screen\"",
-    "install_app_installed": "App installed"
+    "settings_notifications_title": "Notifications"
   },
   "charter": {
     "title": "Community Charter",
@@ -1695,6 +1690,7 @@
     "db_hosted_by": "Database hosted by",
     "usa": "United States",
     "singapore": "Singapore",
+    "germany": "Germany",
     "ip_title": "Intellectual Property",
     "ip_text_1": "All content on this site (texts, images, graphics, logo) is the exclusive property of the publisher, unless otherwise stated.",
     "ip_text_2": "Any reproduction, representation, modification, publication or adaptation of all or part of the site's elements is prohibited without prior written permission.",
@@ -1928,8 +1924,6 @@
     "geo_zones": "Geographic Zones",
     "geo_hint": "Select the regions you want to be notified about. If no zone is selected, you will be notified for all tournaments.",
     "all_continent": "All {label}",
-    "push_notifications": "Push notifications (phone/browser)",
-    "push_denied_hint": "Notifications are blocked in your browser settings. Re-enable them in site settings.",
     "save": "Save",
     "saving": "Saving…",
     "saved": "Preferences saved!"
@@ -2390,7 +2384,7 @@
     "status_live": "🟢 Live",
     "status_finished": "✅ Finished",
     "status_scheduled": "⏳ Scheduled",
-    "btn_penalty": "Fouls",
+    "btn_penalty": "Foul",
     "correct_score": "Correct score",
     "btn_save": "✓ Save",
     "btn_reopen_match": "Reopen match",

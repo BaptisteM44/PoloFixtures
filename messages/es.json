@@ -1024,13 +1024,11 @@
     "club_session": "Nueva actividad en tu club",
     "club_session_join": "Jugadores se inscribieron a una sesión",
     "club_announcement": "Nuevo anuncio en {clubName}",
-    "team_fee_confirmed": "Pago confirmado — {teamName}",
     "community_reply": "Nueva respuesta en \"{itemTitle}\"",
     "section_pending_invites": "Invitaciones pendientes",
     "btn_accept": "Aceptar",
     "btn_decline": "Rechazar",
-    "default": "Notificación",
-    "enable_push": "Activar notificaciones"
+    "default": "Notificación"
   },
   "contact": {
     "btn_open": "Contacto",
@@ -1056,8 +1054,7 @@
     "legal_mentions": "Aviso legal",
     "privacy": "Privacidad",
     "terms": "Condiciones de uso",
-    "charter": "Carta",
-    "install_app": "Instalar app"
+    "charter": "Carta"
   },
   "player": {
     "page_title": "Perfil de jugador",
@@ -1440,6 +1437,10 @@
     "admin_panel_add_placeholder": "Añadir un admin…",
     "admin_panel_confirm_remove": "¿Retirar este admin?",
     "admin_panel_add_btn": "Añadir",
+    "admin_panel_transfer_title": "Transferir la gestión del club",
+    "admin_panel_transfer_placeholder": "Elegir un miembro…",
+    "admin_panel_transfer_btn": "Transferir",
+    "admin_panel_transfer_confirm": "¿Transferir la gestión del club a {name}? Esta acción es irreversible.",
     "venues_title": "Terrenos ({count})",
     "venues_add_btn": "+ Añadir un terreno",
     "venues_empty": "No hay terrenos configurados.",
@@ -1666,13 +1667,7 @@
     "tab_settings": "Ajustes",
     "messages_empty": "Aún no hay conversaciones.",
     "messages_open_all": "Ver todos los mensajes",
-    "settings_notifications_title": "Notificaciones",
-    "install_app_title": "Instalar la app",
-    "install_app_desc": "Instala Poloperator en tu dispositivo para un acceso rápido.",
-    "install_app_btn": "Instalar",
-    "install_app_safari_mac": "En Safari Mac: menú Archivo → Agregar al Dock",
-    "install_app_safari_ios": "En Safari iOS: toca Compartir y luego \"Agregar a inicio\"",
-    "install_app_installed": "App instalada"
+    "settings_notifications_title": "Notificaciones"
   },
   "charter": {
     "title": "Carta de la Comunidad",
@@ -1699,6 +1694,7 @@
     "db_hosted_by": "Base de datos alojada por",
     "usa": "Estados Unidos",
     "singapore": "Singapur",
+    "germany": "Alemania",
     "ip_title": "Propiedad Intelectual",
     "ip_text_1": "Todo el contenido de este sitio (textos, imágenes, gráficos, logotipo) es propiedad exclusiva del editor, salvo indicación contraria.",
     "ip_text_2": "Cualquier reproducción, representación, modificación, publicación o adaptación de la totalidad o parte de los elementos del sitio está prohibida sin autorización previa por escrito.",
@@ -1932,8 +1928,6 @@
     "geo_zones": "Zonas geográficas",
     "geo_hint": "Selecciona las regiones sobre las que deseas ser notificado. Si no se selecciona ninguna zona, serás notificado de todos los torneos.",
     "all_continent": "Todo {label}",
-    "push_notifications": "Notificaciones push (teléfono/navegador)",
-    "push_denied_hint": "Las notificaciones están bloqueadas en la configuración de tu navegador. Reactívalas en los ajustes del sitio.",
     "save": "Guardar",
     "saving": "Guardando…",
     "saved": "¡Preferencias guardadas!"

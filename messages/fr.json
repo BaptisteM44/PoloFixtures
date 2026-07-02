@@ -1020,13 +1020,11 @@
     "club_session": "Nouvelle activité dans ton club",
     "club_session_join": "Des joueur·euses se sont inscrit·es à une session",
     "club_announcement": "Nouvelle annonce dans {clubName}",
-    "team_fee_confirmed": "Paiement confirmé — {teamName}",
     "community_reply": "Nouvelle réponse sur \"{itemTitle}\"",
     "section_pending_invites": "Invitations en attente",
     "btn_accept": "Accepter",
     "btn_decline": "Refuser",
-    "default": "Notification",
-    "enable_push": "Activer les notifs"
+    "default": "Notification"
   },
   "contact": {
     "btn_open": "Contact",
@@ -1052,8 +1050,7 @@
     "legal_mentions": "Mentions légales",
     "privacy": "Confidentialité",
     "terms": "CGU",
-    "charter": "Charte",
-    "install_app": "Installer l'app"
+    "charter": "Charte"
   },
   "player": {
     "page_title": "Profil joueur·euse",
@@ -1437,6 +1434,10 @@
     "admin_panel_add_placeholder": "Ajouter un admin…",
     "admin_panel_confirm_remove": "Retirer cet admin ?",
     "admin_panel_add_btn": "Ajouter",
+    "admin_panel_transfer_title": "Transférer la gestion du club",
+    "admin_panel_transfer_placeholder": "Choisir un membre…",
+    "admin_panel_transfer_btn": "Transférer",
+    "admin_panel_transfer_confirm": "Transférer la gestion du club à {name} ? Cette action est irréversible.",
     "venues_title": "Terrains ({count})",
     "venues_add_btn": "+ Ajouter un terrain",
     "venues_empty": "Aucun terrain configuré.",
@@ -1663,13 +1664,7 @@
     "tab_settings": "Paramètres",
     "messages_empty": "Aucune conversation pour l'instant.",
     "messages_open_all": "Voir tous les messages",
-    "settings_notifications_title": "Notifications",
-    "install_app_title": "Installer l'application",
-    "install_app_desc": "Installez Poloperator sur votre appareil pour un accès rapide.",
-    "install_app_btn": "Installer",
-    "install_app_safari_mac": "Sur Safari Mac : menu Fichier → Ajouter au Dock",
-    "install_app_safari_ios": "Sur Safari iOS : touchez Partager puis \"Sur l'écran d'accueil\"",
-    "install_app_installed": "Application installée"
+    "settings_notifications_title": "Notifications"
   },
   "charter": {
     "title": "Charte de bonne conduite",
@@ -1696,6 +1691,7 @@
     "db_hosted_by": "Base de données hébergée par",
     "usa": "États-Unis",
     "singapore": "Singapour",
+    "germany": "Allemagne",
     "ip_title": "Propriété intellectuelle",
     "ip_text_1": "L'ensemble du contenu de ce site (textes, images, graphismes, logo) est la propriété exclusive de l'éditeur, sauf mention contraire.",
     "ip_text_2": "Toute reproduction, représentation, modification, publication ou adaptation de tout ou partie des éléments du site est interdite sans autorisation préalable écrite.",
@@ -1929,8 +1925,6 @@
     "geo_zones": "Zones géographiques",
     "geo_hint": "Sélectionnez les régions pour lesquelles vous souhaitez être notifié. Si aucune zone n'est sélectionnée, vous serez notifié pour tous les tournois.",
     "all_continent": "Tout(e) {label}",
-    "push_notifications": "Notifications push (sur le téléphone/navigateur)",
-    "push_denied_hint": "Les notifications sont bloquées dans les paramètres de ton navigateur. Réactive-les dans les réglages du site.",
     "save": "Enregistrer",
     "saving": "Enregistrement…",
     "saved": "Préférences sauvegardées !"

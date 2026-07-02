@@ -62,7 +62,7 @@ export function ClubAdminPanel({
   function handleTransfer() {
     if (!transferPlayerId) return;
     const name = members.find((m) => m.playerId === transferPlayerId)?.player.name ?? "ce joueur";
-    if (!confirm(`Transférer la gestion du club à ${name} ? Cette action est irréversible.`)) return;
+    if (!confirm(t("admin_panel_transfer_confirm", { name }))) return;
     startTransition(async () => {
       const res = await transferManagerAction(clubId, transferPlayerId);
       if ("ok" in res) window.location.reload();
@@ -123,7 +123,7 @@ export function ClubAdminPanel({
       {isManager && members.filter((m) => m.playerId !== managerId).length > 0 && (
         <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid var(--border)" }}>
           <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
-            Transférer la gestion du club
+            {t("admin_panel_transfer_title")}
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             <select
@@ -132,7 +132,7 @@ export function ClubAdminPanel({
               onChange={(e) => setTransferPlayerId(e.target.value)}
               style={{ flex: 1, fontSize: 13 }}
             >
-              <option value="">Choisir un membre…</option>
+              <option value="">{t("admin_panel_transfer_placeholder")}</option>
               {members.filter((m) => m.playerId !== managerId).map((m) => (
                 <option key={m.playerId} value={m.playerId}>{m.player.name}</option>
               ))}
@@ -143,7 +143,7 @@ export function ClubAdminPanel({
               disabled={isPending || !transferPlayerId}
               style={{ fontSize: 13 }}
             >
-              Transférer
+              {t("admin_panel_transfer_btn")}
             </button>
           </div>
         </div>

@@ -1025,13 +1025,11 @@
     "club_session": "Neue Aktivität in deinem Club",
     "club_session_join": "Spieler haben sich für eine Session angemeldet",
     "club_announcement": "Neue Ankündigung in {clubName}",
-    "team_fee_confirmed": "Zahlung bestätigt — {teamName}",
     "community_reply": "Neue Antwort auf \"{itemTitle}\"",
     "section_pending_invites": "Ausstehende Einladungen",
     "btn_accept": "Annehmen",
     "btn_decline": "Ablehnen",
-    "default": "Mitteilung",
-    "enable_push": "Benachrichtigungen aktivieren"
+    "default": "Mitteilung"
   },
   "contact": {
     "btn_open": "Kontakt",
@@ -1057,8 +1055,7 @@
     "legal_mentions": "Impressum",
     "privacy": "Datenschutz",
     "terms": "AGB",
-    "charter": "Charta",
-    "install_app": "App installieren"
+    "charter": "Charta"
   },
   "player": {
     "page_title": "Spielerprofil",
@@ -1441,6 +1438,10 @@
     "admin_panel_add_placeholder": "Admin hinzufügen…",
     "admin_panel_confirm_remove": "Diesen Admin entfernen?",
     "admin_panel_add_btn": "Hinzufügen",
+    "admin_panel_transfer_title": "Clubleitung übertragen",
+    "admin_panel_transfer_placeholder": "Mitglied auswählen…",
+    "admin_panel_transfer_btn": "Übertragen",
+    "admin_panel_transfer_confirm": "Clubleitung an {name} übertragen? Diese Aktion ist unwiderruflich.",
     "venues_title": "Spielorte ({count})",
     "venues_add_btn": "+ Spielort hinzufügen",
     "venues_empty": "Keine Spielorte konfiguriert.",
@@ -1667,13 +1668,7 @@
     "tab_settings": "Einstellungen",
     "messages_empty": "Noch keine Unterhaltungen.",
     "messages_open_all": "Alle Nachrichten anzeigen",
-    "settings_notifications_title": "Benachrichtigungen",
-    "install_app_title": "App installieren",
-    "install_app_desc": "Installiere Poloperator auf deinem Gerät für schnellen Zugriff.",
-    "install_app_btn": "Installieren",
-    "install_app_safari_mac": "In Safari Mac: Menü Ablage → Zum Dock hinzufügen",
-    "install_app_safari_ios": "In Safari iOS: Teilen antippen, dann \"Zum Home-Bildschirm\"",
-    "install_app_installed": "App installiert"
+    "settings_notifications_title": "Benachrichtigungen"
   },
   "charter": {
     "title": "Community-Charta",
@@ -1700,6 +1695,7 @@
     "db_hosted_by": "Datenbank gehostet von",
     "usa": "Vereinigte Staaten",
     "singapore": "Singapur",
+    "germany": "Deutschland",
     "ip_title": "Geistiges Eigentum",
     "ip_text_1": "Alle Inhalte dieser Website (Texte, Bilder, Grafiken, Logo) sind das ausschliessliche Eigentum des Herausgebers, sofern nicht anders angegeben.",
     "ip_text_2": "Jede Reproduktion, Darstellung, Modifikation, Veröffentlichung oder Anpassung aller oder eines Teils der Website-Elemente ist ohne vorherige schriftliche Genehmigung verboten.",
@@ -1933,8 +1929,6 @@
     "geo_zones": "Geografische Zonen",
     "geo_hint": "Wähle die Regionen aus, über die du benachrichtigt werden möchtest. Wenn keine Zone ausgewählt ist, wirst du über alle Turniere benachrichtigt.",
     "all_continent": "Ganz {label}",
-    "push_notifications": "Push-Benachrichtigungen (Handy/Browser)",
-    "push_denied_hint": "Benachrichtigungen sind in deinen Browsereinstellungen blockiert. Aktiviere sie in den Seiteneinstellungen.",
     "save": "Speichern",
     "saving": "Speichern…",
     "saved": "Einstellungen gespeichert!"
