@@ -88,10 +88,12 @@ export function ClubVenues({
   clubId,
   venues: initialVenues,
   isAdmin,
+  isMember,
 }: {
   clubId: string;
   venues: Venue[];
   isAdmin: boolean;
+  isMember?: boolean;
 }) {
   const t = useTranslations("club");
   const [venues, setVenues] = useState(initialVenues);
@@ -138,7 +140,7 @@ export function ClubVenues({
     <div className="club-venues">
       <div className="club-venues__header">
         <h3>{t("venues_title", { count: venues.length })}</h3>
-        {isAdmin && !showAdd && (
+        {(isAdmin || isMember) && !showAdd && (
           <button className="ghost" style={{ fontSize: 13 }} onClick={() => setShowAdd(true)}>
             {t("venues_add_btn")}
           </button>

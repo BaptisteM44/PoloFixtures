@@ -452,8 +452,8 @@ export async function createVenueAction(clubId: string, data: {
   notes?: string;
   color?: string;
 }) {
-  const { isAdmin } = await getClubRole(clubId);
-  if (!isAdmin) return { error: "Réservé aux admins." };
+  const { isMember, isAdmin } = await getClubRole(clubId);
+  if (!isMember && !isAdmin) return { error: "Réservé aux membres du club." };
   if (!data.name.trim()) return { error: "Nom requis." };
 
   await prisma.clubVenue.create({
@@ -478,8 +478,8 @@ export async function updateVenueAction(clubId: string, venueId: string, data: {
   notes?: string;
   color?: string;
 }) {
-  const { isAdmin } = await getClubRole(clubId);
-  if (!isAdmin) return { error: "Réservé aux admins." };
+  const { isMember, isAdmin } = await getClubRole(clubId);
+  if (!isMember && !isAdmin) return { error: "Réservé aux membres du club." };
 
   await prisma.clubVenue.update({
     where: { id: venueId },
