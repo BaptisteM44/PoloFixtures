@@ -45,6 +45,7 @@ enum SaturdayFormat {
   MTP_OPEN
   KIOSQUE
   SPLIT_SWISS
+  BIG_APPLE
 }
 
 enum SundayFormat {
@@ -80,6 +81,10 @@ enum MatchPhase {
   KIOSQUE_SE
   SWISS_A
   SWISS_B
+  BIG_APPLE_RR
+  BIG_APPLE_SWISS
+  BIG_APPLE_PLACEMENT
+  BIG_APPLE_SE
 }
 
 enum BracketSide {
@@ -166,7 +171,7 @@ enum NotificationType {
   CLUB_SESSION_JOIN      // des joueurs se sont inscrits à une session
   CLUB_ANNOUNCEMENT      // nouvelle annonce dans le club
   COMMUNITY_STATUS_CHANGED // statut d'un item communauté a changé
-  TEAM_FEE_CONFIRMED       // paiement de l'équipe confirmé par l'orga
+  TEAM_FEE_CONFIRMED       // frais d'inscription d'équipe confirmés
 }
 
 enum TaskPriority {
@@ -431,7 +436,6 @@ model Player {
   receivedInvitations     SquadInvitation[]     @relation("ReceivedInvitations")
   squadMessages           SquadMessage[]
   notifications           Notification[]
-  pushSubscriptions       PushSubscription[]
   conversationsAsA        DirectConversation[]  @relation("ConversationPlayerA")
   conversationsAsB        DirectConversation[]  @relation("ConversationPlayerB")
   directMessages          DirectMessage[]
@@ -458,6 +462,19 @@ model Player {
   communityVotes      CommunityVote[]
   communityReplies    CommunityReply[]
   communityReplyLikes CommunityReplyLike[]
+  pushSubscriptions   PushSubscription[]
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([playerId])
 }
 
 model PlayerAccount {
@@ -714,19 +731,6 @@ model Notification {
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@index([playerId, read])
-  @@index([playerId])
-}
-
-model PushSubscription {
-  id        String   @id @default(cuid())
-  playerId  String
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
   @@index([playerId])
 }
 

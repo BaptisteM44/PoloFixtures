@@ -75,8 +75,8 @@ export default async function PrivacyPage() {
         <h2>{t("s5_title")}</h2>
         <p>{t("s5_intro")}</p>
         <ul>
-          <li><strong>Vercel</strong> — <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">{t("s5_privacy_policy")}</a></li>
-          <li><strong>Supabase</strong> — <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">{t("s5_privacy_policy")}</a></li>
+          <li><strong>Cloudflare</strong> — <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">{t("s5_privacy_policy")}</a></li>
+          <li><strong>Hetzner (Coolify)</strong> — <a href="https://www.hetzner.com/legal/privacy-policy/" target="_blank" rel="noopener noreferrer">{t("s5_privacy_policy")}</a></li>
           <li><strong>SMTP</strong> — {t("s5_smtp")}</li>
         </ul>
         <p>{t("s5_public_profiles")}</p>

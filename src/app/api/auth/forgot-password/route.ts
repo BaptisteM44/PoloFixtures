@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     try {
       await sendMail({ to: account.email, subject, html });
     } catch (err) {
-      // L'envoi SMTP peut échouer sur certains hébergeurs (ex. Vercel bloque les ports SMTP).
+      // L'envoi SMTP peut échouer sur certains hébergeurs.
       // Le token est déjà sauvegardé — on logue l'URL pour intervention manuelle si besoin.
       console.error("[reset-password] Échec envoi email:", err);
       console.warn("[reset-password] URL de réinitialisation (à transmettre manuellement):", resetUrl);

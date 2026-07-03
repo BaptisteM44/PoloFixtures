@@ -210,6 +210,171 @@ function GrazPlanning({
   );
 }
 
+// ─── BigApplePlanning ────────────────────────────────────────────────────────
+
+type BigAppleTab = "samedi" | "dimanche";
+
+function BigApplePlanning({
+  tournament,
+  pools,
+  matches,
+  launchBigAppleSwissRoundAction,
+  launchBigApplePlacementAction,
+  launchBigAppleSEAction,
+  resetBigApplePhaseAction,
+}: {
+  tournament: any;
+  pools: any[];
+  matches: any[];
+  launchBigAppleSwissRoundAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchBigApplePlacementAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchBigAppleSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  resetBigApplePhaseAction?: (phase: "SWISS" | "PLACEMENT" | "SE") => Promise<{ ok?: boolean; error?: string }>;
+}) {
+  const t = useTranslations("tournament");
+  const [tab, setTab] = useState<BigAppleTab>("samedi");
+  const [pendingSwiss, setPendingSwiss] = useState(false);
+  const [pendingPlacement, setPendingPlacement] = useState(false);
+  const [pendingSE, setPendingSE] = useState(false);
+  const [pendingReset, setPendingReset] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const poolAId = pools.find((p: any) => p.name === "Pool A")?.id;
+  const poolBId = pools.find((p: any) => p.name === "Pool B")?.id;
+
+  const rrMatches = matches.filter((m: any) => m.phase === "BIG_APPLE_RR");
+  const poolARR = rrMatches.filter((m: any) => m.poolId === poolAId);
+  const poolBRR = rrMatches.filter((m: any) => m.poolId === poolBId);
+  const swissMatches = matches.filter((m: any) => m.phase === "BIG_APPLE_SWISS");
+  const placementMatches = matches.filter((m: any) => m.phase === "BIG_APPLE_PLACEMENT");
+  const seMatches = matches.filter((m: any) => m.phase === "BIG_APPLE_SE");
+
+  const rrDone = rrMatches.length > 0 && rrMatches.every((m: any) => m.status === "FINISHED");
+  const swissRoundsDone = swissMatches.length > 0 ? Math.max(...swissMatches.map((m: any) => m.roundIndex)) : 0;
+  const currentSwissRound = swissMatches.filter((m: any) => m.roundIndex === swissRoundsDone);
+  const currentSwissDone = currentSwissRound.length > 0 && currentSwissRound.every((m: any) => m.status === "FINISHED");
+  const swissAllDone = swissRoundsDone >= 3 && currentSwissDone;
+  const canLaunchNextSwiss = rrDone && swissRoundsDone < 3 && (swissRoundsDone === 0 || currentSwissDone);
+  const placementDone = placementMatches.length > 0 && placementMatches.every((m: any) => m.status === "FINISHED");
+  const canLaunchPlacement = rrDone && placementMatches.length === 0;
+  const canLaunchSE = seMatches.length === 0 && swissAllDone && placementDone;
+
+  const matchCount = (arr: any[]) => ({ done: arr.filter((m: any) => m.status === "FINISHED").length, total: arr.length });
+
+  function StatusLine({ arr }: { arr: any[] }) {
+    const { done, total } = matchCount(arr);
+    if (total === 0) return <p className="meta">{t("orga_matches_not_generated")}</p>;
+    return (
+      <p style={{ fontSize: 13, margin: 0, color: done === total ? "var(--teal)" : "var(--text)" }}>
+        {t("orga_matches_finished_count", { done, total })}{done === total ? " ✓" : ""}
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      <div className="tabs-bar" style={{ marginTop: 0 }}>
+        <div className="tabs">
+          {(["samedi", "dimanche"] as BigAppleTab[]).map((v) => (
+            <button key={v} type="button" onClick={() => setTab(v)} className={`tab${tab === v ? " active" : ""}`}>
+              {v === "samedi" ? t("orga_day1_label") : t("orga_day2_label")}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && <p style={{ color: "var(--danger)", fontSize: 12, padding: "8px 0" }}>{error}</p>}
+
+      {tab === "samedi" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              {t("big_apple_pool_a_rr" as any)}
+            </p>
+            <StatusLine arr={poolARR} />
+          </div>
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              {t("big_apple_pool_b_rr" as any)}
+            </p>
+            <StatusLine arr={poolBRR} />
+          </div>
+        </div>
+      )}
+
+      {tab === "dimanche" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Swiss 3 rounds (teams 3-8) */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              {t("big_apple_swiss" as any)}
+            </p>
+            <StatusLine arr={swissMatches} />
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {canLaunchNextSwiss && launchBigAppleSwissRoundAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pendingSwiss}
+                  onClick={async () => { setPendingSwiss(true); setError(null); const res = await launchBigAppleSwissRoundAction(); if (res?.error) setError(res.error); setPendingSwiss(false); }}>
+                  {pendingSwiss ? "..." : t("big_apple_launch_swiss" as any, { round: swissRoundsDone + 1 })}
+                </button>
+              )}
+              {swissMatches.length > 0 && resetBigApplePhaseAction && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pendingReset === "SWISS"}
+                  onClick={async () => { if (!window.confirm("Reset Swiss + Placement + SE ?")) return; setPendingReset("SWISS"); setError(null); const res = await resetBigApplePhaseAction("SWISS"); if (res?.error) setError(res.error); setPendingReset(null); }}>
+                  {pendingReset === "SWISS" ? "..." : "↺ Reset"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Placement matches (1&2 of each pool) */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              {t("big_apple_placement" as any)}
+            </p>
+            <StatusLine arr={placementMatches} />
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {canLaunchPlacement && launchBigApplePlacementAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pendingPlacement}
+                  onClick={async () => { setPendingPlacement(true); setError(null); const res = await launchBigApplePlacementAction(); if (res?.error) setError(res.error); setPendingPlacement(false); }}>
+                  {pendingPlacement ? "..." : t("big_apple_launch_placement" as any)}
+                </button>
+              )}
+              {placementMatches.length > 0 && resetBigApplePhaseAction && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pendingReset === "PLACEMENT"}
+                  onClick={async () => { if (!window.confirm("Reset Placement + SE ?")) return; setPendingReset("PLACEMENT"); setError(null); const res = await resetBigApplePhaseAction("PLACEMENT"); if (res?.error) setError(res.error); setPendingReset(null); }}>
+                  {pendingReset === "PLACEMENT" ? "..." : "↺ Reset"}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* SE bracket */}
+          <div className="panel">
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
+              {t("big_apple_se" as any)}
+            </p>
+            <StatusLine arr={seMatches} />
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {canLaunchSE && launchBigAppleSEAction && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pendingSE}
+                  onClick={async () => { setPendingSE(true); setError(null); const res = await launchBigAppleSEAction(); if (res?.error) setError(res.error); setPendingSE(false); }}>
+                  {pendingSE ? "..." : t("big_apple_launch_se" as any)}
+                </button>
+              )}
+              {seMatches.length > 0 && resetBigApplePhaseAction && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pendingReset === "SE"}
+                  onClick={async () => { if (!window.confirm("Reset SE ?")) return; setPendingReset("SE"); setError(null); const res = await resetBigApplePhaseAction("SE"); if (res?.error) setError(res.error); setPendingReset(null); }}>
+                  {pendingReset === "SE" ? "..." : "↺ Reset"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── KiosquePlanning ─────────────────────────────────────────────────────────
 
 function KiosquePoolPanel({
@@ -1267,6 +1432,7 @@ type OrgaDashboardProps = {
   launchAction: (formData: FormData) => Promise<void>;
   resetAction: (formData: FormData) => Promise<void>;
   resetMatchesAction: (formData: FormData) => Promise<void>;
+  launchPoolBAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchGrazPoolBAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchGrazSundayRRAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchGrazRegroupAction?: () => Promise<{ ok?: boolean; error?: string }>;
@@ -1290,6 +1456,10 @@ type OrgaDashboardProps = {
   launchKiosqueSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetKiosquePhaseAction?: (phase: "REGROUP" | "SE") => Promise<{ ok?: boolean; error?: string }>;
   resetKiosqueJ1Action?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchBigAppleSwissRoundAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchBigApplePlacementAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  launchBigAppleSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  resetBigApplePhaseAction?: (phase: "SWISS" | "PLACEMENT" | "SE") => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -1351,6 +1521,7 @@ export function OrgaDashboard({
   launchAction,
   resetAction,
   resetMatchesAction,
+  launchPoolBAction,
   launchGrazPoolBAction,
   launchGrazSundayRRAction,
   launchGrazRegroupAction,
@@ -1374,6 +1545,10 @@ export function OrgaDashboard({
   launchKiosqueSEAction,
   resetKiosquePhaseAction,
   resetKiosqueJ1Action,
+  launchBigAppleSwissRoundAction,
+  launchBigApplePlacementAction,
+  launchBigAppleSEAction,
+  resetBigApplePhaseAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -1405,6 +1580,17 @@ export function OrgaDashboard({
     localStorage.setItem(tabStorageKey, activeTab);
   }, [activeTab, tabStorageKey]);
 
+  const [pendingPoolB, setPendingPoolB] = useState(false);
+  const [poolBError, setPoolBError] = useState<string | null>(null);
+  async function handleLaunchPoolB() {
+    if (!launchPoolBAction) return;
+    setPendingPoolB(true);
+    setPoolBError(null);
+    const res = await launchPoolBAction();
+    setPendingPoolB(false);
+    if (res.error) setPoolBError(res.error);
+  }
+
   // Derived match state
   const poolMatches = matches.filter((m) => m.phase === "POOL" || m.phase === "SWISS");
   const poolMatchesFinished = poolMatches.length > 0 && poolMatches.every((m) => m.status === "FINISHED");
@@ -1422,6 +1608,7 @@ export function OrgaDashboard({
   const isKiosque = (tournament as any).saturdayFormat === "KIOSQUE";
   const isBerlinMixed = tournament.saturdayFormat === "BERLIN_MIXED";
   const isSplitSwiss = (tournament as any).saturdayFormat === "SPLIT_SWISS";
+  const isBigApple = (tournament as any).saturdayFormat === "BIG_APPLE";
   const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0 && !isMtpOpen && !isKiosque && !isBerlinMixed && !isSplitSwiss)) && teams.some((t) => t.selected === true);
   const isLive = tournament.status === "LIVE";
 
@@ -1815,7 +2002,7 @@ export function OrgaDashboard({
                 day1Matches = poolCount * (perPool * (perPool - 1) / 2);
               }
 
-              if (tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && (tournament as any).saturdayFormat !== "MTP_OPEN" && (tournament as any).saturdayFormat !== "KIOSQUE") {
+              if (tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && (tournament as any).saturdayFormat !== "MTP_OPEN" && (tournament as any).saturdayFormat !== "KIOSQUE" && (tournament as any).saturdayFormat !== "BIG_APPLE") {
                 const bracketSize = tournament.bracketSize ?? 16;
                 const qualified = Math.min(bracketSize, n);
                 if (tournament.sundayFormat === "DE") {
@@ -1858,7 +2045,7 @@ export function OrgaDashboard({
           </div>
 
           {/* Pool rounds limit — visible when pool matches exist */}
-          {isLive && poolMatches.length > 0 && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && updatePoolRoundsAction && (
+          {isLive && poolMatches.length > 0 && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && !isBigApple && updatePoolRoundsAction && (
             <div className="panel" style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, margin: 0 }}>
                 {t("field_pool_rounds")}
@@ -1992,8 +2179,21 @@ export function OrgaDashboard({
             />
           )}
 
-          {/* ── Planning standard (non-Berlin, non-Graz, non-MTP, non-Kiosque, non-SplitSwiss) ── */}
-          {tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && !isSplitSwiss && (
+          {/* ── Big Apple Format planning ── */}
+          {isBigApple && (isLive || tournament.status === "COMPLETED") && (
+            <BigApplePlanning
+              tournament={tournament}
+              pools={pools}
+              matches={matches}
+              launchBigAppleSwissRoundAction={launchBigAppleSwissRoundAction}
+              launchBigApplePlacementAction={launchBigApplePlacementAction}
+              launchBigAppleSEAction={launchBigAppleSEAction}
+              resetBigApplePhaseAction={resetBigApplePhaseAction}
+            />
+          )}
+
+          {/* ── Planning standard (non-Berlin, non-Graz, non-MTP, non-Kiosque, non-SplitSwiss, non-BigApple) ── */}
+          {tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && !isSplitSwiss && !isBigApple && (
             <>
               {/* Pools — séparés par pool pour format multi-poule */}
               {hasAnyMatches && (tournament.poolCount ?? 1) > 1 && (
@@ -2018,6 +2218,30 @@ export function OrgaDashboard({
                       </div>
                     );
                   })}
+                  {/* Lancer Pool B séparément (cross-pool / SPLIT_POOLS) : garde l'ordre du planning */}
+                  {tournament.saturdayFormat === "SPLIT_POOLS" && launchPoolBAction && (() => {
+                    const poolA = pools.find((p: any) => p.name === "Pool A");
+                    const poolB = pools.find((p: any) => p.name === "Pool B");
+                    const poolAMatches = poolA ? poolMatches.filter((m) => poolA.teams.some((pt: any) => pt.team.id === m.teamAId || pt.team.id === m.teamBId)) : [];
+                    const poolBMatches = poolB ? poolMatches.filter((m) => poolB.teams.some((pt: any) => pt.team.id === m.teamAId || pt.team.id === m.teamBId)) : [];
+                    const poolAFinished = poolAMatches.length > 0 && poolAMatches.every((m) => m.status === "FINISHED");
+                    const canLaunchPoolB = poolAFinished && poolBMatches.length === 0;
+                    if (!canLaunchPoolB) return null;
+                    return (
+                      <div className="panel">
+                        <button
+                          type="button"
+                          className="primary"
+                          style={{ fontSize: 13 }}
+                          onClick={handleLaunchPoolB}
+                          disabled={pendingPoolB}
+                        >
+                          {pendingPoolB ? "..." : t("orga_launch_pool_b" as any)}
+                        </button>
+                        {poolBError && <p style={{ color: "var(--danger)", fontSize: 12, marginTop: 6 }}>{poolBError}</p>}
+                      </div>
+                    );
+                  })()}
                 </>
               )}
 

@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action } from "./actions";
-import { generateSplitSwissRoundAction, saveSplitSwissGroupsAction, generateSplitSwissBracketAction, resetSplitSwissPhaseAction } from "./split-swiss-actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
@@ -374,6 +373,10 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               "use server";
               await resetMatchesAction(t_.id);
             }}
+            launchPoolBAction={async () => {
+              "use server";
+              return await launchPoolAction(t_.id, "B");
+            }}
             launchGrazPoolBAction={async () => {
               "use server";
               return await launchGrazPoolAction(t_.id, "Pool B");
@@ -426,21 +429,21 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               "use server";
               return await resetKiosqueJ1Action(t_.id);
             }}
-            generateSplitSwissRoundAction={async (group) => {
+            launchBigAppleSwissRoundAction={async () => {
               "use server";
-              return await generateSplitSwissRoundAction(t_.id, group);
+              return await launchBigAppleSwissRoundAction(t_.id);
             }}
-            saveSplitSwissGroupsAction={async (groupA, groupB) => {
+            launchBigApplePlacementAction={async () => {
               "use server";
-              return await saveSplitSwissGroupsAction(t_.id, groupA, groupB);
+              return await launchBigApplePlacementAction(t_.id);
             }}
-            generateSplitSwissBracketAction={async () => {
+            launchBigAppleSEAction={async () => {
               "use server";
-              return await generateSplitSwissBracketAction(t_.id);
+              return await launchBigAppleSEAction(t_.id);
             }}
-            resetSplitSwissPhaseAction={async (phase) => {
+            resetBigApplePhaseAction={async (phase) => {
               "use server";
-              return await resetSplitSwissPhaseAction(t_.id, phase);
+              return await resetBigApplePhaseAction(t_.id, phase);
             }}
             orgaTasks={orgaTasks.map((t) => ({ ...t, priority: t.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT", deadline: t.deadline?.toISOString() ?? null, createdAt: t.createdAt.toISOString() }))}
             orgaNotes={orgaNotes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString() }))}

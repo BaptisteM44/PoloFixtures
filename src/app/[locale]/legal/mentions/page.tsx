@@ -25,9 +25,9 @@ export default async function MentionsLegalesPage() {
         <h2>{t("hosting_title")}</h2>
         <p>
           {t("hosted_by")} :<br />
-          <strong>Vercel Inc.</strong><br />
-          440 N Barranca Ave #4133, Covina, CA 91723, {t("usa")}<br />
-          <a href="https://vercel.com" target="_blank" rel="noopener noreferrer">vercel.com</a>
+          <strong>Hetzner Online GmbH (via Coolify)</strong><br />
+          Industriestr. 25, 91710 Gunzenhausen, {t("germany")}<br />
+          <a href="https://www.hetzner.com" target="_blank" rel="noopener noreferrer">hetzner.com</a>
         </p>
         <p>
           {t("db_hosted_by")} :<br />

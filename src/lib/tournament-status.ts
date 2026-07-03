@@ -22,7 +22,7 @@ function shouldCompleteFromMatches(matches: MatchLite[]): boolean {
 
   // Only complete if there's a finished final match (BRACKET or MTP_DE with no nextMatchWinId)
   // This indicates the tournament actually reached its conclusion
-  const finalPhases = ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE"];
+  const finalPhases = ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE", "BIG_APPLE_SE"];
   const hasFinishedFinal = matches.some(
     (m) => finalPhases.includes(m.phase) && !m.nextMatchWinId && m.status === "FINISHED" && !!m.winnerTeamId
   );

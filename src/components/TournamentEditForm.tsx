@@ -78,8 +78,6 @@ type Tournament = {
   maxSoloPlayers?: number | null;
   externalRegistrationUrl?: string | null;
   hostClubId?: string | null;
-  lat?: number | null;
-  lng?: number | null;
 };
 
 type Props = {
@@ -131,7 +129,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const [currentFormat, setCurrentFormat] = useState(tournament.format);
 
   // Format preset
-  type FormatPreset = "pool_de" | "pool_se" | "2pools_de" | "2pools_se" | "swiss_de" | "swiss_se" | "swiss6_split_se" | "cross_pool_bcn" | "berlin_mixed" | "graz" | "mtp_open" | "split_se" | "kiosque" | "split_swiss" | "custom";
+  type FormatPreset = "pool_de" | "pool_se" | "2pools_de" | "2pools_se" | "swiss_de" | "swiss_se" | "swiss6_split_se" | "cross_pool_bcn" | "berlin_mixed" | "graz" | "mtp_open" | "split_se" | "kiosque" | "big_apple" | "custom";
   type PresetConfig = { saturdayFormat: string; poolCount: number; swissRounds: number; bracketSize: number; sundayFormat: string; crossPool: boolean; thirdPlaceMatch: boolean; gfReset: boolean };
 
   const PRESETS: Record<Exclude<FormatPreset, "custom">, PresetConfig> = {
@@ -148,7 +146,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     mtp_open:       { saturdayFormat: "MTP_OPEN",     poolCount: 2, swissRounds: 9, bracketSize: 16, sundayFormat: "DE",       crossPool: false, thirdPlaceMatch: false, gfReset: true  },
     split_se:       { saturdayFormat: "SPLIT_POOLS",  poolCount: 2, swissRounds: 5, bracketSize: 16, sundayFormat: "SPLIT_SE", crossPool: false, thirdPlaceMatch: false, gfReset: false },
     kiosque:        { saturdayFormat: "KIOSQUE",      poolCount: 2, swissRounds: 5, bracketSize: 8,  sundayFormat: "SE",       crossPool: false, thirdPlaceMatch: false, gfReset: false },
-    split_swiss:    { saturdayFormat: "SPLIT_SWISS",  poolCount: 2, swissRounds: 5, bracketSize: 16, sundayFormat: "DE",       crossPool: false, thirdPlaceMatch: false, gfReset: false },
+    big_apple:      { saturdayFormat: "BIG_APPLE",    poolCount: 2, swissRounds: 7, bracketSize: 8,  sundayFormat: "SE",       crossPool: false, thirdPlaceMatch: true,  gfReset: false },
   };
 
   function detectPreset(tn: Tournament): FormatPreset {
@@ -309,14 +307,6 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     setSaved(false);
     setError(null);
     const formData = new FormData(e.currentTarget);
-    // Convert datetime-local values to proper ISO strings so the server
-    // interprets them in the user's local timezone, not UTC.
-    for (const key of ["registrationStart", "registrationEnd"]) {
-      const val = formData.get(key);
-      if (typeof val === "string" && val) {
-        formData.set(key, new Date(val).toISOString());
-      }
-    }
     startTransition(async () => {
       const result = await action(formData);
       if (result?.ok) {
@@ -469,14 +459,6 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           <label className="field-row">
             {t("field_city")}
             <input name="city" defaultValue={tournament.city} required />
-          </label>
-          <label className="field-row">
-            Lat
-            <input name="lat" type="number" step="any" defaultValue={tournament.lat ?? ""} placeholder="auto" />
-          </label>
-          <label className="field-row">
-            Lng
-            <input name="lng" type="number" step="any" defaultValue={tournament.lng ?? ""} placeholder="auto" />
           </label>
 
           {/* Club hôte */}
@@ -737,7 +719,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                   ["mtp_open",       "MTP Open",                 "2 jours · Pool A + Pool B (sam.) · Barrage SE×4 + DE×16 (dim.)"],
                   ["split_se",       t("preset_split_se"),       t("preset_split_se_desc")],
                   ["kiosque",        "Kiosque",                  "2 pools Swiss J1 → Top 4 (2 rounds) + Bottom 12 (3 rounds) → SE × 8"],
-                  ["split_swiss",    "Swiss 2 groupes + DE",     "2×Swiss Sam (Groupe A matin / Groupe B aprèm) · Classement global combiné · DE Dimanche"],
+                  ["big_apple",      "🍎 Big Apple",             "2 jours · 2×RR Poules (sam.) · Swiss 3 rounds (3-8) + Placement 1&2 · SE Top 8"],
                   ["custom",         t("format_custom"),         t("format_custom_desc")],
                 ] as [FormatPreset, string, string][]).map(([key, label, sub]) => {
                   const active = formatPreset === key;
@@ -789,7 +771,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
               <input type="hidden" name="saturdayFormat" value={presetConfig.saturdayFormat} />
               <input type="hidden" name="poolCount" value={presetConfig.poolCount} />
               {/* swissRounds: hidden by default, overridden by visible input below for swiss presets */}
-              {!["swiss_de", "swiss_se", "swiss6_split_se", "mtp_open", "split_swiss"].includes(formatPreset) && (
+              {!["swiss_de", "swiss_se", "swiss6_split_se", "mtp_open"].includes(formatPreset) && (
                 <input type="hidden" name="swissRounds" value={presetConfig.swissRounds} />
               )}
               <input type="hidden" name="poolRounds" value={poolRounds} />
@@ -805,9 +787,9 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             {/* Options supplémentaires pour les presets standards (3e place en SE, GF reset en DE) */}
             {!isLocked && formatPreset !== "custom" && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 16, paddingTop: 2, alignItems: "center" }}>
-                {["swiss_de", "swiss_se", "swiss6_split_se", "mtp_open", "split_swiss"].includes(formatPreset) && (<>
+                {["swiss_de", "swiss_se", "swiss6_split_se", "mtp_open"].includes(formatPreset) && (<>
                   <label style={{ display: "flex", flexDirection: "row", gap: 8, alignItems: "center", fontSize: 13 }}>
-                    {formatPreset === "split_swiss" ? "Tours/groupe" : t("field_swiss_rounds")}
+                    {t("field_swiss_rounds")}
                     <input
                       type="number"
                       name="swissRounds"
@@ -944,6 +926,8 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                     ? "Pool A (sam. matin) + Pool B (sam. après-midi) → Barrage SE×4 → DE×16"
                     : presetConfig.saturdayFormat === "GRAZ"
                     ? "2×RR Poules → Regroup 4 groupes → SE Top 8"
+                    : presetConfig.saturdayFormat === "BIG_APPLE"
+                    ? "2×RR Poules (sam.) → Swiss 3 rounds (3-8) + Placement 1&2 → SE Top 8"
                     : presetConfig.saturdayFormat === "ALL_DAY"
                     ? t("format_summary_pool1")
                     : presetConfig.saturdayFormat === "SPLIT_POOLS"

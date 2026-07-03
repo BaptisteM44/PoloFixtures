@@ -24,7 +24,7 @@ export function isRateLimited(
   return false;
 }
 
-/** Extrait l'IP réelle derrière un proxy/CDN (Vercel, Cloudflare, etc.) */
+/** Extrait l'IP réelle derrière un proxy/CDN (Coolify, Cloudflare, etc.) */
 export function getIp(req: Request): string {
   return (
     req.headers.get("x-forwarded-for")?.split(",")[0].trim() ??

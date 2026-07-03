@@ -249,7 +249,7 @@ export function LiveMatchTile({
     if (m.teamBId && m.teamB?.name) teamNames[m.teamBId] = m.teamB.name;
   });
 
-  // SSE listener + polling fallback (SSE may not work on Vercel serverless multi-instance)
+  // SSE listener + polling fallback
   useEffect(() => {
     if (!isLive) return;
 
@@ -306,7 +306,7 @@ export function LiveMatchTile({
       }
     });
 
-    // Polling fallback every 8s in case SSE misses events (Vercel multi-instance)
+    // Polling fallback every 8s in case SSE misses events
     const poll = setInterval(fetchMatches, 8000);
 
     return () => { es.close(); clearInterval(poll); };

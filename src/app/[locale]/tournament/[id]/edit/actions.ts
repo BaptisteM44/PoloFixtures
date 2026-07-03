@@ -10,6 +10,17 @@ import { generatePools, generatePoolMatches, generateBracket, generateSwissRound
 import { generateGrazPools, generateGrazPoolRounds, assignRegroupTeamIds, buildPlayedPairs, generateRegroupMatches, selectSETeams, generateGrazSE } from "@/lib/graz";
 import { generateKiosquePools, generateKiosqueRegroupRound, generateKiosqueSE, buildPlayedPairs as kiosqueBuildPlayedPairs } from "@/lib/kiosque";
 import { splitMtpPools, generateMtpPool, generateMtpSwissNextRound, generateMtpCrossPool, generateMtpBarrage, generateMtpDE } from "@/lib/mtp";
+import {
+  generateBigApplePools,
+  generateBigApplePoolRounds,
+  generateBigAppleSwissRound,
+  selectSwissTeamIds,
+  generateBigApplePlacement,
+  selectSESeeds,
+  generateBigAppleSE,
+  buildPlayedPairs as bigAppleBuildPlayedPairs,
+} from "@/lib/big-apple";
+import { createDEBracket } from "@/engine/persist-de";
 import { computeStandings } from "@/lib/standings";
 import { computeCareerBadges } from "@/lib/achievements";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
@@ -58,7 +69,7 @@ const updateSchema = z.object({
   streamCourt2Url: z.string().optional().nullable(),
   streamMultiplexUrl: z.string().optional().nullable(),
   chatMode: z.enum(["OPEN", "ORG_ONLY", "DISABLED"]).default("DISABLED"),
-  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED", "GRAZ", "MTP_OPEN", "KIOSQUE", "SPLIT_SWISS"]),
+  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED", "GRAZ", "MTP_OPEN", "KIOSQUE", "SPLIT_SWISS", "BIG_APPLE"]),
   poolCount: z.coerce.number().int().min(1).max(4).default(1),
   crossPool: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   swissRounds: z.coerce.number().int().min(1).max(20).default(5),
@@ -102,8 +113,6 @@ const updateSchema = z.object({
     z.string().url().nullable()
   ),
   hostClubId: z.string().optional().nullable(),
-  lat: z.preprocess((v) => (v === "" || v === undefined || v === null ? null : Number(v)), z.number().nullable().optional()),
-  lng: z.preprocess((v) => (v === "" || v === undefined || v === null ? null : Number(v)), z.number().nullable().optional()),
 });
 
 export async function updateTournamentAction(formData: FormData) {
@@ -159,13 +168,10 @@ export async function updateTournamentAction(formData: FormData) {
     ? await generateTournamentSlug(data.name, data.city, dateStart.getFullYear(), data.id)
     : existing.slug;
 
-  // Use manual coords if provided, otherwise auto-geocode when city/country changes or coords missing
+  // Auto-geocode if city or country changed, or tournament has no coords yet
   let geoLat = tournament.lat;
   let geoLng = tournament.lng;
-  if (data.lat != null && data.lng != null) {
-    geoLat = data.lat;
-    geoLng = data.lng;
-  } else if (tournament.city !== data.city || tournament.country !== data.country || (geoLat == null && geoLng == null)) {
+  if (tournament.city !== data.city || tournament.country !== data.country || (geoLat == null && geoLng == null)) {
     try {
       const geoRes = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(data.city + ", " + data.country)}`,
@@ -268,6 +274,87 @@ export async function savePoolAssignmentAction(
         });
       }
     }
+  }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+/**
+ * Generate matches for a single pool (A or B) only — used for SPLIT_POOLS
+ * tournaments (e.g. cross-pool) where the organizer wants to launch Pool A,
+ * let it finish, then launch Pool B so matches land in the right schedule order.
+ */
+export async function launchPoolAction(id: string, poolLetter: "A" | "B") {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      pools: { include: { teams: true } },
+    },
+  });
+  if (!tournament) return { error: "Not found" };
+  if (tournament.saturdayFormat !== "SPLIT_POOLS") {
+    return { error: "Ce tournoi n'utilise pas le format à poules séparées." };
+  }
+
+  const poolName = `Pool ${poolLetter}`;
+  const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "POOL", pool: { name: poolName } } });
+  if (existing) return { error: `${poolName} a déjà été générée.` };
+
+  // Ensure pools exist (generate + persist assignment if missing)
+  let pools = tournament.pools;
+  if (pools.length === 0) {
+    const generated = generatePools(tournament.teams, tournament.saturdayFormat, tournament.poolCount);
+    await prisma.$transaction(async (tx) => {
+      for (const pool of generated) {
+        const created = await tx.pool.create({ data: { tournamentId: id, name: pool.name, session: pool.session ?? null } });
+        await tx.poolTeam.createMany({ data: pool.teams.map((team) => ({ poolId: created.id, teamId: team.id })) });
+      }
+    });
+    pools = await prisma.pool.findMany({ where: { tournamentId: id }, include: { teams: true } });
+  }
+
+  const poolRecord = pools.find((p) => p.name === poolName);
+  if (!poolRecord) return { error: `${poolName} introuvable.` };
+  const poolTeams = poolRecord.teams.map((pt) => tournament.teams.find((t) => t.id === pt.teamId)!).filter(Boolean);
+  if (poolTeams.length < 2) return { error: `Pas assez d'équipes dans ${poolName}.` };
+
+  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const t = tournament as any;
+  const startAt = poolLetter === "A"
+    ? (t.saturdayPoolAStart ? new Date(t.saturdayPoolAStart) : new Date(tournament.dateStart))
+    : (t.saturdayPoolBStart ? new Date(t.saturdayPoolBStart) : new Date(tournament.dateStart));
+
+  const matches = generatePoolMatches(
+    [{ name: poolName, teams: poolTeams, session: poolRecord.session }],
+    courtNames,
+    startAt,
+    tournament.gameDurationMin
+  );
+
+  await prisma.$transaction(async (tx) => {
+    await tx.match.createMany({
+      data: matches.map((match) => ({
+        tournamentId: id,
+        phase: "POOL" as const,
+        poolId: poolRecord.id,
+        poolSessionIndex: match.poolSessionIndex ?? null,
+        bracketSide: null,
+        roundIndex: match.roundIndex,
+        positionInRound: match.positionInRound ?? 0,
+        courtName: match.courtName,
+        startAt: match.startAt,
+        dayIndex: "SAT",
+        status: "SCHEDULED" as const,
+        teamAId: match.teamAId,
+        teamBId: match.teamBId,
+      })),
+    });
   }, { timeout: 15000 });
 
   revalidatePath(`/tournament/${id}`);
@@ -384,12 +471,15 @@ export async function generateBracketAction(id: string) {
     include: { teams: { where: { selected: true } }, matches: true }
   });
   if (!tournament) return { error: "Not found" };
+  if (tournament.crossPool) {
+    return { error: "Ce tournoi utilise le format cross-pool. Générez le bracket depuis l'onglet Planning (Cross-Pool → SE → DE)." };
+  }
 
   // Auto-seed depuis les standings Pool/Swiss si disponibles
   const qualifyingMatches = tournament.matches.filter(
     (m) => m.phase === "POOL" || m.phase === "SWISS"
   );
-  let seededTeams = [...tournament.teams].sort((a, b) => a.seed - b.seed);
+  let seededTeams = tournament.teams;
   if (qualifyingMatches.length > 0) {
     const standings = computeStandings(tournament.teams, qualifyingMatches, tournament.scoringSystem);
     seededTeams = standings
@@ -408,6 +498,27 @@ export async function generateBracketAction(id: string) {
     thirdPlaceMatch: (tournament as any).thirdPlaceMatch ?? false,
     gfReset: (tournament as any).gfReset ?? false,
   };
+
+  // ── DE : nouveau moteur générique (src/engine) — remplace l'ancien câblage
+  // slot-claiming qui laissait des slots LB orphelins (cf. docs/AUDIT-FORMATS.md)
+  if (tournament.sundayFormat === "DE") {
+    await prisma.$transaction(async (tx) => {
+      await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: "BRACKET" } } });
+      await tx.match.deleteMany({ where: { tournamentId: id, phase: "BRACKET" } });
+      await createDEBracket(tx, {
+        tournamentId: id,
+        seededTeamIds: seededTeams.map((t) => t.id),
+        courtNames,
+        startAt: new Date(tournament.dateEnd),
+        gameDurationMin: tournament.gameDurationMin,
+        options: { gfReset: bracketOptions.gfReset },
+      });
+    }, { timeout: 30000 });
+
+    revalidatePath(`/tournament/${id}`);
+    return { ok: true };
+  }
+
   const matches = generateBracket(seededTeams, tournament.sundayFormat, courtNames, new Date(tournament.dateEnd), tournament.gameDurationMin, bracketOptions);
 
   await prisma.$transaction(async (tx) => {
@@ -666,26 +777,21 @@ export async function generateBracketAction(id: string) {
       const lbR2RoundIdx = lbR1Count > 0 ? 2 : 1;
       const lbR2Count = (lowerByRound.get(lbR2RoundIdx) ?? []).length;
 
-      // WB R(k) losers → LB injection round.
-      // Mirrors bracket.ts emission: for k≥3, consolidation first (if survivors>1), then injection.
       const wbToLBRound = new Map<number, number>();
       wbToLBRound.set(2, lbR2RoundIdx);
       {
         let lbSurvivors = lbR2Count + (lbR2Teams % 2);
-        let lbRI = lbR2RoundIdx;
+        let lbRI = lbR2RoundIdx + 1;
         for (let k = 3; k <= upperRounds; k++) {
           const wbCount = size / Math.pow(2, k);
-          // Consolidation round (if survivors > 1) → skip it
-          if (lbSurvivors > 1) {
-            const consCount = Math.floor(lbSurvivors / 2);
-            lbRI++;
-            lbSurvivors = consCount + (lbSurvivors % 2);
-          }
-          // Injection round → this is where WB R(k) losers go
-          const injCount = Math.min(lbSurvivors, wbCount);
-          lbRI++;
           wbToLBRound.set(k, lbRI);
+          const injCount = Math.min(lbSurvivors, wbCount);
           lbSurvivors = injCount + Math.abs(lbSurvivors - wbCount);
+          lbRI++;
+          if (k < upperRounds && lbSurvivors > 1) {
+            lbSurvivors = Math.floor(lbSurvivors / 2) + (lbSurvivors % 2);
+            lbRI++;
+          }
         }
       }
 
@@ -733,8 +839,7 @@ export async function generateBracketAction(id: string) {
         await tx.match.update({ where: { id: m.id }, data });
       }
 
-      // ── WB R3+ winners → next WB, losers → LB injection rounds ────
-      // MTP Open pattern: WB R3 losers → LB injection slot A, WB Final loser → LB Final slot B
+      // ── WB R3+ losers → LB injection rounds, slot B (claim first) ────
       for (let k = 3; k <= upperRounds; k++) {
         const uMatches = upperByRound.get(k) ?? [];
         const nextWB = upperByRound.get(k + 1);
@@ -753,14 +858,11 @@ export async function generateBracketAction(id: string) {
             data.nextSlotWin = "A";
           }
 
-          // WB losers → LB injection round
-          const lbTarget = lbTargetMatches[i];
-          if (lbTarget) {
-            data.nextMatchLoseId = lbTarget.id;
-            // WB Final loser → slot B (MTP Open pattern), others → slot A
-            const isWBFinal = k === maxWB && uMatches.length === 1;
-            data.nextSlotLose = isWBFinal ? "B" : "A";
-            claimSlot(lbTarget.id, isWBFinal ? "B" : "A");
+          const target = lbTargetMatches[i];
+          if (target) {
+            data.nextMatchLoseId = target.id;
+            data.nextSlotLose = "B";
+            claimSlot(target.id, "B");
           }
 
           await tx.match.update({ where: { id: uMatches[i].id }, data });
@@ -791,33 +893,34 @@ export async function generateBracketAction(id: string) {
         const lbR1IdxForMirror = lbR1R2PosOrder.indexOf(mirrorR2Pos);
 
         if (lbR1IdxForMirror >= 0 && lbR1InjectionR2Pos.includes(mirrorR2Pos)) {
-          // Injection: WB R2 loser va en LB R1 slot A (cas non-puissance-de-2)
           if (lbR1Matches[lbR1IdxForMirror]) {
             data.nextMatchLoseId = lbR1Matches[lbR1IdxForMirror].id;
             data.nextSlotLose = "A";
             claimSlot(lbR1Matches[lbR1IdxForMirror].id, "A");
           }
-        } else if (lbR1ConsolidationR2Pos.includes(mirrorR2Pos)) {
-          // Consolidation (cas 16 teams = toutes branches): WB R2[i] → LB R2[mirrorR2Pos] slot B (anti-rematch 1-à-1)
-          const target = lbR2Matches[mirrorR2Pos];
-          if (target) {
-            data.nextMatchLoseId = target.id;
-            data.nextSlotLose = "B";
-            claimSlot(target.id, "B");
-          } else {
-            wbR2Overflow.push(m.id);
-          }
         } else {
-          // Bye branch: chercher le premier slot libre en LB R2
+          // Find free slot in LB R2 (prefer slot B first, then slot A)
           let placed = false;
           for (let j = 0; j < lbR2Matches.length; j++) {
             const freeSlot = findFreeSlot(lbR2Matches[j].id);
-            if (freeSlot) {
+            if (freeSlot === "B") {
               data.nextMatchLoseId = lbR2Matches[j].id;
-              data.nextSlotLose = freeSlot;
-              claimSlot(lbR2Matches[j].id, freeSlot);
+              data.nextSlotLose = "B";
+              claimSlot(lbR2Matches[j].id, "B");
               placed = true;
               break;
+            }
+          }
+          if (!placed) {
+            for (let j = 0; j < lbR2Matches.length; j++) {
+              const freeSlot = findFreeSlot(lbR2Matches[j].id);
+              if (freeSlot === "A") {
+                data.nextMatchLoseId = lbR2Matches[j].id;
+                data.nextSlotLose = "A";
+                claimSlot(lbR2Matches[j].id, "A");
+                placed = true;
+                break;
+              }
             }
           }
           if (!placed) {
@@ -848,42 +951,54 @@ export async function generateBracketAction(id: string) {
       }
 
       // ── LB: wire winners forward ──────────────────────────────────────
-      // MTP Open pattern: use round sizes to detect consolidation vs injection
-      // - next.length < cur.length → consolidation: pair up floor(i/2), slot A/B
-      // - next.length >= cur.length → injection (WB losers enter): 1-to-1, slot A
-      for (let lri = 0; lri < lbRounds.length; lri++) {
-        const lr = lbRounds[lri];
+      // LB R1 winners → LB R2 slot A (one-to-one, deterministic)
+      // All other LB rounds → find next round with free slot
+      for (const lr of lbRounds) {
         const lMatches = lowerByRound.get(lr) ?? [];
-        const nextLR = lri + 1 < lbRounds.length ? lbRounds[lri + 1] : null;
 
         for (let i = 0; i < lMatches.length; i++) {
-          // Last LB round → Grand Final slot B
-          if (!nextLR) {
+          if (lr === maxLR) {
             if (grandFinal) {
               await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: grandFinal.id, nextSlotWin: "B" } });
             }
             continue;
           }
 
-          const nextMatches = lowerByRound.get(nextLR) ?? [];
-
-          if (nextMatches.length < lMatches.length) {
-            // Consolidation: pair up — 2 LB matches feed into 1
-            const nextIdx = Math.floor(i / 2);
-            const slot: "A" | "B" = i % 2 === 0 ? "A" : "B";
-            const target = nextMatches[nextIdx];
-            if (target) {
-              await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: target.id, nextSlotWin: slot } });
-              claimSlot(target.id, slot);
-            }
-          } else {
-            // Injection round (same count or more): 1-to-1, use free slot (WB loser already claimed one)
+          // LB R1 → LB R2: always 1-to-1 (LBR1[i] → LBR2[i]).
+          // WB R2 losers have already pre-claimed slot B via the else-branch above,
+          // so findFreeSlot will assign slot A to the LB R1 winner.
+          // If LBR2[i] doesn't exist (overflow), fall through to generic slot-finding.
+          if (lr === 1) {
+            const nextMatches = lowerByRound.get(lbR2RoundIdx) ?? [];
             const target = nextMatches[i];
             if (target) {
               const slot = findFreeSlot(target.id) ?? "A";
               await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: target.id, nextSlotWin: slot } });
               claimSlot(target.id, slot);
+              continue;
             }
+            // LBR2[i] doesn't exist → fall through to generic slot-finding below
+          }
+
+          // All other LB rounds: find next round with a free slot
+          let placed = false;
+          for (const nextRound of lbRounds) {
+            if (nextRound <= lr) continue;
+            const nextMatches = lowerByRound.get(nextRound)!;
+            for (const nm of nextMatches) {
+              const freeSlot = findFreeSlot(nm.id);
+              if (freeSlot) {
+                await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: nm.id, nextSlotWin: freeSlot } });
+                claimSlot(nm.id, freeSlot);
+                placed = true;
+                break;
+              }
+            }
+            if (placed) break;
+          }
+
+          if (!placed && grandFinal) {
+            await tx.match.update({ where: { id: lMatches[i].id }, data: { nextMatchWinId: grandFinal.id, nextSlotWin: "B" } });
           }
         }
       }
@@ -1046,7 +1161,9 @@ export async function generateCrossPoolSEAction(id: string) {
   // With 12 teams: top 4 BYE, 8 others play (5v12, 6v11, 7v10, 8v9) → 4 winners join DE.
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
   const slotMin = tournament.gameDurationMin + 5;
-  const startAt = new Date(tournament.dateEnd);
+  // Planning : démarrer après le dernier match cross-pool (avant : même horaire → conflits)
+  const lastCrossMs = Math.max(...crossPoolMatches.map((m) => new Date(m.startAt).getTime()));
+  const startAt = new Date(Math.max(new Date(tournament.dateEnd).getTime(), lastCrossMs + slotMin * 60_000));
   const courtFree = courtNames.map(() => new Date(startAt));
   const n = seededTeams.length;
   const deSize = nextPowerOf2(Math.ceil(n * 2 / 3)); // target DE size (8 for 12 teams)
@@ -1385,8 +1502,15 @@ export async function generateSwissRoundAction(id: string) {
   const nextRound = existingRounds + 1;
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
 
-  // Schedule start: use tournament start + offset for subsequent rounds
-  const startAt = new Date(tournament.dateStart);
+  // Planning : le round suivant démarre après le dernier match du round précédent
+  // (avant : tous les rounds à dateStart → conflits d'horaires permanents)
+  const slotMs = (tournament.gameDurationMin + 5) * 60_000;
+  let startAt = new Date(tournament.dateStart);
+  if (existingRounds > 0) {
+    const prevRound = swissMatches.filter((m) => m.roundIndex === existingRounds);
+    const lastMs = Math.max(...prevRound.map((m) => new Date(m.startAt).getTime()));
+    startAt = new Date(lastMs + slotMs);
+  }
 
   const newMatches = generateSwissRound(
     tournament.teams,
@@ -1884,6 +2008,17 @@ export async function launchTournamentAction(
     return { ok: true };
   }
 
+  // BIG_APPLE: set LIVE, then generate both pools' full RR (Saturday, 2 courts)
+  if ((tournament as any).saturdayFormat === "BIG_APPLE") {
+    if (selectedCount < 4) return { error: "Le format Big Apple requiert au minimum 4 équipes." };
+    await prisma.tournament.update({ where: { id }, data: { status: "LIVE", locked: true } });
+    const res = await launchBigApplePoolsAction(id);
+    if ("error" in res && res.error) return { error: `Lancement OK mais erreur Big Apple : ${res.error}` };
+    revalidatePath(`/tournament/${id}`);
+    revalidatePath(`/tournament/${id}/edit`);
+    return { ok: true };
+  }
+
   // Saturday format guards
   // Swiss supporte les nombres impairs (BYE automatique)
   if (tournament.saturdayFormat === "SPLIT_POOLS" && selectedCount < poolCount * 2) {
@@ -1928,7 +2063,12 @@ export async function launchTournamentAction(
   } else if (tournament.saturdayFormat === "GRAZ") {
     const res = await launchGrazPoolAction(id, "Pool A");
     if ("error" in res && res.error) return { error: `Lancement OK mais erreur Graz Pool A : ${res.error}` };
-  } else if (tournament.saturdayFormat !== "BERLIN_MIXED" && (tournament as any).saturdayFormat !== "SPLIT_SWISS") {
+  } else if (tournament.saturdayFormat === "SPLIT_POOLS" && tournament.crossPool) {
+    // Cross-pool: launch Pool A only. Pool B is launched separately by the organizer
+    // so matches are scheduled in the right order (Pool A finishes before Pool B starts).
+    const res = await launchPoolAction(id, "A");
+    if ("error" in res && res.error) return { error: `Lancement OK mais erreur Pool A : ${res.error}` };
+  } else if (tournament.saturdayFormat !== "BERLIN_MIXED") {
     const res = await generatePoolsAction(id);
     if ("error" in res && res.error) return { error: `Lancement OK mais erreur Poules : ${res.error}` };
   }
@@ -1960,10 +2100,6 @@ export async function resetMatchesAction(
   await prisma.$transaction(async (tx) => {
     await tx.matchEvent.deleteMany({ where: { match: { tournamentId: id } } });
     await tx.match.deleteMany({ where: { tournamentId: id } });
-    await tx.team.updateMany({
-      where: { tournamentId: id },
-      data: { fridayGroup: null, saturdayGroup: null, globalRank: null },
-    });
     if (tournament.status === "COMPLETED") {
       await tx.tournament.update({ where: { id }, data: { status: "LIVE" } });
     }
@@ -2006,10 +2142,6 @@ export async function resetTournamentAction(
     await tx.match.deleteMany({ where: { tournamentId: id } });
     await tx.poolTeam.deleteMany({ where: { pool: { tournamentId: id } } });
     await tx.pool.deleteMany({ where: { tournamentId: id } });
-    await tx.team.updateMany({
-      where: { tournamentId: id },
-      data: { fridayGroup: null, saturdayGroup: null, globalRank: null },
-    });
     await tx.tournament.update({
       where: { id },
       data: { status: "UPCOMING", locked: false },
@@ -2449,6 +2581,392 @@ export async function launchGrazSEAction(
     // SF2 winner → Final slot B, loser → 3rd slot B
     await tx.match.update({ where: { id: sf2Id }, data: { nextMatchWinId: finalId, nextSlotWin: "B", nextMatchLoseId: thirdId, nextSlotLose: "B" } });
   }, { timeout: 20000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+// ─── Big Apple actions ────────────────────────────────────────────────────────
+
+/**
+ * Phase 1 — Génère les 7 rounds RR pour les 2 pools (samedi).
+ * Pool A → Court 1, Pool B → Court 2, avec rotation de terrain à mi-parcours.
+ */
+export async function launchBigApplePoolsAction(
+  id: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      pools: { include: { teams: { include: { team: true } } } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: "Ce tournoi n'utilise pas le format Big Apple." };
+
+  const already = await prisma.match.findFirst({ where: { tournamentId: id, phase: "BIG_APPLE_RR" } });
+  if (already) return { error: "Les matchs RR ont déjà été générés." };
+
+  const pools = generateBigApplePools(tournament.teams);
+  const poolA = pools.find((p) => p.name === "Pool A")!;
+  const poolB = pools.find((p) => p.name === "Pool B")!;
+
+  const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 2) }, (_, i) => `Court ${i + 1}`);
+  const courtA1 = courtNames[0];
+  const courtA2 = courtNames[1] ?? courtNames[0];
+  // Pool B starts on the other court and rotates the opposite way
+  const courtB1 = courtNames[1] ?? courtNames[0];
+  const courtB2 = courtNames[0];
+
+  const rrRounds = poolA.teams.length - 1; // 7 for 8 teams
+  const startAt = (tournament as any).dateStart ? new Date((tournament as any).dateStart) : new Date();
+
+  const aMatches = generateBigApplePoolRounds(poolA, courtA1, courtA2, startAt, "SAT", tournament.gameDurationMin, 1, rrRounds);
+  const bMatches = generateBigApplePoolRounds(poolB, courtB1, courtB2, startAt, "SAT", tournament.gameDurationMin, 1, rrRounds);
+
+  await prisma.$transaction(async (tx) => {
+    for (const pool of [poolA, poolB]) {
+      const poolMatches = pool.name === "Pool A" ? aMatches : bMatches;
+      let poolRecord = tournament.pools.find((p) => p.name === pool.name);
+      if (!poolRecord) {
+        const created = await tx.pool.create({ data: { tournamentId: id, name: pool.name, session: null } });
+        await tx.poolTeam.createMany({ data: pool.teams.map((t) => ({ poolId: created.id, teamId: t.id })) });
+        poolRecord = { ...created, teams: [] } as any;
+      }
+      for (const match of poolMatches) {
+        await tx.match.create({
+          data: {
+            tournamentId: id,
+            phase: "BIG_APPLE_RR",
+            poolId: poolRecord!.id,
+            bracketSide: null,
+            roundIndex: match.roundIndex,
+            positionInRound: match.positionInRound ?? 0,
+            courtName: match.courtName,
+            startAt: match.startAt,
+            dayIndex: "SAT",
+            status: "SCHEDULED",
+            teamAId: match.teamAId,
+            teamBId: match.teamBId,
+          },
+        });
+      }
+    }
+  }, { timeout: 20000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+/**
+ * Phase 2 — Génère le prochain round de Swiss du dimanche pour les 12 équipes
+ * classées 3-8 dans chaque pool. Cumule les points du samedi.
+ * Appelable jusqu'à 3 fois (rounds 1, 2, 3).
+ */
+export async function launchBigAppleSwissRoundAction(
+  id: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      teams: { where: { selected: true } },
+      pools: { include: { teams: { include: { team: true } } } },
+      matches: { where: { phase: { in: ["BIG_APPLE_RR", "BIG_APPLE_SWISS"] } }, include: { teamA: true, teamB: true } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: "Ce tournoi n'utilise pas le format Big Apple." };
+
+  const rrMatches = tournament.matches.filter((m) => m.phase === "BIG_APPLE_RR");
+  if (rrMatches.length === 0) return { error: "Aucun match RR trouvé." };
+  const unfinishedRR = rrMatches.filter((m) => m.status !== "FINISHED");
+  if (unfinishedRR.length > 0) return { error: `${unfinishedRR.length} match(s) RR non terminé(s).` };
+
+  const swissMatches = tournament.matches.filter((m) => m.phase === "BIG_APPLE_SWISS");
+  const doneRounds = swissMatches.length > 0 ? Math.max(...swissMatches.map((m) => m.roundIndex)) : 0;
+  if (doneRounds >= 3) return { error: "Les 3 rounds de Swiss ont déjà été générés." };
+
+  // Previous Swiss rounds must be finished before generating the next
+  if (doneRounds > 0) {
+    const unfinishedSwiss = swissMatches.filter((m) => m.status !== "FINISHED");
+    if (unfinishedSwiss.length > 0) return { error: `${unfinishedSwiss.length} match(s) Swiss non terminé(s).` };
+  }
+
+  const poolARecord = tournament.pools.find((p) => p.name === "Pool A");
+  const poolBRecord = tournament.pools.find((p) => p.name === "Pool B");
+  if (!poolARecord || !poolBRecord) return { error: "Pools introuvables." };
+
+  const poolATeams = poolARecord.teams.map((pt) => pt.team);
+  const poolBTeams = poolBRecord.teams.map((pt) => pt.team);
+  const poolAMatches = rrMatches.filter((m) => m.poolId === poolARecord.id);
+  const poolBMatches = rrMatches.filter((m) => m.poolId === poolBRecord.id);
+
+  const poolAStandings = computeStandings(poolATeams, poolAMatches as any, (tournament as any).scoringSystem);
+  const poolBStandings = computeStandings(poolBTeams, poolBMatches as any, (tournament as any).scoringSystem);
+
+  const swissTeamIds = selectSwissTeamIds(poolAStandings, poolBStandings);
+  const allTeams = [...poolATeams, ...poolBTeams];
+  const swissTeams = swissTeamIds
+    .map((tid) => allTeams.find((t) => t.id === tid))
+    .filter(Boolean) as typeof allTeams;
+  if (swissTeams.length < 2) return { error: "Pas assez d'équipes pour le Swiss." };
+
+  // Overall standings for the Swiss group carry Saturday points:
+  // combine each team's intra-pool RR matches + previous Swiss matches.
+  const swissRR = rrMatches.filter(
+    (m) => m.teamAId && m.teamBId && swissTeamIds.includes(m.teamAId) && swissTeamIds.includes(m.teamBId)
+  );
+  const combined = [...swissRR, ...swissMatches];
+  const swissStandings = computeStandings(swissTeams, combined as any, (tournament as any).scoringSystem);
+
+  // Avoid rematches (Saturday RR + previous Swiss rounds)
+  const playedPairs = bigAppleBuildPlayedPairs([...rrMatches, ...swissMatches]);
+
+  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const roundStart = new Date(Date.now() + 10 * 60 * 1000);
+  const nextRound = doneRounds + 1;
+
+  const newMatches = generateBigAppleSwissRound(
+    swissTeams,
+    swissStandings,
+    playedPairs,
+    nextRound,
+    courtNames,
+    roundStart,
+    tournament.gameDurationMin
+  );
+
+  await prisma.$transaction(async (tx) => {
+    for (const match of newMatches) {
+      await tx.match.create({
+        data: {
+          tournamentId: id,
+          phase: "BIG_APPLE_SWISS",
+          poolId: null,
+          bracketSide: null,
+          roundIndex: match.roundIndex,
+          positionInRound: match.positionInRound ?? 0,
+          courtName: match.courtName,
+          startAt: match.startAt,
+          dayIndex: "SUN",
+          status: "SCHEDULED",
+          teamAId: match.teamAId,
+          teamBId: match.teamBId,
+        },
+      });
+    }
+  }, { timeout: 20000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+/**
+ * Phase 3 — Génère les 2 matchs de placement (dimanche).
+ * A1 vs B1 → seeds 1/2, A2 vs B2 → seeds 3/4.
+ */
+export async function launchBigApplePlacementAction(
+  id: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      pools: { include: { teams: { include: { team: true } } } },
+      matches: { where: { phase: "BIG_APPLE_RR" } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: "Ce tournoi n'utilise pas le format Big Apple." };
+
+  const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "BIG_APPLE_PLACEMENT" } });
+  if (existing) return { error: "Les matchs de placement ont déjà été générés." };
+
+  const rrMatches = tournament.matches;
+  const poolARecord = tournament.pools.find((p) => p.name === "Pool A");
+  const poolBRecord = tournament.pools.find((p) => p.name === "Pool B");
+  if (!poolARecord || !poolBRecord) return { error: "Pools introuvables." };
+
+  const poolATeams = poolARecord.teams.map((pt) => pt.team);
+  const poolBTeams = poolBRecord.teams.map((pt) => pt.team);
+  const poolAStandings = computeStandings(poolATeams, rrMatches.filter((m) => m.poolId === poolARecord.id) as any, (tournament as any).scoringSystem);
+  const poolBStandings = computeStandings(poolBTeams, rrMatches.filter((m) => m.poolId === poolBRecord.id) as any, (tournament as any).scoringSystem);
+
+  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const startAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  const newMatches = generateBigApplePlacement(poolAStandings, poolBStandings, courtNames, startAt, tournament.gameDurationMin);
+
+  await prisma.$transaction(async (tx) => {
+    for (const match of newMatches) {
+      await tx.match.create({
+        data: {
+          tournamentId: id,
+          phase: "BIG_APPLE_PLACEMENT",
+          poolId: null,
+          bracketSide: null,
+          roundIndex: match.roundIndex,
+          positionInRound: match.positionInRound ?? 0,
+          courtName: match.courtName,
+          startAt: match.startAt,
+          dayIndex: "SUN",
+          status: "SCHEDULED",
+          teamAId: match.teamAId,
+          teamBId: match.teamBId,
+        },
+      });
+    }
+  }, { timeout: 15000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+/**
+ * Phase 4 — Génère le bracket SE de 8 équipes (dimanche).
+ * Requiert : placement matches terminés + 3 rounds Swiss terminés.
+ * Seeds 1-4 depuis les placement matches, seeds 5-8 depuis le top4 Swiss.
+ */
+export async function launchBigAppleSEAction(
+  id: string
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id },
+    include: {
+      pools: { include: { teams: { include: { team: true } } } },
+      matches: { where: { phase: { in: ["BIG_APPLE_RR", "BIG_APPLE_SWISS", "BIG_APPLE_PLACEMENT"] } } },
+    },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: "Ce tournoi n'utilise pas le format Big Apple." };
+
+  const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "BIG_APPLE_SE" } });
+  if (existing) return { error: "Le bracket SE a déjà été généré." };
+
+  const placementMatches = tournament.matches.filter((m) => m.phase === "BIG_APPLE_PLACEMENT");
+  if (placementMatches.length < 2) return { error: "Générez d'abord les matchs de placement." };
+  const unfinishedPlacement = placementMatches.filter((m) => m.status !== "FINISHED");
+  if (unfinishedPlacement.length > 0) return { error: `${unfinishedPlacement.length} match(s) de placement non terminé(s).` };
+
+  const swissMatches = tournament.matches.filter((m) => m.phase === "BIG_APPLE_SWISS");
+  const swissRounds = swissMatches.length > 0 ? Math.max(...swissMatches.map((m) => m.roundIndex)) : 0;
+  if (swissRounds < 3) return { error: "Les 3 rounds de Swiss doivent être générés et terminés." };
+  const unfinishedSwiss = swissMatches.filter((m) => m.status !== "FINISHED");
+  if (unfinishedSwiss.length > 0) return { error: `${unfinishedSwiss.length} match(s) Swiss non terminé(s).` };
+
+  // Determine winners/losers of the placement matches (positionInRound 0 → seeds 1/2, 1 → seeds 3/4)
+  const p12 = placementMatches.find((m) => m.positionInRound === 0);
+  const p34 = placementMatches.find((m) => m.positionInRound === 1);
+  const winnerLoser = (m?: (typeof placementMatches)[number]): [string | null, string | null] => {
+    if (!m || !m.teamAId || !m.teamBId) return [m?.teamAId ?? null, m?.teamBId ?? null];
+    // Prefer the recorded winnerTeamId (handles golden goal / ties); fall back to score.
+    const winId = m.winnerTeamId ?? ((m.scoreA ?? 0) >= (m.scoreB ?? 0) ? m.teamAId : m.teamBId);
+    const loseId = winId === m.teamAId ? m.teamBId : m.teamAId;
+    return [winId, loseId];
+  };
+  const placement12 = winnerLoser(p12);
+  const placement34 = winnerLoser(p34);
+
+  // Swiss top 4 from final Swiss standings (RR + Swiss combined)
+  const poolARecord = tournament.pools.find((p) => p.name === "Pool A");
+  const poolBRecord = tournament.pools.find((p) => p.name === "Pool B");
+  if (!poolARecord || !poolBRecord) return { error: "Pools introuvables." };
+  const poolATeams = poolARecord.teams.map((pt) => pt.team);
+  const poolBTeams = poolBRecord.teams.map((pt) => pt.team);
+  const rrMatches = tournament.matches.filter((m) => m.phase === "BIG_APPLE_RR");
+
+  const poolAStandings = computeStandings(poolATeams, rrMatches.filter((m) => m.poolId === poolARecord.id) as any, (tournament as any).scoringSystem);
+  const poolBStandings = computeStandings(poolBTeams, rrMatches.filter((m) => m.poolId === poolBRecord.id) as any, (tournament as any).scoringSystem);
+  const swissTeamIds = selectSwissTeamIds(poolAStandings, poolBStandings);
+  const allTeams = [...poolATeams, ...poolBTeams];
+  const swissTeams = swissTeamIds.map((tid) => allTeams.find((t) => t.id === tid)).filter(Boolean) as typeof allTeams;
+  const swissRR = rrMatches.filter((m) => m.teamAId && m.teamBId && swissTeamIds.includes(m.teamAId) && swissTeamIds.includes(m.teamBId));
+  const swissStandings = computeStandings(swissTeams, [...swissRR, ...swissMatches] as any, (tournament as any).scoringSystem);
+  const swissTop4 = swissStandings.slice(0, 4).map((s) => s.teamId);
+
+  const seeds = selectSESeeds(placement12, placement34, swissTop4);
+  if (seeds.filter(Boolean).length < 4) return { error: "Pas assez d'équipes qualifiées pour le bracket." };
+
+  const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
+  const seStart = new Date(Date.now() + 15 * 60 * 1000);
+  const seMatches = generateBigAppleSE(seeds, courtNames, seStart, tournament.gameDurationMin);
+
+  await prisma.$transaction(async (tx) => {
+    const createdIds: string[] = [];
+    for (const match of seMatches) {
+      const created = await tx.match.create({
+        data: {
+          tournamentId: id,
+          phase: "BIG_APPLE_SE",
+          poolId: null,
+          bracketSide: match.bracketSide ?? null,
+          roundIndex: match.roundIndex,
+          positionInRound: match.positionInRound ?? 0,
+          courtName: match.courtName,
+          startAt: match.startAt,
+          dayIndex: "SUN",
+          status: "SCHEDULED",
+          teamAId: match.teamAId,
+          teamBId: match.teamBId,
+        },
+      });
+      createdIds.push(created.id);
+    }
+
+    // seMatches order: [QF1, QF2, QF3, QF4, SF1, SF2, 3rd, Final]
+    const [qf1, qf2, qf3, qf4, sf1, sf2, third, final] = createdIds;
+
+    // QF winners feed the SFs. Bracket order [1,8,4,5,2,7,3,6]:
+    //   QF1(1v8) & QF2(4v5) → SF1 ; QF3(2v7) & QF4(3v6) → SF2
+    await tx.match.update({ where: { id: qf1 }, data: { nextMatchWinId: sf1, nextSlotWin: "A" } });
+    await tx.match.update({ where: { id: qf2 }, data: { nextMatchWinId: sf1, nextSlotWin: "B" } });
+    await tx.match.update({ where: { id: qf3 }, data: { nextMatchWinId: sf2, nextSlotWin: "A" } });
+    await tx.match.update({ where: { id: qf4 }, data: { nextMatchWinId: sf2, nextSlotWin: "B" } });
+    // SF winners → Final, losers → 3rd place
+    await tx.match.update({ where: { id: sf1 }, data: { nextMatchWinId: final, nextSlotWin: "A", nextMatchLoseId: third, nextSlotLose: "A" } });
+    await tx.match.update({ where: { id: sf2 }, data: { nextMatchWinId: final, nextSlotWin: "B", nextMatchLoseId: third, nextSlotLose: "B" } });
+  }, { timeout: 20000 });
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return { ok: true };
+}
+
+// ─── Big Apple Reset actions ────────────────────────────────────────────────
+
+export async function resetBigApplePhaseAction(
+  id: string,
+  phase: "SWISS" | "PLACEMENT" | "SE"
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  if (phase === "SE") {
+    await prisma.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: "BIG_APPLE_SE" } } });
+    await prisma.match.deleteMany({ where: { tournamentId: id, phase: "BIG_APPLE_SE" } });
+  } else if (phase === "PLACEMENT") {
+    await prisma.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: { in: ["BIG_APPLE_SE", "BIG_APPLE_PLACEMENT"] } } } });
+    await prisma.match.deleteMany({ where: { tournamentId: id, phase: { in: ["BIG_APPLE_SE", "BIG_APPLE_PLACEMENT"] } } });
+  } else {
+    await prisma.matchEvent.deleteMany({ where: { match: { tournamentId: id, phase: { in: ["BIG_APPLE_SE", "BIG_APPLE_PLACEMENT", "BIG_APPLE_SWISS"] } } } });
+    await prisma.match.deleteMany({ where: { tournamentId: id, phase: { in: ["BIG_APPLE_SE", "BIG_APPLE_PLACEMENT", "BIG_APPLE_SWISS"] } } });
+  }
 
   revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);

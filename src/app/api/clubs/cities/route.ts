@@ -6,6 +6,9 @@
 
 import { prisma } from "@/lib/db";
 
+// Lit la DB à chaque requête — ne doit jamais être prerendered au build
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   // Avoir toutes les villes distinctes avec leur pays
   const clubs = await prisma.club.findMany({

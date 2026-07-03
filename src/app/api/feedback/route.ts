@@ -43,7 +43,7 @@ export async function POST(request: Request) {
         <hr style="margin:16px 0; border:none; border-top:1px solid #e5e7eb;"/>
         <p style="white-space:pre-wrap; line-height:1.6;">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
         <hr style="margin:16px 0; border:none; border-top:1px solid #e5e7eb;"/>
-        <p style="font-size:12px; color:#6b7280;">Envoyé depuis polo-operator.vercel.app</p>
+        <p style="font-size:12px; color:#6b7280;">Envoyé depuis poloperator.com</p>
       </div>
     `,
   });
