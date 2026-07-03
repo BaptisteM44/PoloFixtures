@@ -33,9 +33,18 @@ Thumbs.db
 # prisma
 /prisma/dev.db
 
+# DB locale de simulation (harnais de tests formats)
+/.simdb/
+
 # uploads
 /public/uploads/
+
+# Hébergeurs
 .vercel
+.coolify
+
+# Debug local
+src/lib/debug_*.test.ts
 
 # Backups
 *.dump

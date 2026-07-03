@@ -39,6 +39,12 @@
       ],
       "@/data/*": [
         "src/data/*"
+      ],
+      "@/engine/*": [
+        "src/engine/*"
+      ],
+      "@/sim/*": [
+        "src/sim/*"
       ]
     },
     "plugins": [
