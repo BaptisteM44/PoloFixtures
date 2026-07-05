@@ -85,6 +85,28 @@ enum MatchPhase {
   BIG_APPLE_SWISS
   BIG_APPLE_PLACEMENT
   BIG_APPLE_SE
+  STAGE // nouveau système pipeline : le match appartient à un Stage (stageId)
+}
+
+// ─── Pipeline de stages (refonte formats) ────────────────────────────────────
+// Un tournoi "pipeline" = une suite ordonnée de Stages. Chaque stage est une
+// brique générique (RR/Swiss/cross-pool/placement/SE/DE) configurée en JSON,
+// reliée à la précédente par des règles d'entrée déclaratives.
+
+enum StageType {
+  RR          // poules round-robin (1..N groupes)
+  SWISS       // rounds suisses (1 groupe ou groupes parallèles)
+  CROSS_POOL  // confrontations croisées entre groupes selon le rang
+  PLACEMENT   // duels directs par rang (1erA vs 1erB → seeds 1/2…)
+  SE          // élimination simple (+ 3e place)
+  DE          // double élimination (+ GF reset)
+}
+
+enum StageStatus {
+  PENDING // en attente (l'étape précédente n'est pas terminée)
+  ACTIVE  // en cours
+  DONE    // terminée
+  SKIPPED // supprimée/sautée en cours de tournoi (flexibilité live)
 }
 
 enum BracketSide {
@@ -286,6 +308,8 @@ model Tournament {
   mtpSundayStart          DateTime?        // MTP: Barrage + DE start (Sunday)
   testMode                Boolean          @default(false)        // Test tournament: excluded from badge calculations
   hidden                  Boolean          @default(false)        // Hidden from public tournament list (organizer-controlled)
+  timezone                String?          // Fuseau IANA du lieu (ex: "Europe/Brussels") — tous les horaires affichés dans CE fuseau
+  usesPipeline            Boolean          @default(false)        // true = nouveau système de stages (refonte formats)
   approved                Boolean          @default(false)
   submissionStatus        SubmissionStatus @default(PENDING)
   rejectionReason         String?
@@ -331,6 +355,7 @@ model Tournament {
   teams       Team[]
   pools       Pool[]
   matches     Match[]
+  stages      Stage[]
   accessCodes AccessCode[]
   freeAgents     FreeAgent[]
   messages       TournamentMessage[]
@@ -390,6 +415,7 @@ model Team {
   poolTeams  PoolTeam[]
   matchesA   Match[]        @relation("TeamA")
   matchesB   Match[]        @relation("TeamB")
+  stageEntries StageEntry[]
   messages   TeamMessage[]
   soloEntries TournamentSoloEntry[]
   registrationAnswers RegistrationAnswer[]
@@ -558,9 +584,13 @@ model Match {
   goldenGoal      Boolean     @default(false)
   refereePlayerId String?
   coRefereePlayerId String?
+  // Pipeline (nouveau système) : rattachement à un Stage + groupe éventuel
+  stageId         String?
+  groupKey        String?     // "A", "B", … pour les stages multi-groupes
 
   tournament Tournament @relation(fields: [tournamentId], references: [id])
   pool       Pool?      @relation(fields: [poolId], references: [id])
+  stage      Stage?     @relation(fields: [stageId], references: [id])
   teamA      Team?      @relation("TeamA", fields: [teamAId], references: [id])
   teamB      Team?      @relation("TeamB", fields: [teamBId], references: [id])
   referee    Player?    @relation("RefereedMatches", fields: [refereePlayerId], references: [id])
@@ -570,6 +600,42 @@ model Match {
   @@index([tournamentId])
   @@index([poolId])
   @@index([status])
+  @@index([stageId])
+}
+
+model Stage {
+  id           String      @id @default(cuid())
+  tournamentId String
+  order        Int         // position dans le pipeline (0-based)
+  name         String      // "Poules", "Swiss dimanche", "Bracket final"…
+  type         StageType
+  config       Json        // options par type (groupes, rounds, 3e place, gfReset…) — validé par zod
+  entryRules   Json        // règles d'entrée déclaratives (source, rangs, seeding) — validé par zod
+  status       StageStatus @default(PENDING)
+  startAt      DateTime?   // début planifié
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  tournament Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  matches    Match[]
+  entries    StageEntry[]
+
+  @@index([tournamentId, order])
+}
+
+// Participants d'un stage, résolus au lancement depuis les entryRules.
+model StageEntry {
+  id       String  @id @default(cuid())
+  stageId  String
+  slot     Int     // seed 1-based au sein du stage (ou du groupe)
+  groupKey String  @default("") // "A", "B", … ("" si stage mono-groupe)
+  teamId   String?
+
+  stage Stage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  team  Team? @relation(fields: [teamId], references: [id])
+
+  @@unique([stageId, groupKey, slot])
+  @@index([stageId])
 }
 
 model MatchEvent {
