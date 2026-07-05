@@ -18,18 +18,19 @@ export default async function SandboxPage() {
   const session = await auth();
   const playerId = session?.user?.playerId;
 
-  let allowed = false;
-  if (playerId) {
-    allowed = hasAtLeastRole(session?.user?.role, "ORGA") ||
-      !!(await prisma.tournament.findFirst({ where: { creatorId: playerId }, select: { id: true } }));
-  }
+  // Phase de test privée : admin uniquement (+ email du propriétaire en secours)
+  const ownerEmails = ["bapmorvan@gmail.com"];
+  const email = (session?.user as { email?: string | null } | undefined)?.email?.toLowerCase();
+  const allowed = !!playerId && (
+    hasAtLeastRole(session?.user?.role, "ADMIN") || (!!email && ownerEmails.includes(email))
+  );
 
   if (!allowed) {
     return (
       <main className="container" style={{ padding: "48px 16px", textAlign: "center" }}>
         <h1 style={{ fontSize: 22 }}>🧪 Bac à sable</h1>
         <p style={{ color: "var(--text-muted)", marginTop: 12 }}>
-          Accès réservé aux organisateurs. Connecte-toi avec un compte organisateur.
+          Cette page est en phase de test privée.
         </p>
       </main>
     );

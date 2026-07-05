@@ -21,14 +21,18 @@ import {
 } from "@/engine/pipeline-server";
 import { getPreset } from "@/engine/presets";
 
+// Phase de test privée : admin uniquement (+ email du propriétaire en secours).
+// À élargir aux orgas quand le sandbox sera validé.
+const SANDBOX_OWNER_EMAILS = ["bapmorvan@gmail.com"];
+
 async function requireSandboxAccess(): Promise<{ playerId: string } | { error: string }> {
   const session = await auth();
   const playerId = session?.user?.playerId;
   if (!playerId) return { error: "Connexion requise." };
-  if (hasAtLeastRole(session?.user?.role, "ORGA")) return { playerId };
-  const isCreator = await prisma.tournament.findFirst({ where: { creatorId: playerId }, select: { id: true } });
-  if (isCreator) return { playerId };
-  return { error: "Accès réservé aux organisateurs." };
+  if (hasAtLeastRole(session?.user?.role, "ADMIN")) return { playerId };
+  const email = (session?.user as { email?: string | null } | undefined)?.email?.toLowerCase();
+  if (email && SANDBOX_OWNER_EMAILS.includes(email)) return { playerId };
+  return { error: "Accès réservé — le bac à sable est en phase de test privée." };
 }
 
 /** Vérifie que le tournoi est bien un bac à sable pipeline. */
