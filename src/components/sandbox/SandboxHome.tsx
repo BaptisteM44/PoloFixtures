@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createSandboxAction, deleteSandboxAction } from "@/app/[locale]/sandbox/actions";
+import { PipelineBuilder } from "@/components/sandbox/PipelineBuilder";
 
 type PresetInfo = { key: string; label: string; description: string; minTeams: number };
 type SandboxRow = {
@@ -17,6 +18,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export function SandboxHome({ presets, tournaments }: { presets: PresetInfo[]; tournaments: SandboxRow[] }) {
   const router = useRouter();
+  const [mode, setMode] = useState<"preset" | "custom">("preset");
   const [presetKey, setPresetKey] = useState(presets[0]?.key ?? "");
   const [teamCount, setTeamCount] = useState(16);
   const [courtsCount, setCourtsCount] = useState(2);
@@ -37,7 +39,18 @@ export function SandboxHome({ presets, tournaments }: { presets: PresetInfo[]; t
         invisible du public, zéro impact ELO/badges. Jetable à volonté.
       </p>
 
-      {/* ── Création ── */}
+      {/* ── Sélecteur de mode ── */}
+      <div className="tabs-bar" style={{ marginBottom: 16 }}>
+        <div className="tabs">
+          <button type="button" className={`tab${mode === "preset" ? " active" : ""}`} onClick={() => setMode("preset")}>Preset</button>
+          <button type="button" className={`tab${mode === "custom" ? " active" : ""}`} onClick={() => setMode("custom")}>🛠️ Custom (n&apos;importe quelle formule)</button>
+        </div>
+      </div>
+
+      {mode === "custom" && <div style={{ marginBottom: 24 }}><PipelineBuilder maxTeams={64} /></div>}
+
+      {/* ── Création (preset) ── */}
+      {mode === "preset" && (
       <div className="panel" style={{ marginBottom: 24 }}>
         <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 12 }}>
           Nouveau tournoi de test
@@ -94,6 +107,7 @@ export function SandboxHome({ presets, tournaments }: { presets: PresetInfo[]; t
         </div>
         {error && <p style={{ color: "var(--danger)", fontSize: 13, marginTop: 10 }}>{error}</p>}
       </div>
+      )}
 
       {/* ── Mes tournois de test ── */}
       {tournaments.length > 0 && (

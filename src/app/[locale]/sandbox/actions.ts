@@ -20,6 +20,7 @@ import {
   applyScore,
 } from "@/engine/pipeline-server";
 import { getPreset } from "@/engine/presets";
+import { validateCustomPipeline } from "@/engine/pipeline-validation";
 
 // Phase de test privée : admin uniquement (+ email du propriétaire en secours).
 // À élargir aux orgas quand le sandbox sera validé.
@@ -103,6 +104,63 @@ export async function createSandboxAction(input: {
   });
 
   await createStages(t.id, preset.build(teamCount));
+
+  revalidatePath("/sandbox");
+  return { id: t.id };
+}
+
+/** Crée un tournoi de test à partir d'un pipeline composé librement dans le builder. */
+export async function createCustomSandboxAction(input: {
+  name: string;
+  teamCount: number;
+  courtsCount: number;
+  gameDurationMin: number;
+  stages: unknown;
+}): Promise<{ id?: string; error?: string }> {
+  const access = await requireSandboxAccess();
+  if ("error" in access) return { error: access.error };
+
+  const validated = validateCustomPipeline(input.stages);
+  if (!validated.ok) return { error: validated.error };
+
+  const teamCount = Math.max(2, Math.min(input.teamCount || 16, 64));
+  const now = new Date();
+  const t = await prisma.tournament.create({
+    data: {
+      name: `🧪 ${input.name || "Custom"} — ${teamCount} équipes`,
+      continentCode: "EU",
+      country: "BE",
+      city: "Bac à sable",
+      dateStart: now,
+      dateEnd: new Date(now.getTime() + 36 * 3600_000),
+      format: "pipeline",
+      gameDurationMin: Math.max(5, Math.min(input.gameDurationMin || 12, 40)),
+      maxTeams: teamCount,
+      registrationFeePerTeam: 0,
+      registrationFeeCurrency: "EUR",
+      contactEmail: "sandbox@polo.local",
+      saturdayFormat: "ALL_DAY",
+      sundayFormat: "SE",
+      status: "UPCOMING",
+      courtsCount: Math.max(1, Math.min(input.courtsCount || 2, 4)),
+      timezone: "Europe/Brussels",
+      usesPipeline: true,
+      testMode: true,
+      hidden: true,
+      approved: true,
+      creatorId: access.playerId,
+    } as never,
+  });
+
+  await prisma.team.createMany({
+    data: Array.from({ length: teamCount }, (_, i) => ({
+      tournamentId: t.id,
+      name: FAKE_TEAM_NAMES[i] ?? `Équipe ${i + 1}`,
+      seed: i + 1,
+    })),
+  });
+
+  await createStages(t.id, validated.stages);
 
   revalidatePath("/sandbox");
   return { id: t.id };
