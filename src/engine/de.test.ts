@@ -118,6 +118,17 @@ describe("planDE — structure", () => {
   });
 });
 
+describe("planDE — grandes tailles (48, 64)", () => {
+  for (const n of [40, 48, 56, 64]) {
+    it(`n=${n} : structure ${2 * n - 2} matchs + simulation jouable`, () => {
+      const plan = planDE(n);
+      expect(plan.matches.filter((m) => m.side !== "BG")).toHaveLength(2 * n - 2);
+      const { champion } = simulatePlan(n, true, 42);
+      expect(champion).not.toBeNull();
+    });
+  }
+});
+
 describe("planDE — simulation complète (le bracket est jouable de bout en bout)", () => {
   for (let n = 3; n <= 32; n++) {
     for (const seed of [1, 42, 1337]) {

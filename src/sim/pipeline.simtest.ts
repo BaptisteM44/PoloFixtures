@@ -102,6 +102,20 @@ describe("Pipeline — presets joués de bout en bout", () => {
     ]);
   });
 
+  it("48 équipes : 2 poules → SE, joué de bout en bout", async () => {
+    const id = await createPipelineTournament(48);
+    const preset = PIPELINE_PRESETS.find((p) => p.key === "pools_se")!;
+    await createStages(id, preset.build(48));
+    const res = await simulateAll(id);
+    expect(res.error, res.error).toBeUndefined();
+    await checkPipelineInvariants(id, 48);
+
+    const t = await getPipeline(id);
+    // 2 poules de 24 → 2 × 276 matchs RR = 552, puis SE 8 (7 + 3e place)
+    expect(t!.stages[0].matches).toHaveLength(552);
+    expect(t!.stages[1].matches).toHaveLength(8);
+  });
+
   it("nombre impair d'équipes (13) : Swiss avec BYE tournant", async () => {
     const id = await createPipelineTournament(13);
     const preset = PIPELINE_PRESETS.find((p) => p.key === "swiss_de")!;

@@ -60,7 +60,7 @@ export async function createSandboxAction(input: {
 
   const preset = getPreset(input.presetKey);
   if (!preset) return { error: "Preset inconnu." };
-  const teamCount = Math.max(preset.minTeams, Math.min(input.teamCount, 32));
+  const teamCount = Math.max(preset.minTeams, Math.min(input.teamCount, 64));
 
   const now = new Date();
   const t = await prisma.tournament.create({

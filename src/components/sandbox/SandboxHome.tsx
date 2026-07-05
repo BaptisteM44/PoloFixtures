@@ -64,7 +64,7 @@ export function SandboxHome({ presets, tournaments }: { presets: PresetInfo[]; t
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "end" }}>
           <label style={{ fontSize: 13 }}>
             Équipes<br />
-            <input type="number" min={selected?.minTeams ?? 4} max={32} value={teamCount}
+            <input type="number" min={selected?.minTeams ?? 4} max={64} value={teamCount}
               onChange={(e) => setTeamCount(Number(e.target.value))} style={{ width: 80 }} />
           </label>
           <label style={{ fontSize: 13 }}>
