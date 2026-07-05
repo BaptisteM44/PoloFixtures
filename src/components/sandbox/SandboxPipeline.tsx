@@ -186,7 +186,12 @@ export function SandboxPipeline({ tournament, stages, podium }: Props) {
                   {/* Bracket visuel pour SE/DE */}
                   {isBracket && stage.matches.length > 0 && (
                     <BracketView
-                      matches={stage.matches.map((m) => ({ ...m, startAt: new Date(m.startAt) })) as never}
+                      matches={stage.matches.map((m) => ({
+                        ...m,
+                        startAt: new Date(m.startAt),
+                        teamA: m.teamAId ? { id: m.teamAId, name: m.teamA } : null,
+                        teamB: m.teamBId ? { id: m.teamBId, name: m.teamB } : null,
+                      })) as never}
                       tournamentId={tournament.id}
                       teams={tournament.teams.map((x) => ({ id: x.id, name: x.name, bracketNumber: x.seed }))}
                       isOrganizer={false}
