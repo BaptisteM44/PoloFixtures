@@ -637,7 +637,9 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             )}
           </div>
 
-          {/* ── Format section (presets + lock) ── */}
+          {/* ── Format section (presets + lock) — masquée pour les tournois pipeline
+                (leur format = la timeline d'étapes, pilotée dans l'onglet Planning) ── */}
+          {!(tournament as any).usesPipeline && (
           <div style={{ gridColumn: "1 / -1", border: "2px solid var(--border)", borderRadius: 10, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 16 }}>
 
             {/* Header row */}
@@ -1012,6 +1014,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             </div>
 
           </div>
+          )}
           <label className="field-row">
             {t("field_status")}
             <select name="status" defaultValue={tournament.status}>

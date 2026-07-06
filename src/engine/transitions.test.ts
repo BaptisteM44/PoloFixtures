@@ -69,6 +69,35 @@ describe("resolveEntries", () => {
     }, ctx);
     expect(entries).toHaveLength(6); // s1..s6, pas s1..s4+s1..s6
   });
+
+  it("composition manuelle : respecte les assignations de l'orga", () => {
+    const entries = resolveEntries({
+      sources: [{ kind: "registration" }],
+      groups: 2,
+      groupAssign: "manual",
+      manualAssignments: { t1: "B", t2: "A", t3: "B" },
+    }, ctx);
+    const groupOf = (id: string) => entries.find((e) => e.teamId === id)?.groupKey;
+    expect(groupOf("t1")).toBe("B");
+    expect(groupOf("t2")).toBe("A");
+    expect(groupOf("t3")).toBe("B");
+    // Toutes les équipes assignées ; le total reste 16
+    expect(entries).toHaveLength(16);
+  });
+
+  it("composition manuelle : les équipes non assignées comblent les groupes les moins remplis", () => {
+    const entries = resolveEntries({
+      sources: [{ kind: "registration" }],
+      groups: 2,
+      groupAssign: "manual",
+      manualAssignments: { t1: "A", t2: "A", t3: "A" }, // A a 3, B en aura 0 avant remplissage
+    }, ctx);
+    const countA = entries.filter((e) => e.groupKey === "A").length;
+    const countB = entries.filter((e) => e.groupKey === "B").length;
+    expect(countA + countB).toBe(16);
+    // B doit rattraper puisqu'il partait à 0
+    expect(countB).toBeGreaterThan(0);
+  });
 });
 
 // ─── Classements par type d'étape ────────────────────────────────────────────

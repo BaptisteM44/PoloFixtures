@@ -438,6 +438,57 @@ export async function advanceStage(stageId: string): Promise<{ ok?: boolean; err
   return { ok: true };
 }
 
+// ─── Composition manuelle des groupes (avant lancement) ─────────────────────
+
+/**
+ * Prévisualise les entrées d'une étape PENDING : qui entrerait, dans quel
+ * groupe, avec la répartition actuelle. Sert à l'UI de composition manuelle.
+ */
+export async function previewStageEntries(
+  tournamentId: string,
+  stageOrder: number
+): Promise<{ entries?: Array<{ teamId: string; name: string; groupKey: string; slot: number }>; groups?: number; error?: string }> {
+  const t = await getPipeline(tournamentId);
+  if (!t) return { error: "Tournoi introuvable." };
+  const stage = t.stages.find((s) => s.order === stageOrder);
+  if (!stage) return { error: `Étape ${stageOrder} introuvable.` };
+
+  const rules = stage.entryRules as unknown as EntryRules;
+  const entries = resolveEntries(rules, {
+    registrationSeeds: [...t.teams].sort((a, b) => a.seed - b.seed).map((x) => x.id),
+    stageStandings: (o, g) => stageStandings(t, o, g),
+  });
+  const nameById = new Map(t.teams.map((x) => [x.id, x.name]));
+  return {
+    groups: Math.max(rules.groups ?? 1, 1),
+    entries: entries.map((e) => ({ teamId: e.teamId, name: nameById.get(e.teamId) ?? "?", groupKey: e.groupKey, slot: e.slot })),
+  };
+}
+
+/**
+ * Enregistre la composition manuelle des groupes d'une étape PENDING
+ * (teamId → lettre de groupe). Bascule groupAssign en "manual".
+ */
+export async function setStageManualGroups(
+  tournamentId: string,
+  stageOrder: number,
+  assignments: Record<string, string>
+): Promise<{ ok?: boolean; error?: string }> {
+  const t = await getPipeline(tournamentId);
+  if (!t) return { error: "Tournoi introuvable." };
+  const stage = t.stages.find((s) => s.order === stageOrder);
+  if (!stage) return { error: `Étape ${stageOrder} introuvable.` };
+  if (stage.status !== "PENDING") return { error: "La composition ne peut être modifiée que sur une étape non lancée." };
+
+  const rules = stage.entryRules as unknown as EntryRules;
+  const updated: EntryRules = { ...rules, groupAssign: "manual", manualAssignments: assignments };
+  await prisma.stage.update({
+    where: { id: stage.id },
+    data: { entryRules: updated as unknown as Prisma.InputJsonValue },
+  });
+  return { ok: true };
+}
+
 // ─── Reset (étape N et toutes les suivantes) ─────────────────────────────────
 
 export async function resetStages(tournamentId: string, fromOrder: number): Promise<{ ok?: boolean; error?: string }> {

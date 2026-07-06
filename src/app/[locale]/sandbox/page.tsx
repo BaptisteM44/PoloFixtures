@@ -4,6 +4,7 @@
  * impact ELO/badges (testMode).
  */
 import { unstable_noStore as noStore } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
@@ -26,11 +27,12 @@ export default async function SandboxPage() {
   );
 
   if (!allowed) {
+    const t = await getTranslations("sandbox");
     return (
       <main className="container" style={{ padding: "48px 16px", textAlign: "center" }}>
-        <h1 style={{ fontSize: 22 }}>🧪 Bac à sable</h1>
+        <h1 style={{ fontSize: 22 }}>{t("title")}</h1>
         <p style={{ color: "var(--text-muted)", marginTop: 12 }}>
-          Cette page est en phase de test privée.
+          {t("private_notice")}
         </p>
       </main>
     );

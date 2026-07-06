@@ -4063,6 +4063,31 @@ export async function resetPipelineStagesAction(
   return res;
 }
 
+/** Prévisualise qui entre dans une étape (pour la composition manuelle des groupes). */
+export async function previewPipelineEntriesAction(
+  id: string,
+  stageOrder: number
+): Promise<{ entries?: Array<{ teamId: string; name: string; groupKey: string; slot: number }>; groups?: number; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { previewStageEntries } = await import("@/engine/pipeline-server");
+  return previewStageEntries(id, stageOrder);
+}
+
+/** Enregistre la composition manuelle des groupes d'une étape non lancée. */
+export async function setPipelineManualGroupsAction(
+  id: string,
+  stageOrder: number,
+  assignments: Record<string, string>
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { setStageManualGroups } = await import("@/engine/pipeline-server");
+  const res = await setStageManualGroups(id, stageOrder, assignments);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
 /**
  * Simule les scores restants de l'étape active (au hasard) — réservé aux
  * tournois de test (testMode), pour vérifier un pipeline sans arbitrer

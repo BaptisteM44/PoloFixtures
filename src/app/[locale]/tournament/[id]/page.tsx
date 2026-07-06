@@ -940,11 +940,11 @@ export default async function TournamentPage({
         const stages = [...((tournament as any).stages ?? [])].sort((a: any, b: any) => a.order - b.order);
         const bracketStage = [...stages].reverse().find((s: any) => s.type === "SE" || s.type === "DE");
         if (!bracketStage) {
-          return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>Aucune étape à bracket dans ce format.</p>;
+          return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>{t("pipeline_no_bracket_stage")}</p>;
         }
         const stageMatches = tournament.matches.filter((m: any) => m.stageId === bracketStage.id);
         if (stageMatches.length === 0) {
-          return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>&quot;{bracketStage.name}&quot; n&apos;a pas encore été lancée.</p>;
+          return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>{t("pipeline_stage_not_launched", { name: bracketStage.name })}</p>;
         }
         const teamNameById = new Map(tournament.teams.map((t: any) => [t.id, t.name]));
         const bracketTeams = (bracketStage.entries ?? []).map((e: any) => ({

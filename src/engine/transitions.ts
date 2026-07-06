@@ -15,7 +15,7 @@ export type EntrySource =
   | { kind: "registration" } // seeds initiaux du tournoi (équipes sélectionnées triées)
   | { kind: "stageRanks"; stageOrder: number; group?: string; from: number; to: number }; // rangs 1-based inclusifs
 
-export type GroupAssign = "snake" | "interleave" | "block";
+export type GroupAssign = "snake" | "interleave" | "block" | "manual";
 
 export type EntryRules = {
   /** Sources concaténées dans l'ordre = ordre de seed du stage. */
@@ -26,6 +26,13 @@ export type EntryRules = {
   groups?: number;
   /** Mode de répartition en groupes (défaut "snake"). */
   groupAssign?: GroupAssign;
+  /**
+   * Composition manuelle des groupes (groupAssign="manual") : teamId → lettre
+   * de groupe ("A", "B", …). Renseignée par l'orga avant le lancement de
+   * l'étape. Les équipes non assignées sont réparties en serpentin sur les
+   * groupes les moins remplis.
+   */
+  manualAssignments?: Record<string, string>;
 };
 
 export type ResolvedEntry = { groupKey: string; slot: number; teamId: string };
@@ -78,20 +85,38 @@ export function resolveEntries(rules: EntryRules, ctx: TransitionContext): Resol
   const assign = rules.groupAssign ?? "snake";
   const buckets: string[][] = Array.from({ length: groups }, () => []);
 
-  ordered.forEach((teamId, i) => {
-    let g: number;
-    if (assign === "interleave") {
-      g = i % groups; // 1→A, 2→B, 3→A, 4→B…
-    } else if (assign === "block") {
-      g = Math.floor(i / Math.ceil(ordered.length / groups)); // premiers ensemble
-    } else {
-      // snake : A B B A A B B A…
-      const round = Math.floor(i / groups);
-      const pos = i % groups;
-      g = round % 2 === 0 ? pos : groups - 1 - pos;
+  if (assign === "manual") {
+    // Composition manuelle : l'orga a choisi le groupe de chaque équipe.
+    // Les non-assignées vont dans les groupes les moins remplis (ordre de seed).
+    const manual = rules.manualAssignments ?? {};
+    const letters = GROUP_KEYS.slice(0, groups);
+    const unassigned: string[] = [];
+    for (const teamId of ordered) {
+      const idx = letters.indexOf(manual[teamId] ?? "");
+      if (idx >= 0) buckets[idx].push(teamId);
+      else unassigned.push(teamId);
     }
-    buckets[Math.min(g, groups - 1)].push(teamId);
-  });
+    for (const teamId of unassigned) {
+      let min = 0;
+      for (let g = 1; g < groups; g++) if (buckets[g].length < buckets[min].length) min = g;
+      buckets[min].push(teamId);
+    }
+  } else {
+    ordered.forEach((teamId, i) => {
+      let g: number;
+      if (assign === "interleave") {
+        g = i % groups; // 1→A, 2→B, 3→A, 4→B…
+      } else if (assign === "block") {
+        g = Math.floor(i / Math.ceil(ordered.length / groups)); // premiers ensemble
+      } else {
+        // snake : A B B A A B B A…
+        const round = Math.floor(i / groups);
+        const pos = i % groups;
+        g = round % 2 === 0 ? pos : groups - 1 - pos;
+      }
+      buckets[Math.min(g, groups - 1)].push(teamId);
+    });
+  }
 
   const out: ResolvedEntry[] = [];
   buckets.forEach((bucket, g) => {

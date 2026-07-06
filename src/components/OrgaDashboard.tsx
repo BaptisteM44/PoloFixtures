@@ -377,15 +377,13 @@ function BigApplePlanning({
 
 // ─── PipelinePlanning (nouveau système de stages, refonte formats) ───────────
 
-const STAGE_TYPE_LABEL: Record<string, string> = {
-  RR: "Poules", SWISS: "Swiss", CROSS_POOL: "Cross-pool", PLACEMENT: "Placement", SE: "Élim. simple", DE: "Double élim.",
+const STAGE_STATUS_COLOR: Record<string, string> = {
+  PENDING: "var(--text-muted)",
+  ACTIVE: "var(--amber, #f59e0b)",
+  DONE: "var(--teal)",
+  SKIPPED: "var(--text-muted)",
 };
-const STAGE_STATUS_META: Record<string, { label: string; color: string }> = {
-  PENDING: { label: "En attente", color: "var(--text-muted)" },
-  ACTIVE: { label: "▶ En cours", color: "var(--amber, #f59e0b)" },
-  DONE: { label: "✓ Terminée", color: "var(--teal)" },
-  SKIPPED: { label: "Sautée", color: "var(--text-muted)" },
-};
+const GROUP_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
 function PipelinePlanning({
   tournament,
@@ -393,22 +391,34 @@ function PipelinePlanning({
   launchStageAction,
   resetStagesAction,
   simulateStageAction,
+  previewEntriesAction,
+  setManualGroupsAction,
 }: {
   tournament: any;
   stages: any[];
   launchStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
   resetStagesAction?: (fromOrder: number) => Promise<{ ok?: boolean; error?: string }>;
   simulateStageAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  previewEntriesAction?: (order: number) => Promise<{ entries?: Array<{ teamId: string; name: string; groupKey: string; slot: number }>; groups?: number; error?: string }>;
+  setManualGroupsAction?: (order: number, assignments: Record<string, string>) => Promise<{ ok?: boolean; error?: string }>;
 }) {
+  const t = useTranslations("tournament");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openOrder, setOpenOrder] = useState<number | null>(
     stages.find((s) => s.status === "ACTIVE")?.order ?? stages.find((s) => s.status === "PENDING")?.order ?? 0
   );
+  // Composition manuelle des groupes (étape en attente)
+  const [composeOrder, setComposeOrder] = useState<number | null>(null);
+  const [composeEntries, setComposeEntries] = useState<Array<{ teamId: string; name: string; groupKey: string }>>([]);
+  const [composeGroups, setComposeGroups] = useState(2);
 
   const sorted = [...stages].sort((a, b) => a.order - b.order);
   const nextPending = sorted.find((s) => s.status === "PENDING" &&
     sorted.every((p) => p.order >= s.order || p.status === "DONE" || p.status === "SKIPPED"));
+
+  const statusLabel = (status: string) => t(`pipeline_status_${status.toLowerCase()}` as never);
+  const typeLabel = (type: string) => t(`pipeline_type_${type.toLowerCase()}` as never);
 
   const act = async (fn: () => Promise<{ ok?: boolean; error?: string }> | undefined) => {
     if (!fn) return;
@@ -419,54 +429,114 @@ function PipelinePlanning({
     setPending(false);
   };
 
+  const openCompose = async (stage: any) => {
+    if (!previewEntriesAction) return;
+    setPending(true);
+    setError(null);
+    const res = await previewEntriesAction(stage.order);
+    setPending(false);
+    if (res.error) { setError(res.error); return; }
+    setComposeEntries((res.entries ?? []).map((e) => ({ teamId: e.teamId, name: e.name, groupKey: e.groupKey || "A" })));
+    setComposeGroups(Math.max(res.groups ?? 2, 2));
+    setComposeOrder(stage.order);
+  };
+
+  const saveCompose = async () => {
+    if (composeOrder === null || !setManualGroupsAction) return;
+    const assignments = Object.fromEntries(composeEntries.map((e) => [e.teamId, e.groupKey]));
+    await act(() => setManualGroupsAction(composeOrder, assignments));
+    setComposeOrder(null);
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {simulateStageAction && (
         <div style={{ background: "repeating-linear-gradient(45deg, #f59e0b22, #f59e0b22 10px, transparent 10px, transparent 20px)", border: "1px solid #f59e0b", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, fontWeight: 800 }}>🧪 TOURNOI DE TEST</span>
+          <span style={{ fontSize: 12, fontWeight: 800 }}>{t("pipeline_test_banner")}</span>
           <button className="ghost" style={{ fontSize: 12, marginLeft: "auto" }} disabled={pending}
             onClick={() => act(simulateStageAction)}>
-            ⚡ Simuler l&apos;étape en cours
+            {t("pipeline_simulate_stage")}
           </button>
         </div>
       )}
       {error && <p style={{ color: "var(--danger)", fontSize: 12, padding: "8px 0" }}>{error}</p>}
       {sorted.map((stage) => {
-        const meta = STAGE_STATUS_META[stage.status] ?? STAGE_STATUS_META.PENDING;
+        const color = STAGE_STATUS_COLOR[stage.status] ?? STAGE_STATUS_COLOR.PENDING;
         const isOpen = openOrder === stage.order;
         const doneMatches = (stage.matches ?? []).filter((m: any) => m.status === "FINISHED").length;
         const totalMatches = (stage.matches ?? []).length;
+        const isNextLaunchable = stage.status === "PENDING" && nextPending?.order === stage.order;
+        const hasGroups = ((stage.entryRules as any)?.groups ?? 1) > 1;
+        const isComposing = composeOrder === stage.order;
 
         return (
-          <div key={stage.id} className="panel" style={{ borderLeft: `3px solid ${meta.color}` }}>
+          <div key={stage.id} className="panel" style={{ borderLeft: `3px solid ${color}` }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => setOpenOrder(isOpen ? null : stage.order)}>
               <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-muted)" }}>{stage.order + 1}</span>
               <span style={{ fontWeight: 700, fontSize: 15 }}>{stage.name}</span>
               <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 6, border: "1px solid var(--border)", color: "var(--text-muted)" }}>
-                {STAGE_TYPE_LABEL[stage.type] ?? stage.type}
+                {typeLabel(stage.type)}
               </span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: meta.color }}>{meta.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color }}>{statusLabel(stage.status)}</span>
               <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)" }}>
-                {totalMatches > 0 ? `${doneMatches}/${totalMatches} matchs` : ""} {isOpen ? "▾" : "▸"}
+                {totalMatches > 0 ? t("pipeline_matches_done", { done: doneMatches, total: totalMatches }) : ""} {isOpen ? "▾" : "▸"}
               </span>
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-              {stage.status === "PENDING" && nextPending?.order === stage.order && (
+              {isNextLaunchable && (
                 <button className="primary" style={{ fontSize: 13 }} disabled={pending}
                   onClick={(e) => { e.stopPropagation(); act(() => launchStageAction?.(stage.order)); }}>
-                  ▶ Lancer cette étape
+                  {t("pipeline_launch_stage")}
+                </button>
+              )}
+              {isNextLaunchable && hasGroups && previewEntriesAction && setManualGroupsAction && !isComposing && (
+                <button className="ghost" style={{ fontSize: 13 }} disabled={pending}
+                  onClick={(e) => { e.stopPropagation(); openCompose(stage); }}>
+                  {t("pipeline_compose_groups")}
                 </button>
               )}
               {(stage.status === "ACTIVE" || stage.status === "DONE") && (
                 <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pending}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (window.confirm(`Reset "${stage.name}" et toutes les étapes suivantes ?`)) act(() => resetStagesAction?.(stage.order));
+                    if (window.confirm(t("pipeline_reset_confirm", { name: stage.name }))) act(() => resetStagesAction?.(stage.order));
                   }}>
-                  ↺ Reset depuis ici
+                  {t("pipeline_reset_from_here")}
                 </button>
               )}
             </div>
+
+            {/* Composition manuelle des groupes */}
+            {isComposing && (
+              <div style={{ marginTop: 12, borderTop: "1px dashed var(--border)", paddingTop: 12 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-muted)", marginBottom: 8 }}>
+                  {t("pipeline_compose_title")}
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 6 }}>
+                  {composeEntries.map((e, i) => (
+                    <div key={e.teamId} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+                      <span style={{ flex: 1 }}>{e.name}</span>
+                      <select value={e.groupKey}
+                        onChange={(ev) => setComposeEntries((prev) => prev.map((x, xi) => xi === i ? { ...x, groupKey: ev.target.value } : x))}>
+                        {GROUP_LETTERS.slice(0, composeGroups).map((l) => <option key={l} value={l}>{l}</option>)}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+                {/* Aperçu des effectifs par groupe */}
+                <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
+                  {GROUP_LETTERS.slice(0, composeGroups).map((l) => `${l}: ${composeEntries.filter((e) => e.groupKey === l).length}`).join(" · ")}
+                </p>
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <button className="primary" style={{ fontSize: 13 }} disabled={pending} onClick={saveCompose}>
+                    {t("pipeline_compose_save")}
+                  </button>
+                  <button className="ghost" style={{ fontSize: 13 }} onClick={() => setComposeOrder(null)}>
+                    {t("pipeline_compose_cancel")}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         );
       })}
@@ -1562,6 +1632,8 @@ type OrgaDashboardProps = {
   launchStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
   resetStagesAction?: (fromOrder: number) => Promise<{ ok?: boolean; error?: string }>;
   simulateStageAction?: () => Promise<{ ok?: boolean; error?: string }>;
+  previewEntriesAction?: (order: number) => Promise<{ entries?: Array<{ teamId: string; name: string; groupKey: string; slot: number }>; groups?: number; error?: string }>;
+  setManualGroupsAction?: (order: number, assignments: Record<string, string>) => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -1654,6 +1726,8 @@ export function OrgaDashboard({
   launchStageAction,
   resetStagesAction,
   simulateStageAction,
+  previewEntriesAction,
+  setManualGroupsAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -1678,7 +1752,8 @@ export function OrgaDashboard({
       const saved = localStorage.getItem(tabStorageKey);
       if (saved === "teams" || saved === "config" || saved === "planning" || saved === "orga" || saved === "orgateam" || saved === "hebergement") return saved;
     }
-    return "config";
+    // Pipeline : le pilotage se fait dans l'onglet Planning — c'est l'écran utile
+    return (tournament as any)?.usesPipeline ? "planning" : "config";
   });
 
   useEffect(() => {
@@ -1955,8 +2030,8 @@ export function OrgaDashboard({
       {activeTab === "planning" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* Pool Schedule Editor — éditer les horaires de chaque poule (non MTP_OPEN, non Kiosque) */}
-          {!isMtpOpen && !isKiosque && (
+          {/* Pool Schedule Editor — éditer les horaires de chaque poule (non MTP_OPEN, non Kiosque, non pipeline) */}
+          {!isMtpOpen && !isKiosque && !isPipeline && (
             <PoolScheduleEditor
               tournamentId={tournament.id}
               gameDurationMin={tournament.gameDurationMin}
@@ -1968,7 +2043,7 @@ export function OrgaDashboard({
           )}
 
           {/* Pool Assignment (pour cross-pool format) */}
-          {(tournament.poolCount ?? 1) > 1 && !isLive && (
+          {!isPipeline && (tournament.poolCount ?? 1) > 1 && !isLive && (
             <div className="panel">
               <PoolAssignment
                 tournamentId={tournament.id}
@@ -1980,7 +2055,8 @@ export function OrgaDashboard({
             </div>
           )}
 
-          {/* Explication du format actuel */}
+          {/* Explication du format actuel (legacy — le pipeline a sa propre timeline) */}
+          {!isPipeline && (
           <div className="panel" style={{ background: "var(--bg)", border: "1px solid var(--border)" }}>
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 8 }}>
               {t("orga_planning_format_configured")}
@@ -2149,9 +2225,10 @@ export function OrgaDashboard({
               );
             })()}
           </div>
+          )}
 
           {/* Pool rounds limit — visible when pool matches exist */}
-          {isLive && poolMatches.length > 0 && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && !isBigApple && updatePoolRoundsAction && (
+          {isLive && poolMatches.length > 0 && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && !isBigApple && !isPipeline && updatePoolRoundsAction && (
             <div className="panel" style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, margin: 0 }}>
                 {t("field_pool_rounds")}
@@ -2306,6 +2383,8 @@ export function OrgaDashboard({
               launchStageAction={launchStageAction}
               resetStagesAction={resetStagesAction}
               simulateStageAction={tournament.testMode ? simulateStageAction : undefined}
+              previewEntriesAction={previewEntriesAction}
+              setManualGroupsAction={setManualGroupsAction}
             />
           )}
 

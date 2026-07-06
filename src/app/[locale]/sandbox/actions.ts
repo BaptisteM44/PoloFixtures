@@ -21,6 +21,7 @@ import {
 } from "@/engine/pipeline-server";
 import { getPreset } from "@/engine/presets";
 import { validateCustomPipeline } from "@/engine/pipeline-validation";
+import { generateTournamentSlug } from "@/lib/slug";
 
 // Phase de test privée : admin uniquement (+ email du propriétaire en secours).
 // À élargir aux orgas quand le sandbox sera validé.
@@ -68,9 +69,12 @@ export async function createSandboxAction(input: {
   const teamCount = Math.max(preset.minTeams, Math.min(input.teamCount, 64));
 
   const now = new Date();
+  const name = `🧪 ${preset.label} — ${teamCount} équipes`;
+  const slug = await generateTournamentSlug(name, "sandbox", now.getFullYear());
   const t = await prisma.tournament.create({
     data: {
-      name: `🧪 ${preset.label} — ${teamCount} équipes`,
+      name,
+      slug,
       continentCode: "EU",
       country: "BE",
       city: "Bac à sable",
@@ -125,9 +129,12 @@ export async function createCustomSandboxAction(input: {
 
   const teamCount = Math.max(2, Math.min(input.teamCount || 16, 64));
   const now = new Date();
+  const name = `🧪 ${input.name || "Custom"} — ${teamCount} équipes`;
+  const slug = await generateTournamentSlug(name, "sandbox", now.getFullYear());
   const t = await prisma.tournament.create({
     data: {
-      name: `🧪 ${input.name || "Custom"} — ${teamCount} équipes`,
+      name,
+      slug,
       continentCode: "EU",
       country: "BE",
       city: "Bac à sable",

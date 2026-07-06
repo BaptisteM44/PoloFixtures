@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { assertSimDatabase, resetSimDb } from "./sim-db";
-import { createStages, getPipeline, simulateAll, finalStandings } from "@/engine/pipeline-server";
+import { createStages, getPipeline, simulateAll, finalStandings, previewStageEntries, setStageManualGroups, launchStage } from "@/engine/pipeline-server";
 import { validateCustomPipeline } from "@/engine/pipeline-validation";
 
 async function createPipelineTournament(teamCount: number): Promise<string> {
@@ -99,5 +99,33 @@ describe("Builder custom — exemple utilisateur : 5 Swiss → cross-pool → 4 
       { name: "A", type: "SWISS", config: { rounds: 3 }, entryRules: { sources: [{ kind: "stageRanks", stageOrder: 0, from: 1, to: 8 }] } },
     ]);
     expect(res.ok).toBe(false);
+  });
+});
+
+describe("Composition manuelle des groupes (avant lancement)", () => {
+  it("preview → l'orga réassigne → launch respecte sa composition manuelle", async () => {
+    const id = await createPipelineTournament(8);
+    await createStages(id, [
+      { name: "Poules", type: "RR", config: { groups: 2 }, entryRules: { sources: [{ kind: "registration" }], groups: 2, groupAssign: "snake" } },
+    ]);
+
+    const preview = await previewStageEntries(id, 0);
+    expect(preview.error).toBeUndefined();
+    expect(preview.entries).toHaveLength(8);
+
+    // L'orga décide : toutes les équipes impaires en A, paires en B (au lieu du snake par défaut)
+    const assignments: Record<string, string> = {};
+    preview.entries!.forEach((e, i) => { assignments[e.teamId] = i % 2 === 0 ? "A" : "B"; });
+    const setRes = await setStageManualGroups(id, 0, assignments);
+    expect(setRes.error).toBeUndefined();
+
+    const launchRes = await launchStage(id, 0);
+    expect(launchRes.error).toBeUndefined();
+
+    const t = await getPipeline(id);
+    const stage = t!.stages[0];
+    for (const entry of stage.entries) {
+      expect(entry.groupKey).toBe(assignments[entry.teamId!]);
+    }
   });
 });

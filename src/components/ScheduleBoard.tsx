@@ -552,7 +552,7 @@ export function ScheduleBoard({
           >
             <div className="schedule-round__header">
               <span className="schedule-round__label">
-                {group.phase === "STAGE" ? (stages?.find((s) => s.id === group.stageId)?.name ?? "Étape") : (PHASE_LABEL[group.phase] ?? group.phase)}{bracketLabel}{(!bracketSide || bracketSide === "W" || bracketSide === "L") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}{grazPoolLabel}{group.phase === "STAGE" && group.groupKey ? ` · Groupe ${group.groupKey}` : ""}
+                {group.phase === "STAGE" ? (stages?.find((s) => s.id === group.stageId)?.name ?? t("pipeline_stage")) : (PHASE_LABEL[group.phase] ?? group.phase)}{bracketLabel}{(!bracketSide || bracketSide === "W" || bracketSide === "L") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}{grazPoolLabel}{group.phase === "STAGE" && group.groupKey ? ` · ${t("pipeline_group_label", { key: group.groupKey })}` : ""}
               </span>
               {finished && <span className="schedule-round__badge schedule-round__badge--done">{t("status_completed")}</span>}
               {active && <span className="schedule-round__badge schedule-round__badge--live">{t("status_live")}</span>}

@@ -21,7 +21,8 @@ const entryRulesSchema = z.object({
   sources: z.array(entrySourceSchema).min(1, "Au moins une source d'équipes requise."),
   interleaveSources: z.boolean().optional(),
   groups: z.number().int().min(1).max(8).optional(),
-  groupAssign: z.enum(["snake", "interleave", "block"]).optional(),
+  groupAssign: z.enum(["snake", "interleave", "block", "manual"]).optional(),
+  manualAssignments: z.record(z.string(), z.string().max(1)).optional(),
 });
 
 const stageConfigSchema = z.discriminatedUnion("type", [
