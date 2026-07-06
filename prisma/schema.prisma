@@ -540,12 +540,14 @@ model Pool {
   tournamentId String
   name         String
   session      PoolSession?
+  stageId      String?      // pipeline (refonte formats) : Pool "vue legacy" générée pour ce Stage
 
   tournament Tournament @relation(fields: [tournamentId], references: [id])
   teams      PoolTeam[]
   matches    Match[]
 
   @@index([tournamentId])
+  @@index([stageId])
 }
 
 model PoolTeam {

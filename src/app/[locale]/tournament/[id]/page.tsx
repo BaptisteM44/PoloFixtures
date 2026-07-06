@@ -92,6 +92,7 @@ export default async function TournamentPage({
         ? { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true } } }, orderBy: { createdAt: "asc" as const } }
         : false,
       hostClub: { select: { id: true, name: true, logoPath: true } },
+      stages: { orderBy: { order: "asc" }, include: { entries: true } },
     }
   }) as any;
 
@@ -141,6 +142,7 @@ export default async function TournamentPage({
   const isMtpOpen = tournament.saturdayFormat === "MTP_OPEN";
   const isKiosque = (tournament as any).saturdayFormat === "KIOSQUE";
   const isBigApple = (tournament as any).saturdayFormat === "BIG_APPLE";
+  const isPipeline = !!(tournament as any).usesPipeline;
   const kiosqueTop4Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "KIOSQUE_TOP4");
   const kiosqueBottom12Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "KIOSQUE_BOTTOM12");
   const kiosqueSEMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "KIOSQUE_SE");
@@ -222,7 +224,7 @@ export default async function TournamentPage({
     ...(isLaunched && isKiosque && kiosqueBottom12Matches.length > 0 ? [{ label: t("tab_kiosque_bot12"), value: "kiosque_bot12", href: `/tournament/${params.id}?tab=kiosque_bot12` }] : []),
     ...(isLaunched && isKiosque && kiosqueSEMatches.length > 0 ? [{ label: t("tab_kiosque_se"), value: "kiosque_se", href: `/tournament/${params.id}?tab=kiosque_se` }] : []),
     // Standard tabs (hidden for Berlin Mixed and Kiosque)
-    ...(isLaunched && !isBerlinMixed && !isMtpOpen && !isKiosque && tournament.saturdayFormat !== "SWISS" ? [{ label: (isGraz || isBigApple) ? t("tab_rr_groups") : t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
+    ...(isLaunched && !isBerlinMixed && !isMtpOpen && !isKiosque && tournament.saturdayFormat !== "SWISS" ? [{ label: (isGraz || isBigApple || isPipeline) ? t("tab_rr_groups") : t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
     ...(isLaunched && isMtpOpen ? [{ label: t("tab_mtp_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
     ...(isLaunched && isMtpOpen && hasMtpBarrage ? [{ label: t("tab_mtp_standings"), value: "mtp_standings", href: `/tournament/${params.id}?tab=mtp_standings` }] : []),
     ...(isLaunched && !isBerlinMixed && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
@@ -246,8 +248,19 @@ export default async function TournamentPage({
   let podium: { first: PodiumTeam; second: PodiumTeam; third: PodiumTeam } = { first: null, second: null, third: null };
 
   if (isCompleted) {
+    // Pour un pipeline, ne considérer que le DERNIER stage (celui qui clôt le
+    // tournoi) — un pipeline peut avoir plusieurs stages à bracketSide (ex: un
+    // SE de qualification puis un DE final), il ne faut pas les mélanger.
+    const lastPipelineStageId = isPipeline
+      ? [...((tournament as any).stages ?? [])].sort((a: any, b: any) => b.order - a.order)[0]?.id ?? null
+      : null;
     const bracketMatches = await prisma.match.findMany({
-      where: { tournamentId: tournament.id, phase: { in: ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE", "BIG_APPLE_SE"] }, status: "FINISHED" },
+      where: {
+        tournamentId: tournament.id,
+        phase: { in: ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE", "BIG_APPLE_SE", "STAGE"] },
+        status: "FINISHED",
+        ...(isPipeline ? { stageId: lastPipelineStageId } : {}),
+      },
       include: {
         teamA: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
         teamB: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
@@ -821,7 +834,7 @@ export default async function TournamentPage({
 
       {tab === "schedule" && (isTestMode
         ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
-        : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} pools={(tournament.pools ?? []).map((p: any) => ({ id: p.id, name: p.name }))} isOrganizer={isOrga} poolRounds={(tournament as any).poolRounds ?? null} testMode={!!(tournament as any).testMode} gameDurationMin={tournament.gameDurationMin} sundayFormat={(tournament as any).sundayFormat} />
+        : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} pools={(tournament.pools ?? []).map((p: any) => ({ id: p.id, name: p.name }))} isOrganizer={isOrga} poolRounds={(tournament as any).poolRounds ?? null} testMode={!!(tournament as any).testMode} gameDurationMin={tournament.gameDurationMin} sundayFormat={(tournament as any).sundayFormat} stages={((tournament as any).stages ?? []).map((s: any) => ({ id: s.id, name: s.name, order: s.order }))} />
       )}
 
       {tab === "pools" && (isTestMode
@@ -923,7 +936,30 @@ export default async function TournamentPage({
         return <BracketView matches={mtpDeMatches as any} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />;
       })()}
 
-      {tab === "bracket" && !isTestMode && !isGraz && !isMtpOpen && !isBigApple && (() => {
+      {tab === "bracket" && !isTestMode && isPipeline && (() => {
+        const stages = [...((tournament as any).stages ?? [])].sort((a: any, b: any) => a.order - b.order);
+        const bracketStage = [...stages].reverse().find((s: any) => s.type === "SE" || s.type === "DE");
+        if (!bracketStage) {
+          return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>Aucune étape à bracket dans ce format.</p>;
+        }
+        const stageMatches = tournament.matches.filter((m: any) => m.stageId === bracketStage.id);
+        if (stageMatches.length === 0) {
+          return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>&quot;{bracketStage.name}&quot; n&apos;a pas encore été lancée.</p>;
+        }
+        const teamNameById = new Map(tournament.teams.map((t: any) => [t.id, t.name]));
+        const bracketTeams = (bracketStage.entries ?? []).map((e: any) => ({
+          id: e.teamId,
+          name: teamNameById.get(e.teamId) ?? "?",
+          bracketNumber: e.slot,
+        }));
+        return (
+          <div>
+            <BracketView matches={stageMatches as any} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />
+          </div>
+        );
+      })()}
+
+      {tab === "bracket" && !isTestMode && !isGraz && !isMtpOpen && !isBigApple && !isPipeline && (() => {
         const bracketMatches = tournament.matches.filter((m) => m.phase === "BRACKET");
         const swissAll = tournament.matches.filter((m) => m.phase === "SWISS");
         const poolRoundsLimit = (tournament as any).poolRounds ?? null;

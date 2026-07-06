@@ -60,6 +60,23 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   const scoreA = parsed.data.scoreA ?? existing.scoreA ?? 0;
   const scoreB = parsed.data.scoreB ?? existing.scoreB ?? 0;
 
+  // Pipeline (nouveau système) : délègue entièrement à applyScore() du moteur
+  // — propagation, GF reset, avancement de round Swiss, fin d'étape/tournoi.
+  // Un seul chemin de score pour un match de phase STAGE, qu'il vienne du
+  // vrai arbitrage (MatchEditPanel/RefereePanel) ou du bac à sable.
+  if (existing.phase === "STAGE" && parsed.data.status === "FINISHED") {
+    const { applyScore } = await import("@/engine/pipeline-server");
+    const result = await applyScore(existing.id, scoreA, scoreB);
+    if (result.error) return Response.json({ error: result.error }, { status: 422 });
+    const updated = await prisma.match.findUniqueOrThrow({ where: { id: existing.id } });
+    publishMatchUpdate({ matchId: existing.id, tournamentId: existing.tournamentId, type: "match_update", data: updated });
+    const newStatus = await syncTournamentCompletionById(existing.tournamentId);
+    if (newStatus === "COMPLETED") {
+      publishTournamentUpdate({ tournamentId: existing.tournamentId, type: "tournament_completed", status: "COMPLETED" });
+    }
+    return Response.json(updated);
+  }
+
   // Block finishing a BRACKET match on a draw
   if (parsed.data.status === "FINISHED" && existing.phase === "BRACKET" && scoreA === scoreB) {
     return Response.json({ error: "Impossible de clôturer un match de bracket sur une égalité. Un vainqueur est obligatoire." }, { status: 422 });

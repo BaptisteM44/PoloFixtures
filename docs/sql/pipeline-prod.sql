@@ -20,6 +20,10 @@ ALTER TABLE "Tournament" ADD COLUMN IF NOT EXISTS "timezone" TEXT;
 ALTER TABLE "Tournament" ADD COLUMN IF NOT EXISTS "usesPipeline" BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE "Match" ADD COLUMN IF NOT EXISTS "stageId" TEXT;
 ALTER TABLE "Match" ADD COLUMN IF NOT EXISTS "groupKey" TEXT;
+-- Pool "vue legacy" générée pour un Stage (PoolTables/ScheduleBoard fonctionnent
+-- nativement avec les étapes RR/Swiss/CrossPool du pipeline sans adaptation)
+ALTER TABLE "Pool" ADD COLUMN IF NOT EXISTS "stageId" TEXT;
+CREATE INDEX IF NOT EXISTS "Pool_stageId_idx" ON "Pool"("stageId");
 
 -- Table Stage
 CREATE TABLE IF NOT EXISTS "Stage" (

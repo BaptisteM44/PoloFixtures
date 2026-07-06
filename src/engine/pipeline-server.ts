@@ -144,12 +144,38 @@ function courtNamesOf(t: PipelineTournament): string[] {
   return Array.from({ length: Math.max(t.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
 }
 
+/**
+ * Crée un vrai enregistrement Pool par groupe du stage (+ ses PoolTeam), pour
+ * que PoolTables/ScheduleBoard (composants réels de la page publique) affichent
+ * les étapes à groupes du pipeline sans aucune adaptation de leur côté.
+ * Le Stage reste la source de vérité (config/entryRules/status) — le Pool est
+ * une simple vue "legacy-compatible" dessus, régénérée à chaque lancement.
+ */
+async function ensurePoolsForStage(
+  tx: Prisma.TransactionClient,
+  tournamentId: string,
+  stage: Stage,
+  entries: Array<{ groupKey: string; teamId: string }>
+): Promise<Map<string, string>> {
+  const groups = [...new Set(entries.map((e) => e.groupKey))].sort();
+  const poolIdByGroup = new Map<string, string>();
+  for (const g of groups) {
+    const name = g ? `${stage.name} — Groupe ${g}` : stage.name;
+    const pool = await tx.pool.create({ data: { tournamentId, name, stageId: stage.id } });
+    poolIdByGroup.set(g, pool.id);
+    const teamIds = entries.filter((e) => e.groupKey === g).map((e) => e.teamId);
+    await tx.poolTeam.createMany({ data: teamIds.map((teamId) => ({ poolId: pool.id, teamId })) });
+  }
+  return poolIdByGroup;
+}
+
 async function persistPairings(
   tx: Prisma.TransactionClient,
   t: PipelineTournament,
   stage: Stage,
   pairings: Pairing[],
-  startAt: Date
+  startAt: Date,
+  poolIdByGroup: Map<string, string>
 ): Promise<void> {
   // Rounds globaux : round r = tous les groupes confondus
   const rounds = new Map<number, Pairing[]>();
@@ -174,6 +200,7 @@ async function persistPairings(
           phase: "STAGE",
           stageId: stage.id,
           groupKey: p.groupKey || null,
+          poolId: poolIdByGroup.get(p.groupKey) ?? null,
           roundIndex: p.roundIndex,
           positionInRound: p.positionInRound,
           courtName: slots[ri][i].courtName,
@@ -223,7 +250,8 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
             doubleRound: cfg.doubleRound,
             maxRounds: cfg.maxRounds,
           });
-          await persistPairings(tx, t, stage, pairings, startAt);
+          const poolIdByGroup = await ensurePoolsForStage(tx, t.id, stage, teamIdsBySlot);
+          await persistPairings(tx, t, stage, pairings, startAt, poolIdByGroup);
           break;
         }
         case "SWISS": {
@@ -231,14 +259,15 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
           const pairings = groups.flatMap((g) =>
             swissPairings(byGroup(g), new Set(), new Set(), 1, g)
           );
-          await persistPairings(tx, t, stage, pairings, startAt);
+          const poolIdByGroup = await ensurePoolsForStage(tx, t.id, stage, teamIdsBySlot);
+          await persistPairings(tx, t, stage, pairings, startAt, poolIdByGroup);
           break;
         }
         case "CROSS_POOL": {
           const cfg = stage.config as StageConfigByType["CROSS_POOL"];
           if (groups.length < 2) throw new Error("Cross-pool requiert 2 groupes en entrée.");
           const pairings = crossPoolPairings(byGroup(groups[0]), byGroup(groups[1]), cfg.opponents ?? 1);
-          await persistPairings(tx, t, stage, pairings, startAt);
+          await persistPairings(tx, t, stage, pairings, startAt, new Map());
           break;
         }
         case "PLACEMENT": {
@@ -250,7 +279,7 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
           for (let i = 0; i < count; i++) {
             pairings.push({ roundIndex: 1, positionInRound: i, groupKey: "", teamAId: flat[2 * i], teamBId: flat[2 * i + 1] });
           }
-          await persistPairings(tx, t, stage, pairings, startAt);
+          await persistPairings(tx, t, stage, pairings, startAt, new Map());
           break;
         }
         case "SE": {
@@ -370,8 +399,14 @@ export async function advanceStage(stageId: string): Promise<{ ok?: boolean; err
         swissPairings(stageStandings(t, stage.order, g === "" ? undefined : g), played, hadBye, maxRound + 1, g)
       );
       const startAt = nextStartAt(t);
+      // Réutilise les Pool déjà créés au lancement (retrouvés via un match existant par groupKey)
+      const poolIdByGroup = new Map<string, string>();
+      for (const g of groups) {
+        const withPool = stage.matches.find((m) => (m.groupKey ?? "") === g && m.poolId);
+        if (withPool?.poolId) poolIdByGroup.set(g, withPool.poolId);
+      }
       await prisma.$transaction(async (tx) => {
-        await persistPairings(tx, t, stage, pairings, startAt);
+        await persistPairings(tx, t, stage, pairings, startAt, poolIdByGroup);
       }, { timeout: 20000 });
       return { ok: true };
     }
@@ -414,6 +449,8 @@ export async function resetStages(tournamentId: string, fromOrder: number): Prom
     for (const s of targets) {
       await tx.matchEvent.deleteMany({ where: { match: { stageId: s.id } } });
       await tx.match.deleteMany({ where: { stageId: s.id } });
+      await tx.poolTeam.deleteMany({ where: { pool: { stageId: s.id } } });
+      await tx.pool.deleteMany({ where: { stageId: s.id } });
       await tx.stageEntry.deleteMany({ where: { stageId: s.id } });
       await tx.stage.update({ where: { id: s.id }, data: { status: "PENDING" } });
     }

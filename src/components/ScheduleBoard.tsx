@@ -114,6 +114,7 @@ export function ScheduleBoard({
   testMode = false,
   gameDurationMin = 15,
   sundayFormat,
+  stages,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
@@ -124,6 +125,8 @@ export function ScheduleBoard({
   gameDurationMin?: number;
   testMode?: boolean;
   sundayFormat?: string;
+  /** Pipeline (nouveau système) : nom + ordre de chaque Stage, pour libellés et tri corrects. */
+  stages?: { id: string; name: string; order: number }[];
 }) {
   const t = useTranslations("tournament");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
@@ -270,7 +273,7 @@ export function ScheduleBoard({
 
   // Group matches by phase+round (for POOL: also by poolSessionIndex), sorted: active rounds first, then scheduled, then finished
   const roundGroups = useMemo(() => {
-    const groups = new Map<string, { phase: string; roundIndex: number; poolSessionIndex?: number; bracketSide?: string | null; poolId?: string | null; matches: MatchWithTeams[] }>();
+    const groups = new Map<string, { phase: string; roundIndex: number; poolSessionIndex?: number; bracketSide?: string | null; poolId?: string | null; stageId?: string | null; groupKey?: string | null; matches: MatchWithTeams[] }>();
 
     // Sort all filtered by startAt
     const sorted = [...filtered].sort(
@@ -290,9 +293,12 @@ export function ScheduleBoard({
       const kiosquePoolSuffix = (match.phase === "KIOSQUE_POOL" || match.phase === "KIOSQUE_TOP4" || match.phase === "KIOSQUE_BOTTOM12") && match.poolId ? `-P${match.poolId}` : "";
       // For Big Apple RR matches, separate by pool (Pool A vs Pool B)
       const bigAppleRRSuffix = match.phase === "BIG_APPLE_RR" && match.poolId ? `-P${match.poolId}` : "";
-      const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}${bracketSuffix}${grazPoolSuffix}${grazRegroupSuffix}${kiosquePoolSuffix}${bigAppleRRSuffix}`;
+      // Pipeline (nouveau système) : chaque Stage est son propre groupe — sans
+      // ça, toutes les étapes d'un pipeline fusionneraient sous "STAGE-R1"
+      const stageSuffix = match.phase === "STAGE" && (match as any).stageId ? `-ST${(match as any).stageId}` : "";
+      const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}${bracketSuffix}${grazPoolSuffix}${grazRegroupSuffix}${kiosquePoolSuffix}${bigAppleRRSuffix}${stageSuffix}`;
       if (!groups.has(key)) {
-        groups.set(key, { phase: match.phase, roundIndex: match.roundIndex, poolSessionIndex: match.poolSessionIndex ?? undefined, bracketSide: match.bracketSide ?? undefined, poolId: match.poolId ?? null, matches: [] });
+        groups.set(key, { phase: match.phase, roundIndex: match.roundIndex, poolSessionIndex: match.poolSessionIndex ?? undefined, bracketSide: match.bracketSide ?? undefined, poolId: match.poolId ?? null, stageId: (match as any).stageId ?? null, groupKey: (match as any).groupKey ?? null, matches: [] });
       }
       groups.get(key)!.matches.push(match);
     }
@@ -333,6 +339,7 @@ export function ScheduleBoard({
 
   // Global match ordering for numbering — stable, based on logical order not startAt
   // so numbers don't change when new rounds are generated
+  const stageOrderById = useMemo(() => new Map((stages ?? []).map((s) => [s.id, s.order])), [stages]);
   const globalOrder = useMemo(() => {
     const PHASE_ORDER: Record<string, number> = {
       POOL: 0, MTP_POOL_A: 0, MTP_POOL_B: 1,
@@ -344,9 +351,13 @@ export function ScheduleBoard({
       KIOSQUE_POOL: 0, KIOSQUE_TOP4: 1, KIOSQUE_BOTTOM12: 1, KIOSQUE_SE: 2,
       BIG_APPLE_RR: 0, BIG_APPLE_SWISS: 1, BIG_APPLE_PLACEMENT: 2, BIG_APPLE_SE: 3,
     };
+    // Pipeline : ordre = Stage.order (plusieurs stages partagent phase="STAGE",
+    // donc l'ordre fixe par phase ne suffit pas — on utilise l'ordre réel du pipeline)
+    const stagePhaseOrder = (m: MatchWithTeams) =>
+      m.phase === "STAGE" ? 10 + (stageOrderById.get((m as any).stageId ?? "") ?? 0) : (PHASE_ORDER[m.phase] ?? 99);
     const sorted = [...matches].sort((a, b) => {
-      const pa = PHASE_ORDER[a.phase] ?? 99;
-      const pb = PHASE_ORDER[b.phase] ?? 99;
+      const pa = stagePhaseOrder(a);
+      const pb = stagePhaseOrder(b);
       if (pa !== pb) return pa - pb;
       if (a.roundIndex !== b.roundIndex) return a.roundIndex - b.roundIndex;
       if ((a.positionInRound ?? 0) !== (b.positionInRound ?? 0)) return (a.positionInRound ?? 0) - (b.positionInRound ?? 0);
@@ -355,7 +366,7 @@ export function ScheduleBoard({
     const map = new Map<string, number>();
     sorted.forEach((m, i) => map.set(m.id, i + 1));
     return map;
-  }, [matches]);
+  }, [matches, stageOrderById]);
 
   const phases = [...new Set(matches.map((m) => m.phase))];
 
@@ -532,7 +543,7 @@ export function ScheduleBoard({
         }
 
         const isTruncated = poolRounds !== null && group.phase === "POOL" && group.roundIndex > poolRounds;
-        const groupKey = `${group.phase}-R${group.roundIndex}${sessionLabel.replace(/\s/g, "")}${bracketSide ?? ""}`;
+        const groupKey = `${group.phase}-R${group.roundIndex}${sessionLabel.replace(/\s/g, "")}${bracketSide ?? ""}${group.stageId ?? ""}`;
 
         return (
           <div
@@ -541,7 +552,7 @@ export function ScheduleBoard({
           >
             <div className="schedule-round__header">
               <span className="schedule-round__label">
-                {PHASE_LABEL[group.phase] ?? group.phase}{bracketLabel}{(!bracketSide || bracketSide === "W" || bracketSide === "L") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}{grazPoolLabel}
+                {group.phase === "STAGE" ? (stages?.find((s) => s.id === group.stageId)?.name ?? "Étape") : (PHASE_LABEL[group.phase] ?? group.phase)}{bracketLabel}{(!bracketSide || bracketSide === "W" || bracketSide === "L") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}{grazPoolLabel}{group.phase === "STAGE" && group.groupKey ? ` · Groupe ${group.groupKey}` : ""}
               </span>
               {finished && <span className="schedule-round__badge schedule-round__badge--done">{t("status_completed")}</span>}
               {active && <span className="schedule-round__badge schedule-round__badge--live">{t("status_live")}</span>}

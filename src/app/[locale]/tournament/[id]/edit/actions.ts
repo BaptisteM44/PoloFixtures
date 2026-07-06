@@ -337,13 +337,18 @@ export async function launchPoolAction(id: string, poolLetter: "A" | "B") {
     tournament.gameDurationMin
   );
 
+  // generatePoolMatches is called with a single pool here, so it always assigns
+  // poolSessionIndex = 0 — override with the real session index (0 = Pool A, 1 = Pool B, ...)
+  // so the schedule board doesn't group Pool A round 1 with Pool B round 1.
+  const realSessionIndex = poolLetter.charCodeAt(0) - "A".charCodeAt(0);
+
   await prisma.$transaction(async (tx) => {
     await tx.match.createMany({
       data: matches.map((match) => ({
         tournamentId: id,
         phase: "POOL" as const,
         poolId: poolRecord.id,
-        poolSessionIndex: match.poolSessionIndex ?? null,
+        poolSessionIndex: realSessionIndex,
         bracketSide: null,
         roundIndex: match.roundIndex,
         positionInRound: match.positionInRound ?? 0,
@@ -4021,4 +4026,58 @@ export async function resetKiosquePhaseAction(
   revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);
   return { ok: true };
+}
+
+// ─── Pipeline (nouveau système de stages, refonte formats) ──────────────────
+// Ce tournoi utilise usesPipeline=true : toute la logique de génération vit
+// dans src/engine/pipeline-server.ts. Ces actions ne sont que des wrappers
+// d'accès (mêmes règles que les autres actions orga) autour du moteur.
+
+export async function launchPipelineStageAction(
+  id: string,
+  stageOrder: number
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const { launchStage } = await import("@/engine/pipeline-server");
+  const res = await launchStage(id, stageOrder);
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+export async function resetPipelineStagesAction(
+  id: string,
+  fromOrder: number
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+
+  const { resetStages } = await import("@/engine/pipeline-server");
+  const res = await resetStages(id, fromOrder);
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/**
+ * Simule les scores restants de l'étape active (au hasard) — réservé aux
+ * tournois de test (testMode), pour vérifier un pipeline sans arbitrer
+ * chaque match à la main.
+ */
+export async function simulatePipelineStageAction(id: string): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const t = await prisma.tournament.findUnique({ where: { id }, select: { testMode: true } });
+  if (!t?.testMode) return { error: "Simulation réservée aux tournois de test." };
+
+  const { simulateStage } = await import("@/engine/pipeline-server");
+  const res = await simulateStage(id);
+
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
 }

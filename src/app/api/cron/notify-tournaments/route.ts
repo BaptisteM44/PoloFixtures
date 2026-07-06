@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const newTournaments = await prisma.tournament.findMany({
-    where: { createdAt: { gte: since } },
+    where: { createdAt: { gte: since }, testMode: false, hidden: false, approved: true },
     select: {
       id: true,
       name: true,

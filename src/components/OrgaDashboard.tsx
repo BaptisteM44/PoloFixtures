@@ -375,6 +375,105 @@ function BigApplePlanning({
   );
 }
 
+// ─── PipelinePlanning (nouveau système de stages, refonte formats) ───────────
+
+const STAGE_TYPE_LABEL: Record<string, string> = {
+  RR: "Poules", SWISS: "Swiss", CROSS_POOL: "Cross-pool", PLACEMENT: "Placement", SE: "Élim. simple", DE: "Double élim.",
+};
+const STAGE_STATUS_META: Record<string, { label: string; color: string }> = {
+  PENDING: { label: "En attente", color: "var(--text-muted)" },
+  ACTIVE: { label: "▶ En cours", color: "var(--amber, #f59e0b)" },
+  DONE: { label: "✓ Terminée", color: "var(--teal)" },
+  SKIPPED: { label: "Sautée", color: "var(--text-muted)" },
+};
+
+function PipelinePlanning({
+  tournament,
+  stages,
+  launchStageAction,
+  resetStagesAction,
+  simulateStageAction,
+}: {
+  tournament: any;
+  stages: any[];
+  launchStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
+  resetStagesAction?: (fromOrder: number) => Promise<{ ok?: boolean; error?: string }>;
+  simulateStageAction?: () => Promise<{ ok?: boolean; error?: string }>;
+}) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [openOrder, setOpenOrder] = useState<number | null>(
+    stages.find((s) => s.status === "ACTIVE")?.order ?? stages.find((s) => s.status === "PENDING")?.order ?? 0
+  );
+
+  const sorted = [...stages].sort((a, b) => a.order - b.order);
+  const nextPending = sorted.find((s) => s.status === "PENDING" &&
+    sorted.every((p) => p.order >= s.order || p.status === "DONE" || p.status === "SKIPPED"));
+
+  const act = async (fn: () => Promise<{ ok?: boolean; error?: string }> | undefined) => {
+    if (!fn) return;
+    setPending(true);
+    setError(null);
+    const res = await fn();
+    if (res?.error) setError(res.error);
+    setPending(false);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {simulateStageAction && (
+        <div style={{ background: "repeating-linear-gradient(45deg, #f59e0b22, #f59e0b22 10px, transparent 10px, transparent 20px)", border: "1px solid #f59e0b", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 12, fontWeight: 800 }}>🧪 TOURNOI DE TEST</span>
+          <button className="ghost" style={{ fontSize: 12, marginLeft: "auto" }} disabled={pending}
+            onClick={() => act(simulateStageAction)}>
+            ⚡ Simuler l&apos;étape en cours
+          </button>
+        </div>
+      )}
+      {error && <p style={{ color: "var(--danger)", fontSize: 12, padding: "8px 0" }}>{error}</p>}
+      {sorted.map((stage) => {
+        const meta = STAGE_STATUS_META[stage.status] ?? STAGE_STATUS_META.PENDING;
+        const isOpen = openOrder === stage.order;
+        const doneMatches = (stage.matches ?? []).filter((m: any) => m.status === "FINISHED").length;
+        const totalMatches = (stage.matches ?? []).length;
+
+        return (
+          <div key={stage.id} className="panel" style={{ borderLeft: `3px solid ${meta.color}` }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => setOpenOrder(isOpen ? null : stage.order)}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-muted)" }}>{stage.order + 1}</span>
+              <span style={{ fontWeight: 700, fontSize: 15 }}>{stage.name}</span>
+              <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 6, border: "1px solid var(--border)", color: "var(--text-muted)" }}>
+                {STAGE_TYPE_LABEL[stage.type] ?? stage.type}
+              </span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: meta.color }}>{meta.label}</span>
+              <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)" }}>
+                {totalMatches > 0 ? `${doneMatches}/${totalMatches} matchs` : ""} {isOpen ? "▾" : "▸"}
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+              {stage.status === "PENDING" && nextPending?.order === stage.order && (
+                <button className="primary" style={{ fontSize: 13 }} disabled={pending}
+                  onClick={(e) => { e.stopPropagation(); act(() => launchStageAction?.(stage.order)); }}>
+                  ▶ Lancer cette étape
+                </button>
+              )}
+              {(stage.status === "ACTIVE" || stage.status === "DONE") && (
+                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pending}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Reset "${stage.name}" et toutes les étapes suivantes ?`)) act(() => resetStagesAction?.(stage.order));
+                  }}>
+                  ↺ Reset depuis ici
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── KiosquePlanning ─────────────────────────────────────────────────────────
 
 function KiosquePoolPanel({
@@ -1460,6 +1559,9 @@ type OrgaDashboardProps = {
   launchBigApplePlacementAction?: () => Promise<{ ok?: boolean; error?: string }>;
   launchBigAppleSEAction?: () => Promise<{ ok?: boolean; error?: string }>;
   resetBigApplePhaseAction?: (phase: "SWISS" | "PLACEMENT" | "SE") => Promise<{ ok?: boolean; error?: string }>;
+  launchStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
+  resetStagesAction?: (fromOrder: number) => Promise<{ ok?: boolean; error?: string }>;
+  simulateStageAction?: () => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -1549,6 +1651,9 @@ export function OrgaDashboard({
   launchBigApplePlacementAction,
   launchBigAppleSEAction,
   resetBigApplePhaseAction,
+  launchStageAction,
+  resetStagesAction,
+  simulateStageAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -1609,7 +1714,8 @@ export function OrgaDashboard({
   const isBerlinMixed = tournament.saturdayFormat === "BERLIN_MIXED";
   const isSplitSwiss = (tournament as any).saturdayFormat === "SPLIT_SWISS";
   const isBigApple = (tournament as any).saturdayFormat === "BIG_APPLE";
-  const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0 && !isMtpOpen && !isKiosque && !isBerlinMixed && !isSplitSwiss)) && teams.some((t) => t.selected === true);
+  const isPipeline = !!(tournament as any).usesPipeline;
+  const canLaunch = (tournament.status === "UPCOMING" || (tournament.status === "LIVE" && matches.length === 0 && !isMtpOpen && !isKiosque && !isBerlinMixed && !isSplitSwiss)) && teams.some((t) => t.selected === true) && !isPipeline;
   const isLive = tournament.status === "LIVE";
 
   // Pool rounds control
@@ -2192,8 +2298,19 @@ export function OrgaDashboard({
             />
           )}
 
-          {/* ── Planning standard (non-Berlin, non-Graz, non-MTP, non-Kiosque, non-SplitSwiss, non-BigApple) ── */}
-          {tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && !isSplitSwiss && !isBigApple && (
+          {/* ── Pipeline (nouveau système de stages) ── */}
+          {isPipeline && (
+            <PipelinePlanning
+              tournament={tournament}
+              stages={(tournament as any).stages ?? []}
+              launchStageAction={launchStageAction}
+              resetStagesAction={resetStagesAction}
+              simulateStageAction={tournament.testMode ? simulateStageAction : undefined}
+            />
+          )}
+
+          {/* ── Planning standard (non-Berlin, non-Graz, non-MTP, non-Kiosque, non-SplitSwiss, non-BigApple, non-pipeline) ── */}
+          {tournament.saturdayFormat !== "BERLIN_MIXED" && tournament.saturdayFormat !== "GRAZ" && tournament.saturdayFormat !== "MTP_OPEN" && tournament.saturdayFormat !== "KIOSQUE" && !isSplitSwiss && !isBigApple && !isPipeline && (
             <>
               {/* Pools — séparés par pool pour format multi-poule */}
               {hasAnyMatches && (tournament.poolCount ?? 1) > 1 && (
