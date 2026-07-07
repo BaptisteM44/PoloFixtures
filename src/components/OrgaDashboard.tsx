@@ -25,6 +25,7 @@ import { DrawPanel } from "@/components/DrawPanel";
 import { AccommodationManager } from "@/components/AccommodationManager";
 import { QRCodeSVG } from "qrcode.react";
 import { PipelinePlanning } from "@/components/PipelinePlanning";
+import { NextActionCard } from "@/components/orga/NextActionCard";
 
 
 // ─── GrazPlanning ────────────────────────────────────────────────────────────
@@ -1493,17 +1494,16 @@ type OrgaDashboardProps = {
   }>;
 };
 
-type Tab = "teams" | "config" | "planning" | "stages" | "orga" | "orgateam" | "hebergement";
+type Tab = "teams" | "config" | "planning" | "stages" | "orga" | "hebergement";
 
 // ─── Tab label helper ─────────────────────────────────────────────────────────
 
 const TAB_KEYS: Record<Tab, string> = {
-  teams:        "orga_tab_teams",
-  config:       "orga_tab_config",
-  planning:     "orga_tab_planning",
   stages:       "orga_tab_stages",
+  planning:     "orga_tab_planning",
+  teams:        "orga_tab_teams",
   orga:         "orga_tab_orga",
-  orgateam:     "orga_tab_orgateam",
+  config:       "orga_tab_config",
   hebergement:  "orga_tab_hebergement",
 };
 
@@ -1596,10 +1596,12 @@ export function OrgaDashboard({
       const saved = localStorage.getItem(tabStorageKey);
       // Pipeline : l'onglet Planning est remplacé par Étapes
       if (pipeline && saved === "planning") return "stages";
-      if (saved === "teams" || saved === "config" || saved === "planning" || saved === "stages" || saved === "orga" || saved === "orgateam" || saved === "hebergement") return saved;
+      // "orgateam" a fusionné dans "orga"
+      if (saved === "orgateam") return "orga";
+      if (saved === "teams" || saved === "config" || saved === "planning" || saved === "stages" || saved === "orga" || saved === "hebergement") return saved;
     }
     // Pipeline : le pilotage se fait dans l'onglet Étapes — c'est l'écran utile
-    return pipeline ? "stages" : "config";
+    return pipeline ? "stages" : "planning";
   });
 
   useEffect(() => {
@@ -1676,78 +1678,48 @@ export function OrgaDashboard({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
 
-      {/* ── Status ── */}
-      <div style={{ marginBottom: 12, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      {/* ── Prochaine action (cockpit contextuel) ── */}
+      <NextActionCard
+        tournament={tournament as any}
+        matches={matches as any}
+        isPipeline={isPipeline}
+        onGoToFlow={() => setActiveTab(isPipeline ? "stages" : "planning")}
+        onComplete={handleMarkCompleted}
+        completePending={completePending}
+        completeDone={completeDone}
+        canComplete={isLive}
+      />
+
+      {/* ── KPI bar (compacte, sur une ligne) ── */}
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16, fontSize: 13, color: "var(--text-muted)", alignItems: "center" }}>
         <span className={`status ${tournament.status.toLowerCase()}`}>{tournament.status}</span>
-        {isLive && allBracketFinished && !completeDone && (
-          <button
-            type="button"
-            className="btn btn--success"
-            onClick={handleMarkCompleted}
-            disabled={completePending}
-            style={{ fontSize: 13, padding: "6px 14px" }}
-          >
-            {completePending ? "…" : `🏁 ${t("orga_mark_completed")}`}
-          </button>
-        )}
-        {completeDone && (
-          <span style={{ fontSize: 13, color: "var(--success, #3a9a5c)", fontWeight: 600 }}>
-            ✓ {t("orga_marked_completed")}
-          </span>
-        )}
+        <span><strong style={{ color: "var(--text)" }}>{selectedTeams}</strong>/{tournament.maxTeams} {t("edit_kpi_teams")}</span>
+        <span>·</span>
+        <span><strong style={{ color: "var(--text)" }}>{teams.reduce((acc, t) => acc + t.players.length, 0)}</strong> {t("edit_kpi_players")}</span>
+        {freeAgents.length > 0 && (<><span>·</span><span><strong style={{ color: "var(--text)" }}>{freeAgents.length}</strong> {t("edit_kpi_free_agents")}</span></>)}
+        <span>·</span>
+        <span><strong style={{ color: "var(--text)" }}>{tournament.courtsCount ?? 1}</strong> {t("edit_kpi_courts")}</span>
       </div>
 
-      {/* ── KPI bar ── */}
-      <div className="kpi-grid" style={{ marginBottom: 20 }}>
-        <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-          <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>
-            {selectedTeams}<span style={{ fontSize: 14, color: "var(--text-muted)", marginLeft: 2 }}>/{tournament.maxTeams}</span>
-          </div>
-          <p className="meta">{t("edit_kpi_teams")}</p>
-        </div>
-        <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-          <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{freeAgents.length}</div>
-          <p className="meta">{t("edit_kpi_free_agents")}</p>
-        </div>
-        <div className="panel" style={{ textAlign: "center", padding: 16 }}>
-          <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "var(--font-display)" }}>{teams.reduce((acc, t) => acc + t.players.length, 0)}</div>
-          <p className="meta">{t("edit_kpi_players")}</p>
-        </div>
-      </div>
-
-      {/* ── Overlay links ── */}
+      {/* ── Overlay + QR (repliés pour désencombrer) ── */}
       {(isLive || tournament.status === "UPCOMING") && (
-        <div className="panel" style={{ padding: "12px 16px", marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>🎬 {t("overlay_title")}</span>
-            <span className="meta" style={{ fontSize: 12 }}>{t("overlay_hint")}</span>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <details className="panel" style={{ padding: "12px 16px", marginBottom: 16 }}>
+          <summary style={{ fontWeight: 700, fontSize: 14, cursor: "pointer" }}>📱 {t("qr_title")} · 🎬 {t("overlay_title")}</summary>
+          <p className="meta" style={{ margin: "8px 0 12px" }}>{t("qr_desc")}</p>
+
+          {/* Liens overlay par terrain */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
             {Array.from({ length: tournament.courtsCount ?? 1 }, (_, i) => {
               const url = `${typeof window !== "undefined" ? window.location.origin : ""}/fr/tournament/${tournament.slug || tournament.id}/overlay?court=${i + 1}&theme=dark`;
               return (
-                <button
-                  key={i}
-                  type="button"
-                  className="btn btn--sm btn--ghost"
-                  onClick={() => {
-                    navigator.clipboard.writeText(url);
-                  }}
-                  style={{ fontSize: 12 }}
-                >
-                  📋 Court {i + 1}
+                <button key={i} type="button" className="btn btn--sm btn--ghost"
+                  onClick={() => navigator.clipboard.writeText(url)} style={{ fontSize: 12 }}>
+                  🎬 Court {i + 1}
                 </button>
               );
             })}
           </div>
-        </div>
-      )}
 
-      {/* ── QR Codes ── */}
-      {(isLive || tournament.status === "UPCOMING") && (
-        <details className="panel" style={{ padding: "12px 16px", marginBottom: 16 }}>
-          <summary style={{ fontWeight: 700, fontSize: 14, cursor: "pointer" }}>📱 {t("qr_title")}</summary>
-          <p className="meta" style={{ margin: "8px 0 12px" }}>{t("qr_desc")}</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
             {/* Public tournament QR */}
             <div style={{ textAlign: "center" }}>
@@ -1815,8 +1787,8 @@ export function OrgaDashboard({
       <div className="tabs-bar" style={{ marginTop: 0 }}>
         <div className="tabs">
           {((isPipeline
-            ? ["stages", "config", "teams", "orga", "orgateam", ...(tournament.accommodationAvailable ? ["hebergement"] : [])]
-            : ["config", "teams", "planning", "orga", "orgateam", ...(tournament.accommodationAvailable ? ["hebergement"] : [])]) as Tab[]).map((tab) => (
+            ? ["stages", "teams", "orga", "config", ...(tournament.accommodationAvailable ? ["hebergement"] : [])]
+            : ["planning", "teams", "orga", "config", ...(tournament.accommodationAvailable ? ["hebergement"] : [])]) as Tab[]).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -1840,9 +1812,34 @@ export function OrgaDashboard({
         </>
       )}
 
-      {/* ── Tab: Équipes ── */}
+      {/* ── Tab: Équipes ── (inscrits + sélection/tirage/waitlist regroupés) */}
       {activeTab === "teams" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* Sélection / Tirage au sort — au-dessus de la liste, c'est l'étape amont */}
+          {tournament.format === "ABC Chapeau" ? (() => {
+            const soloEntries = (tournament as any).soloEntries ?? [];
+            const abcTeams = teams.map((t) => ({ id: t.id, name: t.name }));
+            return <DrawPanel tournamentId={tournament.id} soloEntries={soloEntries} teams={abcTeams} />;
+          })() : (teams.length > 0 && (
+            <div className="panel">
+              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 12 }}>{t("orga_selection_title")}</h3>
+              <SelectionManager
+                teams={teams.map((t) => ({
+                  id: t.id, name: t.name, seed: t.seed, city: t.city, country: t.country,
+                  selected: t.selected, guaranteed: t.guaranteed, waitlistPosition: t.waitlistPosition,
+                }))}
+                maxTeams={tournament.maxTeams}
+                tournamentId={tournament.id}
+                toggleAction={toggleTeamSelectedAction}
+                drawAction={drawTeamsAction}
+                guaranteeAction={guaranteeTeamAction}
+                drawOneAction={drawOneTeamAction}
+                drawOneWaitlistAction={drawOneWaitlistAction}
+                removeFromWaitlistAction={removeFromWaitlistAction}
+              />
+            </div>
+          ))}
+
           <UnifiedTeamManager
             tournamentId={tournament.id}
             teams={teams}
@@ -2396,71 +2393,32 @@ export function OrgaDashboard({
           {/* Message groupé aux capitaines */}
           <AnnouncePanel tournamentId={tournament.id} />
 
-          {/* DrawPanel ABC Chapeau */}
-          {tournament.format === "ABC Chapeau" && (() => {
-            const soloEntries = (tournament as any).soloEntries ?? [];
-            const abcTeams = teams.map((t) => ({ id: t.id, name: t.name }));
-            return (
-              <DrawPanel
-                tournamentId={tournament.id}
-                soloEntries={soloEntries}
-                teams={abcTeams}
-              />
-            );
-          })()}
+          {/* ── Équipe organisatrice : sponsors, co-orgas, arbitres ── */}
+          <div style={{ borderTop: "2px solid var(--border)", paddingTop: 20, marginTop: 4, display: "flex", flexDirection: "column", gap: 20 }}>
+            <p style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>
+              {t("orga_tab_orgateam")}
+            </p>
+            <SponsorManager
+              tournamentId={tournament.id}
+              sponsors={sponsors}
+              addAction={addSponsorAction}
+              deleteAction={deleteSponsorAction}
+            />
+            <CoOrganizerManager
+              tournamentId={tournament.id}
+              coOrganizers={coOrganizers.filter((co) => co.role !== "REF").map((co) => co.player)}
+              canManage={isCreator || isAdmin}
+            />
+            <RefereeManager
+              tournamentId={tournament.id}
+              referees={coOrganizers.filter((co) => co.role === "REF").map((co) => co.player)}
+              canManage={isCreator || isAdmin || isOrgaForThis}
+              refToken={tournament.refToken ?? null}
+              generateRefTokenAction={generateRefTokenAction}
+              revokeRefTokenAction={revokeRefTokenAction}
+            />
+          </div>
 
-          {/* Sélection / Tirage au sort */}
-          {teams.length > 0 && tournament.format !== "ABC Chapeau" && (
-            <div className="panel">
-              <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 12 }}>{t("orga_selection_title")}</h3>
-              <SelectionManager
-                teams={teams.map((t) => ({
-                  id: t.id,
-                  name: t.name,
-                  seed: t.seed,
-                  city: t.city,
-                  country: t.country,
-                  selected: t.selected,
-                  guaranteed: t.guaranteed,
-                  waitlistPosition: t.waitlistPosition,
-                }))}
-                maxTeams={tournament.maxTeams}
-                tournamentId={tournament.id}
-                toggleAction={toggleTeamSelectedAction}
-                drawAction={drawTeamsAction}
-                guaranteeAction={guaranteeTeamAction}
-                drawOneAction={drawOneTeamAction}
-                drawOneWaitlistAction={drawOneWaitlistAction}
-                removeFromWaitlistAction={removeFromWaitlistAction}
-              />
-            </div>
-          )}
-
-        </div>
-      )}
-
-      {/* ── Tab: Équipe orga ── */}
-      {activeTab === "orgateam" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <SponsorManager
-            tournamentId={tournament.id}
-            sponsors={sponsors}
-            addAction={addSponsorAction}
-            deleteAction={deleteSponsorAction}
-          />
-          <CoOrganizerManager
-            tournamentId={tournament.id}
-            coOrganizers={coOrganizers.filter((co) => co.role !== "REF").map((co) => co.player)}
-            canManage={isCreator || isAdmin}
-          />
-          <RefereeManager
-            tournamentId={tournament.id}
-            referees={coOrganizers.filter((co) => co.role === "REF").map((co) => co.player)}
-            canManage={isCreator || isAdmin || isOrgaForThis}
-            refToken={tournament.refToken ?? null}
-            generateRefTokenAction={generateRefTokenAction}
-            revokeRefTokenAction={revokeRefTokenAction}
-          />
         </div>
       )}
 

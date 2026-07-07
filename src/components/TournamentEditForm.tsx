@@ -508,6 +508,10 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             {t("field_game_duration")}
             <input type="number" name="gameDurationMin" defaultValue={tournament.gameDurationMin} />
           </label>
+          <label className="field-row">
+            {t("field_courts")}
+            <input type="number" name="courtsCount" defaultValue={tournament.courtsCount} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
+          </label>
           {currentFormat === "ABC Chapeau" && (
             <label className="field-row">
               {t("field_max_solo_players")} <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}>{t("field_max_solo_players_hint")}</span>
@@ -542,10 +546,6 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             <label className="field-row" style={{ margin: 0 }}>
               {t("field_max_teams")}
               <input type="number" name="maxTeams" defaultValue={tournament.maxTeams} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
-            </label>
-            <label className="field-row" style={{ margin: 0 }}>
-              {t("field_courts")}
-              <input type="number" name="courtsCount" defaultValue={tournament.courtsCount} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
             </label>
             <label className="field-row" style={{ margin: 0 }}>
               {t("field_registration_fee")}
