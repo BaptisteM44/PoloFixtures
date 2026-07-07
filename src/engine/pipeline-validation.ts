@@ -32,6 +32,8 @@ const stageConfigSchema = z.discriminatedUnion("type", [
       groups: z.number().int().min(1).max(8).optional(),
       doubleRound: z.boolean().optional(),
       maxRounds: z.number().int().min(1).max(30).optional(),
+      courtMode: z.enum(["sequential", "dedicated", "mixed"]).optional(),
+      groupStartAt: z.record(z.string().max(1), z.string().datetime()).optional(),
     }),
   }),
   z.object({
@@ -39,6 +41,8 @@ const stageConfigSchema = z.discriminatedUnion("type", [
     config: z.object({
       rounds: z.number().int().min(1).max(15),
       inheritFrom: z.number().int().min(0).optional(),
+      courtMode: z.enum(["sequential", "dedicated", "mixed"]).optional(),
+      groupStartAt: z.record(z.string().max(1), z.string().datetime()).optional(),
     }),
   }),
   z.object({

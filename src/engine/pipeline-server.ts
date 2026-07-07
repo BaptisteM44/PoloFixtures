@@ -23,9 +23,18 @@ import { scheduleRounds } from "./scheduler";
 
 // ─── Types de config par étape (stockés dans Stage.config) ──────────────────
 
+/**
+ * Répartition des terrains pour une étape multi-groupes :
+ * - "sequential" (défaut) : groupe A joue d'abord (tous terrains), puis B —
+ *   le pattern bike polo classique où un groupe arbitre l'autre
+ * - "dedicated" : chaque groupe a son/ses terrain(s), les groupes jouent en parallèle
+ * - "mixed" : tous les groupes mélangés sur tous les terrains (remplissage maximal)
+ */
+export type CourtMode = "sequential" | "dedicated" | "mixed";
+
 export type StageConfigByType = {
-  RR: { groups?: number; doubleRound?: boolean; maxRounds?: number };
-  SWISS: { rounds: number; inheritFrom?: number };
+  RR: { groups?: number; doubleRound?: boolean; maxRounds?: number; courtMode?: CourtMode; groupStartAt?: Record<string, string> };
+  SWISS: { rounds: number; inheritFrom?: number; courtMode?: CourtMode; groupStartAt?: Record<string, string> };
   CROSS_POOL: { opponents: number };
   PLACEMENT: { count?: number };
   SE: { thirdPlace?: boolean };
@@ -177,41 +186,93 @@ async function persistPairings(
   startAt: Date,
   poolIdByGroup: Map<string, string>
 ): Promise<void> {
-  // Rounds globaux : round r = tous les groupes confondus
-  const rounds = new Map<number, Pairing[]>();
-  for (const p of pairings) {
-    const arr = rounds.get(p.roundIndex) ?? [];
-    arr.push(p);
-    rounds.set(p.roundIndex, arr);
-  }
-  const roundIdxs = [...rounds.keys()].sort((a, b) => a - b);
-  const slots = scheduleRounds(
-    roundIdxs.map((r) => rounds.get(r)!.length),
-    { courtNames: courtNamesOf(t), slotMinutes: t.gameDurationMin + 5, startAt }
-  );
+  const allCourts = courtNamesOf(t);
+  const slotMinutes = t.gameDurationMin + 5;
+  const groups = [...new Set(pairings.map((p) => p.groupKey))].sort();
+  const stageConfig = stage.config as Record<string, unknown> | null;
+  const courtMode: CourtMode = (stageConfig?.courtMode as CourtMode | undefined) ?? "sequential";
+  // Heure de début optionnelle par groupe (ISO UTC), saisie dans l'onglet Étapes.
+  const groupStartAt = (stageConfig?.groupStartAt ?? {}) as Record<string, string>;
+  const groupStart = (g: string): Date | null => {
+    const raw = groupStartAt[g];
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) ? null : d;
+  };
 
-  for (let ri = 0; ri < roundIdxs.length; ri++) {
-    const roundPairings = rounds.get(roundIdxs[ri])!;
-    for (let i = 0; i < roundPairings.length; i++) {
-      const p = roundPairings[i];
-      await tx.match.create({
-        data: {
-          tournamentId: t.id,
-          phase: "STAGE",
-          stageId: stage.id,
-          groupKey: p.groupKey || null,
-          poolId: poolIdByGroup.get(p.groupKey) ?? null,
-          roundIndex: p.roundIndex,
-          positionInRound: p.positionInRound,
-          courtName: slots[ri][i].courtName,
-          startAt: slots[ri][i].startAt,
-          dayIndex: "SAT",
-          status: p.teamBId === null ? "FINISHED" : "SCHEDULED", // BYE = terminé
-          teamAId: p.teamAId,
-          teamBId: p.teamBId,
-        },
-      });
+  // Planifie un lot de pairings (rounds séquentiels) sur un jeu de terrains ;
+  // retourne l'heure de fin (pour enchaîner un autre lot derrière).
+  type Slotted = { p: Pairing; courtName: string; startAt: Date };
+  const slotted: Slotted[] = [];
+  const scheduleLot = (lot: Pairing[], courts: string[], from: Date): Date => {
+    const rounds = new Map<number, Pairing[]>();
+    for (const p of lot) {
+      const arr = rounds.get(p.roundIndex) ?? [];
+      arr.push(p);
+      rounds.set(p.roundIndex, arr);
     }
+    const idxs = [...rounds.keys()].sort((a, b) => a - b);
+    const slots = scheduleRounds(idxs.map((r) => rounds.get(r)!.length), { courtNames: courts, slotMinutes, startAt: from });
+    let end = from;
+    idxs.forEach((r, ri) => {
+      rounds.get(r)!.forEach((p, i) => {
+        slotted.push({ p, courtName: slots[ri][i].courtName, startAt: slots[ri][i].startAt });
+        const e = new Date(slots[ri][i].startAt.getTime() + slotMinutes * 60_000);
+        if (e > end) end = e;
+      });
+    });
+    return end;
+  };
+
+  if (groups.length <= 1 || courtMode === "mixed") {
+    // Tous groupes confondus, round par round, sur tous les terrains.
+    // Lot mono-groupe (ex: lancement séquentiel du groupe B seul) : son
+    // horaire de début dédié s'applique quand même.
+    const gs = groups.length === 1 ? groupStart(groups[0]) : null;
+    scheduleLot(pairings, allCourts, gs && gs > startAt ? gs : startAt);
+  } else if (courtMode === "dedicated") {
+    // Chaque groupe a son/ses terrain(s) ; les groupes jouent en parallèle.
+    // Si moins de terrains que de groupes, ceux qui partagent un terrain s'enchaînent.
+    const courtCursor = new Map<string, Date>(); // clé = 1er terrain du groupe
+    groups.forEach((g, gi) => {
+      const myCourts = allCourts.length >= groups.length
+        ? allCourts.filter((_, ci) => ci % groups.length === gi)
+        : [allCourts[gi % allCourts.length]];
+      const key = myCourts[0];
+      const base = courtCursor.get(key) ?? startAt;
+      const gs = groupStart(g);
+      const from = gs && gs > base ? gs : base;
+      const end = scheduleLot(pairings.filter((p) => p.groupKey === g), myCourts, from);
+      courtCursor.set(key, end);
+    });
+  } else {
+    // "sequential" (défaut) : groupe A d'abord (tous terrains), puis B, etc.
+    let cursor = new Date(startAt);
+    for (const g of groups) {
+      const gs = groupStart(g);
+      if (gs && gs > cursor) cursor = gs;
+      cursor = scheduleLot(pairings.filter((p) => p.groupKey === g), allCourts, cursor);
+    }
+  }
+
+  for (const { p, courtName, startAt: matchStart } of slotted) {
+    await tx.match.create({
+      data: {
+        tournamentId: t.id,
+        phase: "STAGE",
+        stageId: stage.id,
+        groupKey: p.groupKey || null,
+        poolId: poolIdByGroup.get(p.groupKey) ?? null,
+        roundIndex: p.roundIndex,
+        positionInRound: p.positionInRound,
+        courtName,
+        startAt: matchStart,
+        dayIndex: "SAT",
+        status: p.teamBId === null ? "FINISHED" : "SCHEDULED", // BYE = terminé
+        teamAId: p.teamAId,
+        teamBId: p.teamBId,
+      },
+    });
   }
 }
 
@@ -242,11 +303,16 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
 
       const groups = [...new Set(teamIdsBySlot.map((e) => e.groupKey))].sort();
       const byGroup = (g: string) => teamIdsBySlot.filter((e) => e.groupKey === g).map((e) => e.teamId);
+      // Sessions séquentielles : le lancement ne génère QUE le premier groupe.
+      // Les suivants se lancent explicitement (launchNextGroup) quand le
+      // groupe en cours a terminé — le pattern "un groupe joue, l'autre arbitre".
+      const sequential = ((stage.config as { courtMode?: CourtMode } | null)?.courtMode ?? "sequential") === "sequential";
+      const launchGroups = sequential && groups.length > 1 ? [groups[0]] : groups;
 
       switch (stage.type) {
         case "RR": {
           const cfg = stage.config as StageConfigByType["RR"];
-          const pairings = rrRounds(groups.map((g) => ({ key: g, teamIds: byGroup(g) })), {
+          const pairings = rrRounds(launchGroups.map((g) => ({ key: g, teamIds: byGroup(g) })), {
             doubleRound: cfg.doubleRound,
             maxRounds: cfg.maxRounds,
           });
@@ -256,7 +322,7 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
         }
         case "SWISS": {
           // Round 1 : appariement par ordre d'entrée (seed du stage)
-          const pairings = groups.flatMap((g) =>
+          const pairings = launchGroups.flatMap((g) =>
             swissPairings(byGroup(g), new Set(), new Set(), 1, g)
           );
           const poolIdByGroup = await ensurePoolsForStage(tx, t.id, stage, teamIdsBySlot);
@@ -383,25 +449,30 @@ export async function advanceStage(stageId: string): Promise<{ ok?: boolean; err
 
   const unfinished = stage.matches.filter((m) => m.status !== "FINISHED");
 
-  // Swiss : round terminé → round suivant
-  if (stage.type === "SWISS" && unfinished.length === 0 && stage.matches.length > 0) {
+  // Swiss : round terminé → round suivant, PAR GROUPE (un groupe peut avancer
+  // pendant que l'autre joue encore, ou n'est même pas lancé en mode séquentiel)
+  if (stage.type === "SWISS" && stage.matches.length > 0) {
     const cfg = stage.config as StageConfigByType["SWISS"];
-    const maxRound = Math.max(...stage.matches.map((m) => m.roundIndex));
-    if (maxRound < cfg.rounds) {
-      const groups = [...new Set(stage.entries.map((e) => e.groupKey))].sort();
-      const played = new Set<string>();
-      const hadBye = new Set<string>();
-      for (const m of stage.matches) {
-        if (m.teamAId && m.teamBId) played.add(pairKey(m.teamAId, m.teamBId));
-        if (m.teamAId && !m.teamBId) hadBye.add(m.teamAId);
-      }
-      const pairings = groups.flatMap((g) =>
-        swissPairings(stageStandings(t, stage.order, g === "" ? undefined : g), played, hadBye, maxRound + 1, g)
-      );
+    const played = new Set<string>();
+    const hadBye = new Set<string>();
+    for (const m of stage.matches) {
+      if (m.teamAId && m.teamBId) played.add(pairKey(m.teamAId, m.teamBId));
+      if (m.teamAId && !m.teamBId) hadBye.add(m.teamAId);
+    }
+    const launchedGroups = [...new Set(stage.matches.map((m) => m.groupKey ?? ""))].sort();
+    const pairings: Pairing[] = [];
+    for (const g of launchedGroups) {
+      const gm = stage.matches.filter((m) => (m.groupKey ?? "") === g);
+      if (gm.some((m) => m.status !== "FINISHED")) continue;
+      const maxRound = Math.max(...gm.map((m) => m.roundIndex));
+      if (maxRound >= cfg.rounds) continue;
+      pairings.push(...swissPairings(stageStandings(t, stage.order, g === "" ? undefined : g), played, hadBye, maxRound + 1, g));
+    }
+    if (pairings.length > 0) {
       const startAt = nextStartAt(t);
       // Réutilise les Pool déjà créés au lancement (retrouvés via un match existant par groupKey)
       const poolIdByGroup = new Map<string, string>();
-      for (const g of groups) {
+      for (const g of launchedGroups) {
         const withPool = stage.matches.find((m) => (m.groupKey ?? "") === g && m.poolId);
         if (withPool?.poolId) poolIdByGroup.set(g, withPool.poolId);
       }
@@ -415,7 +486,24 @@ export async function advanceStage(stageId: string): Promise<{ ok?: boolean; err
   // Fin d'étape ?
   let done = false;
   if (stage.matches.length > 0 && unfinished.length === 0) {
-    done = stage.type !== "SWISS" || Math.max(...stage.matches.map((m) => m.roundIndex)) >= (stage.config as StageConfigByType["SWISS"]).rounds;
+    if (stage.type === "SWISS" || stage.type === "RR") {
+      // Tous les groupes prévus doivent être lancés ET terminés (mode
+      // séquentiel : le groupe B peut ne pas encore exister en matchs)
+      const entryGroups = [...new Set(stage.entries.map((e) => e.groupKey))];
+      const matchGroups = new Set(stage.matches.map((m) => m.groupKey ?? ""));
+      const allGroupsLaunched = entryGroups.every((g) => matchGroups.has(g));
+      if (stage.type === "SWISS") {
+        const cfg = stage.config as StageConfigByType["SWISS"];
+        done = allGroupsLaunched && entryGroups.every((g) => {
+          const gm = stage.matches.filter((m) => (m.groupKey ?? "") === g);
+          return gm.length > 0 && Math.max(...gm.map((m) => m.roundIndex)) >= cfg.rounds;
+        });
+      } else {
+        done = allGroupsLaunched;
+      }
+    } else {
+      done = true;
+    }
   } else if (stage.type === "SE" || stage.type === "DE") {
     // Bracket : terminé quand la finale décisive est jouée (BG dormant ignoré)
     const g = stage.matches.find((m) => m.bracketSide === "G");
@@ -436,6 +524,57 @@ export async function advanceStage(stageId: string): Promise<{ ok?: boolean; err
     }
   }
   return { ok: true };
+}
+
+/**
+ * Lance le prochain groupe non lancé d'une étape RR/SWISS active (mode
+ * sessions séquentielles : le groupe A a été généré au lancement, les
+ * suivants se lancent un par un quand l'orga le décide).
+ */
+export async function launchNextGroup(tournamentId: string, stageOrder: number): Promise<{ ok?: boolean; error?: string; group?: string }> {
+  const t = await getPipeline(tournamentId);
+  if (!t) return { error: "Tournoi introuvable." };
+  const stage = t.stages.find((s) => s.order === stageOrder);
+  if (!stage) return { error: `Étape ${stageOrder} introuvable.` };
+  if (stage.status !== "ACTIVE") return { error: "L'étape doit être active." };
+  if (stage.type !== "RR" && stage.type !== "SWISS") return { error: "Lancement par groupe réservé aux étapes Poules/Swiss." };
+
+  const entryGroups = [...new Set(stage.entries.map((e) => e.groupKey))].sort();
+  const matchGroups = new Set(stage.matches.map((m) => m.groupKey ?? ""));
+  const next = entryGroups.find((g) => !matchGroups.has(g));
+  if (!next) return { error: "Tous les groupes sont déjà lancés." };
+
+  const teamIds = stage.entries
+    .filter((e) => e.groupKey === next && e.teamId)
+    .sort((a, b) => a.slot - b.slot)
+    .map((e) => e.teamId as string);
+  if (teamIds.length < 2) return { error: `Groupe ${next} : pas assez d'équipes.` };
+
+  const pairings: Pairing[] =
+    stage.type === "RR"
+      ? rrRounds([{ key: next, teamIds }], {
+          doubleRound: (stage.config as StageConfigByType["RR"]).doubleRound,
+          maxRounds: (stage.config as StageConfigByType["RR"]).maxRounds,
+        })
+      : swissPairings(teamIds, new Set(), new Set(), 1, next);
+
+  // Pool créée au lancement de l'étape (ensurePoolsForStage couvre tous les groupes)
+  const pool = await prisma.pool.findFirst({
+    where: { stageId: stage.id, teams: { some: { teamId: teamIds[0] } } },
+    select: { id: true },
+  });
+  const poolIdByGroup = new Map<string, string>();
+  if (pool) poolIdByGroup.set(next, pool.id);
+
+  const startAt = nextStartAt(t);
+  try {
+    await prisma.$transaction(async (tx) => {
+      await persistPairings(tx, t, stage, pairings, startAt, poolIdByGroup);
+    }, { timeout: 20000 });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+  return { ok: true, group: next };
 }
 
 // ─── Composition manuelle des groupes (avant lancement) ─────────────────────
@@ -486,6 +625,183 @@ export async function setStageManualGroups(
     where: { id: stage.id },
     data: { entryRules: updated as unknown as Prisma.InputJsonValue },
   });
+  return { ok: true };
+}
+
+// ─── Édition des étapes (onglet Étapes du dashboard orga) ────────────────────
+// Toutes ces mutations ne touchent que des étapes PENDING et revalident le
+// pipeline COMPLET (zod + cohérence des références inter-étapes) avant d'écrire.
+
+/** Défs candidates du pipeline courant, dans l'ordre. */
+function pipelineDefs(t: PipelineTournament): Array<{ name: string; type: StageType; config: unknown; entryRules: unknown }> {
+  return [...t.stages].sort((a, b) => a.order - b.order)
+    .map((s) => ({ name: s.name, type: s.type, config: s.config, entryRules: s.entryRules }));
+}
+
+async function revalidateDefs(defs: Array<{ name: string; type: StageType; config: unknown; entryRules: unknown }>): Promise<string | null> {
+  const { validateCustomPipeline } = await import("./pipeline-validation");
+  const v = validateCustomPipeline(defs);
+  return v.ok ? null : v.error;
+}
+
+/**
+ * Modifie une étape non lancée : nom, type, config, règles d'entrée, horaire.
+ * `startAt` : ISO UTC, ou null pour revenir à l'enchaînement automatique.
+ */
+export async function updateStageDef(
+  tournamentId: string,
+  stageOrder: number,
+  patch: {
+    name?: string;
+    type?: StageType;
+    config?: Record<string, unknown>;
+    entryRules?: EntryRules;
+    startAt?: string | null;
+  }
+): Promise<{ ok?: boolean; error?: string }> {
+  const t = await getPipeline(tournamentId);
+  if (!t) return { error: "Tournoi introuvable." };
+  const stage = t.stages.find((s) => s.order === stageOrder);
+  if (!stage) return { error: `Étape ${stageOrder} introuvable.` };
+  if (stage.status !== "PENDING") return { error: "Seule une étape non lancée peut être modifiée — reset d'abord." };
+
+  const defs = pipelineDefs(t);
+  const idx = [...t.stages].sort((a, b) => a.order - b.order).findIndex((s) => s.id === stage.id);
+  defs[idx] = {
+    name: patch.name ?? stage.name,
+    type: patch.type ?? stage.type,
+    config: patch.config ?? stage.config,
+    entryRules: patch.entryRules ?? stage.entryRules,
+  };
+  const err = await revalidateDefs(defs);
+  if (err) return { error: err };
+
+  let startAt: Date | null | undefined = undefined;
+  if (patch.startAt !== undefined) {
+    startAt = patch.startAt === null ? null : new Date(patch.startAt);
+    if (startAt && isNaN(startAt.getTime())) return { error: "Horaire invalide." };
+  }
+
+  await prisma.stage.update({
+    where: { id: stage.id },
+    data: {
+      name: defs[idx].name,
+      type: defs[idx].type,
+      config: defs[idx].config as Prisma.InputJsonValue,
+      entryRules: defs[idx].entryRules as Prisma.InputJsonValue,
+      ...(startAt !== undefined ? { startAt } : {}),
+    },
+  });
+  return { ok: true };
+}
+
+/** Ajoute une étape (fournie par le client, comme dans le builder) en fin de pipeline. */
+export async function addStageDef(
+  tournamentId: string,
+  def: { name: string; type: StageType; config: Record<string, unknown>; entryRules: EntryRules }
+): Promise<{ ok?: boolean; error?: string }> {
+  const t = await getPipeline(tournamentId);
+  if (!t) return { error: "Tournoi introuvable." };
+
+  const defs = [...pipelineDefs(t), def];
+  const err = await revalidateDefs(defs);
+  if (err) return { error: err };
+
+  await prisma.stage.create({
+    data: {
+      tournamentId,
+      order: t.stages.length,
+      name: def.name,
+      type: def.type,
+      config: def.config as Prisma.InputJsonValue,
+      entryRules: def.entryRules as unknown as Prisma.InputJsonValue,
+    },
+  });
+  return { ok: true };
+}
+
+/**
+ * Supprime une étape non lancée. Les références des étapes suivantes sont
+ * renumérotées ; si une étape dépend de celle supprimée → erreur.
+ */
+export async function removeStageDef(tournamentId: string, stageOrder: number): Promise<{ ok?: boolean; error?: string }> {
+  const t = await getPipeline(tournamentId);
+  if (!t) return { error: "Tournoi introuvable." };
+  const sorted = [...t.stages].sort((a, b) => a.order - b.order);
+  const stage = sorted.find((s) => s.order === stageOrder);
+  if (!stage) return { error: `Étape ${stageOrder} introuvable.` };
+  if (stage.status !== "PENDING") return { error: "Seule une étape non lancée peut être supprimée — reset d'abord." };
+  if (sorted.length <= 1) return { error: "Impossible de supprimer la dernière étape du pipeline." };
+
+  // Décale les références stageOrder des étapes suivantes ; bloque si dépendance directe.
+  const remaining = sorted.filter((s) => s.id !== stage.id);
+  const shiftedRules: Array<EntryRules> = [];
+  for (const s of remaining) {
+    const rules = s.entryRules as unknown as EntryRules;
+    const sources = rules.sources.map((src) => {
+      if (src.kind !== "stageRanks") return src;
+      if (src.stageOrder === stageOrder) return null;
+      return src.stageOrder > stageOrder ? { ...src, stageOrder: src.stageOrder - 1 } : src;
+    });
+    if (sources.some((x) => x === null)) {
+      return { error: `Impossible : l'étape "${s.name}" prend ses équipes dans "${stage.name}". Modifie ses sources d'abord.` };
+    }
+    shiftedRules.push({ ...rules, sources: sources as EntryRules["sources"] });
+  }
+
+  const defs = remaining.map((s, i) => ({ name: s.name, type: s.type, config: s.config, entryRules: shiftedRules[i] as unknown }));
+  const err = await revalidateDefs(defs);
+  if (err) return { error: err };
+
+  await prisma.$transaction(async (tx) => {
+    await tx.stage.delete({ where: { id: stage.id } });
+    for (let i = 0; i < remaining.length; i++) {
+      await tx.stage.update({
+        where: { id: remaining[i].id },
+        data: { order: i, entryRules: shiftedRules[i] as unknown as Prisma.InputJsonValue },
+      });
+    }
+  });
+  return { ok: true };
+}
+
+/** Échange une étape non lancée avec sa voisine (dir -1 = monter, +1 = descendre). */
+export async function moveStageDef(tournamentId: string, stageOrder: number, dir: -1 | 1): Promise<{ ok?: boolean; error?: string }> {
+  const t = await getPipeline(tournamentId);
+  if (!t) return { error: "Tournoi introuvable." };
+  const sorted = [...t.stages].sort((a, b) => a.order - b.order);
+  const i = sorted.findIndex((s) => s.order === stageOrder);
+  const j = i + dir;
+  if (i < 0) return { error: `Étape ${stageOrder} introuvable.` };
+  if (j < 0 || j >= sorted.length) return { error: "Déplacement impossible." };
+  if (sorted[i].status !== "PENDING" || sorted[j].status !== "PENDING") {
+    return { error: "Seules des étapes non lancées peuvent être déplacées." };
+  }
+
+  // Échange les positions puis remappe les références i↔j de toutes les étapes.
+  const swapped = [...sorted];
+  [swapped[i], swapped[j]] = [swapped[j], swapped[i]];
+  const remap = (o: number) => (o === i ? j : o === j ? i : o);
+  const newRules = swapped.map((s) => {
+    const rules = s.entryRules as unknown as EntryRules;
+    return {
+      ...rules,
+      sources: rules.sources.map((src) => (src.kind === "stageRanks" ? { ...src, stageOrder: remap(src.stageOrder) } : src)),
+    };
+  });
+
+  const defs = swapped.map((s, k) => ({ name: s.name, type: s.type, config: s.config, entryRules: newRules[k] as unknown }));
+  const err = await revalidateDefs(defs);
+  if (err) return { error: err };
+
+  await prisma.$transaction(
+    swapped.map((s, k) =>
+      prisma.stage.update({
+        where: { id: s.id },
+        data: { order: k, entryRules: newRules[k] as unknown as Prisma.InputJsonValue },
+      })
+    )
+  );
   return { ok: true };
 }
 
@@ -565,6 +881,10 @@ export async function simulateStage(tournamentId: string): Promise<{ ok?: boolea
     if (after?.status === "DONE") return { ok: true };
     const stillUnfinished = after?.matches.filter((m) => m.status !== "FINISHED").length ?? 0;
     if ((pass.played ?? 0) === 0 && stillUnfinished >= before) {
+      // Sessions séquentielles : le groupe en cours est fini, le suivant
+      // attend son lancement — la simulation joue le rôle de l'orga.
+      const nextGroup = await launchNextGroup(tournamentId, active.order);
+      if (nextGroup.ok) continue;
       return { error: `Étape "${active.name}" bloquée : plus de matchs jouables mais pas terminée.` };
     }
   }

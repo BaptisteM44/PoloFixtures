@@ -66,10 +66,36 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   // vrai arbitrage (MatchEditPanel/RefereePanel) ou du bac à sable.
   if (existing.phase === "STAGE" && parsed.data.status === "FINISHED") {
     const { applyScore } = await import("@/engine/pipeline-server");
+    // IDs des matchs du stage AVANT — pour détecter un round auto-généré (Swiss)
+    const beforeIds = new Set(
+      (await prisma.match.findMany({ where: { stageId: existing.stageId! }, select: { id: true } })).map((m) => m.id)
+    );
     const result = await applyScore(existing.id, scoreA, scoreB);
     if (result.error) return Response.json({ error: result.error }, { status: 422 });
     const updated = await prisma.match.findUniqueOrThrow({ where: { id: existing.id } });
     publishMatchUpdate({ matchId: existing.id, tournamentId: existing.tournamentId, type: "match_update", data: updated });
+
+    // Matchs remplis par la propagation (vainqueur/perdant → match suivant) : push SSE
+    for (const nextId of [existing.nextMatchWinId, existing.nextMatchLoseId]) {
+      if (!nextId) continue;
+      const next = await prisma.match.findUnique({ where: { id: nextId }, include: { teamA: true, teamB: true } });
+      if (next) publishMatchUpdate({ matchId: next.id, tournamentId: existing.tournamentId, type: "match_update", data: next });
+    }
+
+    // Round auto-généré (ex: Swiss round suivant) : push SSE "new_matches"
+    // → le planning affiche le nouveau round sans recharger la page
+    const created = await prisma.match.findMany({
+      where: { stageId: existing.stageId!, id: { notIn: [...beforeIds] } },
+      include: { teamA: true, teamB: true },
+    });
+    if (created.length > 0) {
+      publishNewMatches({
+        tournamentId: existing.tournamentId,
+        type: "new_matches",
+        matches: created as unknown as Record<string, unknown>[],
+      });
+    }
+
     const newStatus = await syncTournamentCompletionById(existing.tournamentId);
     if (newStatus === "COMPLETED") {
       publishTournamentUpdate({ tournamentId: existing.tournamentId, type: "tournament_completed", status: "COMPLETED" });
