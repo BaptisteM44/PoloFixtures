@@ -55,6 +55,52 @@ const FAKE_TEAM_NAMES = [
   "Les Hérissons", "Tricycle Gang", "Portière Ouverte", "Les Marmottes",
 ];
 
+const FAKE_PLAYER_NAMES = [
+  "Alex", "Camille", "Charlie", "Dominique", "Eden", "Elliot", "Lou", "Marley",
+  "Maxime", "Morgan", "Noa", "Robin", "Sacha", "Sam", "Stevie", "Yaël",
+];
+
+/**
+ * Crée les équipes fictives + 3 joueurs fictifs par équipe (pour que les
+ * vraies pages se comportent comme avec de vraies inscriptions : bouton ⋯
+ * noms des joueurs, etc.). Les joueurs sont marqués REJECTED (invisibles
+ * partout côté public) avec un slug `sandbox-{tournoi}-{n}` qui permet de
+ * les supprimer avec le tournoi.
+ */
+async function seedFakeTeams(tournamentId: string, teamCount: number) {
+  await prisma.team.createMany({
+    data: Array.from({ length: teamCount }, (_, i) => ({
+      tournamentId,
+      name: FAKE_TEAM_NAMES[i] ?? `Équipe ${i + 1}`,
+      seed: i + 1,
+    })),
+  });
+  const teams = await prisma.team.findMany({
+    where: { tournamentId },
+    orderBy: { seed: "asc" },
+    select: { id: true, name: true },
+  });
+  let n = 0;
+  for (const team of teams) {
+    for (let j = 0; j < 3; j++) {
+      const firstName = FAKE_PLAYER_NAMES[(n + j) % FAKE_PLAYER_NAMES.length];
+      const player = await prisma.player.create({
+        data: {
+          name: `${firstName} ${team.name.split(" ").pop() ?? ""}`.trim(),
+          slug: `sandbox-${tournamentId}-${n + j}`,
+          country: "XX",
+          status: "REJECTED",
+        },
+        select: { id: true },
+      });
+      await prisma.teamPlayer.create({
+        data: { teamId: team.id, playerId: player.id, isCaptain: j === 0 },
+      });
+    }
+    n += 3;
+  }
+}
+
 export async function createSandboxAction(input: {
   presetKey: string;
   teamCount: number;
@@ -99,13 +145,7 @@ export async function createSandboxAction(input: {
     } as never,
   });
 
-  await prisma.team.createMany({
-    data: Array.from({ length: teamCount }, (_, i) => ({
-      tournamentId: t.id,
-      name: FAKE_TEAM_NAMES[i] ?? `Équipe ${i + 1}`,
-      seed: i + 1,
-    })),
-  });
+  await seedFakeTeams(t.id, teamCount);
 
   await createStages(t.id, preset.build(teamCount));
 
@@ -159,13 +199,7 @@ export async function createCustomSandboxAction(input: {
     } as never,
   });
 
-  await prisma.team.createMany({
-    data: Array.from({ length: teamCount }, (_, i) => ({
-      tournamentId: t.id,
-      name: FAKE_TEAM_NAMES[i] ?? `Équipe ${i + 1}`,
-      seed: i + 1,
-    })),
-  });
+  await seedFakeTeams(t.id, teamCount);
 
   await createStages(t.id, validated.stages);
 
@@ -241,8 +275,12 @@ export async function deleteSandboxAction(tournamentId: string) {
     await tx.match.deleteMany({ where: { tournamentId } });
     await tx.stageEntry.deleteMany({ where: { stage: { tournamentId } } });
     await tx.stage.deleteMany({ where: { tournamentId } });
+    await tx.poolTeam.deleteMany({ where: { pool: { tournamentId } } });
+    await tx.pool.deleteMany({ where: { tournamentId } });
     await tx.teamPlayer.deleteMany({ where: { team: { tournamentId } } });
     await tx.team.deleteMany({ where: { tournamentId } });
+    // Joueurs fictifs créés avec les équipes (marqués par leur slug).
+    await tx.player.deleteMany({ where: { slug: { startsWith: `sandbox-${tournamentId}-` } } });
     await tx.tournament.delete({ where: { id: tournamentId } });
   }, { timeout: 20000 });
 
