@@ -13,7 +13,7 @@
  */
 import { prisma } from "@/lib/db";
 import type { Prisma, Stage, StageEntry, Match, StageType } from "@prisma/client";
-import { resolveEntries, type EntryRules } from "./transitions";
+import { resolveEntries, type EntryRules, type ResolvedEntry } from "./transitions";
 import { pointsStandings, placementStandings, bracketStandings, type MatchLite, type ScoringConfig } from "./stage-standings";
 import { rrRounds, swissPairings, crossPoolPairings, pairKey, type Pairing } from "./rounds";
 import { planSE } from "./se";
@@ -33,9 +33,9 @@ import { scheduleRounds } from "./scheduler";
 export type CourtMode = "sequential" | "dedicated" | "mixed";
 
 export type StageConfigByType = {
-  RR: { groups?: number; doubleRound?: boolean; maxRounds?: number; courtMode?: CourtMode; groupStartAt?: Record<string, string> };
-  SWISS: { rounds: number; inheritFrom?: number; courtMode?: CourtMode; groupStartAt?: Record<string, string> };
-  CROSS_POOL: { opponents: number };
+  RR: { groups?: number; doubleRound?: boolean; maxRounds?: number; courtMode?: CourtMode; groupStartAt?: Record<string, string>; carryPoints?: boolean };
+  SWISS: { rounds: number; inheritFrom?: number; carryPoints?: boolean; courtMode?: CourtMode; groupStartAt?: Record<string, string> };
+  CROSS_POOL: { opponents: number; carryPoints?: boolean };
   PLACEMENT: { count?: number };
   SE: { thirdPlace?: boolean };
   DE: { gfReset?: boolean };
@@ -83,19 +83,22 @@ export function stageStandings(t: PipelineTournament, stageOrder: number, group?
   switch (stage.type) {
     case "RR":
     case "CROSS_POOL":
-      return pointsStandings(entryIds, matches, scoringOf(t));
     case "SWISS": {
-      const cfg = stage.config as StageConfigByType["SWISS"];
+      // Classement à points, avec cumul optionnel des étapes précédentes
+      // (carryPoints = depuis l'étape juste avant ; inheritFrom = depuis une
+      // étape précise, gardé pour la rétrocompat du Swiss).
+      const cfg = stage.config as { carryPoints?: boolean; inheritFrom?: number };
+      const sourceOrder = cfg.inheritFrom ?? (cfg.carryPoints ? stage.order - 1 : undefined);
       let all = [...matches];
-      if (cfg.inheritFrom !== undefined) {
-        const src = t.stages.find((s) => s.order === cfg.inheritFrom);
-        if (src) {
-          const entrySet = new Set(entryIds);
-          const inherited = (src.matches as unknown as MatchLite[]).filter(
-            (m) => m.teamAId && m.teamBId && entrySet.has(m.teamAId) && entrySet.has(m.teamBId)
-          );
-          all = [...inherited, ...matches];
-        }
+      if (sourceOrder !== undefined && sourceOrder >= 0) {
+        const entrySet = new Set(entryIds);
+        // On remonte toutes les étapes ≤ sourceOrder (cumul en cascade) et on
+        // ne garde que les matchs entre équipes présentes dans CETTE étape.
+        const inherited = t.stages
+          .filter((s) => s.order <= sourceOrder)
+          .flatMap((s) => s.matches as unknown as MatchLite[])
+          .filter((m) => m.teamAId && m.teamBId && entrySet.has(m.teamAId) && entrySet.has(m.teamBId));
+        all = [...inherited, ...matches];
       }
       return pointsStandings(entryIds, all, scoringOf(t));
     }
@@ -276,6 +279,79 @@ async function persistPairings(
   }
 }
 
+/**
+ * Résout les entrées d'un cross-pool en préservant deux poules distinctes
+ * (A et B), quelle que soit la façon dont l'orga a composé l'étape :
+ *  - 2 sources (une par poule) → source 0 = A, source 1 = B ;
+ *  - 1 source sans groupe précisé, venant d'une étape à plusieurs groupes →
+ *    on récupère chaque poule d'origine séparément ;
+ *  - 1 source d'un seul groupe → on coupe le classement en deux moitiés.
+ * Renvoie [] si on ne peut pas former deux poules.
+ */
+function resolveCrossPoolEntries(t: PipelineTournament, rules: EntryRules): ResolvedEntry[] {
+  const ctx = {
+    registrationSeeds: [...t.teams].sort((a, b) => a.seed - b.seed).map((x) => x.id),
+    stageStandings: (o: number, g?: string) => stageStandings(t, o, g),
+  };
+
+  // Cas 1 : plusieurs sources → une source = une poule.
+  if (rules.sources.length > 1) {
+    return resolveEntries(rules, ctx, { sourcesAsGroups: true });
+  }
+
+  // Cas 2 : une seule source. Si elle pointe une étape à plusieurs groupes
+  // sans préciser lequel, on récupère chaque groupe d'origine.
+  const src = rules.sources[0];
+  if (src?.kind === "stageRanks" && !src.group) {
+    const srcStage = t.stages.find((s) => s.order === src.stageOrder);
+    const groupKeys = [...new Set((srcStage?.entries ?? []).map((e) => e.groupKey))]
+      .filter((g) => g !== "")
+      .sort();
+    if (groupKeys.length >= 2) {
+      const out: ResolvedEntry[] = [];
+      const seen = new Set<string>();
+      groupKeys.slice(0, 8).forEach((g, gi) => {
+        const ranked = stageStandings(t, src.stageOrder, g).slice(src.from - 1, src.to);
+        let slot = 1;
+        for (const teamId of ranked) {
+          if (seen.has(teamId)) continue;
+          seen.add(teamId);
+          out.push({ groupKey: GROUP_KEYS_CP[gi] ?? String(gi), slot: slot++, teamId });
+        }
+      });
+      return out;
+    }
+  }
+
+  // Cas 3 : une source mono-groupe → on coupe le classement en deux moitiés.
+  const flat = resolveEntries({ ...rules, groups: 1 }, ctx).map((e) => e.teamId);
+  if (flat.length < 2) return [];
+  const half = Math.ceil(flat.length / 2);
+  return flat.map((teamId, i) => ({
+    groupKey: i < half ? "A" : "B",
+    slot: (i < half ? i : i - half) + 1,
+    teamId,
+  }));
+}
+
+const GROUP_KEYS_CP = ["A", "B", "C", "D", "E", "F", "G", "H"];
+
+/**
+ * Historique des affrontements des étapes PRÉCÉDENTES, pour qu'un Swiss
+ * cumulatif (carryPoints) n'apparie pas deux équipes qui se sont déjà
+ * rencontrées en poules/croisement. Renvoie l'ensemble des pairKey.
+ */
+function priorMatchups(t: PipelineTournament, beforeOrder: number): Set<string> {
+  const played = new Set<string>();
+  for (const s of t.stages) {
+    if (s.order >= beforeOrder) continue;
+    for (const m of s.matches as unknown as Array<{ teamAId: string | null; teamBId: string | null }>) {
+      if (m.teamAId && m.teamBId) played.add(pairKey(m.teamAId, m.teamBId));
+    }
+  }
+  return played;
+}
+
 export async function launchStage(tournamentId: string, stageOrder: number): Promise<{ ok?: boolean; error?: string }> {
   const t = await getPipeline(tournamentId);
   if (!t) return { error: "Tournoi introuvable." };
@@ -285,10 +361,14 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
   const blocking = t.stages.find((s) => s.order < stageOrder && s.status !== "DONE" && s.status !== "SKIPPED");
   if (blocking) return { error: `L'étape "${blocking.name}" doit être terminée d'abord.` };
 
-  const entries = resolveEntries(stage.entryRules as unknown as EntryRules, {
-    registrationSeeds: [...t.teams].sort((a, b) => a.seed - b.seed).map((x) => x.id),
-    stageStandings: (o, g) => stageStandings(t, o, g),
-  });
+  const rules0 = stage.entryRules as unknown as EntryRules;
+  const entries =
+    stage.type === "CROSS_POOL"
+      ? resolveCrossPoolEntries(t, rules0)
+      : resolveEntries(rules0, {
+          registrationSeeds: [...t.teams].sort((a, b) => a.seed - b.seed).map((x) => x.id),
+          stageStandings: (o, g) => stageStandings(t, o, g),
+        });
   if (entries.length < 2) return { error: "Pas assez d'équipes pour cette étape." };
 
   const startAt = stage.startAt ?? nextStartAt(t);
@@ -306,7 +386,10 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
       // Sessions séquentielles : le lancement ne génère QUE le premier groupe.
       // Les suivants se lancent explicitement (launchNextGroup) quand le
       // groupe en cours a terminé — le pattern "un groupe joue, l'autre arbitre".
-      const sequential = ((stage.config as { courtMode?: CourtMode } | null)?.courtMode ?? "sequential") === "sequential";
+      // Ne concerne que RR/SWISS (le cross-pool oppose les deux poules d'un bloc).
+      const sequential =
+        (stage.type === "RR" || stage.type === "SWISS") &&
+        ((stage.config as { courtMode?: CourtMode } | null)?.courtMode ?? "sequential") === "sequential";
       const launchGroups = sequential && groups.length > 1 ? [groups[0]] : groups;
 
       switch (stage.type) {
@@ -321,9 +404,13 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
           break;
         }
         case "SWISS": {
-          // Round 1 : appariement par ordre d'entrée (seed du stage)
+          // Round 1 : appariement par ordre d'entrée (seed du stage). Si le
+          // Swiss cumule les points (carryPoints), on évite aussi de rejouer
+          // les matchs des étapes précédentes (poules, croisement…).
+          const swissCfg = stage.config as StageConfigByType["SWISS"];
+          const prior = swissCfg.carryPoints ? priorMatchups(t, stage.order) : new Set<string>();
           const pairings = launchGroups.flatMap((g) =>
-            swissPairings(byGroup(g), new Set(), new Set(), 1, g)
+            swissPairings(byGroup(g), new Set(prior), new Set(), 1, g)
           );
           const poolIdByGroup = await ensurePoolsForStage(tx, t.id, stage, teamIdsBySlot);
           await persistPairings(tx, t, stage, pairings, startAt, poolIdByGroup);
@@ -453,7 +540,8 @@ export async function advanceStage(stageId: string): Promise<{ ok?: boolean; err
   // pendant que l'autre joue encore, ou n'est même pas lancé en mode séquentiel)
   if (stage.type === "SWISS" && stage.matches.length > 0) {
     const cfg = stage.config as StageConfigByType["SWISS"];
-    const played = new Set<string>();
+    // Swiss cumulatif : l'historique des rematchs part des étapes précédentes
+    const played = cfg.carryPoints ? priorMatchups(t, stage.order) : new Set<string>();
     const hadBye = new Set<string>();
     for (const m of stage.matches) {
       if (m.teamAId && m.teamBId) played.add(pairKey(m.teamAId, m.teamBId));
@@ -550,13 +638,17 @@ export async function launchNextGroup(tournamentId: string, stageOrder: number):
     .map((e) => e.teamId as string);
   if (teamIds.length < 2) return { error: `Groupe ${next} : pas assez d'équipes.` };
 
+  const carryPrior =
+    stage.type === "SWISS" && (stage.config as StageConfigByType["SWISS"]).carryPoints
+      ? priorMatchups(t, stage.order)
+      : new Set<string>();
   const pairings: Pairing[] =
     stage.type === "RR"
       ? rrRounds([{ key: next, teamIds }], {
           doubleRound: (stage.config as StageConfigByType["RR"]).doubleRound,
           maxRounds: (stage.config as StageConfigByType["RR"]).maxRounds,
         })
-      : swissPairings(teamIds, new Set(), new Set(), 1, next);
+      : swissPairings(teamIds, new Set(carryPrior), new Set(), 1, next);
 
   // Pool créée au lancement de l'étape (ensurePoolsForStage couvre tous les groupes)
   const pool = await prisma.pool.findFirst({
@@ -593,10 +685,14 @@ export async function previewStageEntries(
   if (!stage) return { error: `Étape ${stageOrder} introuvable.` };
 
   const rules = stage.entryRules as unknown as EntryRules;
-  const entries = resolveEntries(rules, {
-    registrationSeeds: [...t.teams].sort((a, b) => a.seed - b.seed).map((x) => x.id),
-    stageStandings: (o, g) => stageStandings(t, o, g),
-  });
+  const entries = resolveEntries(
+    rules,
+    {
+      registrationSeeds: [...t.teams].sort((a, b) => a.seed - b.seed).map((x) => x.id),
+      stageStandings: (o, g) => stageStandings(t, o, g),
+    },
+    { sourcesAsGroups: stage.type === "CROSS_POOL" },
+  );
   const nameById = new Map(t.teams.map((x) => [x.id, x.name]));
   return {
     groups: Math.max(rules.groups ?? 1, 1),

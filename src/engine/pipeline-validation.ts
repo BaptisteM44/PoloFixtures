@@ -34,6 +34,7 @@ const stageConfigSchema = z.discriminatedUnion("type", [
       maxRounds: z.number().int().min(1).max(30).optional(),
       courtMode: z.enum(["sequential", "dedicated", "mixed"]).optional(),
       groupStartAt: z.record(z.string().max(1), z.string().datetime()).optional(),
+      carryPoints: z.boolean().optional(),
     }),
   }),
   z.object({
@@ -41,13 +42,17 @@ const stageConfigSchema = z.discriminatedUnion("type", [
     config: z.object({
       rounds: z.number().int().min(1).max(15),
       inheritFrom: z.number().int().min(0).optional(),
+      carryPoints: z.boolean().optional(),
       courtMode: z.enum(["sequential", "dedicated", "mixed"]).optional(),
       groupStartAt: z.record(z.string().max(1), z.string().datetime()).optional(),
     }),
   }),
   z.object({
     type: z.literal("CROSS_POOL"),
-    config: z.object({ opponents: z.number().int().min(1).max(16) }),
+    config: z.object({
+      opponents: z.number().int().min(1).max(16),
+      carryPoints: z.boolean().optional(),
+    }),
   }),
   z.object({
     type: z.literal("PLACEMENT"),
