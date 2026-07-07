@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction } from "./actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction, updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, launchPipelineGroupAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
@@ -18,7 +18,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       creator: true,
       pools: { include: { teams: { include: { team: { select: { id: true, name: true, seed: true } } } } } },
       matches: { select: { id: true, phase: true, roundIndex: true, positionInRound: true, status: true, winnerTeamId: true, poolId: true, poolSessionIndex: true, teamAId: true, teamBId: true, dayIndex: true, stageId: true, groupKey: true, bracketSide: true, startAt: true, courtName: true } },
-      stages: { orderBy: { order: "asc" }, include: { entries: true, matches: { select: { id: true, status: true } } } },
+      stages: { orderBy: { order: "asc" }, include: { entries: true, matches: { select: { id: true, status: true, groupKey: true } } } },
       sponsors: { orderBy: { name: "asc" } },
       coOrganizers: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true } } }, orderBy: { addedAt: "asc" } },
       soloEntries: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true } } }, orderBy: { createdAt: "asc" } },
@@ -342,6 +342,22 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               soloEntries: t_.soloEntries ?? [],
               hostClubId: (t_ as any).hostClubId ?? null,
               creator: t_.creator ? { id: t_.creator.id, name: t_.creator.name } : null,
+              // Pipeline (nouveau système) — CES CHAMPS SONT CRITIQUES : sans eux,
+              // OrgaDashboard/TournamentEditForm croient que le tournoi est legacy
+              usesPipeline: (t_ as any).usesPipeline ?? false,
+              timezone: (t_ as any).timezone ?? null,
+              stages: (t_.stages ?? []).map((s: any) => ({
+                id: s.id,
+                order: s.order,
+                name: s.name,
+                type: s.type,
+                status: s.status,
+                config: s.config,
+                entryRules: s.entryRules,
+                startAt: s.startAt?.toISOString() ?? null,
+                entries: (s.entries ?? []).map((e: any) => ({ id: e.id, slot: e.slot, groupKey: e.groupKey, teamId: e.teamId })),
+                matches: (s.matches ?? []).map((m: any) => ({ id: m.id, status: m.status, groupKey: m.groupKey ?? null })),
+              })),
             }}
             teams={t_.teams}
             freeAgents={t_.freeAgents}
@@ -465,6 +481,26 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             setManualGroupsAction={async (order, assignments) => {
               "use server";
               return await setPipelineManualGroupsAction(t_.id, order, assignments);
+            }}
+            updatePipelineStageAction={async (order, patch) => {
+              "use server";
+              return await updatePipelineStageAction(t_.id, order, patch);
+            }}
+            launchPipelineGroupAction={async (order) => {
+              "use server";
+              return await launchPipelineGroupAction(t_.id, order);
+            }}
+            addPipelineStageAction={async (def) => {
+              "use server";
+              return await addPipelineStageAction(t_.id, def);
+            }}
+            removePipelineStageAction={async (order) => {
+              "use server";
+              return await removePipelineStageAction(t_.id, order);
+            }}
+            movePipelineStageAction={async (order, dir) => {
+              "use server";
+              return await movePipelineStageAction(t_.id, order, dir);
             }}
             orgaTasks={orgaTasks.map((t) => ({ ...t, priority: t.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT", deadline: t.deadline?.toISOString() ?? null, createdAt: t.createdAt.toISOString() }))}
             orgaNotes={orgaNotes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString() }))}

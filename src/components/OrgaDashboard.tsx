@@ -24,6 +24,7 @@ import { SelectionManager } from "@/components/SelectionManager";
 import { DrawPanel } from "@/components/DrawPanel";
 import { AccommodationManager } from "@/components/AccommodationManager";
 import { QRCodeSVG } from "qrcode.react";
+import { PipelinePlanning } from "@/components/PipelinePlanning";
 
 
 // ─── GrazPlanning ────────────────────────────────────────────────────────────
@@ -371,175 +372,6 @@ function BigApplePlanning({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── PipelinePlanning (nouveau système de stages, refonte formats) ───────────
-
-const STAGE_STATUS_COLOR: Record<string, string> = {
-  PENDING: "var(--text-muted)",
-  ACTIVE: "var(--amber, #f59e0b)",
-  DONE: "var(--teal)",
-  SKIPPED: "var(--text-muted)",
-};
-const GROUP_LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
-
-function PipelinePlanning({
-  tournament,
-  stages,
-  launchStageAction,
-  resetStagesAction,
-  simulateStageAction,
-  previewEntriesAction,
-  setManualGroupsAction,
-}: {
-  tournament: any;
-  stages: any[];
-  launchStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
-  resetStagesAction?: (fromOrder: number) => Promise<{ ok?: boolean; error?: string }>;
-  simulateStageAction?: () => Promise<{ ok?: boolean; error?: string }>;
-  previewEntriesAction?: (order: number) => Promise<{ entries?: Array<{ teamId: string; name: string; groupKey: string; slot: number }>; groups?: number; error?: string }>;
-  setManualGroupsAction?: (order: number, assignments: Record<string, string>) => Promise<{ ok?: boolean; error?: string }>;
-}) {
-  const t = useTranslations("tournament");
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [openOrder, setOpenOrder] = useState<number | null>(
-    stages.find((s) => s.status === "ACTIVE")?.order ?? stages.find((s) => s.status === "PENDING")?.order ?? 0
-  );
-  // Composition manuelle des groupes (étape en attente)
-  const [composeOrder, setComposeOrder] = useState<number | null>(null);
-  const [composeEntries, setComposeEntries] = useState<Array<{ teamId: string; name: string; groupKey: string }>>([]);
-  const [composeGroups, setComposeGroups] = useState(2);
-
-  const sorted = [...stages].sort((a, b) => a.order - b.order);
-  const nextPending = sorted.find((s) => s.status === "PENDING" &&
-    sorted.every((p) => p.order >= s.order || p.status === "DONE" || p.status === "SKIPPED"));
-
-  const statusLabel = (status: string) => t(`pipeline_status_${status.toLowerCase()}` as never);
-  const typeLabel = (type: string) => t(`pipeline_type_${type.toLowerCase()}` as never);
-
-  const act = async (fn: () => Promise<{ ok?: boolean; error?: string }> | undefined) => {
-    if (!fn) return;
-    setPending(true);
-    setError(null);
-    const res = await fn();
-    if (res?.error) setError(res.error);
-    setPending(false);
-  };
-
-  const openCompose = async (stage: any) => {
-    if (!previewEntriesAction) return;
-    setPending(true);
-    setError(null);
-    const res = await previewEntriesAction(stage.order);
-    setPending(false);
-    if (res.error) { setError(res.error); return; }
-    setComposeEntries((res.entries ?? []).map((e) => ({ teamId: e.teamId, name: e.name, groupKey: e.groupKey || "A" })));
-    setComposeGroups(Math.max(res.groups ?? 2, 2));
-    setComposeOrder(stage.order);
-  };
-
-  const saveCompose = async () => {
-    if (composeOrder === null || !setManualGroupsAction) return;
-    const assignments = Object.fromEntries(composeEntries.map((e) => [e.teamId, e.groupKey]));
-    await act(() => setManualGroupsAction(composeOrder, assignments));
-    setComposeOrder(null);
-  };
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {simulateStageAction && (
-        <div style={{ background: "repeating-linear-gradient(45deg, #f59e0b22, #f59e0b22 10px, transparent 10px, transparent 20px)", border: "1px solid #f59e0b", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 12, fontWeight: 800 }}>{t("pipeline_test_banner")}</span>
-          <button className="ghost" style={{ fontSize: 12, marginLeft: "auto" }} disabled={pending}
-            onClick={() => act(simulateStageAction)}>
-            {t("pipeline_simulate_stage")}
-          </button>
-        </div>
-      )}
-      {error && <p style={{ color: "var(--danger)", fontSize: 12, padding: "8px 0" }}>{error}</p>}
-      {sorted.map((stage) => {
-        const color = STAGE_STATUS_COLOR[stage.status] ?? STAGE_STATUS_COLOR.PENDING;
-        const isOpen = openOrder === stage.order;
-        const doneMatches = (stage.matches ?? []).filter((m: any) => m.status === "FINISHED").length;
-        const totalMatches = (stage.matches ?? []).length;
-        const isNextLaunchable = stage.status === "PENDING" && nextPending?.order === stage.order;
-        const hasGroups = ((stage.entryRules as any)?.groups ?? 1) > 1;
-        const isComposing = composeOrder === stage.order;
-
-        return (
-          <div key={stage.id} className="panel" style={{ borderLeft: `3px solid ${color}` }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => setOpenOrder(isOpen ? null : stage.order)}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "var(--text-muted)" }}>{stage.order + 1}</span>
-              <span style={{ fontWeight: 700, fontSize: 15 }}>{stage.name}</span>
-              <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 6, border: "1px solid var(--border)", color: "var(--text-muted)" }}>
-                {typeLabel(stage.type)}
-              </span>
-              <span style={{ fontSize: 12, fontWeight: 700, color }}>{statusLabel(stage.status)}</span>
-              <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-muted)" }}>
-                {totalMatches > 0 ? t("pipeline_matches_done", { done: doneMatches, total: totalMatches }) : ""} {isOpen ? "▾" : "▸"}
-              </span>
-            </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-              {isNextLaunchable && (
-                <button className="primary" style={{ fontSize: 13 }} disabled={pending}
-                  onClick={(e) => { e.stopPropagation(); act(() => launchStageAction?.(stage.order)); }}>
-                  {t("pipeline_launch_stage")}
-                </button>
-              )}
-              {isNextLaunchable && hasGroups && previewEntriesAction && setManualGroupsAction && !isComposing && (
-                <button className="ghost" style={{ fontSize: 13 }} disabled={pending}
-                  onClick={(e) => { e.stopPropagation(); openCompose(stage); }}>
-                  {t("pipeline_compose_groups")}
-                </button>
-              )}
-              {(stage.status === "ACTIVE" || stage.status === "DONE") && (
-                <button className="ghost" style={{ fontSize: 12, color: "var(--danger)" }} disabled={pending}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm(t("pipeline_reset_confirm", { name: stage.name }))) act(() => resetStagesAction?.(stage.order));
-                  }}>
-                  {t("pipeline_reset_from_here")}
-                </button>
-              )}
-            </div>
-
-            {/* Composition manuelle des groupes */}
-            {isComposing && (
-              <div style={{ marginTop: 12, borderTop: "1px dashed var(--border)", paddingTop: 12 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em", color: "var(--text-muted)", marginBottom: 8 }}>
-                  {t("pipeline_compose_title")}
-                </p>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 6 }}>
-                  {composeEntries.map((e, i) => (
-                    <div key={e.teamId} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                      <span style={{ flex: 1 }}>{e.name}</span>
-                      <select value={e.groupKey}
-                        onChange={(ev) => setComposeEntries((prev) => prev.map((x, xi) => xi === i ? { ...x, groupKey: ev.target.value } : x))}>
-                        {GROUP_LETTERS.slice(0, composeGroups).map((l) => <option key={l} value={l}>{l}</option>)}
-                      </select>
-                    </div>
-                  ))}
-                </div>
-                {/* Aperçu des effectifs par groupe */}
-                <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 8 }}>
-                  {GROUP_LETTERS.slice(0, composeGroups).map((l) => `${l}: ${composeEntries.filter((e) => e.groupKey === l).length}`).join(" · ")}
-                </p>
-                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                  <button className="primary" style={{ fontSize: 13 }} disabled={pending} onClick={saveCompose}>
-                    {t("pipeline_compose_save")}
-                  </button>
-                  <button className="ghost" style={{ fontSize: 13 }} onClick={() => setComposeOrder(null)}>
-                    {t("pipeline_compose_cancel")}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -1634,6 +1466,11 @@ type OrgaDashboardProps = {
   simulateStageAction?: () => Promise<{ ok?: boolean; error?: string }>;
   previewEntriesAction?: (order: number) => Promise<{ entries?: Array<{ teamId: string; name: string; groupKey: string; slot: number }>; groups?: number; error?: string }>;
   setManualGroupsAction?: (order: number, assignments: Record<string, string>) => Promise<{ ok?: boolean; error?: string }>;
+  updatePipelineStageAction?: (order: number, patch: { name: string; type: string; config: Record<string, unknown>; entryRules: unknown; startAt: string | null }) => Promise<{ ok?: boolean; error?: string }>;
+  launchPipelineGroupAction?: (order: number) => Promise<{ ok?: boolean; error?: string; group?: string }>;
+  addPipelineStageAction?: (def: { name: string; type: string; config: Record<string, unknown>; entryRules: unknown }) => Promise<{ ok?: boolean; error?: string }>;
+  removePipelineStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
+  movePipelineStageAction?: (order: number, dir: -1 | 1) => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -1656,7 +1493,7 @@ type OrgaDashboardProps = {
   }>;
 };
 
-type Tab = "teams" | "config" | "planning" | "orga" | "orgateam" | "hebergement";
+type Tab = "teams" | "config" | "planning" | "stages" | "orga" | "orgateam" | "hebergement";
 
 // ─── Tab label helper ─────────────────────────────────────────────────────────
 
@@ -1664,6 +1501,7 @@ const TAB_KEYS: Record<Tab, string> = {
   teams:        "orga_tab_teams",
   config:       "orga_tab_config",
   planning:     "orga_tab_planning",
+  stages:       "orga_tab_stages",
   orga:         "orga_tab_orga",
   orgateam:     "orga_tab_orgateam",
   hebergement:  "orga_tab_hebergement",
@@ -1728,6 +1566,11 @@ export function OrgaDashboard({
   simulateStageAction,
   previewEntriesAction,
   setManualGroupsAction,
+  updatePipelineStageAction,
+  launchPipelineGroupAction,
+  addPipelineStageAction,
+  removePipelineStageAction,
+  movePipelineStageAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -1748,12 +1591,15 @@ export function OrgaDashboard({
 
   const tabStorageKey = `orga_tab_${tournament.id}`;
   const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const pipeline = !!(tournament as any)?.usesPipeline;
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(tabStorageKey);
-      if (saved === "teams" || saved === "config" || saved === "planning" || saved === "orga" || saved === "orgateam" || saved === "hebergement") return saved;
+      // Pipeline : l'onglet Planning est remplacé par Étapes
+      if (pipeline && saved === "planning") return "stages";
+      if (saved === "teams" || saved === "config" || saved === "planning" || saved === "stages" || saved === "orga" || saved === "orgateam" || saved === "hebergement") return saved;
     }
-    // Pipeline : le pilotage se fait dans l'onglet Planning — c'est l'écran utile
-    return (tournament as any)?.usesPipeline ? "planning" : "config";
+    // Pipeline : le pilotage se fait dans l'onglet Étapes — c'est l'écran utile
+    return pipeline ? "stages" : "config";
   });
 
   useEffect(() => {
@@ -1968,7 +1814,9 @@ export function OrgaDashboard({
       {/* ── Tab bar ── */}
       <div className="tabs-bar" style={{ marginTop: 0 }}>
         <div className="tabs">
-          {(["config", "teams", "planning", "orga", "orgateam", ...(tournament.accommodationAvailable ? ["hebergement"] : [])] as Tab[]).map((tab) => (
+          {((isPipeline
+            ? ["stages", "config", "teams", "orga", "orgateam", ...(tournament.accommodationAvailable ? ["hebergement"] : [])]
+            : ["config", "teams", "planning", "orga", "orgateam", ...(tournament.accommodationAvailable ? ["hebergement"] : [])]) as Tab[]).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -2023,6 +1871,26 @@ export function OrgaDashboard({
               />
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Tab: Étapes (pipeline — pilotage du format) ── */}
+      {activeTab === "stages" && isPipeline && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <PipelinePlanning
+            tournament={tournament}
+            stages={(tournament as any).stages ?? []}
+            launchStageAction={launchStageAction}
+            resetStagesAction={resetStagesAction}
+            simulateStageAction={tournament.testMode ? simulateStageAction : undefined}
+            previewEntriesAction={previewEntriesAction}
+            setManualGroupsAction={setManualGroupsAction}
+            updateStageAction={updatePipelineStageAction}
+            launchGroupAction={launchPipelineGroupAction}
+            addStageAction={addPipelineStageAction}
+            removeStageAction={removePipelineStageAction}
+            moveStageAction={movePipelineStageAction}
+          />
         </div>
       )}
 
@@ -2372,19 +2240,6 @@ export function OrgaDashboard({
               launchBigApplePlacementAction={launchBigApplePlacementAction}
               launchBigAppleSEAction={launchBigAppleSEAction}
               resetBigApplePhaseAction={resetBigApplePhaseAction}
-            />
-          )}
-
-          {/* ── Pipeline (nouveau système de stages) ── */}
-          {isPipeline && (
-            <PipelinePlanning
-              tournament={tournament}
-              stages={(tournament as any).stages ?? []}
-              launchStageAction={launchStageAction}
-              resetStagesAction={resetStagesAction}
-              simulateStageAction={tournament.testMode ? simulateStageAction : undefined}
-              previewEntriesAction={previewEntriesAction}
-              setManualGroupsAction={setManualGroupsAction}
             />
           )}
 

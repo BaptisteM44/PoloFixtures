@@ -10,13 +10,13 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { createCustomSandboxAction } from "@/app/[locale]/sandbox/actions";
 
-type StageType = "RR" | "SWISS" | "CROSS_POOL" | "PLACEMENT" | "SE" | "DE";
+export type StageType = "RR" | "SWISS" | "CROSS_POOL" | "PLACEMENT" | "SE" | "DE";
 
-type EntrySource =
+export type EntrySource =
   | { kind: "registration" }
   | { kind: "stageRanks"; stageOrder: number; group?: string; from: number; to: number };
 
-type EntryRules = {
+export type EntryRules = {
   sources: EntrySource[];
   interleaveSources?: boolean;
   groups?: number;
@@ -34,9 +34,15 @@ type BuilderStage = {
 let uid = 0;
 const newKey = () => `s${Date.now()}_${uid++}`;
 
-function defaultConfig(type: StageType): Record<string, unknown> {
+// Libellés des types d'étapes (namespace "tournament", partagés avec le reste du site).
+export const TYPE_LABEL_KEY: Record<StageType, string> = {
+  RR: "pipeline_type_rr", SWISS: "pipeline_type_swiss", CROSS_POOL: "pipeline_type_cross_pool",
+  PLACEMENT: "pipeline_type_placement", SE: "pipeline_type_se", DE: "pipeline_type_de",
+};
+
+export function defaultConfig(type: StageType): Record<string, unknown> {
   switch (type) {
-    case "RR": return { groups: 1 };
+    case "RR": return {};
     case "SWISS": return { rounds: 5 };
     case "CROSS_POOL": return { opponents: 1 };
     case "PLACEMENT": return { count: 2 };
@@ -59,6 +65,8 @@ function defaultStage(order: number): BuilderStage {
 
 export function PipelineBuilder({ maxTeams }: { maxTeams: number }) {
   const t = useTranslations("sandbox");
+  const tt = useTranslations("tournament");
+  const typeLabel = (ty: StageType) => tt(TYPE_LABEL_KEY[ty] as never);
   const router = useRouter();
   const [name, setName] = useState(t("format_name_default"));
   const [teamCount, setTeamCount] = useState(16);
@@ -66,7 +74,7 @@ export function PipelineBuilder({ maxTeams }: { maxTeams: number }) {
   const [duration, setDuration] = useState(12);
   const [stages, setStages] = useState<BuilderStage[]>(() => {
     const s = defaultStage(0);
-    s.name = t("stage_default_name", { n: 1 });
+    s.name = typeLabel(s.type);
     return [s];
   });
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +86,7 @@ export function PipelineBuilder({ maxTeams }: { maxTeams: number }) {
 
   const addStage = () => setStages((prev) => {
     const s = defaultStage(prev.length);
-    s.name = t("stage_default_name", { n: prev.length + 1 });
+    s.name = typeLabel(s.type);
     return [...prev, s];
   });
   const removeStage = (i: number) => setStages((prev) => prev.filter((_, idx) => idx !== i));
@@ -95,7 +103,14 @@ export function PipelineBuilder({ maxTeams }: { maxTeams: number }) {
   });
 
   const changeType = (i: number, type: StageType) => {
-    update(i, { type, config: defaultConfig(type) });
+    setStages((prev) => prev.map((s, idx) => {
+      if (idx !== i) return s;
+      // Nom encore par défaut (libellé d'un type ou "Étape N") → suit le nouveau type.
+      const isDefaultName =
+        STAGE_TYPES.some((ty) => s.name === typeLabel(ty)) ||
+        s.name === t("stage_default_name", { n: i + 1 });
+      return { ...s, type, config: defaultConfig(type), name: isDefaultName ? typeLabel(type) : s.name };
+    }));
   };
 
   const submit = () => {
@@ -138,6 +153,7 @@ export function PipelineBuilder({ maxTeams }: { maxTeams: number }) {
             index={i}
             stage={stage}
             availablePrevStages={stages.slice(0, i).map((s, idx) => ({ order: idx, name: s.name }))}
+            courtsCount={courtsCount}
             onChange={(patch) => update(i, patch)}
             onChangeType={(type) => changeType(i, type)}
             onRemove={stages.length > 1 ? () => removeStage(i) : undefined}
@@ -161,14 +177,15 @@ export function PipelineBuilder({ maxTeams }: { maxTeams: number }) {
 
 // ─── Carte d'une étape ────────────────────────────────────────────────────────
 
-const STAGE_TYPES: StageType[] = ["RR", "SWISS", "CROSS_POOL", "PLACEMENT", "SE", "DE"];
+export const STAGE_TYPES: StageType[] = ["RR", "SWISS", "CROSS_POOL", "PLACEMENT", "SE", "DE"];
 
 function StageCard({
-  index, stage, availablePrevStages, onChange, onChangeType, onRemove, onDuplicate, onMoveUp, onMoveDown,
+  index, stage, availablePrevStages, courtsCount, onChange, onChangeType, onRemove, onDuplicate, onMoveUp, onMoveDown,
 }: {
   index: number;
   stage: BuilderStage;
   availablePrevStages: Array<{ order: number; name: string }>;
+  courtsCount: number;
   onChange: (patch: Partial<BuilderStage>) => void;
   onChangeType: (t: StageType) => void;
   onRemove?: () => void;
@@ -177,10 +194,8 @@ function StageCard({
   onMoveDown?: () => void;
 }) {
   const t = useTranslations("sandbox");
-  const typeLabelKey: Record<StageType, string> = {
-    RR: "pipeline_type_rr", SWISS: "pipeline_type_swiss", CROSS_POOL: "pipeline_type_cross_pool",
-    PLACEMENT: "pipeline_type_placement", SE: "pipeline_type_se", DE: "pipeline_type_de",
-  };
+  const tt = useTranslations("tournament"); // les libellés de types d'étapes vivent dans ce namespace
+  const typeLabelKey = TYPE_LABEL_KEY;
   const hintKey: Record<StageType, string> = {
     RR: "hint_rr", SWISS: "hint_swiss", CROSS_POOL: "hint_cross_pool",
     PLACEMENT: "hint_placement", SE: "hint_se", DE: "hint_de",
@@ -197,7 +212,7 @@ function StageCard({
         />
         <select value={stage.type} onChange={(e) => onChangeType(e.target.value as StageType)}>
           {STAGE_TYPES.map((ty) => (
-            <option key={ty} value={ty}>{t(typeLabelKey[ty] as never)}</option>
+            <option key={ty} value={ty}>{tt(typeLabelKey[ty] as never)}</option>
           ))}
         </select>
         <div style={{ display: "flex", gap: 4 }}>
@@ -209,7 +224,7 @@ function StageCard({
       </div>
       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 10px" }}>{t(hintKey[stage.type] as never)}</p>
 
-      <StageConfigFields type={stage.type} config={stage.config} onChange={(config) => onChange({ config })} />
+      <StageConfigFields type={stage.type} config={stage.config} groupCount={stage.entryRules.groups ?? 1} courtsCount={courtsCount} onChange={(config) => onChange({ config })} />
 
       <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed var(--border)" }}>
         <EntryRulesFields
@@ -224,23 +239,26 @@ function StageCard({
 
 // ─── Config par type ──────────────────────────────────────────────────────────
 
-function StageConfigFields({ type, config, onChange }: { type: StageType; config: Record<string, unknown>; onChange: (c: Record<string, unknown>) => void }) {
+export function StageConfigFields({ type, config, groupCount, courtsCount, onChange }: { type: StageType; config: Record<string, unknown>; groupCount: number; courtsCount: number; onChange: (c: Record<string, unknown>) => void }) {
   const t = useTranslations("sandbox");
   const set = (k: string, v: unknown) => onChange({ ...config, [k]: v });
+  // Le choix de répartition n'a de sens qu'avec plusieurs groupes.
+  const showCourtMode = groupCount > 1;
 
   switch (type) {
     case "RR":
       return (
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13 }}>
-          <label>{t("cfg_groups")} <input type="number" min={1} max={8} value={Number(config.groups ?? 1)} onChange={(e) => set("groups", Number(e.target.value))} style={{ width: 60 }} /></label>
-          <label>{t("cfg_max_rounds")} <input type="number" min={1} max={30} value={Number(config.maxRounds ?? "")} onChange={(e) => set("maxRounds", e.target.value ? Number(e.target.value) : undefined)} style={{ width: 60 }} /></label>
+          <label>{t("cfg_max_rounds")} <input type="number" min={1} max={30} value={config.maxRounds != null ? Number(config.maxRounds) : ""} onChange={(e) => set("maxRounds", e.target.value ? Number(e.target.value) : undefined)} style={{ width: 60 }} /></label>
           <label><input type="checkbox" checked={!!config.doubleRound} onChange={(e) => set("doubleRound", e.target.checked)} /> {t("cfg_double_round")}</label>
+          {showCourtMode && <CourtModeSelect value={(config.courtMode as string) ?? "sequential"} courtsCount={courtsCount} onChange={(v) => set("courtMode", v)} />}
         </div>
       );
     case "SWISS":
       return (
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13 }}>
           <label>{t("cfg_rounds")} <input type="number" min={1} max={15} value={Number(config.rounds ?? 5)} onChange={(e) => set("rounds", Number(e.target.value))} style={{ width: 60 }} /></label>
+          {showCourtMode && <CourtModeSelect value={(config.courtMode as string) ?? "sequential"} courtsCount={courtsCount} onChange={(v) => set("courtMode", v)} />}
         </div>
       );
     case "CROSS_POOL":
@@ -270,9 +288,23 @@ function StageConfigFields({ type, config, onChange }: { type: StageType; config
   }
 }
 
+/** Répartition des terrains pour une étape multi-groupes. */
+function CourtModeSelect({ value, courtsCount, onChange }: { value: string; courtsCount: number; onChange: (v: string) => void }) {
+  const t = useTranslations("sandbox");
+  return (
+    <label>{t("cfg_court_mode")}{" "}
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="sequential">{t("court_sequential")}</option>
+        {courtsCount > 1 && <option value="dedicated">{t("court_dedicated")}</option>}
+        <option value="mixed">{t("court_mixed")}</option>
+      </select>
+    </label>
+  );
+}
+
 // ─── Sources d'entrée ─────────────────────────────────────────────────────────
 
-function EntryRulesFields({
+export function EntryRulesFields({
   entryRules, availablePrevStages, onChange,
 }: {
   entryRules: EntryRules;
