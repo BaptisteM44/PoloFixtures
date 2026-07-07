@@ -224,7 +224,7 @@ function StageCard({
       </div>
       <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "0 0 10px" }}>{t(hintKey[stage.type] as never)}</p>
 
-      <StageConfigFields type={stage.type} config={stage.config} groupCount={stage.entryRules.groups ?? 1} courtsCount={courtsCount} onChange={(config) => onChange({ config })} />
+      <StageConfigFields type={stage.type} config={stage.config} groupCount={stage.entryRules.groups ?? 1} courtsCount={courtsCount} canCarry={index > 0} onChange={(config) => onChange({ config })} />
 
       <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed var(--border)" }}>
         <EntryRulesFields
@@ -239,11 +239,15 @@ function StageCard({
 
 // ─── Config par type ──────────────────────────────────────────────────────────
 
-export function StageConfigFields({ type, config, groupCount, courtsCount, onChange }: { type: StageType; config: Record<string, unknown>; groupCount: number; courtsCount: number; onChange: (c: Record<string, unknown>) => void }) {
+export function StageConfigFields({ type, config, groupCount, courtsCount, canCarry, onChange }: { type: StageType; config: Record<string, unknown>; groupCount: number; courtsCount: number; canCarry?: boolean; onChange: (c: Record<string, unknown>) => void }) {
   const t = useTranslations("sandbox");
   const set = (k: string, v: unknown) => onChange({ ...config, [k]: v });
   // Le choix de répartition n'a de sens qu'avec plusieurs groupes.
   const showCourtMode = groupCount > 1;
+  // « Cumuler les points » n'a de sens que si une étape à points précède.
+  const carryToggle = canCarry ? (
+    <label><input type="checkbox" checked={!!config.carryPoints} onChange={(e) => set("carryPoints", e.target.checked || undefined)} /> {t("cfg_carry_points")}</label>
+  ) : null;
 
   switch (type) {
     case "RR":
@@ -251,6 +255,7 @@ export function StageConfigFields({ type, config, groupCount, courtsCount, onCha
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13 }}>
           <label>{t("cfg_max_rounds")} <input type="number" min={1} max={30} value={config.maxRounds != null ? Number(config.maxRounds) : ""} onChange={(e) => set("maxRounds", e.target.value ? Number(e.target.value) : undefined)} style={{ width: 60 }} /></label>
           <label><input type="checkbox" checked={!!config.doubleRound} onChange={(e) => set("doubleRound", e.target.checked)} /> {t("cfg_double_round")}</label>
+          {carryToggle}
           {showCourtMode && <CourtModeSelect value={(config.courtMode as string) ?? "sequential"} courtsCount={courtsCount} onChange={(v) => set("courtMode", v)} />}
         </div>
       );
@@ -258,13 +263,20 @@ export function StageConfigFields({ type, config, groupCount, courtsCount, onCha
       return (
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13 }}>
           <label>{t("cfg_rounds")} <input type="number" min={1} max={15} value={Number(config.rounds ?? 5)} onChange={(e) => set("rounds", Number(e.target.value))} style={{ width: 60 }} /></label>
+          {carryToggle}
           {showCourtMode && <CourtModeSelect value={(config.courtMode as string) ?? "sequential"} courtsCount={courtsCount} onChange={(v) => set("courtMode", v)} />}
         </div>
       );
     case "CROSS_POOL":
       return (
-        <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13 }}>
-          <label>{t("cfg_opponents")} <input type="number" min={1} max={16} value={Number(config.opponents ?? 1)} onChange={(e) => set("opponents", Number(e.target.value))} style={{ width: 60 }} /></label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13 }}>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
+            <label>{t("cfg_opponents")} <input type="number" min={1} max={16} value={Number(config.opponents ?? 1)} onChange={(e) => set("opponents", Number(e.target.value))} style={{ width: 60 }} /></label>
+            {carryToggle}
+          </div>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
+            💡 {t("cross_pool_hint")}
+          </p>
         </div>
       );
     case "PLACEMENT":

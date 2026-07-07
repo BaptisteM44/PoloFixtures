@@ -98,7 +98,7 @@ function StageEditor({
       </div>
 
       <StageConfigFields type={type} config={config} groupCount={groupCount} courtsCount={courtsCount}
-        onChange={setConfig} />
+        canCarry={stage.order > 0} onChange={setConfig} />
 
       <div style={{ borderTop: "1px dashed var(--border)", paddingTop: 10 }}>
         <EntryRulesFields entryRules={entryRules} availablePrevStages={availablePrevStages}
