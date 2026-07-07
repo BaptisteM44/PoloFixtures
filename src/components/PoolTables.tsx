@@ -19,6 +19,8 @@ export function PoolTables({
   isLive = false,
   poolRounds = null,
   teamsWithPlayers = [],
+  combinedOnly = false,
+  combinedLive = false,
 }: {
   pools: PoolWithTeams[];
   matches: MatchWithTeams[];
@@ -27,6 +29,10 @@ export function PoolTables({
   isLive?: boolean;
   poolRounds?: number | null;
   teamsWithPlayers?: TeamWithPlayers[];
+  /** N'affiche que le classement combiné (masque les tableaux par groupe) — onglet "Général" du pipeline. */
+  combinedOnly?: boolean;
+  /** Affiche le combiné même si tous les matchs ne sont pas terminés — classement live du pipeline. */
+  combinedLive?: boolean;
 }) {
   const t = useTranslations("pool_tables");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
@@ -65,7 +71,7 @@ export function PoolTables({
   const barrageMatches = activeMatches.filter((m) => (m as any).phase === "MTP_BARRAGE");
   const allPoolTeams = pools.flatMap((p) => p.teams.map((pt) => pt.team));
   const allFinished = allPoolMatches.length > 0 && allPoolMatches.every((m) => m.status === "FINISHED");
-  const showCombined = pools.length >= 2 && allFinished;
+  const showCombined = pools.length >= 2 && (allFinished || combinedLive);
   const combinedMatchesForStandings = [...allPoolMatches, ...crossPoolMatches] as Match[];
   const combinedStandings = showCombined ? computeStandings(allPoolTeams, combinedMatchesForStandings, scoringSystem) : [];
 
@@ -208,7 +214,7 @@ export function PoolTables({
           </table>
         </div>
       )}
-      {pools.map((pool) => {
+      {!combinedOnly && pools.map((pool) => {
         const poolTeamIds = pool.teams.map((pt) => pt.teamId);
         const poolTeams = pool.teams.map((pt) => pt.team);
         const isRegroupPool = pool.name.startsWith("Regroup-");
