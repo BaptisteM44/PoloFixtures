@@ -881,7 +881,14 @@
     "orga_next_enter_scores": "enter scores",
     "orga_next_launch_stage": "Launch: {name}",
     "orga_next_prev_stage_done": "previous stage finished",
-    "orga_next_all_stages_done": "All stages finished"
+    "orga_next_all_stages_done": "All stages finished",
+    "pipeline_back_to_round": "Back to round",
+    "pipeline_all_groups": "All groups",
+    "pipeline_back_to_round_confirm": "Go back to round {round}? Scores of this round and later ones will be cleared.",
+    "pipeline_reschedule": "Reschedule",
+    "pipeline_reschedule_confirm": "Reschedule unplayed matches from now?",
+    "pipeline_launch_stage_confirm": "Launch stage “{name}”? Matches will be generated and the stage can no longer be edited (reset required).",
+    "pipeline_launch_group_confirm": "Launch group {group}? Its matches will be generated."
   },
   "registration": {
     "section_title": "Register my team",
@@ -1731,6 +1738,7 @@
     "delete_error": "An error occurred. Please try again.",
     "tab_edit": "Edit",
     "tab_badges": "Badges",
+    "tab_collection": "Collection",
     "tab_messages": "Messages",
     "tab_settings": "Settings",
     "messages_empty": "No conversations yet.",
@@ -2371,7 +2379,16 @@
     "label_status": "Status",
     "label_team_a": "Team A",
     "label_team_b": "Team B",
-    "readonly_hint": "Read only — log in as REF / ORGA"
+    "readonly_hint": "Read only — log in as REF / ORGA",
+    "reset_confirm": "Reset this match? Scores will be cleared.",
+    "reset_error": "Error while resetting.",
+    "swap_error": "Error while swapping.",
+    "swap_success": "Swap done!",
+    "reset_match": "Reset match",
+    "reset_pending": "Resetting...",
+    "reset_hint": "Resets the match (scores cleared)",
+    "reset_has_suite": "This match has a follow-up — edit the scores instead.",
+    "reset_has_suite_short": "Follow-up already propagated — edit scores"
   },
   "sponsor": {
     "title": "Sponsors",

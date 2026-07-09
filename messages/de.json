@@ -881,7 +881,14 @@
     "orga_next_enter_scores": "Ergebnisse eintragen",
     "orga_next_launch_stage": "Starten: {name}",
     "orga_next_prev_stage_done": "vorherige Phase beendet",
-    "orga_next_all_stages_done": "Alle Phasen beendet"
+    "orga_next_all_stages_done": "Alle Phasen beendet",
+    "pipeline_back_to_round": "Zurück zu Runde",
+    "pipeline_all_groups": "Alle Gruppen",
+    "pipeline_back_to_round_confirm": "Zurück zu Runde {round}? Ergebnisse dieser und folgender Runden werden gelöscht.",
+    "pipeline_reschedule": "Neu planen",
+    "pipeline_reschedule_confirm": "Ungespielte Spiele ab jetzt neu planen?",
+    "pipeline_launch_stage_confirm": "Phase „{name}“ starten? Spiele werden erzeugt und die Phase kann nicht mehr bearbeitet werden (Reset nötig).",
+    "pipeline_launch_group_confirm": "Gruppe {group} starten? Ihre Spiele werden erzeugt."
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -1736,6 +1743,7 @@
     "delete_error": "Ein Fehler ist aufgetreten. Bitte erneut versuchen.",
     "tab_edit": "Bearbeiten",
     "tab_badges": "Abzeichen",
+    "tab_collection": "Sammlung",
     "tab_messages": "Nachrichten",
     "tab_settings": "Einstellungen",
     "messages_empty": "Noch keine Unterhaltungen.",
@@ -2376,7 +2384,16 @@
     "label_status": "Status",
     "label_team_a": "Team A",
     "label_team_b": "Team B",
-    "readonly_hint": "Nur Lesen — melde dich als REF / ORGA an"
+    "readonly_hint": "Nur Lesen — melde dich als REF / ORGA an",
+    "reset_confirm": "Dieses Spiel zurücksetzen? Ergebnisse werden gelöscht.",
+    "reset_error": "Fehler beim Zurücksetzen.",
+    "swap_error": "Fehler beim Tausch.",
+    "swap_success": "Tausch erfolgt!",
+    "reset_match": "Spiel zurücksetzen",
+    "reset_pending": "Zurücksetzen...",
+    "reset_hint": "Setzt das Spiel zurück (Ergebnisse gelöscht)",
+    "reset_has_suite": "Dieses Spiel hat eine Fortsetzung — bearbeite lieber die Ergebnisse.",
+    "reset_has_suite_short": "Fortsetzung bereits übertragen — Ergebnisse bearbeiten"
   },
   "sponsor": {
     "title": "Sponsoren",

@@ -881,7 +881,14 @@
     "orga_next_enter_scores": "saisir les scores",
     "orga_next_launch_stage": "Lancer : {name}",
     "orga_next_prev_stage_done": "l’étape précédente est terminée",
-    "orga_next_all_stages_done": "Toutes les étapes sont terminées"
+    "orga_next_all_stages_done": "Toutes les étapes sont terminées",
+    "pipeline_back_to_round": "Revenir au round",
+    "pipeline_all_groups": "Tous les groupes",
+    "pipeline_back_to_round_confirm": "Revenir au round {round} ? Les scores de ce round et des suivants seront effacés.",
+    "pipeline_reschedule": "Replanifier les horaires",
+    "pipeline_reschedule_confirm": "Replanifier les matchs non joués à partir de maintenant ?",
+    "pipeline_launch_stage_confirm": "Lancer l'étape « {name} » ? Les matchs seront générés et l'étape ne pourra plus être modifiée (reset nécessaire).",
+    "pipeline_launch_group_confirm": "Lancer le groupe {group} ? Ses matchs seront générés."
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -1732,6 +1739,7 @@
     "delete_error": "Une erreur est survenue. Réessaie.",
     "tab_edit": "Éditer",
     "tab_badges": "Badges",
+    "tab_collection": "Collection",
     "tab_messages": "Messages",
     "tab_settings": "Paramètres",
     "messages_empty": "Aucune conversation pour l'instant.",
@@ -2372,7 +2380,16 @@
     "label_status": "Statut",
     "label_team_a": "Équipe A",
     "label_team_b": "Équipe B",
-    "readonly_hint": "Lecture seule — connectez-vous en tant que REF / ORGA"
+    "readonly_hint": "Lecture seule — connectez-vous en tant que REF / ORGA",
+    "reset_confirm": "Réinitialiser ce match ? Les scores seront effacés.",
+    "reset_error": "Erreur lors de la réinitialisation.",
+    "swap_error": "Erreur lors de l'échange.",
+    "swap_success": "Échange effectué !",
+    "reset_match": "Réinitialiser le match",
+    "reset_pending": "Réinitialisation...",
+    "reset_hint": "Remet le match à zéro (scores effacés)",
+    "reset_has_suite": "Ce match a une suite — modifie les scores plutôt.",
+    "reset_has_suite_short": "Suite déjà propagée — modifier les scores"
   },
   "sponsor": {
     "title": "Sponsors",

@@ -880,7 +880,14 @@
     "orga_next_enter_scores": "introducir resultados",
     "orga_next_launch_stage": "Lanzar: {name}",
     "orga_next_prev_stage_done": "la etapa anterior terminó",
-    "orga_next_all_stages_done": "Todas las etapas terminadas"
+    "orga_next_all_stages_done": "Todas las etapas terminadas",
+    "pipeline_back_to_round": "Volver a la ronda",
+    "pipeline_all_groups": "Todos los grupos",
+    "pipeline_back_to_round_confirm": "¿Volver a la ronda {round}? Se borrarán los resultados de esta ronda y las siguientes.",
+    "pipeline_reschedule": "Reprogramar",
+    "pipeline_reschedule_confirm": "¿Reprogramar los partidos no jugados desde ahora?",
+    "pipeline_launch_stage_confirm": "¿Lanzar la etapa «{name}»? Se generarán los partidos y la etapa ya no podrá editarse (reset necesario).",
+    "pipeline_launch_group_confirm": "¿Lanzar el grupo {group}? Se generarán sus partidos."
   },
   "registration": {
     "section_title": "Inscribir mi equipo",
@@ -1735,6 +1742,7 @@
     "delete_error": "Se produjo un error. Inténtalo de nuevo.",
     "tab_edit": "Editar",
     "tab_badges": "Insignias",
+    "tab_collection": "Colección",
     "tab_messages": "Mensajes",
     "tab_settings": "Ajustes",
     "messages_empty": "Aún no hay conversaciones.",
@@ -2375,7 +2383,16 @@
     "label_status": "Estado",
     "label_team_a": "Equipo A",
     "label_team_b": "Equipo B",
-    "readonly_hint": "Solo lectura — inicia sesión como REF / ORGA"
+    "readonly_hint": "Solo lectura — inicia sesión como REF / ORGA",
+    "reset_confirm": "¿Reiniciar este partido? Se borrarán los resultados.",
+    "reset_error": "Error al reiniciar.",
+    "swap_error": "Error al intercambiar.",
+    "swap_success": "¡Intercambio hecho!",
+    "reset_match": "Reiniciar el partido",
+    "reset_pending": "Reiniciando...",
+    "reset_hint": "Reinicia el partido (resultados borrados)",
+    "reset_has_suite": "Este partido tiene continuación — edita los resultados.",
+    "reset_has_suite_short": "Continuación ya propagada — editar resultados"
   },
   "sponsor": {
     "title": "Patrocinadores",
