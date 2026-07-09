@@ -24,6 +24,29 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   }
   if (!hasRole && !isOrganizer) return new Response("Unauthorized", { status: 401 });
 
+  // Pipeline Swiss/RR : bloquer si le round SUIVANT du même groupe existe déjà
+  // (il a été calculé sur un classement que ce reset rendrait obsolète).
+  // L'orga doit « revenir à ce round » depuis l'onglet Étapes.
+  if (match.phase === "STAGE" && match.stageId) {
+    const stage = await prisma.stage.findUnique({ where: { id: match.stageId }, select: { type: true } });
+    if (stage?.type === "RR" || stage?.type === "SWISS") {
+      const laterRound = await prisma.match.findFirst({
+        where: {
+          stageId: match.stageId,
+          groupKey: match.groupKey,
+          roundIndex: { gt: match.roundIndex },
+        },
+        select: { id: true },
+      });
+      if (laterRound) {
+        return Response.json(
+          { error: "Un round suivant existe déjà — utilise « revenir à ce round » dans l'onglet Étapes." },
+          { status: 422 }
+        );
+      }
+    }
+  }
+
   // Bloquer si une suite existe (nextMatchWin a déjà une équipe propagée depuis ce match)
   if (match.nextMatchWinId) {
     const nextMatch = await prisma.match.findUnique({ where: { id: match.nextMatchWinId } });

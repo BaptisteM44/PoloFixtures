@@ -924,6 +924,115 @@ export async function resetStages(tournamentId: string, fromOrder: number): Prom
   return { ok: true };
 }
 
+// ─── Rattrapage en cours de tournoi (onglet Étapes) ─────────────────────────
+
+/**
+ * Revient au round N d'une étape RR/SWISS active : efface les scores du round
+ * N et supprime tous les rounds > N (Swiss les régénérera via advanceStage au
+ * prochain score). Les Pool/StageEntry sont conservés (l'étape reste ACTIVE).
+ * Pour un groupe donné (mode séquentiel) ou tous les groupes.
+ */
+export async function resetToRound(
+  tournamentId: string,
+  stageOrder: number,
+  round: number,
+  group?: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  const t = await getPipeline(tournamentId);
+  if (!t) return { error: "Tournoi introuvable." };
+  const stage = t.stages.find((s) => s.order === stageOrder);
+  if (!stage) return { error: `Étape ${stageOrder} introuvable.` };
+  if (stage.type !== "RR" && stage.type !== "SWISS") {
+    return { error: "Retour à un round réservé aux étapes Poules/Swiss (pour un bracket, utilise le reset de match)." };
+  }
+  if (stage.status !== "ACTIVE" && stage.status !== "DONE") {
+    return { error: "L'étape n'est pas en cours." };
+  }
+  if (round < 1) return { error: "Numéro de round invalide." };
+
+  const inScope = (m: { groupKey: string | null; roundIndex: number }) =>
+    (group === undefined || (m.groupKey ?? "") === group);
+
+  await prisma.$transaction(async (tx) => {
+    // Rounds strictement après N : supprimés (Swiss/RR régénèrent au besoin)
+    const toDelete = stage.matches.filter((m) => inScope(m) && m.roundIndex > round);
+    if (toDelete.length > 0) {
+      const ids = toDelete.map((m) => m.id);
+      await tx.matchEvent.deleteMany({ where: { matchId: { in: ids } } });
+      await tx.match.deleteMany({ where: { id: { in: ids } } });
+    }
+    // Round N : scores effacés, remis "à jouer" (BYE reste FINISHED)
+    const toClear = stage.matches.filter((m) => inScope(m) && m.roundIndex === round && m.teamBId);
+    for (const m of toClear) {
+      await tx.matchEvent.deleteMany({ where: { matchId: m.id } });
+      await tx.match.update({
+        where: { id: m.id },
+        data: { status: "SCHEDULED", scoreA: 0, scoreB: 0, winnerTeamId: null },
+      });
+    }
+    // L'étape (et le tournoi) repassent en cours si besoin
+    if (stage.status === "DONE") {
+      await tx.stage.update({ where: { id: stage.id }, data: { status: "ACTIVE" } });
+    }
+    if (t.status === "COMPLETED") {
+      await tx.tournament.update({ where: { id: tournamentId }, data: { status: "LIVE" } });
+    }
+  }, { timeout: 20000 });
+
+  return { ok: true };
+}
+
+/**
+ * Replanifie les matchs NON JOUÉS d'une étape active à partir de maintenant
+ * (ou d'une heure donnée), sans toucher aux scores. Utile quand un tournoi
+ * prend du retard. Conserve terrains et ordre logique (round/position).
+ */
+export async function rescheduleStage(
+  tournamentId: string,
+  stageOrder: number,
+  fromISO?: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  const t = await getPipeline(tournamentId);
+  if (!t) return { error: "Tournoi introuvable." };
+  const stage = t.stages.find((s) => s.order === stageOrder);
+  if (!stage) return { error: `Étape ${stageOrder} introuvable.` };
+
+  const from = fromISO ? new Date(fromISO) : new Date();
+  if (isNaN(from.getTime())) return { error: "Horaire invalide." };
+
+  const pending = stage.matches
+    .filter((m) => m.status !== "FINISHED")
+    .sort((a, b) => a.roundIndex - b.roundIndex || a.positionInRound - b.positionInRound);
+  if (pending.length === 0) return { error: "Aucun match à replanifier (tous joués)." };
+
+  const courts = courtNamesOf(t);
+  const slotMinutes = t.gameDurationMin + 5;
+  // Regroupe par round pour caler chaque round sur des créneaux successifs.
+  const byRound = new Map<number, typeof pending>();
+  for (const m of pending) {
+    const arr = byRound.get(m.roundIndex) ?? [];
+    arr.push(m);
+    byRound.set(m.roundIndex, arr);
+  }
+  const rounds = [...byRound.keys()].sort((a, b) => a - b);
+
+  await prisma.$transaction(async (tx) => {
+    let cursor = new Date(from);
+    for (const r of rounds) {
+      const ms = byRound.get(r)!;
+      for (let i = 0; i < ms.length; i++) {
+        const court = courts[i % courts.length] ?? "Court 1";
+        const start = new Date(cursor.getTime() + Math.floor(i / courts.length) * slotMinutes * 60_000);
+        await tx.match.update({ where: { id: ms[i].id }, data: { courtName: court, startAt: start } });
+      }
+      const rows = Math.ceil(ms.length / courts.length);
+      cursor = new Date(cursor.getTime() + rows * slotMinutes * 60_000);
+    }
+  }, { timeout: 20000 });
+
+  return { ok: true };
+}
+
 // ─── Simulation (bac à sable) ────────────────────────────────────────────────
 
 function randScore(allowDraw: boolean): [number, number] {
