@@ -4097,6 +4097,37 @@ export async function setPipelineManualGroupsAction(
   return res;
 }
 
+/** Revient au round N d'une étape RR/SWISS active (efface N et les suivants). */
+export async function resetPipelineToRoundAction(
+  id: string,
+  stageOrder: number,
+  round: number,
+  group?: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { resetToRound } = await import("@/engine/pipeline-server");
+  const res = await resetToRound(id, stageOrder, round, group);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/** Replanifie les matchs non joués d'une étape à partir de maintenant. */
+export async function reschedulePipelineStageAction(
+  id: string,
+  stageOrder: number,
+  fromISO?: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { rescheduleStage } = await import("@/engine/pipeline-server");
+  const res = await rescheduleStage(id, stageOrder, fromISO);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
 /** Lance le prochain groupe non lancé d'une étape RR/SWISS active (sessions séquentielles). */
 export async function launchPipelineGroupAction(
   id: string,

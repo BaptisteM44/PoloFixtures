@@ -1472,6 +1472,8 @@ type OrgaDashboardProps = {
   addPipelineStageAction?: (def: { name: string; type: string; config: Record<string, unknown>; entryRules: unknown }) => Promise<{ ok?: boolean; error?: string }>;
   removePipelineStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
   movePipelineStageAction?: (order: number, dir: -1 | 1) => Promise<{ ok?: boolean; error?: string }>;
+  resetPipelineToRoundAction?: (order: number, round: number, group?: string) => Promise<{ ok?: boolean; error?: string }>;
+  reschedulePipelineStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -1571,6 +1573,8 @@ export function OrgaDashboard({
   addPipelineStageAction,
   removePipelineStageAction,
   movePipelineStageAction,
+  resetPipelineToRoundAction,
+  reschedulePipelineStageAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -1887,6 +1891,8 @@ export function OrgaDashboard({
             addStageAction={addPipelineStageAction}
             removeStageAction={removePipelineStageAction}
             moveStageAction={movePipelineStageAction}
+            resetToRoundAction={resetPipelineToRoundAction}
+            rescheduleStageAction={reschedulePipelineStageAction}
           />
         </div>
       )}

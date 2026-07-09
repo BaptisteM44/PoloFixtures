@@ -150,6 +150,8 @@ export function PipelinePlanning({
   addStageAction,
   removeStageAction,
   moveStageAction,
+  resetToRoundAction,
+  rescheduleStageAction,
 }: {
   tournament: any;
   stages: any[];
@@ -163,6 +165,8 @@ export function PipelinePlanning({
   addStageAction?: (def: { name: string; type: string; config: Record<string, unknown>; entryRules: unknown }) => Promise<{ ok?: boolean; error?: string }>;
   removeStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
   moveStageAction?: (order: number, dir: -1 | 1) => Promise<{ ok?: boolean; error?: string }>;
+  resetToRoundAction?: (order: number, round: number, group?: string) => Promise<{ ok?: boolean; error?: string }>;
+  rescheduleStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const t = useTranslations("tournament");
   const ts = useTranslations("sandbox"); // libellés des modes de répartition des terrains
@@ -171,6 +175,7 @@ export function PipelinePlanning({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editOrder, setEditOrder] = useState<number | null>(null);
+  const [roundResetGroup, setRoundResetGroup] = useState<Record<number, string>>({});
   const [openOrder, setOpenOrder] = useState<number | null>(
     stages.find((s) => s.status === "ACTIVE")?.order ?? stages.find((s) => s.status === "PENDING")?.order ?? 0
   );
@@ -282,7 +287,10 @@ export function PipelinePlanning({
             <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
               {isNextLaunchable && (
                 <button className="primary" style={{ fontSize: 13 }} disabled={pending}
-                  onClick={(e) => { e.stopPropagation(); act(() => launchStageAction?.(stage.order)); }}>
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(t("pipeline_launch_stage_confirm", { name: stage.name }))) act(() => launchStageAction?.(stage.order));
+                  }}>
                   {t("pipeline_launch_stage")}
                 </button>
               )}
@@ -295,7 +303,10 @@ export function PipelinePlanning({
                 const launchedDone = (stage.matches ?? []).length > 0 && (stage.matches ?? []).every((m: any) => m.status === "FINISHED");
                 return (
                   <button className={launchedDone ? "primary" : "ghost"} style={{ fontSize: 13 }} disabled={pending}
-                    onClick={(e) => { e.stopPropagation(); act(() => launchGroupAction(stage.order)); }}>
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm(t("pipeline_launch_group_confirm", { group: nextGroup }))) act(() => launchGroupAction(stage.order));
+                    }}>
                     ▶ {t("pipeline_launch_group", { group: nextGroup })}
                   </button>
                 );
@@ -351,6 +362,46 @@ export function PipelinePlanning({
                 </button>
               )}
             </div>
+
+            {/* Rattrapage en cours : revenir à un round + replanifier (RR/Swiss actifs) */}
+            {stage.status === "ACTIVE" && (stage.type === "RR" || stage.type === "SWISS") && (resetToRoundAction || rescheduleStageAction) && (() => {
+              const rounds = [...new Set((stage.matches ?? []).map((m: any) => m.roundIndex))].sort((a: any, b: any) => a - b) as number[];
+              const groups = [...new Set((stage.matches ?? []).map((m: any) => m.groupKey ?? ""))].filter(Boolean).sort() as string[];
+              return (
+                <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed var(--border)", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", fontSize: 12 }}>
+                  {resetToRoundAction && rounds.length > 0 && (
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <span style={{ color: "var(--text-muted)" }}>↩ {t("pipeline_back_to_round")}</span>
+                      {groups.length > 1 && (
+                        <select value={roundResetGroup[stage.order] ?? ""} onChange={(e) => setRoundResetGroup((p) => ({ ...p, [stage.order]: e.target.value }))} style={{ fontSize: 12 }}>
+                          <option value="">{t("pipeline_all_groups")}</option>
+                          {groups.map((g) => <option key={g} value={g}>{t("pipeline_group_label", { key: g })}</option>)}
+                        </select>
+                      )}
+                      {rounds.map((r) => (
+                        <button key={r} className="ghost" style={{ fontSize: 12, padding: "2px 8px" }} disabled={pending}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const grp = roundResetGroup[stage.order] || undefined;
+                            if (window.confirm(t("pipeline_back_to_round_confirm", { round: r }))) act(() => resetToRoundAction(stage.order, r, grp));
+                          }}>
+                          R{r}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {rescheduleStageAction && (stage.matches ?? []).some((m: any) => m.status !== "FINISHED") && (
+                    <button className="ghost" style={{ fontSize: 12, padding: "2px 8px" }} disabled={pending}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(t("pipeline_reschedule_confirm"))) act(() => rescheduleStageAction(stage.order));
+                      }}>
+                      🕐 {t("pipeline_reschedule")}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Éditeur d'étape (étape non lancée) */}
             {isEditing && updateStageAction && (

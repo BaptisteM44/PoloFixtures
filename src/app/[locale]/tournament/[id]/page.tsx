@@ -34,7 +34,7 @@ import { PipelinePlanning } from "@/components/PipelinePlanning";
 import {
   launchPipelineStageAction, launchPipelineGroupAction, resetPipelineStagesAction,
   simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction,
-  updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction,
+  updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, resetPipelineToRoundAction, reschedulePipelineStageAction,
 } from "./edit/actions";
 
 function summarizeCities(players: { player: { city: string | null } }[]): string {
@@ -941,6 +941,14 @@ export default async function TournamentPage({
           moveStageAction={async (order, dir) => {
             "use server";
             return await movePipelineStageAction(t_.id, order, dir);
+          }}
+          resetToRoundAction={async (order, round, group) => {
+            "use server";
+            return await resetPipelineToRoundAction(t_.id, order, round, group);
+          }}
+          rescheduleStageAction={async (order) => {
+            "use server";
+            return await reschedulePipelineStageAction(t_.id, order);
           }}
         />
       )}

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction, updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, launchPipelineGroupAction } from "./actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction, updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, launchPipelineGroupAction, resetPipelineToRoundAction, reschedulePipelineStageAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
@@ -501,6 +501,14 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             movePipelineStageAction={async (order, dir) => {
               "use server";
               return await movePipelineStageAction(t_.id, order, dir);
+            }}
+            resetPipelineToRoundAction={async (order, round, group) => {
+              "use server";
+              return await resetPipelineToRoundAction(t_.id, order, round, group);
+            }}
+            reschedulePipelineStageAction={async (order) => {
+              "use server";
+              return await reschedulePipelineStageAction(t_.id, order);
             }}
             orgaTasks={orgaTasks.map((t) => ({ ...t, priority: t.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT", deadline: t.deadline?.toISOString() ?? null, createdAt: t.createdAt.toISOString() }))}
             orgaNotes={orgaNotes.map((n) => ({ ...n, createdAt: n.createdAt.toISOString(), updatedAt: n.updatedAt.toISOString() }))}
