@@ -49,6 +49,20 @@ function getColumnMetrics(count: number) {
   };
 }
 
+/**
+ * Provenance des slots vides : clé `${matchId}:${slot}` → match source + s'il
+ * faut le vainqueur ou le perdant. Permet d'afficher « Vainqueur #13 » au lieu
+ * de TBD.
+ */
+function buildSlotSources(matches: MatchWithTeams[]): Map<string, { from: string; win: boolean }> {
+  const map = new Map<string, { from: string; win: boolean }>();
+  for (const m of matches) {
+    if (m.nextMatchWinId && m.nextSlotWin) map.set(`${m.nextMatchWinId}:${m.nextSlotWin}`, { from: m.id, win: true });
+    if (m.nextMatchLoseId && m.nextSlotLose) map.set(`${m.nextMatchLoseId}:${m.nextSlotLose}`, { from: m.id, win: false });
+  }
+  return map;
+}
+
 function BracketCard({
   match,
   onEdit,
@@ -56,6 +70,8 @@ function BracketCard({
   matchNumber,
   teamANumber,
   teamBNumber,
+  placeholderA,
+  placeholderB,
   compact = false,
 }: {
   match: MatchWithTeams;
@@ -64,10 +80,14 @@ function BracketCard({
   matchNumber?: number;
   teamANumber?: number;
   teamBNumber?: number;
+  placeholderA?: string;
+  placeholderB?: string;
   compact?: boolean;
 }) {
-  const teamA = match.teamA?.name ?? (match.teamAId ? "???" : "TBD");
-  const teamB = match.teamB?.name ?? (match.teamBId ? "???" : "TBD");
+  const teamA = match.teamA?.name ?? (match.teamAId ? "???" : placeholderA ?? "TBD");
+  const teamB = match.teamB?.name ?? (match.teamBId ? "???" : placeholderB ?? "TBD");
+  const isPlaceholderA = !match.teamAId && !!placeholderA;
+  const isPlaceholderB = !match.teamBId && !!placeholderB;
   const isFinished = match.status === "FINISHED";
   const isLive = match.status === "LIVE";
   const winA = isFinished && match.scoreA > match.scoreB;
@@ -92,12 +112,12 @@ function BracketCard({
         {isLive && <span className="bracket-live-indicator">LIVE</span>}
         <div className={`bracket-team ${winA ? "bracket-team-row--winner" : ""}`}>
           <span className="bracket-team-seed">{teamANumber ?? ""}</span>
-          <span className="bracket-team-name">{teamA}</span>
+          <span className="bracket-team-name" style={isPlaceholderA ? { opacity: 0.55, fontStyle: "italic", fontWeight: 400 } : undefined}>{teamA}</span>
           <strong className="bracket-score">{isFinished || isLive ? match.scoreA : "–"}</strong>
         </div>
         <div className={`bracket-team ${winB ? "bracket-team-row--winner" : ""}`}>
           <span className="bracket-team-seed">{teamBNumber ?? ""}</span>
-          <span className="bracket-team-name">{teamB}</span>
+          <span className="bracket-team-name" style={isPlaceholderB ? { opacity: 0.55, fontStyle: "italic", fontWeight: 400 } : undefined}>{teamB}</span>
           <strong className="bracket-score">{isFinished || isLive ? match.scoreB : "–"}</strong>
         </div>
         {(match.referee || match.coReferee) && (
@@ -358,6 +378,16 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
   }
   if (thirdPlaceMatch) matchNumbers.set(thirdPlaceMatch.id, matchCounter++);
 
+  // « Vainqueur #n » / « Perdant #n » sur les slots encore vides
+  const slotSources = buildSlotSources(matches);
+  const slotLabel = (m: MatchWithTeams, slot: "A" | "B"): string | undefined => {
+    const src = slotSources.get(`${m.id}:${slot}`);
+    if (!src) return undefined;
+    const n = matchNumbers.get(src.from);
+    if (n === undefined) return undefined;
+    return src.win ? t("bracket_winner_of", { n }) : t("bracket_loser_of", { n });
+  };
+
   // Position matches using tree-based formula derived from positionInRound.
   // R1 has spacing CELL_BASE. Each subsequent round doubles the cell height.
   // This ensures R2 matches are always visually centered between their two R1 feeders,
@@ -455,6 +485,8 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
                     matchNumber={matchNumbers.get(m.id)}
                     teamANumber={m.teamAId ? teamNumberById.get(m.teamAId) : undefined}
                     teamBNumber={m.teamBId ? teamNumberById.get(m.teamBId) : undefined}
+                    placeholderA={slotLabel(m, "A")}
+                    placeholderB={slotLabel(m, "B")}
                     compact={colIdx === 0}
                   />
                 </div>
@@ -476,6 +508,8 @@ function SEBracket({ matches, onEdit, selectedId, teamNumberById }: {
               matchNumber={matchNumbers.get(thirdPlaceMatch.id)}
               teamANumber={thirdPlaceMatch.teamAId ? teamNumberById.get(thirdPlaceMatch.teamAId) : undefined}
               teamBNumber={thirdPlaceMatch.teamBId ? teamNumberById.get(thirdPlaceMatch.teamBId) : undefined}
+              placeholderA={slotLabel(thirdPlaceMatch, "A")}
+              placeholderB={slotLabel(thirdPlaceMatch, "B")}
             />
           </div>
         </div>
@@ -563,11 +597,21 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
     for (const m of grand) matchNumbers.set(m.id, matchCounter++);
   }
 
+  // « Vainqueur #n » / « Perdant #n » sur les slots encore vides — les liens
+  // traversent les sections (le perdant d'un match WB alimente le LB).
+  const slotSources = buildSlotSources(matches);
+  const slotLabel = (m: MatchWithTeams, slot: "A" | "B"): string | undefined => {
+    const src = slotSources.get(`${m.id}:${slot}`);
+    if (!src) return undefined;
+    const n = matchNumbers.get(src.from);
+    if (n === undefined) return undefined;
+    return src.win ? t("bracket_winner_of", { n }) : t("bracket_loser_of", { n });
+  };
+
   const renderTreeSection = (
     title: string,
     sectionMatches: MatchWithTeams[],
     accentClass: string,
-    useTreeSpacing: boolean,
   ) => {
     const rounds = new Map<number, MatchWithTeams[]>();
     sectionMatches.forEach((m) => {
@@ -581,12 +625,12 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
     const side = sectionMatches[0]?.bracketSide ?? "W";
     const { metrics: colMetrics, totalWidth } = getColumnMetrics(sortedRounds.length);
 
-    const firstRoundCount = (rounds.get(sortedRounds[0][0]) ?? []).length;
-    const sectionHeight = useTreeSpacing
-      ? firstRoundCount * CELL_BASE * Math.pow(2, sortedRounds.length - 1)
-      : Math.max(...sectionMatches.map((m) => (m.positionInRound ?? 0) + 1)) * CELL_BASE;
-    const cappedHeight = Math.min(sectionHeight, firstRoundCount * CELL_BASE * 4);
-    const effectiveHeight = useTreeSpacing ? cappedHeight : sectionHeight;
+    // Vraie mise en page d'arbre : chaque colonne divise la hauteur de la
+    // section par sa taille théorique de round, si bien qu'un match est centré
+    // en face de ses deux matchs sources (les rounds de consolidation du LB,
+    // de même taille, restent alignés en face à face).
+    const roundSizes = sortedRounds.map(([, ms]) => Math.max(...ms.map((m) => m.positionInRound ?? 0)) + 1);
+    const sectionHeight = Math.max(roundSizes[0], 1) * CELL_BASE;
     const headerOffset = 28;
 
     const matchPositions = new Map<string, { colIdx: number; y: number }>();
@@ -596,24 +640,17 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
       const sorted = [...roundMatches].sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
       const colData = { x: colMetrics[colIdx].x, matches: [] as Array<{ y: number; nextY: number | null; nextCol: number | null }> };
 
-      if (useTreeSpacing) {
-        const cellH = effectiveHeight / Math.max(sorted.length, 1);
-        sorted.forEach((m, index) => {
-          const top = index * cellH + (cellH - CARD_H) / 2;
-          matchPositions.set(m.id, { colIdx, y: top });
-          colData.matches.push({ y: top, nextY: null, nextCol: null });
-        });
-      } else {
-        sorted.forEach((m) => {
-          const pos = m.positionInRound ?? 0;
-          const top = pos * CELL_BASE + (CELL_BASE - CARD_H) / 2;
-          matchPositions.set(m.id, { colIdx, y: top });
-          colData.matches.push({ y: top, nextY: null, nextCol: null });
-        });
-      }
+      const cellH = sectionHeight / Math.max(roundSizes[colIdx], 1);
+      sorted.forEach((m) => {
+        const top = (m.positionInRound ?? 0) * cellH + (cellH - CARD_H) / 2;
+        matchPositions.set(m.id, { colIdx, y: top });
+        colData.matches.push({ y: top, nextY: null, nextCol: null });
+      });
 
       roundCols.push(colData);
     });
+
+    const effectiveHeight = sectionHeight;
 
     sectionMatches.forEach((m) => {
       if (!m.nextMatchWinId) return;
@@ -681,6 +718,8 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
                         matchNumber={matchNumbers.get(m.id)}
                         teamANumber={m.teamAId ? teamNumberById.get(m.teamAId) : undefined}
                         teamBNumber={m.teamBId ? teamNumberById.get(m.teamBId) : undefined}
+                        placeholderA={slotLabel(m, "A")}
+                        placeholderB={slotLabel(m, "B")}
                         compact={colIdx === 0}
                       />
                     </div>
@@ -696,9 +735,9 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
 
   return (
     <div className="de-bracket">
-      {renderTreeSection(t("de_upper"), upper, "de-section--upper", false)}
-      {renderTreeSection(t("de_lower"), lower, "de-section--lower", false)}
-      {renderTreeSection(t("de_grand"), grand, "de-section--grand", false)}
+      {renderTreeSection(t("de_upper"), upper, "de-section--upper")}
+      {renderTreeSection(t("de_lower"), lower, "de-section--lower")}
+      {renderTreeSection(t("de_grand"), grand, "de-section--grand")}
     </div>
   );
 }

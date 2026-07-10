@@ -3,7 +3,9 @@ import { createNotification } from "@/lib/notify";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
 
 // All match phases that represent a bracket (used to detect finals, champions, etc.)
-const BRACKET_PHASES = ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE"] as const;
+// "STAGE" = pipeline (refonte formats) : seules les étapes SE/DE produisent des
+// matchs bracketSide "G", donc l'inclure est sûr pour les détections de finale.
+const BRACKET_PHASES = ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE", "STAGE"] as const;
 type BracketPhase = typeof BRACKET_PHASES[number];
 
 // ---------------------------------------------------------------------------

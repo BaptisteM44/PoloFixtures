@@ -433,6 +433,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
         {/* ── Infos générales ── */}
         <div className="form-grid">
+          <p style={{ ...sectionTitleStyle, gridColumn: "1 / -1", marginBottom: 0 }}>{t("section_general")}</p>
           <label className="field-row">
             {t("field_name")}
             <input name="name" defaultValue={tournament.name} required />
@@ -507,6 +508,10 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             {t("field_game_duration")}
             <input type="number" name="gameDurationMin" defaultValue={tournament.gameDurationMin} />
           </label>
+          <label className="field-row">
+            {t("field_courts")}
+            <input type="number" name="courtsCount" defaultValue={tournament.courtsCount} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
+          </label>
           {currentFormat === "ABC Chapeau" && (
             <label className="field-row">
               {t("field_max_solo_players")} <span style={{ fontWeight: 400, color: "var(--text-muted)", fontSize: 11 }}>{t("field_max_solo_players_hint")}</span>
@@ -541,10 +546,6 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             <label className="field-row" style={{ margin: 0 }}>
               {t("field_max_teams")}
               <input type="number" name="maxTeams" defaultValue={tournament.maxTeams} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
-            </label>
-            <label className="field-row" style={{ margin: 0 }}>
-              {t("field_courts")}
-              <input type="number" name="courtsCount" defaultValue={tournament.courtsCount} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined} />
             </label>
             <label className="field-row" style={{ margin: 0 }}>
               {t("field_registration_fee")}
@@ -603,38 +604,6 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                 </span>
               </label>
             </div>
-          </div>
-
-          {/* ── Test mode toggle ── */}
-          <div style={{ gridColumn: "1 / -1", border: "2px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
-            <label style={{ display: "flex", flexDirection: "row", gap: 12, alignItems: "center", fontSize: 13, cursor: "pointer", padding: "12px 16px", background: testMode ? "color-mix(in srgb, var(--yellow) 8%, var(--surface))" : "var(--bg-secondary)", margin: 0 }}>
-              <input
-                type="checkbox"
-                checked={testMode}
-                onChange={(e) => handleTestModeChange(e.target.checked)}
-                style={{ width: 18, height: 18, cursor: "pointer", flexShrink: 0 }}
-              />
-              <span style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600 }}>🧪 {t("field_test_mode")}</div>
-                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{t("field_test_mode_desc")}</div>
-              </span>
-            </label>
-            {testMode && (
-              <div style={{ borderTop: "1px solid var(--border)", padding: "10px 16px 10px 46px", background: "var(--bg-secondary)" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, margin: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={hidden}
-                    onChange={(e) => setHidden(e.target.checked)}
-                    style={{ width: 16, height: 16, cursor: "pointer", flexShrink: 0 }}
-                  />
-                  <span>
-                    <div style={{ fontWeight: 600 }}>👁 {t("field_hidden")}</div>
-                    <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>{t("field_hidden_desc")}</div>
-                  </span>
-                </label>
-              </div>
-            )}
           </div>
 
           {/* ── Format section (presets + lock) — masquée pour les tournois pipeline
@@ -1015,42 +984,89 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
           </div>
           )}
-          <label className="field-row">
-            {t("field_status")}
-            <select name="status" defaultValue={tournament.status}>
-              <option value="UPCOMING">{t("status_upcoming")}</option>
-              <option value="LIVE">{t("status_live")}</option>
-              <option value="COMPLETED">{t("status_completed")}</option>
-            </select>
-          </label>
-          <label className="field-row">
-            {t("field_stream_youtube")}
-            <input id="streamYoutubeUrl" name="streamYoutubeUrl" defaultValue={tournament.streamYoutubeUrl ?? ""} />
-          </label>
-          <label className="field-row">
-            {t("field_stream_court1" as any) ?? "Stream Court 1"}
-            <input id="streamCourt1Url" name="streamCourt1Url" defaultValue={tournament.streamCourt1Url ?? ""} placeholder="https://youtube.com/live/..." />
-          </label>
-          <label className="field-row">
-            {t("field_stream_court2" as any) ?? "Stream Court 2"}
-            <input id="streamCourt2Url" name="streamCourt2Url" defaultValue={tournament.streamCourt2Url ?? ""} placeholder="https://youtube.com/live/..." />
-          </label>
-          <label className="field-row">
-            {t("field_stream_multiplex" as any) ?? "Stream Multiplex (QCQC)"}
-            <input id="streamMultiplexUrl" name="streamMultiplexUrl" defaultValue={tournament.streamMultiplexUrl ?? ""} placeholder="https://youtube.com/live/..." />
-          </label>
-          <label className="field-row">
-            {t("field_telegram")}
-            <input name="telegramUrl" defaultValue={tournament.telegramUrl ?? ""} placeholder="https://t.me/mongroupe" />
-          </label>
-          <label className="field-row">
-            {t("field_chat")}
-            <select name="chatMode" defaultValue={tournament.chatMode ?? "DISABLED"}>
-              <option value="DISABLED">{t("chat_disabled")}</option>
-              <option value="OPEN">{t("chat_open")}</option>
-              <option value="ORG_ONLY">{t("chat_org_only")}</option>
-            </select>
-          </label>
+
+          {/* Pipeline : le format vit dans l'onglet Étapes */}
+          {(tournament as any).usesPipeline && (
+            <div style={{ gridColumn: "1 / -1", border: "2px dashed var(--border)", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "var(--text-muted)" }}>
+              🧩 {t("pipeline_format_hint")}
+            </div>
+          )}
+
+          {/* ── Statut & visibilité ── */}
+          <div style={{ gridColumn: "1 / -1", border: "2px solid var(--border)", borderRadius: 10, padding: "16px 18px", display: "grid", gap: 12 }}>
+            <p style={{ ...sectionTitleStyle, marginBottom: 0 }}>{t("section_status_visibility")}</p>
+            <label className="field-row" style={{ margin: 0, maxWidth: 280 }}>
+              {t("field_status")}
+              <select name="status" defaultValue={tournament.status}>
+                <option value="UPCOMING">{t("status_upcoming")}</option>
+                <option value="LIVE">{t("status_live")}</option>
+                <option value="COMPLETED">{t("status_completed")}</option>
+              </select>
+            </label>
+            <div style={{ border: "1.5px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+              <label style={{ display: "flex", flexDirection: "row", gap: 12, alignItems: "center", fontSize: 13, cursor: "pointer", padding: "12px 16px", background: testMode ? "color-mix(in srgb, var(--yellow) 8%, var(--surface))" : "var(--bg-secondary)", margin: 0 }}>
+                <input
+                  type="checkbox"
+                  checked={testMode}
+                  onChange={(e) => handleTestModeChange(e.target.checked)}
+                  style={{ width: 18, height: 18, cursor: "pointer", flexShrink: 0 }}
+                />
+                <span style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600 }}>🧪 {t("field_test_mode")}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{t("field_test_mode_desc")}</div>
+                </span>
+              </label>
+              {testMode && (
+                <div style={{ borderTop: "1px solid var(--border)", padding: "10px 16px 10px 46px", background: "var(--bg-secondary)" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, margin: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={hidden}
+                      onChange={(e) => setHidden(e.target.checked)}
+                      style={{ width: 16, height: 16, cursor: "pointer", flexShrink: 0 }}
+                    />
+                    <span>
+                      <div style={{ fontWeight: 600 }}>👁 {t("field_hidden")}</div>
+                      <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 1 }}>{t("field_hidden_desc")}</div>
+                    </span>
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Diffusion & communication ── */}
+          <div className="edit-grid-2" style={{ gridColumn: "1 / -1", border: "2px solid var(--border)", borderRadius: 10, padding: "16px 18px", gap: "16px 24px" }}>
+            <p style={{ ...sectionTitleStyle, gridColumn: "1 / -1", marginBottom: 0 }}>{t("section_communication")}</p>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_stream_youtube")}
+              <input id="streamYoutubeUrl" name="streamYoutubeUrl" defaultValue={tournament.streamYoutubeUrl ?? ""} />
+            </label>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_stream_court1" as any) ?? "Stream Court 1"}
+              <input id="streamCourt1Url" name="streamCourt1Url" defaultValue={tournament.streamCourt1Url ?? ""} placeholder="https://youtube.com/live/..." />
+            </label>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_stream_court2" as any) ?? "Stream Court 2"}
+              <input id="streamCourt2Url" name="streamCourt2Url" defaultValue={tournament.streamCourt2Url ?? ""} placeholder="https://youtube.com/live/..." />
+            </label>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_stream_multiplex" as any) ?? "Stream Multiplex (QCQC)"}
+              <input id="streamMultiplexUrl" name="streamMultiplexUrl" defaultValue={tournament.streamMultiplexUrl ?? ""} placeholder="https://youtube.com/live/..." />
+            </label>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_telegram")}
+              <input name="telegramUrl" defaultValue={tournament.telegramUrl ?? ""} placeholder="https://t.me/mongroupe" />
+            </label>
+            <label className="field-row" style={{ margin: 0 }}>
+              {t("field_chat")}
+              <select name="chatMode" defaultValue={tournament.chatMode ?? "DISABLED"}>
+                <option value="DISABLED">{t("chat_disabled")}</option>
+                <option value="OPEN">{t("chat_open")}</option>
+                <option value="ORG_ONLY">{t("chat_org_only")}</option>
+              </select>
+            </label>
+          </div>
         </div>
 
         {/* ── Affiche / Bannière ── */}

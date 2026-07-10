@@ -72,11 +72,13 @@ const PHASE_LABEL: Record<string, string> = {
   BIG_APPLE_RR: "RR", BIG_APPLE_SWISS: "Swiss", BIG_APPLE_PLACEMENT: "Placement", BIG_APPLE_SE: "SE",
 };
 
-function positionLabel(match: MatchWithTeams, courtMatches: MatchWithTeams[]) {
+// « Suivant » / « In the hole » : position dans la file GLOBALE du terrain
+// (tous blocs confondus) — sinon le 1er match de chaque bloc affiche
+// « Suivant » et tout semble se lancer en même temps.
+function positionLabel(match: MatchWithTeams, courtQueuePos: Map<string, number>) {
   if (match.status === "FINISHED") return "Terminé";
   if (match.status === "LIVE") return "Sur court";
-  const scheduled = courtMatches.filter((m) => m.status === "SCHEDULED");
-  const idx = scheduled.findIndex((m) => m.id === match.id);
+  const idx = courtQueuePos.get(match.id);
   if (idx === 0) return "Suivant";
   if (idx === 1) return "In the hole";
   return "En attente";
@@ -294,8 +296,11 @@ export function ScheduleBoard({
       // For Big Apple RR matches, separate by pool (Pool A vs Pool B)
       const bigAppleRRSuffix = match.phase === "BIG_APPLE_RR" && match.poolId ? `-P${match.poolId}` : "";
       // Pipeline (nouveau système) : chaque Stage est son propre groupe — sans
-      // ça, toutes les étapes d'un pipeline fusionneraient sous "STAGE-R1"
-      const stageSuffix = match.phase === "STAGE" && (match as any).stageId ? `-ST${(match as any).stageId}` : "";
+      // ça, toutes les étapes d'un pipeline fusionneraient sous "STAGE-R1".
+      // Le groupKey (A/B/…) sépare aussi les groupes d'une même étape, et le
+      // bracketSide sépare WB/LB/finale d'une étape à élimination (sinon
+      // "WB R2" et "LB R2" fusionneraient sous "Round 2").
+      const stageSuffix = match.phase === "STAGE" && (match as any).stageId ? `-ST${(match as any).stageId}${(match as any).groupKey ? `-G${(match as any).groupKey}` : ""}${match.bracketSide ? `-${match.bracketSide}` : ""}` : "";
       const key = `${match.phase}-R${match.roundIndex}${sessionSuffix}${bracketSuffix}${grazPoolSuffix}${grazRegroupSuffix}${kiosquePoolSuffix}${bigAppleRRSuffix}${stageSuffix}`;
       if (!groups.has(key)) {
         groups.set(key, { phase: match.phase, roundIndex: match.roundIndex, poolSessionIndex: match.poolSessionIndex ?? undefined, bracketSide: match.bracketSide ?? undefined, poolId: match.poolId ?? null, stageId: (match as any).stageId ?? null, groupKey: (match as any).groupKey ?? null, matches: [] });
@@ -378,7 +383,81 @@ export function ScheduleBoard({
       list.push(match);
       map.set(match.courtName, list);
     }
+    // Ordre stable des colonnes : Court 1 à gauche, Court 2 à droite, etc.
+    return new Map(
+      [...map.entries()].sort(([a], [b]) =>
+        a.localeCompare(b, undefined, { numeric: true })
+      )
+    );
+  };
+
+  // Étapes pipeline à double élimination = plusieurs matchs side "L" (une SE
+  // n'a qu'une petite finale). Sert à nommer WB/LB vs Finale/3e place.
+  const deStageIds = useMemo(() => {
+    const lCount = new Map<string, number>();
+    for (const m of matches) {
+      const sid = (m as any).stageId as string | undefined;
+      if (m.phase === "STAGE" && sid && m.bracketSide === "L") {
+        lCount.set(sid, (lCount.get(sid) ?? 0) + 1);
+      }
+    }
+    return new Set([...lCount.entries()].filter(([, c]) => c > 1).map(([id]) => id));
+  }, [matches]);
+
+  const stagePill = (m: MatchWithTeams): string | null => {
+    if (m.phase !== "STAGE") return null;
+    const side = m.bracketSide;
+    if (!side) return `R${m.roundIndex}`;
+    const isDE = deStageIds.has(((m as any).stageId as string | undefined) ?? "");
+    if (side === "W") return isDE ? `WB R${m.roundIndex}` : `R${m.roundIndex}`;
+    if (side === "L") return isDE ? `LB R${m.roundIndex}` : "3e place";
+    if (side === "G") return isDE ? "Grande finale" : "Finale";
+    if (side === "BG") return "Finale reset";
+    return `R${m.roundIndex}`;
+  };
+
+  // File d'attente réelle par terrain (matchs planifiés, tous blocs confondus)
+  const courtQueuePos = useMemo(() => {
+    const rank = new Map<string, number>();
+    const byCourt = new Map<string, MatchWithTeams[]>();
+    for (const m of matches) {
+      if (m.status !== "SCHEDULED") continue;
+      const list = byCourt.get(m.courtName) ?? [];
+      list.push(m);
+      byCourt.set(m.courtName, list);
+    }
+    for (const list of byCourt.values()) {
+      list.sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
+      list.forEach((m, i) => rank.set(m.id, i));
+    }
+    return rank;
+  }, [matches]);
+
+  // Provenance des slots vides (« Vainqueur #12 » / « Perdant #7 » au lieu de TBD)
+  const slotSources = useMemo(() => {
+    const map = new Map<string, { from: string; win: boolean }>();
+    for (const m of matches) {
+      const mm = m as any;
+      if (mm.nextMatchWinId && mm.nextSlotWin) map.set(`${mm.nextMatchWinId}:${mm.nextSlotWin}`, { from: m.id, win: true });
+      if (mm.nextMatchLoseId && mm.nextSlotLose) map.set(`${mm.nextMatchLoseId}:${mm.nextSlotLose}`, { from: m.id, win: false });
+    }
     return map;
+  }, [matches]);
+
+  const slotPlaceholder = (m: MatchWithTeams, slot: "A" | "B"): string | null => {
+    const src = slotSources.get(`${m.id}:${slot}`);
+    if (!src) return null;
+    const n = globalOrder.get(src.from);
+    if (n === undefined) return null;
+    return src.win ? t("bracket_winner_of", { n }) : t("bracket_loser_of", { n });
+  };
+
+  const teamSlot = (m: MatchWithTeams, slot: "A" | "B") => {
+    const id = slot === "A" ? m.teamAId : m.teamBId;
+    if (id) return teamName(id);
+    const from = slotPlaceholder(m, slot);
+    if (!from) return "TBD";
+    return <span style={{ opacity: 0.55, fontStyle: "italic", fontWeight: 400 }}>{from}</span>;
   };
 
   const renderMatchCard = (match: MatchWithTeams, courtMatches: MatchWithTeams[]) => (
@@ -390,7 +469,7 @@ export function ScheduleBoard({
       >
         <div className="match-card__corner match-card__corner--tl">
           <span className="match-card__number">{globalOrder.get(match.id)}</span>
-          <span className="pill">{positionLabel(match, courtMatches)}</span>
+          <span className="pill">{positionLabel(match, courtQueuePos)}</span>
         </div>
         <div className="match-card__corner match-card__corner--tr">
           {match.status === "LIVE"
@@ -401,7 +480,7 @@ export function ScheduleBoard({
 
         <div className="match-card__center">
           <div className={`match-card__team${match.status === "FINISHED" && match.scoreA > match.scoreB ? " match-winner" : ""}`}>
-            {teamName(match.teamAId)}
+            {teamSlot(match, "A")}
           </div>
           <div className="match-card__score">
             <span>{match.scoreA}</span>
@@ -409,7 +488,7 @@ export function ScheduleBoard({
             <span>{match.scoreB}</span>
           </div>
           <div className={`match-card__team${match.status === "FINISHED" && match.scoreB > match.scoreA ? " match-winner" : ""}`}>
-            {teamName(match.teamBId)}
+            {teamSlot(match, "B")}
           </div>
           {(match.referee || match.coReferee) && (
             <div className="match-card__referees">
@@ -420,7 +499,7 @@ export function ScheduleBoard({
         </div>
 
         <div className="match-card__corner match-card__corner--bl">
-          <span className="pill">{PHASE_LABEL[match.phase] ?? match.phase} R{match.roundIndex}</span>
+          <span className="pill">{stagePill(match) ?? `${PHASE_LABEL[match.phase] ?? match.phase} R${match.roundIndex}`}</span>
         </div>
         <div className={`match-card__corner match-card__corner--br match-card__status--${match.status.toLowerCase()}`}>
           <span>{STATUS_LABEL[match.status] ?? match.status}</span>
@@ -519,6 +598,15 @@ export function ScheduleBoard({
         // For BRACKET phase, show which bracket + match type based on bracketSide
         const bracketSide = group.matches[0]?.bracketSide;
         let bracketLabel = "";
+        let stageShowRound = true;
+        if (group.phase === "STAGE" && bracketSide) {
+          // Étape pipeline à élimination : nommer WB/LB/finale correctement
+          const isDEStage = deStageIds.has(group.stageId ?? "");
+          if (bracketSide === "W") bracketLabel = isDEStage ? " · Winners" : "";
+          else if (bracketSide === "L") { bracketLabel = isDEStage ? " · Losers" : " · Petite finale"; stageShowRound = isDEStage; }
+          else if (bracketSide === "G") { bracketLabel = isDEStage ? " · Grande finale" : " · Finale"; stageShowRound = false; }
+          else if (bracketSide === "BG") { bracketLabel = " · Finale reset"; stageShowRound = false; }
+        }
         if (group.phase === "BRACKET" && bracketSide) {
           // Detect SWISS_SPLIT_SE by presence of B/BG/BL sides
           const isSplitSE = filtered.some((m) => m.phase === "BRACKET" && (m.bracketSide === "B" || m.bracketSide === "BG" || m.bracketSide === "BL"));
@@ -543,7 +631,7 @@ export function ScheduleBoard({
         }
 
         const isTruncated = poolRounds !== null && group.phase === "POOL" && group.roundIndex > poolRounds;
-        const groupKey = `${group.phase}-R${group.roundIndex}${sessionLabel.replace(/\s/g, "")}${bracketSide ?? ""}${group.stageId ?? ""}`;
+        const groupKey = `${group.phase}-R${group.roundIndex}${sessionLabel.replace(/\s/g, "")}${bracketSide ?? ""}${group.stageId ?? ""}${group.groupKey ?? ""}`;
 
         return (
           <div
@@ -552,7 +640,7 @@ export function ScheduleBoard({
           >
             <div className="schedule-round__header">
               <span className="schedule-round__label">
-                {group.phase === "STAGE" ? (stages?.find((s) => s.id === group.stageId)?.name ?? t("pipeline_stage")) : (PHASE_LABEL[group.phase] ?? group.phase)}{bracketLabel}{(!bracketSide || bracketSide === "W" || bracketSide === "L") ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}{grazPoolLabel}{group.phase === "STAGE" && group.groupKey ? ` · ${t("pipeline_group_label", { key: group.groupKey })}` : ""}
+                {group.phase === "STAGE" ? (stages?.find((s) => s.id === group.stageId)?.name ?? t("pipeline_stage")) : (PHASE_LABEL[group.phase] ?? group.phase)}{bracketLabel}{(group.phase === "STAGE" ? stageShowRound : (!bracketSide || bracketSide === "W" || bracketSide === "L")) ? ` · Round ${group.roundIndex}` : ""}{sessionLabel}{grazPoolLabel}{group.phase === "STAGE" && group.groupKey ? ` · ${t("pipeline_group_label", { key: group.groupKey })}` : ""}
               </span>
               {finished && <span className="schedule-round__badge schedule-round__badge--done">{t("status_completed")}</span>}
               {active && <span className="schedule-round__badge schedule-round__badge--live">{t("status_live")}</span>}

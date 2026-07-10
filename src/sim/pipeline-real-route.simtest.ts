@@ -50,10 +50,10 @@ describe("Pipeline via la VRAIE route PUT /api/matches/[id]", () => {
     const preset = PIPELINE_PRESETS.find((p) => p.key === "big_apple")!;
     await createStages(id, preset.build(16));
 
-    const { launchStage } = await import("@/engine/pipeline-server");
+    const { launchStage, launchNextGroup } = await import("@/engine/pipeline-server");
 
     // Boucle : lancer la prochaine étape en attente, jouer via la vraie route, jusqu'à COMPLETED
-    for (let guard = 0; guard < 20; guard++) {
+    for (let guard = 0; guard < 40; guard++) {
       const t = await getPipeline(id);
       if (!t) throw new Error("tournoi introuvable");
       if (t.status === "COMPLETED") break;
@@ -68,6 +68,9 @@ describe("Pipeline via la VRAIE route PUT /api/matches/[id]", () => {
       }
       // Joue TOUS les matchs jouables via PUT /api/matches/[id] (vraie route)
       await playAllPlayable(id, rng);
+      // Sessions séquentielles : groupe fini → l'orga lance le suivant
+      // (no-op avec erreur ignorée si tous les groupes sont déjà lancés)
+      await launchNextGroup(id, active.order);
     }
 
     const final = await getPipeline(id);

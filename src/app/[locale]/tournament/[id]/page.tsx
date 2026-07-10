@@ -29,6 +29,13 @@ import { TournamentCompletionWatcher } from "@/components/TournamentCompletionWa
 import { BracketActions } from "@/components/BracketActions";
 import { AccommodationPublicView } from "@/components/AccommodationPublicView";
 import { LiveTabView } from "@/components/LiveTabView";
+import { getPipeline, finalStandings } from "@/engine/pipeline-server";
+import { PipelinePlanning } from "@/components/PipelinePlanning";
+import {
+  launchPipelineStageAction, launchPipelineGroupAction, resetPipelineStagesAction,
+  simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction,
+  updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, resetPipelineToRoundAction, reschedulePipelineStageAction,
+} from "./edit/actions";
 
 function summarizeCities(players: { player: { city: string | null } }[]): string {
   const counts = new Map<string, number>();
@@ -58,7 +65,10 @@ export default async function TournamentPage({
   // Les onglets "equipes" et "recap" ont besoin des joueurs complets.
   // "hebergement" aussi : myTeam est calculé via team.players, nécessaire pour afficher le tab.
   // Pas de tab = page chargée sans ?tab= : on charge les players par précaution (recap default pour COMPLETED).
-  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap" || activeTab === "hebergement" || activeTab === "pools" || activeTab === "kiosque_j1" || activeTab === "kiosque_top4" || activeTab === "kiosque_bot12";
+  // "schedule" aussi : le bouton ⋯ des cartes de match (noms des joueurs) en dépend —
+  // il doit fonctionner sur TOUS les tournois, pas seulement les onglets qui chargeaient les joueurs.
+  // Idem pour les onglets de groupes pipeline (grp-/grpgen-) : popover joueurs de PoolTables.
+  const needsPlayers = !activeTab || activeTab === "equipes" || activeTab === "recap" || activeTab === "hebergement" || activeTab === "pools" || activeTab === "kiosque_j1" || activeTab === "kiosque_top4" || activeTab === "kiosque_bot12" || activeTab === "schedule" || activeTab.startsWith("grp-") || activeTab.startsWith("grpgen-");
   // L'onglet "equipes" a besoin des events pour les badges. "schedule" pour le chrono live.
   const needsEvents = activeTab === "equipes" || activeTab === "live" || activeTab === "schedule";
   // Les onglets sans matches : info, inscription, recap, communaute, equipes (matches via events)
@@ -72,9 +82,12 @@ export default async function TournamentPage({
       teams: needsPlayers
         ? { include: { players: { include: { player: { include: { account: { select: { id: true } } } } } } } }
         : { select: { id: true, name: true, seed: true, selected: true, guaranteed: true, waitlistPosition: true, city: true, country: true, registrationNote: true, orgaNote: true, tournamentId: true, color: true, playerALevel: true, playerBLevel: true, playerCLevel: true } },
-      pools: activeTab === "pools" || activeTab === "kiosque_j1" || activeTab === "kiosque_top4" || activeTab === "kiosque_bot12" || activeTab === "schedule"
+      // Pools : include complet quand un onglet en a besoin pour le CONTENU ;
+      // sinon select léger — la barre d'onglets pipeline (Groupe A/B/Général)
+      // a besoin de {id, name, stageId} sur TOUS les onglets pour ne pas disparaître.
+      pools: activeTab === "pools" || activeTab === "kiosque_j1" || activeTab === "kiosque_top4" || activeTab === "kiosque_bot12" || activeTab === "schedule" || activeTab?.startsWith("grp-") || activeTab?.startsWith("grpgen-")
         ? { include: { teams: { include: { team: true } } } }
-        : false,
+        : { select: { id: true, name: true, stageId: true } },
       matches: noMatchesNeeded ? false : {
         include: {
           teamA: true,
@@ -92,7 +105,7 @@ export default async function TournamentPage({
         ? { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true } } }, orderBy: { createdAt: "asc" as const } }
         : false,
       hostClub: { select: { id: true, name: true, logoPath: true } },
-      stages: { orderBy: { order: "asc" }, include: { entries: true } },
+      stages: { orderBy: { order: "asc" }, include: { entries: true, matches: { select: { id: true, status: true, groupKey: true } } } },
     }
   }) as any;
 
@@ -143,6 +156,27 @@ export default async function TournamentPage({
   const isKiosque = (tournament as any).saturdayFormat === "KIOSQUE";
   const isBigApple = (tournament as any).saturdayFormat === "BIG_APPLE";
   const isPipeline = !!(tournament as any).usesPipeline;
+  // Pipeline : un onglet par groupe réel (Pool) de chaque étape RR/Swiss/CrossPool,
+  // + un onglet "Général" par étape ayant plusieurs groupes. Ordre = ordre du pipeline.
+  const pipelineGroupTabs = isPipeline
+    ? [...((tournament as any).stages ?? [])]
+        .sort((a: any, b: any) => a.order - b.order)
+        .flatMap((stage: any) => {
+          const stagePools = (tournament.pools ?? []).filter((p: any) => p.stageId === stage.id);
+          if (stagePools.length === 0) return [];
+          const groupTabs = stagePools.map((p: any) => ({
+            value: `grp-${p.id}`,
+            label: p.name,
+            stageId: stage.id,
+            poolIds: [p.id],
+            combinedOnly: false,
+          }));
+          const generalTab = stagePools.length > 1
+            ? [{ value: `grpgen-${stage.id}`, label: t("pipeline_general"), stageId: stage.id, poolIds: stagePools.map((p: any) => p.id), combinedOnly: true }]
+            : [];
+          return [...groupTabs, ...generalTab];
+        })
+    : [];
   const kiosqueTop4Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "KIOSQUE_TOP4");
   const kiosqueBottom12Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "KIOSQUE_BOTTOM12");
   const kiosqueSEMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "KIOSQUE_SE");
@@ -212,6 +246,8 @@ export default async function TournamentPage({
     { label: t("tab_info"), value: "info", href: `/tournament/${params.id}?tab=info` },
     ...((!registrationClosed || tournament.format === "ABC Chapeau") ? [{ label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` }] : []),
     ...(isLaunched ? [{ label: t("tab_schedule"), value: "schedule", href: `/tournament/${params.id}?tab=schedule` }] : []),
+    // Pipeline : pilotage des étapes directement depuis la page publique (orga/co-orga uniquement)
+    ...(isPipeline && isOrga ? [{ label: t("orga_tab_stages"), value: "stages", href: `/tournament/${params.id}?tab=stages` }] : []),
     // Berlin Mixed tabs
     ...(isLaunched && isBerlinMixed && berlinFriMatches.length > 0 ? [{ label: "Vendredi", value: "berlin_fri", href: `/tournament/${params.id}?tab=berlin_fri` }] : []),
     ...(isLaunched && isBerlinMixed && berlinSatMatches.length > 0 ? [{ label: "Samedi", value: "berlin_sat", href: `/tournament/${params.id}?tab=berlin_sat` }] : []),
@@ -223,8 +259,10 @@ export default async function TournamentPage({
     ...(isLaunched && isKiosque && kiosqueTop4Matches.length > 0 ? [{ label: t("tab_kiosque_top4"), value: "kiosque_top4", href: `/tournament/${params.id}?tab=kiosque_top4` }] : []),
     ...(isLaunched && isKiosque && kiosqueBottom12Matches.length > 0 ? [{ label: t("tab_kiosque_bot12"), value: "kiosque_bot12", href: `/tournament/${params.id}?tab=kiosque_bot12` }] : []),
     ...(isLaunched && isKiosque && kiosqueSEMatches.length > 0 ? [{ label: t("tab_kiosque_se"), value: "kiosque_se", href: `/tournament/${params.id}?tab=kiosque_se` }] : []),
-    // Standard tabs (hidden for Berlin Mixed and Kiosque)
-    ...(isLaunched && !isBerlinMixed && !isMtpOpen && !isKiosque && tournament.saturdayFormat !== "SWISS" ? [{ label: (isGraz || isBigApple || isPipeline) ? t("tab_rr_groups") : t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
+    // Pipeline : un onglet par groupe réel + Général par étape multi-groupes
+    ...(isLaunched && isPipeline ? pipelineGroupTabs.map((g) => ({ label: g.label, value: g.value, href: `/tournament/${params.id}?tab=${g.value}` })) : []),
+    // Standard tabs (hidden for Berlin Mixed, Kiosque, Pipeline)
+    ...(isLaunched && !isBerlinMixed && !isMtpOpen && !isKiosque && !isPipeline && tournament.saturdayFormat !== "SWISS" ? [{ label: (isGraz || isBigApple) ? t("tab_rr_groups") : t("tab_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
     ...(isLaunched && isMtpOpen ? [{ label: t("tab_mtp_pools"), value: "pools", href: `/tournament/${params.id}?tab=pools` }] : []),
     ...(isLaunched && isMtpOpen && hasMtpBarrage ? [{ label: t("tab_mtp_standings"), value: "mtp_standings", href: `/tournament/${params.id}?tab=mtp_standings` }] : []),
     ...(isLaunched && !isBerlinMixed && hasSwiss ? [{ label: t("tab_swiss"), value: "swiss", href: `/tournament/${params.id}?tab=swiss` }] : []),
@@ -247,13 +285,33 @@ export default async function TournamentPage({
   type PodiumTeam = { id: string; name: string; players?: PodiumPlayer[] } | null;
   let podium: { first: PodiumTeam; second: PodiumTeam; third: PodiumTeam } = { first: null, second: null, third: null };
 
-  if (isCompleted) {
+  // Pipeline se terminant SANS bracket (dernier stage = RR/Swiss/CrossPool/Placement) :
+  // le podium vient du classement final du moteur, pas d'un match "G".
+  const lastPipelineStage = isPipeline
+    ? [...((tournament as any).stages ?? [])].sort((a: any, b: any) => b.order - a.order)[0]
+    : null;
+  const pipelineEndsWithoutBracket = isPipeline && lastPipelineStage && lastPipelineStage.type !== "SE" && lastPipelineStage.type !== "DE";
+
+  if (isCompleted && pipelineEndsWithoutBracket) {
+    const pipeline = await getPipeline(tournament.id);
+    if (pipeline) {
+      const ranking = finalStandings(pipeline);
+      const teamById = new Map(tournament.teams.map((tm: any) => [tm.id, tm]));
+      const extractPlayers = (team: any): PodiumPlayer[] =>
+        (team?.players ?? []).map((tp: any) => ({ id: tp.player.id, name: tp.player.name, country: tp.player.country ?? "", city: tp.player.city ?? null, photoPath: tp.player.photoPath ?? null, clubLogoPath: tp.player.clubLogoPath ?? null, teamLogoPath: tp.player.teamLogoPath ?? null, badges: tp.player.badges ?? [], pinnedBadges: tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : undefined, startYear: tp.player.startYear ?? null, hand: tp.player.hand ?? null, gender: tp.player.gender ?? null, slug: tp.player.slug ?? null }));
+      const toTeam = (id: string | undefined): PodiumTeam => {
+        const team = id ? teamById.get(id) : null;
+        return team ? { id: team.id, name: team.name, players: extractPlayers(team) } : null;
+      };
+      podium.first = toTeam(ranking[0]);
+      podium.second = toTeam(ranking[1]);
+      podium.third = toTeam(ranking[2]);
+    }
+  } else if (isCompleted) {
     // Pour un pipeline, ne considérer que le DERNIER stage (celui qui clôt le
     // tournoi) — un pipeline peut avoir plusieurs stages à bracketSide (ex: un
     // SE de qualification puis un DE final), il ne faut pas les mélanger.
-    const lastPipelineStageId = isPipeline
-      ? [...((tournament as any).stages ?? [])].sort((a: any, b: any) => b.order - a.order)[0]?.id ?? null
-      : null;
+    const lastPipelineStageId = isPipeline ? lastPipelineStage?.id ?? null : null;
     const bracketMatches = await prisma.match.findMany({
       where: {
         tournamentId: tournament.id,
@@ -270,9 +328,10 @@ export default async function TournamentPage({
     const extractPlayers = (team: any): PodiumPlayer[] =>
       (team?.players ?? []).map((tp: any) => ({ id: tp.player.id, name: tp.player.name, country: tp.player.country ?? "", city: tp.player.city ?? null, photoPath: tp.player.photoPath ?? null, clubLogoPath: tp.player.clubLogoPath ?? null, teamLogoPath: tp.player.teamLogoPath ?? null, badges: tp.player.badges ?? [], pinnedBadges: tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : undefined, startYear: tp.player.startYear ?? null, hand: tp.player.hand ?? null, gender: tp.player.gender ?? null, slug: tp.player.slug ?? null }));
     const toTeam = (t: any): PodiumTeam => t ? { id: t.id, name: t.name, players: extractPlayers(t) } : null;
-    // GF : en cas de reset (plusieurs matchs G), prendre celui avec le roundIndex le plus élevé
+    // GF : si un reset a été joué (match BG terminé), c'est LUI le match décisif
     const gfMatches = bracketMatches.filter((m) => m.bracketSide === "G");
-    const grandFinal = gfMatches[0]; // déjà trié par roundIndex desc
+    const bgPlayed = bracketMatches.find((m) => m.bracketSide === "BG" && m.winnerTeamId);
+    const grandFinal = bgPlayed ?? gfMatches[0]; // déjà trié par roundIndex desc
     if (grandFinal) {
       const isAWinner = grandFinal.winnerTeamId === grandFinal.teamAId;
       podium.first  = toTeam(isAWinner ? grandFinal.teamA : grandFinal.teamB);
@@ -837,6 +896,85 @@ export default async function TournamentPage({
         : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} pools={(tournament.pools ?? []).map((p: any) => ({ id: p.id, name: p.name }))} isOrganizer={isOrga} poolRounds={(tournament as any).poolRounds ?? null} testMode={!!(tournament as any).testMode} gameDurationMin={tournament.gameDurationMin} sundayFormat={(tournament as any).sundayFormat} stages={((tournament as any).stages ?? []).map((s: any) => ({ id: s.id, name: s.name, order: s.order }))} />
       )}
 
+      {/* Pipeline : pilotage des étapes (orga/co-orga uniquement — mêmes actions
+          que le dashboard, chaque action revérifie les droits côté serveur) */}
+      {tab === "stages" && isPipeline && isOrga && (
+        <PipelinePlanning
+          tournament={tournament}
+          stages={(tournament as any).stages ?? []}
+          launchStageAction={async (order) => {
+            "use server";
+            return await launchPipelineStageAction(t_.id, order);
+          }}
+          resetStagesAction={async (fromOrder) => {
+            "use server";
+            return await resetPipelineStagesAction(t_.id, fromOrder);
+          }}
+          simulateStageAction={(tournament as any).testMode ? (async () => {
+            "use server";
+            return await simulatePipelineStageAction(t_.id);
+          }) : undefined}
+          previewEntriesAction={async (order) => {
+            "use server";
+            return await previewPipelineEntriesAction(t_.id, order);
+          }}
+          setManualGroupsAction={async (order, assignments) => {
+            "use server";
+            return await setPipelineManualGroupsAction(t_.id, order, assignments);
+          }}
+          updateStageAction={async (order, patch) => {
+            "use server";
+            return await updatePipelineStageAction(t_.id, order, patch);
+          }}
+          launchGroupAction={async (order) => {
+            "use server";
+            return await launchPipelineGroupAction(t_.id, order);
+          }}
+          addStageAction={async (def) => {
+            "use server";
+            return await addPipelineStageAction(t_.id, def);
+          }}
+          removeStageAction={async (order) => {
+            "use server";
+            return await removePipelineStageAction(t_.id, order);
+          }}
+          moveStageAction={async (order, dir) => {
+            "use server";
+            return await movePipelineStageAction(t_.id, order, dir);
+          }}
+          resetToRoundAction={async (order, round, group) => {
+            "use server";
+            return await resetPipelineToRoundAction(t_.id, order, round, group);
+          }}
+          rescheduleStageAction={async (order) => {
+            "use server";
+            return await reschedulePipelineStageAction(t_.id, order);
+          }}
+        />
+      )}
+
+      {/* Pipeline : rendu des onglets par groupe / Général */}
+      {isPipeline && pipelineGroupTabs.some((g) => g.value === tab) && (() => {
+        const active = pipelineGroupTabs.find((g) => g.value === tab)!;
+        const activePools = (tournament.pools ?? []).filter((p: any) => active.poolIds.includes(p.id));
+        if (isTestMode) {
+          return <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>;
+        }
+        return (
+          <PoolTables
+            pools={activePools}
+            matches={tournament.matches}
+            tournamentId={tournament.id}
+            scoringSystem={tournament.scoringSystem}
+            isLive={tournament.status === "LIVE"}
+            poolRounds={null}
+            teamsWithPlayers={tournament.teams as any}
+            combinedOnly={active.combinedOnly}
+            combinedLive
+          />
+        );
+      })()}
+
       {tab === "pools" && (isTestMode
         ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
         : <PoolTables pools={tournament.pools} matches={tournament.matches} tournamentId={tournament.id} scoringSystem={tournament.scoringSystem} isLive={tournament.status === "LIVE"} poolRounds={(tournament as any).poolRounds ?? null} teamsWithPlayers={tournament.teams as any} />
@@ -944,7 +1082,24 @@ export default async function TournamentPage({
         }
         const stageMatches = tournament.matches.filter((m: any) => m.stageId === bracketStage.id);
         if (stageMatches.length === 0) {
-          return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>{t("pipeline_stage_not_launched", { name: bracketStage.name })}</p>;
+          // Message contextuel : étape bloquante + taille du bracket attendue (calculée depuis entryRules)
+          const blocking = [...stages]
+            .filter((s: any) => s.order < bracketStage.order && s.status !== "DONE" && s.status !== "SKIPPED")
+            .sort((a: any, b: any) => a.order - b.order)[0];
+          const rules = bracketStage.entryRules as any;
+          const expectedSize = (rules?.sources ?? []).reduce((sum: number, src: any) => {
+            if (src.kind === "stageRanks") return sum + Math.max(src.to - src.from + 1, 0);
+            return sum;
+          }, 0);
+          const sizeLabel = expectedSize > 0 ? t("pipeline_bracket_size", { count: expectedSize }) : "";
+          return (
+            <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>
+              {blocking
+                ? t("pipeline_bracket_waiting_for", { name: blocking.name })
+                : t("pipeline_stage_not_launched", { name: bracketStage.name })}
+              {sizeLabel ? ` ${sizeLabel}` : ""}
+            </p>
+          );
         }
         const teamNameById = new Map(tournament.teams.map((t: any) => [t.id, t.name]));
         const bracketTeams = (bracketStage.entries ?? []).map((e: any) => ({

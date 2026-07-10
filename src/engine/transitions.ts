@@ -37,6 +37,16 @@ export type EntryRules = {
 
 export type ResolvedEntry = { groupKey: string; slot: number; teamId: string };
 
+export type ResolveOptions = {
+  /**
+   * Une source = un groupe (source 0 → A, source 1 → B…). Utilisé par le
+   * cross-pool, qui oppose intrinsèquement deux poules : chaque source garde
+   * son origine comme groupe, quel que soit le champ `groups`. Ignoré s'il
+   * n'y a qu'une seule source (comportement mono-groupe habituel).
+   */
+  sourcesAsGroups?: boolean;
+};
+
 export type TransitionContext = {
   /** Équipes sélectionnées du tournoi, triées par seed initial. */
   registrationSeeds: string[];
@@ -46,13 +56,29 @@ export type TransitionContext = {
 
 const GROUP_KEYS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 
-export function resolveEntries(rules: EntryRules, ctx: TransitionContext): ResolvedEntry[] {
+export function resolveEntries(rules: EntryRules, ctx: TransitionContext, opts?: ResolveOptions): ResolvedEntry[] {
   // 1. Résoudre chaque source en liste ordonnée
   const lists: string[][] = rules.sources.map((src) => {
     if (src.kind === "registration") return [...ctx.registrationSeeds];
     const ranked = ctx.stageStandings(src.stageOrder, src.group);
     return ranked.slice(src.from - 1, src.to);
   });
+
+  // Cas cross-pool : une source = un groupe (A, B, …), en préservant l'ordre
+  // de classement de chaque poule. Dédoublonnage par groupe.
+  if (opts?.sourcesAsGroups && lists.length > 1) {
+    const out: ResolvedEntry[] = [];
+    const seen = new Set<string>();
+    lists.forEach((list, gi) => {
+      let slot = 1;
+      for (const teamId of list) {
+        if (seen.has(teamId)) continue;
+        seen.add(teamId);
+        out.push({ groupKey: GROUP_KEYS[gi] ?? String(gi), slot: slot++, teamId });
+      }
+    });
+    return out;
+  }
 
   // 2. Concaténer ou entrelacer
   let ordered: string[];

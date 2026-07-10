@@ -69,13 +69,15 @@ const updateSchema = z.object({
   streamCourt2Url: z.string().optional().nullable(),
   streamMultiplexUrl: z.string().optional().nullable(),
   chatMode: z.enum(["OPEN", "ORG_ONLY", "DISABLED"]).default("DISABLED"),
-  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED", "GRAZ", "MTP_OPEN", "KIOSQUE", "SPLIT_SWISS", "BIG_APPLE"]),
+  // Optionnels : les tournois pipeline n'affichent pas la section format legacy,
+  // donc ces champs ne sont pas soumis (et ne doivent pas être réécrits).
+  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED", "GRAZ", "MTP_OPEN", "KIOSQUE", "SPLIT_SWISS", "BIG_APPLE"]).optional(),
   poolCount: z.coerce.number().int().min(1).max(4).default(1),
   crossPool: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   swissRounds: z.coerce.number().int().min(1).max(20).default(5),
   poolRounds: z.preprocess((v) => (v === "" || v === null || v === undefined ? null : Number(v)), z.number().int().min(1).max(50).nullable().default(null)),
   bracketSize: z.coerce.number().int().min(2).max(64).default(16),
-  sundayFormat: z.enum(["SE", "DE", "RR", "SWISS_SPLIT_SE", "SPLIT_SE"]),
+  sundayFormat: z.enum(["SE", "DE", "RR", "SWISS_SPLIT_SE", "SPLIT_SE"]).optional(),
   scoringSystem: z.string().default("3/1"),
   thirdPlaceMatch: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
   gfReset: z.preprocess((v) => v === "true" || v === true, z.boolean().default(false)),
@@ -136,7 +138,9 @@ export async function updateTournamentAction(formData: FormData) {
   if (tournament.locked) {
     const structuralFields = ["format", "maxTeams", "courtsCount", "saturdayFormat", "sundayFormat", "poolCount", "crossPool"] as const;
     for (const field of structuralFields) {
-      if ((data as Record<string, unknown>)[field] !== (tournament as Record<string, unknown>)[field]) {
+      const submitted = (data as Record<string, unknown>)[field];
+      if (submitted === undefined) continue; // champ non soumis (pipeline) → pas de changement
+      if (submitted !== (tournament as Record<string, unknown>)[field]) {
         return { error: `${field} cannot be changed when locked` };
       }
     }
@@ -211,22 +215,27 @@ export async function updateTournamentAction(formData: FormData) {
         streamCourt1Url: data.streamCourt1Url || null,
         streamCourt2Url: data.streamCourt2Url || null,
         streamMultiplexUrl: data.streamMultiplexUrl || null,
-        swissRounds: data.swissRounds,
-        poolRounds: data.poolRounds ?? null,
-        bracketSize: data.bracketSize,
         chatMode: data.chatMode,
-        saturdayFormat: data.saturdayFormat,
-        poolCount: data.poolCount,
-        crossPool: data.crossPool,
-        sundayFormat: data.sundayFormat,
-        scoringSystem: data.scoringSystem,
-        thirdPlaceMatch: data.thirdPlaceMatch,
-        gfReset: data.gfReset,
         testMode: data.testMode,
         hidden: data.hidden,
-        mtpPoolAStart: data.mtpPoolAStart ? new Date(data.mtpPoolAStart) : null,
-        mtpPoolBStart: data.mtpPoolBStart ? new Date(data.mtpPoolBStart) : null,
-        mtpSundayStart: data.mtpSundayStart ? new Date(data.mtpSundayStart) : null,
+        // Champs du format legacy : jamais réécrits pour un tournoi pipeline
+        // (la section est masquée dans le formulaire, les défauts zod
+        // écraseraient les valeurs réelles à chaque sauvegarde).
+        ...((tournament as unknown as { usesPipeline?: boolean }).usesPipeline ? {} : {
+          swissRounds: data.swissRounds,
+          poolRounds: data.poolRounds ?? null,
+          bracketSize: data.bracketSize,
+          saturdayFormat: data.saturdayFormat,
+          poolCount: data.poolCount,
+          crossPool: data.crossPool,
+          sundayFormat: data.sundayFormat,
+          scoringSystem: data.scoringSystem,
+          thirdPlaceMatch: data.thirdPlaceMatch,
+          gfReset: data.gfReset,
+          mtpPoolAStart: data.mtpPoolAStart ? new Date(data.mtpPoolAStart) : null,
+          mtpPoolBStart: data.mtpPoolBStart ? new Date(data.mtpPoolBStart) : null,
+          mtpSundayStart: data.mtpSundayStart ? new Date(data.mtpSundayStart) : null,
+        }),
         externalRegistrationUrl: data.externalRegistrationUrl ?? null,
         hostClubId: data.hostClubId || null,
       }
@@ -4084,6 +4093,152 @@ export async function setPipelineManualGroupsAction(
   if (denied) return denied;
   const { setStageManualGroups } = await import("@/engine/pipeline-server");
   const res = await setStageManualGroups(id, stageOrder, assignments);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/**
+ * Définit le format d'un tournoi via une composition d'étapes custom
+ * (builder). Bascule le tournoi en pipeline. Refuse si des matchs sont joués.
+ */
+export async function setTournamentPipelineAction(
+  id: string,
+  stages: unknown,
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { setTournamentPipeline } = await import("@/engine/pipeline-server");
+  const res = await setTournamentPipeline(id, stages);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/** Applique un preset de pipeline (Poules→SE, Swiss→DE, Big Apple…) au tournoi. */
+export async function applyPipelinePresetAction(
+  id: string,
+  presetKey: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const t = await prisma.tournament.findUnique({ where: { id }, select: { maxTeams: true } });
+  if (!t) return { error: "Tournoi introuvable." };
+  const { getPreset } = await import("@/engine/presets");
+  const preset = getPreset(presetKey);
+  if (!preset) return { error: "Preset inconnu." };
+  const stages = preset.build(Math.max(t.maxTeams ?? preset.minTeams, preset.minTeams));
+  const { setTournamentPipeline } = await import("@/engine/pipeline-server");
+  const res = await setTournamentPipeline(id, stages);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/** Revient au round N d'une étape RR/SWISS active (efface N et les suivants). */
+export async function resetPipelineToRoundAction(
+  id: string,
+  stageOrder: number,
+  round: number,
+  group?: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { resetToRound } = await import("@/engine/pipeline-server");
+  const res = await resetToRound(id, stageOrder, round, group);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/** Replanifie les matchs non joués d'une étape à partir de maintenant. */
+export async function reschedulePipelineStageAction(
+  id: string,
+  stageOrder: number,
+  fromISO?: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { rescheduleStage } = await import("@/engine/pipeline-server");
+  const res = await rescheduleStage(id, stageOrder, fromISO);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/** Lance le prochain groupe non lancé d'une étape RR/SWISS active (sessions séquentielles). */
+export async function launchPipelineGroupAction(
+  id: string,
+  stageOrder: number
+): Promise<{ ok?: boolean; error?: string; group?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { launchNextGroup } = await import("@/engine/pipeline-server");
+  const res = await launchNextGroup(id, stageOrder);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/** Modifie une étape non lancée (nom, type, config, sources, horaire). */
+export async function updatePipelineStageAction(
+  id: string,
+  stageOrder: number,
+  patch: {
+    name?: string;
+    type?: string;
+    config?: Record<string, unknown>;
+    entryRules?: unknown;
+    startAt?: string | null;
+  }
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { updateStageDef } = await import("@/engine/pipeline-server");
+  const res = await updateStageDef(id, stageOrder, patch as never);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/** Ajoute une étape en fin de pipeline. */
+export async function addPipelineStageAction(
+  id: string,
+  def: { name: string; type: string; config: Record<string, unknown>; entryRules: unknown }
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { addStageDef } = await import("@/engine/pipeline-server");
+  const res = await addStageDef(id, def as never);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/** Supprime une étape non lancée. */
+export async function removePipelineStageAction(
+  id: string,
+  stageOrder: number
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { removeStageDef } = await import("@/engine/pipeline-server");
+  const res = await removeStageDef(id, stageOrder);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/** Monte/descend une étape non lancée dans le pipeline. */
+export async function movePipelineStageAction(
+  id: string,
+  stageOrder: number,
+  dir: -1 | 1
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { moveStageDef } = await import("@/engine/pipeline-server");
+  const res = await moveStageDef(id, stageOrder, dir);
+  revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);
   return res;
 }

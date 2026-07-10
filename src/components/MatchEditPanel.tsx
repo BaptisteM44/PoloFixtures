@@ -158,14 +158,14 @@ export function MatchEditPanel({ match, onClose, onSaved, onReset, onSwapped, is
   };
 
   const handleReset = async () => {
-    if (!window.confirm("Réinitialiser ce match ? Les scores seront effacés.")) return;
+    if (!window.confirm(t("reset_confirm"))) return;
     setResetting(true);
     setResetError(null);
     try {
       const res = await fetch(`/api/matches/${match.id}/reset`, { method: "POST" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setResetError(data?.error ?? "Erreur lors de la réinitialisation.");
+        setResetError(data?.error ?? t("reset_error"));
         return;
       }
       onReset?.(match.id);
@@ -173,7 +173,7 @@ export function MatchEditPanel({ match, onClose, onSaved, onReset, onSwapped, is
       setScoreB(0);
       setStatus("SCHEDULED");
     } catch {
-      setResetError("Erreur réseau.");
+      setResetError(t("error_network"));
     } finally {
       setResetting(false);
     }
@@ -206,7 +206,7 @@ export function MatchEditPanel({ match, onClose, onSaved, onReset, onSwapped, is
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setSwapError(data?.error ?? "Erreur lors du swap.");
+        setSwapError(data?.error ?? t("swap_error"));
         return;
       }
       onSwapped?.(
@@ -214,10 +214,10 @@ export function MatchEditPanel({ match, onClose, onSaved, onReset, onSwapped, is
         data.matchA.courtName, data.matchA.startAt,
         data.matchB.courtName, data.matchB.startAt
       );
-      setSwapSuccess("Swap effectué !");
+      setSwapSuccess(t("swap_success"));
       setSwapMatchId("");
     } catch {
-      setSwapError("Erreur réseau.");
+      setSwapError(t("error_network"));
     } finally {
       setSwapping(false);
     }
@@ -328,13 +328,13 @@ export function MatchEditPanel({ match, onClose, onSaved, onReset, onSwapped, is
                   className="ghost"
                   onClick={handleReset}
                   disabled={resetting || hasPropagatedSuite}
-                  title={hasPropagatedSuite ? "Ce match a une suite — modifiez les scores plutôt." : "Remet le match à zéro (SCHEDULED, scores effacés)"}
+                  title={hasPropagatedSuite ? t("reset_has_suite") : t("reset_hint")}
                   style={{ fontSize: 12, padding: "5px 12px", color: hasPropagatedSuite ? "var(--text-muted)" : "var(--danger)", opacity: hasPropagatedSuite ? 0.5 : 1 }}
                 >
-                  {resetting ? "Réinitialisation..." : "Réinitialiser le match"}
+                  {resetting ? t("reset_pending") : t("reset_match")}
                 </button>
                 {hasPropagatedSuite && (
-                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Suite déjà propagée — modifier les scores</span>
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{t("reset_has_suite_short")}</span>
                 )}
                 {resetError && <span style={{ fontSize: 12, color: "var(--danger)" }}>{resetError}</span>}
               </div>
