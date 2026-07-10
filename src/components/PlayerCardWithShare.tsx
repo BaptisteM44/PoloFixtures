@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef } from "react";
-import { PokemonCard } from "@/components/PokemonCard";
+import { PlayerCollectibleCard } from "@/components/PlayerCollectibleCard";
 import { ShareCardButton } from "@/components/ShareCardButton";
 
-type Props = React.ComponentProps<typeof PokemonCard> & {
+type Props = React.ComponentProps<typeof PlayerCollectibleCard> & {
   canShare?: boolean;
 };
 
@@ -13,7 +13,7 @@ export function PlayerCardWithShare({ canShare = false, ...cardProps }: Props) {
 
   return (
     <div>
-      <PokemonCard ref={cardRef} {...cardProps} />
+      <PlayerCollectibleCard ref={cardRef} {...cardProps} />
       {canShare && (
         <div style={{ marginTop: 12, display: "flex", justifyContent: "center" }}>
           <ShareCardButton cardRef={cardRef} playerName={cardProps.name} />

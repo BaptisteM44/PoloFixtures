@@ -443,6 +443,9 @@ model Player {
   suspendedAt      DateTime?    // date de suspension
   badges       String[]
   pinnedBadges String[]  // badges shown on the card (max 5, subset of badges)
+  ownedCards   String[]  // collectible card ids the player has unlocked (see card-catalog)
+  activeCard   String?   // id of the card currently displayed (defaults to "standard")
+  whbpcCard    WhbpcCard?
   clubLogoPath       String?
   emblemPosition     String?   @default("top-left")      // top-left | top-right | bottom-left | bottom-right
   teamLogoPath       String?
@@ -1305,4 +1308,26 @@ model RegistrationAnswer {
   @@index([fieldId])
   @@index([teamPlayerId])
   @@index([teamId])
+}
+
+/// Carte souvenir figée offerte aux participants d'un tournoi passé (ex: WHBPC,
+/// joué hors plateforme il y a 2 ans). Une ligne = une carte pour un joueur,
+/// avec toutes ses valeurs propres. Pas de logique de déblocage : attribuée
+/// manuellement (cadeau) pour un événement précis.
+model WhbpcCard {
+  id           String   @id @default(cuid())
+  playerId     String   @unique
+  tournament   String   @default("WHBPC")
+  teamName     String
+  yearStarted  String
+  countryCode  String   @default("be")
+  bestSkill    String
+  pedals       String
+  hand         String   // RIGHTIE | LEFTIE
+  wheelSize    String
+  gearRatio    String
+  photoPath    String?
+  createdAt    DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 }

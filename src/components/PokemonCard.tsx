@@ -6,7 +6,7 @@ import { COUNTRIES } from "@/lib/countries";
 import { HoloEffect } from "./HoloEffect";
 import { BerlinOverlay } from "./BerlinOverlay";
 
-type Props = {
+export type PokemonCardProps = {
   name: string;
   country: string;
   city?: string | null;
@@ -30,6 +30,7 @@ type Props = {
   /** @default "constellation" for legendary rarity */
   holoFull?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "sequin" | "aurora";
   cardFx?: "foil" | "glow" | "glow-champ" | "scanlines";
+  children?: React.ReactNode;
 };
 
 /** Scale name font-size to always fit on one line regardless of length */
@@ -48,7 +49,7 @@ function getCountryCode(name: string): string | null {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCard({ name, country, city, photoPath, clubLogoPath, clubName, teamLogoPath, badges = [], pinnedBadges, startYear, hand: _hand, gender: _gender, showGender: _showGender, theme = "default", variant = "classic", metalBorder, holoVariant, holoFull, cardFx }, externalRef) {
+export const PokemonCard = forwardRef<HTMLDivElement, PokemonCardProps>(function PokemonCard({ name, country, city, photoPath, clubLogoPath, clubName, teamLogoPath, badges = [], pinnedBadges, startYear, hand: _hand, gender: _gender, showGender: _showGender, theme = "default", variant = "classic", metalBorder, holoVariant, holoFull, cardFx, children }, externalRef) {
   const cardRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(externalRef, () => cardRef.current!, []);
   const [cardStyle, setCardStyle] = useState<React.CSSProperties>({});
@@ -199,6 +200,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
               <img src={teamLogoPath} alt="Team" className="pkmn-card__emblem pkmn-card__emblem--team" />
             )}
           </div>
+          {children}
 
           {/* Overlay info at bottom */}
           <div className="pkmn-card__fullart-overlay">
@@ -288,6 +290,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, Props>(function PokemonCar
             )}
           </div>
         </div>
+        {children}
 
         <div className="pkmn-card__strip">
           <span className="pkmn-card__location">{city ? `${city}, ${country}` : country}</span>

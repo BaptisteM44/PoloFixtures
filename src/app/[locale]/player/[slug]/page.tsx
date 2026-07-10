@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export default async function PlayerPage({ params }: { params: { slug: string } }) {
   const t = await getTranslations("player");
-  const playerInclude = { account: { select: { email: true } }, clubMemberships: { include: { club: { select: { name: true } } }, take: 1 } };
+  const playerInclude = { account: { select: { email: true } }, clubMemberships: { include: { club: { select: { name: true } } }, take: 1 }, whbpcCard: true };
   const player =
     (await prisma.player.findUnique({ where: { slug: params.slug }, include: playerInclude })) ??
     (await prisma.player.findFirst({ where: { id: params.slug }, include: playerInclude }));
@@ -67,6 +67,17 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
           hand={player.hand}
           gender={player.gender ?? undefined}
           showGender={player.showGender}
+          activeCard={player.activeCard}
+          whbpcData={player.whbpcCard ? {
+            teamName: player.whbpcCard.teamName,
+            yearStarted: player.whbpcCard.yearStarted,
+            countryCode: player.whbpcCard.countryCode,
+            bestSkill: player.whbpcCard.bestSkill,
+            pedals: player.whbpcCard.pedals,
+            hand: player.whbpcCard.hand as "RIGHTIE" | "LEFTIE",
+            wheelSize: player.whbpcCard.wheelSize,
+            gearRatio: player.whbpcCard.gearRatio,
+          } : null}
           canShare={isOwnProfile}
         />
 

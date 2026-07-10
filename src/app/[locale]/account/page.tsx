@@ -6,11 +6,12 @@ import { Link } from "@/i18n/navigation";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { PokemonCard } from "@/components/PokemonCard";
+import { PlayerCollectibleCard } from "@/components/PlayerCollectibleCard";
 import { ShareCardButton } from "@/components/ShareCardButton";
 import { COUNTRIES } from "@/lib/countries";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 import { BadgeShowcase } from "@/components/BadgeShowcase";
+import { CardCollection } from "@/components/CardCollection";
 import { ClubPicker } from "@/components/ClubPicker";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { NotificationForm } from "@/components/NotificationForm";
@@ -47,6 +48,20 @@ type Player = {
   badges: string[];
   pinnedBadges: string[];
   badgeCatalog: Record<string, BadgeInfo>;
+  ownedCards: string[];
+  activeCard: string | null;
+  whbpcCard: {
+    tournament: string;
+    teamName: string;
+    yearStarted: string;
+    countryCode: string;
+    bestSkill: string;
+    pedals: string;
+    hand: "RIGHTIE" | "LEFTIE";
+    wheelSize: string;
+    gearRatio: string;
+    photoPath: string | null;
+  } | null;
   status: string;
   squads: { squad: Squad }[];
 };
@@ -290,6 +305,7 @@ export default function AccountPage() {
   const tabs = [
     { label: t("tab_edit"), value: "edit", href: `${pathname}?tab=edit` },
     { label: t("tab_badges"), value: "badges", href: `${pathname}?tab=badges` },
+    { label: t("tab_collection"), value: "collection", href: `${pathname}?tab=collection` },
     { label: totalUnread > 0 ? `${t("tab_messages")} (${totalUnread})` : t("tab_messages"), value: "messages", href: `${pathname}?tab=messages` },
     { label: t("tab_settings"), value: "settings", href: `${pathname}?tab=settings` },
   ];
@@ -307,7 +323,7 @@ export default function AccountPage() {
       <div className="account-main-layout">
         {/* ── Sidebar permanente : carte pokémon ── */}
         <div className="account-card-sidebar">
-          <PokemonCard
+          <PlayerCollectibleCard
             ref={cardRef}
             name={player.name}
             country={player.country}
@@ -319,6 +335,17 @@ export default function AccountPage() {
             badges={player.badges}
             pinnedBadges={player.pinnedBadges}
             startYear={player.startYear}
+            activeCard={player.activeCard}
+            whbpcData={player.whbpcCard ? {
+              teamName: player.whbpcCard.teamName,
+              yearStarted: player.whbpcCard.yearStarted,
+              countryCode: player.whbpcCard.countryCode,
+              bestSkill: player.whbpcCard.bestSkill,
+              pedals: player.whbpcCard.pedals,
+              hand: player.whbpcCard.hand,
+              wheelSize: player.whbpcCard.wheelSize,
+              gearRatio: player.whbpcCard.gearRatio,
+            } : null}
           />
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
             <ShareCardButton cardRef={cardRef} playerName={player.name} />
@@ -670,6 +697,46 @@ export default function AccountPage() {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ pinnedBadges: next }),
+                  });
+                  await fetchPlayer();
+                }}
+              />
+            </div>
+          )}
+
+          {/* ── TAB: COLLECTION ── */}
+          {tab === "collection" && (
+            <div style={{ marginTop: 24 }}>
+              <CardCollection
+                player={{
+                  name: player.name,
+                  country: player.country,
+                  city: player.city,
+                  photoPath: player.photoPath,
+                  clubLogoPath: player.clubLogoPath,
+                  clubName: clubMemberships.find(m => m.status === "MEMBER")?.club?.name ?? null,
+                  teamLogoPath: player.teamLogoPath,
+                  badges: player.badges,
+                  pinnedBadges: player.pinnedBadges,
+                  startYear: player.startYear,
+                }}
+                ownedCards={player.ownedCards ?? []}
+                activeCard={player.activeCard}
+                whbpcData={player.whbpcCard ? {
+                  teamName: player.whbpcCard.teamName,
+                  yearStarted: player.whbpcCard.yearStarted,
+                  countryCode: player.whbpcCard.countryCode,
+                  bestSkill: player.whbpcCard.bestSkill,
+                  pedals: player.whbpcCard.pedals,
+                  hand: player.whbpcCard.hand,
+                  wheelSize: player.whbpcCard.wheelSize,
+                  gearRatio: player.whbpcCard.gearRatio,
+                } : null}
+                onSelect={async (cardId) => {
+                  await fetch("/api/account/profile", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ activeCard: cardId }),
                   });
                   await fetchPlayer();
                 }}
