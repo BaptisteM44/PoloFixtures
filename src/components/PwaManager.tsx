@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 
 // Ne pas re-proposer le bandeau avant N jours après un refus.
 const DISMISS_KEY = "pwa_banner_dismissed_at";
-const DISMISS_DAYS = 14;
+const DISMISS_DAYS = 5;
 
 function isStandalone() {
   if (typeof window === "undefined") return false;
