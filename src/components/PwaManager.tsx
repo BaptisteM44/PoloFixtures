@@ -13,6 +13,17 @@ function isStandalone() {
   return window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone === true;
 }
 
+function isIOS() {
+  if (typeof navigator === "undefined") return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isSafari() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /Safari/.test(ua) && !/Chrome|Chromium|Edg|CriOS|FxiOS/.test(ua);
+}
+
 /**
  * Registers the Service Worker, handles push subscription, and shows a
  * bottom install banner when the browser offers a PWA install prompt.
@@ -22,6 +33,7 @@ export function PwaManager() {
   const t = useTranslations("pwa");
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [visible, setVisible] = useState(false);
+  const [iosHint, setIosHint] = useState(false); // iPhone/iPad : pas de prompt, on guide
 
   // Register SW + subscribe to push if logged in
   useEffect(() => {
@@ -47,13 +59,22 @@ export function PwaManager() {
     });
   }, [session?.user?.playerId]);
 
-  // Capture le prompt d'installation (Chrome/Edge/Android)
+  // Décide s'il faut proposer l'installation (et comment selon la plateforme).
   useEffect(() => {
     if (isStandalone()) return; // déjà installée
     // Refus récent → ne pas remontrer
     const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
     if (dismissedAt && Date.now() - dismissedAt < DISMISS_DAYS * 24 * 3600 * 1000) return;
 
+    // iOS/Safari : pas de beforeinstallprompt → on montre directement les
+    // instructions manuelles (Partager → Sur l'écran d'accueil).
+    if (isIOS() && isSafari()) {
+      setIosHint(true);
+      setVisible(true);
+      return;
+    }
+
+    // Chrome/Edge/Android : on attend l'offre d'installation du navigateur.
     const handler = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e);
@@ -76,7 +97,8 @@ export function PwaManager() {
     setVisible(false);
   }, []);
 
-  if (!visible || !installPrompt) return null;
+  // Visible si : offre d'install (Chrome/Android) OU instructions iOS
+  if (!visible || (!installPrompt && !iosHint)) return null;
 
   return (
     <div
@@ -92,12 +114,17 @@ export function PwaManager() {
     >
       <div style={{ flex: "1 1 220px", minWidth: 0 }}>
         <div style={{ fontWeight: 700, fontSize: 14 }}>📲 {t("banner_title")}</div>
-        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("banner_desc")}</div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
+          {iosHint ? t("banner_ios_hint") : t("banner_desc")}
+        </div>
       </div>
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-        <button className="primary" style={{ fontSize: 13, padding: "8px 16px" }} onClick={install}>
-          {t("banner_install")}
-        </button>
+        {/* iOS : pas de bouton possible (Apple ne fournit pas d'API) — juste l'instruction */}
+        {!iosHint && installPrompt && (
+          <button className="primary" style={{ fontSize: 13, padding: "8px 16px" }} onClick={install}>
+            {t("banner_install")}
+          </button>
+        )}
         <button
           type="button"
           aria-label={t("banner_dismiss")}

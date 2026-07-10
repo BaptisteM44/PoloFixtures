@@ -2720,6 +2720,7 @@
     "banner_title": "Instalar la app Poloperator",
     "banner_desc": "Acceso rápido, notificaciones de partidos, incluso sin conexión.",
     "banner_install": "Instalar",
-    "banner_dismiss": "Más tarde"
+    "banner_dismiss": "Más tarde",
+    "banner_ios_hint": "Toca «Compartir» y luego «Añadir a pantalla de inicio»."
   }
 }

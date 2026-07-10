@@ -2716,6 +2716,7 @@
     "banner_title": "Install the Poloperator app",
     "banner_desc": "Quick access, match notifications, even offline.",
     "banner_install": "Install",
-    "banner_dismiss": "Later"
+    "banner_dismiss": "Later",
+    "banner_ios_hint": "Tap the Share button, then “Add to Home Screen”."
   }
 }

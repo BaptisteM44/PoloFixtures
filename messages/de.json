@@ -2721,6 +2721,7 @@
     "banner_title": "Poloperator-App installieren",
     "banner_desc": "Schneller Zugriff, Spielbenachrichtigungen, auch offline.",
     "banner_install": "Installieren",
-    "banner_dismiss": "Später"
+    "banner_dismiss": "Später",
+    "banner_ios_hint": "Tippe auf „Teilen“, dann „Zum Home-Bildschirm“."
   }
 }
