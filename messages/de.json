@@ -888,7 +888,22 @@
     "pipeline_reschedule": "Neu planen",
     "pipeline_reschedule_confirm": "Ungespielte Spiele ab jetzt neu planen?",
     "pipeline_launch_stage_confirm": "Phase „{name}“ starten? Spiele werden erzeugt und die Phase kann nicht mehr bearbeitet werden (Reset nötig).",
-    "pipeline_launch_group_confirm": "Gruppe {group} starten? Ihre Spiele werden erzeugt."
+    "pipeline_launch_group_confirm": "Gruppe {group} starten? Ihre Spiele werden erzeugt.",
+    "orga_tab_format": "🎛 Format",
+    "format_presets_title": "Fertige Formate",
+    "format_custom_title": "Oder eigenes Format bauen",
+    "format_save": "Format speichern",
+    "format_saved": "Format gespeichert",
+    "format_apply_confirm": "Dieses Format anwenden? Die aktuellen Phasen werden ersetzt.",
+    "format_locked_played": "Es wurden bereits Spiele gespielt: das Format kann nicht mehr geändert werden.",
+    "preset_pools_se_label": "2 Gruppen → K.o.",
+    "preset_pools_se_desc": "Round Robin in 2 Gruppen, dann K.o. der besten 8 (+ Spiel um Platz 3).",
+    "preset_swiss_de_label": "Swiss → Doppel-K.o.",
+    "preset_swiss_de_desc": "5 Swiss-Runden, dann Doppel-K.o. der besten 8.",
+    "preset_big_apple_label": "🍎 Big Apple",
+    "preset_big_apple_desc": "2 RR-Gruppen → Swiss (Ränge 3-8) + Platzierung der 1./2. → K.o. der 8.",
+    "orga_tab_format_stages": "🧩 Format & Phasen",
+    "format_edit_summary": "Format bearbeiten (nicht gestartete Phasen)"
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -2701,5 +2716,11 @@
     "btn_delete": "Löschen",
     "confirm_delete": "Feld « {label} » und alle Antworten löschen?",
     "error_add": "Fehler beim Hinzufügen des Feldes."
+  },
+  "pwa": {
+    "banner_title": "Poloperator-App installieren",
+    "banner_desc": "Schneller Zugriff, Spielbenachrichtigungen, auch offline.",
+    "banner_install": "Installieren",
+    "banner_dismiss": "Später"
   }
 }

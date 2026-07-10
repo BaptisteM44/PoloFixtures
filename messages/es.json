@@ -887,7 +887,22 @@
     "pipeline_reschedule": "Reprogramar",
     "pipeline_reschedule_confirm": "¿Reprogramar los partidos no jugados desde ahora?",
     "pipeline_launch_stage_confirm": "¿Lanzar la etapa «{name}»? Se generarán los partidos y la etapa ya no podrá editarse (reset necesario).",
-    "pipeline_launch_group_confirm": "¿Lanzar el grupo {group}? Se generarán sus partidos."
+    "pipeline_launch_group_confirm": "¿Lanzar el grupo {group}? Se generarán sus partidos.",
+    "orga_tab_format": "🎛 Formato",
+    "format_presets_title": "Formatos listos",
+    "format_custom_title": "O crea tu formato",
+    "format_save": "Guardar este formato",
+    "format_saved": "Formato guardado",
+    "format_apply_confirm": "¿Aplicar este formato? Se reemplazarán las etapas actuales.",
+    "format_locked_played": "Ya se han jugado partidos: el formato ya no puede modificarse.",
+    "preset_pools_se_label": "2 grupos → Elim. simple",
+    "preset_pools_se_desc": "Round robin en 2 grupos, luego eliminación simple de los 8 mejores (+ 3er puesto).",
+    "preset_swiss_de_label": "Swiss → Doble elim.",
+    "preset_swiss_de_desc": "5 rondas suizas, luego doble eliminación de los 8 mejores.",
+    "preset_big_apple_label": "🍎 Big Apple",
+    "preset_big_apple_desc": "2 grupos RR → Swiss (puestos 3-8) + colocación de 1º/2º → elim. simple de 8.",
+    "orga_tab_format_stages": "🧩 Formato y etapas",
+    "format_edit_summary": "Editar el formato (etapas no lanzadas)"
   },
   "registration": {
     "section_title": "Inscribir mi equipo",
@@ -2700,5 +2715,11 @@
     "btn_delete": "Eliminar",
     "confirm_delete": "¿Eliminar el campo « {label} » y todas sus respuestas?",
     "error_add": "Error al añadir el campo."
+  },
+  "pwa": {
+    "banner_title": "Instalar la app Poloperator",
+    "banner_desc": "Acceso rápido, notificaciones de partidos, incluso sin conexión.",
+    "banner_install": "Instalar",
+    "banner_dismiss": "Más tarde"
   }
 }

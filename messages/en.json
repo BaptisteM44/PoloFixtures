@@ -888,7 +888,22 @@
     "pipeline_reschedule": "Reschedule",
     "pipeline_reschedule_confirm": "Reschedule unplayed matches from now?",
     "pipeline_launch_stage_confirm": "Launch stage “{name}”? Matches will be generated and the stage can no longer be edited (reset required).",
-    "pipeline_launch_group_confirm": "Launch group {group}? Its matches will be generated."
+    "pipeline_launch_group_confirm": "Launch group {group}? Its matches will be generated.",
+    "orga_tab_format": "🎛 Format",
+    "format_presets_title": "Ready-made formats",
+    "format_custom_title": "Or build your own format",
+    "format_save": "Save this format",
+    "format_saved": "Format saved",
+    "format_apply_confirm": "Apply this format? Current stages will be replaced.",
+    "format_locked_played": "Matches have already been played: the format can no longer be changed.",
+    "preset_pools_se_label": "2 pools → Single elim.",
+    "preset_pools_se_desc": "Round robin in 2 pools, then single elimination of the top 8 (+ 3rd place).",
+    "preset_swiss_de_label": "Swiss → Double elim.",
+    "preset_swiss_de_desc": "5 Swiss rounds, then double elimination of the top 8.",
+    "preset_big_apple_label": "🍎 Big Apple",
+    "preset_big_apple_desc": "2 RR pools → Swiss (ranks 3-8) + placement of 1st/2nd → single elim. of 8.",
+    "orga_tab_format_stages": "🧩 Format & stages",
+    "format_edit_summary": "Edit format (unlaunched stages)"
   },
   "registration": {
     "section_title": "Register my team",
@@ -2696,5 +2711,11 @@
     "btn_delete": "Delete",
     "confirm_delete": "Delete field « {label} » and all its answers?",
     "error_add": "Error adding the field."
+  },
+  "pwa": {
+    "banner_title": "Install the Poloperator app",
+    "banner_desc": "Quick access, match notifications, even offline.",
+    "banner_install": "Install",
+    "banner_dismiss": "Later"
   }
 }

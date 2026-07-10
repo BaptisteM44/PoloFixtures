@@ -26,6 +26,7 @@ import { AccommodationManager } from "@/components/AccommodationManager";
 import { QRCodeSVG } from "qrcode.react";
 import { PipelinePlanning } from "@/components/PipelinePlanning";
 import { NextActionCard } from "@/components/orga/NextActionCard";
+import { TournamentFormatTab } from "@/components/orga/TournamentFormatTab";
 
 
 // ─── GrazPlanning ────────────────────────────────────────────────────────────
@@ -1474,6 +1475,8 @@ type OrgaDashboardProps = {
   movePipelineStageAction?: (order: number, dir: -1 | 1) => Promise<{ ok?: boolean; error?: string }>;
   resetPipelineToRoundAction?: (order: number, round: number, group?: string) => Promise<{ ok?: boolean; error?: string }>;
   reschedulePipelineStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
+  setTournamentPipelineAction?: (stages: unknown) => Promise<{ ok?: boolean; error?: string }>;
+  applyPipelinePresetAction?: (presetKey: string) => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
   orgaNotes: Array<{ id: string; content: string; author: { id: string; name: string }; createdAt: string; updatedAt: string }>;
@@ -1501,7 +1504,7 @@ type Tab = "teams" | "config" | "planning" | "stages" | "orga" | "hebergement";
 // ─── Tab label helper ─────────────────────────────────────────────────────────
 
 const TAB_KEYS: Record<Tab, string> = {
-  stages:       "orga_tab_stages",
+  stages:       "orga_tab_format_stages",
   planning:     "orga_tab_planning",
   teams:        "orga_tab_teams",
   orga:         "orga_tab_orga",
@@ -1575,6 +1578,8 @@ export function OrgaDashboard({
   movePipelineStageAction,
   resetPipelineToRoundAction,
   reschedulePipelineStageAction,
+  setTournamentPipelineAction,
+  applyPipelinePresetAction,
   orgaTasks,
   orgaNotes,
   orgaLinks,
@@ -1790,9 +1795,14 @@ export function OrgaDashboard({
       {/* ── Tab bar ── */}
       <div className="tabs-bar" style={{ marginTop: 0 }}>
         <div className="tabs">
-          {((isPipeline
-            ? ["stages", "teams", "orga", "config", ...(tournament.accommodationAvailable ? ["hebergement"] : [])]
-            : ["planning", "teams", "orga", "config", ...(tournament.accommodationAvailable ? ["hebergement"] : [])]) as Tab[]).map((tab) => (
+          {((() => {
+            const played = matches.some((m) => m.status === "FINISHED");
+            const acc = tournament.accommodationAvailable ? ["hebergement"] : [];
+            // Pipeline (ou legacy vide convertible) : onglet unifié "Format & étapes".
+            const canPipeline = !!setTournamentPipelineAction && (isPipeline || !played);
+            if (isPipeline || canPipeline) return ["stages", "teams", "orga", "config", ...acc] as Tab[];
+            return ["planning", "teams", "orga", "config", ...acc] as Tab[];
+          })()).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -1876,26 +1886,68 @@ export function OrgaDashboard({
       )}
 
       {/* ── Tab: Étapes (pipeline — pilotage du format) ── */}
-      {activeTab === "stages" && isPipeline && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <PipelinePlanning
-            tournament={tournament}
-            stages={(tournament as any).stages ?? []}
-            launchStageAction={launchStageAction}
-            resetStagesAction={resetStagesAction}
-            simulateStageAction={tournament.testMode ? simulateStageAction : undefined}
-            previewEntriesAction={previewEntriesAction}
-            setManualGroupsAction={setManualGroupsAction}
-            updateStageAction={updatePipelineStageAction}
-            launchGroupAction={launchPipelineGroupAction}
-            addStageAction={addPipelineStageAction}
-            removeStageAction={removePipelineStageAction}
-            moveStageAction={movePipelineStageAction}
-            resetToRoundAction={resetPipelineToRoundAction}
-            rescheduleStageAction={reschedulePipelineStageAction}
-          />
-        </div>
-      )}
+      {/* ── Tab: Format & étapes (unifié) ── */}
+      {activeTab === "stages" && (() => {
+        const stages = (tournament as any).stages ?? [];
+        // Un format existe déjà dès qu'au moins une étape est définie : dans ce
+        // cas le composer se replie (la timeline ci-dessous devient l'écran
+        // principal). Il ne reste déplié en grand que pour la 1re configuration.
+        const hasFormat = stages.length > 0;
+        const canFormat = !!setTournamentPipelineAction && !!applyPipelinePresetAction;
+        // Le format reste modifiable tant qu'aucun match n'est joué.
+        const canEditFormat = canFormat && !matches.some((m) => m.status === "FINISHED");
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Composer de format : déplié pour la 1re config, replié ensuite */}
+            {canEditFormat && (
+              hasFormat ? (
+                <details className="panel" style={{ padding: "12px 16px" }}>
+                  <summary style={{ fontWeight: 700, fontSize: 14, cursor: "pointer" }}>🎛 {t("format_edit_summary")}</summary>
+                  <div style={{ marginTop: 12 }}>
+                    <TournamentFormatTab
+                      tournamentId={tournament.id}
+                      courtsCount={tournament.courtsCount ?? 2}
+                      hasPlayedMatches={false}
+                      currentStages={stages.map((s: any) => ({ name: s.name, type: s.type, config: s.config, entryRules: s.entryRules }))}
+                      applyPresetAction={applyPipelinePresetAction!}
+                      setPipelineAction={setTournamentPipelineAction!}
+                    />
+                  </div>
+                </details>
+              ) : (
+                <TournamentFormatTab
+                  tournamentId={tournament.id}
+                  courtsCount={tournament.courtsCount ?? 2}
+                  hasPlayedMatches={false}
+                  currentStages={stages.map((s: any) => ({ name: s.name, type: s.type, config: s.config, entryRules: s.entryRules }))}
+                  applyPresetAction={applyPipelinePresetAction!}
+                  setPipelineAction={setTournamentPipelineAction!}
+                />
+              )
+            )}
+
+            {/* Pilotage des étapes (si le tournoi est déjà pipeline) */}
+            {isPipeline && (
+              <PipelinePlanning
+                tournament={tournament}
+                stages={stages}
+                launchStageAction={launchStageAction}
+                resetStagesAction={resetStagesAction}
+                simulateStageAction={tournament.testMode ? simulateStageAction : undefined}
+                previewEntriesAction={previewEntriesAction}
+                setManualGroupsAction={setManualGroupsAction}
+                updateStageAction={updatePipelineStageAction}
+                launchGroupAction={launchPipelineGroupAction}
+                addStageAction={addPipelineStageAction}
+                removeStageAction={removePipelineStageAction}
+                moveStageAction={movePipelineStageAction}
+                resetToRoundAction={resetPipelineToRoundAction}
+                rescheduleStageAction={reschedulePipelineStageAction}
+              />
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Tab: Planning ── */}
       {activeTab === "planning" && (

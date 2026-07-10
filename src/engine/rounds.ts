@@ -105,14 +105,38 @@ export function swissPairings(
     if (bye === null) bye = pool.pop()!; // toutes ont déjà eu un BYE
   }
 
-  while (pool.length >= 2) {
-    const a = pool.shift()!;
-    let idx = pool.findIndex((b) => !playedPairs.has(pairKey(a, b)));
-    if (idx === -1) {
-      if (!allowFallback) throw new Error(`Swiss: aucun adversaire frais pour ${a} au round ${roundIndex}`);
-      idx = 0; // rematch inévitable : plus proche au classement
+  // Appariement par BACKTRACKING : cherche un jumelage complet SANS rematch,
+  // en essayant les adversaires par proximité de classement. Un simple glouton
+  // (apparier chaque équipe au 1er adversaire frais) « vole » des adversaires
+  // et force de faux rematchs alors qu'un jumelage parfait existe — d'où ce
+  // solveur récursif. Ne retombe sur un rematch que si c'est réellement
+  // impossible (round-robin quasi complet).
+  const solution: Array<[string, string]> = [];
+  const solve = (remaining: string[]): boolean => {
+    if (remaining.length === 0) return true;
+    const a = remaining[0];
+    const rest = remaining.slice(1);
+    for (const b of rest) {
+      if (playedPairs.has(pairKey(a, b))) continue;
+      solution.push([a, b]);
+      if (solve(rest.filter((x) => x !== b))) return true;
+      solution.pop();
     }
-    pairs.push([a, pool.splice(idx, 1)[0]]);
+    return false;
+  };
+
+  if (solve(pool)) {
+    pairs.push(...solution);
+  } else {
+    // Aucun jumelage sans rematch possible → glouton avec rematch minimal,
+    // au plus proche du classement.
+    if (!allowFallback) throw new Error(`Swiss: aucun jumelage sans rematch au round ${roundIndex}`);
+    while (pool.length >= 2) {
+      const a = pool.shift()!;
+      let idx = pool.findIndex((b) => !playedPairs.has(pairKey(a, b)));
+      if (idx === -1) idx = 0;
+      pairs.push([a, pool.splice(idx, 1)[0]]);
+    }
   }
 
   const out: Pairing[] = pairs.map(([a, b], i) => ({

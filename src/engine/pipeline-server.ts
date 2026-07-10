@@ -143,6 +143,66 @@ export async function createStages(tournamentId: string, defs: StageDef[]): Prom
   );
 }
 
+/**
+ * Définit (ou redéfinit) le format pipeline d'un tournoi RÉEL : bascule
+ * usesPipeline=true et remplace ses étapes par la composition fournie.
+ * Refuse si un match a déjà été joué (protège les tournois en cours/terminés).
+ * Réutilise la même validation zod que le builder sandbox.
+ */
+export async function setTournamentPipeline(
+  tournamentId: string,
+  stagesInput: unknown,
+): Promise<{ ok?: boolean; error?: string }> {
+  const { validateCustomPipeline } = await import("./pipeline-validation");
+  const validated = validateCustomPipeline(stagesInput);
+  if (!validated.ok) return { error: validated.error };
+
+  const tournament = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { id: true },
+  });
+  if (!tournament) return { error: "Tournoi introuvable." };
+
+  // Garde-fou : aucun match joué (sinon on casserait des résultats)
+  const playedCount = await prisma.match.count({
+    where: { tournamentId, status: "FINISHED" },
+  });
+  if (playedCount > 0) {
+    return { error: "Des matchs ont déjà été joués : le format ne peut plus être modifié." };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Purge de l'ancien format (étapes pipeline OU matchs legacy non joués)
+    await tx.matchEvent.deleteMany({ where: { match: { tournamentId } } });
+    await tx.match.deleteMany({ where: { tournamentId } });
+    await tx.poolTeam.deleteMany({ where: { pool: { tournamentId } } });
+    await tx.pool.deleteMany({ where: { tournamentId } });
+    await tx.stageEntry.deleteMany({ where: { stage: { tournamentId } } });
+    await tx.stage.deleteMany({ where: { tournamentId } });
+
+    await tx.tournament.update({
+      where: { id: tournamentId },
+      data: { usesPipeline: true, format: "pipeline" } as never,
+    });
+
+    for (let i = 0; i < validated.stages.length; i++) {
+      const def = validated.stages[i];
+      await tx.stage.create({
+        data: {
+          tournamentId,
+          order: i,
+          name: def.name,
+          type: def.type,
+          config: def.config as Prisma.InputJsonValue,
+          entryRules: def.entryRules as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
+  }, { timeout: 30000 });
+
+  return { ok: true };
+}
+
 // ─── Lancement d'une étape ───────────────────────────────────────────────────
 
 function nextStartAt(t: PipelineTournament): Date {

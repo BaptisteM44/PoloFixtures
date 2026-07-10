@@ -4097,6 +4097,43 @@ export async function setPipelineManualGroupsAction(
   return res;
 }
 
+/**
+ * Définit le format d'un tournoi via une composition d'étapes custom
+ * (builder). Bascule le tournoi en pipeline. Refuse si des matchs sont joués.
+ */
+export async function setTournamentPipelineAction(
+  id: string,
+  stages: unknown,
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { setTournamentPipeline } = await import("@/engine/pipeline-server");
+  const res = await setTournamentPipeline(id, stages);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/** Applique un preset de pipeline (Poules→SE, Swiss→DE, Big Apple…) au tournoi. */
+export async function applyPipelinePresetAction(
+  id: string,
+  presetKey: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const t = await prisma.tournament.findUnique({ where: { id }, select: { maxTeams: true } });
+  if (!t) return { error: "Tournoi introuvable." };
+  const { getPreset } = await import("@/engine/presets");
+  const preset = getPreset(presetKey);
+  if (!preset) return { error: "Preset inconnu." };
+  const stages = preset.build(Math.max(t.maxTeams ?? preset.minTeams, preset.minTeams));
+  const { setTournamentPipeline } = await import("@/engine/pipeline-server");
+  const res = await setTournamentPipeline(id, stages);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
 /** Revient au round N d'une étape RR/SWISS active (efface N et les suivants). */
 export async function resetPipelineToRoundAction(
   id: string,

@@ -23,7 +23,7 @@ export type EntryRules = {
   groupAssign?: "snake" | "interleave" | "block" | "manual";
 };
 
-type BuilderStage = {
+export type BuilderStage = {
   key: string;
   name: string;
   type: StageType;
@@ -32,7 +32,7 @@ type BuilderStage = {
 };
 
 let uid = 0;
-const newKey = () => `s${Date.now()}_${uid++}`;
+export const newKey = () => `s${Date.now()}_${uid++}`;
 
 // Libellés des types d'étapes (namespace "tournament", partagés avec le reste du site).
 export const TYPE_LABEL_KEY: Record<StageType, string> = {
@@ -51,7 +51,7 @@ export function defaultConfig(type: StageType): Record<string, unknown> {
   }
 }
 
-function defaultStage(order: number): BuilderStage {
+export function defaultStage(order: number): BuilderStage {
   return {
     key: newKey(),
     name: `__default_${order}`, // placeholder, remplacé au rendu par le libellé traduit
@@ -179,7 +179,7 @@ export function PipelineBuilder({ maxTeams }: { maxTeams: number }) {
 
 export const STAGE_TYPES: StageType[] = ["RR", "SWISS", "CROSS_POOL", "PLACEMENT", "SE", "DE"];
 
-function StageCard({
+export function StageCard({
   index, stage, availablePrevStages, courtsCount, onChange, onChangeType, onRemove, onDuplicate, onMoveUp, onMoveDown,
 }: {
   index: number;
