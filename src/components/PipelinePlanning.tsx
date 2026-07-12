@@ -370,7 +370,7 @@ export function PipelinePlanning({
               return (
                 <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed var(--border)", display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", fontSize: 12 }}>
                   {resetToRoundAction && rounds.length > 0 && (
-                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                       <span style={{ color: "var(--text-muted)" }}>↩ {t("pipeline_back_to_round")}</span>
                       {groups.length > 1 && (
                         <select value={roundResetGroup[stage.order] ?? ""} onChange={(e) => setRoundResetGroup((p) => ({ ...p, [stage.order]: e.target.value }))} style={{ fontSize: 12 }}>

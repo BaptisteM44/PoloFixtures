@@ -3935,10 +3935,23 @@ details.agenda-month--past > summary::-webkit-details-marker {
   gap: 20px;
 }
 
+/* Les classements ont beaucoup de colonnes (W/D/L/GF/GA/DIFF/PTS/BUCH…) :
+   sur mobile la table scrolle horizontalement au lieu de déborder l'écran. */
+.pool-card {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .pool-card table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .pool-card table {
+    min-width: 480px; /* garde les colonnes lisibles ; le conteneur scrolle */
+  }
 }
 
 .pool-card th {

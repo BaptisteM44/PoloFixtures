@@ -192,8 +192,8 @@ export function MtpFinalStandings({ teams, matches, scoringSystem, swissRounds }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "0 0 32px" }}>
-      <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+      <div className="panel" style={{ padding: 0, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, minWidth: 420 }}>
           <thead>
             <tr style={{ background: "var(--bg-muted)", borderBottom: "1px solid var(--border)" }}>
               <th style={{ padding: "10px 12px", textAlign: "left", fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", width: 48 }}>#</th>
