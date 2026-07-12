@@ -185,8 +185,17 @@ export function PipelinePlanning({
   const [composeGroups, setComposeGroups] = useState(2);
 
   const sorted = [...stages].sort((a, b) => a.order - b.order);
-  const nextPending = sorted.find((s) => s.status === "PENDING" &&
-    sorted.every((p) => p.order >= s.order || p.status === "DONE" || p.status === "SKIPPED"));
+
+  // Une étape est lançable si toutes les étapes DONT elle dépend (ses sources
+  // stageRanks) sont terminées. Plusieurs étapes indépendantes peuvent donc
+  // être lançables EN MÊME TEMPS (ex: DE Top 8 + DE Bottom 8). Miroir exact
+  // du garde-fou moteur (launchStage).
+  const isLaunchable = (stage: any): boolean => {
+    if (stage.status !== "PENDING") return false;
+    const sources = (stage.entryRules?.sources ?? []).filter((s: any) => s.kind === "stageRanks");
+    const dependsOn = new Set(sources.map((s: any) => s.stageOrder));
+    return sorted.every((p) => !dependsOn.has(p.order) || p.status === "DONE" || p.status === "SKIPPED");
+  };
 
   const statusLabel = (status: string) => t(`pipeline_status_${status.toLowerCase()}` as never);
   const typeLabel = (type: string) => t(`pipeline_type_${type.toLowerCase()}` as never);
@@ -236,7 +245,7 @@ export function PipelinePlanning({
         const isOpen = openOrder === stage.order;
         const doneMatches = (stage.matches ?? []).filter((m: any) => m.status === "FINISHED").length;
         const totalMatches = (stage.matches ?? []).length;
-        const isNextLaunchable = stage.status === "PENDING" && nextPending?.order === stage.order;
+        const isNextLaunchable = isLaunchable(stage);
         const hasGroups = ((stage.entryRules as any)?.groups ?? 1) > 1;
         const isComposing = composeOrder === stage.order;
         const isEditing = editOrder === stage.order;
