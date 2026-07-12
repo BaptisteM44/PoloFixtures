@@ -988,7 +988,10 @@ export default async function TournamentPage({
           return <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>;
         }
         return (
+          // key=active.value : force le remontage entre onglets de groupes
+          // (sinon PoolTables garde en mémoire les équipes du 1er groupe affiché).
           <PoolTables
+            key={active.value}
             pools={activePools}
             matches={tournament.matches}
             tournamentId={tournament.id}
@@ -1136,7 +1139,11 @@ export default async function TournamentPage({
         }));
         return (
           <div>
-            <BracketView matches={stageMatches as any} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />
+            {/* key=bracketStage.id : force React à remonter le composant (donc à
+                réinitialiser son state matches/teams) quand on change d'onglet
+                bracket — sinon il garde en mémoire les équipes du 1er bracket
+                affiché tant que la page n'est pas rechargée. */}
+            <BracketView key={bracketStage.id} matches={stageMatches as any} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />
           </div>
         );
       })()}
