@@ -418,14 +418,24 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
   const stage = t.stages.find((s) => s.order === stageOrder);
   if (!stage) return { error: `Étape ${stageOrder} introuvable.` };
   if (stage.status !== "PENDING") return { error: `L'étape "${stage.name}" est déjà ${stage.status}.` };
-  const blocking = t.stages.find((s) => s.order < stageOrder && s.status !== "DONE" && s.status !== "SKIPPED");
+  // On ne bloque que sur les étapes DONT celle-ci dépend (ses sources
+  // stageRanks). Deux étapes indépendantes (ex: DE Top 8 et DE Bottom 8, qui
+  // prennent chacune une moitié du Swiss) peuvent tourner EN PARALLÈLE.
+  const rules = stage.entryRules as unknown as EntryRules;
+  const dependsOn = new Set(
+    rules.sources
+      .filter((s): s is Extract<typeof s, { kind: "stageRanks" }> => s.kind === "stageRanks")
+      .map((s) => s.stageOrder),
+  );
+  const blocking = t.stages.find(
+    (s) => dependsOn.has(s.order) && s.status !== "DONE" && s.status !== "SKIPPED",
+  );
   if (blocking) return { error: `L'étape "${blocking.name}" doit être terminée d'abord.` };
 
-  const rules0 = stage.entryRules as unknown as EntryRules;
   const entries =
     stage.type === "CROSS_POOL"
-      ? resolveCrossPoolEntries(t, rules0)
-      : resolveEntries(rules0, {
+      ? resolveCrossPoolEntries(t, rules)
+      : resolveEntries(rules, {
           registrationSeeds: [...t.teams].sort((a, b) => a.seed - b.seed).map((x) => x.id),
           stageStandings: (o, g) => stageStandings(t, o, g),
         });

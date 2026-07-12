@@ -177,6 +177,18 @@ export default async function TournamentPage({
           return [...groupTabs, ...generalTab];
         })
     : [];
+  // Un onglet par étape bracket (SE/DE) : permet d'afficher DEUX brackets
+  // en parallèle (ex: DE Top 8 + DE Bottom 8), chacun avec son propre tableau.
+  const pipelineBracketStages = isPipeline
+    ? [...((tournament as any).stages ?? [])]
+        .sort((a: any, b: any) => a.order - b.order)
+        .filter((s: any) => s.type === "SE" || s.type === "DE")
+    : [];
+  const pipelineBracketTabs = pipelineBracketStages.map((s: any) => ({
+    value: `brk-${s.id}`,
+    label: s.name,
+    stageId: s.id,
+  }));
   const kiosqueTop4Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "KIOSQUE_TOP4");
   const kiosqueBottom12Matches = (tournament.matches ?? []).filter((m: any) => m.phase === "KIOSQUE_BOTTOM12");
   const kiosqueSEMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "KIOSQUE_SE");
@@ -271,7 +283,10 @@ export default async function TournamentPage({
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SPLIT_SE" ? [{ label: t("bracket_r1"), value: "r1", href: `/tournament/${params.id}?tab=r1` }] : []),
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SPLIT_SE" ? [{ label: t("bracket_winners"), value: "winners", href: `/tournament/${params.id}?tab=winners` }] : []),
     ...(isLaunched && !isBerlinMixed && tournament.sundayFormat === "SPLIT_SE" ? [{ label: t("bracket_losers"), value: "losers", href: `/tournament/${params.id}?tab=losers` }] : []),
-    ...(isLaunched && !isBerlinMixed && !isKiosque && tournament.sundayFormat !== "SWISS_SPLIT_SE" && tournament.sundayFormat !== "SPLIT_SE" ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : []),
+    // Pipeline : un onglet par étape bracket (SE/DE). Sinon : onglet Bracket unique (legacy).
+    ...(isLaunched && isPipeline
+      ? pipelineBracketTabs.map((b) => ({ label: b.label, value: b.value, href: `/tournament/${params.id}?tab=${b.value}` }))
+      : (isLaunched && !isBerlinMixed && !isKiosque && tournament.sundayFormat !== "SWISS_SPLIT_SE" && tournament.sundayFormat !== "SPLIT_SE" ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : [])),
     { label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
     ...(youtubeEmbed || court1Embed || court2Embed || multiplexEmbed || t_.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
@@ -285,11 +300,23 @@ export default async function TournamentPage({
   type PodiumTeam = { id: string; name: string; players?: PodiumPlayer[] } | null;
   let podium: { first: PodiumTeam; second: PodiumTeam; third: PodiumTeam } = { first: null, second: null, third: null };
 
-  // Pipeline se terminant SANS bracket (dernier stage = RR/Swiss/CrossPool/Placement) :
-  // le podium vient du classement final du moteur, pas d'un match "G".
-  const lastPipelineStage = isPipeline
-    ? [...((tournament as any).stages ?? [])].sort((a: any, b: any) => b.order - a.order)[0]
-    : null;
+  // Podium d'un pipeline : il vient du bracket qui contient les MEILLEURS
+  // (rangs les plus hauts, ex: DE Top 8), pas forcément le dernier stage —
+  // avec deux DE parallèles (Top 8 / Bottom 8), le podium est celui du Top 8.
+  const pipelineStagesSorted = isPipeline
+    ? [...((tournament as any).stages ?? [])].sort((a: any, b: any) => b.order - a.order)
+    : [];
+  const minFromOf = (s: any): number => {
+    const sources = (s?.entryRules?.sources ?? []).filter((src: any) => src.kind === "stageRanks");
+    if (sources.length === 0) return 1; // registration → rangs de tête
+    return Math.min(...sources.map((src: any) => src.from ?? 1));
+  };
+  const bracketStagesForPodium = pipelineStagesSorted.filter((s: any) => s.type === "SE" || s.type === "DE");
+  // Le bracket "principal" = celui dont la source a le from le plus petit
+  // (rangs 1-x). À égalité, le dernier dans l'ordre du pipeline.
+  const lastPipelineStage = bracketStagesForPodium.length > 0
+    ? [...bracketStagesForPodium].sort((a, b) => minFromOf(a) - minFromOf(b) || b.order - a.order)[0]
+    : (pipelineStagesSorted[0] ?? null);
   const pipelineEndsWithoutBracket = isPipeline && lastPipelineStage && lastPipelineStage.type !== "SE" && lastPipelineStage.type !== "DE";
 
   if (isCompleted && pipelineEndsWithoutBracket) {
@@ -1074,9 +1101,9 @@ export default async function TournamentPage({
         return <BracketView matches={mtpDeMatches as any} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} />;
       })()}
 
-      {tab === "bracket" && !isTestMode && isPipeline && (() => {
+      {isPipeline && !isTestMode && typeof tab === "string" && tab.startsWith("brk-") && (() => {
         const stages = [...((tournament as any).stages ?? [])].sort((a: any, b: any) => a.order - b.order);
-        const bracketStage = [...stages].reverse().find((s: any) => s.type === "SE" || s.type === "DE");
+        const bracketStage = stages.find((s: any) => `brk-${s.id}` === tab && (s.type === "SE" || s.type === "DE"));
         if (!bracketStage) {
           return <p style={{ padding: 24, color: "var(--text-muted)", fontSize: 14 }}>{t("pipeline_no_bracket_stage")}</p>;
         }
