@@ -1762,7 +1762,9 @@
     "tab_settings": "Ajustes",
     "messages_empty": "Aún no hay conversaciones.",
     "messages_open_all": "Ver todos los mensajes",
-    "settings_notifications_title": "Notificaciones"
+    "settings_notifications_title": "Notificaciones",
+    "install_app_title": "Instalar la aplicación",
+    "install_app_desc": "Acceso rápido desde la pantalla de inicio, incluso sin conexión."
   },
   "charter": {
     "title": "Carta de la Comunidad",
@@ -2090,7 +2092,9 @@
     "all_continent": "Todo {label}",
     "save": "Guardar",
     "saving": "Guardando…",
-    "saved": "¡Preferencias guardadas!"
+    "saved": "¡Preferencias guardadas!",
+    "push_notifications": "Notificaciones push",
+    "push_denied_hint": "Las notificaciones están bloqueadas en la configuración de tu navegador."
   },
   "clubs": {
     "title": "Clubs de todo el mundo",

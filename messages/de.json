@@ -1763,7 +1763,9 @@
     "tab_settings": "Einstellungen",
     "messages_empty": "Noch keine Unterhaltungen.",
     "messages_open_all": "Alle Nachrichten anzeigen",
-    "settings_notifications_title": "Benachrichtigungen"
+    "settings_notifications_title": "Benachrichtigungen",
+    "install_app_title": "App installieren",
+    "install_app_desc": "Schneller Zugriff vom Startbildschirm, auch offline."
   },
   "charter": {
     "title": "Community-Charta",
@@ -2091,7 +2093,9 @@
     "all_continent": "Ganz {label}",
     "save": "Speichern",
     "saving": "Speichern…",
-    "saved": "Einstellungen gespeichert!"
+    "saved": "Einstellungen gespeichert!",
+    "push_notifications": "Push-Benachrichtigungen",
+    "push_denied_hint": "Benachrichtigungen sind in deinen Browsereinstellungen blockiert."
   },
   "clubs": {
     "title": "Clubs weltweit",

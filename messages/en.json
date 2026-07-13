@@ -1758,7 +1758,9 @@
     "tab_settings": "Settings",
     "messages_empty": "No conversations yet.",
     "messages_open_all": "See all messages",
-    "settings_notifications_title": "Notifications"
+    "settings_notifications_title": "Notifications",
+    "install_app_title": "Install the app",
+    "install_app_desc": "Quick access from your home screen, even offline."
   },
   "charter": {
     "title": "Community Charter",
@@ -2086,7 +2088,9 @@
     "all_continent": "All {label}",
     "save": "Save",
     "saving": "Saving…",
-    "saved": "Preferences saved!"
+    "saved": "Preferences saved!",
+    "push_notifications": "Push notifications",
+    "push_denied_hint": "Notifications are blocked in your browser settings."
   },
   "clubs": {
     "title": "Clubs worldwide",
