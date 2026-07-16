@@ -100,6 +100,20 @@ describe("Pipeline — presets joués de bout en bout", () => {
       { name: "Placement 1ers/2es", n: 2 },
       { name: "Bracket final", n: 8 },         // SE8 + 3e place
     ]);
+
+    // Régression : le Swiss dimanche DOIT garder les groupes A et B séparés
+    // (6 équipes chacun, 4 matchs/round après BYE — ici pair donc pas de BYE,
+    // 3 matchs/round). Sans groups:2 sur le preset, les 2 sources fusionnaient
+    // en un seul groupe de 12, produisant 6 matchs/round au lieu de 3+3.
+    const swissStage = t!.stages.find((s) => s.name === "Swiss dimanche (3-8)")!;
+    const byGroup = new Map<string, number>();
+    for (const m of swissStage.matches) {
+      const g = m.groupKey || "(aucun)";
+      byGroup.set(g, (byGroup.get(g) ?? 0) + 1);
+    }
+    expect(byGroup.get("(aucun)"), "aucun match ne doit être hors-groupe").toBeUndefined();
+    expect(byGroup.get("A")).toBe(9); // 3 rounds × 3 matchs (6 équipes/groupe)
+    expect(byGroup.get("B")).toBe(9);
   });
 
   it("48 équipes : 2 poules → SE, joué de bout en bout", async () => {

@@ -83,6 +83,13 @@ export const PIPELINE_PRESETS: PipelinePreset[] = [
               { kind: "stageRanks", stageOrder: 0, group: "A", from: 3, to: perGroup },
               { kind: "stageRanks", stageOrder: 0, group: "B", from: 3, to: perGroup },
             ],
+            // Sans ça, les 2 sources fusionnaient en un seul groupe mono (12
+            // équipes mélangées) au lieu de garder A et B séparés pendant le
+            // Swiss du jour 2 — "block" découpe la liste ordonnée (A puis B,
+            // tailles égales) en 2 groupes qui correspondent exactement aux
+            // 2 sources.
+            groups: 2,
+            groupAssign: "block",
           },
         },
         {
