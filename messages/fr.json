@@ -903,7 +903,15 @@
     "preset_big_apple_label": "🍎 Big Apple",
     "preset_big_apple_desc": "2 poules RR → Swiss (rangs 3-8) + placement des 1ers/2es → Élim. simple des 8.",
     "orga_tab_format_stages": "🧩 Format & étapes",
-    "format_edit_summary": "Modifier le format (étapes non lancées)"
+    "format_edit_summary": "Modifier le format (étapes non lancées)",
+    "accommodation_notify_btn": "Notifier ({count})",
+    "accommodation_notify_confirm": "Envoyer une notification + un email aux {count} logé·es pas encore prévenu·es (et à leurs logeurs) ?",
+    "accommodation_notify_done": "{guests} logé·e(s) et {hosts} logeur(s) prévenus",
+    "accommodation_notify_error": "Échec de l'envoi des notifications.",
+    "accommodation_host_capacity_placeholder": "Places offertes (optionnel)",
+    "accommodation_over_capacity": "Capacité dépassée !",
+    "accommodation_notified": "Prévenu·e",
+    "accommodation_not_notified": "Pas encore prévenu·e"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -1118,7 +1126,9 @@
     "section_pending_invites": "Invitations en attente",
     "btn_accept": "Accepter",
     "btn_decline": "Refuser",
-    "default": "Notification"
+    "default": "Notification",
+    "accommodation_assigned": "🏠 Hébergement attribué : {hostName}",
+    "accommodation_guest_added": "🏠 De nouveaux invités chez toi"
   },
   "contact": {
     "btn_open": "Contact",

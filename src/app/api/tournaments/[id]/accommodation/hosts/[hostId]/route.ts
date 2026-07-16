@@ -5,6 +5,7 @@ import { z } from "zod";
 const updateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   contact: z.string().max(500).nullable().optional(),
+  capacity: z.number().int().min(1).max(50).nullable().optional(),
   notes: z.string().max(1000).nullable().optional(),
 });
 

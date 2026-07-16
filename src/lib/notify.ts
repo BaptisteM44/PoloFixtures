@@ -36,6 +36,10 @@ function toPushPayload(
       return { title: p.clubName, body: p.announcementTitle ?? "New announcement", url: p.clubId ? `/club/${p.clubId}?tab=announcements` : "/clubs", tag: `club-${p.clubId}` };
     case "CLUB_SESSION":
       return { title: "New Session", body: p.message ?? "New club session", url: p.clubId ? `/club/${p.clubId}?tab=sessions` : "/clubs", tag: `session-${p.clubId}` };
+    case "ACCOMMODATION_ASSIGNED":
+      return { title: "Accommodation assigned 🏠", body: `${p.hostName} — ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=hebergement`, tag: `acco-${p.tournamentId}` };
+    case "ACCOMMODATION_GUEST_ADDED":
+      return { title: "New guests at your place 🏠", body: `${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=hebergement`, tag: `acco-host-${p.tournamentId}` };
     default:
       return { title: "Poloperator", body: "New notification", url: "/", tag: type };
   }

@@ -20,6 +20,7 @@ const createSchema = z.object({
   playerId: z.string().optional(),
   name: z.string().min(1).max(200),
   contact: z.string().max(500).optional().nullable(),
+  capacity: z.number().int().min(1).max(50).optional().nullable(),
   notes: z.string().max(1000).optional().nullable(),
 });
 
@@ -50,6 +51,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       playerId: parsed.data.playerId ?? null,
       name: parsed.data.name,
       contact: parsed.data.contact ?? null,
+      capacity: parsed.data.capacity ?? null,
       notes: parsed.data.notes ?? null,
     },
     include: hostInclude,

@@ -443,3 +443,104 @@ export function announceEmail(lang: "fr" | "en" | "de" | "es", {
     `),
   };
 }
+
+// ── Hébergement ──────────────────────────────────────────────────────────────
+
+export function accommodationAssignedEmail(lang: "fr" | "en" | "de" | "es", {
+  hostName, hostContact, tournamentName, tournamentId, tournamentSlug,
+}: { hostName: string; hostContact: string | null; tournamentName: string; tournamentId: string; tournamentSlug: string | null }) {
+  const url = `${appUrl}/tournament/${tournamentSlug || tournamentId}?tab=hebergement`;
+  const t = {
+    fr: {
+      subject: `🏠 Ton hébergement pour ${tournamentName}`,
+      title: "🏠 Hébergement attribué !",
+      body: `Tu seras hébergé·e chez <strong>${hostName}</strong> pendant <strong>${tournamentName}</strong>.`,
+      contact: hostContact ? `Contact : <strong>${hostContact}</strong>` : "",
+      cta: "Voir les détails",
+    },
+    en: {
+      subject: `🏠 Your accommodation for ${tournamentName}`,
+      title: "🏠 Accommodation assigned!",
+      body: `You'll be hosted by <strong>${hostName}</strong> during <strong>${tournamentName}</strong>.`,
+      contact: hostContact ? `Contact: <strong>${hostContact}</strong>` : "",
+      cta: "View details",
+    },
+    de: {
+      subject: `🏠 Deine Unterkunft für ${tournamentName}`,
+      title: "🏠 Unterkunft zugeteilt!",
+      body: `Du wirst während <strong>${tournamentName}</strong> bei <strong>${hostName}</strong> untergebracht.`,
+      contact: hostContact ? `Kontakt: <strong>${hostContact}</strong>` : "",
+      cta: "Details ansehen",
+    },
+    es: {
+      subject: `🏠 Tu alojamiento para ${tournamentName}`,
+      title: "🏠 ¡Alojamiento asignado!",
+      body: `Te alojarás con <strong>${hostName}</strong> durante <strong>${tournamentName}</strong>.`,
+      contact: hostContact ? `Contacto: <strong>${hostContact}</strong>` : "",
+      cta: "Ver detalles",
+    },
+  }[lang];
+
+  return {
+    subject: t.subject,
+    html: emailWrapper(`
+      <h2 style="margin: 0 0 16px;">${t.title}</h2>
+      <p>${t.body}</p>
+      ${t.contact ? `<p>${t.contact}</p>` : ""}
+      <p style="margin: 24px 0;">
+        <a href="${url}" style="background:#60c9cf;color:#1a1a1a;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:700;display:inline-block;">
+          ${t.cta}
+        </a>
+      </p>
+      <p style="color:#666;font-size:11px;margin-top:32px;">Poloperator — <a href="${appUrl}" style="color:#60c9cf;">poloperator.com</a></p>
+    `),
+  };
+}
+
+export function accommodationHostEmail(lang: "fr" | "en" | "de" | "es", {
+  guestLines, tournamentName, tournamentId, tournamentSlug,
+}: { guestLines: string[]; tournamentName: string; tournamentId: string; tournamentSlug: string | null }) {
+  const url = `${appUrl}/tournament/${tournamentSlug || tournamentId}?tab=hebergement`;
+  const list = `<ul>${guestLines.map((g) => `<li>${g}</li>`).join("")}</ul>`;
+  const t = {
+    fr: {
+      subject: `🏠 Tes invité·es pour ${tournamentName}`,
+      title: "🏠 Nouveaux invités chez toi !",
+      body: `Voici les joueur·ses qui seront hébergé·es chez toi pendant <strong>${tournamentName}</strong> :`,
+      cta: "Voir les détails",
+    },
+    en: {
+      subject: `🏠 Your guests for ${tournamentName}`,
+      title: "🏠 New guests at your place!",
+      body: `Here are the players staying with you during <strong>${tournamentName}</strong>:`,
+      cta: "View details",
+    },
+    de: {
+      subject: `🏠 Deine Gäste für ${tournamentName}`,
+      title: "🏠 Neue Gäste bei dir!",
+      body: `Diese Spieler:innen übernachten während <strong>${tournamentName}</strong> bei dir:`,
+      cta: "Details ansehen",
+    },
+    es: {
+      subject: `🏠 Tus invitados para ${tournamentName}`,
+      title: "🏠 ¡Nuevos invitados en tu casa!",
+      body: `Estos jugadores se alojarán contigo durante <strong>${tournamentName}</strong>:`,
+      cta: "Ver detalles",
+    },
+  }[lang];
+
+  return {
+    subject: t.subject,
+    html: emailWrapper(`
+      <h2 style="margin: 0 0 16px;">${t.title}</h2>
+      <p>${t.body}</p>
+      ${list}
+      <p style="margin: 24px 0;">
+        <a href="${url}" style="background:#60c9cf;color:#1a1a1a;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:700;display:inline-block;">
+          ${t.cta}
+        </a>
+      </p>
+      <p style="color:#666;font-size:11px;margin-top:32px;">Poloperator — <a href="${appUrl}" style="color:#60c9cf;">poloperator.com</a></p>
+    `),
+  };
+}

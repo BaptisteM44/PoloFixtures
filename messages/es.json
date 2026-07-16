@@ -902,7 +902,15 @@
     "preset_big_apple_label": "🍎 Big Apple",
     "preset_big_apple_desc": "2 grupos RR → Swiss (puestos 3-8) + colocación de 1º/2º → elim. simple de 8.",
     "orga_tab_format_stages": "🧩 Formato y etapas",
-    "format_edit_summary": "Editar el formato (etapas no lanzadas)"
+    "format_edit_summary": "Editar el formato (etapas no lanzadas)",
+    "accommodation_notify_btn": "Notificar ({count})",
+    "accommodation_notify_confirm": "¿Enviar notificación + email a los {count} alojados aún no avisados (y a sus anfitriones)?",
+    "accommodation_notify_done": "{guests} alojado(s) y {hosts} anfitrión(es) avisados",
+    "accommodation_notify_error": "Error al enviar las notificaciones.",
+    "accommodation_host_capacity_placeholder": "Plazas ofrecidas (opcional)",
+    "accommodation_over_capacity": "¡Capacidad superada!",
+    "accommodation_notified": "Avisado/a",
+    "accommodation_not_notified": "Aún no avisado/a"
   },
   "registration": {
     "section_title": "Inscribir mi equipo",
@@ -1122,7 +1130,9 @@
     "section_pending_invites": "Invitaciones pendientes",
     "btn_accept": "Aceptar",
     "btn_decline": "Rechazar",
-    "default": "Notificación"
+    "default": "Notificación",
+    "accommodation_assigned": "🏠 Alojamiento asignado: {hostName}",
+    "accommodation_guest_added": "🏠 Nuevos invitados en tu casa"
   },
   "contact": {
     "btn_open": "Contacto",

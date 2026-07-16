@@ -903,7 +903,15 @@
     "preset_big_apple_label": "🍎 Big Apple",
     "preset_big_apple_desc": "2 RR pools → Swiss (ranks 3-8) + placement of 1st/2nd → single elim. of 8.",
     "orga_tab_format_stages": "🧩 Format & stages",
-    "format_edit_summary": "Edit format (unlaunched stages)"
+    "format_edit_summary": "Edit format (unlaunched stages)",
+    "accommodation_notify_btn": "Notify ({count})",
+    "accommodation_notify_confirm": "Send a notification + email to the {count} guests not yet notified (and their hosts)?",
+    "accommodation_notify_done": "{guests} guest(s) and {hosts} host(s) notified",
+    "accommodation_notify_error": "Failed to send notifications.",
+    "accommodation_host_capacity_placeholder": "Beds offered (optional)",
+    "accommodation_over_capacity": "Over capacity!",
+    "accommodation_notified": "Notified",
+    "accommodation_not_notified": "Not notified yet"
   },
   "registration": {
     "section_title": "Register my team",
@@ -1118,7 +1126,9 @@
     "section_pending_invites": "Pending invitations",
     "btn_accept": "Accept",
     "btn_decline": "Decline",
-    "default": "Notification"
+    "default": "Notification",
+    "accommodation_assigned": "🏠 Accommodation assigned: {hostName}",
+    "accommodation_guest_added": "🏠 New guests at your place"
   },
   "contact": {
     "btn_open": "Contact",

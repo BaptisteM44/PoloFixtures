@@ -903,7 +903,15 @@
     "preset_big_apple_label": "🍎 Big Apple",
     "preset_big_apple_desc": "2 RR-Gruppen → Swiss (Ränge 3-8) + Platzierung der 1./2. → K.o. der 8.",
     "orga_tab_format_stages": "🧩 Format & Phasen",
-    "format_edit_summary": "Format bearbeiten (nicht gestartete Phasen)"
+    "format_edit_summary": "Format bearbeiten (nicht gestartete Phasen)",
+    "accommodation_notify_btn": "Benachrichtigen ({count})",
+    "accommodation_notify_confirm": "Benachrichtigung + E-Mail an die {count} noch nicht informierten Gäste (und ihre Gastgeber) senden?",
+    "accommodation_notify_done": "{guests} Gast/Gäste und {hosts} Gastgeber benachrichtigt",
+    "accommodation_notify_error": "Senden der Benachrichtigungen fehlgeschlagen.",
+    "accommodation_host_capacity_placeholder": "Schlafplätze (optional)",
+    "accommodation_over_capacity": "Kapazität überschritten!",
+    "accommodation_notified": "Benachrichtigt",
+    "accommodation_not_notified": "Noch nicht benachrichtigt"
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -1123,7 +1131,9 @@
     "section_pending_invites": "Ausstehende Einladungen",
     "btn_accept": "Annehmen",
     "btn_decline": "Ablehnen",
-    "default": "Mitteilung"
+    "default": "Mitteilung",
+    "accommodation_assigned": "🏠 Unterkunft zugeteilt: {hostName}",
+    "accommodation_guest_added": "🏠 Neue Gäste bei dir"
   },
   "contact": {
     "btn_open": "Kontakt",

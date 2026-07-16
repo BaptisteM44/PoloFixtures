@@ -53,6 +53,10 @@ function useNotifLabel() {
         return { title: t("team_fee_confirmed", { teamName: p.teamName }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}` };
       case "COMMUNITY_STATUS_CHANGED":
         return { title: t("community_reply", { itemTitle: p.itemTitle ?? "" }), sub: p.message ?? "", href: p.itemId ? `/labs?id=${p.itemId}` : "/labs" };
+      case "ACCOMMODATION_ASSIGNED":
+        return { title: t("accommodation_assigned", { hostName: p.hostName ?? "" }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=hebergement` };
+      case "ACCOMMODATION_GUEST_ADDED":
+        return { title: t("accommodation_guest_added"), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=hebergement` };
       default:
         return { title: t("default"), sub: "", href: "/my-teams" };
     }

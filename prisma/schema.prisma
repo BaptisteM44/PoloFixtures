@@ -194,6 +194,8 @@ enum NotificationType {
   CLUB_ANNOUNCEMENT      // nouvelle annonce dans le club
   COMMUNITY_STATUS_CHANGED // statut d'un item communauté a changé
   TEAM_FEE_CONFIRMED       // frais d'inscription d'équipe confirmés
+  ACCOMMODATION_ASSIGNED    // un hébergement a été attribué au joueur
+  ACCOMMODATION_GUEST_ADDED // des invités ont été ajoutés chez un logeur
 }
 
 enum TaskPriority {
@@ -1119,6 +1121,7 @@ model AccommodationHost {
   playerId     String?  // optional: registered player host
   name         String   // display name
   contact      String?  // email, telegram, phone… free text
+  capacity     Int?     // nombre de places offertes (null = non précisé)
   notes        String?  // orga-only notes
   createdAt    DateTime @default(now())
 
@@ -1135,6 +1138,7 @@ model AccommodationGuest {
   hostId       String
   teamPlayerId String  @unique
   notes        String?
+  notifiedAt   DateTime? // date d'envoi de la notif/mail d'attribution (null = pas encore prévenu)
 
   host       AccommodationHost @relation(fields: [hostId], references: [id], onDelete: Cascade)
   teamPlayer TeamPlayer        @relation(fields: [teamPlayerId], references: [id], onDelete: Cascade)

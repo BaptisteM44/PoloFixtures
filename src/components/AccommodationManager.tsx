@@ -16,6 +16,7 @@ type TeamPlayerRow = {
 type GuestRow = {
   id: string;
   notes: string | null;
+  notifiedAt?: string | Date | null; // date de notification (null = pas encore prévenu)
   teamPlayer: { id: string; player: PlayerInfo; team: TeamInfo };
 };
 
@@ -24,6 +25,7 @@ type HostRow = {
   playerId: string | null;
   name: string;
   contact: string | null;
+  capacity?: number | null; // places offertes
   notes: string | null;
   player: PlayerInfo | null;
   guests: GuestRow[];
@@ -46,12 +48,17 @@ export function AccommodationManager({
   // Add host form
   const [newHostName, setNewHostName] = useState("");
   const [newHostContact, setNewHostContact] = useState("");
+  const [newHostCapacity, setNewHostCapacity] = useState("");
   const [newHostNotes, setNewHostNotes] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
 
   // Edit host state
   const [editingHostId, setEditingHostId] = useState<string | null>(null);
-  const [editHostData, setEditHostData] = useState({ name: "", contact: "", notes: "" });
+  const [editHostData, setEditHostData] = useState({ name: "", contact: "", capacity: "", notes: "" });
+
+  // Bouton « Notifier » : envoie notif+mail à tous les logés/logeurs pas encore prévenus
+  const [notifyResult, setNotifyResult] = useState<string | null>(null);
+  const pendingNotifyCount = hosts.flatMap((h) => h.guests).filter((g) => !g.notifiedAt).length;
 
   const api = `/api/tournaments/${tournamentId}/accommodation/hosts`;
 
@@ -68,6 +75,7 @@ export function AccommodationManager({
         body: JSON.stringify({
           name: newHostName.trim(),
           contact: newHostContact.trim() || null,
+          capacity: newHostCapacity ? Number(newHostCapacity) : null,
           notes: newHostNotes.trim() || null,
         }),
       });
@@ -76,10 +84,28 @@ export function AccommodationManager({
         setHosts((prev) => [...prev, host]);
         setNewHostName("");
         setNewHostContact("");
+        setNewHostCapacity("");
         setNewHostNotes("");
         setShowAddForm(false);
       } else {
         setError(t("accommodation_error_create"));
+      }
+    });
+  };
+
+  const notifyAll = () => {
+    if (!window.confirm(t("accommodation_notify_confirm", { count: pendingNotifyCount }))) return;
+    setNotifyResult(null);
+    setError(null);
+    startTransition(async () => {
+      const res = await fetch(`/api/tournaments/${tournamentId}/accommodation/notify`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        const now = new Date().toISOString();
+        setHosts((prev) => prev.map((h) => ({ ...h, guests: h.guests.map((g) => ({ ...g, notifiedAt: g.notifiedAt ?? now })) })));
+        setNotifyResult(t("accommodation_notify_done", { guests: data.notifiedGuests, hosts: data.notifiedHosts }));
+      } else {
+        setError(t("accommodation_notify_error"));
       }
     });
   };
@@ -94,17 +120,18 @@ export function AccommodationManager({
 
   const startEditHost = (host: HostRow) => {
     setEditingHostId(host.id);
-    setEditHostData({ name: host.name, contact: host.contact ?? "", notes: host.notes ?? "" });
+    setEditHostData({ name: host.name, contact: host.contact ?? "", capacity: host.capacity != null ? String(host.capacity) : "", notes: host.notes ?? "" });
   };
 
   const saveEditHost = (hostId: string) => {
-    setHosts((prev) => prev.map((h) => h.id === hostId ? { ...h, name: editHostData.name, contact: editHostData.contact || null, notes: editHostData.notes || null } : h));
+    const capacity = editHostData.capacity ? Number(editHostData.capacity) : null;
+    setHosts((prev) => prev.map((h) => h.id === hostId ? { ...h, name: editHostData.name, contact: editHostData.contact || null, capacity, notes: editHostData.notes || null } : h));
     setEditingHostId(null);
     startTransition(async () => {
       await fetch(`${api}/${hostId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editHostData.name, contact: editHostData.contact || null, notes: editHostData.notes || null }),
+        body: JSON.stringify({ name: editHostData.name, contact: editHostData.contact || null, capacity, notes: editHostData.notes || null }),
       });
     });
   };
@@ -146,10 +173,18 @@ export function AccommodationManager({
             {t("accommodation_total", { count: teamPlayers.length, plural: teamPlayers.length !== 1 ? "s" : "" })}
           </p>
         </div>
-        <button className="primary" onClick={() => setShowAddForm((v) => !v)} style={{ fontSize: 13 }}>
-          {t("accommodation_add_host")}
-        </button>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {pendingNotifyCount > 0 && (
+            <button className="ghost" onClick={notifyAll} disabled={isPending} style={{ fontSize: 13 }}>
+              📣 {t("accommodation_notify_btn", { count: pendingNotifyCount })}
+            </button>
+          )}
+          <button className="primary" onClick={() => setShowAddForm((v) => !v)} style={{ fontSize: 13 }}>
+            {t("accommodation_add_host")}
+          </button>
+        </div>
       </div>
+      {notifyResult && <p style={{ color: "var(--teal)", fontSize: 13, fontWeight: 600, marginTop: -8, marginBottom: 12 }}>✓ {notifyResult}</p>}
 
       {showAddForm && (
         <div className="panel" style={{ marginBottom: 20, padding: 16 }}>
@@ -167,6 +202,15 @@ export function AccommodationManager({
               value={newHostContact}
               onChange={(e) => setNewHostContact(e.target.value)}
               placeholder={t("accommodation_host_contact_placeholder")}
+              style={{ fontSize: 13 }}
+            />
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={newHostCapacity}
+              onChange={(e) => setNewHostCapacity(e.target.value)}
+              placeholder={t("accommodation_host_capacity_placeholder")}
               style={{ fontSize: 13 }}
             />
             <input
@@ -196,6 +240,7 @@ export function AccommodationManager({
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
                   <input type="text" value={editHostData.name} onChange={(e) => setEditHostData((d) => ({ ...d, name: e.target.value }))} placeholder={t("accommodation_host_name_placeholder")} style={{ fontSize: 13 }} />
                   <input type="text" value={editHostData.contact} onChange={(e) => setEditHostData((d) => ({ ...d, contact: e.target.value }))} placeholder={t("accommodation_host_contact_placeholder")} style={{ fontSize: 13 }} />
+                  <input type="number" min={1} max={50} value={editHostData.capacity} onChange={(e) => setEditHostData((d) => ({ ...d, capacity: e.target.value }))} placeholder={t("accommodation_host_capacity_placeholder")} style={{ fontSize: 13 }} />
                   <input type="text" value={editHostData.notes} onChange={(e) => setEditHostData((d) => ({ ...d, notes: e.target.value }))} placeholder={t("accommodation_host_notes_placeholder")} style={{ fontSize: 13 }} />
                   <div style={{ display: "flex", gap: 8 }}>
                     <button className="primary" onClick={() => saveEditHost(host.id)} style={{ fontSize: 12 }}>{t("accommodation_save")}</button>
@@ -205,7 +250,18 @@ export function AccommodationManager({
               ) : (
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                   <div>
-                    <strong style={{ fontSize: 14 }}>{host.name}</strong>
+                    <strong style={{ fontSize: 14 }}>
+                      {host.name}
+                      {host.capacity != null && (
+                        <span style={{
+                          marginLeft: 8, fontSize: 11, fontWeight: 700, padding: "1px 8px", borderRadius: 10,
+                          background: host.guests.length > host.capacity ? "var(--danger)" : "var(--bg-muted)",
+                          color: host.guests.length > host.capacity ? "#fff" : "var(--text-muted)",
+                        }} title={host.guests.length > host.capacity ? t("accommodation_over_capacity") : undefined}>
+                          🛏 {host.guests.length}/{host.capacity}
+                        </span>
+                      )}
+                    </strong>
                     {host.contact && <p className="meta" style={{ margin: "2px 0 0", fontSize: 12 }}>{host.contact}</p>}
                     {host.notes && <p className="meta" style={{ margin: "2px 0 0", fontSize: 11, fontStyle: "italic" }}>🔒 {host.notes}</p>}
                   </div>
@@ -221,6 +277,9 @@ export function AccommodationManager({
                 {host.guests.map((guest) => (
                   <div key={guest.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", background: "var(--bg-muted)", borderRadius: 6 }}>
                     <span style={{ fontSize: 13, flex: 1 }}>{guest.teamPlayer.player.name} <span className="meta">· {guest.teamPlayer.team.name}</span></span>
+                    {guest.notifiedAt
+                      ? <span title={t("accommodation_notified")} style={{ fontSize: 11, color: "var(--teal)" }}>✉✓</span>
+                      : <span title={t("accommodation_not_notified")} style={{ fontSize: 11, color: "var(--text-muted)" }}>✉…</span>}
                     <button className="ghost" onClick={() => removeGuest(host.id, guest.id)} style={{ fontSize: 11, padding: "2px 6px", color: "var(--danger)" }}>×</button>
                   </div>
                 ))}
