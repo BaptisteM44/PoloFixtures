@@ -21,6 +21,7 @@ export function PoolTables({
   teamsWithPlayers = [],
   combinedOnly = false,
   combinedLive = false,
+  inheritedMatchesByPool,
 }: {
   pools: PoolWithTeams[];
   matches: MatchWithTeams[];
@@ -33,6 +34,13 @@ export function PoolTables({
   combinedOnly?: boolean;
   /** Affiche le combiné même si tous les matchs ne sont pas terminés — classement live du pipeline. */
   combinedLive?: boolean;
+  /**
+   * Pipeline avec report de points (inheritFrom/carryPoints) : matchs des
+   * étapes PRÉCÉDENTES à inclure dans le classement de chaque pool
+   * (poolId → matchs). Sinon le classement d'une étape héritière ignore les
+   * points reportés du RR/Swiss précédent.
+   */
+  inheritedMatchesByPool?: Record<string, MatchWithTeams[]>;
 }) {
   const t = useTranslations("pool_tables");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
@@ -72,7 +80,20 @@ export function PoolTables({
   const allPoolTeams = pools.flatMap((p) => p.teams.map((pt) => pt.team));
   const allFinished = allPoolMatches.length > 0 && allPoolMatches.every((m) => m.status === "FINISHED");
   const showCombined = pools.length >= 2 && (allFinished || combinedLive);
-  const combinedMatchesForStandings = [...allPoolMatches, ...crossPoolMatches] as Match[];
+  // Matchs hérités (report de points pipeline) de toutes les pools affichées,
+  // dédoublonnés par id — pour que le classement "Général" cumule aussi.
+  const allInheritedMatches = (() => {
+    if (!inheritedMatchesByPool) return [] as MatchWithTeams[];
+    const seen = new Set<string>();
+    const out: MatchWithTeams[] = [];
+    for (const p of pools) {
+      for (const m of inheritedMatchesByPool[p.id] ?? []) {
+        if (!seen.has(m.id)) { seen.add(m.id); out.push(m); }
+      }
+    }
+    return out;
+  })();
+  const combinedMatchesForStandings = [...allPoolMatches, ...crossPoolMatches, ...allInheritedMatches] as Match[];
   const combinedStandings = showCombined ? computeStandings(allPoolTeams, combinedMatchesForStandings, scoringSystem) : [];
 
   // Mini-table for seeds 13-20 (barrage teams): pools + cross + barrage
@@ -229,7 +250,8 @@ export function PoolTables({
                 poolTeamIds.includes(m.teamBId)
             )
           : [];
-        const standingsMatches = [...poolMatches, ...recycledRR];
+        const inherited = inheritedMatchesByPool?.[pool.id] ?? [];
+        const standingsMatches = [...poolMatches, ...recycledRR, ...inherited];
         const standings = computeStandings(poolTeams, standingsMatches as Match[], scoringSystem);
 
         const isGraz = poolMatches.some((m) => (m as any).phase === "GRAZ_RR");

@@ -987,6 +987,32 @@ export default async function TournamentPage({
         if (isTestMode) {
           return <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>;
         }
+        // Report de points (inheritFrom/carryPoints) : pour chaque pool de
+        // l'étape active, on ajoute les matchs des étapes PRÉCÉDENTES (≤ source)
+        // entre les équipes de la pool, pour que le classement affiché cumule
+        // ces points comme le fait le moteur (stageStandings).
+        const stagesForInherit = [...((tournament as any).stages ?? [])].sort((a: any, b: any) => a.order - b.order);
+        const activeStage = stagesForInherit.find((s: any) => s.id === active.stageId);
+        const inhCfg = (activeStage?.config ?? {}) as any;
+        const inheritOrder = activeStage
+          ? (inhCfg.inheritFrom ?? (inhCfg.carryPoints ? activeStage.order - 1 : undefined))
+          : undefined;
+        let inheritedMatchesByPool: Record<string, any[]> | undefined;
+        if (inheritOrder !== undefined && inheritOrder >= 0) {
+          const inheritedStageIds = new Set(
+            stagesForInherit.filter((s: any) => s.order <= inheritOrder).map((s: any) => s.id)
+          );
+          const priorMatches = (tournament.matches ?? []).filter(
+            (m: any) => m.stageId && inheritedStageIds.has(m.stageId) && m.teamAId && m.teamBId
+          );
+          inheritedMatchesByPool = {};
+          for (const p of activePools) {
+            const teamIds = new Set((p.teams ?? []).map((pt: any) => pt.team.id));
+            inheritedMatchesByPool[p.id] = priorMatches.filter(
+              (m: any) => teamIds.has(m.teamAId) && teamIds.has(m.teamBId)
+            );
+          }
+        }
         return (
           // key=active.value : force le remontage entre onglets de groupes
           // (sinon PoolTables garde en mémoire les équipes du 1er groupe affiché).
@@ -1001,6 +1027,7 @@ export default async function TournamentPage({
             teamsWithPlayers={tournament.teams as any}
             combinedOnly={active.combinedOnly}
             combinedLive
+            inheritedMatchesByPool={inheritedMatchesByPool}
           />
         );
       })()}
