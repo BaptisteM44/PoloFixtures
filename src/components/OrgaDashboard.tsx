@@ -2484,14 +2484,18 @@ export function OrgaDashboard({
       {activeTab === "hebergement" && tournament.accommodationAvailable && (
         <AccommodationManager
           tournamentId={tournament.id}
-          teamPlayers={teams.flatMap((team) =>
-            (team.players ?? []).map((tp: any) => ({
-              id: tp.id,
-              needsAccommodation: tp.needsAccommodation ?? false,
-              player: tp.player,
-              team: { id: team.id, name: team.name },
-            }))
-          )}
+          teamPlayers={teams
+            // Hébergement : seulement les équipes réellement inscrites (IN),
+            // pas la liste d'attente ni les non-sélectionnées.
+            .filter((team) => team.selected === true)
+            .flatMap((team) =>
+              (team.players ?? []).map((tp: any) => ({
+                id: tp.id,
+                needsAccommodation: tp.needsAccommodation ?? false,
+                player: tp.player,
+                team: { id: team.id, name: team.name },
+              }))
+            )}
           initialHosts={accommodationHosts}
         />
       )}
