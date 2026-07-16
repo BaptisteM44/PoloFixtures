@@ -235,7 +235,11 @@ export default async function TournamentPage({
   // When tournament is launched (LIVE/COMPLETED), show selected teams count instead of total registered
   const isLaunched = tournament.status === "LIVE" || tournament.status === "COMPLETED";
   const selectedTeams = tournament.teams.filter((t: any) => t.selected !== false);
-  const displayTeamCount = isLaunched && selectedTeams.length > 0 ? selectedTeams.length : tournament.teams.length;
+  // Dès qu'un tri a été fait (au moins une équipe explicitement écartée /
+  // en liste d'attente), on affiche le compte des équipes IN — sans attendre
+  // le lancement. Ex : 26 inscrites, 16 retenues → "16/16" et non "26/16".
+  const selectionMade = tournament.teams.some((t: any) => t.selected === false);
+  const displayTeamCount = (isLaunched || selectionMade) && selectedTeams.length > 0 ? selectedTeams.length : tournament.teams.length;
 
   const dateStart = new Date(tournament.dateStart).toLocaleDateString(locale, { day: "numeric", month: "short" });
   const dateEnd = new Date(tournament.dateEnd).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });

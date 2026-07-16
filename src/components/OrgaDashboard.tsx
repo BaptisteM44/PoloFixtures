@@ -1680,7 +1680,10 @@ export function OrgaDashboard({
   };
 
   // KPIs
-  const selectedTeams = (isLive || tournament.status === "COMPLETED") && teams.filter((t) => t.selected !== false).length > 0
+  // Dès qu'un tri a été fait (une équipe écartée/waitlist), le KPI compte les
+  // équipes IN — sans attendre le lancement (26 inscrites, 16 retenues → 16/16).
+  const selectionMade = teams.some((t) => t.selected === false);
+  const selectedTeams = (isLive || tournament.status === "COMPLETED" || selectionMade) && teams.filter((t) => t.selected !== false).length > 0
     ? teams.filter((t) => t.selected !== false).length
     : teams.length;
 
