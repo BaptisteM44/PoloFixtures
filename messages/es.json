@@ -1106,6 +1106,7 @@
   },
   "notifications": {
     "title": "Notificaciones",
+    "enable_push": "Activar push",
     "empty": "Sin notificaciones",
     "squad_invite": "Invitación para unirte a {squadName}",
     "squad_invite_from": "De: {name}",

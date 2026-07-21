@@ -1102,6 +1102,7 @@
   },
   "notifications": {
     "title": "Notifications",
+    "enable_push": "Enable push",
     "empty": "No notifications",
     "squad_invite": "Invitation to join {squadName}",
     "squad_invite_from": "From: {name}",
