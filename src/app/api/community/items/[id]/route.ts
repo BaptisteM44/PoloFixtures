@@ -117,12 +117,34 @@ export async function PATCH(
     data: parsed.data,
   });
 
-  // Si passage en "done" → notifications + badges
+  const STATUS_MESSAGES: Record<string, string> = {
+    thinking: `🤔 "${item.title}" est à l'étude`,
+    in_progress: `🚧 "${item.title}" est en cours de développement`,
+    done: `✅ "${item.title}" est maintenant implémenté !`,
+    rejected: `"${item.title}" ne sera pas retenu`,
+  };
+
+  // Notifier l'auteur de l'item de tout changement de statut (hors "open")
+  if (
+    item.authorId &&
+    parsed.data.status &&
+    parsed.data.status !== item.status &&
+    parsed.data.status !== "open"
+  ) {
+    await createNotification(item.authorId, "COMMUNITY_STATUS_CHANGED" as any, {
+      itemId: item.id,
+      itemTitle: item.title,
+      status: parsed.data.status,
+      message: STATUS_MESSAGES[parsed.data.status],
+    });
+  }
+
+  // Si passage en "done" → notifications aux votants + badges
   if (parsed.data.status === "done" && item.status !== "done") {
-    // Notifier tous les votants avec un compte
+    // Notifier tous les votants avec un compte (l'auteur est déjà notifié ci-dessus)
     const votersWithAccount = item.votes.filter((v) => v.playerId !== null);
     for (const voter of votersWithAccount) {
-      if (!voter.playerId) continue;
+      if (!voter.playerId || voter.playerId === item.authorId) continue;
       await createNotification(voter.playerId, "COMMUNITY_STATUS_CHANGED" as any, {
         itemId: item.id,
         itemTitle: item.title,

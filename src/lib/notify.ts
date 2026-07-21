@@ -36,6 +36,8 @@ function toPushPayload(
       return { title: p.clubName, body: p.announcementTitle ?? "New announcement", url: p.clubId ? `/club/${p.clubId}?tab=announcements` : "/clubs", tag: `club-${p.clubId}` };
     case "CLUB_SESSION":
       return { title: "New Session", body: p.message ?? "New club session", url: p.clubId ? `/club/${p.clubId}?tab=sessions` : "/clubs", tag: `session-${p.clubId}` };
+    case "COMMUNITY_STATUS_CHANGED":
+      return { title: "Poloperator Labs", body: p.message ?? `"${p.itemTitle}"`, url: p.itemId ? `/labs?id=${p.itemId}` : "/labs", tag: `labs-${p.itemId}` };
     case "ACCOMMODATION_ASSIGNED":
       return { title: "Accommodation assigned 🏠", body: `${p.hostName} — ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=hebergement`, tag: `acco-${p.tournamentId}` };
     case "ACCOMMODATION_GUEST_ADDED":

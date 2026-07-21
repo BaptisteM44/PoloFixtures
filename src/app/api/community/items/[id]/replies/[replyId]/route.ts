@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { createNotification } from "@/lib/notify";
 
 const patchSchema = z.object({
   isKeyReply: z.boolean(),
@@ -24,6 +25,7 @@ export async function PATCH(
 
   const reply = await prisma.communityReply.findFirst({
     where: { id: params.replyId, itemId: params.id },
+    include: { item: { select: { title: true } } },
   });
   if (!reply) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
 
@@ -31,6 +33,15 @@ export async function PATCH(
     where: { id: params.replyId },
     data: { isKeyReply: parsed.data.isKeyReply },
   });
+
+  if (parsed.data.isKeyReply && !reply.isKeyReply && reply.authorId) {
+    await createNotification(reply.authorId, "COMMUNITY_STATUS_CHANGED" as any, {
+      itemId: params.id,
+      itemTitle: reply.item.title,
+      status: "reply_key",
+      message: `⭐ Ta réponse sur "${reply.item.title}" a été mise en avant`,
+    });
+  }
 
   return NextResponse.json(updated);
 }
