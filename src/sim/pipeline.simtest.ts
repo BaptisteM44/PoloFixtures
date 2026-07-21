@@ -114,6 +114,19 @@ describe("Pipeline — presets joués de bout en bout", () => {
     expect(byGroup.get("(aucun)"), "aucun match ne doit être hors-groupe").toBeUndefined();
     expect(byGroup.get("A")).toBe(9); // 3 rounds × 3 matchs (6 équipes/groupe)
     expect(byGroup.get("B")).toBe(9);
+
+    // Chaque équipe du Swiss doit avoir joué exactement 3 matchs Swiss (pas de
+    // doublon d'entrée). NB : avec seulement 6 équipes/groupe et 7 adversaires
+    // déjà connus en poule de 8, un rematch peut devenir mathématiquement
+    // inévitable au round 3 (le solveur l'accepte alors en dernier recours
+    // plutôt que de bloquer le tournoi) — carryPoints réduit ce risque sans
+    // l'éliminer totalement. Le classement (stageStandings/inheritFrom) ne
+    // déduplique pas encore ce cas ; à traiter séparément si confirmé fréquent.
+    const swissEntryIds = swissStage.entries.map((e) => e.teamId!).filter(Boolean);
+    for (const teamId of swissEntryIds) {
+      const swissMatchesForTeam = swissStage.matches.filter((m) => m.teamAId === teamId || m.teamBId === teamId);
+      expect(swissMatchesForTeam.length, `équipe ${teamId} doit avoir joué exactement 3 matchs Swiss`).toBe(3);
+    }
   });
 
   it("48 équipes : 2 poules → SE, joué de bout en bout", async () => {

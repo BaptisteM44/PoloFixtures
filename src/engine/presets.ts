@@ -77,7 +77,12 @@ export const PIPELINE_PRESETS: PipelinePreset[] = [
         {
           name: "Swiss dimanche (3-8)",
           type: "SWISS",
-          config: { rounds: 3, inheritFrom: 0 },
+          // carryPoints (en plus d'inheritFrom) est indispensable : sans lui,
+          // le Swiss ignore les duels déjà joués en poule et peut réapparier
+          // deux équipes qui se sont déjà rencontrées — leur confrontation RR
+          // est alors comptée une 2e fois via inheritFrom (points + victoire
+          // fantômes, nombre de matchs incohérent).
+          config: { rounds: 3, inheritFrom: 0, carryPoints: true },
           entryRules: {
             sources: [
               { kind: "stageRanks", stageOrder: 0, group: "A", from: 3, to: perGroup },
