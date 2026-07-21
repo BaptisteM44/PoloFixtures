@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 
@@ -24,9 +24,97 @@ function isSafari() {
   return /Safari/.test(ua) && !/Chrome|Chromium|Edg|CriOS|FxiOS/.test(ua);
 }
 
+// Distance de tirage (px) à partir de laquelle le refresh se déclenche au relâchement.
+const PULL_THRESHOLD = 70;
+
 /**
- * Registers the Service Worker, handles push subscription, and shows a
- * bottom install banner when the browser offers a PWA install prompt.
+ * En mode standalone (PWA installée), le geste natif "tirer pour rafraîchir"
+ * du navigateur n'existe plus (pas de chrome autour de la page) — on le
+ * réimplémente à la main, uniquement quand on est en haut de la page.
+ */
+function usePullToRefresh() {
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const pullDistanceRef = useRef(0);
+
+  useEffect(() => {
+    if (!isStandalone()) return;
+
+    let startY = 0;
+    let tracking = false;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (window.scrollY > 0) { tracking = false; return; }
+      startY = e.touches[0].clientY;
+      tracking = true;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!tracking) return;
+      const delta = e.touches[0].clientY - startY;
+      if (delta <= 0) { pullDistanceRef.current = 0; setPullDistance(0); return; }
+      // Empêche le scroll de la page pendant le tirage (uniquement quand on tire vers le bas depuis le haut)
+      if (window.scrollY === 0) e.preventDefault();
+      const next = Math.min(delta, PULL_THRESHOLD * 1.6);
+      pullDistanceRef.current = next;
+      setPullDistance(next);
+    };
+
+    const onTouchEnd = () => {
+      if (!tracking) return;
+      tracking = false;
+      if (pullDistanceRef.current >= PULL_THRESHOLD) {
+        setRefreshing(true);
+        window.location.reload();
+      } else {
+        pullDistanceRef.current = 0;
+        setPullDistance(0);
+      }
+    };
+
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
+
+  return { pullDistance, refreshing };
+}
+
+function PullToRefreshIndicator() {
+  const { pullDistance, refreshing } = usePullToRefresh();
+  if (pullDistance <= 0 && !refreshing) return null;
+  const ready = pullDistance >= PULL_THRESHOLD;
+  return (
+    <div
+      style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 2000,
+        display: "flex", justifyContent: "center",
+        height: refreshing ? 48 : Math.min(pullDistance, PULL_THRESHOLD * 1.6),
+        overflow: "hidden", transition: refreshing ? "height 0.15s ease" : "none",
+        pointerEvents: "none",
+      }}
+    >
+      <div style={{
+        marginTop: 8, width: 28, height: 28, borderRadius: "50%",
+        border: "3px solid var(--border)", borderTopColor: "var(--teal)",
+        animation: refreshing || ready ? "pwa-spin 0.6s linear infinite" : "none",
+        transform: refreshing ? "none" : `rotate(${pullDistance * 3}deg)`,
+        opacity: refreshing ? 1 : Math.min(pullDistance / PULL_THRESHOLD, 1),
+      }} />
+      <style>{`@keyframes pwa-spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+/**
+ * Registers the Service Worker, handles push subscription, shows a
+ * bottom install banner when the browser offers a PWA install prompt,
+ * and enables pull-to-refresh in standalone mode.
  */
 export function PwaManager() {
   const { data: session } = useSession();
@@ -98,9 +186,11 @@ export function PwaManager() {
   }, []);
 
   // Visible si : offre d'install (Chrome/Android) OU instructions iOS
-  if (!visible || (!installPrompt && !iosHint)) return null;
+  if (!visible || (!installPrompt && !iosHint)) return <PullToRefreshIndicator />;
 
   return (
+    <>
+    <PullToRefreshIndicator />
     <div
       role="dialog"
       aria-label={t("banner_title")}
@@ -135,6 +225,7 @@ export function PwaManager() {
         </button>
       </div>
     </div>
+    </>
   );
 }
 

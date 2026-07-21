@@ -67,16 +67,35 @@ export async function POST(request: Request, { params }: { params: { id: string 
   let winnerTeamId = match.winnerTeamId;
   let goldenGoal = match.goldenGoal;
 
+  // GOAL et GOLDEN_GOAL utilisent un increment atomique en base pour éviter
+  // qu'un but soit perdu si deux requêtes lisent le score au même instant
+  // (double clic rapide, arbitre + co-arbitre simultanés).
   if (parsed.data.type === "GOAL" && parsed.data.teamId) {
     const delta = parsed.data.delta ?? 1;
-    if (parsed.data.teamId === match.teamAId) scoreA = Math.max(0, scoreA + delta);
-    if (parsed.data.teamId === match.teamBId) scoreB = Math.max(0, scoreB + delta);
+    if (parsed.data.teamId === match.teamAId) {
+      const locked = await prisma.match.update({ where: { id: match.id }, data: { scoreA: { increment: delta } }, select: { scoreA: true } });
+      scoreA = Math.max(0, locked.scoreA);
+      if (locked.scoreA < 0) await prisma.match.update({ where: { id: match.id }, data: { scoreA: 0 } });
+    }
+    if (parsed.data.teamId === match.teamBId) {
+      const locked = await prisma.match.update({ where: { id: match.id }, data: { scoreB: { increment: delta } }, select: { scoreB: true } });
+      scoreB = Math.max(0, locked.scoreB);
+      if (locked.scoreB < 0) await prisma.match.update({ where: { id: match.id }, data: { scoreB: 0 } });
+    }
   }
 
   // Golden goal: score +1 for the team, end the match, mark goldenGoal = true
   if (parsed.data.type === "GOLDEN_GOAL" && parsed.data.teamId) {
-    if (parsed.data.teamId === match.teamAId) { scoreA += 1; winnerTeamId = match.teamAId; }
-    if (parsed.data.teamId === match.teamBId) { scoreB += 1; winnerTeamId = match.teamBId; }
+    if (parsed.data.teamId === match.teamAId) {
+      const locked = await prisma.match.update({ where: { id: match.id }, data: { scoreA: { increment: 1 } }, select: { scoreA: true } });
+      scoreA = locked.scoreA;
+      winnerTeamId = match.teamAId;
+    }
+    if (parsed.data.teamId === match.teamBId) {
+      const locked = await prisma.match.update({ where: { id: match.id }, data: { scoreB: { increment: 1 } }, select: { scoreB: true } });
+      scoreB = locked.scoreB;
+      winnerTeamId = match.teamBId;
+    }
     status = "FINISHED";
     goldenGoal = true;
   }
