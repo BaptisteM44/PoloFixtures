@@ -911,7 +911,11 @@
     "accommodation_host_capacity_placeholder": "Places offertes (optionnel)",
     "accommodation_over_capacity": "Capacité dépassée !",
     "accommodation_notified": "Prévenu·e",
-    "accommodation_not_notified": "Pas encore prévenu·e"
+    "accommodation_not_notified": "Pas encore prévenu·e",
+    "accommodation_linked_to": "Compte lié :",
+    "accommodation_unlink": "délier",
+    "accommodation_link_account": "🔗 Lier à un compte joueur",
+    "accommodation_link_search_placeholder": "Chercher un joueur…"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",

@@ -910,7 +910,11 @@
     "accommodation_host_capacity_placeholder": "Plazas ofrecidas (opcional)",
     "accommodation_over_capacity": "¡Capacidad superada!",
     "accommodation_notified": "Avisado/a",
-    "accommodation_not_notified": "Aún no avisado/a"
+    "accommodation_not_notified": "Aún no avisado/a",
+    "accommodation_linked_to": "Cuenta vinculada:",
+    "accommodation_unlink": "desvincular",
+    "accommodation_link_account": "🔗 Vincular a una cuenta de jugador",
+    "accommodation_link_search_placeholder": "Buscar un jugador…"
   },
   "registration": {
     "section_title": "Inscribir mi equipo",

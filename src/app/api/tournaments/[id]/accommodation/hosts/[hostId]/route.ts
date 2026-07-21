@@ -7,6 +7,7 @@ const updateSchema = z.object({
   contact: z.string().max(500).nullable().optional(),
   capacity: z.number().int().min(1).max(50).nullable().optional(),
   notes: z.string().max(1000).nullable().optional(),
+  playerId: z.string().nullable().optional(),
 });
 
 const hostInclude = {

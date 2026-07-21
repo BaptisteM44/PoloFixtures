@@ -206,8 +206,8 @@ export default async function TournamentPage({
   const splitSeLosersMatches = (tournament.matches ?? []).filter((m: any) => m.phase === "BRACKET" && (m.bracketSide === "L" || m.bracketSide === "LG" || m.bracketSide === "LL") && tournament.sundayFormat === "SPLIT_SE");
   const allEvents = (tournament.matches ?? []).flatMap((m: any) => m.events ?? []);
 
-  // Parallel queries: isFollowing + myTeam + overlayChannels
-  const [followRecord, myTeamRecord, overlayChannels] = await Promise.all([
+  // Parallel queries: isFollowing + myTeam + overlayChannels + isAccommodationHost
+  const [followRecord, myTeamRecord, overlayChannels, accommodationHostRecord] = await Promise.all([
     currentPlayerId
       ? (prisma as any).tournamentFollow.findUnique({
           where: { playerId_tournamentId: { playerId: currentPlayerId, tournamentId: tournament.id } },
@@ -224,6 +224,12 @@ export default async function TournamentPage({
       select: { id: true, slug: true, label: true, court: true, activeCourt: true, showChat: true },
       orderBy: { court: "asc" },
     }),
+    currentPlayerId
+      ? (prisma as any).accommodationHost.findFirst({
+          where: { playerId: currentPlayerId, tournamentId: tournament.id },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
   ]);
 
   const isFollowing = followRecord !== null;
@@ -231,6 +237,8 @@ export default async function TournamentPage({
     ? (tournament.teams as any[]).find((team: any) => team.id === myTeamRecord.teamId) ?? null
     : null;
   const isCaptainOfMyTeam = myTeamRecord?.isCaptain ?? false;
+  // Un logeur qui n'a pas d'équipe dans ce tournoi doit quand même voir l'onglet hébergement
+  const isAccommodationHost = accommodationHostRecord !== null;
 
   // When tournament is launched (LIVE/COMPLETED), show selected teams count instead of total registered
   const isLaunched = tournament.status === "LIVE" || tournament.status === "COMPLETED";
@@ -295,7 +303,7 @@ export default async function TournamentPage({
     ...(youtubeEmbed || court1Embed || court2Embed || multiplexEmbed || t_.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
-    ...(tournament.accommodationAvailable && !!myTeam ? [{ label: t("tab_accommodation"), value: "hebergement", href: `/tournament/${params.id}?tab=hebergement` }] : []),
+    ...(tournament.accommodationAvailable && (!!myTeam || isAccommodationHost) ? [{ label: t("tab_accommodation"), value: "hebergement", href: `/tournament/${params.id}?tab=hebergement` }] : []),
   ];
 
 
@@ -1889,7 +1897,7 @@ export default async function TournamentPage({
       )}
 
       {/* ── ONGLET CHAT ── */}
-      {tab === "hebergement" && tournament.accommodationAvailable && !!myTeam && (
+      {tab === "hebergement" && tournament.accommodationAvailable && (!!myTeam || isAccommodationHost) && (
         <AccommodationPublicView tournamentId={tournament.id} />
       )}
 

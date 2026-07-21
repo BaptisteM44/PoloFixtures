@@ -7,7 +7,9 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   const playerId = session.user.playerId;
 
-  // Find the player's TeamPlayer record for this tournament
+  // Find the player's TeamPlayer record for this tournament (peut être absent
+  // si la personne est logeur sans jouer dans ce tournoi — ne pas court-circuiter
+  // la recherche de asHost dans ce cas)
   const teamPlayer = await prisma.teamPlayer.findFirst({
     where: { playerId, team: { tournamentId: params.id } },
     include: {
@@ -33,8 +35,6 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     },
   });
 
-  if (!teamPlayer) return Response.json({ role: "none" });
-
   // Check if this player is also a host
   const asHost = await prisma.accommodationHost.findFirst({
     where: { tournamentId: params.id, playerId },
@@ -52,14 +52,16 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     },
   });
 
+  const accommodationGuest = teamPlayer?.accommodationGuest ?? null;
+
   return Response.json({
-    role: asHost ? "host" : teamPlayer.accommodationGuest ? "guest" : "none",
-    asGuest: teamPlayer.accommodationGuest
+    role: asHost ? "host" : accommodationGuest ? "guest" : "none",
+    asGuest: accommodationGuest
       ? {
-          hostName: teamPlayer.accommodationGuest.host.name,
-          hostContact: teamPlayer.accommodationGuest.host.contact,
-          coGuests: teamPlayer.accommodationGuest.host.guests
-            .filter((g) => g.teamPlayerId !== teamPlayer.id)
+          hostName: accommodationGuest.host.name,
+          hostContact: accommodationGuest.host.contact,
+          coGuests: accommodationGuest.host.guests
+            .filter((g) => g.teamPlayerId !== teamPlayer!.id)
             .map((g) => ({
               playerName: g.teamPlayer.player.name,
               teamName: g.teamPlayer.team.name,

@@ -911,7 +911,11 @@
     "accommodation_host_capacity_placeholder": "Schlafplätze (optional)",
     "accommodation_over_capacity": "Kapazität überschritten!",
     "accommodation_notified": "Benachrichtigt",
-    "accommodation_not_notified": "Noch nicht benachrichtigt"
+    "accommodation_not_notified": "Noch nicht benachrichtigt",
+    "accommodation_linked_to": "Verknüpftes Konto:",
+    "accommodation_unlink": "trennen",
+    "accommodation_link_account": "🔗 Mit Spielerkonto verknüpfen",
+    "accommodation_link_search_placeholder": "Spieler suchen…"
   },
   "registration": {
     "section_title": "Mein Team anmelden",

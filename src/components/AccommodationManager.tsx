@@ -56,6 +56,12 @@ export function AccommodationManager({
   const [editingHostId, setEditingHostId] = useState<string | null>(null);
   const [editHostData, setEditHostData] = useState({ name: "", contact: "", capacity: "", notes: "" });
 
+  // Lien logeur → compte joueur (recherche par nom)
+  const [linkingHostId, setLinkingHostId] = useState<string | null>(null);
+  const [linkSearch, setLinkSearch] = useState("");
+  const [linkResults, setLinkResults] = useState<PlayerInfo[]>([]);
+  const [linkSearching, setLinkSearching] = useState(false);
+
   // Bouton « Notifier » : envoie notif+mail à tous les logés/logeurs pas encore prévenus
   const [notifyResult, setNotifyResult] = useState<string | null>(null);
   const pendingNotifyCount = hosts.flatMap((h) => h.guests).filter((g) => !g.notifiedAt).length;
@@ -132,6 +138,41 @@ export function AccommodationManager({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: editHostData.name, contact: editHostData.contact || null, capacity, notes: editHostData.notes || null }),
+      });
+    });
+  };
+
+  const searchLinkPlayers = (query: string) => {
+    setLinkSearch(query);
+    if (query.trim().length < 2) { setLinkResults([]); return; }
+    setLinkSearching(true);
+    fetch(`/api/players?search=${encodeURIComponent(query.trim())}&hasAccount=true`)
+      .then((r) => r.json())
+      .then((data) => setLinkResults(Array.isArray(data) ? data : []))
+      .finally(() => setLinkSearching(false));
+  };
+
+  const linkHostToPlayer = (hostId: string, player: PlayerInfo) => {
+    setHosts((prev) => prev.map((h) => h.id === hostId ? { ...h, playerId: player.id, player } : h));
+    setLinkingHostId(null);
+    setLinkSearch("");
+    setLinkResults([]);
+    startTransition(async () => {
+      await fetch(`${api}/${hostId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerId: player.id }),
+      });
+    });
+  };
+
+  const unlinkHost = (hostId: string) => {
+    setHosts((prev) => prev.map((h) => h.id === hostId ? { ...h, playerId: null, player: null } : h));
+    startTransition(async () => {
+      await fetch(`${api}/${hostId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerId: null }),
       });
     });
   };
@@ -264,6 +305,36 @@ export function AccommodationManager({
                     </strong>
                     {host.contact && <p className="meta" style={{ margin: "2px 0 0", fontSize: 12 }}>{host.contact}</p>}
                     {host.notes && <p className="meta" style={{ margin: "2px 0 0", fontSize: 11, fontStyle: "italic" }}>🔒 {host.notes}</p>}
+                    <p className="meta" style={{ margin: "4px 0 0", fontSize: 11 }}>
+                      {host.player
+                        ? <>🔗 {t("accommodation_linked_to")} <strong>{host.player.name}</strong> · <button className="ghost" onClick={() => unlinkHost(host.id)} style={{ fontSize: 10, padding: "0 4px" }}>{t("accommodation_unlink")}</button></>
+                        : <button className="ghost" onClick={() => { setLinkingHostId(host.id); setLinkSearch(""); setLinkResults([]); }} style={{ fontSize: 11, padding: "2px 6px" }}>{t("accommodation_link_account")}</button>}
+                    </p>
+                    {linkingHostId === host.id && (
+                      <div style={{ marginTop: 6, position: "relative", maxWidth: 260 }}>
+                        <input
+                          type="text"
+                          autoFocus
+                          value={linkSearch}
+                          onChange={(e) => searchLinkPlayers(e.target.value)}
+                          placeholder={t("accommodation_link_search_placeholder")}
+                          style={{ fontSize: 12, width: "100%" }}
+                        />
+                        {linkSearching && <p className="meta" style={{ fontSize: 10, margin: "4px 0 0" }}>…</p>}
+                        {linkResults.length > 0 && (
+                          <div className="panel" style={{ position: "absolute", zIndex: 5, marginTop: 2, width: "100%", maxHeight: 180, overflowY: "auto", padding: 4 }}>
+                            {linkResults.map((p) => (
+                              <div key={p.id} onClick={() => linkHostToPlayer(host.id, p)} style={{ padding: "6px 8px", fontSize: 12, cursor: "pointer", borderRadius: 4 }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-muted)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}>
+                                {p.name}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <button className="ghost" onClick={() => setLinkingHostId(null)} style={{ fontSize: 10, padding: "2px 6px", marginTop: 4 }}>{t("accommodation_cancel")}</button>
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button className="ghost" onClick={() => startEditHost(host)} style={{ fontSize: 11, padding: "3px 8px" }}>✎</button>

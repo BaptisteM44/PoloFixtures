@@ -911,7 +911,11 @@
     "accommodation_host_capacity_placeholder": "Beds offered (optional)",
     "accommodation_over_capacity": "Over capacity!",
     "accommodation_notified": "Notified",
-    "accommodation_not_notified": "Not notified yet"
+    "accommodation_not_notified": "Not notified yet",
+    "accommodation_linked_to": "Linked account:",
+    "accommodation_unlink": "unlink",
+    "accommodation_link_account": "🔗 Link to a player account",
+    "accommodation_link_search_placeholder": "Search a player…"
   },
   "registration": {
     "section_title": "Register my team",
