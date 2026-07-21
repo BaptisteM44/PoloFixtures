@@ -55,7 +55,7 @@ function FilterBtn({ active, onClick, children }: { active: boolean; onClick: ()
   );
 }
 
-export function ClubMapClient({ clubs, userContinent }: { clubs: MapClub[]; userContinent?: string }) {
+export function ClubMapClient({ clubs, userContinent, totalCountriesCount }: { clubs: MapClub[]; userContinent?: string; totalCountriesCount: number }) {
   const t = useTranslations("tournament");
   const tClubs = useTranslations("clubs");
   const [selectedClub, setSelectedClub] = useState<MapClub | null>(null);
@@ -131,7 +131,7 @@ export function ClubMapClient({ clubs, userContinent }: { clubs: MapClub[]; user
         <div className="home-stats" style={{ justifyContent: "center" }}>
           <span>{tClubs("club_count", { count: filtered.length })}</span>
           <span className="home-stats__dot">·</span>
-          <span>{tClubs("country_count", { count: new Set(filtered.map((c) => c.country)).size })}</span>
+          <span>{tClubs("country_count", { count: totalCountriesCount })}</span>
         </div>
       </div>
     </div>

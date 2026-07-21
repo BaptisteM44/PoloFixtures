@@ -19,14 +19,25 @@ export default async function ClubsPage() {
     if (player?.country) playerContinent = countryToContinent(player.country);
   }
 
-  const clubs = await prisma.club.findMany({
-    where: { approved: true },
-    include: {
-      manager: { select: { id: true, name: true, slug: true } },
-      _count: { select: { members: { where: { status: "MEMBER", player: { status: { not: "REJECTED" } } } } } },
-    },
-    orderBy: [{ continentCode: "asc" }, { country: "asc" }, { name: "asc" }],
-  });
+  const [clubs, countriesOfPlayers] = await Promise.all([
+    prisma.club.findMany({
+      where: { approved: true },
+      include: {
+        manager: { select: { id: true, name: true, slug: true } },
+        _count: { select: { members: { where: { status: "MEMBER", player: { status: { not: "REJECTED" } } } } } },
+      },
+      orderBy: [{ continentCode: "asc" }, { country: "asc" }, { name: "asc" }],
+    }),
+    // Même source que la page d'accueil : nombre de pays représentés par des
+    // joueurs (pas seulement ceux qui ont un club), pour que le chiffre
+    // affiché soit cohérent entre les deux pages.
+    prisma.player.findMany({
+      where: { status: "ACTIVE", account: { isNot: null } },
+      select: { country: true },
+      distinct: ["country"],
+    }),
+  ]);
+  const totalCountriesCount = countriesOfPlayers.length;
 
   const mapped = clubs.map((c) => ({
     id: c.id,
@@ -66,7 +77,7 @@ export default async function ClubsPage() {
 
       {mapClubs.length > 0 && (
         <section>
-          <ClubMapClient clubs={mapClubs} userContinent={playerContinent ?? undefined} />
+          <ClubMapClient clubs={mapClubs} userContinent={playerContinent ?? undefined} totalCountriesCount={totalCountriesCount} />
         </section>
       )}
 
