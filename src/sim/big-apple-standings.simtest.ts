@@ -1,7 +1,9 @@
 /**
  * Points 1 & 3 (retour Josh) sur le preset Big Apple :
- *  1. Un classement Swiss du jour 2 doit être visible → il faut des Pool par
- *     groupe (A/B) rattachés à l'étape Swiss (source des onglets publics).
+ *  1. Un classement Swiss du jour 2 doit être visible → il faut une Pool
+ *     rattachée à l'étape Swiss (source des onglets publics). Le Swiss est UN
+ *     SEUL groupe fusionné de 12 (rangs 3-8 de A + de B), pas 2 groupes
+ *     séparés — demande explicite de l'organisateur à l'origine du format.
  *  3. Ce classement Swiss doit inclure les points hérités du RR (inheritFrom).
  */
 import { describe, it, expect, beforeAll, beforeEach } from "vitest";
@@ -51,7 +53,7 @@ beforeAll(async () => { await assertSimDatabase(); });
 beforeEach(async () => { await resetSimDb(); });
 
 describe("Big Apple — classement Swiss jour 2 visible et cumulatif", () => {
-  it("l'étape Swiss crée 2 Pool (Groupe A / Groupe B) → onglets de classement", async () => {
+  it("l'étape Swiss crée 1 Pool fusionnée (12 équipes) → onglet de classement", async () => {
     const id = await mk(16);
     const preset = PIPELINE_PRESETS.find((p) => p.key === "big_apple")!;
     await createStages(id, preset.build(16));
@@ -62,15 +64,14 @@ describe("Big Apple — classement Swiss jour 2 visible et cumulatif", () => {
 
     const swissStage = (await getPipeline(id))!.stages.find((s) => s.name === "Swiss dimanche (3-8)")!;
     await launchStage(id, swissStage.order);
-    // Si séquentiel, lance aussi le 2e groupe pour qu'il ait ses Pool/matchs
-    await launchNextGroup(id, swissStage.order);
 
-    // Les Pool de l'étape Swiss (source des onglets de classement publics)
-    const pools = await prisma.pool.findMany({ where: { stageId: swissStage.id }, select: { name: true } });
-    const names = pools.map((p) => p.name).sort();
-    expect(pools.length, "l'étape Swiss doit avoir 2 Pool (un par groupe)").toBe(2);
-    expect(names.some((n) => n.includes("Groupe A"))).toBe(true);
-    expect(names.some((n) => n.includes("Groupe B"))).toBe(true);
+    // Les Pool de l'étape Swiss (source des onglets de classement publics) :
+    // une seule pool fusionnée de 12 équipes, pas 2 pools séparées par groupe.
+    const pools = await prisma.pool.findMany({ where: { stageId: swissStage.id }, select: { id: true, name: true } });
+    expect(pools.length, "l'étape Swiss doit avoir 1 seule Pool fusionnée").toBe(1);
+
+    const poolTeams = await prisma.poolTeam.count({ where: { poolId: pools[0].id } });
+    expect(poolTeams, "la Pool fusionnée doit contenir les 12 équipes (rangs 3-8 de A + de B)").toBe(12);
   });
 
   it("le classement Swiss inclut les points du RR (inheritFrom)", async () => {

@@ -92,12 +92,27 @@ export function stageStandings(t: PipelineTournament, stageOrder: number, group?
       let all = [...matches];
       if (sourceOrder !== undefined && sourceOrder >= 0) {
         const entrySet = new Set(entryIds);
+        // Si deux équipes se réaffrontent dans CETTE étape (rematch forcé,
+        // faute d'adversaires "frais" disponibles), leur duel hérité ne doit
+        // pas être compté en plus du nouveau — on ne garde que le plus récent
+        // pour chaque paire, sinon le même résultat est compté deux fois
+        // (points/victoires fantômes, nombre de matchs incohérent).
+        const rematchedPairs = new Set(
+          matches.filter((m) => m.teamAId && m.teamBId).map((m) => pairKey(m.teamAId!, m.teamBId!)),
+        );
         // On remonte toutes les étapes ≤ sourceOrder (cumul en cascade) et on
         // ne garde que les matchs entre équipes présentes dans CETTE étape.
         const inherited = t.stages
           .filter((s) => s.order <= sourceOrder)
           .flatMap((s) => s.matches as unknown as MatchLite[])
-          .filter((m) => m.teamAId && m.teamBId && entrySet.has(m.teamAId) && entrySet.has(m.teamBId));
+          .filter(
+            (m) =>
+              m.teamAId &&
+              m.teamBId &&
+              entrySet.has(m.teamAId) &&
+              entrySet.has(m.teamBId) &&
+              !rematchedPairs.has(pairKey(m.teamAId, m.teamBId)),
+          );
         all = [...inherited, ...matches];
       }
       return pointsStandings(entryIds, all, scoringOf(t));

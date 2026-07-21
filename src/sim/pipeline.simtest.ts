@@ -96,36 +96,53 @@ describe("Pipeline — presets joués de bout en bout", () => {
     const counts = t!.stages.map((s) => ({ name: s.name, n: s.matches.length }));
     expect(counts).toEqual([
       { name: "Poules samedi", n: 56 },        // 2×28
-      { name: "Swiss dimanche (3-8)", n: 18 }, // 3 rounds × 6
+      { name: "Swiss dimanche (3-8)", n: 18 }, // 3 rounds × 6 (1 groupe fusionné de 12)
       { name: "Placement 1ers/2es", n: 2 },
       { name: "Bracket final", n: 8 },         // SE8 + 3e place
     ]);
 
-    // Régression : le Swiss dimanche DOIT garder les groupes A et B séparés
-    // (6 équipes chacun, 4 matchs/round après BYE — ici pair donc pas de BYE,
-    // 3 matchs/round). Sans groups:2 sur le preset, les 2 sources fusionnaient
-    // en un seul groupe de 12, produisant 6 matchs/round au lieu de 3+3.
+    // Le Swiss dimanche est UN SEUL groupe fusionné de 12 (rangs 3-8 de A + de
+    // B), pas 2 groupes séparés — demande explicite de l'organisateur à
+    // l'origine du format ("bottom 6 from each group combined into a group
+    // of 12"). Avec 12 équipes, 6 matchs/round.
     const swissStage = t!.stages.find((s) => s.name === "Swiss dimanche (3-8)")!;
     const byGroup = new Map<string, number>();
     for (const m of swissStage.matches) {
       const g = m.groupKey || "(aucun)";
       byGroup.set(g, (byGroup.get(g) ?? 0) + 1);
     }
-    expect(byGroup.get("(aucun)"), "aucun match ne doit être hors-groupe").toBeUndefined();
-    expect(byGroup.get("A")).toBe(9); // 3 rounds × 3 matchs (6 équipes/groupe)
-    expect(byGroup.get("B")).toBe(9);
+    expect(byGroup.size, "le Swiss dimanche doit être un seul groupe fusionné").toBe(1);
+    const soleGroupCount = [...byGroup.values()][0];
+    expect(soleGroupCount).toBe(18); // 3 rounds × 6 matchs (12 équipes)
 
-    // Chaque équipe du Swiss doit avoir joué exactement 3 matchs Swiss (pas de
-    // doublon d'entrée). NB : avec seulement 6 équipes/groupe et 7 adversaires
-    // déjà connus en poule de 8, un rematch peut devenir mathématiquement
-    // inévitable au round 3 (le solveur l'accepte alors en dernier recours
-    // plutôt que de bloquer le tournoi) — carryPoints réduit ce risque sans
-    // l'éliminer totalement. Le classement (stageStandings/inheritFrom) ne
-    // déduplique pas encore ce cas ; à traiter séparément si confirmé fréquent.
+    // Régression : chaque équipe doit avoir joué exactement 3 matchs Swiss
+    // (round-robin de poule à part, aucun doublon d'entrée côté Swiss lui-même).
     const swissEntryIds = swissStage.entries.map((e) => e.teamId!).filter(Boolean);
     for (const teamId of swissEntryIds) {
       const swissMatchesForTeam = swissStage.matches.filter((m) => m.teamAId === teamId || m.teamBId === teamId);
       expect(swissMatchesForTeam.length, `équipe ${teamId} doit avoir joué exactement 3 matchs Swiss`).toBe(3);
+    }
+
+    // Régression classement : reproduit exactement la logique de dédoublonnage
+    // de stageStandings (pipeline-server.ts) — si le Swiss réapparie 2 équipes
+    // déjà croisées en poule (rematch, accepté par le solveur en dernier
+    // recours), leur match de poule ne doit PLUS être compté en plus du match
+    // Swiss, sinon même duel comptabilisé 2 fois (points/victoires fantômes,
+    // nombre de matchs incohérent — signalé par un organisateur : "10 matchs
+    // joués au lieu de 8 attendus").
+    const poolsStage = t!.stages.find((s) => s.name === "Poules samedi")!;
+    const pairKeyOf = (a: string, b: string) => [a, b].sort().join("|");
+    const swissPairsSet = new Set(swissStage.matches.filter((m) => m.teamAId && m.teamBId).map((m) => pairKeyOf(m.teamAId!, m.teamBId!)));
+    const dedupedInherited = poolsStage.matches.filter(
+      (m) => m.teamAId && m.teamBId && !swissPairsSet.has(pairKeyOf(m.teamAId!, m.teamBId!)),
+    );
+    for (const teamId of swissEntryIds) {
+      const inheritedCountForTeam = dedupedInherited.filter((m) => m.teamAId === teamId || m.teamBId === teamId).length;
+      const swissCountForTeam = swissStage.matches.filter((m) => m.teamAId === teamId || m.teamBId === teamId).length;
+      const totalCountedInStandings = inheritedCountForTeam + swissCountForTeam;
+      // 7 matchs de poule (moins les rematchs exclus) + 3 matchs Swiss, jamais plus de 10.
+      expect(totalCountedInStandings, `équipe ${teamId} : total dédupliqué dans le classement Swiss`).toBeLessThanOrEqual(10);
+      expect(totalCountedInStandings, `équipe ${teamId} : total dédupliqué dans le classement Swiss`).toBeGreaterThanOrEqual(3);
     }
   });
 

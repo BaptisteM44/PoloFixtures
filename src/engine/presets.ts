@@ -83,18 +83,16 @@ export const PIPELINE_PRESETS: PipelinePreset[] = [
           // est alors comptée une 2e fois via inheritFrom (points + victoire
           // fantômes, nombre de matchs incohérent).
           config: { rounds: 3, inheritFrom: 0, carryPoints: true },
+          // Un seul groupe fusionné de 12 (rangs 3-8 de A + rangs 3-8 de B),
+          // pas 2 groupes séparés de 6 : avec 12 équipes il y a bien plus
+          // d'adversaires "frais" disponibles pour les 3 rounds, donc moins
+          // de rematchs forcés qu'avec 2×6 (confirmé auprès de l'organisateur
+          // à l'origine du format — la demande initiale était un seul groupe).
           entryRules: {
             sources: [
               { kind: "stageRanks", stageOrder: 0, group: "A", from: 3, to: perGroup },
               { kind: "stageRanks", stageOrder: 0, group: "B", from: 3, to: perGroup },
             ],
-            // Sans ça, les 2 sources fusionnaient en un seul groupe mono (12
-            // équipes mélangées) au lieu de garder A et B séparés pendant le
-            // Swiss du jour 2 — "block" découpe la liste ordonnée (A puis B,
-            // tailles égales) en 2 groupes qui correspondent exactement aux
-            // 2 sources.
-            groups: 2,
-            groupAssign: "block",
           },
         },
         {
