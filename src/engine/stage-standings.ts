@@ -54,13 +54,25 @@ export function pointsStandings(
   for (const m of finished) {
     const a = rows.get(m.teamAId!);
     const b = rows.get(m.teamBId!);
-    if (!a || !b) continue;
-    a.played++; b.played++;
-    a.goalsFor += m.scoreA; a.goalsAgainst += m.scoreB;
-    b.goalsFor += m.scoreB; b.goalsAgainst += m.scoreA;
-    if (m.scoreA > m.scoreB) { a.wins++; b.losses++; a.points += scoring.win; b.points += scoring.loss; }
-    else if (m.scoreB > m.scoreA) { b.wins++; a.losses++; b.points += scoring.win; a.points += scoring.loss; }
-    else { a.draws++; b.draws++; a.points += scoring.draw; b.points += scoring.draw; }
+    // Un match hérité peut opposer une équipe du classement courant à une
+    // équipe absente (ex: match de poule contre une tête de série qui n'a
+    // pas rejoint le Swiss) — on compte quand même les stats de l'équipe
+    // présente, sans créer de ligne pour l'adversaire absent.
+    if (!a && !b) continue;
+    if (a) {
+      a.played++;
+      a.goalsFor += m.scoreA; a.goalsAgainst += m.scoreB;
+      if (m.scoreA > m.scoreB) { a.wins++; a.points += scoring.win; }
+      else if (m.scoreB > m.scoreA) { a.losses++; a.points += scoring.loss; }
+      else { a.draws++; a.points += scoring.draw; }
+    }
+    if (b) {
+      b.played++;
+      b.goalsFor += m.scoreB; b.goalsAgainst += m.scoreA;
+      if (m.scoreB > m.scoreA) { b.wins++; b.points += scoring.win; }
+      else if (m.scoreA > m.scoreB) { b.losses++; b.points += scoring.loss; }
+      else { b.draws++; b.points += scoring.draw; }
+    }
   }
 
   // BYE = victoire ? Convention existante : match sans teamB terminé = pas compté.

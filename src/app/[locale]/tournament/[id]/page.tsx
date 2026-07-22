@@ -1020,8 +1020,11 @@ export default async function TournamentPage({
           inheritedMatchesByPool = {};
           for (const p of activePools) {
             const teamIds = new Set((p.teams ?? []).map((pt: any) => pt.team.id));
+            // Au moins une équipe de la pool courante — y compris contre une
+            // équipe absente (ex: tête de série qui n'a pas rejoint le Swiss),
+            // ce match compte quand même dans l'historique de l'équipe présente.
             inheritedMatchesByPool[p.id] = priorMatches.filter(
-              (m: any) => teamIds.has(m.teamAId) && teamIds.has(m.teamBId)
+              (m: any) => teamIds.has(m.teamAId) || teamIds.has(m.teamBId)
             );
           }
         }

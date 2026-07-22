@@ -61,33 +61,33 @@ export function computeStandings(teams: Team[], matches: Match[], scoringSystem?
       if (!match.teamAId || !match.teamBId) return;
       const rowA = rows.get(match.teamAId);
       const rowB = rows.get(match.teamBId);
-      if (!rowA || !rowB) return;
+      // Un match hérité peut opposer une équipe du classement courant à une
+      // équipe absente (ex: match de poule contre une tête de série qui n'a
+      // pas rejoint le Swiss) — on compte quand même les stats de l'équipe
+      // présente ; l'adversaire absent n'a simplement pas de ligne à mettre à jour.
+      if (!rowA && !rowB) return;
 
-      rowA.played += 1;
-      rowB.played += 1;
-      rowA.goalsFor += match.scoreA;
-      rowA.goalsAgainst += match.scoreB;
-      rowB.goalsFor += match.scoreB;
-      rowB.goalsAgainst += match.scoreA;
+      if (rowA) { rowA.played += 1; rowA.goalsFor += match.scoreA; rowA.goalsAgainst += match.scoreB; }
+      if (rowB) { rowB.played += 1; rowB.goalsFor += match.scoreB; rowB.goalsAgainst += match.scoreA; }
 
-      opponents.get(match.teamAId)!.push(match.teamBId);
-      opponents.get(match.teamBId)!.push(match.teamAId);
+      if (rowA && rowB) {
+        opponents.get(match.teamAId)!.push(match.teamBId);
+        opponents.get(match.teamBId)!.push(match.teamAId);
+      }
 
       if (match.scoreA > match.scoreB) {
-        rowA.wins += 1;
-        rowB.losses += 1;
-        rowA.points += scoring.win;
-        defeated.get(match.teamAId)!.push(match.teamBId);
+        if (rowA) rowA.wins += 1;
+        if (rowB) rowB.losses += 1;
+        if (rowA) rowA.points += scoring.win;
+        if (rowA && rowB) defeated.get(match.teamAId)!.push(match.teamBId);
       } else if (match.scoreB > match.scoreA) {
-        rowB.wins += 1;
-        rowA.losses += 1;
-        rowB.points += scoring.win;
-        defeated.get(match.teamBId)!.push(match.teamAId);
+        if (rowB) rowB.wins += 1;
+        if (rowA) rowA.losses += 1;
+        if (rowB) rowB.points += scoring.win;
+        if (rowA && rowB) defeated.get(match.teamBId)!.push(match.teamAId);
       } else {
-        rowA.draws += 1;
-        rowB.draws += 1;
-        rowA.points += scoring.draw;
-        rowB.points += scoring.draw;
+        if (rowA) { rowA.draws += 1; rowA.points += scoring.draw; }
+        if (rowB) { rowB.draws += 1; rowB.points += scoring.draw; }
       }
     });
 

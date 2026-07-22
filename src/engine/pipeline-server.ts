@@ -101,7 +101,10 @@ export function stageStandings(t: PipelineTournament, stageOrder: number, group?
           matches.filter((m) => m.teamAId && m.teamBId).map((m) => pairKey(m.teamAId!, m.teamBId!)),
         );
         // On remonte toutes les étapes ≤ sourceOrder (cumul en cascade) et on
-        // ne garde que les matchs entre équipes présentes dans CETTE étape.
+        // garde tout match impliquant AU MOINS une équipe de CETTE étape —
+        // y compris contre une équipe absente (ex: tête de série qui n'a pas
+        // rejoint le Swiss) : ce match compte quand même dans l'historique de
+        // l'équipe présente (pointsStandings ignore l'adversaire absent).
         const inherited = t.stages
           .filter((s) => s.order <= sourceOrder)
           .flatMap((s) => s.matches as unknown as MatchLite[])
@@ -109,8 +112,7 @@ export function stageStandings(t: PipelineTournament, stageOrder: number, group?
             (m) =>
               m.teamAId &&
               m.teamBId &&
-              entrySet.has(m.teamAId) &&
-              entrySet.has(m.teamBId) &&
+              (entrySet.has(m.teamAId) || entrySet.has(m.teamBId)) &&
               !rematchedPairs.has(pairKey(m.teamAId, m.teamBId)),
           );
         all = [...inherited, ...matches];
