@@ -12,6 +12,7 @@ import { COUNTRIES } from "@/lib/countries";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 import { BadgeShowcase } from "@/components/BadgeShowcase";
 import { CardCollection } from "@/components/CardCollection";
+import { updateOwnWhbpcCardAction } from "@/app/[locale]/account/whbpc-actions";
 import { ClubPicker } from "@/components/ClubPicker";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { NotificationForm } from "@/components/NotificationForm";
@@ -739,6 +740,11 @@ export default function AccountPage() {
                     body: JSON.stringify({ activeCard: cardId }),
                   });
                   await fetchPlayer();
+                }}
+                onWhbpcSave={async (data) => {
+                  const res = await updateOwnWhbpcCardAction(data);
+                  if (res.ok) await fetchPlayer();
+                  return res;
                 }}
               />
             </div>

@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { PokemonCard } from "./PokemonCard";
-import { WhbpcCard, type WhbpcCardProps } from "./WhbpcCard";
+import { WhbpcCard, type WhbpcCardData, type WhbpcCardProps } from "./WhbpcCard";
 import { ALL_CARDS, resolveOwnedCards, DEFAULT_CARD_ID, type CardInfo } from "@/lib/card-catalog";
 
 const RARITY_COLOR: Record<string, string> = {
@@ -31,6 +32,7 @@ export function CardCollection({
   activeCard,
   whbpcData,
   onSelect,
+  onWhbpcSave,
 }: {
   player: PlayerCardData;
   ownedCards: string[];
@@ -39,6 +41,8 @@ export function CardCollection({
   whbpcData?: Omit<WhbpcCardProps, "playerName"> | null;
   /** Called when the player picks an owned card as active. Omit for read-only. */
   onSelect?: (cardId: string) => void;
+  /** Called when the player saves edits from the WHBPC card's back-of-card form. Omit to make it read-only. */
+  onWhbpcSave?: (data: WhbpcCardData) => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const owned = resolveOwnedCards(ownedCards);
   const active = activeCard && owned.has(activeCard) ? activeCard : DEFAULT_CARD_ID;
@@ -78,6 +82,7 @@ export function CardCollection({
               owned={isOwned}
               active={isActive}
               onSelect={onSelect && isOwned && !isActive ? () => onSelect(card.id) : undefined}
+              onWhbpcSave={onWhbpcSave}
             />
           );
         })}
@@ -93,6 +98,7 @@ function CardSlot({
   owned,
   active,
   onSelect,
+  onWhbpcSave,
 }: {
   card: CardInfo;
   player: PlayerCardData;
@@ -100,12 +106,22 @@ function CardSlot({
   owned: boolean;
   active: boolean;
   onSelect?: () => void;
+  onWhbpcSave?: (data: WhbpcCardData) => Promise<{ ok?: boolean; error?: string }>;
 }) {
+  const [whbpcFlipped, setWhbpcFlipped] = useState(false);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
       {owned && card.custom === "whbpc" && whbpcData ? (
         // Same base photo as every other card — no separate photo to manage.
-        <WhbpcCard playerName={player.name} {...whbpcData} photoUrl={player.photoPath} />
+        <WhbpcCard
+          playerName={player.name}
+          {...whbpcData}
+          photoUrl={player.photoPath}
+          flipped={whbpcFlipped}
+          onFlipChange={setWhbpcFlipped}
+          onSave={onWhbpcSave}
+        />
       ) : owned ? (
         <PokemonCard
           name={player.name}
@@ -150,7 +166,7 @@ function CardSlot({
               {card.rarity}
             </span>
           </div>
-          <div style={{ marginTop: 8 }}>
+          <div style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             {active ? (
               <span style={{ fontSize: 12, fontWeight: 700, color: "var(--teal)" }}>✓ Carte active</span>
             ) : onSelect ? (
@@ -158,6 +174,29 @@ function CardSlot({
                 Afficher
               </button>
             ) : null}
+            {card.custom === "whbpc" && onWhbpcSave && (
+              <button
+                type="button"
+                onClick={() => setWhbpcFlipped(true)}
+                title="Éditer la carte"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  border: "2px solid var(--border)",
+                  background: "var(--surface)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  padding: 0,
+                  flexShrink: 0,
+                }}
+              >
+                ✏️
+              </button>
+            )}
           </div>
         </div>
       )}

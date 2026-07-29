@@ -15,6 +15,7 @@ export function AdminNav() {
     { href: "/admin/countries", label: t("nav_countries") },
     { href: "/admin/settings", label: t("nav_access_codes") },
     { href: "/admin/roadmap", label: t("nav_roadmap") },
+    { href: "/admin/whbpc", label: "WHBPC" },
   ];
 
   return (
