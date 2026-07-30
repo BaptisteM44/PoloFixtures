@@ -9,7 +9,7 @@
  * back of the card so the player can edit their own fields in place.
  */
 
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 /* ── Helpers SVG ─────────────────────────────────────────────────── */
 
@@ -150,58 +150,78 @@ export function WhbpcCard({
   const initials = playerName.split(/\s+/).map((w) => w[0]).join("").slice(0, 3).toUpperCase();
   const attributeLines = [pedals, hand, `${wheelSize}"`];
 
-  const cardRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
-  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({});
 
+  // Tilt + glare pilotés en DIRECT via le DOM (aucun re-render React pendant
+  // le mousemove) et SANS transition pendant le survol — c'est ce qui rend le
+  // mouvement fluide, comme sur les cartes classiques. La transition n'est
+  // rétablie que pour le retour au repos (mouseleave) et le flip.
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current || flipped) return;
-    const rect = cardRef.current.getBoundingClientRect();
+    if (!innerRef.current || flipped) return;
+    const rect = e.currentTarget.getBoundingClientRect();
     const px = (e.clientX - rect.left) / rect.width;
     const py = (e.clientY - rect.top) / rect.height;
     const rotateX = (py - 0.5) * -12;
     const rotateY = (px - 0.5) * 12;
-    const gx = (1 - px) * 100;
-    const gy = (1 - py) * 100;
-    setTiltStyle({
-      transform: `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
-      "--glare-pos": `${gx}% ${gy}%`,
-    } as React.CSSProperties);
+    innerRef.current.style.transition = "none";
+    innerRef.current.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    if (rootRef.current) {
+      rootRef.current.style.setProperty("--glare-pos", `${(1 - px) * 100}% ${(1 - py) * 100}%`);
+    }
   }, [flipped]);
 
   const handleMouseLeave = useCallback(() => {
     setHovered(false);
-    setTiltStyle({
-      transform: "rotateX(0deg) rotateY(0deg)",
-      "--glare-pos": "50% 50%",
-    } as React.CSSProperties);
-  }, []);
+    if (innerRef.current) {
+      innerRef.current.style.transition = "transform 0.4s cubic-bezier(0.4, 0.2, 0.2, 1)";
+      innerRef.current.style.transform = flipped ? "rotateY(180deg)" : "rotateY(0deg)";
+    }
+    if (rootRef.current) rootRef.current.style.setProperty("--glare-pos", "50% 50%");
+  }, [flipped]);
+
+  // Le mousemove pilote .style.transform en direct ; on resynchronise donc
+  // l'état flip (rare) via un effet, avec transition, plutôt que par le JSX.
+  useEffect(() => {
+    if (!innerRef.current) return;
+    innerRef.current.style.transition = "transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1)";
+    innerRef.current.style.transform = flipped ? "rotateY(180deg)" : "rotateY(0deg)";
+  }, [flipped]);
 
   return (
-    <div style={{ position: "relative", width: 340, height: 520, perspective: 1400 }}>
+    <div
+      ref={rootRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        position: "relative",
+        width: 340,
+        height: 520,
+        perspective: 1400,
+        cursor: "pointer",
+      }}
+    >
       <div
+        ref={innerRef}
         style={{
           position: "relative",
           width: "100%",
           height: "100%",
           transformStyle: "preserve-3d",
-          transition: "transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1)",
+          transition: "transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1)",
           transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
         }}
       >
         {/* ── Face avant ── */}
         <div
-          ref={cardRef}
-          onMouseMove={handleMouseMove}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={handleMouseLeave}
           style={{
             position: "absolute",
             inset: 0,
             borderRadius: 18,
             overflow: "hidden",
             backfaceVisibility: "hidden",
-            cursor: "pointer",
             background: [
               "radial-gradient(circle at 18% 12%, rgba(255,170,215,0.85), transparent 42%)",
               "radial-gradient(circle at 82% 20%, rgba(165,220,255,0.9), transparent 46%)",
@@ -213,7 +233,6 @@ export function WhbpcCard({
             fontFamily: "var(--font-display), 'Arial Black', sans-serif",
             userSelect: "none",
             transition: "box-shadow 0.35s ease",
-            ...(!flipped ? tiltStyle : {}),
           }}
         >
           <div style={{ position: "absolute", inset: 0, background: "linear-gradient(115deg, transparent 34%, rgba(255,255,255,0.4) 47%, transparent 60%)", pointerEvents: "none", zIndex: 5 }} />
