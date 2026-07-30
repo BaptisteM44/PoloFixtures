@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { PokemonCard } from "@/components/PokemonCard";
+import { PlayerCollectibleCard } from "@/components/PlayerCollectibleCard";
 
 type Player = {
   id: string;
@@ -20,6 +20,11 @@ type Player = {
   showGender: boolean;
   clubLogoPath?: string | null;
   clubName?: string | null;
+  activeCard?: string | null;
+  whbpcCard?: {
+    teamName: string; yearStarted: string; countryCode: string; bestSkill: string;
+    pedals: string; hand: string; wheelSize: string; gearRatio: string;
+  } | null;
 };
 
 const CONTINENT_CODES = ["", "EU", "NA", "SA", "AS", "OC", "AF"] as const;
@@ -108,7 +113,7 @@ export function PlayersBrowser({ userContinent }: { userContinent?: string }) {
           {players.map((p) =>
             p.slug ? (
               <Link key={p.id} href={`/player/${p.slug}`} style={{ textDecoration: "none", display: "contents" }}>
-                <PokemonCard
+                <PlayerCollectibleCard
                   name={p.name}
                   country={p.country}
                   city={p.city}
@@ -121,10 +126,12 @@ export function PlayersBrowser({ userContinent }: { userContinent?: string }) {
                   showGender={p.showGender}
                   clubLogoPath={p.clubLogoPath}
                   clubName={p.clubName}
+                  activeCard={p.activeCard}
+                  whbpcData={p.whbpcCard ? { ...p.whbpcCard, hand: p.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
                 />
               </Link>
             ) : (
-              <PokemonCard
+              <PlayerCollectibleCard
                 key={p.id}
                 name={p.name}
                 country={p.country}
@@ -138,6 +145,8 @@ export function PlayersBrowser({ userContinent }: { userContinent?: string }) {
                 showGender={p.showGender}
                 clubLogoPath={p.clubLogoPath}
                 clubName={p.clubName}
+                activeCard={p.activeCard}
+                whbpcData={p.whbpcCard ? { ...p.whbpcCard, hand: p.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
               />
             )
           )}

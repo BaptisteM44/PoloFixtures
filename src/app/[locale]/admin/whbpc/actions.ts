@@ -23,12 +23,12 @@ const assignSchema = z.object({
   gearRatio: z.string().min(1).max(10),
 });
 
-/** Search players by name — used to pick who to gift a card to. */
+/** Search players by name — used to pick who to gift a card to. Only players with a real account (email) can appear here. */
 export async function searchPlayersAction(query: string) {
   await requireAdmin();
   if (query.trim().length < 2) return [];
   return prisma.player.findMany({
-    where: { name: { contains: query, mode: "insensitive" } },
+    where: { name: { contains: query, mode: "insensitive" }, account: { isNot: null } },
     select: { id: true, name: true, slug: true, city: true, country: true },
     take: 15,
     orderBy: { name: "asc" },

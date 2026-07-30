@@ -5,7 +5,7 @@ import { fixImageOrientation } from "@/lib/fix-orientation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { PokemonCard } from "./PokemonCard";
+import { PlayerCollectibleCard } from "./PlayerCollectibleCard";
 
 type Member = {
   id: string;
@@ -27,6 +27,11 @@ type Member = {
   clubName: string | null;
   teamLogoPath: string | null;
   emblemPosition: string | null;
+  activeCard?: string | null;
+  whbpcCard?: {
+    teamName: string; yearStarted: string; countryCode: string; bestSkill: string;
+    pedals: string; hand: string; wheelSize: string; gearRatio: string;
+  } | null;
 };
 
 type PendingInvitation = {
@@ -363,7 +368,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                 <div key={m.id} style={{ flexShrink: 0 }}>
                   {m.slug ? (
                     <Link href={`/player/${m.slug}`} style={{ textDecoration: "none" }}>
-                      <PokemonCard
+                      <PlayerCollectibleCard
                         name={m.name}
                         country={m.country ?? ""}
                         city={m.city}
@@ -377,10 +382,12 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                         hand={m.hand}
                         gender={m.gender ?? undefined}
                         showGender={m.showGender}
+                        activeCard={m.activeCard}
+                        whbpcData={m.whbpcCard ? { ...m.whbpcCard, hand: m.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
                       />
                     </Link>
                   ) : (
-                    <PokemonCard
+                    <PlayerCollectibleCard
                       name={m.name}
                       country={m.country ?? ""}
                       city={m.city}
@@ -394,6 +401,8 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                       hand={m.hand}
                       gender={m.gender ?? undefined}
                       showGender={m.showGender}
+                      activeCard={m.activeCard}
+                      whbpcData={m.whbpcCard ? { ...m.whbpcCard, hand: m.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
                     />
                   )}
                 </div>

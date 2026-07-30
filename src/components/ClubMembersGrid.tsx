@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "@/i18n/navigation";
-import { PokemonCard } from "@/components/PokemonCard";
+import { PlayerCollectibleCard } from "@/components/PlayerCollectibleCard";
 
 type Member = {
   id: string;
@@ -21,6 +21,11 @@ type Member = {
     hand: string | null;
     gender: string | null;
     showGender: boolean;
+    activeCard?: string | null;
+    whbpcCard?: {
+      teamName: string; yearStarted: string; countryCode: string; bestSkill: string;
+      pedals: string; hand: string; wheelSize: string; gearRatio: string;
+    } | null;
   };
 };
 
@@ -48,7 +53,7 @@ export function ClubMembersGrid({ members, emptyLabel, clubName }: { members: Me
     <div className="pokemon-card-grid">
       {shuffled.map((m) => (
         <Link key={m.id} href={`/player/${m.player.slug ?? m.player.id}`} style={{ textDecoration: "none" }}>
-          <PokemonCard
+          <PlayerCollectibleCard
             name={m.player.name}
             country={m.player.country ?? ""}
             city={m.player.city}
@@ -62,6 +67,8 @@ export function ClubMembersGrid({ members, emptyLabel, clubName }: { members: Me
             hand={m.player.hand}
             gender={m.player.gender as "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY" | null | undefined}
             showGender={m.player.showGender}
+            activeCard={m.player.activeCard}
+            whbpcData={m.player.whbpcCard ? { ...m.player.whbpcCard, hand: m.player.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
           />
         </Link>
       ))}

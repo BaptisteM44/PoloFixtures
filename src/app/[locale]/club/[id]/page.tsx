@@ -39,6 +39,7 @@ export default async function ClubPage({
               clubLogoPath: true, emblemPosition: true,
               teamLogoPath: true,
               startYear: true, hand: true, gender: true, showGender: true,
+              activeCard: true, whbpcCard: true,
             },
           },
         },
