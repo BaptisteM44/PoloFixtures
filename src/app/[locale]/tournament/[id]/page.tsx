@@ -263,7 +263,10 @@ export default async function TournamentPage({
     (!tournament.registrationEnd || now <= new Date(tournament.registrationEnd));
   const registrationClosed = !!tournament.registrationEnd && now > new Date(tournament.registrationEnd);
 
-  const hasCommunity = !registrationClosed && tournament.freeAgents.length > 0;
+  // Toujours visible tant que les inscriptions ne sont pas fermées — même sans
+  // aucun agent libre inscrit, pour que le premier joueur puisse s'inscrire
+  // depuis l'onglet plutôt que de devoir passer par Inscription > Free Agent Zone.
+  const hasCommunity = !registrationClosed;
 
   const tabs = [
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
@@ -301,7 +304,7 @@ export default async function TournamentPage({
       : (isLaunched && !isBerlinMixed && !isKiosque && tournament.sundayFormat !== "SWISS_SPLIT_SE" && tournament.sundayFormat !== "SPLIT_SE" ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : [])),
     { label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
     ...(youtubeEmbed || court1Embed || court2Embed || multiplexEmbed || t_.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
-    ...(hasCommunity ? [{ label: `${t("tab_free_agent")}${tournament.freeAgents.length > 0 ? ` (${tournament.freeAgents.length})` : ""}`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
+    ...(hasCommunity ? [{ label: `${t("tab_free_agent")} (${tournament.freeAgents.length})`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
     ...(tournament.accommodationAvailable && (!!myTeam || isAccommodationHost) ? [{ label: t("tab_accommodation"), value: "hebergement", href: `/tournament/${params.id}?tab=hebergement` }] : []),
   ];

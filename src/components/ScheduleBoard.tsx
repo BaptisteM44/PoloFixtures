@@ -5,6 +5,7 @@ import { Match, MatchEvent, Team } from "@prisma/client";
 import { useTranslations } from "next-intl";
 import { formatTime } from "@/lib/utils";
 import { MatchEditPanel, type MatchForEdit } from "./MatchEditPanel";
+import { MatchRecapModal } from "./MatchRecapModal";
 
 function computeClockFromEvents(events: MatchEvent[]): { clockSec: number; paused: boolean } {
   let clockSec = 0;
@@ -139,6 +140,16 @@ export function ScheduleBoard({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [expandedPlayers, setExpandedPlayers] = useState<string | null>(null);
   const [loadingRound, setLoadingRound] = useState<string | null>(null);
+  const [recapMatchId, setRecapMatchId] = useState<string | null>(null);
+
+  // playerId → nom, pour résoudre buteurs/fautifs dans le récap de match
+  const playerNames = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const team of teams) {
+      for (const tp of team.players ?? []) map.set(tp.player.id, tp.player.name);
+    }
+    return map;
+  }, [teams]);
 
   const STATUS_LABEL: Record<string, string> = {
     SCHEDULED: t("status_scheduled"),
@@ -505,6 +516,19 @@ export function ScheduleBoard({
           <span>{STATUS_LABEL[match.status] ?? match.status}</span>
         </div>
       </button>
+      {match.status === "FINISHED" && (
+        <button
+          className="dmc-v5__fab dmc-v5__fab--left"
+          type="button"
+          title={t("recap_title")}
+          onClick={(e) => { e.stopPropagation(); setRecapMatchId(match.id); }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 8v4l3 3" />
+            <circle cx="12" cy="12" r="9" />
+          </svg>
+        </button>
+      )}
       {(teamPlayerNames(match.teamAId) || teamPlayerNames(match.teamBId)) && (
         <button
           className="dmc-v5__fab"
@@ -728,6 +752,22 @@ export function ScheduleBoard({
           );
         }}
       />
+
+      {recapMatchId && (() => {
+        const recapMatch = matches.find((m) => m.id === recapMatchId);
+        if (!recapMatch) return null;
+        return (
+          <MatchRecapModal
+            teamAId={recapMatch.teamAId}
+            teamBId={recapMatch.teamBId}
+            teamAName={teamName(recapMatch.teamAId)}
+            teamBName={teamName(recapMatch.teamBId)}
+            events={recapMatch.events ?? []}
+            playerNames={playerNames}
+            onClose={() => setRecapMatchId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

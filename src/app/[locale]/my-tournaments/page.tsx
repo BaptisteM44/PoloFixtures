@@ -35,6 +35,7 @@ type Entry = {
   isCaptain: boolean;
   tournament: Tournament;
   teammates: Teammate[];
+  waitlistPosition: number | null;
 };
 
 type CreatedTournament = {
@@ -130,13 +131,19 @@ export default function MyTournamentsPage() {
   const ascT = (a: CreatedTournament, b: CreatedTournament) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime();
   const descT = (a: CreatedTournament, b: CreatedTournament) => new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime();
 
-  const upcoming = entries.filter((e) => e.tournament.status === "UPCOMING").sort(asc);
-  const live = entries.filter((e) => e.tournament.status === "LIVE").sort(asc);
-  const completed = entries.filter((e) => e.tournament.status === "COMPLETED").sort(desc);
+  // Équipes en liste d'attente : à part, tant qu'elles ne sont pas confirmées
+  // ce n'est pas une inscription définitive — on ne veut pas les mélanger.
+  const confirmedEntries = entries.filter((e) => e.waitlistPosition === null);
+  const waitlistedEntries = entries.filter((e) => e.waitlistPosition !== null).sort(asc);
+
+  const upcoming = confirmedEntries.filter((e) => e.tournament.status === "UPCOMING").sort(asc);
+  const live = confirmedEntries.filter((e) => e.tournament.status === "LIVE").sort(asc);
+  const completed = confirmedEntries.filter((e) => e.tournament.status === "COMPLETED").sort(desc);
 
   const playerSections = [
     { title: `🔴  ${ts("status_live")}`, entries: live, collapsible: false },
     { title: `📅  ${ts("status_upcoming")}`, entries: upcoming, collapsible: false },
+    { title: `⏳  ${t("status_waitlisted")}`, entries: waitlistedEntries, collapsible: false },
     { title: `✅  ${ts("status_completed")}`, entries: completed, collapsible: true },
   ].filter((s) => s.entries.length > 0);
 
@@ -257,6 +264,12 @@ export default function MyTournamentsPage() {
                           {statusLabel(entry.tournament.status)}
                         </span>
                       </div>
+
+                      {entry.waitlistPosition !== null && (
+                        <p className="meta" style={{ margin: "0 0 8px", color: "var(--color-warning, #b8860b)" }}>
+                          ⏳ {t("waitlist_position", { position: entry.waitlistPosition })}
+                        </p>
+                      )}
 
                       <div className="my-tournaments__team" style={entry.teamColor ? { "--team-accent": entry.teamColor } as React.CSSProperties : undefined}>
                         <div className="my-tournaments__team-header">

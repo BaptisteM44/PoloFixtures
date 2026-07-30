@@ -845,6 +845,16 @@
     "abc_registered_title": "{count} inscritos",
     "abc_on_waitlist": "en lista de espera",
     "schedule_no_filter_matches": "Sin partidos para estos filtros.",
+    "recap_title": "Resumen del partido",
+    "recap_empty": "No hay eventos registrados para este partido.",
+    "recap_goal": "Gol — {team}",
+    "recap_golden_goal": "Gol de oro — {team}",
+    "recap_penalty": "Penalización — {team}",
+    "recap_penalty_cancel": "Penalización anulada — {team}",
+    "recap_timeout": "Tiempo muerto — {team}",
+    "recap_timeout_cancel": "Tiempo muerto anulado — {team}",
+    "recap_timeout_normal": "normal",
+    "recap_timeout_mechanical": "mecánico",
     "orga_tab_stages": "🧩 Etapas",
     "pipeline_edit_stage": "Editar",
     "pipeline_move_up": "Subir",
@@ -1163,7 +1173,10 @@
     "legal_mentions": "Aviso legal",
     "privacy": "Privacidad",
     "terms": "Condiciones de uso",
-    "charter": "Carta"
+    "charter": "Carta",
+    "install_app": "Instalar la app",
+    "install_app_safari_ios": "Instalar: Compartir → Añadir a pantalla de inicio",
+    "install_app_safari_mac": "Instalar: Archivo → Añadir al Dock"
   },
   "player": {
     "page_title": "Perfil de jugador",
@@ -1233,6 +1246,8 @@
     "empty_organizer": "Aún no has organizado un torneo.",
     "captain": "Capitán",
     "pending": "PENDIENTE",
+    "status_waitlisted": "En lista de espera",
+    "waitlist_position": "Posición {position} en lista de espera",
     "btn_create": "Crear torneo",
     "chat_open": "Chat del equipo",
     "chat_close": "Cerrar chat",
@@ -1779,7 +1794,11 @@
     "messages_open_all": "Ver todos los mensajes",
     "settings_notifications_title": "Notificaciones",
     "install_app_title": "Instalar la aplicación",
-    "install_app_desc": "Acceso rápido desde la pantalla de inicio, incluso sin conexión."
+    "install_app_desc": "Acceso rápido desde la pantalla de inicio, incluso sin conexión.",
+    "install_app_btn": "📲 Instalar la aplicación",
+    "install_app_installed": "✓ Aplicación instalada",
+    "install_app_safari_ios": "Para instalar: toca Compartir y luego \"Añadir a pantalla de inicio\".",
+    "install_app_safari_mac": "Para instalar: en el menú Archivo, elige \"Añadir al Dock\"."
   },
   "charter": {
     "title": "Carta de la Comunidad",

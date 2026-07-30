@@ -846,6 +846,16 @@
     "abc_registered_title": "{count} inscrit·es",
     "abc_on_waitlist": "en liste d'attente",
     "schedule_no_filter_matches": "Aucun match pour ces filtres.",
+    "recap_title": "Récap du match",
+    "recap_empty": "Aucun événement enregistré pour ce match.",
+    "recap_goal": "But — {team}",
+    "recap_golden_goal": "But en or — {team}",
+    "recap_penalty": "Pénalité — {team}",
+    "recap_penalty_cancel": "Pénalité annulée — {team}",
+    "recap_timeout": "Temps mort — {team}",
+    "recap_timeout_cancel": "Temps mort annulé — {team}",
+    "recap_timeout_normal": "normal",
+    "recap_timeout_mechanical": "mécanique",
     "orga_tab_stages": "🧩 Étapes",
     "pipeline_edit_stage": "Modifier",
     "pipeline_move_up": "Monter",
@@ -1159,7 +1169,10 @@
     "legal_mentions": "Mentions légales",
     "privacy": "Confidentialité",
     "terms": "CGU",
-    "charter": "Charte"
+    "charter": "Charte",
+    "install_app": "Installer l’app",
+    "install_app_safari_ios": "Installer : Partager → Sur l’écran d’accueil",
+    "install_app_safari_mac": "Installer : Fichier → Ajouter au Dock"
   },
   "player": {
     "page_title": "Profil joueur·euse",
@@ -1229,6 +1242,8 @@
     "tab_chat": "Chat équipe",
     "captain": "Capitaine",
     "pending": "EN ATTENTE",
+    "status_waitlisted": "En liste d'attente",
+    "waitlist_position": "Position {position} en liste d'attente",
     "btn_create": "Créer un tournoi",
     "chat_open": "Discussion d'équipe",
     "chat_close": "Fermer la discussion",
@@ -1776,7 +1791,11 @@
     "messages_open_all": "Voir tous les messages",
     "settings_notifications_title": "Notifications",
     "install_app_title": "Installer l’application",
-    "install_app_desc": "Accès rapide depuis l’écran d’accueil, même hors connexion."
+    "install_app_desc": "Accès rapide depuis l’écran d’accueil, même hors connexion.",
+    "install_app_btn": "📲 Installer l’application",
+    "install_app_installed": "✓ Application installée",
+    "install_app_safari_ios": "Pour installer : appuie sur Partager, puis « Sur l’écran d’accueil ».",
+    "install_app_safari_mac": "Pour installer : dans le menu Fichier, choisis « Ajouter au Dock »."
   },
   "charter": {
     "title": "Charte de bonne conduite",

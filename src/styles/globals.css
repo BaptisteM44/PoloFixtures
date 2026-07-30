@@ -3631,6 +3631,10 @@ details.agenda-month--past > summary::-webkit-details-marker {
 .dmc-v5__fab:hover {
   box-shadow: var(--shadow);
 }
+.dmc-v5__fab--left {
+  right: auto;
+  left: 8px;
+}
 .dmc-v5__overlay {
   position: absolute;
   inset: 0;

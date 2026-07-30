@@ -846,6 +846,16 @@
     "abc_registered_title": "{count} Angemeldete",
     "abc_on_waitlist": "auf der Warteliste",
     "schedule_no_filter_matches": "Keine Spiele für diese Filter.",
+    "recap_title": "Spiel-Rückblick",
+    "recap_empty": "Keine Ereignisse für dieses Spiel erfasst.",
+    "recap_goal": "Tor — {team}",
+    "recap_golden_goal": "Golden Goal — {team}",
+    "recap_penalty": "Strafe — {team}",
+    "recap_penalty_cancel": "Strafe storniert — {team}",
+    "recap_timeout": "Auszeit — {team}",
+    "recap_timeout_cancel": "Auszeit storniert — {team}",
+    "recap_timeout_normal": "normal",
+    "recap_timeout_mechanical": "mechanisch",
     "orga_tab_stages": "🧩 Phasen",
     "pipeline_edit_stage": "Bearbeiten",
     "pipeline_move_up": "Nach oben",
@@ -1164,7 +1174,10 @@
     "legal_mentions": "Impressum",
     "privacy": "Datenschutz",
     "terms": "AGB",
-    "charter": "Charta"
+    "charter": "Charta",
+    "install_app": "App installieren",
+    "install_app_safari_ios": "Installieren: Teilen → Zum Home-Bildschirm",
+    "install_app_safari_mac": "Installieren: Ablage → Zum Dock hinzufügen"
   },
   "player": {
     "page_title": "Spielerprofil",
@@ -1234,6 +1247,8 @@
     "empty_organizer": "Du hast noch kein Turnier organisiert.",
     "captain": "Kapitän",
     "pending": "AUSSTEHEND",
+    "status_waitlisted": "Auf der Warteliste",
+    "waitlist_position": "Position {position} auf der Warteliste",
     "btn_create": "Turnier erstellen",
     "chat_open": "Team-Diskussion",
     "chat_close": "Diskussion schließen",
@@ -1780,7 +1795,11 @@
     "messages_open_all": "Alle Nachrichten anzeigen",
     "settings_notifications_title": "Benachrichtigungen",
     "install_app_title": "App installieren",
-    "install_app_desc": "Schneller Zugriff vom Startbildschirm, auch offline."
+    "install_app_desc": "Schneller Zugriff vom Startbildschirm, auch offline.",
+    "install_app_btn": "📲 App installieren",
+    "install_app_installed": "✓ App installiert",
+    "install_app_safari_ios": "Installieren: Teilen antippen, dann „Zum Home-Bildschirm“.",
+    "install_app_safari_mac": "Installieren: im Ablage-Menü „Zum Dock hinzufügen“ wählen."
   },
   "charter": {
     "title": "Community-Charta",

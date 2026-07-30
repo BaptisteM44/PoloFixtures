@@ -846,6 +846,16 @@
     "abc_registered_title": "{count} registered",
     "abc_on_waitlist": "on waitlist",
     "schedule_no_filter_matches": "No matches for these filters.",
+    "recap_title": "Match recap",
+    "recap_empty": "No events recorded for this match.",
+    "recap_goal": "Goal — {team}",
+    "recap_golden_goal": "Golden goal — {team}",
+    "recap_penalty": "Penalty — {team}",
+    "recap_penalty_cancel": "Penalty cancelled — {team}",
+    "recap_timeout": "Timeout — {team}",
+    "recap_timeout_cancel": "Timeout cancelled — {team}",
+    "recap_timeout_normal": "normal",
+    "recap_timeout_mechanical": "mechanical",
     "orga_tab_stages": "🧩 Stages",
     "pipeline_edit_stage": "Edit",
     "pipeline_move_up": "Move up",
@@ -1159,7 +1169,10 @@
     "legal_mentions": "Legal notices",
     "privacy": "Privacy",
     "terms": "Terms of use",
-    "charter": "Charter"
+    "charter": "Charter",
+    "install_app": "Install the app",
+    "install_app_safari_ios": "Install: Share → Add to Home Screen",
+    "install_app_safari_mac": "Install: File → Add to Dock"
   },
   "player": {
     "page_title": "Player profile",
@@ -1229,6 +1242,8 @@
     "tab_chat": "Team chat",
     "captain": "Captain",
     "pending": "PENDING",
+    "status_waitlisted": "On waitlist",
+    "waitlist_position": "Position {position} on waitlist",
     "btn_create": "Create a tournament",
     "chat_open": "Team discussion",
     "chat_close": "Close discussion",
@@ -1775,7 +1790,11 @@
     "messages_open_all": "See all messages",
     "settings_notifications_title": "Notifications",
     "install_app_title": "Install the app",
-    "install_app_desc": "Quick access from your home screen, even offline."
+    "install_app_desc": "Quick access from your home screen, even offline.",
+    "install_app_btn": "📲 Install the app",
+    "install_app_installed": "✓ App installed",
+    "install_app_safari_ios": "To install: tap Share, then \"Add to Home Screen\".",
+    "install_app_safari_mac": "To install: in the File menu, choose \"Add to Dock\"."
   },
   "charter": {
     "title": "Community Charter",

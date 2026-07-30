@@ -14,7 +14,14 @@ export async function GET() {
 
   // Get all teams the player belongs to, with tournament + teammates
   const teamPlayers = await prisma.teamPlayer.findMany({
-    where: { playerId },
+    where: {
+      playerId,
+      // Une équipe refusée au tirage a selected=false ET waitlistPosition=null —
+      // celles-là ne reviendront jamais, on ne les affiche plus. Une équipe en
+      // liste d'attente a aussi selected=false mais waitlistPosition renseigné :
+      // elle doit rester visible (section "En attente" à part, voir plus bas).
+      team: { OR: [{ selected: true }, { waitlistPosition: { not: null } }] },
+    },
     include: {
       team: {
         include: {
@@ -56,6 +63,7 @@ export async function GET() {
     teamColor: tp.team.color,
     isCaptain: tp.isCaptain,
     tournament: tp.team.tournament,
+    waitlistPosition: tp.team.waitlistPosition,
     teammates: tp.team.players
       .map((p) => ({
         id: p.player.id,
