@@ -112,10 +112,25 @@ export async function PATCH(
   });
   if (!item) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
 
-  const updated = await prisma.communityItem.update({
-    where: { id: params.id },
-    data: parsed.data,
-  });
+  // Transition de statut atomique : la condition status:{not:...} est vérifiée
+  // par la base au moment de l'écriture, pas sur la valeur lue plus haut — deux
+  // requêtes concurrentes (double-clic, retry réseau) ne peuvent donc pas
+  // toutes les deux "gagner" la transition et redéclencher notifs/badges pour
+  // tout le monde (déjà vu sur le score des matchs : lecture-puis-écriture non
+  // atomique = race condition).
+  const statusActuallyChanged =
+    parsed.data.status !== undefined
+      ? (
+          await prisma.communityItem.updateMany({
+            where: { id: params.id, status: { not: parsed.data.status } },
+            data: parsed.data,
+          })
+        ).count > 0
+      : false;
+  if (parsed.data.status === undefined || !statusActuallyChanged) {
+    await prisma.communityItem.update({ where: { id: params.id }, data: parsed.data });
+  }
+  const updated = await prisma.communityItem.findUniqueOrThrow({ where: { id: params.id } });
 
   const STATUS_MESSAGES: Record<string, string> = {
     thinking: `🤔 "${item.title}" est à l'étude`,
@@ -124,11 +139,12 @@ export async function PATCH(
     rejected: `"${item.title}" ne sera pas retenu`,
   };
 
-  // Notifier l'auteur de l'item de tout changement de statut (hors "open")
+  // Notifier l'auteur de l'item de tout changement de statut (hors "open") —
+  // uniquement si CETTE requête a réellement effectué la transition.
   if (
     item.authorId &&
     parsed.data.status &&
-    parsed.data.status !== item.status &&
+    statusActuallyChanged &&
     parsed.data.status !== "open"
   ) {
     await createNotification(item.authorId, "COMMUNITY_STATUS_CHANGED" as any, {
@@ -140,7 +156,7 @@ export async function PATCH(
   }
 
   // Si passage en "done" → notifications aux votants + badges
-  if (parsed.data.status === "done" && item.status !== "done") {
+  if (parsed.data.status === "done" && statusActuallyChanged) {
     // Notifier tous les votants avec un compte (l'auteur est déjà notifié ci-dessus)
     const votersWithAccount = item.votes.filter((v) => v.playerId !== null);
     for (const voter of votersWithAccount) {
