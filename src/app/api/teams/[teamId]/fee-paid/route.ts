@@ -32,10 +32,16 @@ export async function PATCH(request: Request, { params }: { params: { teamId: st
 
   if (!isAdmin && !isOrga) return new Response("Forbidden", { status: 403 });
 
-  const { feePaid } = await request.json();
+  const { feePaid, paymentMethod } = await request.json();
+  const validMethods = ["BANK_TRANSFER", "PAYPAL", "CASH", "OTHER"];
+  const method = validMethods.includes(paymentMethod) ? paymentMethod : null;
   const updated = await prisma.team.update({
     where: { id: params.teamId },
-    data: { feePaid: Boolean(feePaid) },
+    data: {
+      feePaid: Boolean(feePaid),
+      // Uncheck efface le mode de paiement ; check sans mode explicite garde l'existant.
+      paymentMethod: !feePaid ? null : paymentMethod !== undefined ? method : team.paymentMethod,
+    },
   });
 
   // Notify team players when payment is confirmed (not when unchecked)
@@ -49,5 +55,5 @@ export async function PATCH(request: Request, { params }: { params: { teamId: st
     }).catch(() => {});
   }
 
-  return Response.json({ ok: true, feePaid: updated.feePaid });
+  return Response.json({ ok: true, feePaid: updated.feePaid, paymentMethod: updated.paymentMethod });
 }

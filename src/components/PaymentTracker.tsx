@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-methods";
 
 type Team = {
   id: string;
   name: string;
   feePaid?: boolean;
+  paymentMethod?: PaymentMethod | null;
   players: { player: { name: string } }[];
 };
 
@@ -27,6 +29,15 @@ export function PaymentTracker({ teams, feePerTeam, currency }: Props) {
   const totalDue = selected.length * feePerTeam;
   const totalPaid = paidCount * feePerTeam;
 
+  // Récap par mode de paiement (montant encaissé via chaque canal).
+  const byMethod = (Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[])
+    .map((m) => ({
+      method: m,
+      count: selected.filter((t) => t.feePaid && t.paymentMethod === m).length,
+    }))
+    .filter((x) => x.count > 0);
+  const unspecifiedPaid = selected.filter((t) => t.feePaid && !t.paymentMethod).length;
+
   const toggle = async (team: Team) => {
     if (!team.feePaid) {
       const ok = window.confirm(`Confirmer le paiement de ${team.name} ?`);
@@ -42,6 +53,17 @@ export function PaymentTracker({ teams, feePerTeam, currency }: Props) {
     setPending(null);
   };
 
+  const setMethod = async (team: Team, method: PaymentMethod) => {
+    setPending(team.id);
+    await fetch(`/api/teams/${team.id}/fee-paid`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feePaid: true, paymentMethod: method }),
+    });
+    router.refresh();
+    setPending(null);
+  };
+
   return (
     <div className="panel">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -52,6 +74,21 @@ export function PaymentTracker({ teams, feePerTeam, currency }: Props) {
           {paidCount}/{selected.length} équipes · {totalPaid} {currency} / {totalDue} {currency}
         </span>
       </div>
+
+      {(byMethod.length > 0 || unspecifiedPaid > 0) && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+          {byMethod.map(({ method, count }) => (
+            <span key={method} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "color-mix(in srgb, var(--teal) 10%, var(--bg-panel))", border: "1px solid var(--teal)", color: "var(--teal)", fontWeight: 600 }}>
+              {PAYMENT_METHOD_LABELS[method]} : {count * feePerTeam} {currency}
+            </span>
+          ))}
+          {unspecifiedPaid > 0 && (
+            <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--bg-panel)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
+              Mode non précisé : {unspecifiedPaid * feePerTeam} {currency}
+            </span>
+          )}
+        </div>
+      )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {selected.map((team) => (
@@ -80,6 +117,19 @@ export function PaymentTracker({ teams, feePerTeam, currency }: Props) {
               {team.feePaid ? "✓" : ""}
             </button>
             <span style={{ flex: 1, fontSize: 13, fontWeight: 500 }}>{team.name}</span>
+            {team.feePaid && (
+              <select
+                value={team.paymentMethod ?? ""}
+                onChange={(e) => setMethod(team, e.target.value as PaymentMethod)}
+                disabled={pending === team.id}
+                style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border)", background: "var(--bg-panel)" }}
+              >
+                <option value="" disabled>Mode ?</option>
+                {(Object.entries(PAYMENT_METHOD_LABELS) as [PaymentMethod, string][]).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            )}
             <span style={{ fontSize: 11, color: team.feePaid ? "var(--teal)" : "var(--text-muted)", fontWeight: team.feePaid ? 700 : 400 }}>
               {team.feePaid ? `Payé · ${feePerTeam} ${currency}` : `En attente · ${feePerTeam} ${currency}`}
             </span>

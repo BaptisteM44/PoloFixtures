@@ -1836,7 +1836,15 @@ export function OrgaDashboard({
           {tournament.format === "ABC Chapeau" ? (() => {
             const soloEntries = (tournament as any).soloEntries ?? [];
             const abcTeams = teams.map((t) => ({ id: t.id, name: t.name }));
-            return <DrawPanel tournamentId={tournament.id} soloEntries={soloEntries} teams={abcTeams} />;
+            return (
+              <DrawPanel
+                tournamentId={tournament.id}
+                soloEntries={soloEntries}
+                teams={abcTeams}
+                feePerPlayer={tournament.registrationFeePerTeam ?? 0}
+                feeCurrency={tournament.registrationFeeCurrency ?? "EUR"}
+              />
+            );
           })() : (teams.length > 0 && (
             <div className="panel">
               <h3 style={{ fontFamily: "var(--font-display)", fontSize: 16, marginBottom: 12 }}>{t("orga_selection_title")}</h3>

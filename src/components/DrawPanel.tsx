@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-methods";
 
 type SoloEntry = {
   id: string;
@@ -9,6 +10,8 @@ type SoloEntry = {
   level: string;
   teamId: string | null;
   waitlisted: boolean;
+  feePaid?: boolean;
+  paymentMethod?: PaymentMethod | null;
 };
 
 type DrawnTeam = {
@@ -28,10 +31,14 @@ export function DrawPanel({
   tournamentId,
   soloEntries: initialEntries,
   teams: initialTeams,
+  feePerPlayer = 0,
+  feeCurrency = "EUR",
 }: {
   tournamentId: string;
   soloEntries: SoloEntry[];
   teams: DrawnTeam[];
+  feePerPlayer?: number;
+  feeCurrency?: string;
 }) {
   const t = useTranslations("draw");
   const [entries, setEntries] = useState<SoloEntry[]>(initialEntries);
@@ -40,6 +47,7 @@ export function DrawPanel({
   const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [paymentPending, setPaymentPending] = useState<string | null>(null);
 
   // Changements d'assignation (entryId → teamId)
   const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
@@ -106,6 +114,37 @@ export function DrawPanel({
     setTimeout(() => setSaved(false), 3000);
   };
 
+  const togglePaid = async (entry: SoloEntry) => {
+    if (!entry.feePaid) {
+      const ok = window.confirm(`Confirmer le paiement de ${entry.player.name} ?`);
+      if (!ok) return;
+    }
+    setPaymentPending(entry.id);
+    await fetch(`/api/tournaments/${tournamentId}/solo-entries/${entry.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feePaid: !entry.feePaid }),
+    });
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, feePaid: !entry.feePaid, paymentMethod: !entry.feePaid ? e.paymentMethod : null } : e)));
+    setPaymentPending(null);
+  };
+
+  const setPaymentMethod = async (entry: SoloEntry, method: PaymentMethod) => {
+    setPaymentPending(entry.id);
+    await fetch(`/api/tournaments/${tournamentId}/solo-entries/${entry.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ feePaid: true, paymentMethod: method }),
+    });
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, feePaid: true, paymentMethod: method } : e)));
+    setPaymentPending(null);
+  };
+
+  const paidCount = activeEntries.filter((e) => e.feePaid).length;
+  const byMethod = (Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[])
+    .map((m) => ({ method: m, count: activeEntries.filter((e) => e.feePaid && e.paymentMethod === m).length }))
+    .filter((x) => x.count > 0);
+  const unspecifiedPaid = activeEntries.filter((e) => e.feePaid && !e.paymentMethod).length;
   const drawnTeamsCount = teams.length;
   const hasDraw = drawnTeamsCount > 0 && activeEntries.some((e) => e.teamId);
 
@@ -118,6 +157,7 @@ export function DrawPanel({
             <span className="meta" style={{ marginLeft: 10, fontWeight: 400, fontSize: 13 }}>
               {t("registered_count", { count: activeEntries.length })}
               {waitlistEntries.length > 0 && ` · ${t("waitlist_count", { count: waitlistEntries.length })}`}
+              {feePerPlayer > 0 && ` · ${paidCount}/${activeEntries.length} payé${paidCount !== 1 ? "s" : ""}`}
             </span>
           </h3>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -149,6 +189,21 @@ export function DrawPanel({
 
         {error && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}
 
+        {feePerPlayer > 0 && (byMethod.length > 0 || unspecifiedPaid > 0) && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+            {byMethod.map(({ method, count }) => (
+              <span key={method} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "color-mix(in srgb, var(--teal) 10%, var(--bg-panel))", border: "1px solid var(--teal)", color: "var(--teal)", fontWeight: 600 }}>
+                {PAYMENT_METHOD_LABELS[method]} : {count * feePerPlayer} {feeCurrency}
+              </span>
+            ))}
+            {unspecifiedPaid > 0 && (
+              <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--bg-panel)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
+                Mode non précisé : {unspecifiedPaid * feePerPlayer} {feeCurrency}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Liste des inscrits actifs */}
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -157,6 +212,9 @@ export function DrawPanel({
                 <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>{t("col_player")}</th>
                 <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>{t("col_level")}</th>
                 <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>{t("col_team")}</th>
+                {feePerPlayer > 0 && (
+                  <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>Payé</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -182,6 +240,42 @@ export function DrawPanel({
                       <span style={{ color: "var(--text-muted)" }}>{getTeamName(entry.teamId)}</span>
                     )}
                   </td>
+                  {feePerPlayer > 0 && (
+                    <td style={{ padding: "8px 10px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, opacity: paymentPending === entry.id ? 0.5 : 1 }}>
+                        <button
+                          type="button"
+                          onClick={() => togglePaid(entry)}
+                          disabled={paymentPending === entry.id}
+                          style={{
+                            width: 20, height: 20, borderRadius: 4, flexShrink: 0,
+                            border: `2px solid ${entry.feePaid ? "var(--teal)" : "var(--border)"}`,
+                            background: entry.feePaid ? "var(--teal)" : "transparent",
+                            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 12, color: "#fff", padding: 0,
+                          }}
+                        >
+                          {entry.feePaid ? "✓" : ""}
+                        </button>
+                        {entry.feePaid && (
+                          <select
+                            value={entry.paymentMethod ?? ""}
+                            onChange={(e) => setPaymentMethod(entry, e.target.value as PaymentMethod)}
+                            disabled={paymentPending === entry.id}
+                            style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border)", background: "var(--bg-panel)" }}
+                          >
+                            <option value="" disabled>Mode ?</option>
+                            {(Object.entries(PAYMENT_METHOD_LABELS) as [PaymentMethod, string][]).map(([key, label]) => (
+                              <option key={key} value={key}>{label}</option>
+                            ))}
+                          </select>
+                        )}
+                        <span style={{ fontSize: 11, color: entry.feePaid ? "var(--teal)" : "var(--text-muted)" }}>
+                          {feePerPlayer} {feeCurrency}
+                        </span>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
