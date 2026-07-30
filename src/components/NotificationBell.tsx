@@ -57,6 +57,12 @@ function useNotifLabel() {
         return { title: t("accommodation_assigned", { hostName: p.hostName ?? "" }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=hebergement` };
       case "ACCOMMODATION_GUEST_ADDED":
         return { title: t("accommodation_guest_added"), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=hebergement` };
+      case "TOURNAMENT_NEEDS_APPROVAL":
+        return { title: t("tournament_needs_approval"), sub: p.tournamentName ?? "", href: "/admin" };
+      case "CLUB_NEEDS_APPROVAL":
+        return { title: t("club_needs_approval"), sub: p.clubName ?? "", href: "/admin" };
+      case "NEW_TOURNAMENT_PUBLISHED":
+        return { title: t("new_tournament_published", { tournamentName: p.tournamentName ?? "" }), sub: `${p.city ?? ""}${p.country ? ", " + p.country : ""}`, href: `/tournament/${p.tournamentSlug || p.tournamentId}` };
       default:
         return { title: t("default"), sub: "", href: "/my-teams" };
     }

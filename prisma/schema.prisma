@@ -203,6 +203,9 @@ enum NotificationType {
   TEAM_FEE_CONFIRMED       // frais d'inscription d'équipe confirmés
   ACCOMMODATION_ASSIGNED    // un hébergement a été attribué au joueur
   ACCOMMODATION_GUEST_ADDED // des invités ont été ajoutés chez un logeur
+  TOURNAMENT_NEEDS_APPROVAL // notif admin : nouveau tournoi à modérer
+  CLUB_NEEDS_APPROVAL       // notif admin : nouveau club à modérer
+  NEW_TOURNAMENT_PUBLISHED  // notif joueurs : tournoi approuvé/publié
 }
 
 enum TaskPriority {

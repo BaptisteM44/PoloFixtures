@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { countryToContinentOrDefault } from "@/lib/country-utils";
+import { notifyAllAdmins } from "@/lib/notify";
 
 const createSchema = z.object({
   name: z.string().min(2).max(80),
@@ -103,6 +104,14 @@ export async function POST(request: NextRequest) {
   await prisma.clubMember.create({
     data: { clubId: club.id, playerId: session.user.playerId, status: "MEMBER" },
   });
+
+  // Notifie les admins qu'un nouveau club attend leur validation.
+  notifyAllAdmins("CLUB_NEEDS_APPROVAL", {
+    clubId: club.id,
+    clubName: club.name,
+    city: club.city,
+    country: club.country,
+  }).catch(() => {});
 
   return Response.json(club, { status: 201 });
 }

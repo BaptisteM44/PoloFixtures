@@ -3,10 +3,8 @@ import { AdminNav } from "@/components/AdminNav";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { RecomputeBadgesBtn } from "@/components/RecomputeBadgesBtn";
-import { FixBracketSidesBtn } from "@/components/FixBracketSidesBtn";
-import { TestPushBtn } from "@/components/TestPushBtn";
-import { InstallAppButton } from "@/components/InstallAppButton";
 import { AdminTournamentsPanel } from "@/components/AdminTournamentsPanel";
+import { AdminClubActions } from "@/components/AdminClubActions";
 
 export default async function AdminPage() {
   const t = await getTranslations("admin");
@@ -28,6 +26,15 @@ export default async function AdminPage() {
     where: { submissionStatus: "REJECTED" },
     include: { creator: { select: { id: true, name: true, slug: true } } },
     orderBy: { updatedAt: "desc" }
+  });
+
+  const pendingClubs = await prisma.club.findMany({
+    where: { approved: false },
+    include: {
+      manager: { select: { id: true, name: true, slug: true } },
+      _count: { select: { members: true } },
+    },
+    orderBy: { createdAt: "asc" },
   });
 
   return (
@@ -63,18 +70,6 @@ export default async function AdminPage() {
           <p className="meta" style={{ marginBottom: 0 }}>{t("btn_recompute_badges")}</p>
           <RecomputeBadgesBtn />
         </div>
-        <div className="panel" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <p className="meta" style={{ marginBottom: 0 }}>Corriger bracketSide des finales</p>
-          <FixBracketSidesBtn />
-        </div>
-        <div className="panel" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <p className="meta" style={{ marginBottom: 0 }}>Push Notifications</p>
-          <TestPushBtn />
-        </div>
-        <div className="panel" style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <p className="meta" style={{ marginBottom: 0 }}>Installer l&apos;app (PWA)</p>
-          <InstallAppButton variant="settings" />
-        </div>
       </div>
 
       <AdminTournamentsPanel
@@ -104,6 +99,38 @@ export default async function AdminPage() {
           creatorSlug: t.creator?.slug ?? null,
         }))}
       />
+
+      <section className="section" style={{ marginTop: 32 }}>
+        <div className="section-header">
+          <div>
+            <h2>{t("clubs_pending_title")}</h2>
+            <p>{pendingClubs.length === 1 ? t("players_count_one", { count: pendingClubs.length }) : t("players_count_other", { count: pendingClubs.length })}</p>
+          </div>
+        </div>
+
+        {pendingClubs.length === 0 ? (
+          <div className="empty-state"><p>{t("clubs_empty_pending")}</p></div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {pendingClubs.map((club) => (
+              <div key={club.id} className="panel" style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 20px" }}>
+                {club.logoPath && (
+                  <img src={club.logoPath} alt={club.name} style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 600, margin: 0 }}>{club.name}</p>
+                  <p className="meta" style={{ margin: 0 }}>{club.city}, {club.country}</p>
+                  <p className="meta" style={{ margin: 0 }}>
+                    {t("clubs_manager")} : <Link href={`/player/${club.manager.slug ?? club.manager.id}`}>{club.manager.name}</Link>
+                  </p>
+                  {club.description && <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-muted)" }}>{club.description}</p>}
+                </div>
+                <AdminClubActions clubId={club.id} mode="pending" />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

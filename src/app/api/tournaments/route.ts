@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { generateTournamentSlug } from "@/lib/slug";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
+import { notifyAllAdmins } from "@/lib/notify";
 
 export async function GET() {
   await syncLiveTournamentsCompletion();
@@ -118,6 +119,15 @@ export async function POST(request: Request) {
       } : {})
     }
   });
+
+  // Notifie les admins qu'un nouveau tournoi attend leur validation.
+  notifyAllAdmins("TOURNAMENT_NEEDS_APPROVAL", {
+    tournamentId: created.id,
+    tournamentSlug: created.slug ?? "",
+    tournamentName: created.name,
+    city: created.city,
+    country: created.country,
+  }).catch(() => {});
 
   return Response.json(created);
 }

@@ -1147,7 +1147,10 @@
     "btn_decline": "Rechazar",
     "default": "Notificación",
     "accommodation_assigned": "🏠 Alojamiento asignado: {hostName}",
-    "accommodation_guest_added": "🏠 Nuevos invitados en tu casa"
+    "accommodation_guest_added": "🏠 Nuevos invitados en tu casa",
+    "tournament_needs_approval": "Nuevo torneo por revisar",
+    "club_needs_approval": "Nuevo club por revisar",
+    "new_tournament_published": "Nuevo torneo: {tournamentName}"
   },
   "contact": {
     "btn_open": "Contacto",

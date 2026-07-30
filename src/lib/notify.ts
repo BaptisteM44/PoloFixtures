@@ -42,6 +42,12 @@ function toPushPayload(
       return { title: "Accommodation assigned 🏠", body: `${p.hostName} — ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=hebergement`, tag: `acco-${p.tournamentId}` };
     case "ACCOMMODATION_GUEST_ADDED":
       return { title: "New guests at your place 🏠", body: `${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=hebergement`, tag: `acco-host-${p.tournamentId}` };
+    case "TOURNAMENT_NEEDS_APPROVAL":
+      return { title: "Tournoi à valider", body: `${p.tournamentName} — ${p.city}, ${p.country}`, url: "/admin", tag: `admin-t-${p.tournamentId}` };
+    case "CLUB_NEEDS_APPROVAL":
+      return { title: "Club à valider", body: `${p.clubName} — ${p.city}, ${p.country}`, url: "/admin", tag: `admin-c-${p.clubId}` };
+    case "NEW_TOURNAMENT_PUBLISHED":
+      return { title: "Nouveau tournoi 🚴", body: `${p.tournamentName} — ${p.city}, ${p.country}`, url: `/tournament/${p.tournamentSlug || p.tournamentId}`, tag: `new-t-${p.tournamentId}` };
     default:
       return { title: "Poloperator", body: "New notification", url: "/", tag: type };
   }
@@ -193,5 +199,68 @@ export async function mailTeamPlayers(
     }
   } catch (e) {
     console.error("[notify] mailTeamPlayers error:", e);
+  }
+}
+
+/**
+ * Notifie tous les admins liés à un joueur (Operator avec rôle ADMIN + playerId).
+ * Sert pour la modération : nouveau tournoi/club créé à valider. Les codes admin
+ * sans Operator/joueur lié ne reçoivent pas de notif in-app (limite du modèle de
+ * rôles actuel).
+ */
+export async function notifyAllAdmins(
+  type: NotificationType,
+  payload: Record<string, string | number>
+) {
+  try {
+    const admins = await prisma.operator.findMany({
+      where: { playerId: { not: null }, roles: { has: "ADMIN" } },
+      select: { playerId: true },
+    });
+    const ids = [...new Set(admins.map((a) => a.playerId!).filter(Boolean))];
+    for (const playerId of ids) {
+      await createNotification(playerId, type, payload);
+    }
+  } catch (e) {
+    console.error("[notify] notifyAllAdmins failed:", type, e);
+  }
+}
+
+/**
+ * Notif instantanée (in-app + push) aux joueurs abonnés aux nouveaux tournois
+ * quand un tournoi est approuvé/publié. Filtre géographique identique au digest
+ * email quotidien (cron/notify-tournaments) : pas de filtre = tous, sinon match
+ * par continent ou pays. Cible les joueurs ayant une NotificationPreference.
+ */
+export async function notifyPlayersNewTournament(t: {
+  id: string;
+  slug: string | null;
+  name: string;
+  city: string;
+  country: string;
+  continentCode: string;
+}) {
+  try {
+    const prefs = await prisma.notificationPreference.findMany({
+      where: { enabled: true, notifyNewTournaments: true },
+      select: { playerId: true, continents: true, countries: true },
+    });
+    for (const pref of prefs) {
+      const noFilter = pref.continents.length === 0 && pref.countries.length === 0;
+      const matches =
+        noFilter ||
+        pref.continents.includes(t.continentCode) ||
+        pref.countries.includes(t.country);
+      if (!matches) continue;
+      await createNotification(pref.playerId, "NEW_TOURNAMENT_PUBLISHED", {
+        tournamentId: t.id,
+        tournamentSlug: t.slug ?? "",
+        tournamentName: t.name,
+        city: t.city,
+        country: t.country,
+      });
+    }
+  } catch (e) {
+    console.error("[notify] notifyPlayersNewTournament failed:", e);
   }
 }

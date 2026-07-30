@@ -1143,7 +1143,10 @@
     "btn_decline": "Decline",
     "default": "Notification",
     "accommodation_assigned": "🏠 Accommodation assigned: {hostName}",
-    "accommodation_guest_added": "🏠 New guests at your place"
+    "accommodation_guest_added": "🏠 New guests at your place",
+    "tournament_needs_approval": "New tournament to review",
+    "club_needs_approval": "New club to review",
+    "new_tournament_published": "New tournament: {tournamentName}"
   },
   "contact": {
     "btn_open": "Contact",

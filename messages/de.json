@@ -1148,7 +1148,10 @@
     "btn_decline": "Ablehnen",
     "default": "Mitteilung",
     "accommodation_assigned": "🏠 Unterkunft zugeteilt: {hostName}",
-    "accommodation_guest_added": "🏠 Neue Gäste bei dir"
+    "accommodation_guest_added": "🏠 Neue Gäste bei dir",
+    "tournament_needs_approval": "Neues Turnier zu prüfen",
+    "club_needs_approval": "Neuer Club zu prüfen",
+    "new_tournament_published": "Neues Turnier: {tournamentName}"
   },
   "contact": {
     "btn_open": "Kontakt",
