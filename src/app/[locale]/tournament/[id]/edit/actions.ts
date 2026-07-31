@@ -1711,6 +1711,19 @@ export async function removePlayerFromTeamAction(
   return { ok: true };
 }
 
+/**
+ * Bloque toute modification de la sélection/WL une fois que l'orga a validé
+ * sa liste finale (Tournament.selectionLocked). Il faut déverrouiller
+ * explicitement (toggleSelectionLockAction) avant de pouvoir retoucher.
+ */
+async function requireSelectionUnlocked(tournamentId: string): Promise<{ error: string } | null> {
+  const tournament = await prisma.tournament.findUnique({ where: { id: tournamentId }, select: { selectionLocked: true } });
+  if ((tournament as any)?.selectionLocked) {
+    return { error: "La sélection est validée et figée. Déverrouille-la d'abord pour la modifier." };
+  }
+  return null;
+}
+
 export async function toggleTeamSelectedAction(
   teamId: string,
   tournamentId: string,
@@ -1718,6 +1731,8 @@ export async function toggleTeamSelectedAction(
 ): Promise<{ ok?: boolean; error?: string }> {
   const denied = await requireTournamentOrgaAccess(tournamentId);
   if (denied) return denied;
+  const locked = await requireSelectionUnlocked(tournamentId);
+  if (locked) return locked;
 
   await prisma.team.update({ where: { id: teamId }, data: { selected } });
   return { ok: true };
@@ -1731,6 +1746,8 @@ export async function toggleTeamGuaranteedAction(
   "use server";
   const denied = await requireTournamentOrgaAccess(tournamentId);
   if (denied) return denied;
+  const locked = await requireSelectionUnlocked(tournamentId);
+  if (locked) return locked;
 
   await prisma.team.update({
     where: { id: teamId },
@@ -1753,6 +1770,8 @@ export async function drawTeamsAction(
 ): Promise<{ ok?: boolean; error?: string }> {
   const denied = await requireTournamentOrgaAccess(tournamentId);
   if (denied) return denied;
+  const locked = await requireSelectionUnlocked(tournamentId);
+  if (locked) return locked;
 
   const teams = await prisma.team.findMany({ where: { tournamentId }, select: { id: true, guaranteed: true } });
 
@@ -1780,8 +1799,25 @@ export async function drawTeamsAction(
     where: { tournamentId, id: { notIn: Array.from(selectedIds) } },
     data: { selected: false, guaranteed: false },
   });
-  // Le tirage est fait : fige la sélection (sert au hero "en attente de tirage").
-  await prisma.tournament.update({ where: { id: tournamentId }, data: { drawDone: true } });
+  return { ok: true };
+}
+
+/**
+ * Valide (ou déverrouille) la sélection finale des équipes. Indépendant du
+ * tirage : un tournoi sans surbooking, ou dont le tirage a été fait hors
+ * plateforme, se valide aussi. Une fois verrouillée, la WL est figée et
+ * seules les équipes IN peuvent être marquées payées.
+ */
+export async function toggleSelectionLockAction(
+  tournamentId: string,
+  locked: boolean
+): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+
+  await prisma.tournament.update({ where: { id: tournamentId }, data: { selectionLocked: locked } });
+  revalidatePath(`/tournament/${tournamentId}/edit`);
+  revalidatePath(`/tournament/${tournamentId}`);
   return { ok: true };
 }
 
@@ -1795,6 +1831,8 @@ export async function drawOneTeamAction(
 ): Promise<{ ok?: boolean; winnerId?: string; error?: string }> {
   const denied = await requireTournamentOrgaAccess(tournamentId);
   if (denied) return denied;
+  const locked = await requireSelectionUnlocked(tournamentId);
+  if (locked) return locked;
 
   if (candidateIds.length === 0) return { error: "Aucune équipe candidate." };
 
@@ -1833,6 +1871,8 @@ export async function drawOneWaitlistAction(
 ): Promise<{ ok?: boolean; winnerId?: string; waitlistPosition?: number; error?: string }> {
   const denied = await requireTournamentOrgaAccess(tournamentId);
   if (denied) return denied;
+  const locked = await requireSelectionUnlocked(tournamentId);
+  if (locked) return locked;
 
   if (candidateIds.length === 0) return { error: "Aucune équipe candidate." };
 
@@ -1878,6 +1918,8 @@ export async function removeFromWaitlistAction(
 ): Promise<{ ok?: boolean; error?: string }> {
   const denied = await requireTournamentOrgaAccess(tournamentId);
   if (denied) return denied;
+  const locked = await requireSelectionUnlocked(tournamentId);
+  if (locked) return locked;
 
   const team = await prisma.team.findUnique({ where: { id: teamId }, select: { waitlistPosition: true } });
   if (!team || team.waitlistPosition === null) return { error: "Équipe introuvable ou pas en WL." };

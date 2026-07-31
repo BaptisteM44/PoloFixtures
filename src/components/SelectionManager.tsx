@@ -100,24 +100,30 @@ type Props = {
   teams: TeamRow[];
   maxTeams: number;
   tournamentId: string;
+  selectionLocked: boolean;
+  registrationEnd: string | null; // ISO
   toggleAction: (teamId: string, tournamentId: string, selected: boolean) => Promise<{ ok?: boolean; error?: string }>;
   drawAction: (tournamentId: string, count: number, preDrawnIds?: string[]) => Promise<{ ok?: boolean; error?: string }>;
   guaranteeAction: (teamId: string, tournamentId: string, guaranteed: boolean) => Promise<{ ok?: boolean; error?: string }>;
   drawOneAction: (tournamentId: string, candidateIds: string[]) => Promise<{ ok?: boolean; winnerId?: string; error?: string }>;
   drawOneWaitlistAction: (tournamentId: string, candidateIds: string[]) => Promise<{ ok?: boolean; winnerId?: string; waitlistPosition?: number; error?: string }>;
   removeFromWaitlistAction: (tournamentId: string, teamId: string) => Promise<{ ok?: boolean; error?: string }>;
+  toggleLockAction: (tournamentId: string, locked: boolean) => Promise<{ ok?: boolean; error?: string }>;
 };
 
 export function SelectionManager({
   teams: initial,
   maxTeams,
   tournamentId,
+  selectionLocked,
+  registrationEnd,
   toggleAction,
   drawAction,
   guaranteeAction,
   drawOneAction,
   drawOneWaitlistAction,
   removeFromWaitlistAction,
+  toggleLockAction,
 }: Props) {
   const t = useTranslations("selection");
   const [teams, setTeams] = useState(initial);
@@ -128,6 +134,20 @@ export function SelectionManager({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [locked, setLocked] = useState(selectionLocked);
+
+  // Deadline d'inscription passée mais sélection pas encore validée → on incite l'orga à finaliser
+  const deadlinePassed = !!registrationEnd && new Date(registrationEnd) < new Date();
+  const shouldPromptValidation = !locked && deadlinePassed;
+
+  function handleToggleLock(next: boolean) {
+    setError(null);
+    startTransition(async () => {
+      const res = await toggleLockAction(tournamentId, next);
+      if (res.error) { setError(res.error); return; }
+      setLocked(next);
+    });
+  }
 
   const guaranteed = teams.filter((t) => t.guaranteed);
   // Pool = pas guaranteed, pas encore en WL
@@ -322,6 +342,51 @@ export function SelectionManager({
 
       {showNotifyModal && (
         <NotifyModal tournamentId={tournamentId} onClose={() => setShowNotifyModal(false)} t={t} />
+      )}
+
+      {/* ── Validation de la sélection ────────────────────────────────── */}
+      {locked ? (
+        <div
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
+            padding: "10px 14px", marginBottom: 14, borderRadius: 10,
+            background: "color-mix(in srgb, #16a34a 10%, var(--surface))",
+            border: "2px solid color-mix(in srgb, #16a34a 45%, transparent)",
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#15803d" }}>
+            ✓ {t("selection_locked_banner")}
+          </span>
+          <button className="ghost" onClick={() => handleToggleLock(false)} disabled={isPending} style={{ fontSize: 12 }}>
+            {t("selection_unlock_btn")}
+          </button>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
+            padding: "12px 14px", marginBottom: 14, borderRadius: 10,
+            background: shouldPromptValidation ? "var(--yellow)" : "var(--surface)",
+            border: `2px solid ${shouldPromptValidation ? "var(--border)" : "var(--border)"}`,
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>
+              {shouldPromptValidation ? `📋 ${t("selection_prompt_title")}` : t("selection_validate_hint_title")}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+              {shouldPromptValidation ? t("selection_prompt_desc") : t("selection_validate_hint_desc")}
+            </div>
+          </div>
+          <button
+            className="primary"
+            onClick={() => handleToggleLock(true)}
+            disabled={isPending || guaranteed.length === 0}
+            style={{ fontSize: 13, whiteSpace: "nowrap" }}
+          >
+            {t("selection_validate_btn")}
+          </button>
+        </div>
       )}
 
       {/* ── Header bilan ──────────────────────────────────────────────── */}

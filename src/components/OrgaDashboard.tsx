@@ -1488,6 +1488,7 @@ type OrgaDashboardProps = {
   drawOneTeamAction: (tId: string, candidateIds: string[]) => Promise<any>;
   drawOneWaitlistAction: (tId: string, candidateIds: string[]) => Promise<any>;
   removeFromWaitlistAction: (tId: string, teamId: string) => Promise<any>;
+  toggleSelectionLockAction: (tId: string, locked: boolean) => Promise<{ ok?: boolean; error?: string }>;
   createTeamAction: (...args: any[]) => Promise<any>;
   updatePoolRoundsAction?: (tId: string, poolRounds: number | null) => Promise<{ ok?: boolean; error?: string }>;
   generateRefTokenAction?: () => Promise<{ ok?: boolean; token?: string; error?: string }>;
@@ -1590,6 +1591,7 @@ export function OrgaDashboard({
   drawOneTeamAction,
   drawOneWaitlistAction,
   removeFromWaitlistAction,
+  toggleSelectionLockAction,
   createTeamAction,
   updatePoolRoundsAction,
   generateRefTokenAction,
@@ -1855,12 +1857,15 @@ export function OrgaDashboard({
                 }))}
                 maxTeams={tournament.maxTeams}
                 tournamentId={tournament.id}
+                selectionLocked={(tournament as any).selectionLocked ?? false}
+                registrationEnd={(tournament as any).registrationEnd ? new Date((tournament as any).registrationEnd).toISOString() : null}
                 toggleAction={toggleTeamSelectedAction}
                 drawAction={drawTeamsAction}
                 guaranteeAction={guaranteeTeamAction}
                 drawOneAction={drawOneTeamAction}
                 drawOneWaitlistAction={drawOneWaitlistAction}
                 removeFromWaitlistAction={removeFromWaitlistAction}
+                toggleLockAction={toggleSelectionLockAction}
               />
             </div>
           ))}
@@ -1869,6 +1874,7 @@ export function OrgaDashboard({
             tournamentId={tournament.id}
             teams={teams}
             locked={tournament.locked}
+            selectionLocked={(tournament as any).selectionLocked ?? false}
             format={tournament.format}
             showPayment={true}
             showRecap={true}

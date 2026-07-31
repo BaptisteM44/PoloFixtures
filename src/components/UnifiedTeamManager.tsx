@@ -60,6 +60,7 @@ type Props = {
   teams: Team[];
   tournamentId: string;
   locked: boolean;
+  selectionLocked?: boolean;
   format?: string;
   showPayment?: boolean;
   showRecap?: boolean;
@@ -346,8 +347,9 @@ function TeamRow({
               <span className="meta" style={{ fontSize: 12 }}>{team.city ? `${team.city}, ` : ""}{team.country}</span>
             )}
 
-            {/* Payment checkbox (PaymentTracker style) */}
-            {showPayment && (
+            {/* Payment checkbox — jamais pour les équipes en liste d'attente
+                (elles ne jouent pas encore, le paiement n'a pas de sens) */}
+            {showPayment && !isWaitlist && (
               <button
                 onClick={handleTogglePayment}
                 style={{
@@ -536,6 +538,7 @@ export function UnifiedTeamManager({
   teams,
   tournamentId,
   locked,
+  selectionLocked = false,
   format,
   showPayment = true,
   showRecap = false,
@@ -560,7 +563,8 @@ export function UnifiedTeamManager({
   const maxPlayers = maxPlayersFromFormat(format);
   const selected = teams.filter((t) => t.selected !== false).sort((a, b) => a.seed - b.seed);
   const waitlist = teams.filter((t) => t.selected === false).sort((a, b) => (a.waitlistPosition ?? 999) - (b.waitlistPosition ?? 999));
-  const paidCount = teams.filter((t) => t.feePaid).length;
+  // Seules les équipes retenues paient — les WL ne comptent pas dans le total.
+  const paidCount = selected.filter((t) => t.feePaid).length;
 
   const handleCreateTeam = () => {
     if (!newTeamName.trim() || !createTeamAction) return;
@@ -601,11 +605,18 @@ export function UnifiedTeamManager({
           {t("registered_teams", { count: selected.length })}
           {maxTeams ? ` / ${maxTeams}` : ""}
         </h3>
-        {showPayment && teams.length > 0 && (
-          <span className="meta" style={{ fontSize: 12 }}>
-            💳 {paidCount} / {teams.length} {t("paid")} · {paidCount * feePerTeam} {feeCurrency}
-          </span>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {selectionLocked && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#15803d", background: "color-mix(in srgb, #16a34a 12%, transparent)", padding: "2px 8px", borderRadius: 20 }}>
+              ✓ {t("selection_locked")}
+            </span>
+          )}
+          {showPayment && selected.length > 0 && (
+            <span className="meta" style={{ fontSize: 12 }}>
+              💳 {paidCount} / {selected.length} {t("paid")} · {paidCount * feePerTeam} {feeCurrency}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Selected teams */}

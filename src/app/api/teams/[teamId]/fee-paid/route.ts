@@ -24,6 +24,11 @@ export async function PATCH(request: Request, { params }: { params: { teamId: st
   });
   if (!team) return Response.json({ error: "Team not found" }, { status: 404 });
 
+  // Une équipe en liste d'attente ne joue pas (encore) — le paiement n'a pas de sens.
+  if (team.selected === false) {
+    return Response.json({ error: "Impossible de marquer le paiement d'une équipe en liste d'attente." }, { status: 400 });
+  }
+
   const isAdmin = session.user.role === "ADMIN";
   const playerId = (session.user as { playerId?: string }).playerId;
   const isOrga =
