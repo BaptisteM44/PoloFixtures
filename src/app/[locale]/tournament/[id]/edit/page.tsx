@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction, updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, launchPipelineGroupAction, resetPipelineToRoundAction, reschedulePipelineStageAction, setTournamentPipelineAction, applyPipelinePresetAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
+import { ChecklistDetails } from "@/components/ChecklistDetails";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { Link } from "@/i18n/navigation";
@@ -227,8 +228,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       <div className="edit-layout">
         {/* Sidebar checklist — colonne gauche desktop, collapsible mobile */}
         <aside className="edit-sidebar">
-          <details className="edit-checklist-wrapper" open>
-            <summary>Checklist</summary>
+          <ChecklistDetails>
             <TournamentChecklist t={{
               name: t_.name,
               country: t_.country,
@@ -263,7 +263,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
                 </button>
               </form>
             )}
-          </details>
+          </ChecklistDetails>
         </aside>
 
         {/* Main content — colonne droite */}

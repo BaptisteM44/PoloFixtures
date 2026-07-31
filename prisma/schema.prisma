@@ -267,6 +267,7 @@ model Tournament {
   contactEmail            String
   registrationStart       DateTime?
   registrationEnd         DateTime?
+  drawDone                Boolean   @default(false) // true = le tirage au sort a été effectué (sélection/waitlist figées)
   maxSoloPlayers          Int?      // null = pas de limite (ABC Chapeau)
   rushRegistration        Boolean   @default(false) // true = waitlist si complet, false = toutes inscriptions admises
   // Lieu principal (tout le tournoi)

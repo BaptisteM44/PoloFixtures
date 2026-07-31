@@ -1780,6 +1780,8 @@ export async function drawTeamsAction(
     where: { tournamentId, id: { notIn: Array.from(selectedIds) } },
     data: { selected: false, guaranteed: false },
   });
+  // Le tirage est fait : fige la sélection (sert au hero "en attente de tirage").
+  await prisma.tournament.update({ where: { id: tournamentId }, data: { drawDone: true } });
   return { ok: true };
 }
 

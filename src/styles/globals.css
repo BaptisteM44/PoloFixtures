@@ -179,9 +179,12 @@ a {
   padding-right: 6px;
 }
 @media (max-width: 768px) {
+  /* En mobile, on revient au padding standard de .page (6vw) pour rester
+     aligné avec le header — page--full-width ne réduit le padding que sur
+     desktop, où la largeur étendue est utile pour les tableaux/formulaires. */
   .page--full-width {
-    padding-left: 12px;
-    padding-right: 12px;
+    padding-left: 4vw;
+    padding-right: 4vw;
   }
   .page--full-width .edit-main {
     min-width: 0;

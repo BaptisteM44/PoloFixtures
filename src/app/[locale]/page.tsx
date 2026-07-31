@@ -7,6 +7,7 @@ import type { CalendarTournament } from "@/components/CalendarGrid";
 import { auth } from "@/lib/auth";
 import TournamentMapClient from "@/components/TournamentMapClient";
 import type { MapTournament } from "@/components/TournamentMap";
+import { HomeHeroPersonal, type HeroNextTournament } from "@/components/HomeHeroPersonal";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { countryToContinent } from "@/lib/country-utils";
 
@@ -24,7 +25,7 @@ export default async function HomePage() {
 
   const [
     activeTournaments, allTournaments, countryCounts, mapTournaments, recentPlayers, totalPlayers, totalCountries,
-    playerForContinent, teamEntries, soloEntries, followsRaw,
+    me, teamEntries, soloEntries, followsRaw, squadInvites, mySquadsRaw, clubSessionsRaw, awaitingDrawRaw,
   ] = await Promise.all([
     prisma.tournament.findMany({
       where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true, hidden: false },
@@ -59,15 +60,31 @@ export default async function HomePage() {
       select: { country: true },
       distinct: ["country"],
     }),
-    // Player country for map auto-focus
+    // Player complet : pays (map auto-focus) + tout ce qu'il faut pour afficher
+    // sa carte de collection dans le hero personnalisé
     currentPlayerId
-      ? prisma.player.findUnique({ where: { id: currentPlayerId }, select: { country: true } })
+      ? prisma.player.findUnique({
+          where: { id: currentPlayerId },
+          select: {
+            id: true, name: true, country: true, city: true, photoPath: true,
+            clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true,
+            startYear: true, activeCard: true, whbpcCard: true,
+            clubMemberships: { where: { status: "MEMBER" }, take: 1, include: { club: { select: { name: true } } } },
+          },
+        })
       : Promise.resolve(null),
-    // Upcoming tournaments for logged-in player (team entries)
+    // Upcoming tournaments for logged-in player (team entries, avec coéquipiers)
     currentPlayerId
       ? prisma.teamPlayer.findMany({
           where: { playerId: currentPlayerId, team: { tournament: { status: "UPCOMING", approved: true } } },
-          include: { team: { include: { tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true } } } } },
+          include: {
+            team: {
+              include: {
+                tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true } },
+                players: { include: { player: { select: { id: true, name: true, photoPath: true } } } },
+              },
+            },
+          },
         })
       : Promise.resolve([]),
     // Solo entries
@@ -84,9 +101,68 @@ export default async function HomePage() {
           select: { tournamentId: true },
         })
       : Promise.resolve([]),
+    // Pending squad invitations (requests waiting for my action)
+    currentPlayerId
+      ? prisma.squadInvitation.findMany({
+          where: { invitedPlayerId: currentPlayerId, status: "PENDING" },
+          include: {
+            squad: { select: { id: true, name: true, logoPath: true, color: true } },
+            invitedBy: { select: { id: true, name: true } },
+          },
+          orderBy: { createdAt: "desc" },
+        })
+      : Promise.resolve([]),
+    // My squads (long-term teams)
+    currentPlayerId
+      ? prisma.squadMember.findMany({
+          where: { playerId: currentPlayerId },
+          include: {
+            squad: {
+              select: {
+                id: true, name: true, logoPath: true, color: true,
+                _count: { select: { members: true } },
+              },
+            },
+          },
+          orderBy: { joinedAt: "desc" },
+        })
+      : Promise.resolve([]),
+    // Prochaines sessions d'entraînement de mes clubs
+    currentPlayerId
+      ? prisma.clubSession.findMany({
+          where: {
+            date: { gte: new Date() },
+            status: "ACTIVE",
+            club: { members: { some: { playerId: currentPlayerId, status: "MEMBER" } } },
+          },
+          select: {
+            id: true, title: true, date: true, location: true,
+            club: { select: { id: true, name: true } },
+            venue: { select: { name: true } },
+          },
+          orderBy: { date: "asc" },
+          take: 4,
+        })
+      : Promise.resolve([]),
+    // Tournois où je suis inscrit mais le tirage n'a pas encore été fait
+    currentPlayerId
+      ? prisma.teamPlayer.findMany({
+          where: {
+            playerId: currentPlayerId,
+            team: { tournament: { status: "UPCOMING", approved: true, drawDone: false } },
+          },
+          select: {
+            team: {
+              select: {
+                tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true } },
+              },
+            },
+          },
+        })
+      : Promise.resolve([]),
   ]);
 
-  const playerContinent = playerForContinent ? countryToContinent(playerForContinent.country) : null;
+  const playerContinent = me ? countryToContinent(me.country) : null;
 
   const myUpcomingTournaments: { id: string; slug: string | null; name: string; city: string; country: string; dateStart: Date; dateEnd: Date; format: string }[] = [];
   {
@@ -99,6 +175,35 @@ export default async function HomePage() {
     }
     myUpcomingTournaments.sort((a, b) => a.dateStart.getTime() - b.dateStart.getTime());
   }
+
+  // Hero perso : le prochain tournoi avec mon équipe (et coéquipiers) si j'en ai une
+  let heroNext: HeroNextTournament | null = null;
+  if (myUpcomingTournaments.length > 0) {
+    const nextTour = myUpcomingTournaments[0];
+    const myEntry = (teamEntries as any[]).find((e) => e.team.tournament.id === nextTour.id);
+    heroNext = {
+      id: nextTour.id,
+      slug: nextTour.slug,
+      name: nextTour.name,
+      city: nextTour.city,
+      country: nextTour.country,
+      dateStart: nextTour.dateStart.toISOString(),
+      dateEnd: nextTour.dateEnd.toISOString(),
+      teamName: myEntry?.team.name ?? null,
+      teammates: myEntry
+        ? myEntry.team.players
+            .filter((p: any) => p.player.id !== currentPlayerId)
+            .map((p: any) => ({ id: p.player.id, name: p.player.name, photoPath: p.player.photoPath }))
+        : [],
+    };
+  }
+  const heroOthers = myUpcomingTournaments.slice(1, 4).map((tour) => ({
+    id: tour.id,
+    slug: tour.slug,
+    name: tour.name,
+    city: tour.city,
+    dateStart: tour.dateStart.toISOString(),
+  }));
 
   const followedTournamentIds = new Set<string>((followsRaw as any[]).map((f: any) => f.tournamentId));
 
@@ -132,30 +237,84 @@ export default async function HomePage() {
 
   return (
     <div className="home">
-      {/* ---- HERO ---- */}
-      <section className="hero">
-        <div>
-          <h1>{t("hero_title")}</h1>
-          <p>{t("hero_subtitle")}</p>
-          <div className="hero-actions">
-            <Link className="primary" href="/tournament/new">{t("hero_create")}</Link>
-            <Link className="ghost" href="/tournaments">{t("hero_browse")}</Link>
+      {/* ---- HERO : perso si connecté, marketing sinon ---- */}
+      {me ? (
+        <HomeHeroPersonal
+          me={{
+            name: me.name,
+            country: me.country,
+            city: me.city,
+            photoPath: me.photoPath,
+            clubLogoPath: me.clubLogoPath,
+            clubName: (me as any).clubMemberships?.[0]?.club?.name ?? null,
+            teamLogoPath: me.teamLogoPath,
+            badges: me.badges,
+            pinnedBadges: me.pinnedBadges,
+            startYear: me.startYear,
+            activeCard: (me as any).activeCard ?? null,
+            whbpcData: (me as any).whbpcCard
+              ? {
+                  teamName: (me as any).whbpcCard.teamName,
+                  yearStarted: (me as any).whbpcCard.yearStarted,
+                  countryCode: (me as any).whbpcCard.countryCode,
+                  bestSkill: (me as any).whbpcCard.bestSkill,
+                  pedals: (me as any).whbpcCard.pedals,
+                  hand: (me as any).whbpcCard.hand,
+                  wheelSize: (me as any).whbpcCard.wheelSize,
+                  gearRatio: (me as any).whbpcCard.gearRatio,
+                }
+              : null,
+          }}
+          next={heroNext}
+          others={heroOthers}
+          sessions={(clubSessionsRaw as any[]).map((s) => ({
+            id: s.id,
+            title: s.title,
+            date: s.date.toISOString(),
+            clubId: s.club.id,
+            clubName: s.club.name,
+            place: s.venue?.name ?? s.location ?? null,
+          }))}
+          awaitingDraw={(() => {
+            const seen = new Set<string>();
+            const out: { id: string; slug: string | null; name: string; city: string; dateStart: string }[] = [];
+            for (const e of awaitingDrawRaw as any[]) {
+              const tr = e.team.tournament;
+              if (seen.has(tr.id)) continue;
+              seen.add(tr.id);
+              out.push({ id: tr.id, slug: tr.slug, name: tr.name, city: tr.city, dateStart: tr.dateStart.toISOString() });
+            }
+            return out;
+          })()}
+          inviteCount={(squadInvites as any[]).length}
+          squadCount={(mySquadsRaw as any[]).length}
+          locale={locale}
+        />
+      ) : (
+        <section className="hero">
+          <div>
+            <h1>{t("hero_title")}</h1>
+            <p>{t("hero_subtitle")}</p>
+            <div className="hero-actions">
+              <Link className="primary" href="/tournament/new">{t("hero_create")}</Link>
+              <Link className="ghost" href="/tournaments">{t("hero_browse")}</Link>
+            </div>
           </div>
-        </div>
-        <div className="hero-feature-card">
-          <h3>{t("features_title")}</h3>
-          <ul>
-            <li>{t("feature_pools")}</li>
-            <li>{t("feature_referee")}</li>
-            <li>{t("feature_live")}</li>
-            <li>{t("feature_players")}</li>
-            <li>{t("feature_clubs")}</li>
-            <li>{t("feature_map")}</li>
-            <li>{t("feature_calendar")}</li>
-            <li>{t("feature_notifications")}</li>
-          </ul>
-        </div>
-      </section>
+          <div className="hero-feature-card">
+            <h3>{t("features_title")}</h3>
+            <ul>
+              <li>{t("feature_pools")}</li>
+              <li>{t("feature_referee")}</li>
+              <li>{t("feature_live")}</li>
+              <li>{t("feature_players")}</li>
+              <li>{t("feature_clubs")}</li>
+              <li>{t("feature_map")}</li>
+              <li>{t("feature_calendar")}</li>
+              <li>{t("feature_notifications")}</li>
+            </ul>
+          </div>
+        </section>
+      )}
 
       {/* ---- MAP SECTION (WIP) ---- */}
       {process.env.NEXT_PUBLIC_MAP_ENABLED === "true" && mapTournaments.length > 0 && (
@@ -182,35 +341,6 @@ export default async function HomePage() {
       )}
 
       <div className="home-reorder">
-
-      {/* ---- MY UPCOMING TOURNAMENTS (logged in only) ---- */}
-      {currentPlayerId && myUpcomingTournaments.length > 0 && (
-        <section className="section home-reorder__upcoming" style={{ paddingBottom: 0 }}>
-          <div className="section-header">
-            <h2>{t("hero_upcoming_title")}</h2>
-            <Link className="ghost" href="/my-tournaments">{t("hero_upcoming_see_all")}</Link>
-          </div>
-          <div style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 8 }}>
-            {myUpcomingTournaments.slice(0, 5).map((tour) => {
-              const ds = tour.dateStart;
-              return (
-                <Link
-                  key={tour.id}
-                  href={`/tournament/${tour.slug ?? tour.id}`}
-                  className="panel"
-                  style={{ minWidth: 220, padding: "14px 18px", textDecoration: "none", flexShrink: 0, display: "block" }}
-                >
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--teal)", fontFamily: "var(--font-display)", marginBottom: 4 }}>
-                    {ds.toLocaleDateString(locale, { day: "numeric", month: "short" })}
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{tour.name}</div>
-                  <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{tour.city}, {tour.country}</div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       {/* ---- CONTINENTS ---- */}
       <section className="section home-reorder__continents" style={{ paddingBottom: 0 }}>

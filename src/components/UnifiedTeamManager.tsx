@@ -316,7 +316,7 @@ function TeamRow({
       }}
     >
       {/* Team header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: team.players.length > 0 || isEditing ? 12 : 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: team.players.length > 0 || isEditing ? 12 : 0 }}>
         {/* Seed / Waitlist badge */}
         <span style={{
           fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700,
