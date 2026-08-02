@@ -14,13 +14,17 @@ const createSchema = z.object({
 
 async function grantBadge(playerId: string, badge: string) {
   try {
-    const player = await prisma.player.findUnique({
-      where: { id: playerId },
-      select: { badges: true },
+    // Attribution atomique : la condition "badges ne contient pas déjà ce
+    // badge" est vérifiée par la base au moment de l'écriture (push), pas sur
+    // une lecture faite plus tôt — deux requêtes concurrentes (2 posts
+    // rapprochés) ne peuvent donc jamais toutes les deux "gagner" et créer un
+    // doublon. Même classe de bug déjà rencontrée sur le score des matchs et
+    // le statut communauté (lecture-puis-écriture non atomique).
+    const result = await prisma.player.updateMany({
+      where: { id: playerId, NOT: { badges: { has: badge } } },
+      data: { badges: { push: badge } },
     });
-    if (!player || player.badges.includes(badge)) return;
-    const newBadges = [...player.badges, badge];
-    await prisma.player.update({ where: { id: playerId }, data: { badges: newBadges } });
+    if (result.count === 0) return; // déjà possédé, rien à notifier
     const info = BADGE_CATALOG[badge];
     await createNotification(playerId, "BADGE_UNLOCKED", {
       badge,

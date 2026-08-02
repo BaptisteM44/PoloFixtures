@@ -7,13 +7,13 @@ import { BADGE_CATALOG } from "@/lib/badge-catalog";
 
 async function grantBadge(playerId: string, badge: string) {
   try {
-    const player = await prisma.player.findUnique({
-      where: { id: playerId },
-      select: { badges: true },
+    // Attribution atomique — voir le commentaire équivalent dans
+    // src/app/api/community/items/route.ts (même fix, même bug).
+    const result = await prisma.player.updateMany({
+      where: { id: playerId, NOT: { badges: { has: badge } } },
+      data: { badges: { push: badge } },
     });
-    if (!player || player.badges.includes(badge)) return;
-    const newBadges = [...player.badges, badge];
-    await prisma.player.update({ where: { id: playerId }, data: { badges: newBadges } });
+    if (result.count === 0) return;
     const info = BADGE_CATALOG[badge];
     await createNotification(playerId, "BADGE_UNLOCKED", {
       badge,
