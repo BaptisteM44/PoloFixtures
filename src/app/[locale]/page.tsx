@@ -149,7 +149,7 @@ export default async function HomePage() {
       ? prisma.teamPlayer.findMany({
           where: {
             playerId: currentPlayerId,
-            team: { tournament: { status: "UPCOMING", approved: true, drawDone: false } },
+            team: { tournament: { status: "UPCOMING", approved: true, selectionLocked: false } },
           },
           select: {
             team: {
