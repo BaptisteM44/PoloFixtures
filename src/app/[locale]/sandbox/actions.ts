@@ -2,13 +2,11 @@
 
 /**
  * Actions du bac à sable — création de tournois fictifs et pilotage du
- * pipeline. Doubles gardes : accès réservé (admin ou créateur de tournoi),
- * et chaque action vérifie testMode+usesPipeline (impossible de toucher un
- * vrai tournoi depuis ici).
+ * pipeline. Ouvert à tout joueur connecté ; chaque action vérifie en plus
+ * testMode+usesPipeline (impossible de toucher un vrai tournoi depuis ici).
  */
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { hasAtLeastRole } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import {
   createStages,
@@ -23,18 +21,11 @@ import { getPreset } from "@/engine/presets";
 import { validateCustomPipeline } from "@/engine/pipeline-validation";
 import { generateTournamentSlug } from "@/lib/slug";
 
-// Phase de test privée : admin uniquement (+ email du propriétaire en secours).
-// À élargir aux orgas quand le sandbox sera validé.
-const SANDBOX_OWNER_EMAILS = ["bapmorvan@gmail.com"];
-
 async function requireSandboxAccess(): Promise<{ playerId: string } | { error: string }> {
   const session = await auth();
   const playerId = session?.user?.playerId;
   if (!playerId) return { error: "Connexion requise." };
-  if (hasAtLeastRole(session?.user?.role, "ADMIN")) return { playerId };
-  const email = (session?.user as { email?: string | null } | undefined)?.email?.toLowerCase();
-  if (email && SANDBOX_OWNER_EMAILS.includes(email)) return { playerId };
-  return { error: "Accès réservé — le bac à sable est en phase de test privée." };
+  return { playerId };
 }
 
 /** Vérifie que le tournoi est bien un bac à sable pipeline. */

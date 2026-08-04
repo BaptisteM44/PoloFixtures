@@ -1,13 +1,12 @@
 /**
  * 🧪 Bac à sable — création et pilotage de tournois fictifs sur le nouveau
- * moteur pipeline. Réservé aux organisateurs. Invisible du public, zéro
+ * moteur pipeline. Ouvert à tout joueur connecté. Invisible du public, zéro
  * impact ELO/badges (testMode).
  */
 import { unstable_noStore as noStore } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { hasAtLeastRole } from "@/lib/rbac";
 import { PIPELINE_PRESETS } from "@/engine/presets";
 import { SandboxHome } from "@/components/sandbox/SandboxHome";
 
@@ -19,12 +18,7 @@ export default async function SandboxPage() {
   const session = await auth();
   const playerId = session?.user?.playerId;
 
-  // Phase de test privée : admin uniquement (+ email du propriétaire en secours)
-  const ownerEmails = ["bapmorvan@gmail.com"];
-  const email = (session?.user as { email?: string | null } | undefined)?.email?.toLowerCase();
-  const allowed = !!playerId && (
-    hasAtLeastRole(session?.user?.role, "ADMIN") || (!!email && ownerEmails.includes(email))
-  );
+  const allowed = !!playerId;
 
   if (!allowed) {
     const t = await getTranslations("sandbox");
