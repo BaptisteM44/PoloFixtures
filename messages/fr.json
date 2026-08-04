@@ -235,7 +235,7 @@
   "home": {
     "hero_title": "Organise, inscris-toi, joue.",
     "hero_subtitle": "La plateforme complète pour le bike polo : crée ton tournoi, gère les inscriptions, arbitre en live, suis les scores et retrouve toute la communauté mondiale.",
-    "hero_create": "+ Créer un tournoi",
+    "hero_create": "Créer un tournoi",
     "hero_browse": "Voir les tournois",
     "features_title": "Tout est dedans",
     "feature_pools": "Poules, Swiss, Bracket & planning",
@@ -252,6 +252,7 @@
     "hero_upcoming_title": "Tes prochains tournois",
     "hero_upcoming_empty": "Aucune inscription à venir.",
     "hero_upcoming_see_all": "Voir mes tournois",
+    "hero_upcoming_label": "Tournois à venir",
     "hero_hello": "Salut {name}",
     "hero_next_tournament": "Prochain tournoi",
     "hero_days_until": "J-{count}",
@@ -262,6 +263,7 @@
     "hero_chip_squads": "{count, plural, one {# squad} other {# squads}}",
     "hero_trainings": "Prochains entraînements",
     "hero_training_default": "Entraînement",
+    "hero_no_trainings": "Aucun entraînement à venir pour l'instant",
     "hero_awaiting_draw": "En attente de tirage",
     "feature_clubs": "Clubs & équipes permanentes",
     "feature_map": "Carte interactive mondiale",
@@ -1191,6 +1193,7 @@
     "privacy": "Confidentialité",
     "terms": "CGU",
     "charter": "Charte",
+    "donate": "Buy me a coffee",
     "install_app": "Installer l’app",
     "install_app_safari_ios": "Installer : Partager → Sur l’écran d’accueil",
     "install_app_safari_mac": "Installer : Fichier → Ajouter au Dock"

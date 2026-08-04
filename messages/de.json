@@ -235,7 +235,7 @@
   "home": {
     "hero_title": "Organisiere, melde an, spiele.",
     "hero_subtitle": "Die komplette Bike-Polo-Plattform: erstelle dein Turnier, verwalte Anmeldungen, leite live, verfolge Ergebnisse und finde die gesamte weltweite Community.",
-    "hero_create": "+ Turnier erstellen",
+    "hero_create": "Turnier erstellen",
     "hero_browse": "Turniere entdecken",
     "features_title": "Alles inklusive",
     "feature_pools": "Pools, Swiss, Bracket & Planung",
@@ -252,6 +252,7 @@
     "hero_upcoming_title": "Deine nächsten Turniere",
     "hero_upcoming_empty": "Keine bevorstehenden Anmeldungen.",
     "hero_upcoming_see_all": "Meine Turniere ansehen",
+    "hero_upcoming_label": "Kommende Turniere",
     "hero_hello": "Hey {name}",
     "hero_next_tournament": "Nächstes Turnier",
     "hero_days_until": "T-{count}",
@@ -262,6 +263,7 @@
     "hero_chip_squads": "{count, plural, one {# Squad} other {# Squads}}",
     "hero_trainings": "Nächste Trainings",
     "hero_training_default": "Training",
+    "hero_no_trainings": "Noch keine anstehenden Trainings",
     "hero_awaiting_draw": "Warten auf Auslosung",
     "feature_clubs": "Clubs & permanente Teams",
     "feature_map": "Interaktive Weltkarte",
@@ -1196,6 +1198,7 @@
     "privacy": "Datenschutz",
     "terms": "AGB",
     "charter": "Charta",
+    "donate": "Buy me a coffee",
     "install_app": "App installieren",
     "install_app_safari_ios": "Installieren: Teilen → Zum Home-Bildschirm",
     "install_app_safari_mac": "Installieren: Ablage → Zum Dock hinzufügen"

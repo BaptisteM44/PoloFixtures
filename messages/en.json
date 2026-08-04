@@ -252,6 +252,7 @@
     "hero_upcoming_title": "Your upcoming tournaments",
     "hero_upcoming_empty": "No upcoming registrations.",
     "hero_upcoming_see_all": "See my tournaments",
+    "hero_upcoming_label": "Upcoming tournaments",
     "hero_hello": "Hey {name}",
     "hero_next_tournament": "Next tournament",
     "hero_days_until": "D-{count}",
@@ -262,6 +263,7 @@
     "hero_chip_squads": "{count, plural, one {# squad} other {# squads}}",
     "hero_trainings": "Next trainings",
     "hero_training_default": "Training",
+    "hero_no_trainings": "No upcoming training sessions yet",
     "hero_awaiting_draw": "Awaiting draw",
     "feature_clubs": "Clubs & permanent teams",
     "feature_map": "Interactive world map",
@@ -1191,6 +1193,7 @@
     "privacy": "Privacy",
     "terms": "Terms of use",
     "charter": "Charter",
+    "donate": "Buy me a coffee",
     "install_app": "Install the app",
     "install_app_safari_ios": "Install: Share → Add to Home Screen",
     "install_app_safari_mac": "Install: File → Add to Dock"

@@ -110,6 +110,10 @@ export async function POST(request: Request) {
       approved: false,
       submissionStatus: "PENDING",
       creatorId: session.user.playerId,
+      // Tout nouveau tournoi utilise le système de formats "pipeline" (étapes
+      // composables) plutôt que l'ancien système figé — l'orga choisit son
+      // format depuis le dashboard (onglet Format & étapes), pas ici.
+      usesPipeline: true,
       ...(coOrganizerIds && coOrganizerIds.length > 0 ? {
         coOrganizers: {
           create: coOrganizerIds

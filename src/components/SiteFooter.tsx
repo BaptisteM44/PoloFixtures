@@ -22,6 +22,15 @@ export function SiteFooter() {
         <a href="/legal/charter" style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("charter")}</a>
         <span className="site-footer__sep">·</span>
         <ContactAdminModal />
+        <span className="site-footer__sep">·</span>
+        <a
+          href="https://www.paypal.com/paypalme/bapmorvan"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontSize: 12, color: "var(--text-muted)" }}
+        >
+          ☕ {t("donate")}
+        </a>
       </div>
     </footer>
   );

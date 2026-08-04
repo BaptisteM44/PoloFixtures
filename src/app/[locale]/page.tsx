@@ -69,7 +69,7 @@ export default async function HomePage() {
             id: true, name: true, country: true, city: true, photoPath: true,
             clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true,
             startYear: true, activeCard: true, whbpcCard: true,
-            clubMemberships: { where: { status: "MEMBER" }, take: 1, include: { club: { select: { name: true } } } },
+            clubMemberships: { where: { status: "MEMBER" }, take: 1, include: { club: { select: { id: true, name: true, logoPath: true } } } },
           },
         })
       : Promise.resolve(null),
@@ -139,6 +139,11 @@ export default async function HomePage() {
             id: true, title: true, date: true, location: true,
             club: { select: { id: true, name: true } },
             venue: { select: { name: true } },
+            attendees: {
+              where: { status: "CONFIRMED" },
+              select: { player: { select: { id: true, name: true, photoPath: true } } },
+              take: 6,
+            },
           },
           orderBy: { date: "asc" },
           take: 4,
