@@ -323,7 +323,10 @@ export function HomeHeroPersonal({
 
         {/* Deux mini-listes : entraînements club + en attente de tirage */}
         {(sessions.length > 0 || awaitingDraw.length > 0) && (
-          <div style={{ display: "grid", gap: 12, gridTemplateColumns: sessions.length > 0 && awaitingDraw.length > 0 ? "1fr 1fr" : "1fr" }}>
+          <div
+            className={sessions.length > 0 && awaitingDraw.length > 0 ? "hero-two-col" : undefined}
+            style={{ display: "grid", gap: 16, gridTemplateColumns: sessions.length > 0 && awaitingDraw.length > 0 ? "1fr 1fr" : "1fr" }}
+          >
             {/* Prochains entraînements */}
             {sessions.length > 0 && (
               <div className="panel" style={{ padding: 14 }}>

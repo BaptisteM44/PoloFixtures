@@ -1324,6 +1324,19 @@ button:disabled,
   padding: 64px 0 0;
 }
 
+/* Sous 1024px, la colonne gauche devient trop étroite à côté de la carte
+   (380px fixes) pour que les 2 blocs entraînements/tirage tiennent
+   côte à côte sans déborder — on passe le hero en 1 colonne plus tôt. */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .home .hero {
+    grid-template-columns: 1fr;
+  }
+  .hero-perso-card {
+    max-width: 320px;
+    margin: 0 auto;
+  }
+}
+
 .hero h1 {
   font-family: var(--font-display);
   font-size: clamp(32px, 5vw, 56px);
@@ -6456,6 +6469,8 @@ textarea {
 
   .home .hero {
     grid-template-columns: 1fr;
+    padding-top: 32px;
+    gap: 16px;
   }
 
   /* Carte de collection masquée en mobile — prend trop de place pour une info
@@ -6466,6 +6481,12 @@ textarea {
 
   .hero-feature-card {
     display: none;
+  }
+
+  /* Entraînements + tirage en attente : passent en 1 colonne empilée, sinon
+     ils se compressent côte à côte et débordent sur petit écran. */
+  .hero-two-col {
+    grid-template-columns: 1fr !important;
   }
 
   .schedule-courts--multi {
