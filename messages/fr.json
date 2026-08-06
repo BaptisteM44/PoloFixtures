@@ -858,6 +858,8 @@
     "test_mode_hidden": "Les matchs sont masqués au public pendant le mode test.",
     "abc_registered_title": "{count} inscrit·es",
     "abc_on_waitlist": "en liste d'attente",
+    "abc_view_cards": "Cartes",
+    "abc_view_list": "Liste",
     "schedule_no_filter_matches": "Aucun match pour ces filtres.",
     "recap_title": "Récap du match",
     "recap_empty": "Aucun événement enregistré pour ce match.",

@@ -858,6 +858,8 @@
     "test_mode_hidden": "Spiele sind im Testmodus für die Öffentlichkeit verborgen.",
     "abc_registered_title": "{count} Angemeldete",
     "abc_on_waitlist": "auf der Warteliste",
+    "abc_view_cards": "Karten",
+    "abc_view_list": "Liste",
     "schedule_no_filter_matches": "Keine Spiele für diese Filter.",
     "recap_title": "Spiel-Rückblick",
     "recap_empty": "Keine Ereignisse für dieses Spiel erfasst.",

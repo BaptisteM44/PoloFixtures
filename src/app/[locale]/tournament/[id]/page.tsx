@@ -8,6 +8,7 @@ import { PoolTables } from "@/components/PoolTables";
 import { MtpFinalStandings } from "@/components/MtpFinalStandings";
 import { BracketView } from "@/components/BracketView";
 import { PlayerCollectibleCard } from "@/components/PlayerCollectibleCard";
+import { AbcRegisteredList, type AbcEntry } from "@/components/AbcRegisteredList";
 import { toYoutubeEmbed } from "@/lib/youtube";
 import { computePlayerBadges } from "@/lib/achievements";
 import { auth } from "@/lib/auth";
@@ -885,52 +886,11 @@ export default async function TournamentPage({
             </div>
           </div>
 
-          {/* Liste des inscrits ABC Chapeau — cartes joueurs */}
+          {/* Liste des inscrits ABC Chapeau — bascule cartes / liste */}
           {tournament.format === "ABC Chapeau" && (() => {
-            const soloEntries = (t_ as { soloEntries?: { id: string; player: { id: string; name: string; country: string; city: string | null; photoPath: string | null; badges: string[]; pinnedBadges: string[]; startYear: number | null; hand: string | null; gender: string | null; showGender: boolean; slug: string | null; activeCard: string | null; whbpcCard: { teamName: string; yearStarted: string; countryCode: string; bestSkill: string; pedals: string; hand: string; wheelSize: string; gearRatio: string } | null }; level: string; waitlisted: boolean }[] }).soloEntries ?? [];
-            const active = soloEntries.filter((e) => !e.waitlisted);
-            const waitlist = soloEntries.filter((e) => e.waitlisted);
-            if (active.length === 0) return null;
-            return (
-              <div style={{ marginTop: 24 }}>
-                <h3 style={{ marginBottom: 16 }}>{t("abc_registered_title", { count: active.length })}</h3>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-                  {active.map((e) => {
-                    const card = (
-                      <div key={e.id} style={{ position: "relative" }}>
-                        <PlayerCollectibleCard
-                          name={e.player.name}
-                          country={e.player.country}
-                          city={e.player.city}
-                          photoPath={e.player.photoPath}
-                          badges={e.player.badges}
-                          pinnedBadges={e.player.pinnedBadges}
-                          startYear={e.player.startYear}
-                          hand={e.player.hand}
-                          gender={e.player.gender ?? undefined}
-                          showGender={e.player.showGender}
-                          activeCard={e.player.activeCard}
-                          whbpcData={e.player.whbpcCard ? { ...e.player.whbpcCard, hand: e.player.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
-                        />
-                        <div style={{ position: "absolute", top: 8, right: 8, fontWeight: 700, fontSize: 12, background: "rgba(0,0,0,0.7)", color: "#fff", borderRadius: 6, padding: "2px 7px" }}>
-                          {e.level}
-                        </div>
-                      </div>
-                    );
-                    return e.player.slug ? (
-                      <Link key={e.id} href={`/player/${e.player.slug}`} style={{ textDecoration: "none", display: "contents" }}>
-                        {card}
-                      </Link>
-                    ) : card;
-                  })}
-                </div>
-                {waitlist.length > 0 && (
-                  <p className="meta" style={{ marginTop: 12, fontSize: 12 }}>
-                    + {waitlist.length} {t("abc_on_waitlist")}
-                  </p>
-                )}
-              </div>
-            );
+            const soloEntries = (t_ as { soloEntries?: AbcEntry[] }).soloEntries ?? [];
+            if (soloEntries.filter((e) => !e.waitlisted).length === 0) return null;
+            return <AbcRegisteredList entries={soloEntries} />;
           })()}
         </div>
       )}

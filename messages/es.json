@@ -857,6 +857,8 @@
     "test_mode_hidden": "Los partidos están ocultos al público durante el modo test.",
     "abc_registered_title": "{count} inscritos",
     "abc_on_waitlist": "en lista de espera",
+    "abc_view_cards": "Tarjetas",
+    "abc_view_list": "Lista",
     "schedule_no_filter_matches": "Sin partidos para estos filtros.",
     "recap_title": "Resumen del partido",
     "recap_empty": "No hay eventos registrados para este partido.",
