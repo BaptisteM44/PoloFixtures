@@ -1324,16 +1324,23 @@ button:disabled,
   padding: 64px 0 0;
 }
 
-/* Sous 1024px, la colonne gauche devient trop étroite à côté de la carte
-   (380px fixes) pour que les 2 blocs entraînements/tirage tiennent
-   côte à côte sans déborder — on passe le hero en 1 colonne plus tôt. */
-@media (max-width: 1024px) and (min-width: 769px) {
+/* Carte de collection à droite du hero — layout par défaut (desktop).
+   Le display est ici (pas en inline dans le JSX) pour qu'une media query
+   puisse la masquer avec display:none sur les petits écrans. */
+.hero-perso-card {
+  display: flex;
+  justify-content: center;
+}
+
+/* Sous 1024px, la colonne gauche devient trop étroite à côté de la carte :
+   on passe le hero en 1 colonne ET on masque la carte (elle reste
+   consultable sur /account). Elle n'apparaît donc qu'en vrai desktop. */
+@media (max-width: 1024px) {
   .home .hero {
     grid-template-columns: 1fr;
   }
   .hero-perso-card {
-    max-width: 320px;
-    margin: 0 auto;
+    display: none;
   }
 }
 

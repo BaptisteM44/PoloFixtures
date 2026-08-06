@@ -410,8 +410,10 @@ export function HomeHeroPersonal({
         </div>
       </div>
 
-      {/* ── Colonne droite : ma carte de collection (masquée en mobile) ── */}
-      <div className="hero-perso-card" style={{ display: "flex", justifyContent: "center" }}>
+      {/* ── Colonne droite : ma carte de collection (masquée en mobile) ──
+          Pas de display inline : le masquage responsive est porté par le CSS
+          (.hero-perso-card { display:none }) qu'un style inline écraserait. */}
+      <div className="hero-perso-card">
         <div style={{ width: 340 * 0.92, height: 520 * 0.92 }}>
           <div style={{ transform: "scale(0.92)", transformOrigin: "top left" }}>
             <PlayerCollectibleCard
