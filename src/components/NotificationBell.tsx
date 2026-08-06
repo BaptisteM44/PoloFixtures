@@ -51,8 +51,22 @@ function useNotifLabel() {
         return { title: t("club_announcement", { clubName: p.clubName }), sub: p.announcementTitle ?? "", href: p.clubId ? `/club/${p.clubId}?tab=announcements` : "/clubs" };
       case "TEAM_FEE_CONFIRMED":
         return { title: t("team_fee_confirmed", { teamName: p.teamName }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}` };
-      case "COMMUNITY_STATUS_CHANGED":
+      case "COMMUNITY_STATUS_CHANGED": {
+        // Les réponses (status "reply") sont traduites à l'affichage selon la
+        // langue du lecteur, avec regroupement (count) et distinction
+        // auteur/participant. Les autres statuts (planned/done…) gardent le
+        // message figé stocké dans le payload.
+        if (p.status === "reply") {
+          const count = Number(p.count) || 1;
+          const grouped = count > 1;
+          const participant = p.isParticipant === "true";
+          const key = participant
+            ? (grouped ? "community_reply_participant_grouped" : "community_reply_participant")
+            : (grouped ? "community_reply_grouped" : "community_reply");
+          return { title: t(key, { itemTitle: p.itemTitle ?? "", count }), sub: p.itemTitle ?? "", href: p.itemId ? `/labs?id=${p.itemId}` : "/labs" };
+        }
         return { title: p.message || t("community_reply", { itemTitle: p.itemTitle ?? "" }), sub: p.itemTitle ?? "", href: p.itemId ? `/labs?id=${p.itemId}` : "/labs" };
+      }
       case "ACCOMMODATION_ASSIGNED":
         return { title: t("accommodation_assigned", { hostName: p.hostName ?? "" }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=hebergement` };
       case "ACCOMMODATION_GUEST_ADDED":

@@ -138,6 +138,73 @@ export async function notifySessionJoin(
 }
 
 /**
+ * Notifie tous les participants d'un fil Labs (auteur du post + toute personne
+ * ayant déjà répondu), sauf l'auteur de la nouvelle réponse. Groupé par fil :
+ * si une notif "réponses" non lue existe déjà pour cet item, on l'incrémente
+ * (« 3 nouvelles réponses sur X ») au lieu d'en empiler plusieurs.
+ */
+export async function notifyCommunityReply({
+  itemId,
+  itemTitle,
+  itemAuthorId,
+  recipientIds,
+}: {
+  itemId: string;
+  itemTitle: string;
+  itemAuthorId: string | null;
+  recipientIds: string[];
+}) {
+  await Promise.all(
+    recipientIds.map(async (playerId) => {
+      try {
+        const existing = await prisma.notification.findFirst({
+          where: {
+            playerId,
+            type: "COMMUNITY_STATUS_CHANGED",
+            read: false,
+            payload: { path: ["itemId"], equals: itemId },
+            AND: [{ payload: { path: ["status"], equals: "reply" } }],
+          },
+        });
+
+        const isParticipant = playerId !== itemAuthorId;
+        // La cloche traduit le titre à l'affichage (via count + isParticipant) :
+        // on ne stocke PAS de `message` figé dans le payload. Le push natif, lui,
+        // n'a pas de contexte i18n → texte de secours en français (préposition
+        // "sur" pour l'auteur du post, "dans" pour un participant du fil).
+        const prep = isParticipant ? "dans" : "sur";
+
+        if (existing) {
+          const payload = existing.payload as Record<string, string | number>;
+          const count = (Number(payload.count) || 1) + 1;
+          // La notif garde son createdAt (le modèle n'a pas d'updatedAt) : elle
+          // reste à sa place mais son compteur monte et reste non lue — même
+          // comportement de regroupement que notifySessionJoin.
+          await prisma.notification.update({
+            where: { id: existing.id },
+            data: { payload: { itemId, itemTitle, status: "reply", count, isParticipant: String(isParticipant) } },
+          });
+          const pushMsg = `💬 ${count} nouvelles réponses ${prep} "${itemTitle}"`;
+          sendPushToPlayer(playerId, toPushPayload("COMMUNITY_STATUS_CHANGED", { itemId, itemTitle, status: "reply", message: pushMsg })).catch(() => {});
+        } else {
+          await prisma.notification.create({
+            data: {
+              playerId,
+              type: "COMMUNITY_STATUS_CHANGED",
+              payload: { itemId, itemTitle, status: "reply", count: 1, isParticipant: String(isParticipant) },
+            },
+          });
+          const pushMsg = `💬 Nouvelle réponse ${prep} "${itemTitle}"`;
+          sendPushToPlayer(playerId, toPushPayload("COMMUNITY_STATUS_CHANGED", { itemId, itemTitle, status: "reply", message: pushMsg })).catch(() => {});
+        }
+      } catch (e) {
+        console.error("[notify] Failed to create/update community reply notification:", e);
+      }
+    })
+  );
+}
+
+/**
  * Envoie une notification à tous les joueurs ACTIVE d'une équipe
  * (ceux qui ont un compte PlayerAccount lié).
  */

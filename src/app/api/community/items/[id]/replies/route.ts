@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
-import { createNotification } from "@/lib/notify";
+import { createNotification, notifyCommunityReply } from "@/lib/notify";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
 
 async function grantBadge(playerId: string, badge: string) {
@@ -110,13 +110,25 @@ export async function POST(
     }
   }
 
-  // Notifier l'auteur de l'item qu'il y a une nouvelle réponse (s'il a un compte)
-  if (item.authorId && item.authorId !== playerId) {
-    await createNotification(item.authorId, "COMMUNITY_STATUS_CHANGED" as any, {
+  // Notifier tous les participants du fil (auteur du post + toute personne
+  // ayant déjà répondu), sauf l'auteur de cette réponse. Groupé par fil :
+  // les notifs "réponses" non lues s'incrémentent au lieu de s'empiler.
+  const priorReplyAuthors = await prisma.communityReply.findMany({
+    where: { itemId: params.id, authorId: { not: null } },
+    select: { authorId: true },
+    distinct: ["authorId"],
+  });
+  const recipients = new Set<string>();
+  if (item.authorId) recipients.add(item.authorId);
+  for (const r of priorReplyAuthors) if (r.authorId) recipients.add(r.authorId);
+  if (playerId) recipients.delete(playerId); // jamais se notifier soi-même
+
+  if (recipients.size > 0) {
+    await notifyCommunityReply({
       itemId: item.id,
       itemTitle: item.title,
-      status: "reply",
-      message: `💬 Nouvelle réponse sur "${item.title}"`,
+      itemAuthorId: item.authorId,
+      recipientIds: [...recipients],
     });
   }
 
