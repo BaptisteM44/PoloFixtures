@@ -307,6 +307,16 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     setSaved(false);
     setError(null);
     const formData = new FormData(e.currentTarget);
+    // Les inputs datetime-local renvoient une heure locale SANS fuseau
+    // ("2026-08-13T13:00"). On la convertit ici, côté navigateur, en ISO
+    // absolue (new Date interprète alors selon le fuseau du client) — même
+    // sémantique que le formulaire de création. Sans ça, l'action serveur
+    // parserait la chaîne en UTC (fuseau du process), et chaque aller-retour
+    // édition→save décalait l'heure du fuseau (+2h l'été en Europe).
+    for (const field of ["registrationStart", "registrationEnd"] as const) {
+      const v = formData.get(field);
+      if (typeof v === "string" && v) formData.set(field, new Date(v).toISOString());
+    }
     startTransition(async () => {
       const result = await action(formData);
       if (result?.ok) {
