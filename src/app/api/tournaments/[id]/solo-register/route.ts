@@ -3,8 +3,14 @@ import { auth } from "@/lib/auth";
 import { createNotification } from "@/lib/notify";
 import { z } from "zod";
 
+const answerSchema = z.object({
+  fieldId: z.string(),
+  value: z.string().max(500),
+});
+
 const postSchema = z.object({
   level: z.enum(["C", "C+", "B-", "B", "B+", "A-", "A", "A+"]),
+  answers: z.array(answerSchema).optional(),
 });
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -60,6 +66,24 @@ export async function POST(request: Request, { params }: { params: { id: string 
       waitlisted,
     },
   });
+
+  // Réponses au questionnaire d'inscription — seuls les champs PLAYER ont du
+  // sens pour une inscription individuelle. On valide que chaque fieldId
+  // appartient bien au tournoi et cible PLAYER avant de stocker.
+  const answers = parsed.data.answers ?? [];
+  if (answers.length > 0) {
+    const playerFields = await prisma.registrationField.findMany({
+      where: { tournamentId: params.id, target: "PLAYER" },
+      select: { id: true },
+    });
+    const allowed = new Set(playerFields.map((f) => f.id));
+    const rows = answers
+      .filter((a) => allowed.has(a.fieldId) && a.value.trim())
+      .map((a) => ({ fieldId: a.fieldId, value: a.value.trim(), soloEntryId: entry.id }));
+    if (rows.length > 0) {
+      await prisma.registrationAnswer.createMany({ data: rows }).catch(console.error);
+    }
+  }
 
   return Response.json({ ok: true, waitlisted: entry.waitlisted }, { status: 201 });
 }

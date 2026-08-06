@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-methods";
 
@@ -12,6 +12,12 @@ type SoloEntry = {
   waitlisted: boolean;
   feePaid?: boolean;
   paymentMethod?: PaymentMethod | null;
+};
+
+type SoloAnswer = {
+  id: string;
+  value: string;
+  field: { label: string; target: string };
 };
 
 type DrawnTeam = {
@@ -48,6 +54,28 @@ export function DrawPanel({
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [paymentPending, setPaymentPending] = useState<string | null>(null);
+
+  // Réponses au questionnaire par inscription (chargées à la demande)
+  const [openAnswers, setOpenAnswers] = useState<Record<string, SoloAnswer[] | "loading">>({});
+
+  const toggleAnswers = async (entryId: string) => {
+    if (openAnswers[entryId]) {
+      setOpenAnswers((prev) => {
+        const next = { ...prev };
+        delete next[entryId];
+        return next;
+      });
+      return;
+    }
+    setOpenAnswers((prev) => ({ ...prev, [entryId]: "loading" }));
+    try {
+      const res = await fetch(`/api/solo-entries/${entryId}/answers`);
+      const data: SoloAnswer[] = res.ok ? await res.json() : [];
+      setOpenAnswers((prev) => ({ ...prev, [entryId]: data }));
+    } catch {
+      setOpenAnswers((prev) => ({ ...prev, [entryId]: [] }));
+    }
+  };
 
   // Changements d'assignation (entryId → teamId)
   const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
@@ -219,8 +247,19 @@ export function DrawPanel({
             </thead>
             <tbody>
               {activeEntries.map((entry) => (
-                <tr key={entry.id} style={{ borderBottom: "1px solid var(--border-light)" }}>
-                  <td style={{ padding: "8px 10px", fontWeight: 600 }}>{entry.player.name}</td>
+                <Fragment key={entry.id}>
+                <tr style={{ borderBottom: openAnswers[entry.id] ? "none" : "1px solid var(--border-light)" }}>
+                  <td style={{ padding: "8px 10px", fontWeight: 600 }}>
+                    <button
+                      type="button"
+                      onClick={() => toggleAnswers(entry.id)}
+                      title="Voir les réponses au questionnaire"
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginRight: 6, color: "var(--text-muted)", fontSize: 11 }}
+                    >
+                      {openAnswers[entry.id] ? "▾" : "▸"}
+                    </button>
+                    {entry.player.name}
+                  </td>
                   <td style={{ padding: "8px 10px" }}>
                     <span className="level-badge" data-level={getLevelTier(entry.level)}>{entry.level}</span>
                   </td>
@@ -277,6 +316,27 @@ export function DrawPanel({
                     </td>
                   )}
                 </tr>
+                {openAnswers[entry.id] && (
+                  <tr style={{ borderBottom: "1px solid var(--border-light)" }}>
+                    <td colSpan={feePerPlayer > 0 ? 4 : 3} style={{ padding: "0 10px 10px 30px" }}>
+                      {openAnswers[entry.id] === "loading" ? (
+                        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>…</span>
+                      ) : (openAnswers[entry.id] as SoloAnswer[]).length === 0 ? (
+                        <span style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>Aucune réponse au questionnaire.</span>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {(openAnswers[entry.id] as SoloAnswer[]).map((a) => (
+                            <div key={a.id} style={{ fontSize: 12 }}>
+                              <span style={{ fontWeight: 700, color: "var(--text-muted)" }}>{a.field.label} : </span>
+                              {a.value}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
