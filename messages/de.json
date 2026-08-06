@@ -1473,6 +1473,8 @@
     "btn_saving": "Speichern…",
     "btn_back_country": "← {country}",
     "members_empty": "Noch keine Mitglieder.",
+    "view_cards": "Karten",
+    "view_list": "Liste",
     "pending_approval": "Dieser Club wartet auf die Genehmigung eines Administrators.",
     "created_success": "🎉 Club erstellt! Er wird nach Genehmigung öffentlich sichtbar.",
     "website_link": "🌐 Website →",

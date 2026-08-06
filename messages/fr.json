@@ -1466,6 +1466,8 @@
     "btn_back_country": "← {country}",
     "members_title": "Joueur·ses ({count})",
     "members_empty": "Aucun membre pour l'instant.",
+    "view_cards": "Cartes",
+    "view_list": "Liste",
     "founded_label": "Fondé en",
     "pending_approval": "Ce club est en attente d'approbation par un administrateur.",
     "created_success": "🎉 Club créé ! Il sera visible publiquement après approbation.",

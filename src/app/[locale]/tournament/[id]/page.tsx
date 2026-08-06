@@ -38,17 +38,6 @@ import {
   updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, resetPipelineToRoundAction, reschedulePipelineStageAction,
 } from "./edit/actions";
 
-function summarizeCities(players: { player: { city: string | null } }[]): string {
-  const counts = new Map<string, number>();
-  for (const tp of players) {
-    const city = tp.player.city || "—";
-    counts.set(city, (counts.get(city) || 0) + 1);
-  }
-  return Array.from(counts.entries())
-    .map(([city, n]) => (n > 1 ? `${city} (${n})` : city))
-    .join(", ");
-}
-
 export default async function TournamentPage({
   params,
   searchParams
@@ -1649,7 +1638,6 @@ export default async function TournamentPage({
                     <tr>
                       <th>#</th>
                       <th>{t("teams_col_team")}</th>
-                      <th>{t("teams_col_cities")}</th>
                       <th>{t("teams_col_players")}</th>
                       {hasWaitlist && <th>{t("teams_col_status")}</th>}
                     </tr>
@@ -1659,7 +1647,6 @@ export default async function TournamentPage({
                       <tr key={team.id}>
                         <td style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>#{team.seed}</td>
                         <td style={{ fontWeight: 600 }}>{team.name}</td>
-                        <td className="meta">{summarizeCities(team.players)}</td>
                         <td>
                           {team.players.map((tp, i) => {
                             const abcLevel = tournament.format === "ABC"
@@ -1668,6 +1655,7 @@ export default async function TournamentPage({
                                 : tp.player.id === (team as { playerCLevel?: string | null }).playerCLevel ? "C"
                                 : null)
                               : null;
+                            const city = (tp.player as { city?: string | null }).city;
                             return (
                               <span key={tp.player.id}>
                                 {i > 0 && ", "}
@@ -1678,6 +1666,7 @@ export default async function TournamentPage({
                                 ) : (
                                   tp.player.name
                                 )}
+                                {city && <span className="meta" style={{ fontWeight: 400 }}> ({city})</span>}
                                 {abcLevel && (
                                   <span className="level-badge" data-level={abcLevel} style={{ marginLeft: 4, fontSize: 10 }}>{abcLevel}</span>
                                 )}
@@ -1691,26 +1680,29 @@ export default async function TournamentPage({
                     {hasWaitlist && (
                       <>
                         <tr className="teams-divider-row">
-                          <td colSpan={5} className="teams-divider">{t("waitlist_divider", { count: waitlist.length })}</td>
+                          <td colSpan={4} className="teams-divider">{t("waitlist_divider", { count: waitlist.length })}</td>
                         </tr>
                         {waitlist.map((team) => (
                           <tr key={team.id} className="team-row--waitlist">
                             <td style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>WL{team.waitlistPosition ?? "?"}</td>
                             <td style={{ fontWeight: 600 }}>{team.name}</td>
-                            <td className="meta">{summarizeCities(team.players)}</td>
                             <td>
-                              {team.players.map((tp, i) => (
-                                <span key={tp.player.id}>
-                                  {i > 0 && ", "}
-                                  {(tp.player as { slug?: string | null }).slug ? (
-                                    <Link href={`/player/${(tp.player as { slug?: string | null }).slug}`} style={{ color: "var(--teal)", textDecoration: "none", fontWeight: 500 }}>
-                                      {tp.player.name}
-                                    </Link>
-                                  ) : (
-                                    tp.player.name
-                                  )}
-                                </span>
-                              ))}
+                              {team.players.map((tp, i) => {
+                                const city = (tp.player as { city?: string | null }).city;
+                                return (
+                                  <span key={tp.player.id}>
+                                    {i > 0 && ", "}
+                                    {(tp.player as { slug?: string | null }).slug ? (
+                                      <Link href={`/player/${(tp.player as { slug?: string | null }).slug}`} style={{ color: "var(--teal)", textDecoration: "none", fontWeight: 500 }}>
+                                        {tp.player.name}
+                                      </Link>
+                                    ) : (
+                                      tp.player.name
+                                    )}
+                                    {city && <span className="meta" style={{ fontWeight: 400 }}> ({city})</span>}
+                                  </span>
+                                );
+                              })}
                             </td>
                             <td><span style={{ color: "var(--text-muted)", fontWeight: 700, fontSize: 11, fontFamily: "var(--font-display)" }}>{t("badge_waiting")}</span></td>
                           </tr>

@@ -1472,6 +1472,8 @@
     "btn_saving": "Guardando…",
     "btn_back_country": "← {country}",
     "members_empty": "Sin miembros aún.",
+    "view_cards": "Tarjetas",
+    "view_list": "Lista",
     "pending_approval": "Este club está pendiente de aprobación por un administrador.",
     "created_success": "🎉 ¡Club creado! Será visible públicamente después de la aprobación.",
     "website_link": "🌐 Sitio web →",

@@ -1466,6 +1466,8 @@
     "btn_back_country": "← {country}",
     "members_title": "Players ({count})",
     "members_empty": "No members yet.",
+    "view_cards": "Cards",
+    "view_list": "List",
     "founded_label": "Founded",
     "pending_approval": "This club is pending approval by an administrator.",
     "created_success": "🎉 Club created! It will be publicly visible after approval.",
