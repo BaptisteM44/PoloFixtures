@@ -88,14 +88,30 @@ describe("Pipeline via la VRAIE route PUT /api/matches/[id]", () => {
     const preset = PIPELINE_PRESETS.find((p) => p.key === "swiss_de")!;
     await createStages(id, preset.build(8));
 
-    const { launchStage } = await import("@/engine/pipeline-server");
+    const { launchStage, applyScore } = await import("@/engine/pipeline-server");
     await launchStage(id, 0); // Swiss
     const rng = mulberry32(3);
-    await playAllPlayable(id, rng);
-    await launchStage(id, 1); // DE
+    // On joue UNIQUEMENT le Swiss (étape 0) : à sa fin le DE s'auto-lance, et on
+    // veut inspecter son 1er match AVANT qu'il soit joué. (playAllPlayable jouerait
+    // tout le tournoi, DE compris, à cause de l'auto-lancement.)
+    let sg = 0;
+    while (sg++ < 40) {
+      const cur = await getPipeline(id);
+      const swiss = cur!.stages[0];
+      if (swiss.status !== "ACTIVE") break;
+      const playable = swiss.matches.filter((m) => m.teamAId && m.teamBId && m.status !== "FINISHED");
+      if (playable.length === 0) break;
+      for (const m of playable) {
+        let a = Math.floor(rng() * 6);
+        let b = Math.floor(rng() * 6);
+        if (a === b) a += 1;
+        await applyScore(m.id, a, b);
+      }
+    }
 
     const t = await getPipeline(id);
     const de = t!.stages[1];
+    expect(de.status, "le DE doit s'être auto-lancé à la fin du Swiss").toBe("ACTIVE");
     const firstMatch = de.matches.find((m) => m.teamAId && m.teamBId && m.status !== "FINISHED");
     expect(firstMatch).toBeDefined();
 

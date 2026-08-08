@@ -48,16 +48,11 @@ describe("DE Top 8 / Bottom 8 en parallèle", () => {
     await launchStage(id, 0);
     await simulateStage(id);
 
-    // Les DEUX DE doivent pouvoir se lancer (aucun ne dépend de l'autre)
-    const r1 = await launchStage(id, 1);
-    expect(r1.error, "DE Top 8 doit se lancer").toBeUndefined();
-    const r2 = await launchStage(id, 2);
-    expect(r2.error, "DE Bottom 8 doit se lancer en parallèle").toBeUndefined();
-
-    // Les deux sont ACTIVE en même temps
+    // À la fin du Swiss, les DEUX DE (indépendants l'un de l'autre) doivent
+    // s'être lancés AUTOMATIQUEMENT en parallèle — sans launchStage manuel.
     let t = await getPipeline(id);
-    expect(t!.stages[1].status).toBe("ACTIVE");
-    expect(t!.stages[2].status).toBe("ACTIVE");
+    expect(t!.stages[1].status, "DE Top 8 auto-lancé").toBe("ACTIVE");
+    expect(t!.stages[2].status, "DE Bottom 8 auto-lancé en parallèle").toBe("ACTIVE");
 
     // On joue les deux brackets en même temps, un match de chaque à la fois
     let guard = 0;

@@ -83,19 +83,22 @@ describe("Report des points RR → Swiss (inheritFrom)", () => {
       { name: "Swiss", type: "SWISS", config: { rounds: 2 }, entryRules: { sources: [{ kind: "stageRanks", stageOrder: 0, from: 1, to: 8 }] } },
     ] as never);
     await launchStage(id, 0);
+    // On ne joue QUE le RR (étape 0). À sa fin, le Swiss s'auto-lance (round 1
+    // généré, non joué) — on l'inspecte à cet instant précis.
     let guard = 0;
     while (guard++ < 20) {
       const t = await getPipeline(id);
-      const active = t!.stages.find((s) => s.status === "ACTIVE");
-      if (!active || active.matches.every((m: any) => m.status === "FINISHED" || !m.teamBId)) break;
-      await playActive(id);
+      const rr = t!.stages[0];
+      if (rr.status !== "ACTIVE") break;
+      const playable = rr.matches.filter((m: any) => m.status !== "FINISHED" && m.teamAId && m.teamBId);
+      if (playable.length === 0) break;
+      for (const m of playable) await applyScore(m.id, 5, 2);
     }
-    await launchStage(id, 1);
-    // Sans inheritFrom, le Swiss part de zéro : pas encore de matchs joués →
-    // tout le monde à 0 point. Le classement = ordre de seed du Swiss, pas le RR.
+    // Sans inheritFrom, le Swiss part de zéro : round 1 généré mais pas encore
+    // joué → tout le monde à 0 point, le classement suit le seed, pas le RR.
     const t = await getPipeline(id);
     const swiss = t!.stages[1];
-    // Aucun match Swiss joué encore : le classement ne peut pas refléter des points.
+    expect(swiss.status, "le Swiss doit s'être auto-lancé").toBe("ACTIVE");
     const playedSwiss = swiss.matches.filter((m: any) => m.status === "FINISHED").length;
     expect(playedSwiss).toBe(0);
   });

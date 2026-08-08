@@ -696,9 +696,50 @@ export async function advanceStage(stageId: string): Promise<{ ok?: boolean; err
     const remaining = t.stages.filter((s) => s.id !== stage.id && s.status !== "DONE" && s.status !== "SKIPPED");
     if (remaining.length === 0) {
       await prisma.tournament.update({ where: { id: t.id }, data: { status: "COMPLETED" } });
+    } else {
+      // Lancement automatique des étapes suivantes devenues éligibles : sans
+      // ça, l'étape suivante restait PENDING et l'orga devait la lancer à la
+      // main (d'où l'impression qu'il fallait « revalider le dernier match »).
+      // On ne cible QUE les étapes PENDING qui dépendent (directement) de celle
+      // qu'on vient de terminer ; launchStage refait tous les garde-fous
+      // (dépendances multiples encore en cours, pas assez d'équipes…), donc on
+      // tente et on ignore silencieusement un refus légitime.
+      await autoLaunchDependents(t.id, stage.order);
     }
   }
   return { ok: true };
+}
+
+/**
+ * Lance automatiquement les étapes PENDING dont une source dépend de l'étape
+ * `justFinishedOrder` qui vient de passer DONE. launchStage fait lui-même les
+ * vérifications (statut PENDING, toutes les dépendances DONE, effectif suffisant)
+ * et renvoie une erreur bénigne si l'étape n'est pas prête — on l'ignore alors.
+ * Idempotent : relancer après coup ne double rien (une étape déjà lancée n'est
+ * plus PENDING). Best-effort : une erreur ne doit jamais faire échouer le score.
+ */
+async function autoLaunchDependents(tournamentId: string, justFinishedOrder: number): Promise<void> {
+  try {
+    const t = await getPipeline(tournamentId);
+    if (!t) return;
+    const candidates = t.stages
+      .filter((s) => s.status === "PENDING")
+      .filter((s) => {
+        const rules = s.entryRules as unknown as EntryRules;
+        return rules.sources.some(
+          (src) => src.kind === "stageRanks" && src.stageOrder === justFinishedOrder,
+        );
+      })
+      .sort((a, b) => a.order - b.order);
+    for (const next of candidates) {
+      const res = await launchStage(tournamentId, next.order);
+      // res.error attendu et sans gravité si une AUTRE dépendance de `next`
+      // n'est pas encore terminée — on n'agit pas dessus.
+      if (res.error) continue;
+    }
+  } catch (e) {
+    console.error("[pipeline] autoLaunchDependents failed:", tournamentId, justFinishedOrder, e);
+  }
 }
 
 /**

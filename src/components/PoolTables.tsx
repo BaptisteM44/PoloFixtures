@@ -62,6 +62,23 @@ export function PoolTables({
   const teamPlayersMap = new Map(teamsWithPlayers.map((t) => [t.id, t.players.map((tp) => tp.player.name)]));
   const activeMatches = poolRounds !== null ? matches.filter((m) => m.roundIndex <= poolRounds) : matches;
 
+  // Réhydrate les matchs hérités (report de points inheritFrom/carryPoints,
+  // dont les matchs de cross-pool) depuis l'état SSE à jour : la prop
+  // `inheritedMatchesByPool` est figée au render serveur, donc un match hérité
+  // JOUÉ en direct (ex: un match de cross-pool) n'y apparaîtrait qu'après un
+  // reload. On remappe par id sur `matches` (qui contient TOUS les matchs du
+  // tournoi et reçoit les mises à jour SSE) pour que le score live soit compté.
+  const liveById = new Map(matches.map((m) => [m.id, m]));
+  const rehydratedInheritedByPool: Record<string, MatchWithTeams[]> | undefined =
+    inheritedMatchesByPool
+      ? Object.fromEntries(
+          Object.entries(inheritedMatchesByPool).map(([poolId, ms]) => [
+            poolId,
+            ms.map((m) => liveById.get(m.id) ?? m),
+          ])
+        )
+      : undefined;
+
   useEffect(() => {
     if (!isLive) return;
     const es = new EventSource(`/api/sse?tournamentId=${tournamentId}`);
@@ -83,11 +100,11 @@ export function PoolTables({
   // Matchs hérités (report de points pipeline) de toutes les pools affichées,
   // dédoublonnés par id — pour que le classement "Général" cumule aussi.
   const allInheritedMatches = (() => {
-    if (!inheritedMatchesByPool) return [] as MatchWithTeams[];
+    if (!rehydratedInheritedByPool) return [] as MatchWithTeams[];
     const seen = new Set<string>();
     const out: MatchWithTeams[] = [];
     for (const p of pools) {
-      for (const m of inheritedMatchesByPool[p.id] ?? []) {
+      for (const m of rehydratedInheritedByPool[p.id] ?? []) {
         if (!seen.has(m.id)) { seen.add(m.id); out.push(m); }
       }
     }
@@ -250,7 +267,7 @@ export function PoolTables({
                 poolTeamIds.includes(m.teamBId)
             )
           : [];
-        const inherited = inheritedMatchesByPool?.[pool.id] ?? [];
+        const inherited = rehydratedInheritedByPool?.[pool.id] ?? [];
         const standingsMatches = [...poolMatches, ...recycledRR, ...inherited];
         const standings = computeStandings(poolTeams, standingsMatches as Match[], scoringSystem);
 
