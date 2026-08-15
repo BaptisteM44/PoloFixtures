@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { isRateLimited, getIp } from "@/lib/rate-limit";
 
 const schema = z.object({
   token: z.string().min(1),
@@ -8,6 +9,12 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Rate-limit par IP : sans lui, on pourrait brute-forcer les tokens de reset.
+  // 10 tentatives / 10 min suffisent largement pour un usage légitime.
+  if (isRateLimited(`reset-pw:${getIp(req)}`, 10, 10 * 60 * 1000)) {
+    return Response.json({ error: "Trop de tentatives, réessayez plus tard." }, { status: 429 });
+  }
+
   const body = await req.json();
   const parsed = schema.safeParse(body);
   if (!parsed.success) {

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { generateTournamentSlug } from "@/lib/slug";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { notifyAllAdmins } from "@/lib/notify";
+import { isRateLimited } from "@/lib/rate-limit";
 
 export async function GET() {
   await syncLiveTournamentsCompletion();
@@ -55,6 +56,10 @@ export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.playerId) {
     return new Response("Connectez-vous pour créer un tournoi", { status: 401 });
+  }
+  // Anti-spam : un même compte ne crée pas plus de 10 tournois / heure.
+  if (isRateLimited(`create-tournament:${session.user.playerId}`, 10, 60 * 60 * 1000)) {
+    return Response.json({ error: "Trop de tournois créés récemment, réessayez plus tard." }, { status: 429 });
   }
 
   const json = await request.json();

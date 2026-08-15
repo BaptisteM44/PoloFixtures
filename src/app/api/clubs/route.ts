@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { countryToContinentOrDefault } from "@/lib/country-utils";
 import { notifyAllAdmins } from "@/lib/notify";
+import { isRateLimited } from "@/lib/rate-limit";
 
 const createSchema = z.object({
   name: z.string().min(2).max(80),
@@ -61,6 +62,10 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.playerId) {
     return new Response("Connexion requise", { status: 401 });
+  }
+  // Anti-spam : un même compte ne crée pas plus de 5 clubs / heure.
+  if (isRateLimited(`create-club:${session.user.playerId}`, 5, 60 * 60 * 1000)) {
+    return Response.json({ error: "Trop de clubs créés récemment, réessayez plus tard." }, { status: 429 });
   }
 
   const body = await request.json();
