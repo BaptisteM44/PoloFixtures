@@ -117,7 +117,27 @@ export function stageStandings(t: PipelineTournament, stageOrder: number, group?
           );
         all = [...inherited, ...matches];
       }
-      return pointsStandings(entryIds, all, scoringOf(t));
+      const ranked = pointsStandings(entryIds, all, scoringOf(t));
+
+      // Cross-pool « rang de poule verrouillé » (preserveSeeding) : on classe PAR
+      // STRATE de rang. Le slot de la StageEntry = rang dans la poule d'origine
+      // (1 = 1er, 2 = 2e…). On regroupe par slot croissant et, dans chaque strate,
+      // on garde l'ordre du classement à points (le match croisé départage). Ainsi
+      // un 1er de poule reste devant tous les 2es, quel que soit le score du duel.
+      if (stage.type === "CROSS_POOL" && (stage.config as { preserveSeeding?: boolean }).preserveSeeding) {
+        const slotOf = new Map<string, number>();
+        for (const e of stage.entries) {
+          if (e.teamId) slotOf.set(e.teamId, e.slot);
+        }
+        const posInPoints = new Map(ranked.map((id, i) => [id, i]));
+        return [...ranked].sort((a, b) => {
+          const sa = slotOf.get(a) ?? Number.MAX_SAFE_INTEGER;
+          const sb = slotOf.get(b) ?? Number.MAX_SAFE_INTEGER;
+          if (sa !== sb) return sa - sb;                       // strate (rang de poule) d'abord
+          return (posInPoints.get(a) ?? 0) - (posInPoints.get(b) ?? 0); // départage par points
+        });
+      }
+      return ranked;
     }
     case "PLACEMENT":
       return placementStandings(matches);

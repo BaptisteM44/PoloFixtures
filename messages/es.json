@@ -1929,7 +1929,8 @@
     "duplicate": "Duplicar",
     "delete": "Eliminar",
     "cross_pool_hint": "El cross-pool enfrenta dos grupos (A contra B). Toma equipos de una etapa con 2 grupos: una sola fuente con toda su clasificación (los grupos se detectan automáticamente) o dos fuentes, una por grupo.",
-    "cfg_carry_points": "Acumular los puntos de las etapas anteriores"
+    "cfg_carry_points": "Acumular los puntos de las etapas anteriores",
+    "cfg_preserve_seeding": "Bloquear el rango de grupo (1º queda ante los 2º)"
   },
   "legal_privacy": {
     "title": "Política de Privacidad",

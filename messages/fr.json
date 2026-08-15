@@ -1926,7 +1926,8 @@
     "duplicate": "Dupliquer",
     "delete": "Supprimer",
     "cross_pool_hint": "Le cross-pool oppose deux poules (A contre B). Prends tes équipes depuis une étape à 2 groupes : soit une seule source qui reprend tout son classement (les poules d’origine sont retrouvées automatiquement), soit deux sources — une par groupe.",
-    "cfg_carry_points": "Cumuler les points des étapes précédentes"
+    "cfg_carry_points": "Cumuler les points des étapes précédentes",
+    "cfg_preserve_seeding": "Verrouiller le rang de poule (1er reste devant les 2es)"
   },
   "legal_privacy": {
     "title": "Politique de confidentialité",

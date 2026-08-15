@@ -273,6 +273,7 @@ export function StageConfigFields({ type, config, groupCount, courtsCount, canCa
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center" }}>
             <label>{t("cfg_opponents")} <input type="number" min={1} max={16} value={Number(config.opponents ?? 1)} onChange={(e) => set("opponents", Number(e.target.value))} style={{ width: 60 }} /></label>
             {carryToggle}
+            <label><input type="checkbox" checked={!!config.preserveSeeding} onChange={(e) => set("preserveSeeding", e.target.checked || undefined)} /> {t("cfg_preserve_seeding")}</label>
           </div>
           <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, lineHeight: 1.5 }}>
             💡 {t("cross_pool_hint")}

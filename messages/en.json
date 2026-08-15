@@ -1925,7 +1925,8 @@
     "duplicate": "Duplicate",
     "delete": "Delete",
     "cross_pool_hint": "Cross-pool pits two pools against each other (A vs B). Take teams from a 2-group stage: either a single source covering its whole ranking (original pools are detected automatically), or two sources — one per group.",
-    "cfg_carry_points": "Carry points from previous stages"
+    "cfg_carry_points": "Carry points from previous stages",
+    "cfg_preserve_seeding": "Lock pool rank (1st stays ahead of 2nds)"
   },
   "legal_privacy": {
     "title": "Privacy Policy",

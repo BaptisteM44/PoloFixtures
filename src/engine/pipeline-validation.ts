@@ -52,6 +52,11 @@ const stageConfigSchema = z.discriminatedUnion("type", [
     config: z.object({
       opponents: z.number().int().min(1).max(16),
       carryPoints: z.boolean().optional(),
+      // Verrouille le rang de poule : le classement est calculé PAR STRATE de
+      // rang (tous les 1ers devant tous les 2es…), le match croisé ne départage
+      // qu'à l'intérieur d'une strate. Un 1er de poule ne descend donc jamais
+      // sous la Nᵉ place (N = nb de poules). Décoché → tri pur par points.
+      preserveSeeding: z.boolean().optional(),
     }),
   }),
   z.object({
