@@ -76,9 +76,10 @@ export async function GET() {
       .sort((a, b) => (a.isCaptain === b.isCaptain ? 0 : a.isCaptain ? -1 : 1)),
   }));
 
-  // Tournaments created by this player
+  // Tournaments created by this player — hors bacs à sable (testMode), qui
+  // ont leur propre écran de gestion dédié (/sandbox).
   const createdTournaments = await prisma.tournament.findMany({
-    where: { creatorId: playerId },
+    where: { creatorId: playerId, testMode: { not: true } },
     select: {
       id: true,
       slug: true,
@@ -98,7 +99,7 @@ export async function GET() {
   // Tournaments where player is a co-organizer (role ORGA, not REF), excluding ones already created
   const createdIds = new Set(createdTournaments.map((t) => t.id));
   const coOrgLinks = await prisma.tournamentOrganizer.findMany({
-    where: { playerId, role: "ORGA" },
+    where: { playerId, role: "ORGA", tournament: { testMode: { not: true } } },
     include: {
       tournament: {
         select: {
