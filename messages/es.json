@@ -2794,5 +2794,14 @@
     "banner_install": "Instalar",
     "banner_dismiss": "Más tarde",
     "banner_ios_hint": "Toca «Compartir» y luego «Añadir a pantalla de inicio»."
+  },
+  "errors": {
+    "not_found_title": "Página no encontrada",
+    "not_found_desc": "Esta página no existe o se ha movido. El enlace puede ser incorrecto.",
+    "error_title": "Se ha producido un error",
+    "error_desc": "Algo ha fallado por nuestra parte. Inténtalo de nuevo o vuelve al inicio.",
+    "btn_retry": "Reintentar",
+    "btn_home": "Volver al inicio",
+    "btn_tournaments": "Ver torneos"
   }
 }

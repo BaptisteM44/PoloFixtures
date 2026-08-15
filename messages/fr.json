@@ -2791,5 +2791,14 @@
     "banner_install": "Installer",
     "banner_dismiss": "Plus tard",
     "banner_ios_hint": "Touchez « Partager » en bas, puis « Sur l’écran d’accueil »."
+  },
+  "errors": {
+    "not_found_title": "Page introuvable",
+    "not_found_desc": "Cette page n'existe pas ou a été déplacée. Le lien est peut-être erroné.",
+    "error_title": "Une erreur est survenue",
+    "error_desc": "Quelque chose s'est mal passé de notre côté. Réessayez, ou revenez à l'accueil.",
+    "btn_retry": "Réessayer",
+    "btn_home": "Retour à l'accueil",
+    "btn_tournaments": "Voir les tournois"
   }
 }

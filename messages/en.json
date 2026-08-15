@@ -2790,5 +2790,14 @@
     "banner_install": "Install",
     "banner_dismiss": "Later",
     "banner_ios_hint": "Tap the Share button, then “Add to Home Screen”."
+  },
+  "errors": {
+    "not_found_title": "Page not found",
+    "not_found_desc": "This page doesn't exist or has moved. The link may be wrong.",
+    "error_title": "Something went wrong",
+    "error_desc": "Something broke on our end. Try again, or head back home.",
+    "btn_retry": "Try again",
+    "btn_home": "Back to home",
+    "btn_tournaments": "Browse tournaments"
   }
 }
