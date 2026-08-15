@@ -441,7 +441,14 @@ export function TournamentRefereePanel({
         else if (p.timeoutType === "mechanical") toMech[tid] = (toMech[tid] ?? 0) + delta;
       }
       if (e.type === "GOAL" || e.type === "GOLDEN_GOAL") {
-        goals.set(String(p.playerId), (goals.get(String(p.playerId)) ?? 0) + (Number(p.delta) || 1));
+        // Un but sans buteur désigné (playerId absent) compte dans le score de
+        // l'équipe mais N'EST PAS attribuable à un joueur — on l'ignore ici,
+        // sinon tous ces buts s'agrègent sur une fausse clé "undefined".
+        if (!p.playerId) return;
+        // delta peut valoir -1 (annulation d'un but) : on l'additionne tel quel
+        // au lieu de le forcer à 1, pour que retirer un but décrémente bien.
+        const d = Number(p.delta);
+        goals.set(String(p.playerId), (goals.get(String(p.playerId)) ?? 0) + (Number.isFinite(d) && d !== 0 ? d : 1));
       }
     });
     return { penaltyCounts: penalties, timeoutNormal: toNormal, timeoutMech: toMech, goalsByPlayer: goals };
@@ -465,10 +472,17 @@ export function TournamentRefereePanel({
 
   const nextScheduled = useMemo(() => {
     const currentCourt = selectedMatch?.courtName;
-    // Priorité au prochain match SCHEDULED sur le même terrain, sinon premier SCHEDULED global
+    // Quand un match se termine, la route passe AUTOMATIQUEMENT le match suivant
+    // du terrain en LIVE. Il faut donc considérer LIVE **et** SCHEDULED comme
+    // « prochain match » — sinon on saute le vrai suivant (devenu LIVE) pour
+    // pointer celui d'après (encore SCHEDULED). LIVE est prioritaire.
+    const isNext = (m: (typeof sortedMatches)[number]) =>
+      (m.status === "LIVE" || m.status === "SCHEDULED") && m.id !== selectedMatchId;
     return (
-      sortedMatches.find((m) => m.status === "SCHEDULED" && m.id !== selectedMatchId && m.courtName === currentCourt) ??
-      sortedMatches.find((m) => m.status === "SCHEDULED" && m.id !== selectedMatchId)
+      sortedMatches.find((m) => isNext(m) && m.status === "LIVE" && m.courtName === currentCourt) ??
+      sortedMatches.find((m) => isNext(m) && m.courtName === currentCourt) ??
+      sortedMatches.find((m) => isNext(m) && m.status === "LIVE") ??
+      sortedMatches.find((m) => isNext(m))
     );
   }, [sortedMatches, selectedMatchId, selectedMatch?.courtName]);
 

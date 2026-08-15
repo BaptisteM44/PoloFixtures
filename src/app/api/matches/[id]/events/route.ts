@@ -66,6 +66,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
   let status = match.status;
   let winnerTeamId = match.winnerTeamId;
   let goldenGoal = match.goldenGoal;
+  // Les buts sont écrits ATOMIQUEMENT via increment (voir plus bas). L'update
+  // final ne doit alors PAS réécrire scoreA/scoreB : sinon il remet les valeurs
+  // lues en début de requête (périmées) et écrase les buts d'une saisie
+  // concurrente sur l'autre équipe — d'où des scores faux type « 2-2 → 3-0 ».
+  let scoreTouchedAtomically = false;
 
   // GOAL et GOLDEN_GOAL utilisent un increment atomique en base pour éviter
   // qu'un but soit perdu si deux requêtes lisent le score au même instant
@@ -74,13 +79,24 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const delta = parsed.data.delta ?? 1;
     if (parsed.data.teamId === match.teamAId) {
       const locked = await prisma.match.update({ where: { id: match.id }, data: { scoreA: { increment: delta } }, select: { scoreA: true } });
-      scoreA = Math.max(0, locked.scoreA);
-      if (locked.scoreA < 0) await prisma.match.update({ where: { id: match.id }, data: { scoreA: 0 } });
+      // Garde-fou anti-négatif : ré-clamp atomiquement à 0 sans réécrire scoreB.
+      if (locked.scoreA < 0) {
+        const fixed = await prisma.match.update({ where: { id: match.id }, data: { scoreA: 0 }, select: { scoreA: true } });
+        scoreA = fixed.scoreA;
+      } else {
+        scoreA = locked.scoreA;
+      }
+      scoreTouchedAtomically = true;
     }
     if (parsed.data.teamId === match.teamBId) {
       const locked = await prisma.match.update({ where: { id: match.id }, data: { scoreB: { increment: delta } }, select: { scoreB: true } });
-      scoreB = Math.max(0, locked.scoreB);
-      if (locked.scoreB < 0) await prisma.match.update({ where: { id: match.id }, data: { scoreB: 0 } });
+      if (locked.scoreB < 0) {
+        const fixed = await prisma.match.update({ where: { id: match.id }, data: { scoreB: 0 }, select: { scoreB: true } });
+        scoreB = fixed.scoreB;
+      } else {
+        scoreB = locked.scoreB;
+      }
+      scoreTouchedAtomically = true;
     }
   }
 
@@ -90,11 +106,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
       const locked = await prisma.match.update({ where: { id: match.id }, data: { scoreA: { increment: 1 } }, select: { scoreA: true } });
       scoreA = locked.scoreA;
       winnerTeamId = match.teamAId;
+      scoreTouchedAtomically = true;
     }
     if (parsed.data.teamId === match.teamBId) {
       const locked = await prisma.match.update({ where: { id: match.id }, data: { scoreB: { increment: 1 } }, select: { scoreB: true } });
       scoreB = locked.scoreB;
       winnerTeamId = match.teamBId;
+      scoreTouchedAtomically = true;
     }
     status = "FINISHED";
     goldenGoal = true;
@@ -112,6 +130,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
   // PAUSE garde le match LIVE — c'est juste une pause du chrono local
   if (parsed.data.type === "END") {
+    // Relit le score FRAIS en base : des GOAL concurrents ont pu arriver depuis
+    // le findUnique initial, donc match.scoreA/scoreB en mémoire peuvent être
+    // périmés — on ne veut pas désigner un mauvais vainqueur (ni un faux nul).
+    const fresh = await prisma.match.findUniqueOrThrow({ where: { id: match.id }, select: { scoreA: true, scoreB: true } });
+    scoreA = fresh.scoreA;
+    scoreB = fresh.scoreB;
     // Block ending a BRACKET match on a draw
     if (match.phase === "BRACKET" && scoreA === scoreB) {
       return Response.json({ error: "Impossible de terminer un match de bracket sur une égalité. Utilisez le Golden Goal pour désigner un vainqueur." }, { status: 422 });
@@ -119,7 +143,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
     status = "FINISHED";
     if (match.teamAId && match.teamBId) {
       if (scoreA > scoreB) winnerTeamId = match.teamAId;
-      if (scoreB > scoreA) winnerTeamId = match.teamBId;
+      else if (scoreB > scoreA) winnerTeamId = match.teamBId;
+      else winnerTeamId = null; // nul explicite (poules) : pas de vainqueur
     }
   }
 
@@ -132,9 +157,16 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
   });
 
+  // On n'inclut scoreA/scoreB dans l'update QUE s'ils n'ont pas déjà été gérés
+  // atomiquement (GOAL/GOLDEN_GOAL) — évite d'écraser une saisie concurrente.
   const updated = await prisma.match.update({
     where: { id: match.id },
-    data: { scoreA, scoreB, status, winnerTeamId, goldenGoal }
+    data: {
+      status,
+      winnerTeamId,
+      goldenGoal,
+      ...(scoreTouchedAtomically ? {} : { scoreA, scoreB }),
+    },
   });
 
   const triggerAdvance = (parsed.data.type === "END" || parsed.data.type === "GOLDEN_GOAL") && winnerTeamId;
