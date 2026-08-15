@@ -115,15 +115,24 @@ export function TournamentRefereePanel({
 
   // Matches triés depuis matchMap (réactif aux mises à jour SSE), filtrés par terrain
   const sortedMatches = useMemo(() => {
-    const order: Record<string, number> = { LIVE: 0, SCHEDULED: 1, FINISHED: 2 };
+    // Les matchs à jouer (LIVE + SCHEDULED) sont triés CHRONOLOGIQUEMENT par
+    // heure de début : l'arbitre suit son terrain dans l'ordre réel, pas par
+    // statut. Sans ça, sur J2 les matchs cross-pool encore ouverts pouvaient
+    // remonter avant/après de façon incohérente, et « Match suivant » pointait
+    // le mauvais match. Les FINISHED sont repoussés en fin (historique), en
+    // ordre chronologique inverse (le plus récent d'abord).
+    const isDone = (s: string) => s === "FINISHED";
     return [...matchMap.values()]
       .filter((m) => !selectedCourt || selectedCourt === "__all__" || m.courtName === selectedCourt)
-      .sort(
-        (a, b) =>
-          (order[a.status] ?? 1) - (order[b.status] ?? 1) ||
-          a.courtName.localeCompare(b.courtName) ||
-          a.startAt.localeCompare(b.startAt)
-      );
+      .sort((a, b) => {
+        if (isDone(a.status) !== isDone(b.status)) return isDone(a.status) ? 1 : -1;
+        if (isDone(a.status)) {
+          // historique : plus récent en premier
+          return b.startAt.localeCompare(a.startAt) || a.courtName.localeCompare(b.courtName);
+        }
+        // à jouer : ordre chronologique réel, terrain en secondaire
+        return a.startAt.localeCompare(b.startAt) || a.courtName.localeCompare(b.courtName);
+      });
   }, [matchMap, selectedCourt]);
   const [selectedMatchId, setSelectedMatchId] = useState<string>(() => sortedMatches.find((m) => m.status === "LIVE" || m.status === "SCHEDULED")?.id ?? sortedMatches[0]?.id ?? "");
   const [clockSec, setClockSec] = useState(0);
@@ -177,6 +186,10 @@ export function TournamentRefereePanel({
   const [timeoutModal, setTimeoutModal] = useState<TimeoutModal>(null);
   const [goldenGoalModal, setGoldenGoalModal] = useState<GoldenGoalModal>(null);
   const [timeoutTimer, setTimeoutTimer] = useState<{ sec: number; label: string } | null>(null);
+  // Décomptes d'exclusion 30s par joueur (pénalité bike polo). Plusieurs joueurs
+  // peuvent être exclus en même temps ; le chrono du match NE s'arrête pas (le
+  // jeu continue à effectif réduit). playerId → secondes restantes.
+  const [exclusions, setExclusions] = useState<Map<string, number>>(new Map());
 
   // Referee assignment
   const [localRefereeId, setLocalRefereeId] = useState<string>("");
@@ -273,15 +286,31 @@ export function TournamentRefereePanel({
   const matchEndedRef = useRef(matchEnded);
   useEffect(() => { matchEndedRef.current = matchEnded; }, [matchEnded]);
 
-  // Timer timeout (overlay) — redémarre le chrono à la fin du timeout si on est dans les 2 dernières minutes
+  // Décompte des exclusions 30s : un seul interval décrémente tous les joueurs
+  // exclus, retire ceux arrivés à 0. Indépendant du chrono du match (le jeu
+  // continue). Ne tourne que s'il y a au moins une exclusion active.
+  useEffect(() => {
+    if (exclusions.size === 0) return;
+    const interval = setInterval(() => {
+      setExclusions((prev) => {
+        if (prev.size === 0) return prev;
+        const next = new Map<string, number>();
+        for (const [pid, sec] of prev) {
+          if (sec - 1 > 0) next.set(pid, sec - 1);
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [exclusions.size]);
+
+  // Timer timeout (overlay). À la fin du décompte on NE redémarre PLUS le chrono
+  // automatiquement : l'arbitre relance lui-même quand tout le monde est prêt
+  // (retour terrain — le redémarrage auto surprenait les arbitres).
   useEffect(() => {
     if (!timeoutTimer) return;
     if (timeoutTimer.sec <= 0) {
       setTimeoutTimer(null);
-      if (isLastTwoMinutesRef.current && !runningRef.current && !matchEndedRef.current) {
-        setRunning(true);
-        postEvent("START");
-      }
       return;
     }
     const interval = setInterval(() => setTimeoutTimer((prev) => prev ? { ...prev, sec: prev.sec - 1 } : null), 1000);
@@ -387,10 +416,36 @@ export function TournamentRefereePanel({
     }
   };
 
-  const onPenaltyConfirmed = (teamId: string, playerId: string, delta: number) => {
+  // Lance (ou relance) le décompte d'exclusion 30s d'un joueur. Le chrono du
+  // match n'est PAS touché — le jeu continue à effectif réduit.
+  const startExclusion = (playerId: string) => {
+    setExclusions((prev) => new Map(prev).set(playerId, 30));
+  };
+
+  // FAUTE : incrémente/décrémente le compteur de fautes du joueur (event
+  // PENALTY). Règle bike polo : à la 3e faute, exclusion 30s d'office.
+  // Une faute n'entraîne PAS d'exclusion en soi (sauf la 3e).
+  const onFaultConfirmed = (teamId: string, playerId: string, delta: number) => {
     setTimeout(() => setPenaltyModal(null), 0);
     const playerName = tournament.teams.flatMap((t) => t.players).find((p) => p.id === playerId)?.name;
     postEvent("PENALTY", { teamId, playerId, ...(playerName ? { playerName } : {}), delta });
+    if (delta > 0) {
+      const newCount = (penaltyCounts.get(playerId) ?? 0) + 1;
+      // 3e faute (ou multiple : 6e, 9e…) → exclusion 30s automatique.
+      if (newCount > 0 && newCount % 3 === 0) startExclusion(playerId);
+    } else {
+      // Annulation d'une faute : on ne lève pas une exclusion en cours (elle a
+      // pu être donnée pour une action dangereuse, indépendamment du compteur).
+    }
+  };
+
+  // 30 SECONDES direct (action dangereuse…) : lance l'exclusion 30s ET compte
+  // une faute au joueur (les deux sont liés d'après les règles).
+  const on30sConfirmed = (teamId: string, playerId: string) => {
+    setTimeout(() => setPenaltyModal(null), 0);
+    const playerName = tournament.teams.flatMap((t) => t.players).find((p) => p.id === playerId)?.name;
+    postEvent("PENALTY", { teamId, playerId, ...(playerName ? { playerName } : {}), delta: 1 });
+    startExclusion(playerId);
   };
 
   const onTimeoutConfirmed = (teamId: string, type: "normal" | "mechanical") => {
@@ -472,10 +527,11 @@ export function TournamentRefereePanel({
 
   const nextScheduled = useMemo(() => {
     const currentCourt = selectedMatch?.courtName;
-    // Quand un match se termine, la route passe AUTOMATIQUEMENT le match suivant
-    // du terrain en LIVE. Il faut donc considérer LIVE **et** SCHEDULED comme
-    // « prochain match » — sinon on saute le vrai suivant (devenu LIVE) pour
-    // pointer celui d'après (encore SCHEDULED). LIVE est prioritaire.
+    // « Match suivant » = le match qui doit se jouer MAINTENANT sur le terrain
+    // (le « on court »), pas le « on deck » d'après. Quand un match se termine,
+    // la route passe le suivant du terrain en LIVE ; il faut donc viser en
+    // priorité ce LIVE du terrain courant. À défaut, le prochain match à jouer
+    // dans l'ordre CHRONOLOGIQUE (sortedMatches trie déjà par startAt).
     const isNext = (m: (typeof sortedMatches)[number]) =>
       (m.status === "LIVE" || m.status === "SCHEDULED") && m.id !== selectedMatchId;
     return (
@@ -508,6 +564,13 @@ export function TournamentRefereePanel({
     }).sort((a, b) => a.name.localeCompare(b.name));
   }, [tournament.teams]);
   const cannotEndBracketDraw = !!selectedMatch && selectedMatch.phase === "BRACKET" && selectedMatch.scoreA === selectedMatch.scoreB;
+
+  // Changement de match : purge les décomptes (exclusions 30s + timeout) du
+  // match précédent — ils ne concernent pas le nouveau match sélectionné.
+  useEffect(() => {
+    setExclusions(new Map());
+    setTimeoutTimer(null);
+  }, [selectedMatchId]);
 
   // Auto-select if single court
   useEffect(() => {
@@ -653,13 +716,21 @@ export function TournamentRefereePanel({
             <p className="ref-modal-sub">{penaltyModal.teamName}</p>
             <div className="ref-modal-list">
               {penaltyModal.players.map((pl) => (
-                <button key={pl.id} className="ghost ref-modal-item"
-                  onClick={() => onPenaltyConfirmed(penaltyModal.teamId, pl.id, 1)}>
-                  {pl.name}
-                  {(penaltyCounts.get(pl.id) ?? 0) > 0 && (
-                    <span className="ref-badge ref-badge--red">{penaltyCounts.get(pl.id)}</span>
-                  )}
-                </button>
+                <div key={pl.id} className="ref-fault-row">
+                  {/* Faute simple : incrémente le compteur (30s d'office à la 3e) */}
+                  <button className="ghost ref-modal-item ref-fault-main"
+                    onClick={() => onFaultConfirmed(penaltyModal.teamId, pl.id, 1)}>
+                    {pl.name}
+                    {(penaltyCounts.get(pl.id) ?? 0) > 0 && (
+                      <span className="ref-badge ref-badge--red">{penaltyCounts.get(pl.id)}</span>
+                    )}
+                  </button>
+                  {/* 30s direct (action dangereuse) : exclusion + 1 faute */}
+                  <button className="danger ref-30s-btn"
+                    onClick={() => on30sConfirmed(penaltyModal.teamId, pl.id)}>
+                    ⏱ 30s
+                  </button>
+                </div>
               ))}
             </div>
             <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setPenaltyModal(null), 0)}>{t("btn_cancel")}</button>
@@ -748,14 +819,17 @@ export function TournamentRefereePanel({
           {!matchEnded && (
             <div className="ref-section" style={{ padding: "12px 16px", display: "grid", gap: 10 }}>
               <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>🦺 {t("referees_label")}</p>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <label style={{ fontSize: 12, display: "grid", gap: 4 }}>
+              {/* minWidth:0 sur la grille ET les colonnes + width:100% sur les
+                  <select> : sans ça un nom de joueur long donne au select une
+                  largeur mini-content qui fait déborder la grille à droite. */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, minWidth: 0 }}>
+                <label style={{ fontSize: 12, display: "grid", gap: 4, minWidth: 0 }}>
                   <span>{t("main_referee")}</span>
                   <select
                     value={localRefereeId}
                     onChange={(e) => { setLocalRefereeId(e.target.value); saveReferees(e.target.value, localCoRefereeId); }}
                     disabled={refSaving}
-                    style={{ fontSize: 13 }}
+                    style={{ fontSize: 13, width: "100%", minWidth: 0 }}
                   >
                     <option value="">{t("not_assigned")}</option>
                     {allPlayers.map((p) => (
@@ -763,13 +837,13 @@ export function TournamentRefereePanel({
                     ))}
                   </select>
                 </label>
-                <label style={{ fontSize: 12, display: "grid", gap: 4 }}>
+                <label style={{ fontSize: 12, display: "grid", gap: 4, minWidth: 0 }}>
                   <span>{t("co_referee_phone")}</span>
                   <select
                     value={localCoRefereeId}
                     onChange={(e) => { setLocalCoRefereeId(e.target.value); saveReferees(localRefereeId, e.target.value); }}
                     disabled={refSaving}
-                    style={{ fontSize: 13 }}
+                    style={{ fontSize: 13, width: "100%", minWidth: 0 }}
                   >
                     <option value="">{t("not_assigned")}</option>
                     {allPlayers.map((p) => (
@@ -810,6 +884,25 @@ export function TournamentRefereePanel({
               <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => p + 5); postEvent("TIME_ADJUST", { delta: 5 }); }}>+5s</button>
               <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => p + 10); postEvent("TIME_ADJUST", { delta: 10 }); }}>+10s</button>
             </div>
+            {/* Rappel des exclusions 30s en cours, visible sur l'écran principal
+                (le jeu continue pendant le décompte). Tap = lever l'exclusion. */}
+            {exclusions.size > 0 && (
+              <div className="ref-exclusions-bar">
+                {[...exclusions.entries()].map(([pid, sec]) => {
+                  const pl = tournament.teams.flatMap((tm) => tm.players).find((p) => p.id === pid);
+                  return (
+                    <button
+                      key={pid}
+                      className="ref-exclusion-chip"
+                      onClick={() => setExclusions((prev) => { const n = new Map(prev); n.delete(pid); return n; })}
+                      title={t("exclusion_clear")}
+                    >
+                      ⏱ {sec}s · {pl?.name ?? "?"}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* ── Scores ─────────────────────────────────────────────────── */}
@@ -970,16 +1063,23 @@ export function TournamentRefereePanel({
                   <p className="ref-sub-label">{team.name}</p>
                   {team.players.map((pl) => (
                     <div key={pl.id} className="ref-penalty-row">
-                      <span>{pl.name}</span>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pl.name}</span>
+                        {exclusions.has(pl.id) && (
+                          <span className="ref-exclusion-badge">⏱ {exclusions.get(pl.id)}s</span>
+                        )}
+                      </span>
                       <div className="ref-penalty-controls">
                         <button className="ghost ref-smBtn"
-                          onClick={() => onPenaltyConfirmed(team.id, pl.id, -1)}>−</button>
+                          onClick={() => onFaultConfirmed(team.id, pl.id, -1)}>−</button>
                         <span className="ref-penalty-val"
                           style={{ color: (penaltyCounts.get(pl.id) ?? 0) > 0 ? "var(--red)" : undefined }}>
                           {penaltyCounts.get(pl.id) ?? 0}
                         </span>
                         <button className="ghost ref-smBtn"
-                          onClick={() => onPenaltyConfirmed(team.id, pl.id, 1)}>+</button>
+                          onClick={() => onFaultConfirmed(team.id, pl.id, 1)}>+</button>
+                        <button className="danger ref-30s-btn"
+                          onClick={() => on30sConfirmed(team.id, pl.id)}>⏱ 30s</button>
                       </div>
                     </div>
                   ))}
