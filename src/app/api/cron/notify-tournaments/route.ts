@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   const in3days = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
   const in2days = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
   const closingSoonTournaments = await prisma.tournament.findMany({
-    where: { registrationEnd: { gte: in2days, lte: in3days } },
+    where: { registrationEnd: { gte: in2days, lte: in3days }, createdViaSandbox: false, hidden: false },
     select: { id: true, name: true, city: true, country: true, continentCode: true, registrationEnd: true },
   });
 

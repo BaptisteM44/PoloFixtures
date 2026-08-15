@@ -319,7 +319,8 @@ model Tournament {
   mtpPoolAStart           DateTime?        // MTP: Pool A start (Sat morning)
   mtpPoolBStart           DateTime?        // MTP: Pool B start (Sat afternoon)
   mtpSundayStart          DateTime?        // MTP: Barrage + DE start (Sunday)
-  testMode                Boolean          @default(false)        // Test tournament: excluded from badge calculations
+  testMode                Boolean          @default(false)        // Test tournament: excluded from badge calculations. Peut être activé sur un vrai tournoi (pas que via /sandbox).
+  createdViaSandbox       Boolean          @default(false)        // true uniquement pour les tournois créés depuis /sandbox — distinct de testMode (qu'un vrai tournoi peut aussi activer). Exclut des notifs email.
   hidden                  Boolean          @default(false)        // Hidden from public tournament list (organizer-controlled)
   timezone                String?          // Fuseau IANA du lieu (ex: "Europe/Brussels") — tous les horaires affichés dans CE fuseau
   usesPipeline            Boolean          @default(false)        // true = nouveau système de stages (refonte formats)

@@ -655,7 +655,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   // We look for each tournament's previous one (by dateEnd) and check if that winner is among opponents we beat
   if (playerTeamIds.length > 0) {
     const allCompletedTournaments = await prisma.tournament.findMany({
-      where: { status: "COMPLETED" },
+      where: { status: "COMPLETED", testMode: false },
       select: { id: true, dateEnd: true },
       orderBy: { dateEnd: "asc" },
     });
