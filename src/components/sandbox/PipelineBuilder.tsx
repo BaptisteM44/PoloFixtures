@@ -41,9 +41,13 @@ export const TYPE_LABEL_KEY: Record<StageType, string> = {
 };
 
 export function defaultConfig(type: StageType): Record<string, unknown> {
+  // carryPoints est coché par défaut sur RR/SWISS (quand l'option a du sens,
+  // cf. canCarry) : au-delà de cumuler les points entre étapes, c'est CE
+  // réglage qui évite de refaire jouer deux équipes déjà opposées lors d'une
+  // étape précédente. Décocher est possible mais expose à des rematchs.
   switch (type) {
-    case "RR": return {};
-    case "SWISS": return { rounds: 5 };
+    case "RR": return { carryPoints: true };
+    case "SWISS": return { rounds: 5, carryPoints: true };
     case "CROSS_POOL": return { opponents: 1 };
     case "PLACEMENT": return { count: 2 };
     case "SE": return { thirdPlace: true };
@@ -245,8 +249,13 @@ export function StageConfigFields({ type, config, groupCount, courtsCount, canCa
   // Le choix de répartition n'a de sens qu'avec plusieurs groupes.
   const showCourtMode = groupCount > 1;
   // « Cumuler les points » n'a de sens que si une étape à points précède.
+  // Coché par défaut : au-delà du cumul de points, c'est ce réglage qui
+  // évite les rematchs avec les étapes précédentes (cf. tooltip).
   const carryToggle = canCarry ? (
-    <label><input type="checkbox" checked={!!config.carryPoints} onChange={(e) => set("carryPoints", e.target.checked || undefined)} /> {t("cfg_carry_points")}</label>
+    <label title={t("cfg_carry_points_hint")}>
+      <input type="checkbox" checked={!!config.carryPoints} onChange={(e) => set("carryPoints", e.target.checked || undefined)} /> {t("cfg_carry_points")}
+      <span style={{ marginLeft: 4, fontSize: 11, color: "var(--text-muted)" }}>({t("cfg_carry_points_hint")})</span>
+    </label>
   ) : null;
 
   switch (type) {

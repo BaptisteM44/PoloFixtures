@@ -1946,6 +1946,7 @@
     "delete": "Löschen",
     "cross_pool_hint": "Cross-Pool lässt zwei Gruppen gegeneinander antreten (A gegen B). Nimm Teams aus einer Phase mit 2 Gruppen: entweder eine Quelle mit der gesamten Rangliste (die Gruppen werden automatisch erkannt) oder zwei Quellen — eine pro Gruppe.",
     "cfg_carry_points": "Punkte aus vorherigen Phasen übernehmen",
+    "cfg_carry_points_hint": "übernimmt die Punkte UND verhindert, dass zwei Teams, die sich bereits in einer vorherigen Phase getroffen haben, erneut gegeneinander spielen",
     "cfg_preserve_seeding": "Poolrang sperren (1. bleibt vor den 2.)"
   },
   "legal_privacy": {
