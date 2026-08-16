@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { BadgeInfo } from "@/lib/badge-catalog";
 
@@ -47,7 +48,7 @@ function BadgeRow({
       }}
     >
       {info.iconUrl ? (
-        <img src={info.iconUrl} alt={info.name} width={20} height={20} style={{ imageRendering: "pixelated" }} />
+        <Image src={info.iconUrl} alt={info.name} width={20} height={20} style={{ imageRendering: "pixelated" }} unoptimized />
       ) : (
         <span style={{ fontSize: 20, lineHeight: 1 }}>{info.emoji}</span>
       )}

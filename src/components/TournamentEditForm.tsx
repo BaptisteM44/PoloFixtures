@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition, useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
@@ -1087,7 +1088,13 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
             {bannerPath && (
               <div style={{ position: "relative", display: "inline-block" }}>
-                <img src={bannerPath} alt={t("banner_alt")} style={{ height: 100, borderRadius: 8, border: "2px solid var(--border)", objectFit: "cover" }} />
+                <Image
+                  src={bannerPath}
+                  alt={t("banner_alt")}
+                  width={71}
+                  height={100}
+                  style={{ height: 100, width: "auto", borderRadius: 8, border: "2px solid var(--border)", objectFit: "cover" }}
+                />
                 <button type="button" onClick={() => setBannerPath("")} style={{ position: "absolute", top: -8, right: -8, background: "var(--danger)", color: "#fff", border: "none", borderRadius: "50%", width: 22, height: 22, minWidth: 22, minHeight: 22, padding: 0, cursor: "pointer", fontSize: 12, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
               </div>
             )}

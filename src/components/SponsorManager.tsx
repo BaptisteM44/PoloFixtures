@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 
@@ -112,7 +113,13 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
               border: "1.5px solid var(--border-light)", borderRadius: 8, background: "var(--surface-2)"
             }}>
               {s.logoPath ? (
-                <img src={s.logoPath} alt={s.name} style={{ height: 32, width: "auto", maxWidth: 90, objectFit: "contain", borderRadius: 4, border: "1px solid var(--border-light)" }} />
+                <Image
+                  src={s.logoPath}
+                  alt={s.name}
+                  width={90}
+                  height={32}
+                  style={{ height: 32, width: "auto", maxWidth: 90, objectFit: "contain", borderRadius: 4, border: "1px solid var(--border-light)" }}
+                />
               ) : (
                 <span style={{ fontSize: 22 }}>🤝</span>
               )}
@@ -161,6 +168,7 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
 
         {logoPreview && (
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- blob: URL locale (preview avant upload), next/image ne supporte pas ce protocole */}
             <img src={logoPreview} alt="preview" style={{ height: 48, width: "auto", maxWidth: 140, objectFit: "contain", borderRadius: 6, border: "1.5px solid var(--border-light)" }} />
             <button type="button" onClick={() => { setLogoPreview(null); setLogoPath(null); if (fileRef.current) fileRef.current.value = ""; }}
               style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 13 }}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 type RefPlayer = {
@@ -148,7 +149,7 @@ export function RefereeManager({
             >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {ref.photoPath ? (
-                  <img src={ref.photoPath} alt={ref.name} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+                  <Image src={ref.photoPath} alt={ref.name} width={32} height={32} style={{ borderRadius: "50%", objectFit: "cover" }} />
                 ) : (
                   <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--teal)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>
                     {ref.name[0]}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 type OrgaPlayer = {
@@ -101,7 +102,7 @@ export function CoOrganizerManager({
           {organizers.map((o) => (
             <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "var(--surface-2)", border: "1.5px solid var(--border)", borderRadius: 8 }}>
               {o.photoPath && (
-                <img src={o.photoPath} alt="" style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />
+                <Image src={o.photoPath} alt="" width={32} height={32} style={{ borderRadius: "50%", objectFit: "cover" }} />
               )}
               <div style={{ flex: 1 }}>
                 <strong style={{ fontSize: 14 }}>{o.name}</strong>
