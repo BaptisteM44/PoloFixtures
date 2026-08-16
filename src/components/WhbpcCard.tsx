@@ -10,6 +10,7 @@
  */
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 /* ── Helpers SVG ─────────────────────────────────────────────────── */
 
@@ -146,6 +147,7 @@ export function WhbpcCard({
   onFlipChange,
   onSave,
 }: WhbpcCardProps) {
+  const t = useTranslations("common");
   const editable = !!onSave;
   const initials = playerName.split(/\s+/).map((w) => w[0]).join("").slice(0, 3).toUpperCase();
   const attributeLines = [pedals, hand, `${wheelSize}"`];
@@ -330,7 +332,7 @@ export function WhbpcCard({
               onSave={async (data) => {
                 const res = await onSave?.(data);
                 if (res?.ok) onFlipChange?.(false);
-                return res ?? { error: "Erreur" };
+                return res ?? { error: t("error") };
               }}
             />
           </div>
@@ -351,6 +353,7 @@ function WhbpcCardBackForm({
   onSave: (data: WhbpcCardData) => Promise<{ ok?: boolean; error?: string }>;
   onCancel: () => void;
 }) {
+  const t = useTranslations("common");
   const [form, setForm] = useState<WhbpcCardData>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -448,10 +451,10 @@ function WhbpcCardBackForm({
 
       <div style={{ marginTop: "auto", display: "flex", gap: 8 }}>
         <button type="button" className="primary" style={{ flex: 1, fontSize: 13 }} onClick={handleSave} disabled={saving}>
-          {saving ? "…" : "Enregistrer"}
+          {saving ? "…" : t("save")}
         </button>
         <button type="button" className="ghost" style={{ fontSize: 13 }} onClick={onCancel} disabled={saving}>
-          Annuler
+          {t("cancel")}
         </button>
       </div>
     </div>

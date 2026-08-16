@@ -23,15 +23,16 @@ type Props = {
   currentPlayerId?: string | null;
 };
 
-export function FreeAgentList({ agents, canDelete, deleteAction, title = "Demandes reçues", publicView = false, currentPlayerId }: Props) {
+export function FreeAgentList({ agents, canDelete, deleteAction, title, publicView = false, currentPlayerId }: Props) {
   const t = useTranslations("free_agent");
   const [isPending, startTransition] = useTransition();
+  const resolvedTitle = title ?? t("default_title");
 
   if (agents.length === 0) return null;
 
   const handleDelete = (id: string) => {
     if (!deleteAction) return;
-    if (!confirm("Supprimer cette demande ?")) return;
+    if (!confirm(t("confirm_delete"))) return;
     startTransition(async () => {
       await deleteAction!(id);
     });
@@ -47,7 +48,7 @@ export function FreeAgentList({ agents, canDelete, deleteAction, title = "Demand
 
   return (
     <div className="free-agent-list">
-      {title && <h4>{title}</h4>}
+      {resolvedTitle && <h4>{resolvedTitle}</h4>}
       <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
         {agents.map((agent) => (
           <div key={agent.id} className="free-agent-row">
@@ -87,7 +88,7 @@ export function FreeAgentList({ agents, canDelete, deleteAction, title = "Demand
                   type="button"
                   onClick={() => handleDelete(agent.id)}
                   disabled={isPending}
-                  title="Supprimer"
+                  title={t("delete_btn")}
                   className="free-agent-row__delete"
                 >
                   ✕

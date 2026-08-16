@@ -377,16 +377,16 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                       const res = await fetch("/api/upload", { method: "POST", body: fd });
                       if (!res.ok) {
                         const txt = await res.text();
-                        throw new Error(txt || `Upload échoué (${res.status})`);
+                        throw new Error(txt || t("upload_failed", { status: res.status }));
                       }
                       const json = await res.json();
                       const path = json?.path;
-                      if (!path) throw new Error("Réponse d'upload invalide");
+                      if (!path) throw new Error(t("upload_invalid_response"));
                       setPhotoFinishPath(path);
                       save({ photoFinishPath: path });
                     } catch (err: any) {
                       console.error("Upload photo finish failed:", err);
-                      setUploadError(err?.message ?? "Erreur lors de l'upload");
+                      setUploadError(err?.message ?? t("upload_generic_error"));
                     } finally {
                       setUploadingPhoto(false);
                     }
@@ -447,16 +447,16 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                     const res = await fetch("/api/upload", { method: "POST", body: fd });
                     if (!res.ok) {
                       const txt = await res.text();
-                      throw new Error(txt || `Upload échoué (${res.status})`);
+                      throw new Error(txt || t("upload_failed", { status: res.status }));
                     }
                     const json = await res.json();
                     const path = json?.path;
-                    if (!path) throw new Error("Réponse d'upload invalide");
+                    if (!path) throw new Error(t("upload_invalid_response"));
                     setPhotoFinishPath(path);
                     save({ photoFinishPath: path });
                   } catch (err: any) {
                     console.error("Upload photo finish failed:", err);
-                    setUploadError(err?.message ?? "Erreur lors de l'upload");
+                    setUploadError(err?.message ?? t("upload_generic_error"));
                   } finally {
                     setUploadingPhoto(false);
                   }

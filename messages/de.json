@@ -31,7 +31,8 @@
     "of": "von",
     "auth_required_title": "Anmeldung erforderlich",
     "auth_required_desc": "Sie müssen angemeldet sein, um auf diese Seite zuzugreifen.",
-    "auth_required_btn": "Anmelden"
+    "auth_required_btn": "Anmelden",
+    "error": "Fehler"
   },
   "seo": {
     "site_name": "Poloperator",
@@ -1146,7 +1147,10 @@
     "error": "Ein Fehler ist aufgetreten, bitte erneut versuchen.",
     "btn_sending": "Wird gesendet…",
     "withdraw": "Zurückziehen",
-    "withdraw_confirm": "Deine Free-Agent-Anfrage zurückziehen?"
+    "withdraw_confirm": "Deine Free-Agent-Anfrage zurückziehen?",
+    "confirm_delete": "Diese Anfrage löschen?",
+    "delete_btn": "Löschen",
+    "default_title": "Erhaltene Anfragen"
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -2155,7 +2159,10 @@
     "the_historian": "Eine Nachricht in einem Turnier-Chat senden der seit 6+ Monaten beendet ist",
     "squeaky_clean": "Ein Turnier gewinnen ohne je mehr als 1 Gegentor pro Spiel zu kassieren",
     "ref_duty": "3 Spiele leiten UND 3 Spiele spielen am selben Tag",
-    "double_duty": "5 Spiele leiten UND 5 Spiele spielen am selben Tag"
+    "double_duty": "5 Spiele leiten UND 5 Spiele spielen am selben Tag",
+    "unpin_from_card": "Von Karte entfernen",
+    "pin_on_card": "Auf Karte anheften",
+    "max_pinned": "Max. 5 Abzeichen auf der Karte"
   },
   "settings_notifications": {
     "title": "Turnier-Benachrichtigungen",
@@ -2532,7 +2539,10 @@
     "add_summary": "+ Turnierbericht schreiben",
     "btn_save": "Speichern",
     "btn_cancel": "Abbrechen",
-    "credit_placeholder": "@Nutzername oder URL"
+    "credit_placeholder": "@Nutzername oder URL",
+    "upload_failed": "Upload fehlgeschlagen ({status})",
+    "upload_invalid_response": "Ungültige Upload-Antwort",
+    "upload_generic_error": "Fehler beim Hochladen"
   },
   "draw": {
     "title": "ABC-Hut-Auslosung",

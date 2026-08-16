@@ -31,7 +31,8 @@
     "of": "of",
     "auth_required_title": "Login required",
     "auth_required_desc": "You must be logged in to access this page.",
-    "auth_required_btn": "Log in"
+    "auth_required_btn": "Log in",
+    "error": "Error"
   },
   "seo": {
     "site_name": "Poloperator",
@@ -1141,7 +1142,10 @@
     "empty": "No free agents yet.",
     "error": "An error occurred, please try again.",
     "withdraw": "Withdraw",
-    "withdraw_confirm": "Withdraw your free agent request?"
+    "withdraw_confirm": "Withdraw your free agent request?",
+    "confirm_delete": "Delete this request?",
+    "delete_btn": "Delete",
+    "default_title": "Requests received"
   },
   "notifications": {
     "title": "Notifications",
@@ -2150,7 +2154,10 @@
     "the_historian": "Send a message in a tournament chat that ended 6+ months ago",
     "squeaky_clean": "Win a tournament without ever conceding more than 1 goal per match",
     "ref_duty": "Referee 3 matches AND play 3 matches on the same day",
-    "double_duty": "Referee 5 matches AND play 5 matches on the same day"
+    "double_duty": "Referee 5 matches AND play 5 matches on the same day",
+    "unpin_from_card": "Remove from card",
+    "pin_on_card": "Pin to card",
+    "max_pinned": "5 badges max on card"
   },
   "settings_notifications": {
     "title": "Tournament Notifications",
@@ -2527,7 +2534,10 @@
     "add_summary": "+ Write a tournament summary",
     "btn_save": "Save",
     "btn_cancel": "Cancel",
-    "credit_placeholder": "@username or URL"
+    "credit_placeholder": "@username or URL",
+    "upload_failed": "Upload failed ({status})",
+    "upload_invalid_response": "Invalid upload response",
+    "upload_generic_error": "Upload error"
   },
   "draw": {
     "title": "ABC Hat Draw",

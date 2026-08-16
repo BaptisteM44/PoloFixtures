@@ -31,7 +31,8 @@
     "of": "de",
     "auth_required_title": "Connexion requise",
     "auth_required_desc": "Vous devez être connecté pour accéder à cette page.",
-    "auth_required_btn": "Se connecter"
+    "auth_required_btn": "Se connecter",
+    "error": "Erreur"
   },
   "seo": {
     "site_name": "Poloperator",
@@ -1141,7 +1142,10 @@
     "empty": "Aucun free agent pour l'instant.",
     "error": "Une erreur est survenue, réessaie.",
     "withdraw": "Se retirer",
-    "withdraw_confirm": "Retirer ta demande de free agent ?"
+    "withdraw_confirm": "Retirer ta demande de free agent ?",
+    "confirm_delete": "Supprimer cette demande ?",
+    "delete_btn": "Supprimer",
+    "default_title": "Demandes reçues"
   },
   "notifications": {
     "title": "Notifications",
@@ -2151,7 +2155,10 @@
     "the_historian": "Envoyer un message dans un chat de tournoi terminé depuis 6+ mois",
     "squeaky_clean": "Gagner un tournoi en n'encaissant jamais plus d'1 but par match",
     "ref_duty": "Arbitrer 3 matchs ET jouer 3 matchs dans la même journée",
-    "double_duty": "Arbitrer 5 matchs ET jouer 5 matchs dans la même journée"
+    "double_duty": "Arbitrer 5 matchs ET jouer 5 matchs dans la même journée",
+    "unpin_from_card": "Retirer de la carte",
+    "pin_on_card": "Épingler sur la carte",
+    "max_pinned": "5 badges max sur la carte"
   },
   "settings_notifications": {
     "title": "Notifications de tournois",
@@ -2528,7 +2535,10 @@
     "add_summary": "+ Rédiger un résumé du tournoi",
     "btn_save": "Enregistrer",
     "btn_cancel": "Annuler",
-    "credit_placeholder": "@pseudo ou URL"
+    "credit_placeholder": "@pseudo ou URL",
+    "upload_failed": "Upload échoué ({status})",
+    "upload_invalid_response": "Réponse d'upload invalide",
+    "upload_generic_error": "Erreur lors de l'upload"
   },
   "draw": {
     "title": "Tirage ABC Chapeau",

@@ -29,6 +29,7 @@ function BadgeRow({
   canPin?: boolean;
   onTogglePin?: () => void;
 }) {
+  const t = useTranslations("badges");
   return (
     <div
       style={{
@@ -70,7 +71,7 @@ function BadgeRow({
           type="button"
           onClick={onTogglePin}
           disabled={!pinned && !canPin}
-          title={pinned ? "Retirer de la carte" : canPin ? "Épingler sur la carte" : "5 badges max sur la carte"}
+          title={pinned ? t("unpin_from_card") : canPin ? t("pin_on_card") : t("max_pinned")}
           style={{
             fontSize: 10, padding: "4px 8px", borderRadius: 6,
             fontWeight: 700, fontFamily: "var(--font-display)",

@@ -31,7 +31,8 @@
     "of": "de",
     "auth_required_title": "Inicio de sesión requerido",
     "auth_required_desc": "Debe estar conectado para acceder a esta página.",
-    "auth_required_btn": "Iniciar sesión"
+    "auth_required_btn": "Iniciar sesión",
+    "error": "Error"
   },
   "seo": {
     "site_name": "Poloperator",
@@ -1145,7 +1146,10 @@
     "error": "Ocurrió un error, inténtalo de nuevo.",
     "btn_sending": "Enviando…",
     "withdraw": "Retirarse",
-    "withdraw_confirm": "¿Retirar tu solicitud de agente libre?"
+    "withdraw_confirm": "¿Retirar tu solicitud de agente libre?",
+    "confirm_delete": "¿Eliminar esta solicitud?",
+    "delete_btn": "Eliminar",
+    "default_title": "Solicitudes recibidas"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -2154,7 +2158,10 @@
     "the_historian": "Enviar un mensaje en el chat de un torneo terminado hace 6+ meses",
     "squeaky_clean": "Ganar un torneo sin encajar nunca más de 1 gol por partido",
     "ref_duty": "Arbitrar 3 partidos Y jugar 3 partidos en el mismo día",
-    "double_duty": "Arbitrar 5 partidos Y jugar 5 partidos en el mismo día"
+    "double_duty": "Arbitrar 5 partidos Y jugar 5 partidos en el mismo día",
+    "unpin_from_card": "Quitar de la tarjeta",
+    "pin_on_card": "Fijar en la tarjeta",
+    "max_pinned": "Máx. 5 insignias en la tarjeta"
   },
   "settings_notifications": {
     "title": "Notificaciones de torneos",
@@ -2531,7 +2538,10 @@
     "add_summary": "+ Escribir resumen del torneo",
     "btn_save": "Guardar",
     "btn_cancel": "Cancelar",
-    "credit_placeholder": "@usuario o URL"
+    "credit_placeholder": "@usuario o URL",
+    "upload_failed": "Subida fallida ({status})",
+    "upload_invalid_response": "Respuesta de subida no válida",
+    "upload_generic_error": "Error al subir"
   },
   "draw": {
     "title": "Sorteo ABC Sombrero",
