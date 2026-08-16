@@ -1713,6 +1713,7 @@ button:disabled,
 }
 
 .tournament-card__banner {
+  position: relative; /* requis pour next/image fill */
   width: 90px;
   flex-shrink: 0;
   overflow: hidden;

@@ -1,4 +1,5 @@
 import { Link } from "@/i18n/navigation";
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { getLocale } from "next-intl/server";
 import { Tournament } from "@prisma/client";
@@ -85,10 +86,16 @@ export async function TournamentCard({
           <p className="meta">{tournament.format} · {t("teams_slots", { count: teamCount, max: tournament.maxTeams })}</p>
         </div>
 
-        {/* Banner full height */}
+        {/* Banner full height (next/image : redimensionné à 90px, lazy, webp/avif) */}
         {tournament.bannerPath && (
           <div className="tournament-card__banner">
-            <img src={tournament.bannerPath} alt="" />
+            <Image
+              src={tournament.bannerPath}
+              alt=""
+              fill
+              sizes="90px"
+              style={{ objectFit: "cover" }}
+            />
           </div>
         )}
       </Link>
