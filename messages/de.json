@@ -60,7 +60,8 @@
     "account_suspended": "⚠️ Ihr Konto ist gesperrt.",
     "reason_prefix": "Grund: ",
     "close_menu": "Menü schließen",
-    "open_menu": "Menü öffnen"
+    "open_menu": "Menü öffnen",
+    "polls": "Umfragen"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -2832,5 +2833,38 @@
     "btn_retry": "Erneut versuchen",
     "btn_home": "Zur Startseite",
     "btn_tournaments": "Turniere ansehen"
+  },
+  "poll": {
+    "vote": "Abstimmen",
+    "your_vote": "Deine Stimme",
+    "submit": "Stimme abgeben",
+    "already_voted": "Du hast in dieser Umfrage bereits abgestimmt.",
+    "thanks": "Danke für deine Teilnahme!",
+    "results": "Ergebnisse",
+    "total_votes": "{count, plural, one {# Stimme} other {# Stimmen}}",
+    "closed": "Diese Umfrage ist geschlossen.",
+    "not_open": "Diese Umfrage ist noch nicht geöffnet.",
+    "guest_section": "Kein Konto? Trotzdem abstimmen",
+    "guest_intro": "Gib unten deine Infos ein. Du erhältst eine E-Mail zur Bestätigung (eine Stimme pro Person).",
+    "email": "E-Mail",
+    "email_required": "E-Mail erforderlich",
+    "guest_pending_title": "Prüfe deine E-Mails",
+    "guest_pending_desc": "Wir haben dir einen Bestätigungslink geschickt. Klicke ihn an, um deine Stimme zu bestätigen.",
+    "verify_success": "✓ Deine Stimme ist bestätigt, danke!",
+    "verify_already": "Diese Stimme wurde bereits bestätigt.",
+    "verify_expired": "Dieser Link ist abgelaufen. Stimme erneut ab, wenn die Umfrage noch offen ist.",
+    "verify_invalid": "Ungültiger Bestätigungslink.",
+    "verification_pending": "Eine Bestätigungs-E-Mail wurde dir bereits gesendet. Prüfe dein Postfach.",
+    "rate_limited": "Zu viele Versuche. Versuche es in ein paar Minuten erneut.",
+    "login_to_vote": "Melde dich an, um direkt abzustimmen",
+    "or": "oder",
+    "select_choice": "Wähle eine Antwort",
+    "anonymous_note": "🔒 Deine Stimme ist anonym: Niemand kann sehen, was du gewählt hast.",
+    "page_title": "Umfragen",
+    "page_intro": "Teile deine Meinung zu den Fragen der Bike-Polo-Community. Deine Stimme ist anonym.",
+    "page_empty": "Aktuell keine Umfragen.",
+    "open_badge": "Aktiv",
+    "closed_section": "Beendete Umfragen",
+    "results_not_yet": "Die Ergebnisse sind noch nicht verfügbar."
   }
 }

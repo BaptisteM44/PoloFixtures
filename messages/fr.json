@@ -60,7 +60,8 @@
     "account_suspended": "⚠️ Votre compte est suspendu.",
     "reason_prefix": "Raison : ",
     "close_menu": "Fermer le menu",
-    "open_menu": "Ouvrir le menu"
+    "open_menu": "Ouvrir le menu",
+    "polls": "Sondages"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -2828,5 +2829,38 @@
     "btn_retry": "Réessayer",
     "btn_home": "Retour à l'accueil",
     "btn_tournaments": "Voir les tournois"
+  },
+  "poll": {
+    "vote": "Voter",
+    "your_vote": "Ton vote",
+    "submit": "Envoyer mon vote",
+    "already_voted": "Tu as déjà voté à ce sondage.",
+    "thanks": "Merci pour ta participation !",
+    "results": "Résultats",
+    "total_votes": "{count, plural, one {# vote} other {# votes}}",
+    "closed": "Ce sondage est fermé.",
+    "not_open": "Ce sondage n'est pas encore ouvert.",
+    "guest_section": "Pas de compte ? Vote quand même",
+    "guest_intro": "Renseigne tes infos ci-dessous. Tu recevras un email pour confirmer ton vote (un seul vote par personne).",
+    "email": "Email",
+    "email_required": "Email obligatoire",
+    "guest_pending_title": "Vérifie tes emails",
+    "guest_pending_desc": "On t'a envoyé un lien de confirmation. Clique dessus pour valider ton vote.",
+    "verify_success": "✓ Ton vote est confirmé, merci !",
+    "verify_already": "Ce vote a déjà été confirmé.",
+    "verify_expired": "Ce lien a expiré. Revote si le sondage est encore ouvert.",
+    "verify_invalid": "Lien de confirmation invalide.",
+    "verification_pending": "Un email de confirmation t'a déjà été envoyé. Vérifie ta boîte.",
+    "rate_limited": "Trop de tentatives. Réessaie dans quelques minutes.",
+    "login_to_vote": "Connecte-toi pour voter directement",
+    "or": "ou",
+    "select_choice": "Choisis une réponse",
+    "anonymous_note": "🔒 Ton vote est anonyme : personne ne peut savoir ce que tu as voté.",
+    "page_title": "Sondages",
+    "page_intro": "Donne ton avis sur les questions de la communauté bike polo. Ton vote est anonyme.",
+    "page_empty": "Aucun sondage pour le moment.",
+    "open_badge": "En cours",
+    "closed_section": "Sondages terminés",
+    "results_not_yet": "Les résultats ne sont pas encore disponibles."
   }
 }

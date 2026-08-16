@@ -60,7 +60,8 @@
     "account_suspended": "⚠️ Your account is suspended.",
     "reason_prefix": "Reason: ",
     "close_menu": "Close menu",
-    "open_menu": "Open menu"
+    "open_menu": "Open menu",
+    "polls": "Polls"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -2827,5 +2828,38 @@
     "btn_retry": "Try again",
     "btn_home": "Back to home",
     "btn_tournaments": "Browse tournaments"
+  },
+  "poll": {
+    "vote": "Vote",
+    "your_vote": "Your vote",
+    "submit": "Submit my vote",
+    "already_voted": "You already voted in this poll.",
+    "thanks": "Thanks for participating!",
+    "results": "Results",
+    "total_votes": "{count, plural, one {# vote} other {# votes}}",
+    "closed": "This poll is closed.",
+    "not_open": "This poll isn't open yet.",
+    "guest_section": "No account? Vote anyway",
+    "guest_intro": "Fill in your info below. You'll get an email to confirm your vote (one vote per person).",
+    "email": "Email",
+    "email_required": "Email required",
+    "guest_pending_title": "Check your inbox",
+    "guest_pending_desc": "We sent you a confirmation link. Click it to validate your vote.",
+    "verify_success": "✓ Your vote is confirmed, thanks!",
+    "verify_already": "This vote was already confirmed.",
+    "verify_expired": "This link has expired. Vote again if the poll is still open.",
+    "verify_invalid": "Invalid confirmation link.",
+    "verification_pending": "A confirmation email was already sent to you. Check your inbox.",
+    "rate_limited": "Too many attempts. Try again in a few minutes.",
+    "login_to_vote": "Log in to vote directly",
+    "or": "or",
+    "select_choice": "Pick an answer",
+    "anonymous_note": "🔒 Your vote is anonymous: no one can see what you voted.",
+    "page_title": "Polls",
+    "page_intro": "Share your opinion on the bike polo community's questions. Your vote is anonymous.",
+    "page_empty": "No polls right now.",
+    "open_badge": "Live",
+    "closed_section": "Closed polls",
+    "results_not_yet": "Results aren't available yet."
   }
 }

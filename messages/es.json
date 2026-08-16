@@ -60,7 +60,8 @@
     "account_suspended": "⚠️ Tu cuenta está suspendida.",
     "reason_prefix": "Motivo: ",
     "close_menu": "Cerrar menú",
-    "open_menu": "Abrir menú"
+    "open_menu": "Abrir menú",
+    "polls": "Encuestas"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -2831,5 +2832,38 @@
     "btn_retry": "Reintentar",
     "btn_home": "Volver al inicio",
     "btn_tournaments": "Ver torneos"
+  },
+  "poll": {
+    "vote": "Votar",
+    "your_vote": "Tu voto",
+    "submit": "Enviar mi voto",
+    "already_voted": "Ya has votado en esta encuesta.",
+    "thanks": "¡Gracias por participar!",
+    "results": "Resultados",
+    "total_votes": "{count, plural, one {# voto} other {# votos}}",
+    "closed": "Esta encuesta está cerrada.",
+    "not_open": "Esta encuesta aún no está abierta.",
+    "guest_section": "¿Sin cuenta? Vota igualmente",
+    "guest_intro": "Rellena tus datos abajo. Recibirás un email para confirmar tu voto (un voto por persona).",
+    "email": "Email",
+    "email_required": "Email obligatorio",
+    "guest_pending_title": "Revisa tu correo",
+    "guest_pending_desc": "Te enviamos un enlace de confirmación. Haz clic para validar tu voto.",
+    "verify_success": "✓ Tu voto está confirmado, ¡gracias!",
+    "verify_already": "Este voto ya fue confirmado.",
+    "verify_expired": "Este enlace ha caducado. Vuelve a votar si la encuesta sigue abierta.",
+    "verify_invalid": "Enlace de confirmación no válido.",
+    "verification_pending": "Ya se te ha enviado un email de confirmación. Revisa tu bandeja.",
+    "rate_limited": "Demasiados intentos. Inténtalo de nuevo en unos minutos.",
+    "login_to_vote": "Inicia sesión para votar directamente",
+    "or": "o",
+    "select_choice": "Elige una respuesta",
+    "anonymous_note": "🔒 Tu voto es anónimo: nadie puede ver qué has votado.",
+    "page_title": "Encuestas",
+    "page_intro": "Comparte tu opinión sobre las preguntas de la comunidad de bike polo. Tu voto es anónimo.",
+    "page_empty": "No hay encuestas por ahora.",
+    "open_badge": "En curso",
+    "closed_section": "Encuestas cerradas",
+    "results_not_yet": "Los resultados aún no están disponibles."
   }
 }

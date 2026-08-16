@@ -94,26 +94,26 @@ enum MatchPhase {
 // reliée à la précédente par des règles d'entrée déclaratives.
 
 enum StageType {
-  RR          // poules round-robin (1..N groupes)
-  SWISS       // rounds suisses (1 groupe ou groupes parallèles)
-  CROSS_POOL  // confrontations croisées entre groupes selon le rang
-  PLACEMENT   // duels directs par rang (1erA vs 1erB → seeds 1/2…)
-  SE          // élimination simple (+ 3e place)
-  DE          // double élimination (+ GF reset)
+  RR // poules round-robin (1..N groupes)
+  SWISS // rounds suisses (1 groupe ou groupes parallèles)
+  CROSS_POOL // confrontations croisées entre groupes selon le rang
+  PLACEMENT // duels directs par rang (1erA vs 1erB → seeds 1/2…)
+  SE // élimination simple (+ 3e place)
+  DE // double élimination (+ GF reset)
 }
 
 enum StageStatus {
   PENDING // en attente (l'étape précédente n'est pas terminée)
-  ACTIVE  // en cours
-  DONE    // terminée
+  ACTIVE // en cours
+  DONE // terminée
   SKIPPED // supprimée/sautée en cours de tournoi (flexibilité live)
 }
 
 enum BracketSide {
-  W  // Top bracket / standard SE: normal round
-  L  // Top bracket / standard SE: 3rd place match / SPLIT_SE losers rounds
-  G  // Top bracket / standard SE: final
-  B  // Bottom bracket (SWISS_SPLIT_SE): normal round
+  W // Top bracket / standard SE: normal round
+  L // Top bracket / standard SE: 3rd place match / SPLIT_SE losers rounds
+  G // Top bracket / standard SE: final
+  B // Bottom bracket (SWISS_SPLIT_SE): normal round
   BG // Bottom bracket (SWISS_SPLIT_SE): final
   BL // Bottom bracket (SWISS_SPLIT_SE): 3rd place match
   R1 // SPLIT_SE: first round (all 16 teams)
@@ -188,24 +188,24 @@ enum NotificationType {
   SQUAD_ROLE_CHANGED
   DIRECT_MESSAGE_REQUEST
   DIRECT_MESSAGE_RECEIVED
-  TEAM_REGISTERED        // inscription confirmée au tournoi
-  TEAM_SELECTED          // tiré au sort → IN
-  TEAM_WAITLISTED        // tiré au sort → liste d'attente (avec rang)
-  BADGE_UNLOCKED         // badge débloqué
-  TEAM_MESSAGE_RECEIVED  // nouveau message dans le chat d'équipe
-  TASK_ASSIGNED          // tâche orga assignée
+  TEAM_REGISTERED // inscription confirmée au tournoi
+  TEAM_SELECTED // tiré au sort → IN
+  TEAM_WAITLISTED // tiré au sort → liste d'attente (avec rang)
+  BADGE_UNLOCKED // badge débloqué
+  TEAM_MESSAGE_RECEIVED // nouveau message dans le chat d'équipe
+  TASK_ASSIGNED // tâche orga assignée
   TASK_DEADLINE_APPROACHING // deadline tâche orga proche
-  CLUB_JOIN_REQUEST      // un joueur a rejoint le club (notif au manager)
-  CLUB_SESSION           // nouvelle session ajoutée dans le club
-  CLUB_SESSION_JOIN      // des joueurs se sont inscrits à une session
-  CLUB_ANNOUNCEMENT      // nouvelle annonce dans le club
+  CLUB_JOIN_REQUEST // un joueur a rejoint le club (notif au manager)
+  CLUB_SESSION // nouvelle session ajoutée dans le club
+  CLUB_SESSION_JOIN // des joueurs se sont inscrits à une session
+  CLUB_ANNOUNCEMENT // nouvelle annonce dans le club
   COMMUNITY_STATUS_CHANGED // statut d'un item communauté a changé
-  TEAM_FEE_CONFIRMED       // frais d'inscription d'équipe confirmés
-  ACCOMMODATION_ASSIGNED    // un hébergement a été attribué au joueur
+  TEAM_FEE_CONFIRMED // frais d'inscription d'équipe confirmés
+  ACCOMMODATION_ASSIGNED // un hébergement a été attribué au joueur
   ACCOMMODATION_GUEST_ADDED // des invités ont été ajoutés chez un logeur
   TOURNAMENT_NEEDS_APPROVAL // notif admin : nouveau tournoi à modérer
-  CLUB_NEEDS_APPROVAL       // notif admin : nouveau club à modérer
-  NEW_TOURNAMENT_PUBLISHED  // notif joueurs : tournoi approuvé/publié
+  CLUB_NEEDS_APPROVAL // notif admin : nouveau club à modérer
+  NEW_TOURNAMENT_PUBLISHED // notif joueurs : tournoi approuvé/publié
 }
 
 enum TaskPriority {
@@ -225,7 +225,7 @@ model AccessCode {
   expiresAt    DateTime?
   createdAt    DateTime  @default(now())
 
-  operator  Operator? @relation(fields: [operatorId], references: [id])
+  operator   Operator?   @relation(fields: [operatorId], references: [id])
   tournament Tournament? @relation(fields: [tournamentId], references: [id])
 
   @@index([role])
@@ -267,9 +267,9 @@ model Tournament {
   contactEmail            String
   registrationStart       DateTime?
   registrationEnd         DateTime?
-  selectionLocked         Boolean   @default(false) // true = l'orga a validé sa liste d'équipes finale (avec ou sans tirage). Fige WL + paiement.
-  maxSoloPlayers          Int?      // null = pas de limite (ABC Chapeau)
-  rushRegistration        Boolean   @default(false) // true = waitlist si complet, false = toutes inscriptions admises
+  selectionLocked         Boolean          @default(false) // true = l'orga a validé sa liste d'équipes finale (avec ou sans tirage). Fige WL + paiement.
+  maxSoloPlayers          Int? // null = pas de limite (ABC Chapeau)
+  rushRegistration        Boolean          @default(false) // true = waitlist si complet, false = toutes inscriptions admises
   // Lieu principal (tout le tournoi)
   venueName               String?
   venueAddress            String?
@@ -296,40 +296,40 @@ model Tournament {
   chatMode                ChatMode         @default(DISABLED)
   infoTilesLayout         Json?
   saturdayFormat          SaturdayFormat
-  poolCount               Int              @default(1)   // 1, 2, 3, 4 groupes
+  poolCount               Int              @default(1) // 1, 2, 3, 4 groupes
   crossPool               Boolean          @default(false) // dimanche matin cross-pool avant bracket
   swissRounds             Int              @default(5)
-  poolRounds              Int?                              // null = unlimited (full round-robin)
+  poolRounds              Int? // null = unlimited (full round-robin)
   bracketSize             Int              @default(16)
   sundayFormat            SundayFormat
-  scoringSystem           String           @default("3/1")  // "3/1" = V3 N1 D0, "1/0.5" = V1 N0.5 D0
-  thirdPlaceMatch         Boolean          @default(false)  // SE only: add 3rd place match
-  gfReset                 Boolean          @default(false)  // DE only: grand final bracket reset
+  scoringSystem           String           @default("3/1") // "3/1" = V3 N1 D0, "1/0.5" = V1 N0.5 D0
+  thirdPlaceMatch         Boolean          @default(false) // SE only: add 3rd place match
+  gfReset                 Boolean          @default(false) // DE only: grand final bracket reset
   // Berlin Mixed format
   fridayRounds            Int              @default(5)
   saturdayRounds          Int              @default(5)
-  sundayRounds            Int              @default(2)      // 1 or 2
-  fridayGroupAStart       DateTime?        // Friday group A start time (morning)
-  fridayGroupBStart       DateTime?        // Friday group B start time (afternoon)
+  sundayRounds            Int              @default(2) // 1 or 2
+  fridayGroupAStart       DateTime? // Friday group A start time (morning)
+  fridayGroupBStart       DateTime? // Friday group B start time (afternoon)
   status                  TournamentStatus
   locked                  Boolean          @default(false)
-  saturdayPoolAStart      DateTime?        // Pool A session start time (for match scheduling)
-  saturdayPoolBStart      DateTime?        // Pool B session start time (for match scheduling)
+  saturdayPoolAStart      DateTime? // Pool A session start time (for match scheduling)
+  saturdayPoolBStart      DateTime? // Pool B session start time (for match scheduling)
   // MTP Open format
-  mtpPoolAStart           DateTime?        // MTP: Pool A start (Sat morning)
-  mtpPoolBStart           DateTime?        // MTP: Pool B start (Sat afternoon)
-  mtpSundayStart          DateTime?        // MTP: Barrage + DE start (Sunday)
-  testMode                Boolean          @default(false)        // Test tournament: excluded from badge calculations. Peut être activé sur un vrai tournoi (pas que via /sandbox).
-  createdViaSandbox       Boolean          @default(false)        // true uniquement pour les tournois créés depuis /sandbox — distinct de testMode (qu'un vrai tournoi peut aussi activer). Exclut des notifs email.
-  hidden                  Boolean          @default(false)        // Hidden from public tournament list (organizer-controlled)
-  timezone                String?          // Fuseau IANA du lieu (ex: "Europe/Brussels") — tous les horaires affichés dans CE fuseau
-  usesPipeline            Boolean          @default(false)        // true = nouveau système de stages (refonte formats)
+  mtpPoolAStart           DateTime? // MTP: Pool A start (Sat morning)
+  mtpPoolBStart           DateTime? // MTP: Pool B start (Sat afternoon)
+  mtpSundayStart          DateTime? // MTP: Barrage + DE start (Sunday)
+  testMode                Boolean          @default(false) // Test tournament: excluded from badge calculations. Peut être activé sur un vrai tournoi (pas que via /sandbox).
+  createdViaSandbox       Boolean          @default(false) // true uniquement pour les tournois créés depuis /sandbox — distinct de testMode (qu'un vrai tournoi peut aussi activer). Exclut des notifs email.
+  hidden                  Boolean          @default(false) // Hidden from public tournament list (organizer-controlled)
+  timezone                String? // Fuseau IANA du lieu (ex: "Europe/Brussels") — tous les horaires affichés dans CE fuseau
+  usesPipeline            Boolean          @default(false) // true = nouveau système de stages (refonte formats)
   approved                Boolean          @default(false)
   submissionStatus        SubmissionStatus @default(PENDING)
   rejectionReason         String?
   // Hébergement
   accommodationAvailable  Boolean          @default(false)
-  accommodationType       String?          // gymnase, camping, chez l'habitant…
+  accommodationType       String? // gymnase, camping, chez l'habitant…
   accommodationCapacity   Int?
   // Repas (JSON array of { day: 1|2|3, breakfast: bool, lunch: bool, dinner: bool })
   meals                   Json?
@@ -341,16 +341,16 @@ model Tournament {
   faq                     Json?
   // Telegram group/channel link (t.me/...)
   telegramUrl             String?
-  refToken                String?   @unique  // Token URL pour accès arbitre sans compte
+  refToken                String?          @unique // Token URL pour accès arbitre sans compte
   // Récap post-tournoi
-  recapText               String?   // markdown
-  photoFinishPath         String?   // URL upload photo finish
-  photoFinishCredit       String?   // crédit photographe photo finish
-  podiumNote              String?   // mention spéciale, MVP…
-  recapAnecdote           String?   // anecdote / remerciement
-  bannerCredit            String?   // crédit photographe
-  mvpPlayerId             String?   // joueur·euse du tournoi
-  mvpTitle                String?   // intitulé ex: "MVP", "Meilleur gardien"
+  recapText               String? // markdown
+  photoFinishPath         String? // URL upload photo finish
+  photoFinishCredit       String? // crédit photographe photo finish
+  podiumNote              String? // mention spéciale, MVP…
+  recapAnecdote           String? // anecdote / remerciement
+  bannerCredit            String? // crédit photographe
+  mvpPlayerId             String? // joueur·euse du tournoi
+  mvpTitle                String? // intitulé ex: "MVP", "Meilleur gardien"
   // Legacy meal booleans (kept for migration compatibility)
   breakfastProvided       Boolean          @default(false)
   lunchProvided           Boolean          @default(false)
@@ -363,25 +363,25 @@ model Tournament {
   createdAt               DateTime         @default(now())
   updatedAt               DateTime         @updatedAt
 
-  creator     Player?      @relation("CreatedTournaments", fields: [creatorId], references: [id])
-  hostClub    Club?        @relation("HostedTournaments", fields: [hostClubId], references: [id])
-  sponsors    Sponsor[]
-  teams       Team[]
-  pools       Pool[]
-  matches     Match[]
-  stages      Stage[]
-  accessCodes AccessCode[]
-  freeAgents     FreeAgent[]
-  messages       TournamentMessage[]
-  coOrganizers   TournamentOrganizer[]
-  orgaTasks           OrgaTask[]
-  orgaNotes           OrgaNote[]
-  orgaLinks           OrgaLink[]
-  followers           TournamentFollow[]
-  accommodationHosts  AccommodationHost[]
-  soloEntries     TournamentSoloEntry[]
-  overlayChannels OverlayChannel[]
-  registrationFields  RegistrationField[]
+  creator            Player?               @relation("CreatedTournaments", fields: [creatorId], references: [id])
+  hostClub           Club?                 @relation("HostedTournaments", fields: [hostClubId], references: [id])
+  sponsors           Sponsor[]
+  teams              Team[]
+  pools              Pool[]
+  matches            Match[]
+  stages             Stage[]
+  accessCodes        AccessCode[]
+  freeAgents         FreeAgent[]
+  messages           TournamentMessage[]
+  coOrganizers       TournamentOrganizer[]
+  orgaTasks          OrgaTask[]
+  orgaNotes          OrgaNote[]
+  orgaLinks          OrgaLink[]
+  followers          TournamentFollow[]
+  accommodationHosts AccommodationHost[]
+  soloEntries        TournamentSoloEntry[]
+  overlayChannels    OverlayChannel[]
+  registrationFields RegistrationField[]
 
   @@index([continentCode])
   @@index([status])
@@ -402,111 +402,112 @@ model Sponsor {
 }
 
 model Team {
-  id           String     @id @default(cuid())
-  tournamentId String
-  name         String
-  city         String?
-  country      String?
-  color        String?
-  seed         Int
-  selected     Boolean    @default(true)
-  guaranteed   Boolean    @default(false)
-  waitlistPosition   Int?
-  registrationNote   String?
-  orgaNote           String?
-  feePaid            Boolean   @default(false)
-  paymentMethod      PaymentMethod?
+  id               String         @id @default(cuid())
+  tournamentId     String
+  name             String
+  city             String?
+  country          String?
+  color            String?
+  seed             Int
+  selected         Boolean        @default(true)
+  guaranteed       Boolean        @default(false)
+  waitlistPosition Int?
+  registrationNote String?
+  orgaNote         String?
+  feePaid          Boolean        @default(false)
+  paymentMethod    PaymentMethod?
   // Berlin Mixed format
-  fridayGroup        String?   // "A" | "B"
-  saturdayGroup      String?   // "A" | "B"
-  globalRank         Int?      // consolidated rank after each day
+  fridayGroup      String? // "A" | "B"
+  saturdayGroup    String? // "A" | "B"
+  globalRank       Int? // consolidated rank after each day
 
-  playerALevel       String?   // "A" | "B" | "C" — format ABC
-  playerBLevel       String?
-  playerCLevel       String?
+  playerALevel String? // "A" | "B" | "C" — format ABC
+  playerBLevel String?
+  playerCLevel String?
 
-  tournament Tournament   @relation(fields: [tournamentId], references: [id])
-  players    TeamPlayer[]
-  poolTeams  PoolTeam[]
-  matchesA   Match[]        @relation("TeamA")
-  matchesB   Match[]        @relation("TeamB")
-  stageEntries StageEntry[]
-  messages   TeamMessage[]
-  soloEntries TournamentSoloEntry[]
+  tournament          Tournament            @relation(fields: [tournamentId], references: [id])
+  players             TeamPlayer[]
+  poolTeams           PoolTeam[]
+  matchesA            Match[]               @relation("TeamA")
+  matchesB            Match[]               @relation("TeamB")
+  stageEntries        StageEntry[]
+  messages            TeamMessage[]
+  soloEntries         TournamentSoloEntry[]
   registrationAnswers RegistrationAnswer[]
 
   @@index([tournamentId])
 }
 
 model Player {
-  id        String       @id @default(cuid())
-  slug      String?      @unique
-  name      String
-  country   String
-  city      String?
-  photoPath String?
-  bio       String?
-  startYear Int?
-  hand        String?
-  gender      Gender?
-  showGender  Boolean  @default(false)
-  diets       String[]  // OMNIVORE | VEGETARIAN | VEGAN | GLUTEN_FREE (cumulative)
-  petAllergies  String?  // free text: cat, dog, etc.
-  foodAllergies String?  // free text: nuts, lactose, etc.
+  id               String       @id @default(cuid())
+  slug             String?      @unique
+  name             String
+  country          String
+  city             String?
+  photoPath        String?
+  bio              String?
+  startYear        Int?
+  hand             String?
+  gender           Gender?
+  showGender       Boolean      @default(false)
+  diets            String[] // OMNIVORE | VEGETARIAN | VEGAN | GLUTEN_FREE (cumulative)
+  petAllergies     String? // free text: cat, dog, etc.
+  foodAllergies    String? // free text: nuts, lactose, etc.
   status           PlayerStatus @default(PENDING)
-  suspendedReason  String?      // raison de la suspension (visible par l'admin)
-  suspendedAt      DateTime?    // date de suspension
-  badges       String[]
-  pinnedBadges String[]  // badges shown on the card (max 5, subset of badges)
-  ownedCards   String[]  // collectible card ids the player has unlocked (see card-catalog)
-  activeCard   String?   // id of the card currently displayed (defaults to "standard")
-  whbpcCard    WhbpcCard?
-  clubLogoPath       String?
-  emblemPosition     String?   @default("top-left")      // top-left | top-right | bottom-left | bottom-right
-  teamLogoPath       String?
-  teamLogoPosition   String?   @default("bottom-right")  // top-left | top-right | bottom-left | bottom-right
-  createdAt DateTime     @default(now())
+  suspendedReason  String? // raison de la suspension (visible par l'admin)
+  suspendedAt      DateTime? // date de suspension
+  badges           String[]
+  pinnedBadges     String[] // badges shown on the card (max 5, subset of badges)
+  ownedCards       String[] // collectible card ids the player has unlocked (see card-catalog)
+  activeCard       String? // id of the card currently displayed (defaults to "standard")
+  whbpcCard        WhbpcCard?
+  clubLogoPath     String?
+  emblemPosition   String?      @default("top-left") // top-left | top-right | bottom-left | bottom-right
+  teamLogoPath     String?
+  teamLogoPosition String?      @default("bottom-right") // top-left | top-right | bottom-left | bottom-right
+  createdAt        DateTime     @default(now())
 
-  teams              TeamPlayer[]
-  soloEntries        TournamentSoloEntry[]
-  account            PlayerAccount?
-  operator           Operator?
-  createdTournaments Tournament[]    @relation("CreatedTournaments")
-  messages                TournamentMessage[]
-  teamMessages            TeamMessage[]
-  coOrganizedTournaments  TournamentOrganizer[]
-  squads                  SquadMember[]
-  sentInvitations         SquadInvitation[]     @relation("SentInvitations")
-  receivedInvitations     SquadInvitation[]     @relation("ReceivedInvitations")
-  squadMessages           SquadMessage[]
-  notifications           Notification[]
-  conversationsAsA        DirectConversation[]  @relation("ConversationPlayerA")
-  conversationsAsB        DirectConversation[]  @relation("ConversationPlayerB")
-  directMessages          DirectMessage[]
-  freeAgentRegistrations  FreeAgent[]
-  managedClubs            Club[]       @relation("ManagedClubs")
-  clubMemberships         ClubMember[]
-  clubAdminRoles          ClubAdmin[]
-  createdClubSessions     ClubSession[]        @relation("CreatedSessions")
-  clubSessionAttendances  ClubSessionAttendee[]
-  clubMessages            ClubMessage[]
-  clubSessionMessages     ClubSessionMessage[]
-  borrowedEquipment       ClubEquipment[]      @relation("BorrowedEquipment")
-  clubAnnouncements       ClubAnnouncement[]   @relation("ClubAnnouncements")
-  orgaTaskAssignments     OrgaTaskAssignee[] @relation("OrgaTaskAssignments")
-  createdOrgaTasks        OrgaTask[]   @relation("CreatedTasks")
-  orgaNotes               OrgaNote[]   @relation("OrgaNotes")
-  orgaLinks               OrgaLink[]   @relation("OrgaLinks")
-  refereedMatches         Match[]      @relation("RefereedMatches")
-  coRefereedMatches       Match[]      @relation("CoRefereedMatches")
-  notificationPreference  NotificationPreference?
-  tournamentFollows       TournamentFollow[]
-  hostedAccommodations    AccommodationHost[] @relation("AccommodationHostPlayer")
-  communityItems      CommunityItem[]
-  communityVotes      CommunityVote[]
-  communityReplies    CommunityReply[]
-  communityReplyLikes CommunityReplyLike[]
-  pushSubscriptions   PushSubscription[]
+  teams                  TeamPlayer[]
+  soloEntries            TournamentSoloEntry[]
+  account                PlayerAccount?
+  operator               Operator?
+  createdTournaments     Tournament[]            @relation("CreatedTournaments")
+  messages               TournamentMessage[]
+  teamMessages           TeamMessage[]
+  coOrganizedTournaments TournamentOrganizer[]
+  squads                 SquadMember[]
+  sentInvitations        SquadInvitation[]       @relation("SentInvitations")
+  receivedInvitations    SquadInvitation[]       @relation("ReceivedInvitations")
+  squadMessages          SquadMessage[]
+  notifications          Notification[]
+  conversationsAsA       DirectConversation[]    @relation("ConversationPlayerA")
+  conversationsAsB       DirectConversation[]    @relation("ConversationPlayerB")
+  directMessages         DirectMessage[]
+  freeAgentRegistrations FreeAgent[]
+  managedClubs           Club[]                  @relation("ManagedClubs")
+  clubMemberships        ClubMember[]
+  clubAdminRoles         ClubAdmin[]
+  createdClubSessions    ClubSession[]           @relation("CreatedSessions")
+  clubSessionAttendances ClubSessionAttendee[]
+  clubMessages           ClubMessage[]
+  clubSessionMessages    ClubSessionMessage[]
+  borrowedEquipment      ClubEquipment[]         @relation("BorrowedEquipment")
+  clubAnnouncements      ClubAnnouncement[]      @relation("ClubAnnouncements")
+  orgaTaskAssignments    OrgaTaskAssignee[]      @relation("OrgaTaskAssignments")
+  createdOrgaTasks       OrgaTask[]              @relation("CreatedTasks")
+  orgaNotes              OrgaNote[]              @relation("OrgaNotes")
+  orgaLinks              OrgaLink[]              @relation("OrgaLinks")
+  refereedMatches        Match[]                 @relation("RefereedMatches")
+  coRefereedMatches      Match[]                 @relation("CoRefereedMatches")
+  notificationPreference NotificationPreference?
+  tournamentFollows      TournamentFollow[]
+  hostedAccommodations   AccommodationHost[]     @relation("AccommodationHostPlayer")
+  communityItems         CommunityItem[]
+  communityVotes         CommunityVote[]
+  communityReplies       CommunityReply[]
+  communityReplyLikes    CommunityReplyLike[]
+  pushSubscriptions      PushSubscription[]
+  createdPolls           Poll[]                  @relation("CreatedPolls")
 }
 
 model PushSubscription {
@@ -522,16 +523,16 @@ model PushSubscription {
 }
 
 model PlayerAccount {
-  id               String    @id @default(cuid())
-  email            String    @unique
-  passwordHash     String
-  playerId         String    @unique
+  id                String    @id @default(cuid())
+  email             String    @unique
+  passwordHash      String
+  playerId          String    @unique
   resetToken        String?   @unique
   resetTokenExpiry  DateTime?
   charterAcceptedAt DateTime?
   createdAt         DateTime  @default(now())
 
-  player Player @relation(fields: [playerId], references: [id])
+  player    Player     @relation(fields: [playerId], references: [id])
   loginDays LoginDay[]
 
   @@index([email])
@@ -545,9 +546,9 @@ model TeamPlayer {
   needsAccommodation Boolean  @default(false)
   registeredAt       DateTime @default(now())
 
-  team   Team   @relation(fields: [teamId], references: [id])
-  player Player @relation(fields: [playerId], references: [id])
-  accommodationGuest AccommodationGuest?
+  team                Team                 @relation(fields: [teamId], references: [id])
+  player              Player               @relation(fields: [playerId], references: [id])
+  accommodationGuest  AccommodationGuest?
   registrationAnswers RegistrationAnswer[]
 
   @@unique([teamId, playerId])
@@ -558,7 +559,7 @@ model Pool {
   tournamentId String
   name         String
   session      PoolSession?
-  stageId      String?      // pipeline (refonte formats) : Pool "vue legacy" générée pour ce Stage
+  stageId      String? // pipeline (refonte formats) : Pool "vue legacy" générée pour ce Stage
 
   tournament Tournament @relation(fields: [tournamentId], references: [id])
   teams      PoolTeam[]
@@ -580,41 +581,41 @@ model PoolTeam {
 }
 
 model Match {
-  id              String      @id @default(cuid())
-  tournamentId    String
-  phase           MatchPhase
-  poolId          String?
-  bracketSide     BracketSide?
-  roundIndex      Int
-  positionInRound Int         @default(0)
-  courtName       String
-  startAt         DateTime
-  dayIndex        MatchDay
-  poolSessionIndex Int?        // For pool matches: 0 = Pool A, 1 = Pool B, etc. Orga can launch each session independently
-  status          MatchStatus @default(SCHEDULED)
-  teamAId         String?
-  teamBId         String?
-  scoreA          Int         @default(0)
-  scoreB          Int         @default(0)
-  winnerTeamId    String?
-  nextMatchWinId  String?
-  nextSlotWin     String?
-  nextMatchLoseId String?
-  nextSlotLose    String?
-  goldenGoal      Boolean     @default(false)
-  refereePlayerId String?
+  id                String       @id @default(cuid())
+  tournamentId      String
+  phase             MatchPhase
+  poolId            String?
+  bracketSide       BracketSide?
+  roundIndex        Int
+  positionInRound   Int          @default(0)
+  courtName         String
+  startAt           DateTime
+  dayIndex          MatchDay
+  poolSessionIndex  Int? // For pool matches: 0 = Pool A, 1 = Pool B, etc. Orga can launch each session independently
+  status            MatchStatus  @default(SCHEDULED)
+  teamAId           String?
+  teamBId           String?
+  scoreA            Int          @default(0)
+  scoreB            Int          @default(0)
+  winnerTeamId      String?
+  nextMatchWinId    String?
+  nextSlotWin       String?
+  nextMatchLoseId   String?
+  nextSlotLose      String?
+  goldenGoal        Boolean      @default(false)
+  refereePlayerId   String?
   coRefereePlayerId String?
   // Pipeline (nouveau système) : rattachement à un Stage + groupe éventuel
-  stageId         String?
-  groupKey        String?     // "A", "B", … pour les stages multi-groupes
+  stageId           String?
+  groupKey          String? // "A", "B", … pour les stages multi-groupes
 
-  tournament Tournament @relation(fields: [tournamentId], references: [id])
-  pool       Pool?      @relation(fields: [poolId], references: [id])
-  stage      Stage?     @relation(fields: [stageId], references: [id])
-  teamA      Team?      @relation("TeamA", fields: [teamAId], references: [id])
-  teamB      Team?      @relation("TeamB", fields: [teamBId], references: [id])
-  referee    Player?    @relation("RefereedMatches", fields: [refereePlayerId], references: [id])
-  coReferee  Player?    @relation("CoRefereedMatches", fields: [coRefereePlayerId], references: [id])
+  tournament Tournament   @relation(fields: [tournamentId], references: [id])
+  pool       Pool?        @relation(fields: [poolId], references: [id])
+  stage      Stage?       @relation(fields: [stageId], references: [id])
+  teamA      Team?        @relation("TeamA", fields: [teamAId], references: [id])
+  teamB      Team?        @relation("TeamB", fields: [teamBId], references: [id])
+  referee    Player?      @relation("RefereedMatches", fields: [refereePlayerId], references: [id])
+  coReferee  Player?      @relation("CoRefereedMatches", fields: [coRefereePlayerId], references: [id])
   events     MatchEvent[]
 
   @@index([tournamentId])
@@ -626,13 +627,13 @@ model Match {
 model Stage {
   id           String      @id @default(cuid())
   tournamentId String
-  order        Int         // position dans le pipeline (0-based)
-  name         String      // "Poules", "Swiss dimanche", "Bracket final"…
+  order        Int // position dans le pipeline (0-based)
+  name         String // "Poules", "Swiss dimanche", "Bracket final"…
   type         StageType
-  config       Json        // options par type (groupes, rounds, 3e place, gfReset…) — validé par zod
-  entryRules   Json        // règles d'entrée déclaratives (source, rangs, seeding) — validé par zod
+  config       Json // options par type (groupes, rounds, 3e place, gfReset…) — validé par zod
+  entryRules   Json // règles d'entrée déclaratives (source, rangs, seeding) — validé par zod
   status       StageStatus @default(PENDING)
-  startAt      DateTime?   // début planifié
+  startAt      DateTime? // début planifié
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -647,7 +648,7 @@ model Stage {
 model StageEntry {
   id       String  @id @default(cuid())
   stageId  String
-  slot     Int     // seed 1-based au sein du stage (ou du groupe)
+  slot     Int // seed 1-based au sein du stage (ou du groupe)
   groupKey String  @default("") // "A", "B", … ("" si stage mono-groupe)
   teamId   String?
 
@@ -680,7 +681,7 @@ model KnownBikePoloCountry {
 model FreeAgent {
   id           String   @id @default(cuid())
   tournamentId String?
-  playerId     String?  // linked Player account (if registered while logged in)
+  playerId     String? // linked Player account (if registered while logged in)
   name         String
   email        String
   city         String?
@@ -744,13 +745,13 @@ model TournamentOrganizer {
 // ── Équipes permanentes (Squads) ──────────────────────────────────────────────
 
 model Squad {
-  id          String   @id @default(cuid())
-  name        String
-  logoPath    String?
-  color       String?
-  bio         String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  logoPath  String?
+  color     String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   members     SquadMember[]
   invitations SquadInvitation[]
@@ -760,11 +761,11 @@ model Squad {
 }
 
 model SquadMember {
-  id        String    @id @default(cuid())
-  squadId   String
-  playerId  String
-  role      SquadRole @default(MEMBER)
-  joinedAt  DateTime  @default(now())
+  id       String    @id @default(cuid())
+  squadId  String
+  playerId String
+  role     SquadRole @default(MEMBER)
+  joinedAt DateTime  @default(now())
 
   squad  Squad  @relation(fields: [squadId], references: [id], onDelete: Cascade)
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
@@ -810,7 +811,7 @@ model Notification {
   id        String           @id @default(cuid())
   playerId  String
   type      NotificationType
-  payload   Json             // { squadId, squadName, invitedById, invitedByName, ... }
+  payload   Json // { squadId, squadName, invitedById, invitedByName, ... }
   read      Boolean          @default(false)
   createdAt DateTime         @default(now())
 
@@ -831,8 +832,8 @@ model DirectConversation {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  playerA  Player         @relation("ConversationPlayerA", fields: [playerAId], references: [id], onDelete: Cascade)
-  playerB  Player         @relation("ConversationPlayerB", fields: [playerBId], references: [id], onDelete: Cascade)
+  playerA  Player          @relation("ConversationPlayerA", fields: [playerAId], references: [id], onDelete: Cascade)
+  playerB  Player          @relation("ConversationPlayerB", fields: [playerBId], references: [id], onDelete: Cascade)
   messages DirectMessage[]
 
   @@unique([playerAId, playerBId])
@@ -882,15 +883,15 @@ model Club {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  manager       Player              @relation("ManagedClubs", fields: [managerId], references: [id])
-  members       ClubMember[]
-  admins        ClubAdmin[]
-  sessions      ClubSession[]
-  messages      ClubMessage[]
-  venues        ClubVenue[]
-  equipment     ClubEquipment[]
-  announcements ClubAnnouncement[]
-  hostedTournaments Tournament[]    @relation("HostedTournaments")
+  manager           Player             @relation("ManagedClubs", fields: [managerId], references: [id])
+  members           ClubMember[]
+  admins            ClubAdmin[]
+  sessions          ClubSession[]
+  messages          ClubMessage[]
+  venues            ClubVenue[]
+  equipment         ClubEquipment[]
+  announcements     ClubAnnouncement[]
+  hostedTournaments Tournament[]       @relation("HostedTournaments")
 
   @@index([continentCode])
   @@index([country])
@@ -898,16 +899,16 @@ model Club {
 }
 
 model ClubEquipment {
-  id          String   @id @default(cuid())
-  clubId      String
-  name        String
-  category    String   // "bike", "mallet", "other"
-  notes       String?
-  borrowedBy  String?  // playerId si emprunté
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  clubId     String
+  name       String
+  category   String // "bike", "mallet", "other"
+  notes      String?
+  borrowedBy String? // playerId si emprunté
+  createdAt  DateTime @default(now())
 
-  club       Club    @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  borrower   Player? @relation("BorrowedEquipment", fields: [borrowedBy], references: [id])
+  club     Club    @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  borrower Player? @relation("BorrowedEquipment", fields: [borrowedBy], references: [id])
 
   @@index([clubId])
 }
@@ -952,7 +953,7 @@ model ClubSession {
   recurring      Boolean  @default(false)
   recurrenceDay  Int?
   recurrenceTime String?
-  color          String?  // hex color chosen by creator, e.g. "#ffa2af"
+  color          String? // hex color chosen by creator, e.g. "#ffa2af"
   createdById    String
   createdAt      DateTime @default(now())
   status         String   @default("ACTIVE")
@@ -972,8 +973,8 @@ model ClubSessionAttendee {
   sessionId   String
   playerId    String
   status      String   @default("CONFIRMED")
-  arrivalTime String?  // ex: "19:30"
-  minPlayers  Int?     // vient si >= N joueurs
+  arrivalTime String? // ex: "19:30"
+  minPlayers  Int? // vient si >= N joueurs
   createdAt   DateTime @default(now())
 
   session ClubSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -1003,10 +1004,10 @@ model ClubVenue {
   address   String?
   mapLink   String?
   notes     String?
-  color     String?   // hex color ex: "#3b82f6"
+  color     String? // hex color ex: "#3b82f6"
   createdAt DateTime @default(now())
 
-  club     Club           @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  club     Club          @relation(fields: [clubId], references: [id], onDelete: Cascade)
   sessions ClubSession[]
 
   @@index([clubId])
@@ -1053,8 +1054,8 @@ model OrgaTask {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  tournament Tournament       @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  createdBy  Player           @relation("CreatedTasks", fields: [createdById], references: [id])
+  tournament Tournament         @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  createdBy  Player             @relation("CreatedTasks", fields: [createdById], references: [id])
   assignees  OrgaTaskAssignee[]
 
   @@index([tournamentId])
@@ -1103,17 +1104,17 @@ model OrgaLink {
 }
 
 model NotificationPreference {
-  id         String   @id @default(cuid())
-  playerId   String   @unique
-  player     Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  enabled    Boolean  @default(true)
-  continents String[] @default([])
-  countries  String[] @default([])
-  notifyNewTournaments  Boolean @default(true)
-  notifyFollowedClosing Boolean @default(true)
-  notifySquadInvite     Boolean @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  playerId              String   @unique
+  player                Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  enabled               Boolean  @default(true)
+  continents            String[] @default([])
+  countries             String[] @default([])
+  notifyNewTournaments  Boolean  @default(true)
+  notifyFollowedClosing Boolean  @default(true)
+  notifySquadInvite     Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model TournamentFollow {
@@ -1123,6 +1124,7 @@ model TournamentFollow {
   createdAt    DateTime   @default(now())
   player       Player     @relation(fields: [playerId], references: [id], onDelete: Cascade)
   tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
   @@unique([playerId, tournamentId])
 }
 
@@ -1131,15 +1133,15 @@ model TournamentFollow {
 model AccommodationHost {
   id           String   @id @default(cuid())
   tournamentId String
-  playerId     String?  // optional: registered player host
-  name         String   // display name
-  contact      String?  // email, telegram, phone… free text
-  capacity     Int?     // nombre de places offertes (null = non précisé)
-  notes        String?  // orga-only notes
+  playerId     String? // optional: registered player host
+  name         String // display name
+  contact      String? // email, telegram, phone… free text
+  capacity     Int? // nombre de places offertes (null = non précisé)
+  notes        String? // orga-only notes
   createdAt    DateTime @default(now())
 
-  tournament Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  player     Player?             @relation("AccommodationHostPlayer", fields: [playerId], references: [id], onDelete: SetNull)
+  tournament Tournament           @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player?              @relation("AccommodationHostPlayer", fields: [playerId], references: [id], onDelete: SetNull)
   guests     AccommodationGuest[]
 
   @@index([tournamentId])
@@ -1147,9 +1149,9 @@ model AccommodationHost {
 }
 
 model AccommodationGuest {
-  id           String  @id @default(cuid())
+  id           String    @id @default(cuid())
   hostId       String
-  teamPlayerId String  @unique
+  teamPlayerId String    @unique
   notes        String?
   notifiedAt   DateTime? // date d'envoi de la notif/mail d'attribution (null = pas encore prévenu)
 
@@ -1164,28 +1166,28 @@ model RoadmapItem {
   title       String
   description String?
   type        String   @default("feature") // "feature" | "bug" | "improvement"
-  priority    String   @default("normal")  // "critical" | "high" | "normal" | "low"
-  status      String   @default("todo")    // "todo" | "in_progress" | "done"
+  priority    String   @default("normal") // "critical" | "high" | "normal" | "low"
+  status      String   @default("todo") // "todo" | "in_progress" | "done"
   order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
 model TournamentSoloEntry {
-  id            String   @id @default(cuid())
+  id            String         @id @default(cuid())
   tournamentId  String
   playerId      String
-  level         String   // "C"|"C+"|"B-"|"B"|"B+"|"A-"|"A"|"A+"
-  teamId        String?  // rempli après le tirage
-  waitlisted    Boolean  @default(false)
-  feePaid       Boolean  @default(false)
+  level         String // "C"|"C+"|"B-"|"B"|"B+"|"A-"|"A"|"A+"
+  teamId        String? // rempli après le tirage
+  waitlisted    Boolean        @default(false)
+  feePaid       Boolean        @default(false)
   paymentMethod PaymentMethod?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime       @default(now())
 
-  tournament    Tournament     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  player        Player         @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  team          Team?          @relation(fields: [teamId], references: [id])
-  answers       RegistrationAnswer[]
+  tournament Tournament           @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player               @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  team       Team?                @relation(fields: [teamId], references: [id])
+  answers    RegistrationAnswer[]
 
   @@unique([tournamentId, playerId])
   @@index([tournamentId])
@@ -1193,12 +1195,12 @@ model TournamentSoloEntry {
 }
 
 model LoginDay {
-  id        String        @id @default(cuid())
+  id        String   @id @default(cuid())
   accountId String
-  date      String        // "YYYY-MM-DD" en UTC
-  loggedAt  DateTime      @default(now()) // timestamp du 1er login de la journée
+  date      String // "YYYY-MM-DD" en UTC
+  loggedAt  DateTime @default(now()) // timestamp du 1er login de la journée
 
-  account   PlayerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  account PlayerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@unique([accountId, date])
   @@index([accountId])
@@ -1210,11 +1212,11 @@ model LoginDay {
 
 model CommunityItem {
   id         String   @id @default(cuid())
-  type       String   // "idea" | "bug" | "translation"
+  type       String // "idea" | "bug" | "translation"
   title      String
   body       String
   authorId   String?
-  authorName String?  // pour les posts anonymes
+  authorName String? // pour les posts anonymes
   status     String   @default("open") // open | thinking | in_progress | done | rejected
   pinned     Boolean  @default(false)
   createdAt  DateTime @default(now())
@@ -1229,8 +1231,8 @@ model CommunityVote {
   id        String   @id @default(cuid())
   itemId    String
   playerId  String?
-  vote      String   // "up" | "meh" | "down"
-  comment   String?  // obligatoire si vote = "meh"
+  vote      String // "up" | "meh" | "down"
+  comment   String? // obligatoire si vote = "meh"
   createdAt DateTime @default(now())
 
   item   CommunityItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
@@ -1243,14 +1245,14 @@ model CommunityReply {
   id         String   @id @default(cuid())
   itemId     String
   authorId   String?
-  authorName String?  // pour les posts anonymes
+  authorName String? // pour les posts anonymes
   body       String
   isKeyReply Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  item   CommunityItem      @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  author Player?            @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  item   CommunityItem        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  author Player?              @relation(fields: [authorId], references: [id], onDelete: SetNull)
   likes  CommunityReplyLike[]
 }
 
@@ -1308,7 +1310,7 @@ model RegistrationField {
   order        Int                     @default(0)
   createdAt    DateTime                @default(now())
 
-  tournament Tournament          @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournament Tournament           @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   answers    RegistrationAnswer[]
 
   @@index([tournamentId])
@@ -1338,19 +1340,102 @@ model RegistrationAnswer {
 /// avec toutes ses valeurs propres. Pas de logique de déblocage : attribuée
 /// manuellement (cadeau) pour un événement précis.
 model WhbpcCard {
-  id           String   @id @default(cuid())
-  playerId     String   @unique
-  tournament   String   @default("WHBPC")
-  teamName     String
-  yearStarted  String
-  countryCode  String   @default("be")
-  bestSkill    String
-  pedals       String
-  hand         String   // RIGHTIE | LEFTIE
-  wheelSize    String
-  gearRatio    String
-  photoPath    String?
-  createdAt    DateTime @default(now())
+  id          String   @id @default(cuid())
+  playerId    String   @unique
+  tournament  String   @default("WHBPC")
+  teamName    String
+  yearStarted String
+  countryCode String   @default("be")
+  bestSkill   String
+  pedals      String
+  hand        String // RIGHTIE | LEFTIE
+  wheelSize   String
+  gearRatio   String
+  photoPath   String?
+  createdAt   DateTime @default(now())
 
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+}
+
+// ─── Sondages / votes communautaires ─────────────────────────────────────────
+// Anti-fraude + anonymat façon "urne" : le BULLETIN (PollBallot) et
+// l'ÉMARGEMENT (PollVoter) sont deux tables SANS aucun lien entre elles. On sait
+// "X a voté" (émargement, dédup anti-double-vote) et "N votes pour l'option A"
+// (bulletins agrégés), mais jamais "X a voté A".
+
+enum PollStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+enum PollResultsMode {
+  IMMEDIATE // visibles dès que le votant a voté
+  AT_DATE // visibles à partir de Poll.resultsAt
+  AT_CLOSE // visibles seulement une fois le sondage CLOSED
+  HIDDEN // jamais montrés aux votants (admin seulement)
+}
+
+model Poll {
+  id             String          @id @default(cuid())
+  question       String
+  description    String?
+  options        String[] // choix possibles (ex: ["Oui","Non"] ou plus)
+  status         PollStatus      @default(DRAFT)
+  multipleChoice Boolean         @default(false) // un seul choix (false) ou plusieurs (true)
+  allowGuests    Boolean         @default(true) // autoriser les non-inscrits (via formulaire + email)
+  // Formulaire libre demandé aux GUESTS (les inscrits ne le remplissent pas).
+  // L'email n'est PAS ici : il est toujours demandé séparément (anti-fraude).
+  // Format : [{ "key":"club", "label":"Club", "required":false }, ...]
+  guestFields    Json            @default("[]")
+  openAt         DateTime? // ouverture programmée (optionnelle)
+  closeAt        DateTime? // fermeture programmée (optionnelle)
+  // Visibilité des résultats pour les VOTANTS (l'admin voit toujours tout) :
+  // IMMEDIATE = dès que t'as voté ; AT_DATE = à partir de resultsAt ; AT_CLOSE
+  // = seulement quand le sondage est fermé ; HIDDEN = jamais montrés aux votants.
+  showResults    PollResultsMode @default(IMMEDIATE)
+  resultsAt      DateTime? // date d'ouverture des résultats si showResults = AT_DATE
+  createdById    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  createdBy Player?      @relation("CreatedPolls", fields: [createdById], references: [id], onDelete: SetNull)
+  ballots   PollBallot[]
+  voters    PollVoter[]
+
+  @@index([status])
+}
+
+// L'URNE : un bulletin = un choix, ANONYME. Aucun champ ne référence le votant.
+model PollBallot {
+  id        String   @id @default(cuid())
+  pollId    String
+  choice    String // l'option votée
+  createdAt DateTime @default(now())
+
+  poll Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  @@index([pollId])
+}
+
+// L'ÉMARGEMENT : qui a voté (pas quoi). voterHash = empreinte du votant
+// (sha256(pollId + playerId|email + secret)) → bloque le double-vote sans
+// stocker l'identité en clair côté anti-fraude. guestInfo garde les réponses au
+// formulaire des non-inscrits (séparé du bulletin, donc non reliable au choix).
+model PollVoter {
+  id            String    @id @default(cuid())
+  pollId        String
+  voterHash     String // unique par sondage : a voté ou pas
+  isGuest       Boolean   @default(false)
+  verified      Boolean   @default(false) // email confirmé (guests) ; true d'office pour les inscrits
+  verifyToken   String? // token de confirmation email (guests non vérifiés)
+  verifyExpiry  DateTime?
+  guestInfo     Json? // réponses au formulaire libre (nom, club, ville…) — null pour les inscrits
+  pendingChoice Json? // choix en attente tant que l'email guest n'est pas confirmé (déposé à la vérif)
+  createdAt     DateTime  @default(now())
+
+  poll Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, voterHash])
+  @@index([verifyToken])
 }
