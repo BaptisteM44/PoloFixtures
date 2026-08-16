@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
@@ -691,7 +692,7 @@ function PlayerAvatar({ player, arrivalTime, minPlayers }: {
       onMouseLeave={() => setShowTooltip(false)}
     >
       {player.photoPath ? (
-        <img src={player.photoPath} alt={player.name} />
+        <Image src={player.photoPath} alt={player.name} width={30} height={30} />
       ) : (
         <div className="session-player-avatar__initials">
           {player.name[0]?.toUpperCase()}

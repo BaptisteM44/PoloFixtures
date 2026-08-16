@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { COUNTRIES } from "@/lib/countries";
 
@@ -122,7 +123,7 @@ export function ClubPicker({ country, onJoin, onCreate, namespace = "account" }:
               }}
             >
               {club.logoPath ? (
-                <img src={club.logoPath} alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                <Image src={club.logoPath} alt="" width={28} height={28} style={{ borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
               ) : (
                 <div style={{ width: 28, height: 28, borderRadius: "50%", background: "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🏒</div>
               )}

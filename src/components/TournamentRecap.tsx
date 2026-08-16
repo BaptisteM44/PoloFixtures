@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
 import { PokemonCard } from "@/components/PokemonCard";
@@ -198,7 +199,14 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
         {/* Affiche portrait */}
         {tournament.bannerPath && (
           <div className="recap-banner-panel panel">
-            <img src={tournament.bannerPath} alt={tournament.name} className="recap-banner-img" />
+            <Image
+              src={tournament.bannerPath}
+              alt={tournament.name}
+              width={792}
+              height={1120}
+              className="recap-banner-img"
+              style={{ width: "100%", height: "auto" }}
+            />
             <div className="recap-banner-credit">
               {editingCredit ? (
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -397,7 +405,14 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
           </div>
           {photoFinishPath ? (
             <>
-              <img src={photoFinishPath} alt="Photo finish" className="recap-photo-img" />
+              <Image
+                src={photoFinishPath}
+                alt="Photo finish"
+                width={1200}
+                height={480}
+                className="recap-photo-img"
+                style={{ width: "100%", height: "auto" }}
+              />
               <div className="recap-banner-credit">
                 {editingPhotoCredit ? (
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>

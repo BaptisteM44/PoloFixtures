@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 type CoGuestInfo = { playerName: string; teamName: string; photoPath: string | null };
@@ -61,7 +62,7 @@ export function AccommodationPublicView({ tournamentId }: { tournamentId: string
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {data.asGuest.coGuests.map((g, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {g.photoPath && <img src={g.photoPath} alt={g.playerName} style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover" }} />}
+                    {g.photoPath && <Image src={g.photoPath} alt={g.playerName} width={28} height={28} style={{ borderRadius: "50%", objectFit: "cover" }} />}
                     <span style={{ fontSize: 13 }}>{g.playerName} <span className="meta">· {g.teamName}</span></span>
                   </div>
                 ))}
@@ -84,7 +85,7 @@ export function AccommodationPublicView({ tournamentId }: { tournamentId: string
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {data.asHost.guests.map((g, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "var(--bg-muted)", borderRadius: 8 }}>
-                  {g.photoPath && <img src={g.photoPath} alt={g.playerName} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover" }} />}
+                  {g.photoPath && <Image src={g.photoPath} alt={g.playerName} width={32} height={32} style={{ borderRadius: "50%", objectFit: "cover" }} />}
                   <div>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{g.playerName}</p>
                     <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>{g.teamName}</p>

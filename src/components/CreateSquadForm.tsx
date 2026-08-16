@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Image from "next/image";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -101,7 +102,7 @@ export function CreateSquadForm() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {logoPath && (
             <div style={{ position: "relative" }}>
-              <img src={logoPath} alt="Logo" style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border)" }} />
+              <Image src={logoPath} alt="Logo" width={52} height={52} style={{ borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border)" }} />
               <button type="button" onClick={() => setLogoPath("")} style={{ position: "absolute", top: -6, right: -6, background: "var(--danger)", color: "#fff", border: "none", borderRadius: "50%", width: 20, height: 20, minWidth: 20, minHeight: 20, padding: 0, cursor: "pointer", fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" }}>✕</button>
             </div>
           )}

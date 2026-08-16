@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 
 type RegistrationField = {
@@ -265,7 +266,7 @@ export function RegisterTeamForm({
               {squads.map((sq) => (
                 <div key={sq.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", border: "2px solid var(--yellow)", borderRadius: 8, background: "color-mix(in srgb, var(--yellow) 12%, var(--surface))" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    {sq.logoPath && <img src={sq.logoPath} alt="" style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover" }} />}
+                    {sq.logoPath && <Image src={sq.logoPath} alt="" width={36} height={36} style={{ borderRadius: "50%", objectFit: "cover" }} />}
                     <div>
                       <div style={{ fontWeight: 700, fontFamily: "var(--font-display)" }}>{sq.name}</div>
                       <div className="meta" style={{ fontSize: 12 }}>{sq.members.map((m) => m.player.name).join(", ")}</div>
