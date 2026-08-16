@@ -8767,6 +8767,7 @@ details[open] .my-tournaments__section-title--summary::after {
   transform: translateY(-2px);
 }
 .club-card__logo {
+  position: relative; /* requis pour next/image fill */
   width: 64px;
   height: 64px;
   border-radius: 50%;

@@ -2204,7 +2204,9 @@
     "filter_by_country": "Nach Land filtern",
     "player_count": "{count, plural, one {# Spieler} other {# Spieler}}",
     "no_players_found": "Keine Spieler gefunden.",
-    "loading": "Laden…"
+    "loading": "Laden…",
+    "members_count": "{count, plural, one {# Mitglied} other {# Mitglieder}}",
+    "pending_approval": "Genehmigung ausstehend"
   },
   "squad": {
     "tab_members": "Mitglieder",

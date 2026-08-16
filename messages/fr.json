@@ -2200,7 +2200,9 @@
     "filter_by_country": "Filtrer par pays",
     "player_count": "{count, plural, one {# joueur·euse} other {# joueur·euses}}",
     "no_players_found": "Aucun·e joueur·euse trouvé·e.",
-    "loading": "Chargement…"
+    "loading": "Chargement…",
+    "members_count": "{count, plural, one {# membre} other {# membres}}",
+    "pending_approval": "En attente d'approbation"
   },
   "squad": {
     "tab_members": "Membres",

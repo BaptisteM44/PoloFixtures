@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export type PlayerCardProps = {
   id: string;
@@ -17,7 +18,11 @@ export function PlayerCard({ id, slug, name, country, city, photoPath, badges = 
   return (
     <Link href={href} className="player-card" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
       <div className="player-photo">
-        {photoPath ? <img src={photoPath} alt={name} /> : <div className="placeholder">{name[0]}</div>}
+        {photoPath ? (
+          <Image src={photoPath} alt={name} width={64} height={64} style={{ objectFit: "cover" }} />
+        ) : (
+          <div className="placeholder">{name[0]}</div>
+        )}
       </div>
       <div className="player-info">
         <h4>{name}</h4>

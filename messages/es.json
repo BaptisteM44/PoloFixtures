@@ -2203,7 +2203,9 @@
     "filter_by_country": "Filtrar por país",
     "player_count": "{count, plural, one {# jugador} other {# jugadores}}",
     "no_players_found": "No se encontraron jugadores.",
-    "loading": "Cargando…"
+    "loading": "Cargando…",
+    "members_count": "{count, plural, one {# miembro} other {# miembros}}",
+    "pending_approval": "Pendiente de aprobación"
   },
   "squad": {
     "tab_members": "Miembros",
