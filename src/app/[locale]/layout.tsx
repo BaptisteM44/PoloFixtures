@@ -29,9 +29,22 @@ type Props = {
 
 export async function generateMetadata({ params: { locale } }: Props): Promise<Metadata> {
   const t = await getTranslations({ locale, namespace: "seo" });
+  const { SITE_URL } = await import("@/lib/site-url");
   return {
+    metadataBase: new URL(SITE_URL),
     title: { default: t("og_title"), template: `%s | Poloperator` },
     description: t("og_description"),
+    openGraph: {
+      title: t("og_title"),
+      description: t("og_description"),
+      siteName: "Poloperator",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t("og_title"),
+      description: t("og_description"),
+    },
   };
 }
 

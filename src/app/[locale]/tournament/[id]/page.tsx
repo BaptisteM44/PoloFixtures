@@ -38,6 +38,50 @@ import {
   updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, resetPipelineToRoundAction, reschedulePipelineStageAction,
 } from "./edit/actions";
 
+export async function generateMetadata({
+  params,
+}: {
+  params: { id: string };
+}): Promise<import("next").Metadata> {
+  const tournament =
+    (await prisma.tournament.findUnique({
+      where: { slug: params.id },
+      select: { name: true, city: true, country: true, dateStart: true, dateEnd: true, bannerPath: true, hidden: true },
+    })) ??
+    (await prisma.tournament.findUnique({
+      where: { id: params.id },
+      select: { name: true, city: true, country: true, dateStart: true, dateEnd: true, bannerPath: true, hidden: true },
+    }));
+
+  if (!tournament || tournament.hidden) return { title: "Poloperator" };
+
+  const dateFmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const dates =
+    tournament.dateStart.toDateString() === tournament.dateEnd.toDateString()
+      ? dateFmt.format(tournament.dateStart)
+      : `${dateFmt.format(tournament.dateStart)} – ${dateFmt.format(tournament.dateEnd)}`;
+
+  const title = tournament.name;
+  const description = `${tournament.city}, ${tournament.country} · ${dates} — Bike Polo tournament on Poloperator`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      ...(tournament.bannerPath ? { images: [{ url: tournament.bannerPath, width: 1200, height: 630 }] } : {}),
+    },
+    twitter: {
+      card: tournament.bannerPath ? "summary_large_image" : "summary",
+      title,
+      description,
+      ...(tournament.bannerPath ? { images: [tournament.bannerPath] } : {}),
+    },
+  };
+}
+
 export default async function TournamentPage({
   params,
   searchParams
