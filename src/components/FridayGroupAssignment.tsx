@@ -20,9 +20,10 @@ interface Props {
 
 export function FridayGroupAssignment({ tournamentId, teams, isLocked }: Props) {
   const t = useTranslations("tournament");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
 
   // Init from existing fridayGroup values
   const initGroups = (): { A: string[]; B: string[] } => {
@@ -68,9 +69,9 @@ export function FridayGroupAssignment({ tournamentId, teams, isLocked }: Props) 
       setMessage(null);
       const res = await saveFridayGroupsAction(tournamentId, groups.A, groups.B);
       if (res && "error" in res) {
-        setMessage(`Erreur : ${res.error}`);
+        setMessage({ text: `${tc("error")} : ${res.error}`, isError: true });
       } else {
-        setMessage(t("friday_groups_saved"));
+        setMessage({ text: t("friday_groups_saved"), isError: false });
         router.refresh();
       }
     });
@@ -126,8 +127,8 @@ export function FridayGroupAssignment({ tournamentId, teams, isLocked }: Props) 
             {pending ? t("friday_groups_saving") : t("friday_groups_save")}
           </button>
           {message && (
-            <span style={{ fontSize: 12, color: message.startsWith("Erreur") ? "var(--danger)" : "var(--teal)" }}>
-              {message}
+            <span style={{ fontSize: 12, color: message.isError ? "var(--danger)" : "var(--teal)" }}>
+              {message.text}
             </span>
           )}
         </div>

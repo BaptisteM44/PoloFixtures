@@ -2435,7 +2435,10 @@
     "section_general": "Información general",
     "section_status_visibility": "Estado y visibilidad",
     "section_communication": "Streams y comunicación",
-    "pipeline_format_hint": "El formato de este torneo (etapas, grupos, pistas, horarios) se gestiona en la pestaña Etapas."
+    "pipeline_format_hint": "El formato de este torneo (etapas, grupos, pistas, horarios) se gestiona en la pestaña Etapas.",
+    "format_summary_mtp_open": "Grupo A (sáb. mañana) + Grupo B (sáb. tarde) → Barraje SE×4 → DE×16",
+    "format_summary_graz": "2×RR Grupos → Reagrupación 4 grupos → SE Top 8",
+    "format_summary_big_apple": "2×RR Grupos (sáb.) → Swiss 3 rondas (3-8) + Clasificación 1&2 → SE Top 8"
   },
   "team_manager": {
     "registered_teams": "Equipos inscritos ({count})",
@@ -2563,7 +2566,8 @@
     "no_team": "— Sin equipo",
     "waitlist_title": "Lista de espera ({count})",
     "formed_teams_title": "Equipos formados ({count})",
-    "no_player": "Sin jugador"
+    "no_player": "Sin jugador",
+    "view_registration_answers": "Ver respuestas del formulario de inscripción"
   },
   "co_orga": {
     "title": "Co-organizadores",

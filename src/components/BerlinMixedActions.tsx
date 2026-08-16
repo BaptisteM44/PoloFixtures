@@ -78,6 +78,8 @@ export function BerlinMixedActions({ tournamentId, teams, matches, tournament, p
       setMessage(null);
       const res = await fn();
       if (res && "error" in res) {
+        // Ce composant n'affiche JAMAIS de message de succès (seulement router.refresh()),
+        // donc `message` non-null = toujours une erreur : pas besoin de startsWith().
         setMessage(t("error_prefix") + res.error);
       } else {
         router.refresh();
@@ -209,7 +211,7 @@ export function BerlinMixedActions({ tournamentId, teams, matches, tournament, p
     <div>
       {sections[phase] ?? sections["all"]}
       {message && (
-        <p style={{ fontSize: 12, color: message.startsWith("Erreur") ? "var(--danger)" : "var(--teal)", margin: "12px 0 0" }}>
+        <p style={{ fontSize: 12, color: "var(--danger)", margin: "12px 0 0" }}>
           {message}
         </p>
       )}

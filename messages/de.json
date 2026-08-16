@@ -2436,7 +2436,10 @@
     "section_general": "Allgemeine Infos",
     "section_status_visibility": "Status & Sichtbarkeit",
     "section_communication": "Streams & Kommunikation",
-    "pipeline_format_hint": "Das Format dieses Turniers (Phasen, Gruppen, Courts, Zeitplan) wird im Tab Phasen verwaltet."
+    "pipeline_format_hint": "Das Format dieses Turniers (Phasen, Gruppen, Courts, Zeitplan) wird im Tab Phasen verwaltet.",
+    "format_summary_mtp_open": "Pool A (Sa. Vormittag) + Pool B (Sa. Nachmittag) → Barrage SE×4 → DE×16",
+    "format_summary_graz": "2×RR Pools → Regroup 4 Gruppen → SE Top 8",
+    "format_summary_big_apple": "2×RR Pools (Sa.) → Swiss 3 Runden (3-8) + Placement 1&2 → SE Top 8"
   },
   "team_manager": {
     "registered_teams": "Angemeldete Teams ({count})",
@@ -2564,7 +2567,8 @@
     "no_team": "— Kein Team",
     "waitlist_title": "Warteliste ({count})",
     "formed_teams_title": "Gebildete Teams ({count})",
-    "no_player": "Kein Spieler"
+    "no_player": "Kein Spieler",
+    "view_registration_answers": "Antworten des Anmeldeformulars ansehen"
   },
   "co_orga": {
     "title": "Co-Organisatoren",

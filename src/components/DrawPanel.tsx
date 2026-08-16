@@ -253,7 +253,7 @@ export function DrawPanel({
                     <button
                       type="button"
                       onClick={() => toggleAnswers(entry.id)}
-                      title="Voir les réponses au questionnaire"
+                      title={t("view_registration_answers")}
                       style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginRight: 6, color: "var(--text-muted)", fontSize: 11 }}
                     >
                       {openAnswers[entry.id] ? "▾" : "▸"}

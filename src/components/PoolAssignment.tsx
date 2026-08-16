@@ -27,9 +27,13 @@ interface Props {
 
 export function PoolAssignment({ tournamentId, teams, pools, poolCount, isLocked }: Props) {
   const t = useTranslations("tournament");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
+  // { isError } explicite plutôt que deviner via message.startsWith("Erreur") :
+  // ne fonctionnait qu'en français, affichait une erreur en teal (succès) dans
+  // les autres langues.
+  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
 
   // Initialize assignments from existing pools or empty
   const poolNames = Array.from({ length: poolCount }, (_, i) => `Pool ${String.fromCharCode(65 + i)}`);
@@ -101,9 +105,9 @@ export function PoolAssignment({ tournamentId, teams, pools, poolCount, isLocked
       }));
       const res = await savePoolAssignmentAction(tournamentId, data);
       if (res && "error" in res) {
-        setMessage(`Erreur : ${res.error}`);
+        setMessage({ text: `${tc("error")} : ${res.error}`, isError: true });
       } else {
-        setMessage(t("pool_assignment_saved"));
+        setMessage({ text: t("pool_assignment_saved"), isError: false });
         router.refresh();
       }
     });
@@ -134,8 +138,8 @@ export function PoolAssignment({ tournamentId, teams, pools, poolCount, isLocked
           </>
         )}
         {message && (
-          <span style={{ fontSize: 12, color: message.startsWith("Erreur") ? "var(--danger)" : "var(--teal)" }}>
-            {message}
+          <span style={{ fontSize: 12, color: message.isError ? "var(--danger)" : "var(--teal)" }}>
+            {message.text}
           </span>
         )}
       </div>

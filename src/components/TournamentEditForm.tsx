@@ -905,11 +905,11 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                 <div style={{ fontSize: 12, color: "var(--text-muted)" }}>
                   <strong>{t("format_summary_label")}</strong>{" "}
                   {presetConfig.saturdayFormat === "MTP_OPEN"
-                    ? "Pool A (sam. matin) + Pool B (sam. après-midi) → Barrage SE×4 → DE×16"
+                    ? t("format_summary_mtp_open")
                     : presetConfig.saturdayFormat === "GRAZ"
-                    ? "2×RR Poules → Regroup 4 groupes → SE Top 8"
+                    ? t("format_summary_graz")
                     : presetConfig.saturdayFormat === "BIG_APPLE"
-                    ? "2×RR Poules (sam.) → Swiss 3 rounds (3-8) + Placement 1&2 → SE Top 8"
+                    ? t("format_summary_big_apple")
                     : presetConfig.saturdayFormat === "ALL_DAY"
                     ? t("format_summary_pool1")
                     : presetConfig.saturdayFormat === "SPLIT_POOLS"

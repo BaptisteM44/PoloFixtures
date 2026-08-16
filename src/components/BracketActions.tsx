@@ -18,9 +18,13 @@ interface Props {
 
 export function BracketActions({ tournamentId, returnPath, hasQualifyingMatches, isRR, saturdayFormat, mode }: Props) {
   const t = useTranslations("tournament");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
+  // { isError } explicite plutôt que deviner via message.startsWith("Erreur") :
+  // ce dernier ne fonctionnait que par coïncidence (le préfixe était toujours
+  // en français) et aurait affiché une erreur en vert/teal dans les autres langues.
+  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const label = isRR ? "Round Robin" : "bracket";
@@ -35,9 +39,9 @@ export function BracketActions({ tournamentId, returnPath, hasQualifyingMatches,
       setMessage(null);
       const res = await doGenerate();
       if (res && "error" in res) {
-        setMessage(`Erreur : ${res.error}`);
+        setMessage({ text: `${tc("error")} : ${res.error}`, isError: true });
       } else {
-        setMessage(isRR ? t("bracket_rr_generated") : t("bracket_generated"));
+        setMessage({ text: isRR ? t("bracket_rr_generated") : t("bracket_generated"), isError: false });
         router.refresh();
       }
     });
@@ -53,9 +57,9 @@ export function BracketActions({ tournamentId, returnPath, hasQualifyingMatches,
       setMessage(null);
       const res = await doGenerate();
       if (res && "error" in res) {
-        setMessage(`Erreur : ${res.error}`);
+        setMessage({ text: `${tc("error")} : ${res.error}`, isError: true });
       } else {
-        setMessage(isRR ? t("bracket_rr_regenerated") : t("bracket_regenerated"));
+        setMessage({ text: isRR ? t("bracket_rr_regenerated") : t("bracket_regenerated"), isError: false });
         router.refresh();
       }
     });
@@ -65,7 +69,7 @@ export function BracketActions({ tournamentId, returnPath, hasQualifyingMatches,
     startTransition(async () => {
       setMessage(null);
       await applySeedingAction(tournamentId);
-      setMessage(t("seeding_applied"));
+      setMessage({ text: t("seeding_applied"), isError: false });
       router.refresh();
     });
   };
@@ -81,7 +85,7 @@ export function BracketActions({ tournamentId, returnPath, hasQualifyingMatches,
         >
           {pending ? t("generating") : isRR ? `🔄 ${t("bracket_launch_rr")}` : `🏆 ${t("bracket_launch")}`}
         </button>
-        {message && <p style={{ marginTop: 12, color: message.startsWith("Erreur") ? "var(--danger)" : "var(--teal)", fontSize: 13 }}>{message}</p>}
+        {message && <p style={{ marginTop: 12, color: message.isError ? "var(--danger)" : "var(--teal)", fontSize: 13 }}>{message.text}</p>}
       </div>
     );
   }
@@ -148,8 +152,8 @@ export function BracketActions({ tournamentId, returnPath, hasQualifyingMatches,
       )}
 
       {message && (
-        <span style={{ fontSize: 12, color: message.startsWith("Erreur") ? "var(--danger)" : "var(--teal)" }}>
-          {message}
+        <span style={{ fontSize: 12, color: message.isError ? "var(--danger)" : "var(--teal)" }}>
+          {message.text}
         </span>
       )}
     </div>

@@ -2431,7 +2431,10 @@
     "section_general": "General info",
     "section_status_visibility": "Status & visibility",
     "section_communication": "Streams & communication",
-    "pipeline_format_hint": "This tournament's format (stages, groups, courts, schedule) is managed in the Stages tab."
+    "pipeline_format_hint": "This tournament's format (stages, groups, courts, schedule) is managed in the Stages tab.",
+    "format_summary_mtp_open": "Pool A (Sat. morning) + Pool B (Sat. afternoon) → Barrage SE×4 → DE×16",
+    "format_summary_graz": "2×RR Pools → Regroup 4 groups → SE Top 8",
+    "format_summary_big_apple": "2×RR Pools (Sat.) → Swiss 3 rounds (3-8) + Placement 1&2 → SE Top 8"
   },
   "team_manager": {
     "registered_teams": "Registered teams ({count})",
@@ -2559,7 +2562,8 @@
     "no_team": "— No team",
     "waitlist_title": "Waiting list ({count})",
     "formed_teams_title": "Formed teams ({count})",
-    "no_player": "No player"
+    "no_player": "No player",
+    "view_registration_answers": "View registration form answers"
   },
   "co_orga": {
     "title": "Co-organizers",

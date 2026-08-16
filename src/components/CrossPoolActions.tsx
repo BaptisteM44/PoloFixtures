@@ -34,9 +34,10 @@ export function CrossPoolActions({
   deGenerated,
 }: Props) {
   const t = useTranslations("tournament");
+  const tc = useTranslations("common");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [confirmTarget, setConfirmTarget] = useState<ConfirmTarget>(null);
 
   if (!hasCrossPool) return null;
@@ -46,9 +47,9 @@ export function CrossPoolActions({
     startTransition(async () => {
       setMessage(null);
       const res = await action(tournamentId);
-      if (res && "error" in res) setMessage(`Erreur : ${res.error}`);
+      if (res && "error" in res) setMessage({ text: `${tc("error")} : ${res.error}`, isError: true });
       else {
-        setMessage(successMsg);
+        setMessage({ text: successMsg, isError: false });
         router.refresh();
       }
     });
@@ -138,8 +139,8 @@ export function CrossPoolActions({
       {stepRow(3, t("step_de_bracket"), deGenerated, false, seRound1Finished, t("de_wait_se"), "de", generateCrossPoolDEAction, t("de_bracket_generated"))}
 
       {message && (
-        <div style={{ fontSize: 12, color: message.startsWith("Erreur") ? "var(--danger)" : "var(--teal)" }}>
-          {message}
+        <div style={{ fontSize: 12, color: message.isError ? "var(--danger)" : "var(--teal)" }}>
+          {message.text}
         </div>
       )}
     </div>

@@ -2432,7 +2432,10 @@
     "section_general": "Infos générales",
     "section_status_visibility": "Statut & visibilité",
     "section_communication": "Diffusion & communication",
-    "pipeline_format_hint": "Le format de ce tournoi (étapes, groupes, terrains, horaires) se gère dans l'onglet Étapes."
+    "pipeline_format_hint": "Le format de ce tournoi (étapes, groupes, terrains, horaires) se gère dans l'onglet Étapes.",
+    "format_summary_mtp_open": "Pool A (sam. matin) + Pool B (sam. après-midi) → Barrage SE×4 → DE×16",
+    "format_summary_graz": "2×RR Poules → Regroup 4 groupes → SE Top 8",
+    "format_summary_big_apple": "2×RR Poules (sam.) → Swiss 3 rounds (3-8) + Placement 1&2 → SE Top 8"
   },
   "team_manager": {
     "registered_teams": "Équipes inscrites ({count})",
@@ -2560,7 +2563,8 @@
     "no_team": "— Aucune équipe",
     "waitlist_title": "Liste d'attente ({count})",
     "formed_teams_title": "Équipes formées ({count})",
-    "no_player": "Aucun·e joueur·euse"
+    "no_player": "Aucun·e joueur·euse",
+    "view_registration_answers": "Voir les réponses au questionnaire"
   },
   "co_orga": {
     "title": "Co-organisateur.trices",
