@@ -39,12 +39,15 @@ const nextConfig = {
   images: {
     // Formats modernes servis automatiquement (plus légers que JPEG/PNG).
     formats: ["image/avif", "image/webp"],
-    // Domaines externes autorisés pour next/image. Nos uploads vivent sur
-    // Cloudflare R2 (bucket public *.r2.dev). ⚠️ Si tu sers les images via un
-    // domaine custom (ex: images.tondomaine.com), ajoute-le ici.
+    // Domaines externes autorisés pour next/image. Les uploads vivent sur
+    // Cloudflare R2 (bucket public *.r2.dev) DEPUIS la migration, mais des
+    // images plus anciennes restent encore hébergées sur Supabase Storage
+    // (*.supabase.co) — les deux doivent être autorisés, sinon ces anciennes
+    // images font planter next/image (« hostname not configured »).
     remotePatterns: [
       { protocol: "https", hostname: "**.r2.dev" },
       { protocol: "https", hostname: "**.r2.cloudflarestorage.com" },
+      { protocol: "https", hostname: "**.supabase.co" },
     ],
   },
   async headers() {
