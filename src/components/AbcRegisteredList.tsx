@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { PlayerCollectibleCard } from "@/components/PlayerCollectibleCard";
 
@@ -128,13 +129,13 @@ export function AbcRegisteredList({ entries }: { entries: AbcEntry[] }) {
               >
                 <div
                   style={{
+                    position: "relative",
                     width: 26, height: 26, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
                     background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center",
                   }}
                 >
                   {e.player.photoPath ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={e.player.photoPath} alt={e.player.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <Image src={e.player.photoPath} alt={e.player.name} fill sizes="26px" style={{ objectFit: "cover" }} />
                   ) : (
                     <span style={{ fontSize: 12, fontWeight: 800, color: "#fff" }}>{e.player.name[0]?.toUpperCase()}</span>
                   )}

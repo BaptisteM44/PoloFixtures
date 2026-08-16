@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "@/i18n/navigation";
+import Image from "next/image";
 import { PlayerCollectibleCard } from "@/components/PlayerCollectibleCard";
 
 type Member = {
@@ -109,13 +110,13 @@ export function ClubMembersGrid({
               >
                 <div
                   style={{
+                    position: "relative",
                     width: 26, height: 26, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
                     background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center",
                   }}
                 >
                   {m.player.photoPath ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.player.photoPath} alt={m.player.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <Image src={m.player.photoPath} alt={m.player.name} fill sizes="26px" style={{ objectFit: "cover" }} />
                   ) : (
                     <span style={{ fontSize: 12, fontWeight: 800, color: "#fff" }}>{m.player.name[0]?.toUpperCase()}</span>
                   )}

@@ -10,6 +10,7 @@
  */
 
 import { Link } from "@/i18n/navigation";
+import Image from "next/image";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { PlayerCollectibleCard } from "@/components/PlayerCollectibleCard";
@@ -264,6 +265,7 @@ export function HomeHeroPersonal({
                           key={p.id}
                           title={p.name}
                           style={{
+                            position: "relative",
                             width: 30, height: 30, borderRadius: "50%", overflow: "hidden",
                             border: "2px solid var(--bg)", marginLeft: i === 0 ? 0 : -9,
                             background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center",
@@ -271,8 +273,7 @@ export function HomeHeroPersonal({
                           }}
                         >
                           {p.photoPath ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={p.photoPath} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            <Image src={p.photoPath} alt={p.name} fill sizes="30px" style={{ objectFit: "cover" }} />
                           ) : (
                             <span style={{ fontSize: 12, fontWeight: 800, color: "#fff" }}>{p.name[0]?.toUpperCase()}</span>
                           )}

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useTransition } from "react";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PlayerCollectibleCard } from "./PlayerCollectibleCard";
@@ -69,8 +70,8 @@ type Props = {
 
 function Avatar({ name, photoPath, size = 36 }: { name: string; photoPath: string | null; size?: number }) {
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: "var(--surface-2)", border: "2px solid var(--border)", overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.38, fontWeight: 700, color: "var(--text-muted)" }}>
-      {photoPath ? <img src={photoPath} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : name[0]?.toUpperCase()}
+    <div style={{ position: "relative", width: size, height: size, borderRadius: "50%", background: "var(--surface-2)", border: "2px solid var(--border)", overflow: "hidden", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.38, fontWeight: 700, color: "var(--text-muted)" }}>
+      {photoPath ? <Image src={photoPath} alt={name} fill sizes={`${size}px`} style={{ objectFit: "cover" }} /> : name[0]?.toUpperCase()}
     </div>
   );
 }
@@ -279,9 +280,9 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div
                   onClick={() => logoInputRef.current?.click()}
-                  style={{ width: 56, height: 56, borderRadius: "50%", border: "2px dashed var(--border)", background: squad.color ?? "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", flexShrink: 0 }}
+                  style={{ position: "relative", width: 56, height: 56, borderRadius: "50%", border: "2px dashed var(--border)", background: squad.color ?? "var(--surface-2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", flexShrink: 0 }}
                 >
-                  {logoUploading ? <span style={{ fontSize: 11 }}>…</span> : editLogoPath ? <img src={editLogoPath} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ fontSize: 22 }}>🏑</span>}
+                  {logoUploading ? <span style={{ fontSize: 11 }}>…</span> : editLogoPath ? <Image src={editLogoPath} alt="" fill sizes="56px" style={{ objectFit: "cover" }} /> : <span style={{ fontSize: 22 }}>🏑</span>}
                 </div>
                 <input ref={logoInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); }} />
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -315,8 +316,8 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
           </div>
         ) : (
           <div style={{ display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
-            <div style={{ width: 100, height: 100, borderRadius: "50%", background: squad.color ?? "var(--teal)", border: "3px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 44, flexShrink: 0, overflow: "hidden" }}>
-              {squad.logoPath ? <img src={squad.logoPath} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "🏑"}
+            <div style={{ position: "relative", width: 100, height: 100, borderRadius: "50%", background: squad.color ?? "var(--teal)", border: "3px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 44, flexShrink: 0, overflow: "hidden" }}>
+              {squad.logoPath ? <Image src={squad.logoPath} alt="" fill sizes="100px" style={{ objectFit: "cover" }} /> : "🏑"}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h2 style={{ margin: "0 0 4px", fontFamily: "var(--font-display)" }}>{squad.name}</h2>

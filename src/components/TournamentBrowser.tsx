@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
+import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { FollowButton } from "@/components/FollowButton";
 import { getTournamentStatusBadge } from "@/components/TournamentCard";
@@ -332,7 +333,7 @@ export function TournamentBrowser({
                     {/* Banner full height */}
                     {tour.bannerPath && (
                       <div className="tournament-card__banner">
-                        <img src={tour.bannerPath} alt="" />
+                        <Image src={tour.bannerPath} alt="" fill sizes="90px" style={{ objectFit: "cover" }} />
                       </div>
                     )}
                   </Link>
