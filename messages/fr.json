@@ -940,7 +940,18 @@
     "accommodation_linked_to": "Compte lié :",
     "accommodation_unlink": "délier",
     "accommodation_link_account": "🔗 Lier à un compte joueur",
-    "accommodation_link_search_placeholder": "Chercher un joueur…"
+    "accommodation_link_search_placeholder": "Chercher un joueur…",
+    "follow": "Suivre ce tournoi",
+    "unfollow": "Ne plus suivre ce tournoi",
+    "pos_next": "Suivant",
+    "pos_in_the_hole": "In the hole",
+    "status_waiting": "En attente",
+    "grand_final": "Grande finale",
+    "small_final": "Petite finale",
+    "final_label": "Finale",
+    "gen_random_scores": "Générer des scores aléatoires",
+    "third_place": "3e place",
+    "final_reset": "Finale reset"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",

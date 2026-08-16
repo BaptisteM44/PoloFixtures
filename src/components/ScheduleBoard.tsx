@@ -76,13 +76,17 @@ const PHASE_LABEL: Record<string, string> = {
 // « Suivant » / « In the hole » : position dans la file GLOBALE du terrain
 // (tous blocs confondus) — sinon le 1er match de chaque bloc affiche
 // « Suivant » et tout semble se lancer en même temps.
-function positionLabel(match: MatchWithTeams, courtQueuePos: Map<string, number>) {
-  if (match.status === "FINISHED") return "Terminé";
-  if (match.status === "LIVE") return "Sur court";
+function positionLabel(
+  match: MatchWithTeams,
+  courtQueuePos: Map<string, number>,
+  t: (key: string) => string,
+) {
+  if (match.status === "FINISHED") return t("status_finished");
+  if (match.status === "LIVE") return t("status_live");
   const idx = courtQueuePos.get(match.id);
-  if (idx === 0) return "Suivant";
-  if (idx === 1) return "In the hole";
-  return "En attente";
+  if (idx === 0) return t("pos_next");
+  if (idx === 1) return t("pos_in_the_hole");
+  return t("status_waiting");
 }
 
 /** Check if a round is fully finished */
@@ -421,9 +425,9 @@ export function ScheduleBoard({
     if (!side) return `R${m.roundIndex}`;
     const isDE = deStageIds.has(((m as any).stageId as string | undefined) ?? "");
     if (side === "W") return isDE ? `WB R${m.roundIndex}` : `R${m.roundIndex}`;
-    if (side === "L") return isDE ? `LB R${m.roundIndex}` : "3e place";
-    if (side === "G") return isDE ? "Grande finale" : "Finale";
-    if (side === "BG") return "Finale reset";
+    if (side === "L") return isDE ? `LB R${m.roundIndex}` : t("third_place");
+    if (side === "G") return isDE ? t("grand_final") : t("final_label");
+    if (side === "BG") return t("final_reset");
     return `R${m.roundIndex}`;
   };
 
@@ -480,7 +484,7 @@ export function ScheduleBoard({
       >
         <div className="match-card__corner match-card__corner--tl">
           <span className="match-card__number">{globalOrder.get(match.id)}</span>
-          <span className="pill">{positionLabel(match, courtQueuePos)}</span>
+          <span className="pill">{positionLabel(match, courtQueuePos, t)}</span>
         </div>
         <div className="match-card__corner match-card__corner--tr">
           {match.status === "LIVE"
@@ -627,9 +631,9 @@ export function ScheduleBoard({
           // Étape pipeline à élimination : nommer WB/LB/finale correctement
           const isDEStage = deStageIds.has(group.stageId ?? "");
           if (bracketSide === "W") bracketLabel = isDEStage ? " · Winners" : "";
-          else if (bracketSide === "L") { bracketLabel = isDEStage ? " · Losers" : " · Petite finale"; stageShowRound = isDEStage; }
-          else if (bracketSide === "G") { bracketLabel = isDEStage ? " · Grande finale" : " · Finale"; stageShowRound = false; }
-          else if (bracketSide === "BG") { bracketLabel = " · Finale reset"; stageShowRound = false; }
+          else if (bracketSide === "L") { bracketLabel = isDEStage ? " · Losers" : ` · ${t("small_final")}`; stageShowRound = isDEStage; }
+          else if (bracketSide === "G") { bracketLabel = isDEStage ? ` · ${t("grand_final")}` : ` · ${t("final_label")}`; stageShowRound = false; }
+          else if (bracketSide === "BG") { bracketLabel = ` · ${t("final_reset")}`; stageShowRound = false; }
         }
         if (group.phase === "BRACKET" && bracketSide) {
           // Detect SWISS_SPLIT_SE by presence of B/BG/BL sides
@@ -637,8 +641,8 @@ export function ScheduleBoard({
           if (isSplitSE) {
             // Top 10 / Bottom 8 labels for SWISS_SPLIT_SE
             if (bracketSide === "W") bracketLabel = " · Top 10";
-            else if (bracketSide === "G") bracketLabel = " · Top 10 · Finale";
-            else if (bracketSide === "L") bracketLabel = " · Top 10 · Petite finale";
+            else if (bracketSide === "G") bracketLabel = ` · Top 10 · ${t("final_label")}`;
+            else if (bracketSide === "L") bracketLabel = ` · Top 10 · ${t("small_final")}`;
             else if (bracketSide === "B") bracketLabel = " · Bottom 8";
             else if (bracketSide === "BG") bracketLabel = " · Bottom 8 · Finale";
             else if (bracketSide === "BL") bracketLabel = " · Bottom 8 · Manche des perdants";
@@ -672,7 +676,7 @@ export function ScheduleBoard({
               {isOrganizer && testMode && !finished && (
                 <button
                   type="button"
-                  title="Générer des scores aléatoires"
+                  title={t("gen_random_scores")}
                   disabled={loadingRound === groupKey}
                   onClick={() => generateRoundScores(groupKey, group.matches)}
                   style={{

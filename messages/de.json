@@ -940,7 +940,18 @@
     "accommodation_linked_to": "Verknüpftes Konto:",
     "accommodation_unlink": "trennen",
     "accommodation_link_account": "🔗 Mit Spielerkonto verknüpfen",
-    "accommodation_link_search_placeholder": "Spieler suchen…"
+    "accommodation_link_search_placeholder": "Spieler suchen…",
+    "follow": "Turnier folgen",
+    "unfollow": "Turnier nicht mehr folgen",
+    "pos_next": "Nächstes",
+    "pos_in_the_hole": "In the hole",
+    "status_waiting": "Wartend",
+    "grand_final": "Großes Finale",
+    "small_final": "Kleines Finale",
+    "final_label": "Finale",
+    "gen_random_scores": "Zufällige Ergebnisse generieren",
+    "third_place": "3. Platz",
+    "final_reset": "Finale-Reset"
   },
   "registration": {
     "section_title": "Mein Team anmelden",

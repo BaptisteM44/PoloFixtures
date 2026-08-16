@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 interface FollowButtonProps {
   tournamentId: string;
@@ -13,6 +14,8 @@ export function FollowButton({ tournamentId, initialFollowing, isLoggedIn }: Fol
   const [following, setFollowing] = useState(initialFollowing);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const t = useTranslations("tournament");
+  const label = following ? t("unfollow") : t("follow");
 
   async function handleClick() {
     if (!isLoggedIn) {
@@ -40,8 +43,8 @@ export function FollowButton({ tournamentId, initialFollowing, isLoggedIn }: Fol
       onClick={handleClick}
       disabled={loading}
       className={`follow-btn${following ? " follow-btn--active" : ""}`}
-      title={following ? "Ne plus suivre ce tournoi" : "Suivre ce tournoi"}
-      aria-label={following ? "Ne plus suivre ce tournoi" : "Suivre ce tournoi"}
+      title={label}
+      aria-label={label}
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill={following ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
