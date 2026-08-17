@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Link } from "@/i18n/navigation";
 
 type GuestField = { key: string; label: string; required: boolean };
 type ResultsMode = "IMMEDIATE" | "AT_DATE" | "AT_CLOSE" | "HIDDEN";
@@ -257,6 +258,7 @@ export function AdminPolls() {
               {p.status === "CLOSED" && <button className="ghost" style={{ fontSize: 12 }} onClick={() => setStatus(p.id, "OPEN")}>Rouvrir</button>}
               <button className="ghost" style={{ fontSize: 12 }} onClick={() => copyLink(p.id)}>🔗 Copier le lien</button>
               <a className="ghost" style={{ fontSize: 12 }} href={`/poll/${p.id}`} target="_blank" rel="noopener noreferrer">👁 Voir</a>
+              <Link className="primary" style={{ fontSize: 12 }} href={`/admin/polls/${p.id}`}>📊 Résultats</Link>
               <button className="danger" style={{ fontSize: 12 }} onClick={() => remove(p.id)}>Supprimer</button>
               <select
                 value={p.showResults}
