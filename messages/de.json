@@ -2859,12 +2859,12 @@
     "login_to_vote": "Melde dich an, um direkt abzustimmen",
     "or": "oder",
     "select_choice": "Wähle eine Antwort",
-    "anonymous_note": "🔒 Deine Stimme ist anonym: Niemand kann sehen, was du gewählt hast.",
     "page_title": "Umfragen",
     "page_intro": "Teile deine Meinung zu den Fragen der Bike-Polo-Community. Deine Stimme ist anonym.",
     "page_empty": "Aktuell keine Umfragen.",
     "open_badge": "Aktiv",
     "closed_section": "Beendete Umfragen",
-    "results_not_yet": "Die Ergebnisse sind noch nicht verfügbar."
+    "results_not_yet": "Die Ergebnisse sind noch nicht verfügbar.",
+    "security_note": "Deine Stimme wird von einem automatisierten, anonymen System verarbeitet: Deine Wahl (ja/nein/usw.) wird getrennt von deiner Identität gespeichert, ohne jede Verbindung dazwischen — nicht einmal wir können sehen, was du gewählt hast. Name, E-Mail und Verein/Stadt fragen wir nur ab, um zu prüfen, dass du nicht schon abgestimmt hast (eine Person = eine Stimme), und um Gesamtstatistiken zur Beteiligung zu erstellen (z. B. Anzahl Wähler pro Land). Diese Angaben werden nie mit deiner Stimme verknüpft."
   }
 }

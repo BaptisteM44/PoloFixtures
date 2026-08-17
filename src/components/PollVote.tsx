@@ -138,6 +138,20 @@ export function PollVote({
             ))}
           </div>
 
+          {/* Encart sécurité/anonymat — pourquoi on demande des infos perso alors
+              que le vote est anonyme. Placé AVANT le formulaire guest pour lever
+              la méfiance au bon moment (pas juste en petite ligne après coup). */}
+          <div
+            style={{
+              display: "flex", gap: 10, alignItems: "flex-start",
+              background: "color-mix(in srgb, var(--teal) 8%, var(--surface))",
+              border: "1.5px solid var(--teal)", borderRadius: 10, padding: "12px 14px",
+            }}
+          >
+            <span style={{ fontSize: 20, flexShrink: 0 }}>🔒</span>
+            <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: "var(--text)" }}>{t("security_note")}</p>
+          </div>
+
           {/* Formulaire guest (uniquement si non connecté) */}
           {!isLoggedIn && poll.allowGuests && (
             <div style={{ borderTop: "1px solid var(--border-light)", paddingTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -170,8 +184,6 @@ export function PollVote({
           <button className="primary" onClick={submit} disabled={submitting} style={{ fontSize: 15 }}>
             {submitting ? "…" : t("submit")}
           </button>
-
-          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0, textAlign: "center" }}>{t("anonymous_note")}</p>
         </>
       )}
 

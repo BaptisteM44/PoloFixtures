@@ -2858,12 +2858,12 @@
     "login_to_vote": "Inicia sesión para votar directamente",
     "or": "o",
     "select_choice": "Elige una respuesta",
-    "anonymous_note": "🔒 Tu voto es anónimo: nadie puede ver qué has votado.",
     "page_title": "Encuestas",
     "page_intro": "Comparte tu opinión sobre las preguntas de la comunidad de bike polo. Tu voto es anónimo.",
     "page_empty": "No hay encuestas por ahora.",
     "open_badge": "En curso",
     "closed_section": "Encuestas cerradas",
-    "results_not_yet": "Los resultados aún no están disponibles."
+    "results_not_yet": "Los resultados aún no están disponibles.",
+    "security_note": "Tu voto se procesa mediante un sistema automatizado y anónimo: tu elección (sí/no/etc.) se guarda por separado de tu identidad, sin ninguna conexión entre ambas — ni siquiera nosotros podemos saber qué has votado. El nombre, email y club/ciudad que te pedimos solo sirven para comprobar que no has votado ya (una persona = un voto), y para generar estadísticas globales de participación (ej. número de votantes por país). Estos datos nunca se vinculan a tu voto."
   }
 }
