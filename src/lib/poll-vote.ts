@@ -6,6 +6,8 @@ export type PollLite = {
   status: "DRAFT" | "OPEN" | "CLOSED";
   options: string[];
   multipleChoice: boolean;
+  minChoices?: number | null;
+  maxChoices?: number | null;
   openAt: Date | null;
   closeAt: Date | null;
 };
@@ -38,7 +40,8 @@ export function isPollOpen(poll: PollLite, now = new Date()): boolean {
   return true;
 }
 
-/** Valide que les choix soumis appartiennent bien aux options du sondage. */
+/** Valide que les choix soumis appartiennent bien aux options du sondage, et
+ * respectent les bornes min/max (multi-choix). */
 export function validateChoices(poll: PollLite, choices: string[]): string | null {
   if (choices.length === 0) return "Aucun choix sélectionné.";
   if (!poll.multipleChoice && choices.length > 1) return "Un seul choix autorisé.";
@@ -46,6 +49,14 @@ export function validateChoices(poll: PollLite, choices: string[]): string | nul
   if (dedup.size !== choices.length) return "Choix en double.";
   for (const c of choices) {
     if (!poll.options.includes(c)) return "Choix invalide.";
+  }
+  if (poll.multipleChoice) {
+    if (poll.minChoices != null && choices.length < poll.minChoices) {
+      return `Choisis au moins ${poll.minChoices} réponse(s).`;
+    }
+    if (poll.maxChoices != null && choices.length > poll.maxChoices) {
+      return `Choisis au maximum ${poll.maxChoices} réponse(s).`;
+    }
   }
   return null;
 }
@@ -61,6 +72,10 @@ export type CastResult =
  *  - crée le(s) bulletin(s) (PollBallot) SANS aucun lien vers l'émargement.
  * Tout dans une seule transaction : si l'émargement existe déjà (P2002), rien
  * n'est écrit → pas de bulletin fantôme.
+ *
+ * `allowRevote` (inscrits) : si l'émargement existe déjà, on REMPLACE le vote —
+ * suppression des anciens bulletins (via ballotIds) + dépôt des nouveaux, en une
+ * transaction. Le commentaire est porté par le 1er bulletin.
  */
 export async function castVote(params: {
   pollId: string;
@@ -72,11 +87,21 @@ export async function castVote(params: {
   // Identité du votant INSCRIT (stats démographiques) — reste sur l'émargement,
   // jamais sur le bulletin. undefined/null pour les guests.
   playerId?: string | null;
+  comment?: string | null;
+  allowRevote?: boolean;
 }): Promise<CastResult> {
+  const buildBallots = () =>
+    params.choices.map((choice, i) => ({
+      pollId: params.pollId,
+      choice,
+      // Commentaire porté par le 1er bulletin uniquement (évite les doublons).
+      comment: i === 0 ? (params.comment ?? null) : null,
+    }));
+
   try {
     await prisma.$transaction(async (tx) => {
       // 1) Émargement — la contrainte unique fait foi pour l'anti-double-vote.
-      await tx.pollVoter.create({
+      const voter = await tx.pollVoter.create({
         data: {
           pollId: params.pollId,
           voterHash: params.voterHash,
@@ -85,17 +110,59 @@ export async function castVote(params: {
           verified: params.verified,
           guestInfo: params.guestInfo ?? undefined,
         },
+        select: { id: true },
       });
       // 2) Bulletin(s) — anonyme, aucun champ ne pointe vers le votant.
-      await tx.pollBallot.createMany({
-        data: params.choices.map((choice) => ({ pollId: params.pollId, choice })),
+      const created = await Promise.all(
+        buildBallots().map((data) => tx.pollBallot.create({ data, select: { id: true } })),
+      );
+      // 3) Mémorise les ids des bulletins sur l'émargement (pour un futur re-vote).
+      await tx.pollVoter.update({
+        where: { id: voter.id },
+        data: { ballotIds: created.map((b) => b.id) },
       });
     });
     return { ok: true };
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      // Émargement déjà présent : soit on refuse (déjà voté), soit on remplace.
+      if (params.allowRevote) {
+        return await replaceVote(params, buildBallots);
+      }
       return { ok: false, reason: "already_voted" };
     }
     throw e;
   }
+}
+
+/**
+ * Re-vote d'un votant existant (inscrit) : supprime ses anciens bulletins
+ * (retrouvés via ballotIds sur l'émargement) et dépose les nouveaux, en une
+ * transaction. Met à jour ballotIds. L'anonymat est préservé (on ne lit jamais
+ * le contenu des anciens bulletins, on les supprime par id).
+ */
+async function replaceVote(
+  params: { pollId: string; voterHash: string; comment?: string | null },
+  buildBallots: () => { pollId: string; choice: string; comment: string | null }[],
+): Promise<CastResult> {
+  await prisma.$transaction(async (tx) => {
+    const voter = await tx.pollVoter.findUnique({
+      where: { pollId_voterHash: { pollId: params.pollId, voterHash: params.voterHash } },
+      select: { id: true, ballotIds: true },
+    });
+    if (!voter) return; // ne devrait pas arriver (on vient d'avoir un P2002)
+    // Supprime les anciens bulletins de ce votant.
+    if (voter.ballotIds.length > 0) {
+      await tx.pollBallot.deleteMany({ where: { id: { in: voter.ballotIds } } });
+    }
+    // Dépose les nouveaux et ré-attache leurs ids à l'émargement.
+    const created = await Promise.all(
+      buildBallots().map((data) => tx.pollBallot.create({ data, select: { id: true } })),
+    );
+    await tx.pollVoter.update({
+      where: { id: voter.id },
+      data: { ballotIds: created.map((b) => b.id) },
+    });
+  });
+  return { ok: true };
 }

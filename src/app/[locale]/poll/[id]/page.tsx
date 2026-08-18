@@ -21,8 +21,9 @@ export default async function PollPage({
     where: { id: params.id },
     select: {
       id: true, question: true, description: true, options: true,
-      multipleChoice: true, allowGuests: true, guestFields: true, status: true,
-      showResults: true, resultsAt: true,
+      multipleChoice: true, minChoices: true, maxChoices: true, allowComment: true,
+      allowGuests: true, guestFields: true, status: true,
+      showResults: true, resultsAt: true, closeAt: true,
     },
   });
   if (!poll || poll.status === "DRAFT") notFound();

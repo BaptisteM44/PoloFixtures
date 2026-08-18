@@ -7,7 +7,7 @@ import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import { prisma } from "@/lib/db";
 import { assertSimDatabase, resetSimDb } from "./sim-db";
 import { hashPlayerVoter, hashGuestVoter } from "@/lib/poll-hash";
-import { castVote } from "@/lib/poll-vote";
+import { castVote, validateChoices } from "@/lib/poll-vote";
 
 async function mkPoll(): Promise<string> {
   const p = await prisma.poll.create({
@@ -59,7 +59,7 @@ describe("Vote — anti-double-vote & anonymat", () => {
     await castVote({ pollId, voterHash: hashPlayerVoter(pollId, "secret-player"), choices: ["Oui"], isGuest: false, verified: true });
     const ballot = await prisma.pollBallot.findFirst({ where: { pollId } });
     // Les seuls champs sont id/pollId/choice/createdAt — pas de voterHash/playerId.
-    expect(Object.keys(ballot ?? {}).sort()).toEqual(["choice", "createdAt", "id", "pollId"]);
+    expect(Object.keys(ballot ?? {}).sort()).toEqual(["choice", "comment", "createdAt", "id", "pollId"]);
   });
 
   it("deux votes CONCURRENTS du même votant → un seul passe", async () => {
@@ -107,7 +107,7 @@ describe("Vote — anti-double-vote & anonymat", () => {
     // Le bulletin n'a et ne peut pas avoir de playerId (schéma sans ce champ) :
     // vérifie qu'aucun champ du bulletin ne référence le votant.
     const ballot = await prisma.pollBallot.findFirst({ where: { pollId } });
-    expect(Object.keys(ballot ?? {}).sort()).toEqual(["choice", "createdAt", "id", "pollId"]);
+    expect(Object.keys(ballot ?? {}).sort()).toEqual(["choice", "comment", "createdAt", "id", "pollId"]);
   });
 
   it("guest (sans playerId) : émargement a playerId=null", async () => {
@@ -119,5 +119,54 @@ describe("Vote — anti-double-vote & anonymat", () => {
     const voter = await prisma.pollVoter.findFirst({ where: { pollId } });
     expect(voter?.playerId).toBeNull();
     expect((voter?.guestInfo as any)?.club).toBe("Test Club");
+  });
+});
+
+describe("Re-vote (inscrits) + commentaire", () => {
+  it("re-vote : le nouveau choix remplace l'ancien (1 seul bulletin final)", async () => {
+    const pollId = await mkPoll();
+    const hash = hashPlayerVoter(pollId, "revoter");
+    await castVote({ pollId, voterHash: hash, choices: ["Oui"], isGuest: false, verified: true, playerId: null, allowRevote: true });
+    // Change d'avis :
+    const res = await castVote({ pollId, voterHash: hash, choices: ["Non"], isGuest: false, verified: true, playerId: null, allowRevote: true });
+    expect(res.ok).toBe(true);
+
+    // 1 seul bulletin, avec le NOUVEAU choix. Toujours 1 seul émargement.
+    const ballots = await prisma.pollBallot.findMany({ where: { pollId } });
+    expect(ballots.length).toBe(1);
+    expect(ballots[0].choice).toBe("Non");
+    expect(await prisma.pollVoter.count({ where: { pollId } })).toBe(1);
+  });
+
+  it("sans allowRevote : le 2e vote est refusé (comportement guest/défaut)", async () => {
+    const pollId = await mkPoll();
+    const hash = hashGuestVoter(pollId, "noRevote@test.com");
+    await castVote({ pollId, voterHash: hash, choices: ["Oui"], isGuest: true, verified: true });
+    const res = await castVote({ pollId, voterHash: hash, choices: ["Non"], isGuest: true, verified: true });
+    expect(res.ok).toBe(false);
+    expect(await prisma.pollBallot.count({ where: { pollId } })).toBe(1);
+  });
+
+  it("commentaire anonyme : stocké sur le bulletin", async () => {
+    const pollId = await mkPoll();
+    await castVote({ pollId, voterHash: hashPlayerVoter(pollId, "c1"), choices: ["Oui"], isGuest: false, verified: true, comment: "super idée" });
+    const ballot = await prisma.pollBallot.findFirst({ where: { pollId } });
+    expect(ballot?.comment).toBe("super idée");
+  });
+});
+
+describe("validateChoices — bornes min/max", () => {
+  const base = { id: "p", status: "OPEN" as const, options: ["A", "B", "C", "D"], openAt: null, closeAt: null };
+  it("max : refuse trop de choix", () => {
+    const err = validateChoices({ ...base, multipleChoice: true, maxChoices: 2 }, ["A", "B", "C"]);
+    expect(err).toContain("maximum");
+  });
+  it("min : refuse trop peu", () => {
+    const err = validateChoices({ ...base, multipleChoice: true, minChoices: 2 }, ["A"]);
+    expect(err).toContain("moins");
+  });
+  it("exactement N (min=max) : ok si pile le bon nombre", () => {
+    expect(validateChoices({ ...base, multipleChoice: true, minChoices: 2, maxChoices: 2 }, ["A", "B"])).toBeNull();
+    expect(validateChoices({ ...base, multipleChoice: true, minChoices: 2, maxChoices: 2 }, ["A"])).toContain("moins");
   });
 });

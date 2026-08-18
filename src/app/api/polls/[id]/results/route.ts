@@ -85,7 +85,17 @@ export async function GET(_request: Request, { params }: { params: { id: string 
           }
         : null,
     }));
-    return Response.json({ ...base, voters: votersOut });
+
+    // Commentaires ANONYMES (attachés aux bulletins) — le créateur les voit sans
+    // savoir qui les a écrits (aucun lien bulletin↔votant).
+    const commentBallots = await prisma.pollBallot.findMany({
+      where: { pollId: params.id, comment: { not: null } },
+      select: { comment: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const comments = commentBallots.map((b) => ({ comment: b.comment, createdAt: b.createdAt }));
+
+    return Response.json({ ...base, voters: votersOut, comments });
   }
 
   return Response.json(base);

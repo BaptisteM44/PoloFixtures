@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
+import { countryToContinent } from "@/lib/country-utils";
 
 type VoterPlayer = { name: string; city: string | null; country: string; club: string | null };
 type Voter = {
@@ -10,6 +11,7 @@ type Voter = {
   createdAt: string;
   player: VoterPlayer | null;
 };
+type Comment = { comment: string; createdAt: string };
 type ResultsData = {
   poll: { id: string; question: string; description: string | null; options: string[]; status: string };
   visible: boolean;
@@ -17,6 +19,12 @@ type ResultsData = {
   totalBallots?: number;
   voterCount?: number;
   voters?: Voter[];
+  comments?: Comment[];
+};
+
+const CONTINENT_LABEL: Record<string, string> = {
+  EU: "Europe", NA: "Amérique du Nord", SA: "Amérique du Sud", AS: "Asie",
+  AF: "Afrique", OC: "Océanie", AN: "Antarctique",
 };
 
 /** Compte les occurrences d'une valeur (club/ville/pays) tous types de votants
@@ -53,7 +61,7 @@ export function AdminPollResults({ pollId }: { pollId: string }) {
   if (loading) return <p className="meta" style={{ marginTop: 16 }}>Chargement…</p>;
   if (!data) return <p className="meta" style={{ marginTop: 16 }}>Sondage introuvable.</p>;
 
-  const { poll, counts = {}, totalBallots = 0, voterCount = 0, voters = [] } = data;
+  const { poll, counts = {}, totalBallots = 0, voterCount = 0, voters = [], comments = [] } = data;
   const maxCount = Math.max(1, ...Object.values(counts));
 
   // Toutes les clés de champs guest rencontrées (pour les colonnes du tableau/export).
@@ -61,11 +69,17 @@ export function AdminPollResults({ pollId }: { pollId: string }) {
     new Set(voters.flatMap((v) => (v.guestInfo ? Object.keys(v.guestInfo) : [])))
   );
 
-  // Stats démographiques : club/ville/pays, tous types de votants confondus
-  // (le club d'un inscrit vient de son profil, celui d'un guest de guestInfo.club).
+  // Stats démographiques : club/ville/pays/continent, tous types confondus (le
+  // club d'un inscrit vient de son profil, celui d'un guest de guestInfo.club).
+  const countryOf = (v: Voter) => v.player?.country ?? v.guestInfo?.country ?? v.guestInfo?.pays;
   const clubStats = tally(voters, (v) => v.player?.club ?? v.guestInfo?.club);
   const cityStats = tally(voters, (v) => v.player?.city ?? v.guestInfo?.city ?? v.guestInfo?.ville);
-  const countryStats = tally(voters, (v) => v.player?.country ?? v.guestInfo?.country ?? v.guestInfo?.pays);
+  const countryStats = tally(voters, countryOf);
+  const continentStats = tally(voters, (v) => {
+    const c = countryOf(v);
+    const cont = c ? countryToContinent(c) : null;
+    return cont ? (CONTINENT_LABEL[cont] ?? cont) : null;
+  });
 
   const exportCsv = () => {
     const headers = ["type", "date", "nom", "ville", "pays", "club", ...guestKeys];
@@ -121,12 +135,13 @@ export function AdminPollResults({ pollId }: { pollId: string }) {
           types confondus. Jamais croisé avec le choix voté. */}
       {voters.length > 0 && (
         <div className="panel" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-          <h3 style={{ margin: 0 }}>Participation par club / ville / pays</h3>
+          <h3 style={{ margin: 0 }}>Participation par club / ville / pays / continent</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
             {[
               { title: "Club", stats: clubStats },
               { title: "Ville", stats: cityStats },
               { title: "Pays", stats: countryStats },
+              { title: "Continent", stats: continentStats },
             ].map(({ title, stats }) => (
               <div key={title}>
                 <strong style={{ fontSize: 13 }}>{title}</strong>
@@ -142,6 +157,23 @@ export function AdminPollResults({ pollId }: { pollId: string }) {
                     ))}
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Commentaires anonymes (attachés aux bulletins, non reliables au votant) */}
+      {comments.length > 0 && (
+        <div className="panel" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+          <h3 style={{ margin: 0 }}>Commentaires ({comments.length})</h3>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>
+            🔒 Anonymes : impossible de savoir qui a écrit quoi.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {comments.map((c, i) => (
+              <div key={i} style={{ fontSize: 14, padding: "8px 12px", background: "var(--surface-2)", borderRadius: 8, borderLeft: "3px solid var(--teal)" }}>
+                {c.comment}
               </div>
             ))}
           </div>

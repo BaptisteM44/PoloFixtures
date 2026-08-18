@@ -2866,6 +2866,17 @@
     "results_not_yet": "Los resultados aún no están disponibles.",
     "security_note": "Tu voto se procesa mediante un sistema automatizado y anónimo: tu elección (sí/no/etc.) se guarda por separado de tu identidad, sin ninguna conexión entre ambas — ni siquiera nosotros podemos saber qué has votado. El nombre, email y club/ciudad que te pedimos solo sirven para comprobar que no has votado ya (una persona = un voto), y para generar estadísticas globales de participación (ej. número de votantes por país). Estos datos nunca se vinculan a tu voto.",
     "club_other": "Otro (especificar)",
-    "club_pick_list": "Elegir de la lista"
+    "club_pick_list": "Elegir de la lista",
+    "min_choices": "Elige al menos {n} respuesta(s).",
+    "max_choices": "Elige como máximo {n} respuesta(s).",
+    "pick_exactly": "Elige exactamente {n} respuestas.",
+    "pick_up_to": "Elige hasta {n} respuestas.",
+    "pick_at_least": "Elige al menos {n} respuestas.",
+    "comment_label": "Comentario (opcional)",
+    "comment_placeholder": "Explica tu elección si quieres…",
+    "closes_in": "Termina en {time}",
+    "change_vote": "Cambiar mi voto",
+    "guest_final_warning": "Tu voto será definitivo: no se puede cambiar sin una cuenta.",
+    "share": "Compartir"
   }
 }

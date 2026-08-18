@@ -2863,6 +2863,17 @@
     "results_not_yet": "Les résultats ne sont pas encore disponibles.",
     "security_note": "Ton vote est traité par un système automatisé et anonyme : ton choix (oui/non/etc.) est enregistré séparément de ton identité, sans aucun lien entre les deux — même nous, on ne peut pas savoir ce que tu as voté. Le prénom, nom, email et club/ville qu'on te demande ne servent qu'à vérifier que tu n'as pas déjà voté (une personne = un vote), et à sortir des statistiques globales de participation (ex: nombre de votants par pays). Ces infos ne sont jamais reliées à ton choix de vote.",
     "club_other": "Autre (préciser)",
-    "club_pick_list": "Choisir dans la liste"
+    "club_pick_list": "Choisir dans la liste",
+    "min_choices": "Choisis au moins {n} réponse(s).",
+    "max_choices": "Choisis au maximum {n} réponse(s).",
+    "pick_exactly": "Choisis exactement {n} réponses.",
+    "pick_up_to": "Choisis jusqu'à {n} réponses.",
+    "pick_at_least": "Choisis au moins {n} réponses.",
+    "comment_label": "Commentaire (optionnel)",
+    "comment_placeholder": "Explique ton choix si tu veux…",
+    "closes_in": "Se termine dans {time}",
+    "change_vote": "Modifier mon vote",
+    "guest_final_warning": "Ton vote sera définitif : pas de retour en arrière possible sans compte.",
+    "share": "Partager"
   }
 }

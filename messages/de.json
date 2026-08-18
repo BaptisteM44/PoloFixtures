@@ -2867,6 +2867,17 @@
     "results_not_yet": "Die Ergebnisse sind noch nicht verfügbar.",
     "security_note": "Deine Stimme wird von einem automatisierten, anonymen System verarbeitet: Deine Wahl (ja/nein/usw.) wird getrennt von deiner Identität gespeichert, ohne jede Verbindung dazwischen — nicht einmal wir können sehen, was du gewählt hast. Name, E-Mail und Verein/Stadt fragen wir nur ab, um zu prüfen, dass du nicht schon abgestimmt hast (eine Person = eine Stimme), und um Gesamtstatistiken zur Beteiligung zu erstellen (z. B. Anzahl Wähler pro Land). Diese Angaben werden nie mit deiner Stimme verknüpft.",
     "club_other": "Andere (angeben)",
-    "club_pick_list": "Aus Liste wählen"
+    "club_pick_list": "Aus Liste wählen",
+    "min_choices": "Wähle mindestens {n} Antwort(en).",
+    "max_choices": "Wähle höchstens {n} Antwort(en).",
+    "pick_exactly": "Wähle genau {n} Antworten.",
+    "pick_up_to": "Wähle bis zu {n} Antworten.",
+    "pick_at_least": "Wähle mindestens {n} Antworten.",
+    "comment_label": "Kommentar (optional)",
+    "comment_placeholder": "Begründe deine Wahl, wenn du magst…",
+    "closes_in": "Endet in {time}",
+    "change_vote": "Meine Stimme ändern",
+    "guest_final_warning": "Deine Stimme ist endgültig: ohne Konto keine Änderung möglich.",
+    "share": "Teilen"
   }
 }

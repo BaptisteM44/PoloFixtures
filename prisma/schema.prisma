@@ -1384,6 +1384,11 @@ model Poll {
   options        String[] // choix possibles (ex: ["Oui","Non"] ou plus)
   status         PollStatus      @default(DRAFT)
   multipleChoice Boolean         @default(false) // un seul choix (false) ou plusieurs (true)
+  // Bornes du nombre de choix quand multipleChoice=true (null = pas de borne) :
+  // minChoices=maxChoices=2 → "choisis exactement 2" ; maxChoices=3 → "3 max".
+  minChoices     Int? // nb minimum de choix requis
+  maxChoices     Int? // nb maximum de choix autorisés
+  allowComment   Boolean         @default(false) // proposer un commentaire (anonyme) avec le vote
   allowGuests    Boolean         @default(true) // autoriser les non-inscrits (via formulaire + email)
   // Formulaire libre demandé aux GUESTS (les inscrits ne le remplissent pas).
   // L'email n'est PAS ici : il est toujours demandé séparément (anti-fraude).
@@ -1412,6 +1417,10 @@ model PollBallot {
   id        String   @id @default(cuid())
   pollId    String
   choice    String // l'option votée
+  // Commentaire ANONYME optionnel (si Poll.allowComment). Attaché au bulletin,
+  // donc non reliable au votant — le créateur du sondage le voit sans savoir
+  // qui l'a écrit. En multi-choix, le commentaire est stocké sur le 1er bulletin.
+  comment   String?
   createdAt DateTime @default(now())
 
   poll Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
@@ -1433,6 +1442,11 @@ model PollVoter {
   verifyExpiry  DateTime?
   guestInfo     Json? // réponses au formulaire libre (nom, club, ville…) — null pour les inscrits
   pendingChoice Json? // choix en attente tant que l'email guest n'est pas confirmé (déposé à la vérif)
+  // IDs des bulletins déposés par ce votant — permet le RE-VOTE (inscrits) :
+  // au changement d'avis on supprime ces bulletins et on en dépose de nouveaux.
+  // Ne stocke PAS le choix, juste les ids (pour retrouver l'ancien bulletin sans
+  // que l'émargement révèle le vote). Non reliable au contenu sans lire l'urne.
+  ballotIds     String[]  @default([])
   // Identité d'un votant INSCRIT — pour des stats démographiques (club/ville/pays)
   // dans l'admin. ⚠️ Reste séparé du BULLETIN (choix voté) : on sait qui a
   // participé, jamais ce qu'il a voté (PollBallot n'a et n'aura jamais ce lien).

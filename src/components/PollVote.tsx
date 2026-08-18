@@ -11,9 +11,13 @@ export type PollData = {
   description: string | null;
   options: string[];
   multipleChoice: boolean;
+  minChoices: number | null;
+  maxChoices: number | null;
+  allowComment: boolean;
   allowGuests: boolean;
   guestFields: GuestField[];
   status: "DRAFT" | "OPEN" | "CLOSED";
+  closeAt: string | null;
 };
 
 type Results = { counts: Record<string, number>; totalBallots: number; voterCount: number };
@@ -99,6 +103,7 @@ export function PollVote({
 }) {
   const t = useTranslations("poll");
   const [selected, setSelected] = useState<string[]>([]);
+  const [comment, setComment] = useState("");
   const [email, setEmail] = useState("");
   const [guestValues, setGuestValues] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -106,6 +111,24 @@ export function PollVote({
   // "done" (inscrit ou déjà voté) | "pending" (guest, email envoyé)
   const [state, setState] = useState<"idle" | "done" | "pending">(hasVoted ? "done" : "idle");
   const [results, setResults] = useState<Results | null>(initialResults);
+  const [timeLeft, setTimeLeft] = useState<string | null>(null);
+
+  // Compte à rebours si une date de fermeture est programmée (incite à voter).
+  useEffect(() => {
+    if (!poll.closeAt || poll.status !== "OPEN") { setTimeLeft(null); return; }
+    const close = new Date(poll.closeAt).getTime();
+    const tick = () => {
+      const diff = close - Date.now();
+      if (diff <= 0) { setTimeLeft(null); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      setTimeLeft(d > 0 ? `${d}j ${h}h` : h > 0 ? `${h}h ${m}min` : `${m}min`);
+    };
+    tick();
+    const id = setInterval(tick, 60000);
+    return () => clearInterval(id);
+  }, [poll.closeAt, poll.status]);
 
   const toggle = (opt: string) => {
     setSelected((prev) =>
@@ -132,6 +155,15 @@ export function PollVote({
   const submit = async () => {
     setError(null);
     if (selected.length === 0) { setError(t("select_choice")); return; }
+    // Validation min/max côté client (le serveur revérifie de toute façon).
+    if (poll.multipleChoice) {
+      if (poll.minChoices != null && selected.length < poll.minChoices) {
+        setError(t("min_choices", { n: poll.minChoices })); return;
+      }
+      if (poll.maxChoices != null && selected.length > poll.maxChoices) {
+        setError(t("max_choices", { n: poll.maxChoices })); return;
+      }
+    }
     if (!isLoggedIn && !email.trim()) { setError(t("email_required")); return; }
 
     setSubmitting(true);
@@ -141,6 +173,7 @@ export function PollVote({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           choices: selected,
+          ...(poll.allowComment && comment.trim() ? { comment: comment.trim() } : {}),
           ...(isLoggedIn ? {} : { email: email.trim(), guestInfo: guestValues }),
         }),
       });
@@ -162,19 +195,42 @@ export function PollVote({
     }
   };
 
+  // Re-vote (inscrits) : revient au formulaire avec la sélection actuelle.
+  const editVote = () => { setState("idle"); setError(null); };
+
+  const [shared, setShared] = useState(false);
+  const share = async () => {
+    const url = window.location.href;
+    // API native (mobile) si dispo, sinon copie du lien dans le presse-papier.
+    if (navigator.share) {
+      try { await navigator.share({ title: poll.question, url }); return; } catch { /* annulé */ }
+    }
+    try { await navigator.clipboard.writeText(url); setShared(true); setTimeout(() => setShared(false), 2000); } catch { /* noop */ }
+  };
+
   const maxCount = results ? Math.max(1, ...Object.values(results.counts)) : 1;
 
   return (
     <div className="panel" style={{ display: "flex", flexDirection: "column", gap: 18, padding: 24 }}>
-      <div>
-        <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 24 }}>{poll.question}</h1>
-        {poll.description && (
-          <p style={{ marginTop: 8, color: "var(--text-muted)", lineHeight: 1.6 }}>{poll.description}</p>
-        )}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 24 }}>{poll.question}</h1>
+          {poll.description && (
+            <p style={{ marginTop: 8, color: "var(--text-muted)", lineHeight: 1.6 }}>{poll.description}</p>
+          )}
+        </div>
+        <button className="ghost" onClick={share} style={{ fontSize: 13, flexShrink: 0 }} title={t("share")}>
+          {shared ? "✓" : "🔗"} {t("share")}
+        </button>
       </div>
 
       {poll.status !== "OPEN" && (
         <p style={{ color: "var(--text-muted)" }}>{t(poll.status === "CLOSED" ? "closed" : "not_open")}</p>
+      )}
+
+      {/* Compte à rebours de fermeture */}
+      {timeLeft && (
+        <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>⏳ {t("closes_in", { time: timeLeft })}</p>
       )}
 
       {/* Confirmation email guest en attente */}
@@ -188,6 +244,16 @@ export function PollVote({
       {/* Vote (si ouvert et pas déjà voté/en attente) */}
       {poll.status === "OPEN" && state === "idle" && (
         <>
+          {/* Consigne de sélection multi-choix (exactement N / max N…) */}
+          {poll.multipleChoice && (poll.minChoices != null || poll.maxChoices != null) && (
+            <p style={{ fontSize: 13, color: "var(--teal)", fontWeight: 600, margin: 0 }}>
+              {poll.minChoices != null && poll.minChoices === poll.maxChoices
+                ? t("pick_exactly", { n: poll.minChoices })
+                : poll.maxChoices != null
+                  ? t("pick_up_to", { n: poll.maxChoices })
+                  : t("pick_at_least", { n: poll.minChoices! })}
+            </p>
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {poll.options.map((opt) => (
               <button
@@ -205,6 +271,21 @@ export function PollVote({
               </button>
             ))}
           </div>
+
+          {/* Commentaire optionnel (anonyme) si le sondage l'autorise */}
+          {poll.allowComment && (
+            <label style={{ fontSize: 13, display: "grid", gap: 4 }}>
+              {t("comment_label")}
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={2}
+                maxLength={1000}
+                placeholder={t("comment_placeholder")}
+                style={{ padding: "8px 10px", borderRadius: 8, border: "2px solid var(--border)", resize: "vertical" }}
+              />
+            </label>
+          )}
 
           {/* Encart sécurité/anonymat — pourquoi on demande des infos perso alors
               que le vote est anonyme. Placé AVANT le formulaire guest pour lever
@@ -227,6 +308,8 @@ export function PollVote({
                 <strong style={{ fontSize: 14 }}>{t("guest_section")}</strong>
                 <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-muted)" }}>{t("guest_intro")}</p>
               </div>
+              {/* Vote définitif pour les guests (pas de re-vote via email). */}
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: "var(--danger)" }}>⚠️ {t("guest_final_warning")}</p>
               <label style={{ fontSize: 13, display: "grid", gap: 4 }}>
                 {t("email")} *
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
@@ -270,6 +353,12 @@ export function PollVote({
         <>
           <p style={{ color: "var(--teal)", fontWeight: 600 }}>{hasVoted ? t("already_voted") : t("thanks")}</p>
           {!results && <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("results_not_yet")}</p>}
+          {/* Re-vote : seulement pour les inscrits, tant que le sondage est ouvert. */}
+          {isLoggedIn && poll.status === "OPEN" && (
+            <button className="ghost" onClick={editVote} style={{ fontSize: 13, alignSelf: "start" }}>
+              ✏️ {t("change_vote")}
+            </button>
+          )}
         </>
       )}
 

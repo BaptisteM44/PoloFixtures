@@ -43,6 +43,9 @@ export function AdminPolls() {
   const [description, setDescription] = useState("");
   const [options, setOptions] = useState<string[]>(["Oui", "Non"]);
   const [multipleChoice, setMultipleChoice] = useState(false);
+  const [minChoices, setMinChoices] = useState("");
+  const [maxChoices, setMaxChoices] = useState("");
+  const [allowComment, setAllowComment] = useState(false);
   const [allowGuests, setAllowGuests] = useState(true);
   const [guestFields, setGuestFields] = useState<GuestField[]>([]);
   const [openAt, setOpenAt] = useState("");
@@ -75,6 +78,9 @@ export function AdminPolls() {
           description: description.trim() || null,
           options: cleanOptions,
           multipleChoice,
+          minChoices: multipleChoice && minChoices ? Number(minChoices) : null,
+          maxChoices: multipleChoice && maxChoices ? Number(maxChoices) : null,
+          allowComment,
           allowGuests,
           guestFields: guestFields
             .filter((f) => f.key.trim() && f.label.trim())
@@ -89,6 +95,7 @@ export function AdminPolls() {
       // reset + reload
       setQuestion(""); setDescription(""); setOptions(["Oui", "Non"]);
       setGuestFields([]); setMultipleChoice(false); setAllowGuests(true);
+      setMinChoices(""); setMaxChoices(""); setAllowComment(false);
       setOpenAt(""); setCloseAt(""); setShowResults("IMMEDIATE"); setResultsAt("");
       await load();
     } finally {
@@ -160,6 +167,23 @@ export function AdminPolls() {
           <input type="checkbox" checked={multipleChoice} onChange={(e) => setMultipleChoice(e.target.checked)} />
           Plusieurs réponses possibles
         </label>
+        {multipleChoice && (
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", paddingLeft: 24 }}>
+            <label style={{ fontSize: 12, display: "flex", gap: 6, alignItems: "center" }}>
+              Min. de choix
+              <input type="number" min={1} max={20} value={minChoices} onChange={(e) => setMinChoices(e.target.value)} style={{ width: 60 }} placeholder="—" />
+            </label>
+            <label style={{ fontSize: 12, display: "flex", gap: 6, alignItems: "center" }}>
+              Max. de choix
+              <input type="number" min={1} max={20} value={maxChoices} onChange={(e) => setMaxChoices(e.target.value)} style={{ width: 60 }} placeholder="—" />
+            </label>
+            <span style={{ fontSize: 11, color: "var(--text-muted)", alignSelf: "center" }}>(min = max → "exactement N")</span>
+          </div>
+        )}
+        <label style={{ fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
+          <input type="checkbox" checked={allowComment} onChange={(e) => setAllowComment(e.target.checked)} />
+          Autoriser un commentaire (anonyme) avec le vote
+        </label>
         <label style={{ fontSize: 13, display: "flex", gap: 8, alignItems: "center" }}>
           <input type="checkbox" checked={allowGuests} onChange={(e) => setAllowGuests(e.target.checked)} />
           Autoriser les non-inscrits (via email de confirmation)
@@ -193,10 +217,26 @@ export function AdminPolls() {
                 <button className="ghost" onClick={() => setGuestFields((p) => p.filter((_, idx) => idx !== i))}>✕</button>
               </div>
             ))}
-            <button className="ghost" style={{ alignSelf: "start", fontSize: 13 }}
-              onClick={() => setGuestFields((p) => [...p, { key: "", label: "", required: false, type: "text" }])}>
-              + Ajouter un champ
-            </button>
+            {/* Champs connus en un clic (l'email est déjà demandé séparément). */}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Ajouter vite :</span>
+              {([
+                { key: "name", label: "Nom", type: "text" as const },
+                { key: "city", label: "Ville", type: "text" as const },
+                { key: "club", label: "Club", type: "club" as const },
+                { key: "country", label: "Pays", type: "text" as const },
+              ]).map((preset) => (
+                <button key={preset.key} type="button" className="ghost" style={{ fontSize: 12 }}
+                  disabled={guestFields.some((f) => f.key === preset.key)}
+                  onClick={() => setGuestFields((p) => [...p, { ...preset, required: false }])}>
+                  + {preset.label}
+                </button>
+              ))}
+              <button type="button" className="ghost" style={{ fontSize: 12 }}
+                onClick={() => setGuestFields((p) => [...p, { key: "", label: "", required: false, type: "text" }])}>
+                + Champ libre
+              </button>
+            </div>
           </div>
         )}
 

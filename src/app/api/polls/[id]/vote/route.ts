@@ -10,6 +10,7 @@ import { SITE_URL } from "@/lib/site-url";
 
 const voteSchema = z.object({
   choices: z.array(z.string()).min(1).max(20),
+  comment: z.string().max(1000).optional(),
   // Champs guest (ignorés si l'utilisateur est connecté)
   email: z.string().email().max(160).optional(),
   guestInfo: z.record(z.string()).optional(), // { key: value } du formulaire libre
@@ -18,8 +19,11 @@ const voteSchema = z.object({
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const poll = (await prisma.poll.findUnique({
     where: { id: params.id },
-    select: { id: true, status: true, options: true, multipleChoice: true, openAt: true, closeAt: true, allowGuests: true },
-  })) as (PollLite & { allowGuests: boolean }) | null;
+    select: {
+      id: true, status: true, options: true, multipleChoice: true, minChoices: true, maxChoices: true,
+      openAt: true, closeAt: true, allowGuests: true, allowComment: true,
+    },
+  })) as (PollLite & { allowGuests: boolean; allowComment: boolean }) | null;
 
   if (!poll) return new Response("Sondage introuvable", { status: 404 });
   if (!isPollOpen(poll)) return Response.json({ error: "closed" }, { status: 409 });
@@ -28,6 +32,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const parsed = voteSchema.safeParse(json);
   if (!parsed.success) return Response.json({ error: "invalid" }, { status: 400 });
   const { choices, email, guestInfo } = parsed.data;
+  // Commentaire ignoré si le sondage ne l'autorise pas.
+  const comment = poll.allowComment ? (parsed.data.comment?.trim() || null) : null;
 
   const choiceError = validateChoices(poll, choices);
   if (choiceError) return Response.json({ error: "invalid", detail: choiceError }, { status: 400 });
@@ -35,10 +41,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const session = await auth();
   const playerId = session?.user?.playerId;
 
-  // ── Cas 1 : votant INSCRIT (connecté) — vote direct, pas de formulaire ──
+  // ── Cas 1 : votant INSCRIT (connecté) — vote direct, re-vote autorisé ──
   if (playerId) {
     const voterHash = hashPlayerVoter(poll.id, playerId);
-    const res = await castVote({ pollId: poll.id, voterHash, choices, isGuest: false, verified: true, playerId });
+    // allowRevote=true : un inscrit peut changer d'avis tant que c'est ouvert.
+    const res = await castVote({ pollId: poll.id, voterHash, choices, isGuest: false, verified: true, playerId, comment, allowRevote: true });
     if (!res.ok && res.reason === "already_voted") {
       return Response.json({ error: "already_voted" }, { status: 409 });
     }
@@ -82,7 +89,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
       verifyToken: token,
       verifyExpiry: new Date(Date.now() + 48 * 60 * 60 * 1000), // 48h
       guestInfo: guestInfo ?? undefined,
-      pendingChoice: choices,
+      // On garde choix + commentaire en attente ; déposés à la confirmation.
+      pendingChoice: { choices, comment },
     },
   });
 
