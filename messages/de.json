@@ -2865,6 +2865,8 @@
     "open_badge": "Aktiv",
     "closed_section": "Beendete Umfragen",
     "results_not_yet": "Die Ergebnisse sind noch nicht verfügbar.",
-    "security_note": "Deine Stimme wird von einem automatisierten, anonymen System verarbeitet: Deine Wahl (ja/nein/usw.) wird getrennt von deiner Identität gespeichert, ohne jede Verbindung dazwischen — nicht einmal wir können sehen, was du gewählt hast. Name, E-Mail und Verein/Stadt fragen wir nur ab, um zu prüfen, dass du nicht schon abgestimmt hast (eine Person = eine Stimme), und um Gesamtstatistiken zur Beteiligung zu erstellen (z. B. Anzahl Wähler pro Land). Diese Angaben werden nie mit deiner Stimme verknüpft."
+    "security_note": "Deine Stimme wird von einem automatisierten, anonymen System verarbeitet: Deine Wahl (ja/nein/usw.) wird getrennt von deiner Identität gespeichert, ohne jede Verbindung dazwischen — nicht einmal wir können sehen, was du gewählt hast. Name, E-Mail und Verein/Stadt fragen wir nur ab, um zu prüfen, dass du nicht schon abgestimmt hast (eine Person = eine Stimme), und um Gesamtstatistiken zur Beteiligung zu erstellen (z. B. Anzahl Wähler pro Land). Diese Angaben werden nie mit deiner Stimme verknüpft.",
+    "club_other": "Andere (angeben)",
+    "club_pick_list": "Aus Liste wählen"
   }
 }

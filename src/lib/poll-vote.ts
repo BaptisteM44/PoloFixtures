@@ -69,6 +69,9 @@ export async function castVote(params: {
   isGuest: boolean;
   guestInfo?: Prisma.InputJsonValue | null;
   verified: boolean;
+  // Identité du votant INSCRIT (stats démographiques) — reste sur l'émargement,
+  // jamais sur le bulletin. undefined/null pour les guests.
+  playerId?: string | null;
 }): Promise<CastResult> {
   try {
     await prisma.$transaction(async (tx) => {
@@ -77,6 +80,7 @@ export async function castVote(params: {
         data: {
           pollId: params.pollId,
           voterHash: params.voterHash,
+          playerId: params.playerId ?? null,
           isGuest: params.isGuest,
           verified: params.verified,
           guestInfo: params.guestInfo ?? undefined,

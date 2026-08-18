@@ -2860,6 +2860,8 @@
     "open_badge": "Live",
     "closed_section": "Closed polls",
     "results_not_yet": "Results aren't available yet.",
-    "security_note": "Your vote is processed by an automated, anonymous system: your choice (yes/no/etc.) is stored separately from your identity, with no link between the two — not even we can see what you voted. The name, email, and club/city we ask for are only used to check you haven't already voted (one person = one vote), and to produce overall participation stats (e.g. number of voters per country). This info is never linked to your vote."
+    "security_note": "Your vote is processed by an automated, anonymous system: your choice (yes/no/etc.) is stored separately from your identity, with no link between the two — not even we can see what you voted. The name, email, and club/city we ask for are only used to check you haven't already voted (one person = one vote), and to produce overall participation stats (e.g. number of voters per country). This info is never linked to your vote.",
+    "club_other": "Other (specify)",
+    "club_pick_list": "Pick from list"
   }
 }

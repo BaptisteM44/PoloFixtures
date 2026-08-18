@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
 
-type Voter = { isGuest: boolean; guestInfo: Record<string, string> | null; createdAt: string };
+type VoterPlayer = { name: string; city: string | null; country: string; club: string | null };
+type Voter = {
+  isGuest: boolean;
+  guestInfo: Record<string, string> | null;
+  createdAt: string;
+  player: VoterPlayer | null;
+};
 type ResultsData = {
   poll: { id: string; question: string; description: string | null; options: string[]; status: string };
   visible: boolean;
@@ -12,6 +18,20 @@ type ResultsData = {
   voterCount?: number;
   voters?: Voter[];
 };
+
+/** Compte les occurrences d'une valeur (club/ville/pays) tous types de votants
+ * confondus — pour les stats démographiques. Ignore les valeurs vides. */
+function tally(voters: Voter[], pick: (v: Voter) => string | null | undefined): { label: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const v of voters) {
+    const val = pick(v)?.trim();
+    if (!val) continue;
+    counts.set(val, (counts.get(val) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
+}
 
 /**
  * Résultats détaillés pour l'admin : le décompte par option (visible EN TOUT
@@ -41,11 +61,21 @@ export function AdminPollResults({ pollId }: { pollId: string }) {
     new Set(voters.flatMap((v) => (v.guestInfo ? Object.keys(v.guestInfo) : [])))
   );
 
+  // Stats démographiques : club/ville/pays, tous types de votants confondus
+  // (le club d'un inscrit vient de son profil, celui d'un guest de guestInfo.club).
+  const clubStats = tally(voters, (v) => v.player?.club ?? v.guestInfo?.club);
+  const cityStats = tally(voters, (v) => v.player?.city ?? v.guestInfo?.city ?? v.guestInfo?.ville);
+  const countryStats = tally(voters, (v) => v.player?.country ?? v.guestInfo?.country ?? v.guestInfo?.pays);
+
   const exportCsv = () => {
-    const headers = ["type", "date", ...guestKeys];
+    const headers = ["type", "date", "nom", "ville", "pays", "club", ...guestKeys];
     const rows = voters.map((v) => [
       v.isGuest ? "invité" : "inscrit",
       new Date(v.createdAt).toLocaleString("fr-FR"),
+      v.player?.name ?? v.guestInfo?.name ?? v.guestInfo?.nom ?? "",
+      v.player?.city ?? v.guestInfo?.city ?? v.guestInfo?.ville ?? "",
+      v.player?.country ?? v.guestInfo?.country ?? v.guestInfo?.pays ?? "",
+      v.player?.club ?? v.guestInfo?.club ?? "",
       ...guestKeys.map((k) => v.guestInfo?.[k] ?? ""),
     ]);
     const csv = [headers, ...rows]
@@ -87,6 +117,37 @@ export function AdminPollResults({ pollId }: { pollId: string }) {
         })}
       </div>
 
+      {/* Stats démographiques — combien de votants par club/ville/pays, tous
+          types confondus. Jamais croisé avec le choix voté. */}
+      {voters.length > 0 && (
+        <div className="panel" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+          <h3 style={{ margin: 0 }}>Participation par club / ville / pays</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
+            {[
+              { title: "Club", stats: clubStats },
+              { title: "Ville", stats: cityStats },
+              { title: "Pays", stats: countryStats },
+            ].map(({ title, stats }) => (
+              <div key={title}>
+                <strong style={{ fontSize: 13 }}>{title}</strong>
+                {stats.length === 0 ? (
+                  <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "4px 0 0" }}>Aucune donnée.</p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
+                    {stats.slice(0, 8).map((s) => (
+                      <div key={s.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                        <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.label}</span>
+                        <strong style={{ flexShrink: 0, marginLeft: 8 }}>{s.count}</strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Participants (émargement) — qui a voté, JAMAIS quoi */}
       <div className="panel" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
@@ -107,17 +168,29 @@ export function AdminPollResults({ pollId }: { pollId: string }) {
                 <tr style={{ textAlign: "left", borderBottom: "1px solid var(--border-light)" }}>
                   <th style={{ padding: "6px 8px" }}>Type</th>
                   <th style={{ padding: "6px 8px" }}>Date</th>
-                  {guestKeys.map((k) => <th key={k} style={{ padding: "6px 8px" }}>{k}</th>)}
+                  <th style={{ padding: "6px 8px" }}>Nom</th>
+                  <th style={{ padding: "6px 8px" }}>Club</th>
+                  <th style={{ padding: "6px 8px" }}>Ville</th>
+                  <th style={{ padding: "6px 8px" }}>Pays</th>
                 </tr>
               </thead>
               <tbody>
-                {voters.map((v, i) => (
-                  <tr key={i} style={{ borderBottom: "1px solid var(--border-light)" }}>
-                    <td style={{ padding: "6px 8px" }}>{v.isGuest ? "Invité" : "Inscrit"}</td>
-                    <td style={{ padding: "6px 8px", color: "var(--text-muted)" }}>{new Date(v.createdAt).toLocaleString("fr-FR")}</td>
-                    {guestKeys.map((k) => <td key={k} style={{ padding: "6px 8px" }}>{v.guestInfo?.[k] ?? "—"}</td>)}
-                  </tr>
-                ))}
+                {voters.map((v, i) => {
+                  const name = v.player?.name ?? v.guestInfo?.name ?? v.guestInfo?.nom ?? "—";
+                  const club = v.player?.club ?? v.guestInfo?.club ?? "—";
+                  const city = v.player?.city ?? v.guestInfo?.city ?? v.guestInfo?.ville ?? "—";
+                  const country = v.player?.country ?? v.guestInfo?.country ?? v.guestInfo?.pays ?? "—";
+                  return (
+                    <tr key={i} style={{ borderBottom: "1px solid var(--border-light)" }}>
+                      <td style={{ padding: "6px 8px" }}>{v.isGuest ? "Invité" : "Inscrit"}</td>
+                      <td style={{ padding: "6px 8px", color: "var(--text-muted)" }}>{new Date(v.createdAt).toLocaleString("fr-FR")}</td>
+                      <td style={{ padding: "6px 8px" }}>{name}</td>
+                      <td style={{ padding: "6px 8px" }}>{club}</td>
+                      <td style={{ padding: "6px 8px" }}>{city}</td>
+                      <td style={{ padding: "6px 8px" }}>{country}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

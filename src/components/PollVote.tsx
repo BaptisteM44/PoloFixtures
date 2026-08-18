@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 
-type GuestField = { key: string; label: string; required?: boolean };
+type GuestField = { key: string; label: string; required?: boolean; type?: "text" | "club" };
 
 export type PollData = {
   id: string;
@@ -17,6 +17,74 @@ export type PollData = {
 };
 
 type Results = { counts: Record<string, number>; totalBallots: number; voterCount: number };
+
+const OTHER_CLUB = "__other__";
+
+/** Champ club pour les guests : liste déroulante des clubs existants + option
+ * "Autre" qui bascule sur un champ libre (le club recherché n'est pas listé). */
+function ClubSelectField({
+  value,
+  onChange,
+  label,
+  required,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  required?: boolean;
+}) {
+  const t = useTranslations("poll");
+  const [clubs, setClubs] = useState<{ id: string; name: string }[] | null>(null);
+  const [mode, setMode] = useState<"select" | "other">("select");
+
+  useEffect(() => {
+    fetch("/api/clubs")
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setClubs(Array.isArray(data) ? data : []))
+      .catch(() => setClubs([]));
+  }, []);
+
+  // Si la valeur actuelle ne correspond à aucun club connu (ex: pré-remplie),
+  // on bascule automatiquement en mode "autre" pour ne pas la perdre.
+  useEffect(() => {
+    if (clubs && value && !clubs.some((c) => c.name === value)) setMode("other");
+  }, [clubs, value]);
+
+  return (
+    <label style={{ fontSize: 13, display: "grid", gap: 4 }}>
+      {label}{required ? " *" : ""}
+      {mode === "select" ? (
+        <select
+          value={value || ""}
+          onChange={(e) => {
+            if (e.target.value === OTHER_CLUB) { setMode("other"); onChange(""); }
+            else onChange(e.target.value);
+          }}
+          required={required}
+          style={{ padding: "8px 10px", borderRadius: 8, border: "2px solid var(--border)" }}
+        >
+          <option value="" disabled>{clubs === null ? "…" : t("select_choice")}</option>
+          {clubs?.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
+          <option value={OTHER_CLUB}>{t("club_other")}</option>
+        </select>
+      ) : (
+        <div style={{ display: "flex", gap: 6 }}>
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            required={required}
+            placeholder={t("club_other")}
+            style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "2px solid var(--border)" }}
+          />
+          <button type="button" className="ghost" onClick={() => { setMode("select"); onChange(""); }} style={{ fontSize: 12 }}>
+            {t("club_pick_list")}
+          </button>
+        </div>
+      )}
+    </label>
+  );
+}
 
 export function PollVote({
   poll,
@@ -164,18 +232,28 @@ export function PollVote({
                 <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
                   style={{ padding: "8px 10px", borderRadius: 8, border: "2px solid var(--border)" }} />
               </label>
-              {poll.guestFields.map((f) => (
-                <label key={f.key} style={{ fontSize: 13, display: "grid", gap: 4 }}>
-                  {f.label}{f.required ? " *" : ""}
-                  <input
-                    type="text"
-                    value={guestValues[f.key] ?? ""}
-                    onChange={(e) => setGuestValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
+              {poll.guestFields.map((f) =>
+                f.type === "club" ? (
+                  <ClubSelectField
+                    key={f.key}
+                    label={f.label}
                     required={f.required}
-                    style={{ padding: "8px 10px", borderRadius: 8, border: "2px solid var(--border)" }}
+                    value={guestValues[f.key] ?? ""}
+                    onChange={(v) => setGuestValues((prev) => ({ ...prev, [f.key]: v }))}
                   />
-                </label>
-              ))}
+                ) : (
+                  <label key={f.key} style={{ fontSize: 13, display: "grid", gap: 4 }}>
+                    {f.label}{f.required ? " *" : ""}
+                    <input
+                      type="text"
+                      value={guestValues[f.key] ?? ""}
+                      onChange={(e) => setGuestValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                      required={f.required}
+                      style={{ padding: "8px 10px", borderRadius: 8, border: "2px solid var(--border)" }}
+                    />
+                  </label>
+                )
+              )}
             </div>
           )}
 

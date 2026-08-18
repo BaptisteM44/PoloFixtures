@@ -3,11 +3,13 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 
 // Un champ du formulaire libre demandé aux guests. L'email n'est PAS ici : il
-// est toujours demandé séparément (anti-fraude).
+// est toujours demandé séparément (anti-fraude). type "club" affiche une liste
+// déroulante des clubs existants + une option "Autre" avec champ libre.
 const guestFieldSchema = z.object({
   key: z.string().min(1).max(40),
   label: z.string().min(1).max(120),
   required: z.boolean().optional().default(false),
+  type: z.enum(["text", "club"]).optional().default("text"),
 });
 
 const createSchema = z.object({

@@ -2861,6 +2861,8 @@
     "open_badge": "En cours",
     "closed_section": "Sondages terminés",
     "results_not_yet": "Les résultats ne sont pas encore disponibles.",
-    "security_note": "Ton vote est traité par un système automatisé et anonyme : ton choix (oui/non/etc.) est enregistré séparément de ton identité, sans aucun lien entre les deux — même nous, on ne peut pas savoir ce que tu as voté. Le prénom, nom, email et club/ville qu'on te demande ne servent qu'à vérifier que tu n'as pas déjà voté (une personne = un vote), et à sortir des statistiques globales de participation (ex: nombre de votants par pays). Ces infos ne sont jamais reliées à ton choix de vote."
+    "security_note": "Ton vote est traité par un système automatisé et anonyme : ton choix (oui/non/etc.) est enregistré séparément de ton identité, sans aucun lien entre les deux — même nous, on ne peut pas savoir ce que tu as voté. Le prénom, nom, email et club/ville qu'on te demande ne servent qu'à vérifier que tu n'as pas déjà voté (une personne = un vote), et à sortir des statistiques globales de participation (ex: nombre de votants par pays). Ces infos ne sont jamais reliées à ton choix de vote.",
+    "club_other": "Autre (préciser)",
+    "club_pick_list": "Choisir dans la liste"
   }
 }

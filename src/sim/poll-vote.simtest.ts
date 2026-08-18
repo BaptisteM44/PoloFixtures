@@ -89,4 +89,35 @@ describe("Vote — anti-double-vote & anonymat", () => {
     expect(await prisma.pollBallot.count({ where: { pollId } })).toBe(2);
     expect(await prisma.pollVoter.count({ where: { pollId } })).toBe(1);
   });
+
+  it("playerId d'un inscrit : stocké sur l'émargement, JAMAIS sur le bulletin", async () => {
+    const player = await prisma.player.create({
+      data: { name: "Stats Player", country: "FR", city: "Nantes" } as never,
+      select: { id: true },
+    });
+    const pollId = await mkPoll();
+    await castVote({
+      pollId, voterHash: hashPlayerVoter(pollId, player.id), choices: ["Oui"],
+      isGuest: false, verified: true, playerId: player.id,
+    });
+
+    const voter = await prisma.pollVoter.findFirst({ where: { pollId } });
+    expect(voter?.playerId).toBe(player.id);
+
+    // Le bulletin n'a et ne peut pas avoir de playerId (schéma sans ce champ) :
+    // vérifie qu'aucun champ du bulletin ne référence le votant.
+    const ballot = await prisma.pollBallot.findFirst({ where: { pollId } });
+    expect(Object.keys(ballot ?? {}).sort()).toEqual(["choice", "createdAt", "id", "pollId"]);
+  });
+
+  it("guest (sans playerId) : émargement a playerId=null", async () => {
+    const pollId = await mkPoll();
+    await castVote({
+      pollId, voterHash: hashGuestVoter(pollId, "guest@test.com"), choices: ["Non"],
+      isGuest: true, verified: true, guestInfo: { name: "Guest", club: "Test Club" },
+    });
+    const voter = await prisma.pollVoter.findFirst({ where: { pollId } });
+    expect(voter?.playerId).toBeNull();
+    expect((voter?.guestInfo as any)?.club).toBe("Test Club");
+  });
 });

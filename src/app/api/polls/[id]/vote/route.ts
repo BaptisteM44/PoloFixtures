@@ -38,7 +38,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   // ── Cas 1 : votant INSCRIT (connecté) — vote direct, pas de formulaire ──
   if (playerId) {
     const voterHash = hashPlayerVoter(poll.id, playerId);
-    const res = await castVote({ pollId: poll.id, voterHash, choices, isGuest: false, verified: true });
+    const res = await castVote({ pollId: poll.id, voterHash, choices, isGuest: false, verified: true, playerId });
     if (!res.ok && res.reason === "already_voted") {
       return Response.json({ error: "already_voted" }, { status: 409 });
     }

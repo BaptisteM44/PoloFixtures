@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
 
-type GuestField = { key: string; label: string; required: boolean };
+type GuestField = { key: string; label: string; required: boolean; type: "text" | "club" };
 type ResultsMode = "IMMEDIATE" | "AT_DATE" | "AT_CLOSE" | "HIDDEN";
 type PollListItem = {
   id: string; question: string; status: "DRAFT" | "OPEN" | "CLOSED";
@@ -78,7 +78,7 @@ export function AdminPolls() {
           allowGuests,
           guestFields: guestFields
             .filter((f) => f.key.trim() && f.label.trim())
-            .map((f) => ({ key: f.key.trim(), label: f.label.trim(), required: f.required })),
+            .map((f) => ({ key: f.key.trim(), label: f.label.trim(), required: f.required, type: f.type })),
           openAt: localToIso(openAt),
           closeAt: localToIso(closeAt),
           showResults,
@@ -179,6 +179,12 @@ export function AdminPolls() {
                 <input placeholder="Label affiché (ex: Club)" value={f.label}
                   onChange={(e) => setGuestFields((p) => p.map((x, idx) => idx === i ? { ...x, label: e.target.value } : x))}
                   style={{ flex: 1 }} />
+                <select value={f.type} title="Type de champ"
+                  onChange={(e) => setGuestFields((p) => p.map((x, idx) => idx === i ? { ...x, type: e.target.value as "text" | "club" } : x))}
+                  style={{ fontSize: 12, flexShrink: 0 }}>
+                  <option value="text">Texte libre</option>
+                  <option value="club">Club (liste + autre)</option>
+                </select>
                 <label style={{ fontSize: 12, display: "flex", gap: 4, alignItems: "center", flexShrink: 0 }}>
                   <input type="checkbox" checked={f.required}
                     onChange={(e) => setGuestFields((p) => p.map((x, idx) => idx === i ? { ...x, required: e.target.checked } : x))} />
@@ -188,7 +194,7 @@ export function AdminPolls() {
               </div>
             ))}
             <button className="ghost" style={{ alignSelf: "start", fontSize: 13 }}
-              onClick={() => setGuestFields((p) => [...p, { key: "", label: "", required: false }])}>
+              onClick={() => setGuestFields((p) => [...p, { key: "", label: "", required: false, type: "text" }])}>
               + Ajouter un champ
             </button>
           </div>

@@ -51,13 +51,41 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   const base = { poll: pollOut, visible: true, counts, totalBallots, voterCount };
 
   // L'admin voit en plus la liste des participants (émargement) — qui, pas quoi.
+  // Pour un INSCRIT, on résout son profil (nom/ville/pays/club) pour les stats
+  // démographiques — toujours sans lien vers son choix voté (PollBallot n'a
+  // aucune relation vers PollVoter/Player).
   if (isAdmin) {
     const voters = await prisma.pollVoter.findMany({
       where: { pollId: params.id, verified: true },
-      select: { isGuest: true, guestInfo: true, createdAt: true },
+      select: {
+        isGuest: true, guestInfo: true, createdAt: true,
+        player: {
+          select: {
+            name: true, city: true, country: true,
+            clubMemberships: {
+              where: { status: "MEMBER" },
+              take: 1,
+              select: { club: { select: { name: true } } },
+            },
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
-    return Response.json({ ...base, voters });
+    const votersOut = voters.map((v) => ({
+      isGuest: v.isGuest,
+      guestInfo: v.guestInfo,
+      createdAt: v.createdAt,
+      player: v.player
+        ? {
+            name: v.player.name,
+            city: v.player.city,
+            country: v.player.country,
+            club: v.player.clubMemberships[0]?.club.name ?? null,
+          }
+        : null,
+    }));
+    return Response.json({ ...base, voters: votersOut });
   }
 
   return Response.json(base);

@@ -508,6 +508,7 @@ model Player {
   communityReplyLikes    CommunityReplyLike[]
   pushSubscriptions      PushSubscription[]
   createdPolls           Poll[]                  @relation("CreatedPolls")
+  pollVoterEntries       PollVoter[]
 }
 
 model PushSubscription {
@@ -1432,10 +1433,16 @@ model PollVoter {
   verifyExpiry  DateTime?
   guestInfo     Json? // réponses au formulaire libre (nom, club, ville…) — null pour les inscrits
   pendingChoice Json? // choix en attente tant que l'email guest n'est pas confirmé (déposé à la vérif)
+  // Identité d'un votant INSCRIT — pour des stats démographiques (club/ville/pays)
+  // dans l'admin. ⚠️ Reste séparé du BULLETIN (choix voté) : on sait qui a
+  // participé, jamais ce qu'il a voté (PollBallot n'a et n'aura jamais ce lien).
+  playerId      String? // null pour les guests (leur identité vit dans guestInfo)
   createdAt     DateTime  @default(now())
 
-  poll Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  poll   Poll    @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  player Player? @relation(fields: [playerId], references: [id], onDelete: SetNull)
 
   @@unique([pollId, voterHash])
   @@index([verifyToken])
+  @@index([playerId])
 }
