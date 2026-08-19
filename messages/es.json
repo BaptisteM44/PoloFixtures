@@ -952,7 +952,11 @@
     "final_label": "Final",
     "gen_random_scores": "Generar resultados aleatorios",
     "third_place": "3er puesto",
-    "final_reset": "Reinicio de final"
+    "final_reset": "Reinicio de final",
+    "live_not_started_title": "El directo aún no ha empezado",
+    "live_not_started_desc": "Vuelve el {date} para seguir los resultados en tiempo real.",
+    "live_finished_title": "Torneo finalizado",
+    "live_finished_results": "Ver resultados →"
   },
   "registration": {
     "section_title": "Inscribir mi equipo",

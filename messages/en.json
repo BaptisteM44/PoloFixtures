@@ -953,7 +953,11 @@
     "final_label": "Final",
     "gen_random_scores": "Generate random scores",
     "third_place": "3rd place",
-    "final_reset": "Bracket reset"
+    "final_reset": "Bracket reset",
+    "live_not_started_title": "The live hasn't started yet",
+    "live_not_started_desc": "Come back on {date} to follow scores in real time.",
+    "live_finished_title": "Tournament finished",
+    "live_finished_results": "View results →"
   },
   "registration": {
     "section_title": "Register my team",

@@ -337,7 +337,10 @@ export default async function TournamentPage({
       ? pipelineBracketTabs.map((b) => ({ label: b.label, value: b.value, href: `/tournament/${params.id}?tab=${b.value}` }))
       : (isLaunched && !isBerlinMixed && !isKiosque && tournament.sundayFormat !== "SWISS_SPLIT_SE" && tournament.sundayFormat !== "SPLIT_SE" ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : [])),
     { label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
-    ...(youtubeEmbed || court1Embed || court2Embed || multiplexEmbed || t_.chatMode !== "DISABLED" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` }] : []),
+    // Onglet Live TOUJOURS visible : les scores/chronos en direct se suffisent,
+    // pas besoin de stream ni de chat pour le justifier. Le contenu s'adapte au
+    // statut du tournoi (à venir / en cours / terminé).
+    { label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` },
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")} (${tournament.freeAgents.length})`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
     ...(tournament.accommodationAvailable && (!!myTeam || isAccommodationHost) ? [{ label: t("tab_accommodation"), value: "hebergement", href: `/tournament/${params.id}?tab=hebergement` }] : []),
@@ -1869,6 +1872,8 @@ export default async function TournamentPage({
           matches={tournament.matches}
           gameDurationMin={tournament.gameDurationMin}
           isLive={tournament.status === "LIVE"}
+          tournamentStatus={tournament.status}
+          dateStart={tournament.dateStart.toISOString()}
           courtsCount={tournament.courtsCount}
           youtubeEmbed={youtubeEmbed}
           court1Embed={court1Embed}

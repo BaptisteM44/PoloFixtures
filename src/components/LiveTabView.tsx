@@ -15,6 +15,8 @@ export function LiveTabView({
   matches,
   gameDurationMin,
   isLive,
+  tournamentStatus,
+  dateStart,
   courtsCount,
   youtubeEmbed,
   court1Embed,
@@ -34,6 +36,8 @@ export function LiveTabView({
   matches: MatchWithTeams[];
   gameDurationMin: number;
   isLive: boolean;
+  tournamentStatus: "UPCOMING" | "LIVE" | "COMPLETED";
+  dateStart: string;
   courtsCount: number;
   youtubeEmbed: string | null;
   court1Embed: string | null;
@@ -141,6 +145,9 @@ export function LiveTabView({
     : matches;
 
   const streamEmbed = getStreamEmbed();
+  // Un stream est-il configuré (sur au moins un onglet) ? Sert à décider si on
+  // affiche le bloc vidéo ou si on met les scores live en avant.
+  const hasAnyStream = !!(youtubeEmbed || court1Embed || court2Embed || multiplexEmbed);
 
   // Overlay channels for the active tab
   const tabOverlayChannels = activeTab === "multiplex"
@@ -160,8 +167,28 @@ export function LiveTabView({
     })),
   ];
 
+  const startLabel = new Date(dateStart).toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+      {/* Bandeau d'état selon le statut du tournoi */}
+      {tournamentStatus === "UPCOMING" && (
+        <div className="panel" style={{ textAlign: "center", padding: "20px 16px" }}>
+          <div style={{ fontSize: 32 }} aria-hidden>⏳</div>
+          <p style={{ fontWeight: 700, margin: "6px 0 2px" }}>{t("live_not_started_title")}</p>
+          <p className="meta" style={{ margin: 0 }}>{t("live_not_started_desc", { date: startLabel })}</p>
+        </div>
+      )}
+      {tournamentStatus === "COMPLETED" && (
+        <div className="panel" style={{ textAlign: "center", padding: "20px 16px" }}>
+          <div style={{ fontSize: 32 }} aria-hidden>🏁</div>
+          <p style={{ fontWeight: 700, margin: "6px 0 2px" }}>{t("live_finished_title")}</p>
+          <Link href={`/tournament/${tournamentSlug}?tab=bracket`} className="ghost" style={{ fontSize: 13, display: "inline-block", marginTop: 8 }}>
+            {t("live_finished_results")}
+          </Link>
+        </div>
+      )}
 
       {/* Tabs: QCQC Multiplex | Court 1 | Court 2 */}
       <div className="tabs-bar" style={{ marginTop: 0 }}>
@@ -236,7 +263,10 @@ export function LiveTabView({
         </div>
       )}
 
-      {/* Video + overlay iframe stacked */}
+      {/* Video + overlay iframe — affiché seulement s'il y a un stream, OU si
+          l'orga peut en ajouter un (CTA). Un spectateur sans stream ne voit pas
+          d'encart vide : les scores live passent en avant à la place. */}
+      {(streamEmbed || (!hasAnyStream && canEdit)) && (
       <div ref={videoRef} style={{ position: "relative", borderRadius: 8, overflow: "hidden" }}>
         {streamEmbed ? (
           <iframe
@@ -300,9 +330,15 @@ export function LiveTabView({
           </div>
         )}
       </div>
+      )}
 
-      {/* Scores live + Chat en dessous — comme avant */}
-      <div className="live-grid">
+      {/* Scores live + Chat. Le chat n'apparaît que sur l'onglet multiplex OU si
+          chatMode ≠ DISABLED — sinon les scores prennent toute la largeur (pas
+          de colonne "chat désactivé" qui gâche l'espace). */}
+      {(() => {
+        const showChat = activeTab === "multiplex" || chatMode !== "DISABLED";
+        return (
+      <div className={showChat ? "live-grid" : undefined}>
         <div>
           {activeTab === "multiplex" && courtsCount >= 2 ? (
             /* Multiplex: 1 panel par terrain côte à côte (colonne sur mobile) */
@@ -335,6 +371,7 @@ export function LiveTabView({
           )}
         </div>
 
+        {showChat && (
         <div className="panel" style={{ minHeight: 400, maxHeight: 600, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {activeTab === "multiplex" ? (
             /* Chat dédié multiplex — toujours ouvert, stocké séparément */
@@ -349,7 +386,7 @@ export function LiveTabView({
               charterAccepted={charterAccepted}
               fullPage
             />
-          ) : chatMode !== "DISABLED" ? (
+          ) : (
             <TournamentChat
               tournamentId={tournamentId}
               chatMode={chatMode}
@@ -360,13 +397,12 @@ export function LiveTabView({
               charterAccepted={charterAccepted}
               fullPage
             />
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200 }}>
-              <p className="meta" style={{ textAlign: "center" }}>{t("chat_disabled")}</p>
-            </div>
           )}
         </div>
+        )}
       </div>
+        );
+      })()}
     </div>
   );
 }
