@@ -2859,7 +2859,9 @@ details.agenda-month--past > summary::-webkit-details-marker {
   }
   .tabs {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    /* Cellules plus étroites (72px) pour caser plus d'onglets par ligne quand il
+       y en a beaucoup, sans troncature du texte. */
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
     gap: 4px;
     overflow: visible;
     flex: none;
@@ -2881,8 +2883,12 @@ details.agenda-month--past > summary::-webkit-details-marker {
     margin-bottom: 0 !important;
     text-align: center;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* Padding resserré + police plus petite en mobile : le mot entier tient dans
+       sa cellule sans passer sur deux lignes ni être tronqué. */
+    padding: 8px 6px !important;
+    font-size: clamp(9px, 2.6vw, 11px);
+    letter-spacing: 0.02em;
+    min-width: 0;
   }
   .tab.active {
     background: var(--text) !important;
@@ -2892,15 +2898,19 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 
 .tab {
-  padding: 8px 18px;
+  padding: 8px clamp(10px, 1.4vw, 18px); /* padding qui se resserre quand l'écran rétrécit */
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   border: 2px solid transparent;
   border-bottom: none;
   font-family: var(--font-display);
-  font-size: 12px;
+  /* Taille de police fluide : ~11px sur petits écrans, jusqu'à 12px large.
+     Empêche un label long de se casser sur deux lignes (white-space: nowrap). */
+  font-size: clamp(10px, 0.5vw + 9px, 12px);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0; /* garde chaque onglet sur une ligne, le conteneur scrolle */
   cursor: pointer;
   transition: background var(--transition);
   background: none;
