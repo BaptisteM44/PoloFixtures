@@ -2833,7 +2833,7 @@ details.agenda-month--past > summary::-webkit-details-marker {
   display: flex;
   gap: 4px;
   flex-wrap: nowrap;
-  flex: 1;
+  width: 100%;
   min-width: 0;
   overflow-x: auto;
   overflow-y: visible;
@@ -2842,6 +2842,53 @@ details.agenda-month--past > summary::-webkit-details-marker {
   padding-top: 4px;
   padding-bottom: 0;
 }
+.tabs::-webkit-scrollbar { display: none; }
+
+/* Conteneur scrollable des onglets : porte les indices de défilement (fondus
+   latéraux) affichés seulement quand il reste des onglets à faire défiler. */
+.tabs-scroll {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  display: flex;
+}
+/* Fondus latéraux — visibles seulement via les classes .can-scroll-* posées en JS. */
+.tabs-scroll::before,
+.tabs-scroll::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  z-index: 4;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.tabs-scroll::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg), transparent);
+}
+.tabs-scroll::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg), transparent);
+}
+.tabs-scroll.can-scroll-left::before { opacity: 1; }
+.tabs-scroll.can-scroll-right::after { opacity: 1; }
+/* Petit chevron pulsé à droite tant qu'on n'a pas scrollé jusqu'au bout. */
+.tabs-scroll.can-scroll-right > .tabs-scroll-hint {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  pointer-events: none;
+  font-size: 16px;
+  color: var(--text-muted);
+  animation: tabsHintPulse 1.4s ease-in-out infinite;
+}
+.tabs-scroll:not(.can-scroll-right) > .tabs-scroll-hint { display: none; }
+@keyframes tabsHintPulse { 0%,100% { opacity: 0.35; transform: translateY(-50%) translateX(0); } 50% { opacity: 0.9; transform: translateY(-50%) translateX(3px); } }
 .tabs::-webkit-scrollbar { display: none; }
 
 .tabs-right-slot {
@@ -2857,16 +2904,21 @@ details.agenda-month--past > summary::-webkit-details-marker {
     gap: 6px;
     margin: 12px 0 16px;
   }
+  /* Mobile : scroll horizontal (comme desktop) au lieu d'une grille — un mot
+     long ne déborde plus de sa cellule, il défile. Chaque onglet garde sa
+     largeur naturelle (contenu), le conteneur scrolle. */
   .tabs {
-    display: grid;
-    /* Cellules plus étroites (72px) pour caser plus d'onglets par ligne quand il
-       y en a beaucoup, sans troncature du texte. */
-    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
     gap: 4px;
-    overflow: visible;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
     flex: none;
     width: 100%;
   }
+  .tabs::-webkit-scrollbar { display: none; }
   .tabs-right-slot {
     padding-bottom: 0;
     width: 100%;
@@ -2883,12 +2935,10 @@ details.agenda-month--past > summary::-webkit-details-marker {
     margin-bottom: 0 !important;
     text-align: center;
     white-space: nowrap;
-    /* Padding resserré + police plus petite en mobile : le mot entier tient dans
-       sa cellule sans passer sur deux lignes ni être tronqué. */
-    padding: 8px 6px !important;
-    font-size: clamp(9px, 2.6vw, 11px);
+    flex-shrink: 0;
+    padding: 8px 12px !important;
+    font-size: clamp(10px, 2.6vw, 12px);
     letter-spacing: 0.02em;
-    min-width: 0;
   }
   .tab.active {
     background: var(--text) !important;
