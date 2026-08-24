@@ -158,7 +158,14 @@ export async function updateTournamentAction(formData: FormData) {
   try { faqJson = data.faq ? JSON.parse(data.faq) : null; } catch { /* ignore */ }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, poolRounds: _pr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, status: _statusFromForm, mtpPoolAStart: _mpa, mtpPoolBStart: _mpb, mtpSundayStart: _mps, hostClubId: _hcid, ...rest } = data;
+  const { id: _id, locked: _locked, links: _links, meals: _meals, faq: _faq, accommodationCapacity: _ac, telegramUrl: _tg, swissRounds: _sr, poolRounds: _pr, bracketSize: _bs, chatMode: _cm, streamYoutubeUrl: _syu, saturdayFormat: _sf, sundayFormat: _df, scoringSystem: _ss, thirdPlaceMatch: _tpm, gfReset: _gfr, poolCount: _pc, crossPool: _cp, status: _statusFromForm, mtpPoolAStart: _mpa, mtpPoolBStart: _mpb, mtpSundayStart: _mps, hostClubId: _hcid, format: _format, ...rest } = data;
+
+  // Le `format` d'un tournoi pipeline est piloté par le composeur d'étapes (il
+  // vaut "pipeline") : on ne le laisse JAMAIS être réécrit par le formulaire
+  // legacy, sinon un <select> qui n'a pas d'option "pipeline" le ferait retomber
+  // sur "2v2" et casserait l'affichage dépendant du format (liste d'inscrits…).
+  const isPipeline = !!(tournament as unknown as { usesPipeline?: boolean }).usesPipeline;
+  const formatUpdate = isPipeline ? {} : { format: data.format };
 
   // Status transitions allowed via edit form (all directions allowed for orga flexibility)
   let statusUpdate: "UPCOMING" | "LIVE" | "COMPLETED" | undefined;
@@ -195,6 +202,7 @@ export async function updateTournamentAction(formData: FormData) {
       where: { id: data.id },
       data: {
         ...rest,
+        ...formatUpdate,
         status: statusUpdate,
         slug,
         lat: geoLat,

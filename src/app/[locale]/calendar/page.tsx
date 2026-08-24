@@ -28,7 +28,7 @@ export default async function CalendarPage() {
   }
 
   const tournaments = await prisma.tournament.findMany({
-    where: { approved: true, hidden: false },
+    where: { approved: true, hidden: false, testMode: false },
     select: {
       id: true,
       slug: true,

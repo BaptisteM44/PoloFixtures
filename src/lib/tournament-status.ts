@@ -1,4 +1,4 @@
-import { MatchPhase, MatchStatus, TournamentStatus } from "@prisma/client";
+import { TournamentStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 type TournamentLite = {
@@ -7,33 +7,6 @@ type TournamentLite = {
   dateEnd: Date;
   usesPipeline?: boolean;
 };
-
-type MatchLite = {
-  tournamentId: string;
-  status: MatchStatus;
-  phase: MatchPhase;
-  nextMatchWinId: string | null;
-  winnerTeamId: string | null;
-};
-
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
-
-function shouldCompleteFromMatches(matches: MatchLite[]): boolean {
-  if (matches.length === 0) return false;
-
-  // Only complete if there's a finished final match (BRACKET or MTP_DE with no nextMatchWinId)
-  // This indicates the tournament actually reached its conclusion
-  const finalPhases = ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE", "BIG_APPLE_SE"];
-  const hasFinishedFinal = matches.some(
-    (m) => finalPhases.includes(m.phase) && !m.nextMatchWinId && m.status === "FINISHED" && !!m.winnerTeamId
-  );
-
-  return hasFinishedFinal;
-}
-
-function shouldCompleteByDate(dateEnd: Date, now: Date): boolean {
-  return now.getTime() >= dateEnd.getTime() + ONE_DAY_MS;
-}
 
 /**
  * Seuil horaire de fin : on ne considère un tournoi terminé qu'à partir de 21h
@@ -113,17 +86,11 @@ export async function syncTournamentCompletionById(tournamentId: string): Promis
   if (tournament.usesPipeline) {
     shouldComplete = await isPipelineComplete(tournamentId, tournament.dateEnd, tournament.timezone, now);
   } else {
-    const matches = await prisma.match.findMany({
-      where: { tournamentId: tournament.id },
-      select: {
-        tournamentId: true,
-        status: true,
-        phase: true,
-        nextMatchWinId: true,
-        winnerTeamId: true,
-      },
-    });
-    shouldComplete = shouldCompleteByDate(tournament.dateEnd, now) || shouldCompleteFromMatches(matches);
+    // Legacy : on ne passe COMPLETED qu'après 21h (heure locale) le jour de
+    // dateEnd — jamais dès qu'un bracket final est joué. Un tournoi sur 2 jours
+    // dont la finale du samedi est saisie ne doit pas basculer en « Terminé »
+    // alors qu'il reste le dimanche. L'orga garde le bouton « Terminer » manuel.
+    shouldComplete = isAfterEndThreshold(tournament.dateEnd, tournament.timezone, now);
   }
   if (!shouldComplete) return tournament.status;
 
@@ -171,35 +138,12 @@ export async function syncLiveTournamentsCompletion(): Promise<string[]> {
     }
   }
 
-  // Legacy : logique historique (date ou match final joué).
-  let legacyIdsToComplete: string[] = [];
-  if (legacyTournaments.length > 0) {
-    const legacyIds = legacyTournaments.map((t) => t.id);
-    const matches = await prisma.match.findMany({
-      where: { tournamentId: { in: legacyIds } },
-      select: {
-        tournamentId: true,
-        status: true,
-        phase: true,
-        nextMatchWinId: true,
-        winnerTeamId: true,
-      },
-    });
-
-    const byTournament = new Map<string, MatchLite[]>();
-    for (const m of matches) {
-      const arr = byTournament.get(m.tournamentId) ?? [];
-      arr.push(m);
-      byTournament.set(m.tournamentId, arr);
-    }
-
-    legacyIdsToComplete = legacyTournaments
-      .filter((t) => {
-        const tmMatches = byTournament.get(t.id) ?? [];
-        return shouldCompleteByDate(t.dateEnd, now) || shouldCompleteFromMatches(tmMatches);
-      })
-      .map((t) => t.id);
-  }
+  // Legacy : comme les pipelines, on ne termine qu'après 21h (heure locale) le
+  // jour de dateEnd — jamais dès qu'un bracket final est joué (un tournoi sur 2
+  // jours resterait LIVE le dimanche même si la finale du samedi est saisie).
+  const legacyIdsToComplete = legacyTournaments
+    .filter((t) => isAfterEndThreshold(t.dateEnd, t.timezone, now))
+    .map((t) => t.id);
 
   const idsToComplete = [...pipelineIdsToComplete, ...legacyIdsToComplete];
   if (idsToComplete.length === 0) return [];

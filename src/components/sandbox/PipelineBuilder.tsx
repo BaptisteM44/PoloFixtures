@@ -51,7 +51,7 @@ export function defaultConfig(type: StageType): Record<string, unknown> {
     case "CROSS_POOL": return { opponents: 1 };
     case "PLACEMENT": return { count: 2 };
     case "SE": return { thirdPlace: true };
-    case "DE": return { gfReset: false };
+    case "DE": return { gfReset: true };
   }
 }
 

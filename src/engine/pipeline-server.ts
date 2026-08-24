@@ -560,9 +560,14 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
         case "DE": {
           const cfg = stage.config as StageConfigByType["DE"];
           const seeds = teamIdsBySlot.map((e) => e.teamId);
+          // GF reset toujours planifié pour les DE pipeline : le match BG reste
+          // dormant si le WB gagne d'entrée (advanceStage gère `bgDormant`), et
+          // se joue seulement si le LB gagne la 1re finale. On ne dépend plus
+          // d'une case à cocher oubliée avant lancement. On respecte toutefois
+          // un gfReset explicitement mis à false dans la config.
           await persistBracketPlan(tx, {
             tournamentId: t.id,
-            plan: planDE(seeds.length, { gfReset: cfg.gfReset }),
+            plan: planDE(seeds.length, { gfReset: cfg.gfReset !== false }),
             seededTeamIds: seeds,
             phase: "STAGE",
             stageId: stage.id,

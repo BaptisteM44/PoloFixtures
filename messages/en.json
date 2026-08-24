@@ -259,6 +259,7 @@
     "hero_next_tournament": "Next tournament",
     "hero_days_until": "D-{count}",
     "hero_today": "It's today!",
+    "hero_ongoing": "Ongoing",
     "hero_with_teammates": "with {names}",
     "hero_no_upcoming": "No upcoming tournament — find your next one!",
     "hero_chip_invites": "{count, plural, one {# pending invitation} other {# pending invitations}}",

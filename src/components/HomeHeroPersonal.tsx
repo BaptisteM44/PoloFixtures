@@ -197,6 +197,16 @@ export function HomeHeroPersonal({
     ? Math.max(0, Math.ceil((new Date(next.dateStart).getTime() - Date.now()) / 86400000))
     : 0;
 
+  // Tournoi en cours : commencé et pas encore fini (fin de journée du dernier
+  // jour). On l'affiche « En cours » plutôt qu'un J-0 trompeur, et il reste
+  // épinglé dans le hero le temps du tournoi.
+  const isOngoing = !!next && (() => {
+    const now = Date.now();
+    const startedMs = new Date(next.dateStart).getTime();
+    const endOfLastDay = new Date(next.dateEnd).getTime() + 86400000; // fin du jour de dateEnd
+    return now >= startedMs && now < endOfLastDay;
+  })();
+
   const dateRange = next
     ? (() => {
         const ds = new Date(next.dateStart);
@@ -237,10 +247,10 @@ export function HomeHeroPersonal({
                 }}
               >
                 <span style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: daysUntil > 99 ? 26 : 34, lineHeight: 1, color: "var(--border)" }}>
-                  {daysUntil === 0 ? "🔥" : t("hero_days_until", { count: daysUntil })}
+                  {isOngoing || daysUntil === 0 ? "🔥" : t("hero_days_until", { count: daysUntil })}
                 </span>
                 <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 6, color: "var(--border)", opacity: 0.75, textAlign: "center" }}>
-                  {daysUntil === 0 ? t("hero_today") : t("hero_next_tournament")}
+                  {isOngoing ? t("hero_ongoing") : daysUntil === 0 ? t("hero_today") : t("hero_next_tournament")}
                 </span>
               </div>
 

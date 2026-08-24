@@ -9,6 +9,11 @@ import { ISO_COUNTRIES } from "@/lib/iso-countries";
 import { CURRENCIES } from "@/lib/currencies";
 import { RegistrationFieldsEditor } from "@/components/RegistrationFieldsEditor";
 
+// Formats legacy proposés dans le menu. Un format hors de cette liste (ex.
+// "pipeline") ne doit jamais être coercé vers "2v2" par un <select> sans option
+// correspondante — d'où le garde-fou dans le rendu du champ.
+const STANDARD_FORMATS = ["2v2", "3v3", "4v4", "5v5", "ABC", "ABC Chapeau"];
+
 type MealDay = { day: number; breakfast: boolean; lunch: boolean; dinner: boolean };
 type FaqItem = { question: string; answer: string };
 
@@ -506,14 +511,30 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </label>
           <label className="field-row">
             {t("field_format")}
-            <select name="format" value={currentFormat} onChange={(e) => setCurrentFormat(e.target.value)} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
-              <option value="2v2">2v2</option>
-              <option value="3v3">3v3</option>
-              <option value="4v4">4v4</option>
-              <option value="5v5">5v5</option>
-              <option value="ABC">ABC</option>
-              <option value="ABC Chapeau">ABC Chapeau</option>
-            </select>
+            {(tournament as any).usesPipeline ? (
+              // Tournoi pipeline : le format est piloté par le composeur d'étapes
+              // (onglet Planning), pas par ce menu legacy. On soumet la valeur
+              // réelle telle quelle via un champ caché — sinon un <select> sans
+              // <option> correspondant à "pipeline" retomberait sur "2v2" et
+              // écraserait silencieusement le format à l'enregistrement.
+              <>
+                <input type="hidden" name="format" value={currentFormat} />
+                <input value={currentFormat} disabled style={{ opacity: 0.5 }} />
+              </>
+            ) : (
+              <select name="format" value={STANDARD_FORMATS.includes(currentFormat) ? currentFormat : ""} onChange={(e) => setCurrentFormat(e.target.value)} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
+                {/* Garde-fou : si le format actuel n'est pas dans la liste standard,
+                    on l'ajoute en option pour qu'il round-trip sans être coercé
+                    vers la 1re option (2v2). */}
+                {!STANDARD_FORMATS.includes(currentFormat) && <option value={currentFormat}>{currentFormat}</option>}
+                <option value="2v2">2v2</option>
+                <option value="3v3">3v3</option>
+                <option value="4v4">4v4</option>
+                <option value="5v5">5v5</option>
+                <option value="ABC">ABC</option>
+                <option value="ABC Chapeau">ABC Chapeau</option>
+              </select>
+            )}
           </label>
           <label className="field-row">
             {t("field_game_duration")}
