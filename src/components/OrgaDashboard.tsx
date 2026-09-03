@@ -2088,6 +2088,20 @@ export function OrgaDashboard({
               const slot = dur + pause;
               const courts = tournament.courtsCount ?? 1;
 
+              // Sans équipes (ou une seule), aucune estimation n'a de sens : les
+              // formules produiraient des valeurs négatives (ex. DE : 2×0−2+1 = −1).
+              // On affiche un état d'attente plutôt que des nombres absurdes.
+              if (n < 2) {
+                return (
+                  <div style={{ marginTop: 12, padding: "10px 12px", background: "var(--bg-muted)", borderRadius: 8, fontSize: 12 }}>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-muted)", marginBottom: 6 }}>
+                      {t("orga_preview_title")}
+                    </p>
+                    <span style={{ color: "var(--text-muted)" }}>{t("orga_preview_awaiting_teams")}</span>
+                  </div>
+                );
+              }
+
               let day1Matches = 0;
               let day2Matches = 0;
 

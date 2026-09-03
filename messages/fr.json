@@ -694,6 +694,7 @@
     "orga_launch_pool_b": "Lancer Pool B",
     "orga_day2_label": "Jour 2",
     "orga_preview_title": "Estimation",
+    "orga_preview_awaiting_teams": "En attente d'équipes inscrites pour estimer le nombre de matchs.",
     "orga_preview_matches": "matchs au total",
     "orga_preview_slot": "Créneau",
     "orga_preview_courts": "terrains",

@@ -694,6 +694,7 @@
     "orga_launch_pool_b": "Pool B starten",
     "orga_day2_label": "Tag 2",
     "orga_preview_title": "Schätzung",
+    "orga_preview_awaiting_teams": "Warten auf angemeldete Teams, um die Anzahl der Spiele zu schätzen.",
     "orga_preview_matches": "Spiele insgesamt",
     "orga_preview_slot": "Zeitfenster",
     "orga_preview_courts": "Plätze",

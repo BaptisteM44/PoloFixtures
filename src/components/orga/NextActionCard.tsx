@@ -147,10 +147,14 @@ function computeNextAction(
 
   if (isPipeline) return pipelineAction(tournament, t, flowLabel);
 
-  // Legacy : pas de pilotage fin ici, on renvoie au planning
+  // Legacy : pas de pilotage fin ici, on renvoie au planning.
+  // Tant que le tournoi n'est pas LIVE, il n'a PAS démarré : on affiche « pas
+  // encore lancé », même si des matchs FINISHED existent (cas d'un tournoi de
+  // test/simulé dont les matchs sont restés en base) — sinon on proposait à tort
+  // « tous les matchs joués / clôturer » sur un tournoi UPCOMING.
   const anyMatches = matches.length > 0;
-  const allDone = anyMatches && matches.every((m) => m.status === "FINISHED");
-  if (!anyMatches) {
+  const allDone = tournament.status === "LIVE" && anyMatches && matches.every((m) => m.status === "FINISHED");
+  if (tournament.status !== "LIVE" || !anyMatches) {
     return { tone: "todo", icon: "🚀", title: t("orga_next_not_launched"), subtitle: t("orga_next_not_launched_hint"), showFlowButton: true, flowLabel, showComplete: false };
   }
   if (allDone) {
@@ -178,6 +182,13 @@ function pipelineAction(
   const stages = [...(tournament.stages ?? [])].sort((a, b) => a.order - b.order);
   if (stages.length === 0) {
     return { tone: "waiting", icon: "🧩", title: t("orga_next_no_stages"), showFlowButton: true, flowLabel, showComplete: false };
+  }
+
+  // Tant que le tournoi n'est pas LIVE, il n'a pas démarré : on n'affiche jamais
+  // « toutes les étapes terminées / clôturer » (cas d'un tournoi de test dont les
+  // étapes/matchs sont restés en base sans passage en LIVE).
+  if (tournament.status !== "LIVE") {
+    return { tone: "todo", icon: "🚀", title: t("orga_next_not_launched"), subtitle: t("orga_next_not_launched_hint"), showFlowButton: true, flowLabel, showComplete: false };
   }
 
   const active = stages.find((s) => s.status === "ACTIVE");

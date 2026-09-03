@@ -693,6 +693,7 @@
     "orga_launch_pool_b": "Lanzar Pool B",
     "orga_day2_label": "Día 2",
     "orga_preview_title": "Estimación",
+    "orga_preview_awaiting_teams": "Esperando equipos inscritos para estimar el número de partidos.",
     "orga_preview_matches": "partidos en total",
     "orga_preview_slot": "Turno",
     "orga_preview_courts": "canchas",

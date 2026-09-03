@@ -694,6 +694,7 @@
     "orga_launch_pool_b": "Launch Pool B",
     "orga_day2_label": "Day 2",
     "orga_preview_title": "Estimation",
+    "orga_preview_awaiting_teams": "Waiting for registered teams to estimate the number of matches.",
     "orga_preview_matches": "total matches",
     "orga_preview_slot": "Slot",
     "orga_preview_courts": "courts",
