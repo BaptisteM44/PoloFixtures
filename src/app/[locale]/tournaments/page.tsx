@@ -22,7 +22,7 @@ export default async function TournamentsPage({ searchParams }: { searchParams: 
 
   const [tournaments, followedTournamentIds] = await Promise.all([
     prisma.tournament.findMany({
-      where: { approved: true, hidden: false, testMode: false },
+      where: { approved: true, hidden: false },
       include: { teams: { where: { selected: true } } },
       orderBy: { dateStart: "asc" },
     }),
