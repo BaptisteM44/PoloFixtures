@@ -162,13 +162,13 @@ export async function updateTournamentAction(formData: FormData) {
 
   // Le `format` = type d'inscription (2v2, 3v3, ABC Chapeau…) et reste éditable,
   // y compris pour un tournoi pipeline (usesPipeline pilote le déroulé, pas le
-  // type d'inscription). Seul garde-fou : on refuse d'écraser un ancien format
-  // "pipeline" (valeur héritée qui n'a PAS d'option dans le <select>) par une
-  // valeur legacy — c'était la vraie cause du format qui « sautait » en 2v2.
-  const currentDbFormat = (tournament as unknown as { format?: string }).format;
-  const formatUpdate = currentDbFormat === "pipeline" && data.format !== "pipeline"
-    ? {}
-    : { format: data.format };
+  // type d'inscription). Le formulaire soumet toujours une valeur choisie
+  // explicitement (le <select> inclut désormais le format courant même hors
+  // liste standard), donc on l'écrit telle quelle. Seul garde-fou minimal : on
+  // n'écrase pas avec une chaîne vide (formulaire cassé / champ absent).
+  const formatUpdate = data.format && data.format.trim() !== ""
+    ? { format: data.format }
+    : {};
 
   // Status transitions allowed via edit form (all directions allowed for orga flexibility)
   let statusUpdate: "UPCOMING" | "LIVE" | "COMPLETED" | undefined;
