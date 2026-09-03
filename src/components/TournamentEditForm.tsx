@@ -511,30 +511,21 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </label>
           <label className="field-row">
             {t("field_format")}
-            {(tournament as any).usesPipeline ? (
-              // Tournoi pipeline : le format est piloté par le composeur d'étapes
-              // (onglet Planning), pas par ce menu legacy. On soumet la valeur
-              // réelle telle quelle via un champ caché — sinon un <select> sans
-              // <option> correspondant à "pipeline" retomberait sur "2v2" et
-              // écraserait silencieusement le format à l'enregistrement.
-              <>
-                <input type="hidden" name="format" value={currentFormat} />
-                <input value={currentFormat} disabled style={{ opacity: 0.5 }} />
-              </>
-            ) : (
-              <select name="format" value={STANDARD_FORMATS.includes(currentFormat) ? currentFormat : ""} onChange={(e) => setCurrentFormat(e.target.value)} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
-                {/* Garde-fou : si le format actuel n'est pas dans la liste standard,
-                    on l'ajoute en option pour qu'il round-trip sans être coercé
-                    vers la 1re option (2v2). */}
-                {!STANDARD_FORMATS.includes(currentFormat) && <option value={currentFormat}>{currentFormat}</option>}
-                <option value="2v2">2v2</option>
-                <option value="3v3">3v3</option>
-                <option value="4v4">4v4</option>
-                <option value="5v5">5v5</option>
-                <option value="ABC">ABC</option>
-                <option value="ABC Chapeau">ABC Chapeau</option>
-              </select>
-            )}
+            {/* Le format = type d'inscription (2v2, 3v3, ABC Chapeau…), éditable
+                y compris pour les tournois pipeline (usesPipeline ne remplace PAS
+                ce champ : il change juste la façon de piloter le déroulé). Garde-
+                fou : si le format actuel n'est pas dans la liste standard (ex.
+                "pipeline" hérité), on l'ajoute en option pour qu'il round-trip
+                sans être coercé vers la 1re option (2v2). */}
+            <select name="format" value={currentFormat} onChange={(e) => setCurrentFormat(e.target.value)} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
+              {!STANDARD_FORMATS.includes(currentFormat) && <option value={currentFormat}>{currentFormat}</option>}
+              <option value="2v2">2v2</option>
+              <option value="3v3">3v3</option>
+              <option value="4v4">4v4</option>
+              <option value="5v5">5v5</option>
+              <option value="ABC">ABC</option>
+              <option value="ABC Chapeau">ABC Chapeau</option>
+            </select>
           </label>
           <label className="field-row">
             {t("field_game_duration")}

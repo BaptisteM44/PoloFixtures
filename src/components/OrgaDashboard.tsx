@@ -1603,16 +1603,23 @@ export function OrgaDashboard({
   const tabStorageKey = `orga_tab_${tournament.id}`;
   const [activeTab, setActiveTab] = useState<Tab>(() => {
     const pipeline = !!(tournament as any)?.usesPipeline;
+    // Un legacy sans match joué est CONVERTIBLE vers pipeline : sa barre d'onglets
+    // remplace "planning" par "stages" (là où se trouve la bascule). Sans ce cas,
+    // l'onglet actif par défaut ("planning") n'existait pas dans la barre → l'orga
+    // ne voyait pas comment switcher de système de format.
+    const convertible = !pipeline && !matches.some((m: any) => m.status === "FINISHED");
+    const showsStages = pipeline || convertible;
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem(tabStorageKey);
-      // Pipeline : l'onglet Planning est remplacé par Étapes
-      if (pipeline && saved === "planning") return "stages";
+      // "planning" n'existe pas quand la barre montre "stages"
+      if (showsStages && saved === "planning") return "stages";
       // "orgateam" a fusionné dans "orga"
       if (saved === "orgateam") return "orga";
       if (saved === "teams" || saved === "config" || saved === "planning" || saved === "stages" || saved === "orga" || saved === "hebergement") return saved;
     }
-    // Pipeline : le pilotage se fait dans l'onglet Étapes — c'est l'écran utile
-    return pipeline ? "stages" : "planning";
+    // Pipeline (ou legacy convertible) : le pilotage / la bascule se fait dans
+    // l'onglet Étapes — c'est l'écran utile.
+    return showsStages ? "stages" : "planning";
   });
 
   useEffect(() => {
