@@ -878,11 +878,15 @@ export function TournamentRefereePanel({
                 ⇄ {t("swap_sides")}
               </button>
             </div>
+            {/* Le chrono AFFICHÉ décompte (displaySec = durée − clockSec), donc
+                un bouton doit agir sur le temps RESTANT : "+5s" = +5s restantes =
+                retirer 5 à clockSec (temps écoulé), et inversement. Sans ça les
+                boutons paraissaient inversés (+5s enlevait du temps). */}
             <div className="ref-clock-controls" style={{ marginTop: 6 }}>
-              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => Math.max(0, p - 10)); postEvent("TIME_ADJUST", { delta: -10 }); }}>−10s</button>
-              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => Math.max(0, p - 5)); postEvent("TIME_ADJUST", { delta: -5 }); }}>−5s</button>
-              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => p + 5); postEvent("TIME_ADJUST", { delta: 5 }); }}>+5s</button>
-              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => p + 10); postEvent("TIME_ADJUST", { delta: 10 }); }}>+10s</button>
+              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => p + 10); postEvent("TIME_ADJUST", { delta: -10 }); }}>−10s</button>
+              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => p + 5); postEvent("TIME_ADJUST", { delta: -5 }); }}>−5s</button>
+              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => Math.max(0, p - 5)); postEvent("TIME_ADJUST", { delta: 5 }); }}>+5s</button>
+              <button className="ghost ref-btn-sm" onClick={() => { setClockSec((p) => Math.max(0, p - 10)); postEvent("TIME_ADJUST", { delta: 10 }); }}>+10s</button>
             </div>
             {/* Rappel des exclusions 30s en cours, visible sur l'écran principal
                 (le jeu continue pendant le décompte). Tap = lever l'exclusion. */}
