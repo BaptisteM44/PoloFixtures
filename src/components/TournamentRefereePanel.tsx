@@ -135,6 +135,10 @@ export function TournamentRefereePanel({
       });
   }, [matchMap, selectedCourt]);
   const [selectedMatchId, setSelectedMatchId] = useState<string>(() => sortedMatches.find((m) => m.status === "LIVE" || m.status === "SCHEDULED")?.id ?? sortedMatches[0]?.id ?? "");
+  // Ref à jour du match sélectionné, lisible depuis le listener SSE (qui capture
+  // une closure figée sur [tournament.id]).
+  const selectedMatchIdRef = useRef(selectedMatchId);
+  useEffect(() => { selectedMatchIdRef.current = selectedMatchId; }, [selectedMatchId]);
   const [clockSec, setClockSec] = useState(0);
   const [running, setRunning] = useState(false);
   const [buzzerPlayed, setBuzzerPlayed] = useState(false);
@@ -210,8 +214,17 @@ export function TournamentRefereePanel({
           const cur = prev.get(updatedMatch.id!);
           const next = new Map(prev);
           if (cur) {
-            // Match existant : merge
-            next.set(updatedMatch.id!, { ...cur, ...updatedMatch });
+            // Match existant : merge. MAIS pour le match que l'arbitre est en train
+            // de saisir, on NE laisse PAS le score du SSE écraser le score local :
+            // un SSE porteur d'un score plus ancien (event antérieur, cascade de
+            // reschedule…) faisait « disparaître » un but qu'on venait de saisir.
+            // La source de vérité de ce match, c'est la saisie locale + les
+            // réponses de ses propres POST.
+            const isSelected = updatedMatch.id === selectedMatchIdRef.current;
+            const merged = isSelected
+              ? { ...cur, ...updatedMatch, scoreA: cur.scoreA, scoreB: cur.scoreB }
+              : { ...cur, ...updatedMatch };
+            next.set(updatedMatch.id!, merged);
           } else {
             // Nouveau match (rare) — on l'ajoute si on a assez d'infos
             next.set(updatedMatch.id!, updatedMatch as MatchInfo);
@@ -378,8 +391,11 @@ export function TournamentRefereePanel({
       return next;
     });
     if (data.match?.status === "FINISHED") { setRunning(false); setMatchEnded(true); }
-    // Don't restart clock after TIMEOUT, PAUSE or SWAP_SIDES events
-    if (data.match?.status === "LIVE" && type !== "TIMEOUT" && type !== "PAUSE" && type !== "SWAP_SIDES") setRunning(true);
+    // Le chrono ne se (re)lance QUE sur un START explicite. Auparavant, tout
+    // event LIVE (GOAL, PENALTY…) forçait setRunning(true) : ajouter un but ou une
+    // faute pendant une PAUSE relançait le chrono tout seul. Chaque action gère
+    // désormais son propre running (onStart, onPause, redémarrage last-2-min).
+    if (data.match?.status === "LIVE" && type === "START") setRunning(true);
   }, [selectedMatchId, clockSec]);
 
   // ── Actions ───────────────────────────────────────────────────────────────

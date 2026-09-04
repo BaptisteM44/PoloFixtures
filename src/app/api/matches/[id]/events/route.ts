@@ -45,6 +45,20 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return new Response("Unauthorized", { status: 401 });
   }
 
+  // Un match déjà TERMINÉ ne doit plus accepter d'événement qui modifie son
+  // résultat : ajouter un but après END faussait le score sans recalculer le
+  // vainqueur ni la propagation dans le bracket (match affiché 3-4 mais
+  // « vainqueur A », mauvaise équipe en finale). Pour corriger un score, il faut
+  // d'abord ROUVRIR le match (PUT /api/matches/[id] status=LIVE), pas passer par
+  // ici. PENALTY/TIMEOUT (log, sans effet sur le score) restent tolérés.
+  const RESULT_CHANGING = ["GOAL", "GOLDEN_GOAL", "START", "END"];
+  if (match.status === "FINISHED" && RESULT_CHANGING.includes(parsed.data.type)) {
+    return Response.json(
+      { error: "Ce match est terminé. Rouvrez-le pour modifier le score." },
+      { status: 409 }
+    );
+  }
+
   const payload: Record<string, unknown> = {
     teamId: parsed.data.teamId ?? undefined,
     playerId: parsed.data.playerId ?? undefined,
