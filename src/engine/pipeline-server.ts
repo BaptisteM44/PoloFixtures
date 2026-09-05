@@ -424,10 +424,10 @@ function resolveCrossPoolEntries(t: PipelineTournament, rules: EntryRules): Reso
   // Le cross-pool oppose forcément DEUX poules (A vs B, même rang). Il ne doit
   // JAMAIS recouper le classement général en deux (ça mélangeait les poules
   // d'origine : le « 2e absolu » pouvait affronter quelqu'un de sa propre poule).
-  //   - Si l'orga a explicitement demandé un split (groups>=2 + groupAssign),
-  //     on honore ce découpage via resolveEntries (block/snake corrects).
+  //   - Si l'orga a explicitement demandé un split en >=2 groupes, on honore ce
+  //     découpage via resolveEntries (block/snake corrects selon groupAssign).
   //   - Sinon, on REFUSE : pas de 2 poules réelles → cross-pool impossible.
-  if ((rules.groups ?? 1) >= 2 && rules.groupAssign && rules.groupAssign !== "source") {
+  if ((rules.groups ?? 1) >= 2) {
     return resolveEntries(rules, ctx);
   }
   throw new Error(
