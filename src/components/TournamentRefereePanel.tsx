@@ -464,11 +464,14 @@ export function TournamentRefereePanel({
     startExclusion(playerId);
   };
 
-  const onTimeoutConfirmed = (teamId: string, type: "normal" | "mechanical") => {
+  // `durationSec` : durée choisie par l'arbitre pour un timeout équipe (60/90/120).
+  // Le timeout mécanique reste fixe (150s). La durée change parfois d'un tournoi
+  // à l'autre, d'où le choix au moment du déclenchement.
+  const onTimeoutConfirmed = (teamId: string, type: "normal" | "mechanical", durationSec?: number) => {
     setTimeout(() => setTimeoutModal(null), 0);
     // Pause locale du chrono (match reste LIVE côté serveur)
     setRunning(false);
-    const dur = type === "mechanical" ? 150 : 120;
+    const dur = type === "mechanical" ? 150 : (durationSec ?? 120);
     setTimeoutTimer({ sec: dur, label: type === "mechanical" ? t("timeout_technical") : t("timeout_team") });
     postEvent("TIMEOUT", { teamId, timeoutType: type, delta: 1 });
     // Pas d'event PAUSE — le match reste LIVE
@@ -761,12 +764,26 @@ export function TournamentRefereePanel({
             <p className="ref-modal-title">{t("timeout_type_question")}</p>
             <p className="ref-modal-sub">{timeoutModal.teamName}</p>
             <div className="ref-modal-list">
-              <button className="ghost ref-modal-item"
-                disabled={(timeoutNormal[timeoutModal.teamId] ?? 0) >= 2}
-                onClick={() => onTimeoutConfirmed(timeoutModal.teamId, "normal")}>
-                🟢 {t("timeout_team")}
+              {/* Timeout équipe : l'arbitre choisit la durée (elle varie selon les
+                  tournois). Max 2 par équipe → les 3 boutons sont désactivés une
+                  fois le quota atteint. */}
+              <div style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <span>🟢 {t("timeout_team")}</span>
                 <span className="ref-badge">{timeoutNormal[timeoutModal.teamId] ?? 0}/2</span>
-              </button>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {[
+                  { label: "1:00", sec: 60 },
+                  { label: "1:30", sec: 90 },
+                  { label: "2:00", sec: 120 },
+                ].map((opt) => (
+                  <button key={opt.sec} className="ghost ref-modal-item" style={{ flex: 1, justifyContent: "center" }}
+                    disabled={(timeoutNormal[timeoutModal.teamId] ?? 0) >= 2}
+                    onClick={() => onTimeoutConfirmed(timeoutModal.teamId, "normal", opt.sec)}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
               <button className="ghost ref-modal-item"
                 onClick={() => onTimeoutConfirmed(timeoutModal.teamId, "mechanical")}>
                 🔧 {t("timeout_technical")}
