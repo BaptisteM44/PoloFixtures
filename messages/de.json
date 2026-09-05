@@ -235,6 +235,9 @@
     "numbers_badges": "verfügbare Badges"
   },
   "home": {
+    "euros_vote_title": "Hast du in den letzten 12 Monaten an einem Turnier gespielt? DANN ABSTIMMEN!",
+    "euros_vote_body": "Die Abstimmung darüber, ob die Euros im verpflichtenden gemischtgeschlechtlichen Format oder im offenen Format ausgetragen werden, hat bereits begonnen. Die Stimmen werden von den Vertreter·innen jedes Landes gesammelt. Klicke, um zu sehen, wer deine Landesvertretung ist, die aktuellsten Infos zu lesen und an der Diskussion teilzunehmen. Die Abstimmung läuft bis zum 1. Oktober.",
+    "euros_vote_cta": "Mitmachen",
     "hero_title": "Organisiere, melde an, spiele.",
     "hero_subtitle": "Die komplette Bike-Polo-Plattform: erstelle dein Turnier, verwalte Anmeldungen, leite live, verfolge Ergebnisse und finde die gesamte weltweite Community.",
     "hero_create": "Turnier erstellen",

@@ -1375,6 +1375,74 @@ button:disabled,
   box-shadow: var(--shadow-lg);
 }
 
+/* ---- Bannière annonce (ex: vote communautaire) ----
+   Largeur EXACTEMENT alignée sur la colonne gauche de la map juste en
+   dessous (.map-section-layout est en grid-template-columns: 3fr 2fr,
+   gap 20px) — calc() reproduit le même calcul de grille, collée à gauche
+   plutôt que pleine largeur ou centrée. */
+.euros-vote-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: calc((100% - 20px) * 3 / 5);
+  margin: 20px 0;
+  padding: 14px 20px;
+  background: var(--purple);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: var(--border);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.euros-vote-banner:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.euros-vote-banner__icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.euros-vote-banner__text {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.euros-vote-banner__text strong {
+  font-family: var(--font-display);
+}
+
+.euros-vote-banner__cta {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .euros-vote-banner {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .euros-vote-banner {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .euros-vote-banner__cta {
+    width: 100%;
+  }
+}
+
 .hero-feature-card h3 {
   font-size: 13px;
   text-transform: uppercase;

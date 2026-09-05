@@ -235,6 +235,9 @@
     "numbers_badges": "badges disponibles"
   },
   "home": {
+    "euros_vote_title": "Tu as joué un tournoi ces 12 derniers mois ? VOTE !",
+    "euros_vote_body": "Le vote pour décider si les Euros se joueront en format mixte obligatoire ou en format ouvert a commencé. Les votes sont collectés par les représentant·es de chaque pays. Clique pour savoir qui sont les tiens, lire les infos à jour et participer à la discussion. Votes collectés jusqu'au 1er octobre.",
+    "euros_vote_cta": "Participer",
     "hero_title": "Organise, inscris-toi, joue.",
     "hero_subtitle": "La plateforme complète pour le bike polo : crée ton tournoi, gère les inscriptions, arbitre en live, suis les scores et retrouve toute la communauté mondiale.",
     "hero_create": "Créer un tournoi",

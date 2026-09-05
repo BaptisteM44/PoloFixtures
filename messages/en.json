@@ -235,6 +235,9 @@
     "numbers_badges": "badges available"
   },
   "home": {
+    "euros_vote_title": "Have you played a tournament in the last 12 months? THEN VOTE!",
+    "euros_vote_body": "The vote to decide if the Euros will be held in a mixed-gender mandatory format or open format started already. Votes are being collected by each country representatives. Click to see who your country reps are, to read the most up-to-date information and to participate in the discussion. Votes will be collected until 1st of October.",
+    "euros_vote_cta": "Take part",
     "hero_title": "Organize, register, play.",
     "hero_subtitle": "The complete bike polo platform: create your tournament, manage registrations, referee live, track scores and find the entire worldwide community.",
     "hero_create": "Create a tournament",

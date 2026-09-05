@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import TournamentMapClient from "@/components/TournamentMapClient";
 import type { MapTournament } from "@/components/TournamentMap";
 import { HomeHeroPersonal, type HeroNextTournament } from "@/components/HomeHeroPersonal";
+import { EurosVoteBanner } from "@/components/EurosVoteBanner";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { countryToContinent } from "@/lib/country-utils";
 
@@ -320,6 +321,8 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      <EurosVoteBanner />
 
       {/* ---- MAP SECTION (WIP) ---- */}
       {process.env.NEXT_PUBLIC_MAP_ENABLED === "true" && mapTournaments.length > 0 && (
