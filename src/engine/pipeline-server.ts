@@ -15,7 +15,7 @@ import { prisma } from "@/lib/db";
 import type { Prisma, Stage, StageEntry, Match, StageType } from "@prisma/client";
 import { resolveEntries, type EntryRules, type ResolvedEntry } from "./transitions";
 import { pointsStandings, placementStandings, bracketStandings, type MatchLite, type ScoringConfig } from "./stage-standings";
-import { rrRounds, swissPairings, crossPoolPairings, pairKey, type Pairing } from "./rounds";
+import { rrRounds, swissPairings, crossPoolPairings, placementPairings, pairKey, type Pairing } from "./rounds";
 import { planSE } from "./se";
 import { planDE } from "./de";
 import { persistBracketPlan } from "./persist-plan";
@@ -420,15 +420,19 @@ function resolveCrossPoolEntries(t: PipelineTournament, rules: EntryRules): Reso
     }
   }
 
-  // Cas 3 : une source mono-groupe → on coupe le classement en deux moitiés.
-  const flat = resolveEntries({ ...rules, groups: 1 }, ctx).map((e) => e.teamId);
-  if (flat.length < 2) return [];
-  const half = Math.ceil(flat.length / 2);
-  return flat.map((teamId, i) => ({
-    groupKey: i < half ? "A" : "B",
-    slot: (i < half ? i : i - half) + 1,
-    teamId,
-  }));
+  // Cas 3 : une seule source mono-groupe.
+  // Le cross-pool oppose forcément DEUX poules (A vs B, même rang). Il ne doit
+  // JAMAIS recouper le classement général en deux (ça mélangeait les poules
+  // d'origine : le « 2e absolu » pouvait affronter quelqu'un de sa propre poule).
+  //   - Si l'orga a explicitement demandé un split (groups>=2 + groupAssign),
+  //     on honore ce découpage via resolveEntries (block/snake corrects).
+  //   - Sinon, on REFUSE : pas de 2 poules réelles → cross-pool impossible.
+  if ((rules.groups ?? 1) >= 2 && rules.groupAssign && rules.groupAssign !== "source") {
+    return resolveEntries(rules, ctx);
+  }
+  throw new Error(
+    "Le cross-pool requiert deux poules distinctes en entrée (deux sources, une étape à plusieurs groupes, ou un découpage explicite en 2 groupes)."
+  );
 }
 
 const GROUP_KEYS_CP = ["A", "B", "C", "D", "E", "F", "G", "H"];
@@ -532,12 +536,25 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
         }
         case "PLACEMENT": {
           const cfg = stage.config as StageConfigByType["PLACEMENT"];
-          // Slots consécutifs appariés : (1v2), (3v4)… → places 1/2, 3/4…
-          const flat = teamIdsBySlot.map((e) => e.teamId);
-          const count = Math.min(cfg.count ?? Math.floor(flat.length / 2), Math.floor(flat.length / 2));
-          const pairings: Pairing[] = [];
-          for (let i = 0; i < count; i++) {
-            pairings.push({ roundIndex: 1, positionInRound: i, groupKey: "", teamAId: flat[2 * i], teamBId: flat[2 * i + 1] });
+          let pairings: Pairing[];
+          const realGroups = groups.filter((g) => g !== "");
+          if (realGroups.length >= 2) {
+            // DEUX poules → matchs de placement inter-poules : rang i de A vs
+            // rang i de B (1erA vs 1erB → places 1/2, 2eA vs 2eB → 3/4…). C'est
+            // le cas qui suit un cross-pool : jamais deux équipes du même groupe.
+            const rankedA = byGroup(realGroups[0]);
+            const rankedB = byGroup(realGroups[1]);
+            const count = cfg.count ?? Math.min(rankedA.length, rankedB.length);
+            pairings = placementPairings(rankedA, rankedB, count);
+          } else {
+            // UN seul groupe (classement unique) → slots consécutifs pour
+            // départager : (1v2) places 1/2, (3v4) places 3/4…
+            const flat = teamIdsBySlot.map((e) => e.teamId);
+            const count = Math.min(cfg.count ?? Math.floor(flat.length / 2), Math.floor(flat.length / 2));
+            pairings = [];
+            for (let i = 0; i < count; i++) {
+              pairings.push({ roundIndex: 1, positionInRound: i, groupKey: "", teamAId: flat[2 * i], teamBId: flat[2 * i + 1] });
+            }
           }
           await persistPairings(tx, t, stage, pairings, startAt, new Map());
           break;
