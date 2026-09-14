@@ -5,19 +5,23 @@ import { useTranslations } from "next-intl";
 
 type Props = {
   tournamentId: string;
+  format?: string;
 };
 
-export function AnnouncePanel({ tournamentId }: Props) {
+export function AnnouncePanel({ tournamentId, format }: Props) {
   const t = useTranslations("tournament");
+  const isSolo = format === "ABC Chapeau";
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [target, setTarget] = useState<"captains" | "all">("captains");
-  const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error" | "mailer_unavailable">("idle");
   const [result, setResult] = useState<{ sent: number; errors: string[] } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const targetLabel = target === "captains" ? t("announce_confirm_captains") : t("announce_confirm_all");
+    const targetLabel = isSolo
+      ? t("announce_confirm_solo")
+      : target === "captains" ? t("announce_confirm_captains") : t("announce_confirm_all");
     if (!confirm(t("announce_confirm", { target: targetLabel }))) return;
     setStatus("sending");
     setResult(null);
@@ -33,6 +37,8 @@ export function AnnouncePanel({ tournamentId }: Props) {
         setStatus("ok");
         setSubject("");
         setMessage("");
+      } else if (res.status === 503 && data?.error === "mailer_unavailable") {
+        setStatus("mailer_unavailable");
       } else {
         setStatus("error");
       }
@@ -51,28 +57,34 @@ export function AnnouncePanel({ tournamentId }: Props) {
       </p>
 
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 12 }}>
-        <div style={{ display: "flex", gap: 16 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
-            <input
-              type="radio"
-              name="target"
-              value="captains"
-              checked={target === "captains"}
-              onChange={() => setTarget("captains")}
-            />
-            {t("announce_target_captains")}
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
-            <input
-              type="radio"
-              name="target"
-              value="all"
-              checked={target === "all"}
-              onChange={() => setTarget("all")}
-            />
-            {t("announce_target_all")}
-          </label>
-        </div>
+        {isSolo ? (
+          <p style={{ fontSize: 13, color: "var(--text-muted)", margin: 0 }}>
+            {t("announce_target_solo")}
+          </p>
+        ) : (
+          <div style={{ display: "flex", gap: 16 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="target"
+                value="captains"
+                checked={target === "captains"}
+                onChange={() => setTarget("captains")}
+              />
+              {t("announce_target_captains")}
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="target"
+                value="all"
+                checked={target === "all"}
+                onChange={() => setTarget("all")}
+              />
+              {t("announce_target_all")}
+            </label>
+          </div>
+        )}
 
         <label className="field-row">
           {t("announce_subject")}
@@ -103,11 +115,24 @@ export function AnnouncePanel({ tournamentId }: Props) {
           </p>
         )}
 
-        {status === "ok" && result && (
-          <p style={{ color: "var(--success, green)", fontSize: 13, margin: 0 }}>
-            ✅ {result.sent} email{result.sent > 1 ? "s" : ""} {result.sent > 1 ? "envoyés" : "envoyé"}.
-            {result.errors.length > 0 && ` (${result.errors.length} échec${result.errors.length > 1 ? "s" : ""})`}
+        {status === "mailer_unavailable" && (
+          <p style={{ color: "var(--danger)", fontSize: 13, margin: 0 }}>
+            {t("announce_mailer_unavailable")}
           </p>
+        )}
+
+        {status === "ok" && result && (
+          result.sent === 0 ? (
+            <p style={{ color: "var(--danger)", fontSize: 13, margin: 0 }}>
+              {t("announce_none_sent")}
+              {result.errors.length > 0 && ` (${result.errors.length} échec${result.errors.length > 1 ? "s" : ""})`}
+            </p>
+          ) : (
+            <p style={{ color: "var(--success, green)", fontSize: 13, margin: 0 }}>
+              ✅ {result.sent} email{result.sent > 1 ? "s" : ""} {result.sent > 1 ? "envoyés" : "envoyé"}.
+              {result.errors.length > 0 && ` (${result.errors.length} échec${result.errors.length > 1 ? "s" : ""})`}
+            </p>
+          )
         )}
 
         <div>

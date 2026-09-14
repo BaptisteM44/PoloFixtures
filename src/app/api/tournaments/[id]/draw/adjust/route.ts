@@ -6,6 +6,9 @@ import { z } from "zod";
 const adjustSchema = z.object({
   entries: z.array(z.object({
     entryId: z.string(),
+    // "" (chaîne vide envoyée par le select "Aucune équipe") = désassigner :
+    // sans ça, retirer une équipe faisait échouer la validation → le bouton
+    // "Enregistrer" ne faisait rien de visible.
     teamId: z.string(),
   })),
 });
@@ -34,12 +37,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const parsed = adjustSchema.safeParse(json);
   if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  // Mettre à jour chaque entry
+  // Mettre à jour chaque entry. teamId "" (select "Aucune équipe") → null,
+  // sinon la chaîne vide viole la contrainte de clé étrangère et fait échouer
+  // toute la sauvegarde (bouton "Enregistrer" sans effet visible).
   await Promise.all(
     parsed.data.entries.map((e) =>
       prisma.tournamentSoloEntry.update({
         where: { id: e.entryId },
-        data: { teamId: e.teamId },
+        data: { teamId: e.teamId || null },
       })
     )
   );

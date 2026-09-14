@@ -2486,8 +2486,8 @@ export function OrgaDashboard({
             tournamentId={tournament.id}
           />
 
-          {/* Message groupé aux capitaines */}
-          <AnnouncePanel tournamentId={tournament.id} />
+          {/* Message groupé aux capitaines (ou aux inscrit·es solo en ABC Chapeau) */}
+          <AnnouncePanel tournamentId={tournament.id} format={tournament.format} />
 
           {/* ── Équipe organisatrice : sponsors, co-orgas, arbitres ── */}
           <div style={{ borderTop: "2px solid var(--border)", paddingTop: 20, marginTop: 4, display: "flex", flexDirection: "column", gap: 20 }}>
