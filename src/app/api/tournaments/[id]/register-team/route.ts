@@ -4,7 +4,7 @@ import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { notifyTeamPlayers } from "@/lib/notify";
 import { z } from "zod";
 import { toSlug } from "@/lib/utils";
-import { computeCareerBadges } from "@/lib/achievements";
+import { recomputePlayerBadges } from "@/lib/achievements";
 
 const playerSlotSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("existing"), playerId: z.string(), needsAccommodation: z.boolean().optional() }),
@@ -227,19 +227,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
     tournamentSlug: tournament.slug ?? "",
   }).catch(console.error);
 
-  // Recalculer les badges en parallèle (fire-and-forget, additif)
+  // Recalculer les badges en parallèle (fire-and-forget). Remplace l'existant
+  // calculé (retire un badge plus mérité) en préservant externes/manuels + épinglés.
   Promise.all(
     existingAccountPlayerIds.map(async (pid) => {
-      const [computed, playerData] = await Promise.all([
-        computeCareerBadges(pid),
-        prisma.player.findUnique({ where: { id: pid }, select: { badges: true, pinnedBadges: true } }),
-      ]);
-      // Union : badges existants + pinnedBadges (toujours légitimes) + nouveaux calculés
-      const merged = Array.from(new Set([
-        ...(playerData?.badges as string[] ?? []),
-        ...(playerData?.pinnedBadges as string[] ?? []),
-        ...computed,
-      ]));
+      const merged = await recomputePlayerBadges(pid);
       await prisma.player.update({ where: { id: pid }, data: { badges: merged } });
     })
   ).catch(console.error);

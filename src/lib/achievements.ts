@@ -493,7 +493,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     include: { teams: { select: { id: true } } },
   });
   if (organizedTournaments.length >= 1)  badges.add("host");
-  if (organizedTournaments.length >= 3)  badges.add("serial_organizer");
+  if (organizedTournaments.length >= 5)  badges.add("serial_organizer"); // description : 5+ tournois
   if (organizedTournaments.length >= 10) badges.add("community_builder");
   if (organizedTournaments.length >= 20) badges.add("grand_architect");
   if (organizedTournaments.some((t) => t.teams.length >= 16)) badges.add("mega_event");
@@ -801,11 +801,11 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   const [refMain, refCo] = await Promise.all([
     prisma.match.findMany({
       where: { refereePlayerId: playerId, status: "FINISHED" },
-      select: { id: true, tournamentId: true, phase: true, nextMatchWinId: true, startAt: true },
+      select: { id: true, tournamentId: true, phase: true, bracketSide: true, startAt: true },
     }),
     prisma.match.findMany({
       where: { coRefereePlayerId: playerId, status: "FINISHED" },
-      select: { id: true, tournamentId: true, phase: true, nextMatchWinId: true, startAt: true },
+      select: { id: true, tournamentId: true, phase: true, bracketSide: true, startAt: true },
     }),
   ]);
   // Déduplique par id
@@ -816,9 +816,14 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     // first_whistle — 1er match arbitré
     badges.add("first_whistle");
 
-    // Finales = match BRACKET sans nextMatchWinId (dernier match du bracket)
+    // Finale = LA grande finale (bracketSide "G"), pas n'importe quel dernier
+    // match de branche : un critère "sans match suivant" attrapait aussi la
+    // 3e place, les finales de tableaux secondaires (SPLIT_SE) et les matchs
+    // terminaux du losers bracket en double élim — d'où des head_ref attribués
+    // à tort. On aligne sur la même définition que partout ailleurs (champion,
+    // squeaky_clean…) : la vraie finale a bracketSide === "G".
     const finalesArbitrees = allRefMatches.filter(
-      (m) => BRACKET_PHASES.includes(m.phase as BracketPhase) && !m.nextMatchWinId
+      (m) => BRACKET_PHASES.includes(m.phase as BracketPhase) && m.bracketSide === "G"
     );
 
     // head_ref — arbitrer au moins une finale
@@ -837,8 +842,8 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     for (const [tid, matches] of byTournament) {
       // full_ref_day — 5+ matchs arbitrés dans un même tournoi
       if (matches.length >= 5) badges.add("full_ref_day");
-      // grand_referee — 12+ matchs arbitrés + au moins une finale dans un même tournoi
-      const hasFinale = matches.some((m) => BRACKET_PHASES.includes(m.phase as BracketPhase) && !m.nextMatchWinId);
+      // grand_referee — 12+ matchs arbitrés + la finale (bracketSide "G") arbitrée dans un même tournoi
+      const hasFinale = matches.some((m) => BRACKET_PHASES.includes(m.phase as BracketPhase) && m.bracketSide === "G");
       if (matches.length >= 12 && hasFinale) { badges.add("grand_referee"); }
       void tid; // évite le warning "unused variable"
     }
@@ -1016,6 +1021,45 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Badges attribués HORS de computeCareerBadges (communauté/Labs + distinctions
+// manuelles). computeCareerBadges ne les recrache jamais : lors d'un recalcul
+// qui REMPLACE (et non fusionne), il faut les préserver explicitement, sinon
+// ils seraient effacés. Tout le reste est entièrement dérivé du calcul, donc
+// remplaçable — c'est ce qui permet de RETIRER un badge accordé à tort après
+// correction d'une condition (ex: head_ref).
+// ---------------------------------------------------------------------------
+export const EXTERNALLY_GRANTED_BADGES = [
+  "first_feedback",
+  "community_voice",
+  "early_backer",
+  "constructive",
+  "debate_starter",
+  "grenouille_platine",
+] as const;
+
+/**
+ * Recalcule la liste de badges d'un joueur et renvoie la liste FINALE à
+ * persister : résultat frais du calcul + badges externes déjà acquis + badges
+ * épinglés (toujours légitimes). Remplace donc l'existant calculé (permet de
+ * retirer un badge qui n'est plus mérité) sans jamais toucher aux badges
+ * externes/manuels.
+ */
+export async function recomputePlayerBadges(playerId: string): Promise<string[]> {
+  const player = await prisma.player.findUnique({
+    where: { id: playerId },
+    select: { badges: true, pinnedBadges: true },
+  });
+  const existing = new Set<string>((player?.badges as string[]) ?? []);
+  const computed = await computeCareerBadges(playerId);
+
+  const preserved = [
+    ...EXTERNALLY_GRANTED_BADGES.filter((b) => existing.has(b)),
+    ...((player?.pinnedBadges as string[]) ?? []),
+  ];
+  return Array.from(new Set([...computed, ...preserved]));
+}
+
+// ---------------------------------------------------------------------------
 // Recompute badges for ALL active players and persist to DB
 // ---------------------------------------------------------------------------
 
@@ -1031,9 +1075,9 @@ export async function recomputeAllBadges(): Promise<{ updated: number; errors: n
   for (const player of players) {
     try {
       const oldBadges = new Set<string>(player.badges);
-      const computed = await computeCareerBadges(player.id);
-      // Merge : on ajoute les nouveaux badges mais on ne retire jamais les acquis
-      const merged = Array.from(new Set([...player.badges, ...computed]));
+      // Remplace l'existant calculé (retire les badges plus mérités) tout en
+      // préservant les badges externes/manuels et épinglés.
+      const merged = await recomputePlayerBadges(player.id);
       await prisma.player.update({ where: { id: player.id }, data: { badges: merged } });
 
       // Notifier uniquement les badges nouvellement ajoutés

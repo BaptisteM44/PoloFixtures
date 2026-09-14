@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { computeCareerBadges } from "@/lib/achievements";
+import { recomputePlayerBadges } from "@/lib/achievements";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
 import { createNotification } from "@/lib/notify";
 
@@ -19,18 +19,14 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 
   const player = await prisma.player.findUnique({
     where: { id: params.id },
-    select: { badges: true, pinnedBadges: true, account: { select: { id: true } } },
+    select: { badges: true, account: { select: { id: true } } },
   });
   if (!player) return NextResponse.json({ error: "Joueur introuvable" }, { status: 404 });
 
   const oldBadges = new Set<string>(player.badges as string[]);
-  const computed = await computeCareerBadges(params.id);
-  // Union : badges existants + pinnedBadges (toujours légitimes) + nouveaux calculés
-  const mergedBadges = Array.from(new Set([
-    ...Array.from(oldBadges),
-    ...(player.pinnedBadges as string[]),
-    ...computed,
-  ]));
+  // Remplace l'existant calculé (retire un badge plus mérité, ex: head_ref
+  // accordé à tort) tout en préservant badges externes/manuels + épinglés.
+  const mergedBadges = await recomputePlayerBadges(params.id);
 
   await prisma.player.update({ where: { id: params.id }, data: { badges: mergedBadges } });
 

@@ -22,7 +22,7 @@ import {
 } from "@/lib/big-apple";
 import { createDEBracket } from "@/engine/persist-de";
 import { computeStandings } from "@/lib/standings";
-import { computeCareerBadges } from "@/lib/achievements";
+import { recomputePlayerBadges } from "@/lib/achievements";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
 
 async function requireTournamentOrgaAccess(tournamentId: string): Promise<{ error: string } | null> {
@@ -2177,7 +2177,7 @@ export async function resetMatchesAction(
   // Recompute badges for affected players
   for (const playerId of playerIds) {
     try {
-      const newBadges = await computeCareerBadges(playerId);
+      const newBadges = await recomputePlayerBadges(playerId);
       await prisma.player.update({ where: { id: playerId }, data: { badges: newBadges } });
     } catch { /* non-blocking */ }
   }
@@ -2220,7 +2220,7 @@ export async function resetTournamentAction(
   // Recompute badges for all affected players (events deleted = badges may change)
   for (const playerId of playerIds) {
     try {
-      const newBadges = await computeCareerBadges(playerId);
+      const newBadges = await recomputePlayerBadges(playerId);
       await prisma.player.update({ where: { id: playerId }, data: { badges: newBadges } });
     } catch {
       // Non-blocking: don't fail the reset if badge recompute fails
