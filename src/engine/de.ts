@@ -99,9 +99,27 @@ export function planDE(teamCount: number, options: DEOptions = {}): BracketPlan 
     }
   }
 
-  // ── Rounds suivants : consolidation LB, WB Rj, injection LB ──
+  // ── Rounds suivants : WB Rj, puis consolidation LB, puis injection LB ──
+  // L'ORDRE D'ÉMISSION = l'ordre de passage sur les terrains (persist-plan suit
+  // cet ordre pour poser les créneaux). Il doit refléter le déroulé réel d'un
+  // vrai bracket DE : à chaque vague, on joue d'abord le round du winner bracket,
+  // PUIS les rounds du loser bracket qui en découlent (consolidation des
+  // survivants, puis injection des nouveaux perdants du WB). Sans ça, le WB
+  // paraissait « gelé » (on enchaînait plusieurs rounds LB avant d'y revenir).
   for (let j = 3; j <= k; j++) {
     const count = P / Math.pow(2, j);
+
+    // WB Rj (émis en premier dans la vague)
+    for (let i = 0; i < count; i++) {
+      graph.push({
+        key: `W${j}-${i}`,
+        side: "W",
+        roundIndex: j,
+        positionInRound: i,
+        slotA: { type: "winnerOf", key: `W${j - 1}-${2 * i}` },
+        slotB: { type: "winnerOf", key: `W${j - 1}-${2 * i + 1}` },
+      });
+    }
 
     // Consolidation LB R(2j-3) : les survivants du LB précédent s'affrontent
     for (let i = 0; i < count; i++) {
@@ -112,18 +130,6 @@ export function planDE(teamCount: number, options: DEOptions = {}): BracketPlan 
         positionInRound: i,
         slotA: { type: "winnerOf", key: `L${2 * j - 4}-${2 * i}` },
         slotB: { type: "winnerOf", key: `L${2 * j - 4}-${2 * i + 1}` },
-      });
-    }
-
-    // WB Rj
-    for (let i = 0; i < count; i++) {
-      graph.push({
-        key: `W${j}-${i}`,
-        side: "W",
-        roundIndex: j,
-        positionInRound: i,
-        slotA: { type: "winnerOf", key: `W${j - 1}-${2 * i}` },
-        slotB: { type: "winnerOf", key: `W${j - 1}-${2 * i + 1}` },
       });
     }
 
