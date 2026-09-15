@@ -241,6 +241,101 @@ export function ScoreOverlay({
 
   const isDark = theme === "dark";
 
+  // Panneau d'événements d'un côté du scoreboard (dans le flux, pas fixed) :
+  // collé directement au bloc score à la même hauteur, à gauche/droite.
+  const renderFeed = (feed: FeedItem[], align: "left" | "right", teamName: string) => {
+    if (!(showEventFeed && isLive) || feed.length === 0) return null;
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          width: 158,
+          alignSelf: "flex-start",
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 9,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: 0.8,
+            color: isDark ? "#475569" : "#94a3b8",
+            textAlign: align,
+            paddingLeft: align === "left" ? 8 : 0,
+            paddingRight: align === "right" ? 8 : 0,
+            marginBottom: 2,
+          }}
+        >
+          {teamName}
+        </div>
+        {feed.map((item) => {
+          const isNew = highlightedIds.has(item.id);
+          return (
+            <div
+              key={item.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flexDirection: align === "right" ? "row-reverse" : "row",
+                gap: 6,
+                padding: "3px 7px",
+                borderRadius: 7,
+                background: isNew
+                  ? isDark ? "rgba(34,211,238,0.15)" : "rgba(8,145,178,0.12)"
+                  : isDark ? "rgba(15,15,30,0.75)" : "rgba(241,245,249,0.85)",
+                border: `1px solid ${isNew
+                  ? isDark ? "rgba(34,211,238,0.35)" : "rgba(8,145,178,0.35)"
+                  : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
+                boxShadow: isNew ? "0 0 12px rgba(34,211,238,0.25)" : "none",
+                backdropFilter: "blur(8px)",
+                transition: "background 0.6s ease, border 0.6s ease, box-shadow 0.6s ease",
+                animation: isNew
+                  ? `feedItemIn${align === "left" ? "Left" : "Right"} 0.3s ease-out`
+                  : "none",
+              }}
+            >
+              <span style={{ fontSize: 13, flexShrink: 0 }}>{item.icon}</span>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: align === "right" ? "flex-end" : "flex-start",
+                  minWidth: 0,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: isDark ? "#f1f5f9" : "#1e293b",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    maxWidth: 108,
+                  }}
+                >
+                  {item.text}
+                </span>
+                <span
+                  style={{
+                    fontSize: 9,
+                    color: isDark ? "#64748b" : "#94a3b8",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {item.clockStr}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Hide header, footer, and page padding for clean overlay */}
@@ -280,17 +375,22 @@ export function ScoreOverlay({
               Aucun match sur {courtName}
             </div>
           ) : (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 0,
-                minWidth: 520,
-                borderRadius: 12,
-                overflow: "hidden",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
-              }}
-            >
+            // Rangée horizontale : feed équipe A · scoreboard · feed équipe B,
+            // alignés en haut pour que les événements soient littéralement AUX
+            // CÔTÉS du score (même hauteur), pas en dessous ni sur les bords écran.
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              {renderFeed(feedLeft, "left", displayTeamA?.name ?? "")}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 0,
+                  minWidth: 520,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+                }}
+              >
               {/* Header bar */}
               {showHeader && (
               <div
@@ -459,109 +559,11 @@ export function ScoreOverlay({
               </div>
               )}
 
+              </div>
+              {renderFeed(feedRight, "right", displayTeamB?.name ?? "")}
             </div>
           )}
         </div>
-
-        {/* ── Panneaux latéraux d'événements ── */}
-        {showEventFeed && isLive && [
-          { feed: feedLeft, align: "left" as const, teamName: displayTeamA?.name ?? "" },
-          { feed: feedRight, align: "right" as const, teamName: displayTeamB?.name ?? "" },
-        ].map(({ feed, align, teamName }) =>
-          feed.length > 0 ? (
-            <div
-              key={align}
-              style={{
-                position: "fixed",
-                [align]: 16,
-                top: "50%",
-                transform: "translateY(-50%)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 5,
-                width: 190,
-                pointerEvents: "none",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 9,
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.8,
-                  color: isDark ? "#475569" : "#94a3b8",
-                  textAlign: align,
-                  paddingLeft: align === "left" ? 8 : 0,
-                  paddingRight: align === "right" ? 8 : 0,
-                  marginBottom: 2,
-                }}
-              >
-                {teamName}
-              </div>
-              {feed.map((item) => {
-                const isNew = highlightedIds.has(item.id);
-                return (
-                  <div
-                    key={item.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      flexDirection: align === "right" ? "row-reverse" : "row",
-                      gap: 7,
-                      padding: "5px 8px",
-                      borderRadius: 8,
-                      background: isNew
-                        ? isDark ? "rgba(34,211,238,0.15)" : "rgba(8,145,178,0.12)"
-                        : isDark ? "rgba(15,15,30,0.75)" : "rgba(241,245,249,0.85)",
-                      border: `1px solid ${isNew
-                        ? isDark ? "rgba(34,211,238,0.35)" : "rgba(8,145,178,0.35)"
-                        : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`,
-                      boxShadow: isNew ? "0 0 12px rgba(34,211,238,0.25)" : "none",
-                      backdropFilter: "blur(8px)",
-                      transition: "background 0.6s ease, border 0.6s ease, box-shadow 0.6s ease",
-                      animation: isNew
-                        ? `feedItemIn${align === "left" ? "Left" : "Right"} 0.3s ease-out`
-                        : "none",
-                    }}
-                  >
-                    <span style={{ fontSize: 15, flexShrink: 0 }}>{item.icon}</span>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: align === "right" ? "flex-end" : "flex-start",
-                        minWidth: 0,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 700,
-                          color: isDark ? "#f1f5f9" : "#1e293b",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          maxWidth: 130,
-                        }}
-                      >
-                        {item.text}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          color: isDark ? "#64748b" : "#94a3b8",
-                          fontVariantNumeric: "tabular-nums",
-                        }}
-                      >
-                        {item.clockStr}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : null
-        )}
 
       {/* Multiplex chat — shown on overlay when showChat is enabled */}
       {showChat && (

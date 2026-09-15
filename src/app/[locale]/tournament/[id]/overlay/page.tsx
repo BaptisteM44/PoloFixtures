@@ -7,7 +7,7 @@ export default async function OverlayPage({
   searchParams,
 }: {
   params: { id: string; locale: string };
-  searchParams: { court?: string; theme?: string };
+  searchParams: { court?: string; theme?: string; feed?: string };
 }) {
   const tournament = await prisma.tournament.findFirst({
     where: { OR: [{ id: params.id }, { slug: params.id }] },
@@ -31,6 +31,7 @@ export default async function OverlayPage({
 
   const court = searchParams.court ?? "1";
   const theme = searchParams.theme ?? "dark";
+  const showEventFeed = searchParams.feed !== "off"; // ?feed=off masque le feed d'événements
 
   return (
     <ScoreOverlay
@@ -40,6 +41,7 @@ export default async function OverlayPage({
       gameDurationMin={tournament.gameDurationMin}
       court={court}
       theme={theme}
+      showEventFeed={showEventFeed}
     />
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { TournamentEditForm } from "@/components/TournamentEditForm";
+import { OverlayLinks } from "@/components/OverlayLinks";
 import { UnifiedTeamManager } from "@/components/UnifiedTeamManager";
 import { PoolAssignment } from "@/components/PoolAssignment";
 import { FreeAgentList } from "@/components/FreeAgentList";
@@ -1728,18 +1729,11 @@ export function OrgaDashboard({
           <summary style={{ fontWeight: 700, fontSize: 14, cursor: "pointer" }}>📱 {t("qr_title")} · 🎬 {t("overlay_title")}</summary>
           <p className="meta" style={{ margin: "8px 0 12px" }}>{t("qr_desc")}</p>
 
-          {/* Liens overlay par terrain */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-            {Array.from({ length: tournament.courtsCount ?? 1 }, (_, i) => {
-              const url = `${typeof window !== "undefined" ? window.location.origin : ""}/fr/tournament/${tournament.slug || tournament.id}/overlay?court=${i + 1}&theme=dark`;
-              return (
-                <button key={i} type="button" className="btn btn--sm btn--ghost"
-                  onClick={() => navigator.clipboard.writeText(url)} style={{ fontSize: 12 }}>
-                  🎬 Court {i + 1}
-                </button>
-              );
-            })}
-          </div>
+          {/* Liens overlay par terrain (avec réglage feed + feedback copié) */}
+          <OverlayLinks
+            tournamentIdOrSlug={tournament.slug || tournament.id}
+            courtsCount={tournament.courtsCount ?? 1}
+          />
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
             {/* Public tournament QR */}

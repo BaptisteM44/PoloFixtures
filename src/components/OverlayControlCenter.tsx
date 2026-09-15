@@ -57,8 +57,19 @@ export function OverlayControlCenter({
   const [newLabel, setNewLabel] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+
+  const copyUrl = async (slug: string) => {
+    try {
+      await navigator.clipboard.writeText(`${baseUrl}/overlay/${slug}`);
+      setCopiedSlug(slug);
+      window.setTimeout(() => setCopiedSlug((s) => (s === slug ? null : s)), 1800);
+    } catch {
+      /* clipboard indisponible */
+    }
+  };
 
   const updateChannel = (slug: string, patch: Partial<Channel>) => {
     setChannels((prev) => prev.map((c) => c.slug === slug ? { ...c, ...patch } : c));
@@ -162,8 +173,12 @@ export function OverlayControlCenter({
             <code style={{ fontSize: 12, background: "var(--surface-2)", padding: "3px 8px", borderRadius: 4, border: "1px solid var(--border-light)" }}>
               {baseUrl}/overlay/{ch.slug}
             </code>
-            <button className="btn btn--sm" onClick={() => navigator.clipboard.writeText(`${baseUrl}/overlay/${ch.slug}`)}>
-              Copier
+            <button
+              className="btn btn--sm"
+              onClick={() => copyUrl(ch.slug)}
+              style={{ color: copiedSlug === ch.slug ? "var(--success, green)" : undefined }}
+            >
+              {copiedSlug === ch.slug ? "✓ Copié" : "Copier"}
             </button>
             <a href={`/overlay/${ch.slug}`} target="_blank" rel="noreferrer" className="btn btn--sm">
               Ouvrir ↗
