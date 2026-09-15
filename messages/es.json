@@ -2581,7 +2581,11 @@
     "waitlist_title": "Lista de espera ({count})",
     "formed_teams_title": "Equipos formados ({count})",
     "no_player": "Sin jugador",
-    "view_registration_answers": "Ver respuestas del formulario de inscripción"
+    "view_registration_answers": "Ver respuestas del formulario de inscripción",
+    "col_status": "Selección",
+    "mark_out": "Retirar",
+    "mark_out_hint": "Pasar a lista de espera (excluido del sorteo)",
+    "mark_in": "Recuperar"
   },
   "co_orga": {
     "title": "Co-organizadores",

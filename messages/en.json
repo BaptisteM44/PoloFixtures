@@ -2577,7 +2577,11 @@
     "waitlist_title": "Waiting list ({count})",
     "formed_teams_title": "Formed teams ({count})",
     "no_player": "No player",
-    "view_registration_answers": "View registration form answers"
+    "view_registration_answers": "View registration form answers",
+    "col_status": "Selection",
+    "mark_out": "Remove",
+    "mark_out_hint": "Move to waitlist (excluded from the draw)",
+    "mark_in": "Bring back"
   },
   "co_orga": {
     "title": "Co-organizers",

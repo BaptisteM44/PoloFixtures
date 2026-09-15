@@ -168,6 +168,19 @@ export function DrawPanel({
     setPaymentPending(null);
   };
 
+  // Bascule manuelle IN ↔ liste d'attente, sans passer par le tirage.
+  const toggleWaitlisted = async (entry: SoloEntry) => {
+    const next = !entry.waitlisted;
+    setPaymentPending(entry.id);
+    await fetch(`/api/tournaments/${tournamentId}/solo-entries/${entry.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ waitlisted: next }),
+    });
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, waitlisted: next } : e)));
+    setPaymentPending(null);
+  };
+
   const paidCount = activeEntries.filter((e) => e.feePaid).length;
   const byMethod = (Object.keys(PAYMENT_METHOD_LABELS) as PaymentMethod[])
     .map((m) => ({ method: m, count: activeEntries.filter((e) => e.feePaid && e.paymentMethod === m).length }))
@@ -243,6 +256,7 @@ export function DrawPanel({
                 {feePerPlayer > 0 && (
                   <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>Payé</th>
                 )}
+                <th style={{ textAlign: "right", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>{t("col_status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -315,10 +329,22 @@ export function DrawPanel({
                       </div>
                     </td>
                   )}
+                  <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={() => toggleWaitlisted(entry)}
+                      disabled={paymentPending === entry.id}
+                      title={t("mark_out_hint")}
+                      style={{ fontSize: 11, padding: "3px 10px", color: "var(--danger)", borderColor: "var(--danger)" }}
+                    >
+                      {t("mark_out")}
+                    </button>
+                  </td>
                 </tr>
                 {openAnswers[entry.id] && (
                   <tr style={{ borderBottom: "1px solid var(--border-light)" }}>
-                    <td colSpan={feePerPlayer > 0 ? 4 : 3} style={{ padding: "0 10px 10px 30px" }}>
+                    <td colSpan={feePerPlayer > 0 ? 5 : 4} style={{ padding: "0 10px 10px 30px" }}>
                       {openAnswers[entry.id] === "loading" ? (
                         <span style={{ fontSize: 12, color: "var(--text-muted)" }}>…</span>
                       ) : (openAnswers[entry.id] as SoloAnswer[]).length === 0 ? (
@@ -353,6 +379,15 @@ export function DrawPanel({
                 <div key={entry.id} style={{ display: "flex", gap: 12, alignItems: "center", fontSize: 13, color: "var(--text-muted)" }}>
                   <span style={{ fontWeight: 600 }}>{entry.player.name}</span>
                   <span className="level-badge" data-level={getLevelTier(entry.level)} style={{ opacity: 0.7 }}>{entry.level}</span>
+                  <button
+                    type="button"
+                    className="ghost"
+                    onClick={() => toggleWaitlisted(entry)}
+                    disabled={paymentPending === entry.id}
+                    style={{ fontSize: 11, padding: "2px 10px", marginLeft: "auto", color: "var(--teal)", borderColor: "var(--teal)" }}
+                  >
+                    {t("mark_in")}
+                  </button>
                 </div>
               ))}
             </div>

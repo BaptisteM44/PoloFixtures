@@ -2582,7 +2582,11 @@
     "waitlist_title": "Warteliste ({count})",
     "formed_teams_title": "Gebildete Teams ({count})",
     "no_player": "Kein Spieler",
-    "view_registration_answers": "Antworten des Anmeldeformulars ansehen"
+    "view_registration_answers": "Antworten des Anmeldeformulars ansehen",
+    "col_status": "Auswahl",
+    "mark_out": "Entfernen",
+    "mark_out_hint": "Auf die Warteliste setzen (vom Auslosen ausgeschlossen)",
+    "mark_in": "Zurückholen"
   },
   "co_orga": {
     "title": "Co-Organisatoren",

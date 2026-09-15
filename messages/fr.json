@@ -2578,7 +2578,11 @@
     "waitlist_title": "Liste d'attente ({count})",
     "formed_teams_title": "Équipes formées ({count})",
     "no_player": "Aucun·e joueur·euse",
-    "view_registration_answers": "Voir les réponses au questionnaire"
+    "view_registration_answers": "Voir les réponses au questionnaire",
+    "col_status": "Sélection",
+    "mark_out": "Retirer",
+    "mark_out_hint": "Basculer en liste d'attente (exclu du tirage)",
+    "mark_in": "Repêcher"
   },
   "co_orga": {
     "title": "Co-organisateur.trices",
