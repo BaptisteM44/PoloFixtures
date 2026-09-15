@@ -8443,6 +8443,15 @@ details[open] .my-tournaments__section-title--summary::after {
   line-height: 1;
   letter-spacing: -2px;
   transition: color 0.4s;
+  font-variant-numeric: tabular-nums;
+}
+/* Centièmes dans la dernière minute : plus petits, comme un chrono sportif. */
+.ref-clock-centis {
+  font-size: 0.5em;
+  font-weight: 800;
+  letter-spacing: -1px;
+  vertical-align: baseline;
+  margin-left: 2px;
 }
 .ref-overtime {
   font-size: 13px;

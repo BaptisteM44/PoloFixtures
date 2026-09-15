@@ -80,11 +80,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
   let status = match.status;
   let winnerTeamId = match.winnerTeamId;
   let goldenGoal = match.goldenGoal;
-  // Les buts sont écrits ATOMIQUEMENT via increment (voir plus bas). L'update
-  // final ne doit alors PAS réécrire scoreA/scoreB : sinon il remet les valeurs
-  // lues en début de requête (périmées) et écrase les buts d'une saisie
-  // concurrente sur l'autre équipe — d'où des scores faux type « 2-2 → 3-0 ».
-  let scoreTouchedAtomically = false;
+  // Le score en base est TOUJOURS autoritaire : il n'est modifié que via les
+  // increments atomiques des buts (GOAL/GOLDEN_GOAL, plus bas). L'update final
+  // ne réécrit donc JAMAIS scoreA/scoreB — sinon un event non-score (START,
+  // PAUSE, PENALTY…) traité en même temps qu'un but remettrait les valeurs
+  // lues en début de requête (périmées) et effacerait ce but. C'était le cas
+  // du START relancé juste après un but dans les 2 dernières minutes : le +1
+  // apparaissait sur le joueur (event créé) mais le score revenait à 0.
 
   // GOAL et GOLDEN_GOAL utilisent un increment atomique en base pour éviter
   // qu'un but soit perdu si deux requêtes lisent le score au même instant
@@ -100,7 +102,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
       } else {
         scoreA = locked.scoreA;
       }
-      scoreTouchedAtomically = true;
     }
     if (parsed.data.teamId === match.teamBId) {
       const locked = await prisma.match.update({ where: { id: match.id }, data: { scoreB: { increment: delta } }, select: { scoreB: true } });
@@ -110,7 +111,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
       } else {
         scoreB = locked.scoreB;
       }
-      scoreTouchedAtomically = true;
     }
   }
 
@@ -120,13 +120,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
       const locked = await prisma.match.update({ where: { id: match.id }, data: { scoreA: { increment: 1 } }, select: { scoreA: true } });
       scoreA = locked.scoreA;
       winnerTeamId = match.teamAId;
-      scoreTouchedAtomically = true;
     }
     if (parsed.data.teamId === match.teamBId) {
       const locked = await prisma.match.update({ where: { id: match.id }, data: { scoreB: { increment: 1 } }, select: { scoreB: true } });
       scoreB = locked.scoreB;
       winnerTeamId = match.teamBId;
-      scoreTouchedAtomically = true;
     }
     status = "FINISHED";
     goldenGoal = true;
@@ -171,15 +169,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
   });
 
-  // On n'inclut scoreA/scoreB dans l'update QUE s'ils n'ont pas déjà été gérés
-  // atomiquement (GOAL/GOLDEN_GOAL) — évite d'écraser une saisie concurrente.
+  // scoreA/scoreB volontairement ABSENTS : la base est autoritaire pour le
+  // score (increments atomiques des buts). On ne met à jour ici que l'état
+  // du match (statut, vainqueur, golden goal).
   const updated = await prisma.match.update({
     where: { id: match.id },
     data: {
       status,
       winnerTeamId,
       goldenGoal,
-      ...(scoreTouchedAtomically ? {} : { scoreA, scoreB }),
     },
   });
 

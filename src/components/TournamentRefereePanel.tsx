@@ -141,6 +141,10 @@ export function TournamentRefereePanel({
   useEffect(() => { selectedMatchIdRef.current = selectedMatchId; }, [selectedMatchId]);
   const [clockSec, setClockSec] = useState(0);
   const [running, setRunning] = useState(false);
+  // Horloge temps-réel du dernier tick de clockSec (pour interpoler les
+  // centièmes affichés dans la dernière minute) + tick rapide de re-render.
+  const lastTickMsRef = useRef<number>(Date.now());
+  const [, setSubTick] = useState(0);
   const [buzzerPlayed, setBuzzerPlayed] = useState(false);
   const [muted, setMuted] = useState(false);
   const [matchEnded, setMatchEnded] = useState(false);
@@ -244,6 +248,22 @@ export function TournamentRefereePanel({
   const displaySec = Math.max(0, gameDurSec - clockSec);
   // Dernières 2 minutes : le chrono doit se stopper automatiquement sur but/timeout
   const isLastTwoMinutes = clockSec >= gameDurSec - 120 && clockSec < gameDurSec;
+  // Dernière minute : on affiche en plus les centièmes de seconde (SS:CC).
+  const isLastMinute = displaySec <= 60 && displaySec > 0;
+
+  // Affichage du chrono. Hors dernière minute : "MM:SS". Dans la dernière
+  // minute : grandes secondes + petits centièmes (façon chrono sportif),
+  // pour lever toute ambiguïté avec un format MM:SS.
+  const mainClockText = isLastMinute
+    ? String(displaySec % 60).padStart(2, "0")
+    : `${String(Math.floor(displaySec / 60)).padStart(2, "0")}:${String(displaySec % 60).padStart(2, "0")}`;
+  // Centièmes interpolés depuis le dernier tick seconde (99 → 0), bornés.
+  const centis = (() => {
+    if (!isLastMinute) return null;
+    const sinceTick = running ? Math.min(999, Date.now() - lastTickMsRef.current) : 0;
+    const cc = Math.floor((999 - sinceTick) / 10);
+    return String(Math.max(0, Math.min(99, cc))).padStart(2, "0");
+  })();
 
   // Sync état à chaque changement de match sélectionné
   useEffect(() => {
@@ -284,12 +304,26 @@ export function TournamentRefereePanel({
     setRefSaving(false);
   }, [selectedMatchId]);
 
-  // Timer principal
+  // Timer principal (secondes entières — pilote toute la logique existante)
   useEffect(() => {
     if (!running) return;
-    const interval = setInterval(() => setClockSec((prev) => prev + 1), 1000);
+    lastTickMsRef.current = Date.now();
+    const interval = setInterval(() => {
+      lastTickMsRef.current = Date.now();
+      setClockSec((prev) => prev + 1);
+    }, 1000);
     return () => clearInterval(interval);
   }, [running]);
+
+  // Tick rapide pour l'affichage des centièmes dans la DERNIÈRE MINUTE
+  // uniquement : on force un re-render ~toutes les 60ms pour interpoler les
+  // millisecondes écoulées depuis le dernier tick seconde. Hors dernière
+  // minute, ce tick ne tourne pas (aucun coût).
+  useEffect(() => {
+    if (!running || !isLastMinute) return;
+    const interval = setInterval(() => setSubTick((n) => n + 1), 60);
+    return () => clearInterval(interval);
+  }, [running, isLastMinute]);
 
   // Refs pour accéder aux valeurs courantes dans les callbacks sans stale closure
   const isLastTwoMinutesRef = useRef(false);
@@ -891,7 +925,10 @@ export function TournamentRefereePanel({
 
           {/* ── Clock ──────────────────────────────────────────────────── */}
           <div className="ref-clock-section">
-            <div className="ref-clock" style={{ color: clockColor }}>{fmtClock(displaySec)}</div>
+            <div className="ref-clock" style={{ color: clockColor }}>
+              {mainClockText}
+              {centis !== null && <span className="ref-clock-centis">.{centis}</span>}
+            </div>
             {clockSec > 0 && displaySec === 0 && (
               <div className="ref-overtime">{t("overtime")}</div>
             )}
