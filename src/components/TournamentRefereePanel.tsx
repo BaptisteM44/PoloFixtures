@@ -198,6 +198,11 @@ export function TournamentRefereePanel({
   // peuvent être exclus en même temps ; le chrono du match NE s'arrête pas (le
   // jeu continue à effectif réduit). playerId → secondes restantes.
   const [exclusions, setExclusions] = useState<Map<string, number>>(new Map());
+  // Compteur de fautes OPTIMISTE (playerId → nb) incrémenté synchroniquement à
+  // chaque clic, avant le retour serveur. Sert à déclencher l'exclusion 30s à
+  // la 3e faute de façon fiable même si l'arbitre clique vite (le compteur
+  // dérivé des events serveur, lui, arrive avec un temps de retard).
+  const optimisticPenaltiesRef = useRef<Map<string, number>>(new Map());
 
   // Referee assignment
   const [localRefereeId, setLocalRefereeId] = useState<string>("");
@@ -333,11 +338,14 @@ export function TournamentRefereePanel({
   const matchEndedRef = useRef(matchEnded);
   useEffect(() => { matchEndedRef.current = matchEnded; }, [matchEnded]);
 
-  // Décompte des exclusions 30s : un seul interval décrémente tous les joueurs
-  // exclus, retire ceux arrivés à 0. Indépendant du chrono du match (le jeu
-  // continue). Ne tourne que s'il y a au moins une exclusion active.
+  // Décompte des exclusions 30s. Deux règles :
+  //  - SUSPENDU quand le chrono du match est en pause (arrêt de jeu : timeout,
+  //    but/faute dans les 2 dernières min…) — le joueur ne purge pas pendant un
+  //    arrêt. L'interval ne tourne donc que si `running`.
+  //  - Dépend de `running` (pas de exclusions.size) : ajouter une 2e exclusion
+  //    ne réinitialise plus le tick de celle en cours (plus de ~1s perdue).
   useEffect(() => {
-    if (exclusions.size === 0) return;
+    if (!running) return;
     const interval = setInterval(() => {
       setExclusions((prev) => {
         if (prev.size === 0) return prev;
@@ -349,7 +357,7 @@ export function TournamentRefereePanel({
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [exclusions.size]);
+  }, [running]);
 
   // Timer timeout (overlay). À la fin du décompte on NE redémarre PLUS le chrono
   // automatiquement : l'arbitre relance lui-même quand tout le monde est prêt
@@ -479,14 +487,15 @@ export function TournamentRefereePanel({
     setTimeout(() => setPenaltyModal(null), 0);
     const playerName = tournament.teams.flatMap((t) => t.players).find((p) => p.id === playerId)?.name;
     postEvent("PENALTY", { teamId, playerId, ...(playerName ? { playerName } : {}), delta });
-    if (delta > 0) {
-      const newCount = (penaltyCounts.get(playerId) ?? 0) + 1;
-      // 3e faute (ou multiple : 6e, 9e…) → exclusion 30s automatique.
-      if (newCount > 0 && newCount % 3 === 0) startExclusion(playerId);
-    } else {
-      // Annulation d'une faute : on ne lève pas une exclusion en cours (elle a
-      // pu être donnée pour une action dangereuse, indépendamment du compteur).
-    }
+    // Compteur optimiste mis à jour SYNCHRONIQUEMENT (avant le retour serveur) :
+    // fiable même si l'arbitre enchaîne plusieurs fautes rapidement.
+    const prev = optimisticPenaltiesRef.current.get(playerId) ?? 0;
+    const newCount = Math.max(0, prev + delta);
+    optimisticPenaltiesRef.current.set(playerId, newCount);
+    // 3e faute (ou multiple : 6e, 9e…) → exclusion 30s automatique.
+    if (delta > 0 && newCount > 0 && newCount % 3 === 0) startExclusion(playerId);
+    // Annulation d'une faute (delta < 0) : on ne lève pas une exclusion en cours
+    // (elle a pu être donnée pour une action dangereuse, hors compteur).
   };
 
   // 30 SECONDES direct (action dangereuse…) : lance l'exclusion 30s ET compte
@@ -495,6 +504,7 @@ export function TournamentRefereePanel({
     setTimeout(() => setPenaltyModal(null), 0);
     const playerName = tournament.teams.flatMap((t) => t.players).find((p) => p.id === playerId)?.name;
     postEvent("PENALTY", { teamId, playerId, ...(playerName ? { playerName } : {}), delta: 1 });
+    optimisticPenaltiesRef.current.set(playerId, (optimisticPenaltiesRef.current.get(playerId) ?? 0) + 1);
     startExclusion(playerId);
   };
 
@@ -561,6 +571,12 @@ export function TournamentRefereePanel({
     });
     return { penaltyCounts: penalties, timeoutNormal: toNormal, timeoutMech: toMech, goalsByPlayer: goals };
   }, [selectedMatch]);
+
+  // Resynchronise le compteur optimiste sur la vérité serveur dès que les
+  // events (donc penaltyCounts) sont à jour — évite toute dérive à long terme.
+  useEffect(() => {
+    optimisticPenaltiesRef.current = new Map(penaltyCounts);
+  }, [penaltyCounts]);
 
   // Global match number per court (chronological)
   const globalOrder = useMemo(() => {
