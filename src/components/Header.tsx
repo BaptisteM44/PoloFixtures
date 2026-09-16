@@ -8,6 +8,7 @@ import { AuthStatus } from "@/components/AuthStatus";
 import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { DarkModeToggle } from "@/components/DarkModeToggle";
+import { AppBackButton } from "@/components/AppBackButton";
 
 export function Header() {
   const { data: session } = useSession();
@@ -42,6 +43,7 @@ export function Header() {
     )}
     <header className="site-header">
       <div className="brand">
+        <AppBackButton />
         <Link href="/" onClick={() => setMenuOpen(false)}>
           <span className="brand-dot" />
           {t("header.brand_name")}

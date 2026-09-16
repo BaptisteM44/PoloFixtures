@@ -61,7 +61,8 @@
     "reason_prefix": "Motivo: ",
     "close_menu": "Cerrar menú",
     "open_menu": "Abrir menú",
-    "polls": "Encuestas"
+    "polls": "Encuestas",
+    "go_back": "Volver"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -2708,7 +2709,9 @@
     "main_referee": "Árbitro principal",
     "co_referee_phone": "Co-árbitro (teléfono)",
     "not_assigned": "— No asignado —",
-    "saving": "Guardando…"
+    "saving": "Guardando…",
+    "enter_fullscreen": "Pantalla completa",
+    "exit_fullscreen": "Salir de pantalla completa"
   },
   "pool_tables": {
     "overall_standings": "Clasificación general",

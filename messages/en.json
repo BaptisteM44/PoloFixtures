@@ -61,7 +61,8 @@
     "reason_prefix": "Reason: ",
     "close_menu": "Close menu",
     "open_menu": "Open menu",
-    "polls": "Polls"
+    "polls": "Polls",
+    "go_back": "Back"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -2704,7 +2705,9 @@
     "main_referee": "Main referee",
     "co_referee_phone": "Co-referee (phone)",
     "not_assigned": "— Not assigned —",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "enter_fullscreen": "Fullscreen",
+    "exit_fullscreen": "Exit fullscreen"
   },
   "pool_tables": {
     "overall_standings": "Overall standings",

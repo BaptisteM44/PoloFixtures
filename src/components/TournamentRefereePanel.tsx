@@ -198,6 +198,9 @@ export function TournamentRefereePanel({
   // peuvent être exclus en même temps ; le chrono du match NE s'arrête pas (le
   // jeu continue à effectif réduit). playerId → secondes restantes.
   const [exclusions, setExclusions] = useState<Map<string, number>>(new Map());
+  // Mode immersif : masque header/footer du site et occupe tout l'écran, pour
+  // arbitrer sans distraction (l'arbitre a souvent le téléphone en main).
+  const [fullscreen, setFullscreen] = useState(false);
   // Compteur de fautes OPTIMISTE (playerId → nb) incrémenté synchroniquement à
   // chaque clic, avant le retour serveur. Sert à déclencher l'exclusion 30s à
   // la 3e faute de façon fiable même si l'arbitre clique vite (le compteur
@@ -246,7 +249,7 @@ export function TournamentRefereePanel({
   }, [tournament.id]);
 
   // Garder l'écran allumé tant que running
-  useWakeLock(running || !!timeoutTimer);
+  useWakeLock(running || !!timeoutTimer || fullscreen);
 
   const selectedMatch = matchMap.get(selectedMatchId) ?? null;
   const gameDurSec = tournament.gameDurationMin * 60;
@@ -704,7 +707,15 @@ export function TournamentRefereePanel({
   }
 
   return (
-    <div className="ref-page">
+    <div className={`ref-page${fullscreen ? " ref-page--fullscreen" : ""}`}>
+      {/* Mode immersif : masque le chrome du site (header/footer) et empêche le
+          scroll du body pour occuper tout l'écran. */}
+      {fullscreen && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          header.site-header, footer, .site-footer { display: none !important; }
+          body { overflow: hidden !important; }
+        ` }} />
+      )}
       {/* ── Timeout overlay ──────────────────────────────────────────────── */}
       {timeoutTimer && (
         <div className="ref-timeout-overlay">
@@ -862,6 +873,11 @@ export function TournamentRefereePanel({
           <button className="ghost" style={{ fontSize: 12, padding: "4px 10px" }}
             onClick={() => setMuted((v) => !v)} title={muted ? t("buzzer_enable") : t("buzzer_mute")}>
             {muted ? "🔇" : "🔔"}
+          </button>
+          <button className="ghost" style={{ fontSize: 12, padding: "4px 10px" }}
+            onClick={() => setFullscreen((v) => !v)}
+            title={fullscreen ? t("exit_fullscreen") : t("enter_fullscreen")}>
+            {fullscreen ? "🡿" : "⛶"}
           </button>
         </div>
       </div>

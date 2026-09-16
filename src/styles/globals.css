@@ -913,6 +913,32 @@ a {
   margin-right: 8px;
 }
 
+/* Bouton retour — PWA standalone uniquement (AppBackButton). Zone tactile
+   généreuse (44px, seuil Apple HIG) même si l'icône reste discrète. */
+.app-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-right: 4px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition), transform var(--transition);
+}
+.app-back-btn:hover {
+  background: var(--surface-2);
+}
+.app-back-btn:active {
+  transform: scale(0.92);
+}
+
 .tag {
   font-size: 11px;
   color: var(--text-muted);
@@ -8377,6 +8403,30 @@ details[open] .my-tournaments__section-title--summary::after {
   padding: 0 0 120px;
   position: relative;
   min-height: 100vh;
+}
+
+/* Mode immersif : la console occupe tout l'écran, par-dessus le reste, avec
+   son propre scroll. La topbar (sticky) reste en haut → le bouton pour
+   ressortir du plein écran est toujours accessible. */
+.ref-page--fullscreen {
+  position: fixed;
+  inset: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0 0 120px;
+  background: var(--bg);
+  overflow-y: auto;
+  z-index: 100;
+}
+.ref-page--fullscreen .ref-topbar {
+  max-width: 600px;
+  margin: 0 auto;
+}
+/* Le contenu reste borné en largeur (lisibilité) même si le fond est plein. */
+.ref-page--fullscreen > *:not(.ref-topbar):not(style) {
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Top bar */

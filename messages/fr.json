@@ -61,7 +61,8 @@
     "reason_prefix": "Raison : ",
     "close_menu": "Fermer le menu",
     "open_menu": "Ouvrir le menu",
-    "polls": "Sondages"
+    "polls": "Sondages",
+    "go_back": "Retour"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -2685,6 +2686,8 @@
     "back_to_tournament": "← Tournoi",
     "buzzer_enable": "Activer buzzer",
     "buzzer_mute": "Couper buzzer",
+    "enter_fullscreen": "Plein écran",
+    "exit_fullscreen": "Quitter le plein écran",
     "save_error": "Erreur lors de la sauvegarde",
     "bracket_no_draw": "Un match de bracket ne peut pas se terminer sur une égalité. Utilise Golden Goal pour désigner un vainqueur.",
     "phase_pool": "Poule",

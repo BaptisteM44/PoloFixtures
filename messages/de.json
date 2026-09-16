@@ -61,7 +61,8 @@
     "reason_prefix": "Grund: ",
     "close_menu": "Menü schließen",
     "open_menu": "Menü öffnen",
-    "polls": "Umfragen"
+    "polls": "Umfragen",
+    "go_back": "Zurück"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -2709,7 +2710,9 @@
     "main_referee": "Hauptschiedsrichter",
     "co_referee_phone": "Co-Schiedsrichter (Telefon)",
     "not_assigned": "— Nicht zugewiesen —",
-    "saving": "Speichern…"
+    "saving": "Speichern…",
+    "enter_fullscreen": "Vollbild",
+    "exit_fullscreen": "Vollbild beenden"
   },
   "pool_tables": {
     "overall_standings": "Gesamtklassement",
