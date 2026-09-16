@@ -34,6 +34,20 @@ describe("DE — ordre de passage des rounds", () => {
     ]);
   });
 
+  it("LB R1 émis de BAS EN HAUT (positions décroissantes)", () => {
+    // Le 1er round du loser bracket se joue du bas du tableau vers le haut :
+    // l'ordre d'émission des L1-* doit avoir des positionInRound décroissants.
+    const plan = planDE(16, { gfReset: true });
+    const lb1 = plan.matches.filter((m) => m.side === "L" && m.roundIndex === 1);
+    const positions = lb1.map((m) => m.positionInRound);
+    // décroissant strict
+    for (let i = 1; i < positions.length; i++) {
+      expect(positions[i], "LB R1 émis en positions décroissantes").toBeLessThan(positions[i - 1]);
+    }
+    // mais positionInRound reste 0..n-1 (placement visuel inchangé)
+    expect([...positions].sort((a, b) => a - b)).toEqual(lb1.map((_, i) => i));
+  });
+
   it("ordre topologique : aucun match avant ses feeders (4..32 équipes)", () => {
     for (const n of [4, 5, 6, 8, 12, 16, 24, 32]) {
       const plan = planDE(n, { gfReset: true });

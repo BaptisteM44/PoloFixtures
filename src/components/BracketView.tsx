@@ -561,40 +561,26 @@ function DEBracket({ matches, onEdit, selectedId, teamNumberById, crossPool = fa
   const minUpperRound = upper.length > 0 ? Math.min(...upper.map((m) => m.roundIndex)) : 1;
   const maxLowerRound = lower.length > 0 ? Math.max(...lower.map((m) => m.roundIndex)) : 1;
 
+  // Numéro d'ordre de passage (#n) = ordre RÉEL de jeu sur les terrains, piloté
+  // par startAt (calculé par le moteur de.ts + persist-plan : c'est la source de
+  // vérité de l'ordre). On ne re-dérive plus l'ordre depuis roundIndex, ce qui
+  // désynchronisait le numéro affiché du déroulé réel. Départages : startAt, puis
+  // roundIndex, puis positionInRound (stable si des startAt sont égaux ou nuls).
   const matchNumbers = new Map<string, number>();
-  let matchCounter = 1;
   {
-    const upperByRound = new Map<number, MatchWithTeams[]>();
-    const lowerByRound = new Map<number, MatchWithTeams[]>();
-
-    for (const m of upper) {
-      if (!upperByRound.has(m.roundIndex)) upperByRound.set(m.roundIndex, []);
-      upperByRound.get(m.roundIndex)!.push(m);
-    }
-    for (const m of lower) {
-      if (!lowerByRound.has(m.roundIndex)) lowerByRound.set(m.roundIndex, []);
-      lowerByRound.get(m.roundIndex)!.push(m);
-    }
-    for (const arr of [...upperByRound.values(), ...lowerByRound.values()]) {
-      arr.sort((a, b) => (a.positionInRound ?? 0) - (b.positionInRound ?? 0));
-    }
-
-    const numUpper = upperByRound.size > 0 ? Math.max(...upperByRound.keys()) : 0;
-    const numberRound = (section: MatchWithTeams[]) => {
-      for (const m of section) matchNumbers.set(m.id, matchCounter++);
-    };
-
-    numberRound(upperByRound.get(1) ?? []);
-    numberRound(lowerByRound.get(1) ?? []);
-    numberRound(upperByRound.get(2) ?? []);
-    numberRound(lowerByRound.get(2) ?? []);
-    for (let k = 3; k <= numUpper; k += 1) {
-      // MTP Open order: LB consolidation, WB R(k), LB injection
-      numberRound(lowerByRound.get(2 * k - 3) ?? []);
-      numberRound(upperByRound.get(k) ?? []);
-      numberRound(lowerByRound.get(2 * k - 2) ?? []);
-    }
-    for (const m of grand) matchNumbers.set(m.id, matchCounter++);
+    const sideRank: Record<string, number> = { W: 0, L: 0, G: 1, BG: 2 };
+    const ordered = [...upper, ...lower, ...grand].sort((a, b) => {
+      const ta = a.startAt ? new Date(a.startAt).getTime() : Number.MAX_SAFE_INTEGER;
+      const tb = b.startAt ? new Date(b.startAt).getTime() : Number.MAX_SAFE_INTEGER;
+      if (ta !== tb) return ta - tb;
+      const ra = sideRank[a.bracketSide ?? "W"] ?? 0;
+      const rb = sideRank[b.bracketSide ?? "W"] ?? 0;
+      if (ra !== rb) return ra - rb;
+      if ((a.roundIndex ?? 0) !== (b.roundIndex ?? 0)) return (a.roundIndex ?? 0) - (b.roundIndex ?? 0);
+      return (a.positionInRound ?? 0) - (b.positionInRound ?? 0);
+    });
+    let matchCounter = 1;
+    for (const m of ordered) matchNumbers.set(m.id, matchCounter++);
   }
 
   // « Vainqueur #n » / « Perdant #n » sur les slots encore vides — les liens

@@ -61,8 +61,13 @@ export function planDE(teamCount: number, options: DEOptions = {}): BracketPlan 
   }
 
   // ── LB R1 : perdants du WB R1 appariés ──
+  // ÉMISSION DE BAS EN HAUT (i décroissant) : le 1er round du loser bracket se
+  // joue du bas vers le haut du tableau (le perdant du 1er match WB, en haut,
+  // croise vers le bas du LB) — conforme au déroulé réel. On garde positionInRound
+  // = i pour NE PAS déplacer le placement visuel : seul l'ordre de passage
+  // (startAt, dérivé de l'ordre d'émission) change.
   if (k >= 2) {
-    for (let i = 0; i < P / 4; i++) {
+    for (let i = P / 4 - 1; i >= 0; i--) {
       graph.push({
         key: `L1-${i}`,
         side: "L",
