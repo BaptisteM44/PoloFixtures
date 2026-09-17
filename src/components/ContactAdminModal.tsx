@@ -34,7 +34,7 @@ export function ContactAdminModal() {
         setStatus("ok");
       } else {
         const data = await res.json().catch(() => ({}));
-        setErrorMsg(data.error ?? t("error_invalid"));
+        setErrorMsg(data.error === "mailer_unavailable" ? t("error_mailer_unavailable") : (data.error ?? t("error_invalid")));
         setStatus("error");
       }
     } catch {

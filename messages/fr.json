@@ -1220,7 +1220,8 @@
     "success_desc": "L'admin recevra ton message par email.",
     "btn_close": "Fermer",
     "error_rate_limit": "Trop de messages envoyés. Réessayez dans 30 minutes.",
-    "error_invalid": "Données invalides."
+    "error_invalid": "Données invalides.",
+    "error_mailer_unavailable": "Le service d'envoi d'emails est indisponible pour le moment. Réessaie plus tard."
   },
   "footer": {
     "copyright": "Poloperator © {year}",

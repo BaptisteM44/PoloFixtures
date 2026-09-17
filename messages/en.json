@@ -1220,7 +1220,8 @@
     "success_desc": "The admin will receive your message by email.",
     "btn_close": "Close",
     "error_rate_limit": "Too many messages sent. Please try again in 30 minutes.",
-    "error_invalid": "Invalid data."
+    "error_invalid": "Invalid data.",
+    "error_mailer_unavailable": "The email service is currently unavailable. Please try again later."
   },
   "footer": {
     "copyright": "Poloperator © {year}",

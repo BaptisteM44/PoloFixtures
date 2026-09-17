@@ -1225,7 +1225,8 @@
     "success_desc": "Der Admin wird deine Nachricht per E-Mail erhalten.",
     "btn_close": "Schließen",
     "error_rate_limit": "Zu viele Nachrichten gesendet. Bitte in 30 Minuten erneut versuchen.",
-    "error_invalid": "Ungültige Daten."
+    "error_invalid": "Ungültige Daten.",
+    "error_mailer_unavailable": "Der E-Mail-Dienst ist derzeit nicht verfügbar. Bitte später erneut versuchen."
   },
   "footer": {
     "copyright": "Poloperator © {year}",

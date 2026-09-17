@@ -1,5 +1,5 @@
 import { isRateLimited, getIp } from "@/lib/rate-limit";
-import { sendMail } from "@/lib/mailer";
+import { sendMail, isMailerConfigured } from "@/lib/mailer";
 import { z } from "zod";
 
 const schema = z.object({
@@ -30,23 +30,34 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   }
 
-  await sendMail({
-    to: adminEmail,
-    subject: `[Poloperator] Contact : ${subject}`,
-    html: `
-      <div style="font-family: sans-serif; max-width: 600px;">
-        <h2 style="color: #0d9488;">Message via Poloperator</h2>
-        <table style="width:100%; border-collapse:collapse;">
-          <tr><td style="padding:6px 0; font-weight:700; width:100px;">De</td><td>${name} &lt;${email}&gt;</td></tr>
-          <tr><td style="padding:6px 0; font-weight:700;">Sujet</td><td>${subject}</td></tr>
-        </table>
-        <hr style="margin:16px 0; border:none; border-top:1px solid #e5e7eb;"/>
-        <p style="white-space:pre-wrap; line-height:1.6;">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
-        <hr style="margin:16px 0; border:none; border-top:1px solid #e5e7eb;"/>
-        <p style="font-size:12px; color:#6b7280;">Envoyé depuis poloperator.com</p>
-      </div>
-    `,
-  });
+  // Service email indisponible : erreur explicite plutôt qu'un faux succès
+  // (avant : sendMail() lançait silencieusement une exception non catchée,
+  // remontant en 500 générique sans message compréhensible côté formulaire).
+  if (!isMailerConfigured()) {
+    return Response.json({ error: "mailer_unavailable" }, { status: 503 });
+  }
+
+  try {
+    await sendMail({
+      to: adminEmail,
+      subject: `[Poloperator] Contact : ${subject}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px;">
+          <h2 style="color: #0d9488;">Message via Poloperator</h2>
+          <table style="width:100%; border-collapse:collapse;">
+            <tr><td style="padding:6px 0; font-weight:700; width:100px;">De</td><td>${name} &lt;${email}&gt;</td></tr>
+            <tr><td style="padding:6px 0; font-weight:700;">Sujet</td><td>${subject}</td></tr>
+          </table>
+          <hr style="margin:16px 0; border:none; border-top:1px solid #e5e7eb;"/>
+          <p style="white-space:pre-wrap; line-height:1.6;">${message.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+          <hr style="margin:16px 0; border:none; border-top:1px solid #e5e7eb;"/>
+          <p style="font-size:12px; color:#6b7280;">Envoyé depuis poloperator.com</p>
+        </div>
+      `,
+    });
+  } catch {
+    return Response.json({ error: "mailer_unavailable" }, { status: 503 });
+  }
 
   return Response.json({ ok: true });
 }

@@ -1224,7 +1224,8 @@
     "success_desc": "El admin recibirá tu mensaje por email.",
     "btn_close": "Cerrar",
     "error_rate_limit": "Demasiados mensajes enviados. Inténtalo de nuevo en 30 minutos.",
-    "error_invalid": "Datos inválidos."
+    "error_invalid": "Datos inválidos.",
+    "error_mailer_unavailable": "El servicio de correo no está disponible por el momento. Inténtalo más tarde."
   },
   "footer": {
     "copyright": "Poloperator © {year}",
