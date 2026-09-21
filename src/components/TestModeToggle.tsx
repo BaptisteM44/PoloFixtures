@@ -32,11 +32,14 @@ export function TestModeToggle({ tournamentId, initialTestMode, initialHidden }:
   };
 
   const handleTestModeToggle = () => {
+    // testMode et hidden sont deux réglages indépendants : testMode masque
+    // seulement le déroulé/les matchs pour le public (la page du tournoi
+    // reste listée et accessible) ; hidden le rend complètement invisible.
+    // On ne force plus hidden automatiquement à l'activation du mode test —
+    // l'orga coche "Invisible" séparément s'il veut aussi le masquer partout.
     const newTestMode = !testMode;
-    const newHidden = newTestMode ? true : false;
     setTestMode(newTestMode);
-    setHidden(newHidden);
-    patch({ testMode: newTestMode, hidden: newHidden });
+    patch({ testMode: newTestMode });
   };
 
   const handleHiddenToggle = () => {
@@ -61,23 +64,25 @@ export function TestModeToggle({ tournamentId, initialTestMode, initialHidden }:
         </div>
         {pending && <span style={{ fontSize: 12, color: "var(--text-muted)" }}>…</span>}
       </label>
-      {testMode && (
-        <div style={{ borderTop: "1px solid var(--border)", padding: "10px 16px 10px 44px", background: "var(--bg-secondary)" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", margin: 0 }}>
-            <input
-              type="checkbox"
-              checked={hidden}
-              onChange={handleHiddenToggle}
-              disabled={pending}
-              style={{ width: 16, height: 16, cursor: pending ? "not-allowed" : "pointer", flexShrink: 0 }}
-            />
-            <div>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>👁 {t("field_hidden")}</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("field_hidden_desc")}</div>
-            </div>
-          </label>
-        </div>
-      )}
+      {/* Réglage indépendant de testMode : un tournoi normal peut aussi être
+          rendu invisible (ex: pas encore prêt à annoncer), et un tournoi de
+          test peut rester listé publiquement (déroulé/matchs masqués, mais
+          page accessible) si l'orga ne coche pas celui-ci. */}
+      <div style={{ borderTop: "1px solid var(--border)", padding: "10px 16px 10px 44px", background: "var(--bg-secondary)" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", margin: 0 }}>
+          <input
+            type="checkbox"
+            checked={hidden}
+            onChange={handleHiddenToggle}
+            disabled={pending}
+            style={{ width: 16, height: 16, cursor: pending ? "not-allowed" : "pointer", flexShrink: 0 }}
+          />
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>👁 {t("field_hidden")}</div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{t("field_hidden_desc")}</div>
+          </div>
+        </label>
+      </div>
     </div>
   );
 }

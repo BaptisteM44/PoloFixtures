@@ -145,6 +145,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                           hand={p.hand}
                           gender={p.gender ?? undefined}
                           metalBorder={place === "first" ? "gold" : place === "second" ? "silver" : "bronze"}
+                          disableScrollTilt
                         />
                       </Link>
                     </div>
@@ -358,6 +359,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                       gender={p.gender ?? undefined}
                       showGender={p.showGender}
                       metalBorder="gold"
+                      disableScrollTilt
                     />
                   </Link>
                 </div>

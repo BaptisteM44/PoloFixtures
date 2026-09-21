@@ -31,6 +31,14 @@ export type PokemonCardProps = {
   holoFull?: "glitter" | "iris" | "constellation" | "chromatic" | "plasma" | "sequin" | "aurora";
   cardFx?: "foil" | "glow" | "glow-champ" | "scanlines";
   children?: React.ReactNode;
+  /**
+   * Désactive le tilt automatique au scroll (mobile). Pensé pour une carte
+   * plein format isolée (profil) ; sur des miniatures groupées (podium,
+   * grilles) chaque carte a son propre listener de scroll qui recalcule un
+   * tilt indépendant selon sa position à l'écran — combiné au scale() CSS
+   * du conteneur qui ne bouge pas, ça donne une impression de sautillement.
+   */
+  disableScrollTilt?: boolean;
 };
 
 /** Scale name font-size to always fit on one line regardless of length */
@@ -49,7 +57,7 @@ function getCountryCode(name: string): string | null {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const PokemonCard = forwardRef<HTMLDivElement, PokemonCardProps>(function PokemonCard({ name, country, city, photoPath, clubLogoPath, clubName, teamLogoPath, badges = [], pinnedBadges, startYear, hand: _hand, gender: _gender, showGender: _showGender, theme = "default", variant = "classic", metalBorder, holoVariant, holoFull, cardFx, children }, externalRef) {
+export const PokemonCard = forwardRef<HTMLDivElement, PokemonCardProps>(function PokemonCard({ name, country, city, photoPath, clubLogoPath, clubName, teamLogoPath, badges = [], pinnedBadges, startYear, hand: _hand, gender: _gender, showGender: _showGender, theme = "default", variant = "classic", metalBorder, holoVariant, holoFull, cardFx, children, disableScrollTilt = false }, externalRef) {
   const cardRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(externalRef, () => cardRef.current!, []);
   const [cardStyle, setCardStyle] = useState<React.CSSProperties>({});
@@ -60,6 +68,7 @@ export const PokemonCard = forwardRef<HTMLDivElement, PokemonCardProps>(function
 
   // Mobile scroll tilt
   useEffect(() => {
+    if (disableScrollTilt) return;
     const isMobile = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
     if (!isMobile) return;
     const el = cardRef.current;
