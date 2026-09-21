@@ -33,6 +33,8 @@ export async function persistBracketPlan(
     const g = `${m.side}${m.roundIndex}`;
     groupSizes.set(g, (groupSizes.get(g) ?? 0) + 1);
   }
+  // Fin planifiée de chaque match déjà posé (pour le garde-fou de repos ci-dessous).
+  const endByKey = new Map<string, number>();
 
   let roundStart = new Date(startAt);
   let prevGroup = "";
@@ -49,11 +51,32 @@ export async function persistBracketPlan(
       prevGroup = group;
       indexInRound = 0;
       roundSize = groupSizes.get(group) ?? 1;
+
+      // Garde-fou anti-enchaînement : si ce nouveau round démarre alors qu'un
+      // de ses feeders directs (loserOf/winnerOf) n'a pas encore fini à cet
+      // instant (beaucoup de terrains → les rounds se touchent), on repousse
+      // tout le round d'un créneau. Sans ça, une équipe qui vient de perdre
+      // pouvait enchaîner deux matchs sans repos. On ne regarde que les
+      // matchs du round entrant (feeders déjà posés, donc dans endByKey).
+      const roundMatches = plan.matches.filter((mm) => `${mm.side}${mm.roundIndex}` === group);
+      let latestFeederEnd = -Infinity;
+      for (const rm of roundMatches) {
+        for (const slot of [rm.slotA, rm.slotB]) {
+          if (slot && (slot.type === "winnerOf" || slot.type === "loserOf")) {
+            const feederEnd = endByKey.get(slot.key);
+            if (feederEnd !== undefined && feederEnd > latestFeederEnd) latestFeederEnd = feederEnd;
+          }
+        }
+      }
+      if (latestFeederEnd >= roundStart.getTime()) {
+        roundStart = new Date(roundStart.getTime() + slotMin * 60_000);
+      }
     }
 
     const courtIdx = indexInRound % courts;
     const matchStart = new Date(roundStart.getTime() + Math.floor(indexInRound / courts) * slotMin * 60_000);
     indexInRound++;
+    endByKey.set(m.key, matchStart.getTime() + slotMin * 60_000);
 
     const created = await tx.match.create({
       data: {

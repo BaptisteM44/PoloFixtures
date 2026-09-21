@@ -61,13 +61,14 @@ export function planDE(teamCount: number, options: DEOptions = {}): BracketPlan 
   }
 
   // ── LB R1 : perdants du WB R1 appariés ──
-  // ÉMISSION DE BAS EN HAUT (i décroissant) : le 1er round du loser bracket se
-  // joue du bas vers le haut du tableau (le perdant du 1er match WB, en haut,
-  // croise vers le bas du LB) — conforme au déroulé réel. On garde positionInRound
-  // = i pour NE PAS déplacer le placement visuel : seul l'ordre de passage
-  // (startAt, dérivé de l'ordre d'émission) change.
+  // ÉMISSION CROISSANTE (i croissant, = positionInRound croissant) : L1-i dépend
+  // de W1-2i et W1-2i+1, donc i croît avec l'instant où ses feeders terminent.
+  // Émettre dans cet ordre place chaque match LB1 juste après que SES feeders
+  // (et non ceux d'un autre match) aient fini — priorité au repos : une équipe
+  // qui vient de perdre en WB R1 ne doit jamais enchaîner sans repos. Le
+  // placement visuel (positionInRound) est inchangé.
   if (k >= 2) {
-    for (let i = P / 4 - 1; i >= 0; i--) {
+    for (let i = 0; i < P / 4; i++) {
       graph.push({
         key: `L1-${i}`,
         side: "L",
@@ -92,15 +93,26 @@ export function planDE(teamCount: number, options: DEOptions = {}): BracketPlan 
       });
     }
     // ── LB R2 : injection des perdants WB R2 ──
-    for (let i = 0; i < P / 4; i++) {
-      graph.push({
-        key: `L2-${i}`,
-        side: "L",
-        roundIndex: 2,
-        positionInRound: i,
-        slotA: { type: "winnerOf", key: `L1-${i}` },
-        slotB: { type: "loserOf", key: `W2-${injectionPerm(i, P / 4, 2)}` },
-      });
+    // ÉMISSION PAR FEEDER CROISSANT : injectionPerm(i) peut monter ou descendre
+    // selon la parité du round WB, donc on n'émet pas par i mais en TRIANT les
+    // positions par l'index du match WB qui les alimente. Ainsi le match L2-i
+    // dont le feeder WB a fini le plus TÔT est toujours émis en premier, et celui
+    // dont le feeder a fini le plus TARD est émis en dernier — jamais 0 minute
+    // de repos pour l'équipe qui vient de perdre. positionInRound reste i
+    // (visuel inchangé) : seul l'ORDRE D'ÉMISSION est trié par feeder.
+    {
+      const positions = Array.from({ length: P / 4 }, (_, i) => i);
+      positions.sort((a, b) => injectionPerm(a, P / 4, 2) - injectionPerm(b, P / 4, 2));
+      for (const i of positions) {
+        graph.push({
+          key: `L2-${i}`,
+          side: "L",
+          roundIndex: 2,
+          positionInRound: i,
+          slotA: { type: "winnerOf", key: `L1-${i}` },
+          slotB: { type: "loserOf", key: `W2-${injectionPerm(i, P / 4, 2)}` },
+        });
+      }
     }
   }
 
@@ -138,16 +150,25 @@ export function planDE(teamCount: number, options: DEOptions = {}): BracketPlan 
       });
     }
 
-    // Injection LB R(2j-2) : consolidés vs perdants WB Rj
-    for (let i = 0; i < count; i++) {
-      graph.push({
-        key: `L${2 * j - 2}-${i}`,
-        side: "L",
-        roundIndex: 2 * j - 2,
-        positionInRound: i,
-        slotA: { type: "winnerOf", key: `L${2 * j - 3}-${i}` },
-        slotB: { type: "loserOf", key: `W${j}-${injectionPerm(i, count, j)}` },
-      });
+    // Injection LB R(2j-2) : consolidés vs perdants WB Rj.
+    // ÉMISSION PAR FEEDER CROISSANT (même principe que LB R2) : on trie les
+    // positions par l'index du match WB Rj qui les alimente, pour que le match
+    // dont le feeder a fini le plus tôt soit joué en premier — jamais 0 minute
+    // de repos pour l'équipe qui vient de perdre. positionInRound reste i
+    // (visuel inchangé).
+    {
+      const positions = Array.from({ length: count }, (_, i) => i);
+      positions.sort((a, b) => injectionPerm(a, count, j) - injectionPerm(b, count, j));
+      for (const i of positions) {
+        graph.push({
+          key: `L${2 * j - 2}-${i}`,
+          side: "L",
+          roundIndex: 2 * j - 2,
+          positionInRound: i,
+          slotA: { type: "winnerOf", key: `L${2 * j - 3}-${i}` },
+          slotB: { type: "loserOf", key: `W${j}-${injectionPerm(i, count, j)}` },
+        });
+      }
     }
   }
 

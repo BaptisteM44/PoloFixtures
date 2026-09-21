@@ -34,18 +34,42 @@ describe("DE — ordre de passage des rounds", () => {
     ]);
   });
 
-  it("LB R1 émis de BAS EN HAUT (positions décroissantes)", () => {
-    // Le 1er round du loser bracket se joue du bas du tableau vers le haut :
-    // l'ordre d'émission des L1-* doit avoir des positionInRound décroissants.
-    const plan = planDE(16, { gfReset: true });
-    const lb1 = plan.matches.filter((m) => m.side === "L" && m.roundIndex === 1);
-    const positions = lb1.map((m) => m.positionInRound);
-    // décroissant strict
-    for (let i = 1; i < positions.length; i++) {
-      expect(positions[i], "LB R1 émis en positions décroissantes").toBeLessThan(positions[i - 1]);
+  it("un round LB « injection » est émis dans l'ordre de ses feeders WB (pas par positionInRound)", () => {
+    // Pour chaque round LB qui reçoit un perdant frais du WB (L1, L2, L(2j-2)),
+    // l'ordre d'ÉMISSION doit suivre l'instant où le feeder WB correspondant
+    // termine — jamais l'inverse, sinon le match qui dépend du DERNIER match WB
+    // joué se retrouve programmé en tête du round suivant → 0 repos pour
+    // l'équipe qui vient de perdre. Le placement visuel (positionInRound) doit
+    // rester intact : on vérifie juste que la SÉQUENCE D'ÉMISSION est cohérente
+    // avec le graphe de dépendances (voir aussi le test de repos ci-dessous).
+    for (const n of [8, 16, 32]) {
+      const plan = planDE(n, { gfReset: true });
+      const posInPlan = new Map(plan.matches.map((m, i) => [m.key, i]));
+      const lbInjectionRounds = new Set(
+        plan.matches.filter((m) => m.side === "L").map((m) => m.roundIndex)
+      );
+      for (const round of lbInjectionRounds) {
+        const roundMatches = plan.matches.filter((m) => m.side === "L" && m.roundIndex === round);
+        // Récupère, pour chaque match du round, la position d'émission de son
+        // feeder loserOf (WB) s'il existe.
+        const withFeeder = roundMatches
+          .map((m) => {
+            const feederSlot = [m.slotA, m.slotB].find((s) => s.type === "loserOf");
+            return feederSlot ? { m, feederPos: posInPlan.get((feederSlot as { key: string }).key)! } : null;
+          })
+          .filter((x): x is { m: (typeof roundMatches)[number]; feederPos: number } => x !== null);
+        if (withFeeder.length < 2) continue;
+        // Trié par position d'émission du match lui-même, le feederPos doit
+        // être croissant (on joue d'abord celui dont le feeder a fini le plus tôt).
+        const sortedByEmission = [...withFeeder].sort((a, b) => posInPlan.get(a.m.key)! - posInPlan.get(b.m.key)!);
+        for (let i = 1; i < sortedByEmission.length; i++) {
+          expect(
+            sortedByEmission[i].feederPos,
+            `${n}éq round L${round}: émission incohérente avec l'ordre des feeders WB`
+          ).toBeGreaterThanOrEqual(sortedByEmission[i - 1].feederPos);
+        }
+      }
     }
-    // mais positionInRound reste 0..n-1 (placement visuel inchangé)
-    expect([...positions].sort((a, b) => a - b)).toEqual(lb1.map((_, i) => i));
   });
 
   it("ordre topologique : aucun match avant ses feeders (4..32 équipes)", () => {
