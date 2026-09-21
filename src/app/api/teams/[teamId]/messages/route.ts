@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { createNotification } from "@/lib/notify";
 
 /** Check whether the authenticated player belongs to this team */
 async function isMember(playerId: string, teamId: string) {
@@ -56,6 +57,27 @@ export async function POST(
     data: { teamId: params.teamId, authorId: playerId, content },
     include: { author: { select: { id: true, name: true, photoPath: true } } },
   });
+
+  // Notifie les autres membres de l'équipe (in-app + push) — pas l'auteur.
+  // Équipe = petit groupe (quelques joueurs), contrairement au chat tournoi
+  // (broadcast à tous) qui ne notifie personne pour éviter le bruit.
+  const team = await prisma.team.findUnique({
+    where: { id: params.teamId },
+    select: {
+      name: true,
+      players: { where: { playerId: { not: playerId } }, select: { playerId: true } },
+    },
+  });
+  if (team) {
+    for (const tp of team.players) {
+      createNotification(tp.playerId, "TEAM_MESSAGE_RECEIVED", {
+        teamId: params.teamId,
+        teamName: team.name,
+        senderName: message.author.name,
+        preview: content.slice(0, 80),
+      }).catch(() => {});
+    }
+  }
 
   return NextResponse.json(message, { status: 201 });
 }
