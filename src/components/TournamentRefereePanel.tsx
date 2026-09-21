@@ -148,6 +148,12 @@ export function TournamentRefereePanel({
   const [buzzerPlayed, setBuzzerPlayed] = useState(false);
   const [muted, setMuted] = useState(false);
   const [matchEnded, setMatchEnded] = useState(false);
+  // Distingue une pause AUTOMATIQUE (déclenchée par le clic "+1 but" dans les
+  // 2 dernières minutes, le temps de choisir le buteur) d'une pause MANUELLE de
+  // l'arbitre. Seule la première doit relancer le chrono à la confirmation du
+  // but — sinon confirmer un but pendant une pause manuelle relançait le chrono
+  // tout seul, ce que l'arbitre n'avait jamais demandé.
+  const [autoPausedForGoal, setAutoPausedForGoal] = useState(false);
 
   // Édition / correction d'un match terminé
   const [editMode, setEditMode] = useState(false);
@@ -445,8 +451,9 @@ export function TournamentRefereePanel({
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const onStart = () => { setRunning(true); postEvent("START"); };
-  // Pause locale uniquement — le match reste LIVE côté serveur
-  const onPause = () => { setRunning(false); postEvent("PAUSE"); };
+  // Pause locale uniquement — le match reste LIVE côté serveur. Pause MANUELLE
+  // explicite : jamais relancée automatiquement par la confirmation d'un but.
+  const onPause = () => { setRunning(false); setAutoPausedForGoal(false); postEvent("PAUSE"); };
   const onReset = () => {
     if (!window.confirm(t("confirm_reset_timer"))) return;
     setClockSec(0);
@@ -470,8 +477,12 @@ export function TournamentRefereePanel({
     });
     const playerName = playerId ? tournament.teams.flatMap((t) => t.players).find((p) => p.id === playerId)?.name : undefined;
     postEvent("GOAL", { teamId, delta, ...(playerId ? { playerId, ...(playerName ? { playerName } : {}) } : {}) });
-    // Dernières 2 min : le chrono était pausé pour l'attribution du buteur → on le redémarre
-    if (isLastTwoMinutes && delta > 0) {
+    // On ne redémarre le chrono QUE si CETTE confirmation a été précédée de la
+    // pause automatique "attribution du buteur" — jamais si l'arbitre avait déjà
+    // mis pause manuellement avant de cliquer sur le but (sinon un but confirmé
+    // pendant une pause manuelle relançait le chrono tout seul).
+    if (autoPausedForGoal && delta > 0) {
+      setAutoPausedForGoal(false);
       setRunning(true);
       postEvent("START");
     }
@@ -762,7 +773,12 @@ export function TournamentRefereePanel({
                 </button>
               </div>
             )}
-            <button className="ghost" style={{ marginTop: 12 }} onClick={() => setTimeout(() => setGoalModal(null), 0)}>{t("btn_cancel")}</button>
+            <button className="ghost" style={{ marginTop: 12 }} onClick={() => {
+              // Annulation : le but n'est pas confirmé, le chrono reste en pause.
+              // On efface le flag pour ne pas relancer le chrono à tort plus tard.
+              setAutoPausedForGoal(false);
+              setTimeout(() => setGoalModal(null), 0);
+            }}>{t("btn_cancel")}</button>
           </div>
         </div>
       )}
@@ -1043,8 +1059,10 @@ export function TournamentRefereePanel({
                       ) : (
                         <button className="primary ref-bigbtn"
                           onClick={() => {
-                            // Dernières 2 min : pause auto en attendant l'attribution du buteur
-                            if (isLastTwoMinutes && running) { setRunning(false); postEvent("PAUSE"); }
+                            // Dernières 2 min : pause auto en attendant l'attribution du buteur.
+                            // On ne relance QUE cette pause-là à la confirmation (pas une pause
+                            // manuelle préexistante) — d'où le flag dédié.
+                            if (isLastTwoMinutes && running) { setRunning(false); setAutoPausedForGoal(true); postEvent("PAUSE"); }
                             setGoalModal({ teamId: tid, teamName: team.name, delta: 1 });
                           }}>
                           {t("btn_plus_one_goal")}
