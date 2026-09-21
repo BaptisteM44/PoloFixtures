@@ -1690,7 +1690,12 @@
     "message_deleted": "Message deleted",
     "message_edited": "edited",
     "save": "OK",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "search_placeholder": "Search for a player…",
+    "search_no_results": "No results.",
+    "first_message_hint": "Write to {name} to start the conversation.",
+    "message_actions": "Message actions",
+    "select_conversation_hint": "Select a conversation or start a new one."
   },
   "referee": {
     "page_title": "Referee console",

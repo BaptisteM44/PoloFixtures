@@ -18,11 +18,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         include: {
           host: {
             include: {
+              player: { select: { id: true, slug: true } },
               guests: {
                 include: {
                   teamPlayer: {
                     include: {
-                      player: { select: { id: true, name: true, photoPath: true } },
+                      player: { select: { id: true, slug: true, name: true, photoPath: true } },
                       team: { select: { id: true, name: true } },
                     },
                   },
@@ -43,7 +44,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         include: {
           teamPlayer: {
             include: {
-              player: { select: { id: true, name: true, photoPath: true } },
+              player: { select: { id: true, slug: true, name: true, photoPath: true } },
               team: { select: { id: true, name: true } },
             },
           },
@@ -53,6 +54,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   });
 
   const accommodationGuest = teamPlayer?.accommodationGuest ?? null;
+  const myPlayerId = playerId;
 
   return Response.json({
     role: asHost ? "host" : accommodationGuest ? "guest" : "none",
@@ -60,9 +62,14 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       ? {
           hostName: accommodationGuest.host.name,
           hostContact: accommodationGuest.host.contact,
+          // playerId/slug null si l'hôte n'est pas un joueur enregistré (saisi en texte libre)
+          hostPlayerId: accommodationGuest.host.player?.id ?? null,
+          hostPlayerSlug: accommodationGuest.host.player?.slug ?? null,
           coGuests: accommodationGuest.host.guests
             .filter((g) => g.teamPlayerId !== teamPlayer!.id)
             .map((g) => ({
+              playerId: g.teamPlayer.player.id,
+              playerSlug: g.teamPlayer.player.slug,
               playerName: g.teamPlayer.player.name,
               teamName: g.teamPlayer.team.name,
               photoPath: g.teamPlayer.player.photoPath,
@@ -76,11 +83,14 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
           contact: asHost.contact,
           guests: asHost.guests.map((g) => ({
             id: g.id,
+            playerId: g.teamPlayer.player.id,
+            playerSlug: g.teamPlayer.player.slug,
             playerName: g.teamPlayer.player.name,
             teamName: g.teamPlayer.team.name,
             photoPath: g.teamPlayer.player.photoPath,
           })),
         }
       : null,
+    myPlayerId,
   });
 }

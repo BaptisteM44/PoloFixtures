@@ -1695,7 +1695,12 @@
     "message_edited": "bearbeitet",
     "save": "OK",
     "cancel": "Abbrechen",
-    "click_marker": "Klicke auf einen Marker, um Details zu sehen."
+    "click_marker": "Klicke auf einen Marker, um Details zu sehen.",
+    "search_placeholder": "Spieler·in suchen…",
+    "search_no_results": "Keine Ergebnisse.",
+    "first_message_hint": "Schreibe {name}, um die Unterhaltung zu starten.",
+    "message_actions": "Nachrichtenaktionen",
+    "select_conversation_hint": "Wähle eine Unterhaltung oder starte eine neue."
   },
   "referee": {
     "page_title": "Schiedsrichter-Konsole",

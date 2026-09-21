@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { createNotification } from "@/lib/notify";
+import { publishDirectMessage } from "@/lib/sse";
 
 async function getConvAndPlayer(id: string) {
   const session = await auth();
@@ -73,6 +74,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     }
   );
 
+  publishDirectMessage({
+    type: "new",
+    conversationId: params.id,
+    recipientId: ctx.recipientId,
+    message: { ...message, createdAt: message.createdAt.toISOString() },
+  });
+
   return NextResponse.json(message);
 }
 
@@ -92,6 +100,12 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
 
   await prisma.directMessage.delete({ where: { id: parsed.data.messageId } });
+  publishDirectMessage({
+    type: "deleted",
+    conversationId: params.id,
+    recipientId: ctx.recipientId,
+    messageId: parsed.data.messageId,
+  });
   return NextResponse.json({ ok: true });
 }
 
@@ -113,6 +127,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     where: { id: parsed.data.messageId },
     data: { content: parsed.data.content, editedAt: new Date() },
     include: { author: { select: { id: true, name: true, photoPath: true } } },
+  });
+
+  publishDirectMessage({
+    type: "edited",
+    conversationId: params.id,
+    recipientId: ctx.recipientId,
+    message: { ...updated, createdAt: updated.createdAt.toISOString(), editedAt: updated.editedAt?.toISOString() ?? null },
   });
 
   return NextResponse.json(updated);

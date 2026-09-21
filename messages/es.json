@@ -1694,7 +1694,12 @@
     "message_edited": "editado",
     "save": "OK",
     "cancel": "Cancelar",
-    "click_marker": "Haz clic en un marcador para ver detalles."
+    "click_marker": "Haz clic en un marcador para ver detalles.",
+    "search_placeholder": "Buscar un·a jugador·a…",
+    "search_no_results": "Sin resultados.",
+    "first_message_hint": "Escribe a {name} para iniciar la conversación.",
+    "message_actions": "Acciones del mensaje",
+    "select_conversation_hint": "Selecciona una conversación o inicia una nueva."
   },
   "referee": {
     "page_title": "Consola de árbitro",

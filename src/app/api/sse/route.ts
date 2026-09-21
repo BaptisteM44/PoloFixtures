@@ -1,8 +1,13 @@
-import { sseEmitter } from "@/lib/sse";
+import { sseEmitter, type DirectMessagePayload } from "@/lib/sse";
+import { auth } from "@/lib/auth";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const tournamentId = searchParams.get("tournamentId");
+  // Messagerie directe : identifiée par la SESSION (pas un paramètre d'URL
+  // manipulable), pour ne jamais diffuser les messages de quelqu'un d'autre.
+  const session = await auth();
+  const myPlayerId = (session?.user as { playerId?: string } | undefined)?.playerId ?? null;
 
   const stream = new ReadableStream({
     start(controller) {
@@ -30,6 +35,11 @@ export async function GET(request: Request) {
         sendEvent("channel", payload);
       };
 
+      const directMessageHandler = (payload: DirectMessagePayload) => {
+        if (!myPlayerId || payload.recipientId !== myPlayerId) return;
+        sendEvent("direct_message", payload);
+      };
+
       const keepAlive = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(`: ping\n\n`));
@@ -46,12 +56,14 @@ export async function GET(request: Request) {
         sseEmitter.off("match", matchHandler);
         sseEmitter.off("tournament", tournamentHandler);
         sseEmitter.off("channel", channelHandler);
+        sseEmitter.off("direct_message", directMessageHandler);
         try { controller.close(); } catch { /* already closed */ }
       };
 
       sseEmitter.on("match", matchHandler);
       sseEmitter.on("tournament", tournamentHandler);
       sseEmitter.on("channel", channelHandler);
+      sseEmitter.on("direct_message", directMessageHandler);
       controller.enqueue(encoder.encode(`: connected\n\n`));
 
       request.signal.addEventListener("abort", close);

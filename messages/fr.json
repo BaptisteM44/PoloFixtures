@@ -1691,7 +1691,12 @@
     "message_deleted": "Message supprimé",
     "message_edited": "modifié",
     "save": "OK",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "search_placeholder": "Chercher un·e joueur·euse…",
+    "search_no_results": "Aucun résultat.",
+    "first_message_hint": "Écris à {name} pour démarrer la conversation.",
+    "message_actions": "Actions du message",
+    "select_conversation_hint": "Sélectionne une conversation ou démarres-en une nouvelle."
   },
   "referee": {
     "page_title": "Console arbitrage",

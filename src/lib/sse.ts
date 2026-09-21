@@ -25,6 +25,12 @@ export type ChannelUpdatePayload = {
   showChat: boolean;
 };
 
+/** Messagerie directe : diffusé aux deux participant·es d'une conversation. */
+export type DirectMessagePayload =
+  | { type: "new"; conversationId: string; recipientId: string; message: Record<string, unknown> }
+  | { type: "edited"; conversationId: string; recipientId: string; message: Record<string, unknown> }
+  | { type: "deleted"; conversationId: string; recipientId: string; messageId: string };
+
 const globalForSse = globalThis as unknown as { sseEmitter?: EventEmitter };
 
 export const sseEmitter = globalForSse.sseEmitter ?? new EventEmitter();
@@ -48,4 +54,8 @@ export function publishTournamentUpdate(payload: TournamentUpdatePayload) {
 
 export function publishChannelUpdate(payload: ChannelUpdatePayload) {
   sseEmitter.emit("channel", payload);
+}
+
+export function publishDirectMessage(payload: DirectMessagePayload) {
+  sseEmitter.emit("direct_message", payload);
 }

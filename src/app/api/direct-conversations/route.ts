@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { createNotification } from "@/lib/notify";
+import { publishDirectMessage } from "@/lib/sse";
 
 const schema = z.object({
   recipientId: z.string(),
@@ -93,6 +94,13 @@ export async function POST(req: Request) {
       preview: message.slice(0, 80),
     }
   );
+
+  publishDirectMessage({
+    type: "new",
+    conversationId: conversation.id,
+    recipientId,
+    message: { ...newMessage, createdAt: newMessage.createdAt.toISOString() },
+  });
 
   return NextResponse.json({ conversation, message: newMessage });
 }

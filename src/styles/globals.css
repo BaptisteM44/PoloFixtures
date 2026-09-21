@@ -4530,38 +4530,59 @@ details.agenda-month--past > summary::-webkit-details-marker {
   overflow-y: auto;
 }
 
+.messages-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 2px solid var(--border);
+  flex-shrink: 0;
+}
+
 .messages-conv-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  background: none;
-  border: none;
+  gap: 4px;
   border-bottom: 1px solid var(--border-light);
-  cursor: pointer;
-  text-align: left;
-  color: inherit;
-  transition: background var(--transition);
-  width: 100%;
   position: relative;
 }
 .messages-conv-item:hover { background: var(--surface-hover, color-mix(in srgb, var(--accent) 6%, transparent)); }
 .messages-conv-item--active { background: color-mix(in srgb, var(--accent) 10%, transparent); }
-.messages-conv-item__delete {
-  display: none;
-  position: absolute;
-  bottom: 8px; right: 8px;
+
+.messages-conv-item__main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 8px 14px 16px;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 13px;
-  color: var(--text-muted);
-  padding: 2px;
-  line-height: 1;
-  transition: color 0.15s;
+  text-align: left;
+  color: inherit;
+  flex: 1;
+  min-width: 0;
+  font: inherit;
 }
-.messages-conv-item:hover .messages-conv-item__delete { display: block; }
-.messages-conv-item__delete:hover { color: var(--text); }
+
+/* Toujours visible (jamais hover-only) : indispensable au tactile. */
+.messages-conv-item__delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  margin-right: 8px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-muted);
+  transition: color 0.15s, background 0.15s;
+}
+.messages-conv-item__delete:hover { color: var(--text); background: var(--bg-muted); }
 
 .messages-conv-item__avatar {
   position: relative;
@@ -4608,9 +4629,36 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 
 .messages-thread__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 14px 20px;
   border-bottom: 2px solid var(--border);
   font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* Bouton retour : caché sur desktop (les deux colonnes sont visibles), visible
+   uniquement en layout mobile plein-écran (voir media query). */
+.messages-back-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  padding: 2px 6px;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.messages-thread__placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
 }
 
 .messages-thread__body {
@@ -4628,7 +4676,26 @@ details.agenda-month--past > summary::-webkit-details-marker {
   padding: 12px 16px;
   border-top: 2px solid var(--border);
   align-items: flex-end;
+  flex-shrink: 0;
 }
+
+/* Recherche "nouveau message" */
+.messages-new-conv { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.messages-search-result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+}
+.messages-search-result:hover { background: var(--bg-muted); }
 
 /* Bubbles */
 .message-bubble {
@@ -4647,28 +4714,61 @@ details.agenda-month--past > summary::-webkit-details-marker {
   border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
   border-radius: 12px 12px 2px 12px;
 }
+/* Menu ⋯ toujours accessible (plus de hover-only) : essentiel au tactile. */
 .message-actions {
-  display: none;
-  gap: 8px;
+  position: relative;
+  display: inline-block;
   margin-top: 4px;
 }
-.message-bubble:hover .message-actions { display: flex; }
-.message-actions button {
+.message-actions__toggle {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 11px;
-  font-family: var(--font-display);
+  font-size: 14px;
   color: var(--text-muted);
-  padding: 0;
-  transition: color 0.15s;
+  padding: 2px 6px;
+  line-height: 1;
+  border-radius: 6px;
 }
-.message-actions button:hover { color: var(--text); }
+.message-actions__toggle:hover { color: var(--text); background: var(--bg-muted); }
+.message-actions__menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.15));
+  overflow: hidden;
+  min-width: 120px;
+}
+.message-actions__menu button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font-display);
+  color: var(--text);
+  padding: 8px 12px;
+  text-align: left;
+  transition: background 0.15s;
+}
+.message-actions__menu button:hover { background: var(--bg-muted); }
 
 @media (max-width: 768px) {
-  .messages-layout { grid-template-columns: 1fr; height: auto; }
-  .messages-sidebar { border-right: none; border-bottom: 2px solid var(--border); max-height: 220px; }
-  .messages-thread { min-height: 400px; }
+  .messages-layout {
+    grid-template-columns: 1fr;
+    height: calc(100vh - 140px);
+  }
+  .messages-sidebar { border-right: none; }
+  .messages-thread { display: none; }
+  .messages-back-btn { display: block; }
+  /* Un seul panneau visible à la fois : la liste OU le fil actif. */
+  .messages-layout--show-thread .messages-sidebar { display: none; }
+  .messages-layout--show-thread .messages-thread { display: flex; }
 }
 
 /* ========================
