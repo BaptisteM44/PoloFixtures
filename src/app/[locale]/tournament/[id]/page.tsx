@@ -300,7 +300,11 @@ export default async function TournamentPage({
   // Toujours visible tant que les inscriptions ne sont pas fermées — même sans
   // aucun agent libre inscrit, pour que le premier joueur puisse s'inscrire
   // depuis l'onglet plutôt que de devoir passer par Inscription > Free Agent Zone.
-  const hasCommunity = !registrationClosed;
+  // Masqué pour les tournois en inscription INDIVIDUELLE (maxSoloPlayers défini,
+  // ex. ABC Chapeau) : tout le monde s'inscrit déjà seul, l'onglet "agent libre"
+  // n'a pas de sens et pouvait prêter à confusion.
+  const isSoloRegistration = (tournament as { maxSoloPlayers?: number | null }).maxSoloPlayers != null;
+  const hasCommunity = !registrationClosed && !isSoloRegistration;
 
   const tabs = [
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
@@ -747,7 +751,7 @@ export default async function TournamentPage({
               </div>
             )}
 
-            {!registrationClosed && tournament.freeAgents.length > 0 && (
+            {!registrationClosed && !isSoloRegistration && tournament.freeAgents.length > 0 && (
               <div className="panel">
                 <h3 style={{ marginBottom: 4 }}>
                   {t("tab_free_agent")}{" "}
@@ -904,7 +908,9 @@ export default async function TournamentPage({
               )}
             </div>
 
-            {/* Renvoi vers Zone free agent */}
+            {/* Renvoi vers Zone free agent — sans objet en inscription individuelle
+                (tout le monde s'inscrit déjà seul, cf. hasCommunity plus haut) */}
+            {!isSoloRegistration && (
             <div className="panel" style={{ display: "flex", flexDirection: "column", gap: 12, justifyContent: "center", textAlign: "center" }}>
               <div style={{ fontSize: 32 }}>🤝</div>
               <h3 style={{ margin: 0 }}>{r("no_team_title")}</h3>
@@ -920,6 +926,7 @@ export default async function TournamentPage({
                 {r("btn_view_free_agent")}
               </Link>
             </div>
+            )}
           </div>
 
           {/* Liste des inscrits ABC Chapeau — bascule cartes / liste */}
@@ -1891,7 +1898,9 @@ export default async function TournamentPage({
       )}
 
       {/* ── ONGLET ZONE FREE AGENT ── */}
-      {tab === "communaute" && !registrationClosed && (
+      {/* Inaccessible en inscription individuelle même par URL directe : ce n'est
+          pas qu'un masquage de lien, la fonctionnalité n'a pas de sens ici. */}
+      {tab === "communaute" && !registrationClosed && !isSoloRegistration && (
         <div className="panel" style={{ maxWidth: 600 }}>
           <h3 style={{ marginBottom: 4 }}>{t("tab_free_agent")}</h3>
           <p className="meta" style={{ marginBottom: 16 }}>
