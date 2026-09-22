@@ -507,9 +507,11 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     const regAt        = (tp as { registeredAt?: Date }).registeredAt;
     if (!regAt || regAt < oneHourBefore || regAt > deadline) continue;
 
+    // Tri secondaire par id : même garde-fou que early_bird/patient_zero contre
+    // un ordre non déterministe en cas d'égalité de registeredAt.
     const last = await prisma.teamPlayer.findFirst({
       where: { team: { tournamentId: tournament.id } },
-      orderBy: { registeredAt: "desc" },
+      orderBy: [{ registeredAt: "desc" }, { id: "desc" }],
       select: { playerId: true },
     });
     if (last?.playerId === playerId) { badges.add("fashionably_late"); break; }
@@ -543,20 +545,25 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   if (freeAgentCount >= 1) badges.add("free_agent");
 
   // early_bird: first message ever sent in a tournament chat (first by createdAt in that tournament)
+  // Tri secondaire par id : createdAt seul n'est pas un ordre déterministe en
+  // cas d'égalité de timestamp (import en masse, deux messages à la même
+  // milliseconde) — sans lui, deux recalculs successifs pouvaient élire un
+  // "premier" différent et faire disparaître le badge de la vraie personne.
   earlyBird: for (const msg of allMessages) {
     const firstMsg = await prisma.tournamentMessage.findFirst({
       where: { tournamentId: msg.tournamentId },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: { authorId: true },
     });
     if (firstMsg?.authorId === playerId) { badges.add("early_bird"); break earlyBird; }
   }
 
   // patient_zero: first TeamPlayer registered in a tournament
+  // Même garde-fou : tri secondaire par id pour un ordre déterministe.
   patientZero: for (const tp of teamPlayers) {
     const first = await prisma.teamPlayer.findFirst({
       where: { team: { tournamentId: tp.team.tournament.id } },
-      orderBy: { registeredAt: "asc" },
+      orderBy: [{ registeredAt: "asc" }, { id: "asc" }],
       select: { playerId: true },
     });
     if (first?.playerId === playerId) { badges.add("patient_zero"); break patientZero; }
@@ -972,18 +979,26 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     if (loginDayCount >= 200) badges.add("no_days_off");
     if (loginDayCount >= 365) badges.add("full_year");
 
-    // on_a_roll / habit_formed: streak de jours consécutifs
-    const loginDatesList = await prisma.loginDay.findMany({
+    // on_a_roll / habit_formed / night_owl (connexion) : une seule requête sur
+    // LoginDay, réutilisée pour les deux calculs. Le recalcul REMPLACE les
+    // badges déjà acquis (recomputePlayerBadges) : avaler silencieusement une
+    // erreur ici (ancien `.catch(() => [])`) faisait disparaître ces badges à
+    // chaque échec transitoire de la requête au lieu de garder l'état
+    // précédent — on laisse l'exception remonter pour que le recalcul entier
+    // échoue proprement (aucune écriture) plutôt que de persister un résultat
+    // partiel.
+    const loginDays = await prisma.loginDay.findMany({
       where: { accountId: player.account.id },
-      select: { date: true },
+      select: { date: true, loggedAt: true },
       orderBy: { date: "asc" },
-    }).catch(() => [] as { date: string }[]);
-    if (loginDatesList.length > 0) {
+    });
+
+    if (loginDays.length > 0) {
       let maxStreak = 1;
       let currentStreak = 1;
-      for (let i = 1; i < loginDatesList.length; i++) {
-        const prev = new Date(loginDatesList[i - 1].date);
-        const curr = new Date(loginDatesList[i].date);
+      for (let i = 1; i < loginDays.length; i++) {
+        const prev = new Date(loginDays[i - 1].date);
+        const curr = new Date(loginDays[i].date);
         const diffDays = Math.round((curr.getTime() - prev.getTime()) / 86400000);
         if (diffDays === 1) {
           currentStreak++;
@@ -999,11 +1014,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     // night_owl — se connecter entre 4h55 et 5h05 UTC
     // (complète la condition existante sur les messages de chat)
     if (!badges.has("night_owl")) {
-      const allLoginTimes = await prisma.loginDay.findMany({
-        where: { accountId: player.account.id },
-        select: { loggedAt: true },
-      }).catch(() => [] as { loggedAt: Date }[]);
-      const hadNightLogin = allLoginTimes.some((l) => {
+      const hadNightLogin = loginDays.some((l) => {
         const h = l.loggedAt.getUTCHours();
         const m = l.loggedAt.getUTCMinutes();
         return (h === 4 && m >= 55) || (h === 5 && m <= 5);
