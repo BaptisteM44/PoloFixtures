@@ -32,8 +32,45 @@ export function areResultsVisibleToVoters(poll: PollResultsVisibility, now = new
   }
 }
 
+export type PollEligibility = {
+  eligibleClubIds: string[];
+  eligibleCountries: string[];
+  eligibleContinents: string[];
+};
+
+/** Profil d'un votant INSCRIT, tel qu'utilisé pour vérifier l'éligibilité. */
+export type VoterProfile = {
+  country: string | null;
+  continent: string | null;
+  clubIds: string[];
+};
+
+export function isPollRestricted(poll: PollEligibility): boolean {
+  return poll.eligibleClubIds.length > 0 || poll.eligibleCountries.length > 0 || poll.eligibleContinents.length > 0;
+}
+
+/**
+ * Le votant peut-il voter ? Un invité (voter = null) ne le peut que si le
+ * sondage n'a aucune restriction. Pour un inscrit, chaque critère non vide doit
+ * être satisfait (ET entre critères) par au moins un élément (OU dans le critère).
+ */
+export function isVoterEligible(poll: PollEligibility, voter: VoterProfile | null): boolean {
+  if (!isPollRestricted(poll)) return true;
+  if (!voter) return false;
+  const norm = (s: string) => s.trim().toLowerCase();
+  if (poll.eligibleClubIds.length > 0 && !voter.clubIds.some((id) => poll.eligibleClubIds.includes(id))) return false;
+  if (poll.eligibleCountries.length > 0) {
+    if (!voter.country || !poll.eligibleCountries.some((c) => norm(c) === norm(voter.country!))) return false;
+  }
+  if (poll.eligibleContinents.length > 0) {
+    if (!voter.continent || !poll.eligibleContinents.includes(voter.continent)) return false;
+  }
+  return true;
+}
+
 /** Un sondage accepte-t-il des votes MAINTENANT (statut + fenêtre de dates) ? */
-export function isPollOpen(poll: PollLite, now = new Date()): boolean {
+export function isPollOpen(poll: PollLite & { blockedAt?: Date | null }, now = new Date()): boolean {
+  if (poll.blockedAt) return false;
   if (poll.status !== "OPEN") return false;
   if (poll.openAt && now < poll.openAt) return false;
   if (poll.closeAt && now > poll.closeAt) return false;

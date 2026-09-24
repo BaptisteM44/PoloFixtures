@@ -1,11 +1,11 @@
 import { AdminNav } from "@/components/AdminNav";
-import { AdminPollResults } from "@/components/AdminPollResults";
+import { PollResultsDetail } from "@/components/PollResultsDetail";
 
 export default function AdminPollResultsPage({ params }: { params: { id: string } }) {
   return (
     <div className="page">
       <AdminNav />
-      <AdminPollResults pollId={params.id} />
+      <PollResultsDetail pollId={params.id} backHref="/admin/polls" />
     </div>
   );
 }

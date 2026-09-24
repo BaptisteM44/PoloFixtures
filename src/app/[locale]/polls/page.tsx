@@ -1,21 +1,36 @@
 import { prisma } from "@/lib/db";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
+import { auth } from "@/lib/auth";
+import { isPollRestricted, isVoterEligible } from "@/lib/poll-vote";
+import { loadVoterProfile } from "@/lib/poll-access";
 
 export const dynamic = "force-dynamic";
 
 export default async function PollsPage() {
   const t = await getTranslations("poll");
 
+  const session = await auth();
+  const playerId = session?.user?.playerId ?? null;
+  const isAdmin = session?.user?.role === "ADMIN";
+
   // Sondages visibles publiquement : ouverts, ou récemment fermés (résultats).
-  const polls = await prisma.poll.findMany({
-    where: { status: { in: ["OPEN", "CLOSED"] } },
+  // Les sondages bloqués par la modération ne sont jamais listés.
+  const allPolls = await prisma.poll.findMany({
+    where: { status: { in: ["OPEN", "CLOSED"] }, blockedAt: null },
     orderBy: [{ status: "asc" }, { createdAt: "desc" }], // OPEN avant CLOSED
     select: {
-      id: true, question: true, description: true, status: true,
+      id: true, question: true, description: true, status: true, createdById: true,
+      eligibleClubIds: true, eligibleCountries: true, eligibleContinents: true,
       _count: { select: { voters: true } },
     },
   });
+
+  // Un sondage ciblé (club/pays/continent) n’est listé que pour son public, son
+  // créateur et l’admin — il reste accessible par lien direct pour les autres.
+  const viewer = playerId ? await loadVoterProfile(playerId) : null;
+  const polls = allPolls.filter((p) =>
+    !isPollRestricted(p) || isAdmin || p.createdById === playerId || isVoterEligible(p, viewer));
 
   const open = polls.filter((p) => p.status === "OPEN");
   const closed = polls.filter((p) => p.status === "CLOSED");
@@ -23,7 +38,13 @@ export default async function PollsPage() {
   return (
     <div className="page" style={{ maxWidth: 720, margin: "0 auto" }}>
       <h1 style={{ fontFamily: "var(--font-display)" }}>📊 {t("page_title")}</h1>
-      <p style={{ color: "var(--text-muted)", marginBottom: 24 }}>{t("page_intro")}</p>
+      <p style={{ color: "var(--text-muted)", marginBottom: 16 }}>{t("page_intro")}</p>
+      {playerId && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
+          <Link href="/polls/mine" className="primary" style={{ fontSize: 13 }}>{t("create_btn")}</Link>
+          <Link href="/polls/mine" className="ghost" style={{ fontSize: 13 }}>{t("mine_btn")}</Link>
+        </div>
+      )}
 
       {polls.length === 0 && <p className="meta">{t("page_empty")}</p>}
 
@@ -44,7 +65,7 @@ export default async function PollsPage() {
                   )}
                 </div>
                 <span style={{ fontSize: 11, fontWeight: 700, color: "var(--teal)", flexShrink: 0, whiteSpace: "nowrap" }}>
-                  ● {t("open_badge")}
+                  {isPollRestricted(p) && <>🎯 {t("restricted_badge")} · </>}● {t("open_badge")}
                 </span>
               </div>
               <div style={{ marginTop: 10, fontSize: 13, color: "var(--teal)", fontWeight: 600 }}>

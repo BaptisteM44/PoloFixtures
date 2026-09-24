@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 
 type GuestField = { key: string; label: string; required?: boolean; type?: "text" | "club" };
 
@@ -95,11 +96,22 @@ export function PollVote({
   isLoggedIn,
   hasVoted,
   initialResults,
+  eligibilityLabel = null,
+  eligible = true,
+  canReport = false,
+  manageHref = null,
 }: {
   poll: PollData;
   isLoggedIn: boolean;
   hasVoted: boolean;
   initialResults: Results | null;
+  /** Public visé (clubs/pays/continents) — null si le sondage est ouvert à tous. */
+  eligibilityLabel?: string | null;
+  /** Le visiteur connecté fait-il partie du public visé ? */
+  eligible?: boolean;
+  canReport?: boolean;
+  /** Lien vers la gestion/les résultats, pour le créateur (ou l’admin). */
+  manageHref?: string | null;
 }) {
   const t = useTranslations("poll");
   const [selected, setSelected] = useState<string[]>([]);
@@ -208,6 +220,32 @@ export function PollVote({
     try { await navigator.clipboard.writeText(url); setShared(true); setTimeout(() => setShared(false), 2000); } catch { /* noop */ }
   };
 
+  // Signalement à la modération
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportState, setReportState] = useState<"idle" | "sending" | "done">("idle");
+  const [reportError, setReportError] = useState<string | null>(null);
+  const sendReport = async () => {
+    setReportError(null);
+    if (reportReason.trim().length < 5) { setReportError(t("report_too_short")); return; }
+    setReportState("sending");
+    const res = await fetch(`/api/polls/${poll.id}/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: reportReason.trim() }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) { setReportState("done"); return; }
+    setReportState("idle");
+    const code = typeof data.error === "string" ? data.error : "";
+    setReportError(
+      code === "already_reported" ? t("already_reported") :
+      code === "login_required" ? t("login_required") :
+      code === "rate_limited" ? t("rate_limited") : t("report_too_short"),
+    );
+  };
+
+  const restricted = eligibilityLabel !== null;
   const maxCount = results ? Math.max(1, ...Object.values(results.counts)) : 1;
 
   return (
@@ -223,6 +261,14 @@ export function PollVote({
           {shared ? "✓" : "🔗"} {t("share")}
         </button>
       </div>
+
+      {restricted && (
+        <p style={{ fontSize: 13, color: "var(--teal)", fontWeight: 600, margin: 0 }}>🎯 {t("eligibility_label", { list: eligibilityLabel })}</p>
+      )}
+
+      {manageHref && (
+        <Link href={manageHref} className="ghost" style={{ fontSize: 13, alignSelf: "start" }}>{t("manage_link")}</Link>
+      )}
 
       {poll.status !== "OPEN" && (
         <p style={{ color: "var(--text-muted)" }}>{t(poll.status === "CLOSED" ? "closed" : "not_open")}</p>
@@ -242,7 +288,17 @@ export function PollVote({
       )}
 
       {/* Vote (si ouvert et pas déjà voté/en attente) */}
-      {poll.status === "OPEN" && state === "idle" && (
+      {poll.status === "OPEN" && state === "idle" && restricted && !isLoggedIn && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "start" }}>
+          <p style={{ margin: 0, fontSize: 14 }}>{t("eligibility_login")}</p>
+          <Link href="/login" className="primary" style={{ fontSize: 14 }}>{t("login_btn")}</Link>
+        </div>
+      )}
+      {poll.status === "OPEN" && state === "idle" && isLoggedIn && !eligible && (
+        <p style={{ margin: 0, fontSize: 14, color: "var(--text-muted)" }}>{t("not_eligible")}</p>
+      )}
+
+      {poll.status === "OPEN" && state === "idle" && (isLoggedIn ? eligible : !restricted) && (
         <>
           {/* Consigne de sélection multi-choix (exactement N / max N…) */}
           {poll.multipleChoice && (poll.minChoices != null || poll.maxChoices != null) && (
@@ -383,6 +439,40 @@ export function PollVote({
           <p style={{ fontSize: 13, color: "var(--text-muted)", margin: "4px 0 0" }}>
             {t("total_votes", { count: results.voterCount })}
           </p>
+        </div>
+      )}
+
+      {/* Signalement d’un sondage tendancieux à la modération */}
+      {canReport && (
+        <div style={{ borderTop: "1px solid var(--border-light)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+          {reportState === "done" ? (
+            <p style={{ margin: 0, fontSize: 13, color: "var(--teal)", fontWeight: 600 }}>✓ {t("report_done")}</p>
+          ) : !reportOpen ? (
+            <button className="ghost" onClick={() => setReportOpen(true)} style={{ fontSize: 12, alignSelf: "start" }}>
+              {t("report_btn")}
+            </button>
+          ) : (
+            <>
+              <strong style={{ fontSize: 13 }}>{t("report_title")}</strong>
+              <textarea
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                rows={3}
+                maxLength={500}
+                placeholder={t("report_placeholder")}
+                style={{ padding: "8px 10px", borderRadius: 8, border: "2px solid var(--border)", resize: "vertical" }}
+              />
+              {reportError && <p style={{ color: "var(--danger)", fontSize: 12, margin: 0 }}>{reportError}</p>}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="danger" onClick={sendReport} disabled={reportState === "sending"} style={{ fontSize: 12 }}>
+                  {reportState === "sending" ? "…" : t("report_send")}
+                </button>
+                <button className="ghost" onClick={() => { setReportOpen(false); setReportError(null); }} style={{ fontSize: 12 }}>
+                  {t("report_cancel")}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

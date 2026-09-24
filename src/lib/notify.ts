@@ -50,6 +50,10 @@ function toPushPayload(
       return { title: "Club à valider", body: `${p.clubName} — ${p.city}, ${p.country}`, url: "/admin", tag: `admin-c-${p.clubId}` };
     case "NEW_TOURNAMENT_PUBLISHED":
       return { title: "Nouveau tournoi 🚴", body: `${p.tournamentName} — ${p.city}, ${p.country}`, url: `/tournament/${p.tournamentSlug || p.tournamentId}`, tag: `new-t-${p.tournamentId}` };
+    case "POLL_REPORTED":
+      return { title: "Sondage signalé ⚠️", body: `${p.pollQuestion} — ${p.reason}`, url: "/admin/polls", tag: `poll-report-${p.pollId}` };
+    case "POLL_BLOCKED":
+      return { title: "Sondage bloqué", body: p.pollQuestion, url: "/polls/mine", tag: `poll-blocked-${p.pollId}` };
     default:
       return { title: "Poloperator", body: "New notification", url: "/", tag: type };
   }

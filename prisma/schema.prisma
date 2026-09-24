@@ -206,6 +206,8 @@ enum NotificationType {
   TOURNAMENT_NEEDS_APPROVAL // notif admin : nouveau tournoi à modérer
   CLUB_NEEDS_APPROVAL // notif admin : nouveau club à modérer
   NEW_TOURNAMENT_PUBLISHED // notif joueurs : tournoi approuvé/publié
+  POLL_REPORTED // notif admin : un sondage a été signalé
+  POLL_BLOCKED // notif créateur : son sondage a été bloqué par la modération
 }
 
 enum TaskPriority {
@@ -509,6 +511,7 @@ model Player {
   pushSubscriptions      PushSubscription[]
   createdPolls           Poll[]                  @relation("CreatedPolls")
   pollVoterEntries       PollVoter[]
+  pollReports            PollReport[]            @relation("PollReports")
 }
 
 model PushSubscription {
@@ -1401,6 +1404,16 @@ model Poll {
   // = seulement quand le sondage est fermé ; HIDDEN = jamais montrés aux votants.
   showResults    PollResultsMode @default(IMMEDIATE)
   resultsAt      DateTime? // date d'ouverture des résultats si showResults = AT_DATE
+  // Ciblage des votants. Liste vide = pas de restriction sur ce critère. Les
+  // critères non vides se cumulent (ET) ; à l'intérieur d'un critère, un seul
+  // élément suffit (OU). Dès qu'un critère est posé, seuls les inscrits peuvent
+  // voter (club/pays d'un invité non vérifiables).
+  eligibleClubIds    String[] @default([])
+  eligibleCountries  String[] @default([]) // noms de pays, même format que Player.country
+  eligibleContinents String[] @default([]) // codes continent (EU, NA…)
+  // Modération : un sondage bloqué n'accepte plus de votes et n'est plus listé.
+  blockedAt      DateTime?
+  blockedReason  String?
   createdById    String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -1408,8 +1421,24 @@ model Poll {
   createdBy Player?      @relation("CreatedPolls", fields: [createdById], references: [id], onDelete: SetNull)
   ballots   PollBallot[]
   voters    PollVoter[]
+  reports   PollReport[]
 
   @@index([status])
+}
+
+// Signalement d'un sondage par un inscrit (un par personne et par sondage).
+model PollReport {
+  id         String   @id @default(cuid())
+  pollId     String
+  reporterId String
+  reason     String
+  createdAt  DateTime @default(now())
+
+  poll     Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  reporter Player @relation("PollReports", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, reporterId])
+  @@index([pollId])
 }
 
 // L'URNE : un bulletin = un choix, ANONYME. Aucun champ ne référence le votant.

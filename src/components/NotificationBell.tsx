@@ -77,6 +77,10 @@ function useNotifLabel() {
         return { title: t("club_needs_approval"), sub: p.clubName ?? "", href: "/admin" };
       case "NEW_TOURNAMENT_PUBLISHED":
         return { title: t("new_tournament_published", { tournamentName: p.tournamentName ?? "" }), sub: `${p.city ?? ""}${p.country ? ", " + p.country : ""}`, href: `/tournament/${p.tournamentSlug || p.tournamentId}` };
+      case "POLL_REPORTED":
+        return { title: t("poll_reported"), sub: p.pollQuestion ?? "", href: "/admin/polls" };
+      case "POLL_BLOCKED":
+        return { title: t("poll_blocked"), sub: p.pollQuestion ?? "", href: "/polls/mine" };
       default:
         return { title: t("default"), sub: "", href: "/my-teams" };
     }

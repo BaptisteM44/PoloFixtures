@@ -22,6 +22,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
   });
 
   if (!voter) redirect(`${base}?verify=invalid`);
+
+  // Sondage bloqué par la modération entre le vote et la confirmation : on ne
+  // dépose pas le bulletin en attente.
+  const poll = await prisma.poll.findUnique({ where: { id: params.id }, select: { blockedAt: true } });
+  if (!poll || poll.blockedAt) redirect(`${base}?verify=blocked`);
   if (voter.verified) redirect(`${base}?verify=already`);
   if (voter.verifyExpiry && voter.verifyExpiry < new Date()) redirect(`${base}?verify=expired`);
 

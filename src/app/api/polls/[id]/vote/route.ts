@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { randomBytes } from "crypto";
 import { hashPlayerVoter, hashGuestVoter } from "@/lib/poll-hash";
-import { isPollOpen, validateChoices, castVote, type PollLite } from "@/lib/poll-vote";
+import { isPollOpen, validateChoices, castVote, isPollRestricted, isVoterEligible, type PollLite, type PollEligibility } from "@/lib/poll-vote";
+import { loadVoterProfile } from "@/lib/poll-access";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { sendMail } from "@/lib/mailer";
 import { SITE_URL } from "@/lib/site-url";
@@ -22,10 +23,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
     select: {
       id: true, status: true, options: true, multipleChoice: true, minChoices: true, maxChoices: true,
       openAt: true, closeAt: true, allowGuests: true, allowComment: true,
+      blockedAt: true, eligibleClubIds: true, eligibleCountries: true, eligibleContinents: true,
     },
-  })) as (PollLite & { allowGuests: boolean; allowComment: boolean }) | null;
+  })) as (PollLite & PollEligibility & { allowGuests: boolean; allowComment: boolean; blockedAt: Date | null }) | null;
 
   if (!poll) return new Response("Sondage introuvable", { status: 404 });
+  if (poll.blockedAt) return Response.json({ error: "blocked" }, { status: 409 });
   if (!isPollOpen(poll)) return Response.json({ error: "closed" }, { status: 409 });
 
   const json = await request.json();
@@ -43,6 +46,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   // ── Cas 1 : votant INSCRIT (connecté) — vote direct, re-vote autorisé ──
   if (playerId) {
+    // Ciblage (club/pays/continent) : vérifié ici, pas seulement dans l'UI.
+    if (isPollRestricted(poll) && !isVoterEligible(poll, await loadVoterProfile(playerId))) {
+      return Response.json({ error: "not_eligible" }, { status: 403 });
+    }
     const voterHash = hashPlayerVoter(poll.id, playerId);
     // allowRevote=true : un inscrit peut changer d'avis tant que c'est ouvert.
     const res = await castVote({ pollId: poll.id, voterHash, choices, isGuest: false, verified: true, playerId, comment, allowRevote: true });
@@ -53,7 +60,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
   }
 
   // ── Cas 2 : votant GUEST — email obligatoire + confirmation par mail ──
-  if (!poll.allowGuests) {
+  // Un invité ne peut jamais prouver son club/pays : exclu de tout sondage ciblé.
+  if (!poll.allowGuests || isPollRestricted(poll)) {
     return Response.json({ error: "guests_not_allowed" }, { status: 403 });
   }
   if (!email) {
