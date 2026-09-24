@@ -2927,12 +2927,9 @@
     "login_required": "Inicia sesión para denunciar una encuesta.",
     "manage_link": "📊 Gestionar mi encuesta y ver los resultados",
     "create_btn": "+ Crear una encuesta",
-    "mine_btn": "Mis encuestas",
     "restricted_badge": "Dirigida"
   },
   "poll_manage": {
-    "page_title": "Mis encuestas",
-    "page_intro": "Crea una encuesta para tu club, tu país o toda la comunidad. Ves los resultados en tiempo real. El admin puede bloquear una encuesta contraria a las reglas de la comunidad.",
     "admin_title": "Encuestas",
     "title_new": "Nueva encuesta",
     "field_question": "Pregunta",
@@ -2988,7 +2985,6 @@
     "list_title_mine": "Mis encuestas",
     "loading": "Cargando…",
     "empty_admin": "Todavía no hay encuestas.",
-    "empty_mine": "Todavía no has creado ninguna encuesta.",
     "counts": "{voters, plural, one {# votante} other {# votantes}} · {ballots, plural, one {# papeleta} other {# papeletas}}",
     "status_DRAFT": "Borrador",
     "status_OPEN": "Abierta",

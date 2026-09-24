@@ -2924,12 +2924,9 @@
     "login_required": "Connecte-toi pour signaler un sondage.",
     "manage_link": "📊 Gérer mon sondage et voir les résultats",
     "create_btn": "+ Créer un sondage",
-    "mine_btn": "Mes sondages",
     "restricted_badge": "Ciblé"
   },
   "poll_manage": {
-    "page_title": "Mes sondages",
-    "page_intro": "Crée un sondage pour ton club, ton pays ou toute la communauté. Tu vois les résultats en temps réel. L'admin peut bloquer un sondage contraire aux règles de la communauté.",
     "admin_title": "Sondages",
     "title_new": "Nouveau sondage",
     "field_question": "Question",
@@ -2985,7 +2982,6 @@
     "list_title_mine": "Mes sondages",
     "loading": "Chargement…",
     "empty_admin": "Aucun sondage pour l'instant.",
-    "empty_mine": "Tu n'as encore créé aucun sondage.",
     "counts": "{voters, plural, one {# votant} other {# votants}} · {ballots, plural, one {# bulletin} other {# bulletins}}",
     "status_DRAFT": "Brouillon",
     "status_OPEN": "Ouvert",

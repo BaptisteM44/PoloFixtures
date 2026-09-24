@@ -4,7 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { canManagePoll } from "@/lib/poll-access";
 import { PollResultsDetail } from "@/components/PollResultsDetail";
 
-export default async function MyPollResultsPage({ params }: { params: { id: string } }) {
+export default async function PollResultsPage({ params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user?.playerId) redirect("/login");
 
@@ -13,7 +13,7 @@ export default async function MyPollResultsPage({ params }: { params: { id: stri
 
   return (
     <div className="page" style={{ maxWidth: 760, margin: "0 auto" }}>
-      <PollResultsDetail pollId={params.id} backHref="/polls/mine" />
+      <PollResultsDetail pollId={params.id} backHref="/polls" />
     </div>
   );
 }

@@ -84,6 +84,7 @@ function ChipPicker({
  */
 export function PollManager({ mode }: { mode: "admin" | "mine" }) {
   const t = useTranslations("poll_manage");
+  const tPoll = useTranslations("poll");
   const tHome = useTranslations("home");
   const isAdminView = mode === "admin";
   const continentLabel = (code: string) => tHome(`continent_${code.toLowerCase()}` as never);
@@ -112,6 +113,8 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
   const [showResults, setShowResults] = useState<ResultsMode>("IMMEDIATE");
   const [resultsAt, setResultsAt] = useState("");
   const [creating, setCreating] = useState(false);
+  // Mode joueur (page /polls) : formulaire replié derrière un bouton.
+  const [formOpen, setFormOpen] = useState(isAdminView);
   const [error, setError] = useState<string | null>(null);
 
   const restricted = eligibleClubIds.length > 0 || eligibleCountries.length > 0 || eligibleContinents.length > 0;
@@ -172,6 +175,7 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
       setMinChoices(""); setMaxChoices(""); setAllowComment(false);
       setEligibleClubIds([]); setEligibleCountries([]); setEligibleContinents([]);
       setOpenAt(""); setCloseAt(""); setShowResults("IMMEDIATE"); setResultsAt("");
+      if (!isAdminView) setFormOpen(false);
       await load();
     } finally {
       setCreating(false);
@@ -227,8 +231,18 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, marginTop: 16 }}>
       {/* ── Création ── */}
+      {!formOpen ? (
+        <button className="primary" onClick={() => setFormOpen(true)} style={{ alignSelf: "start" }}>
+          {tPoll("create_btn")}
+        </button>
+      ) : (
       <div className="panel" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>
-        <h3 style={{ margin: 0 }}>{t("title_new")}</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <h3 style={{ margin: 0 }}>{t("title_new")}</h3>
+          {!isAdminView && (
+            <button className="ghost" onClick={() => setFormOpen(false)} style={{ fontSize: 12 }}>✕</button>
+          )}
+        </div>
         <label style={{ fontSize: 13, display: "grid", gap: 4 }}>
           {t("field_question")}
           <input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder={t("placeholder_question")} />
@@ -393,13 +407,15 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
         </button>
         <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("draft_hint")}</p>
       </div>
+      )}
 
-      {/* ── Liste ── */}
+      {/* ── Liste ── (en mode joueur, masquée tant qu’il n’a créé aucun sondage) */}
+      {(isAdminView || polls.length > 0) && (
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <h3 style={{ margin: 0 }}>{isAdminView ? t("list_title_admin") : t("list_title_mine")}</h3>
         {actionError && <p style={{ color: "var(--danger)", fontSize: 13, margin: 0 }}>{actionError}</p>}
         {loading ? <p className="meta">{t("loading")}</p> : polls.length === 0 ? (
-          <p className="meta">{isAdminView ? t("empty_admin") : t("empty_mine")}</p>
+          <p className="meta">{t("empty_admin")}</p>
         ) : polls.map((p) => {
           const blocked = !!p.blockedAt;
           const summary = eligibilitySummary(p);
@@ -456,7 +472,7 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
                   {copiedId === p.id ? t("btn_copied") : t("btn_copy")}
                 </button>
                 <a className="ghost" style={{ fontSize: 12 }} href={`/poll/${p.id}`} target="_blank" rel="noopener noreferrer">{t("btn_view")}</a>
-                <Link className="primary" style={{ fontSize: 12 }} href={isAdminView ? `/admin/polls/${p.id}` : `/polls/mine/${p.id}`}>
+                <Link className="primary" style={{ fontSize: 12 }} href={isAdminView ? `/admin/polls/${p.id}` : `/poll/${p.id}/results`}>
                   {t("btn_results")}
                 </Link>
                 {(!blocked || isAdminView) && (
@@ -480,6 +496,7 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

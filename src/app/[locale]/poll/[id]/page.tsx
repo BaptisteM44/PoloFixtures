@@ -39,7 +39,7 @@ export default async function PollPage({
   const playerId = session?.user?.playerId;
   const isLoggedIn = !!playerId;
   const isManager = canManagePoll(poll, session);
-  const manageHref = isManager ? `/polls/mine/${poll.id}` : null;
+  const manageHref = isManager ? `/poll/${poll.id}/results` : null;
 
   const verifyMsg = searchParams.verify;
   const verifyBanner = verifyMsg && (

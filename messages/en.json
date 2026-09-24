@@ -2923,12 +2923,9 @@
     "login_required": "Log in to report a poll.",
     "manage_link": "📊 Manage my poll and see the results",
     "create_btn": "+ Create a poll",
-    "mine_btn": "My polls",
     "restricted_badge": "Targeted"
   },
   "poll_manage": {
-    "page_title": "My polls",
-    "page_intro": "Create a poll for your club, your country or the whole community. You see the results in real time. The admin can block a poll that breaks the community rules.",
     "admin_title": "Polls",
     "title_new": "New poll",
     "field_question": "Question",
@@ -2984,7 +2981,6 @@
     "list_title_mine": "My polls",
     "loading": "Loading…",
     "empty_admin": "No polls yet.",
-    "empty_mine": "You haven't created any poll yet.",
     "counts": "{voters, plural, one {# voter} other {# voters}} · {ballots, plural, one {# ballot} other {# ballots}}",
     "status_DRAFT": "Draft",
     "status_OPEN": "Open",

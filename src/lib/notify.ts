@@ -53,7 +53,7 @@ function toPushPayload(
     case "POLL_REPORTED":
       return { title: "Sondage signalé ⚠️", body: `${p.pollQuestion} — ${p.reason}`, url: "/admin/polls", tag: `poll-report-${p.pollId}` };
     case "POLL_BLOCKED":
-      return { title: "Sondage bloqué", body: p.pollQuestion, url: "/polls/mine", tag: `poll-blocked-${p.pollId}` };
+      return { title: "Sondage bloqué", body: p.pollQuestion, url: "/polls", tag: `poll-blocked-${p.pollId}` };
     default:
       return { title: "Poloperator", body: "New notification", url: "/", tag: type };
   }

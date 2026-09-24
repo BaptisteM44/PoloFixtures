@@ -2928,12 +2928,9 @@
     "login_required": "Melde dich an, um eine Umfrage zu melden.",
     "manage_link": "📊 Meine Umfrage verwalten und Ergebnisse ansehen",
     "create_btn": "+ Umfrage erstellen",
-    "mine_btn": "Meine Umfragen",
     "restricted_badge": "Gezielt"
   },
   "poll_manage": {
-    "page_title": "Meine Umfragen",
-    "page_intro": "Erstelle eine Umfrage für deinen Club, dein Land oder die ganze Community. Du siehst die Ergebnisse in Echtzeit. Der Admin kann eine Umfrage sperren, die gegen die Community-Regeln verstößt.",
     "admin_title": "Umfragen",
     "title_new": "Neue Umfrage",
     "field_question": "Frage",
@@ -2989,7 +2986,6 @@
     "list_title_mine": "Meine Umfragen",
     "loading": "Wird geladen…",
     "empty_admin": "Noch keine Umfragen.",
-    "empty_mine": "Du hast noch keine Umfrage erstellt.",
     "counts": "{voters, plural, one {# Teilnehmer·in} other {# Teilnehmende}} · {ballots, plural, one {# Stimmzettel} other {# Stimmzettel}}",
     "status_DRAFT": "Entwurf",
     "status_OPEN": "Offen",

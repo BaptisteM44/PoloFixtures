@@ -80,7 +80,7 @@ function useNotifLabel() {
       case "POLL_REPORTED":
         return { title: t("poll_reported"), sub: p.pollQuestion ?? "", href: "/admin/polls" };
       case "POLL_BLOCKED":
-        return { title: t("poll_blocked"), sub: p.pollQuestion ?? "", href: "/polls/mine" };
+        return { title: t("poll_blocked"), sub: p.pollQuestion ?? "", href: "/polls" };
       default:
         return { title: t("default"), sub: "", href: "/my-teams" };
     }

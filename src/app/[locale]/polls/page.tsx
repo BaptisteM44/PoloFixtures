@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { auth } from "@/lib/auth";
 import { isPollRestricted, isVoterEligible } from "@/lib/poll-vote";
 import { loadVoterProfile } from "@/lib/poll-access";
+import { PollManager } from "@/components/PollManager";
 
 export const dynamic = "force-dynamic";
 
@@ -26,11 +27,12 @@ export default async function PollsPage() {
     },
   });
 
-  // Un sondage ciblé (club/pays/continent) n’est listé que pour son public, son
-  // créateur et l’admin — il reste accessible par lien direct pour les autres.
+  // Un sondage ciblé (club/pays/continent) n’est listé que pour son public et
+  // l’admin — il reste accessible par lien direct pour les autres. Les sondages
+  // du visiteur ne sont pas répétés ici : ils sont dans « Mes sondages ».
   const viewer = playerId ? await loadVoterProfile(playerId) : null;
   const polls = allPolls.filter((p) =>
-    !isPollRestricted(p) || isAdmin || p.createdById === playerId || isVoterEligible(p, viewer));
+    p.createdById !== playerId && (!isPollRestricted(p) || isAdmin || isVoterEligible(p, viewer)));
 
   const open = polls.filter((p) => p.status === "OPEN");
   const closed = polls.filter((p) => p.status === "CLOSED");
@@ -39,10 +41,11 @@ export default async function PollsPage() {
     <div className="page" style={{ maxWidth: 720, margin: "0 auto" }}>
       <h1 style={{ fontFamily: "var(--font-display)" }}>📊 {t("page_title")}</h1>
       <p style={{ color: "var(--text-muted)", marginBottom: 16 }}>{t("page_intro")}</p>
+
+      {/* Connecté : bouton de création + gestion de ses propres sondages */}
       {playerId && (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
-          <Link href="/polls/mine" className="primary" style={{ fontSize: 13 }}>{t("create_btn")}</Link>
-          <Link href="/polls/mine" className="ghost" style={{ fontSize: 13 }}>{t("mine_btn")}</Link>
+        <div style={{ marginBottom: 32 }}>
+          <PollManager mode="mine" />
         </div>
       )}
 
