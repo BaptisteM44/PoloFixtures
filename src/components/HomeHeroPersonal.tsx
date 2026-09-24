@@ -233,9 +233,10 @@ export function HomeHeroPersonal({
         </h1>
 
         {next ? (
-          <div
+          <Link
+            href={`/tournament/${next.slug ?? next.id}`}
             className="panel"
-            style={{ padding: 0, overflow: "hidden", boxShadow: "var(--shadow-lg)" }}
+            style={{ padding: 0, overflow: "hidden", boxShadow: "var(--shadow-lg)", display: "block", textDecoration: "none", color: "inherit" }}
           >
             <div style={{ display: "flex", alignItems: "stretch" }}>
               {/* Countdown */}
@@ -256,12 +257,11 @@ export function HomeHeroPersonal({
 
               {/* Infos tournoi */}
               <div style={{ padding: "16px 20px", minWidth: 0, flex: 1 }}>
-                <Link
-                  href={`/tournament/${next.slug ?? next.id}`}
-                  style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 20, textDecoration: "none", color: "inherit", display: "block", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                <div
+                  style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 20, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
                 >
                   {next.name}
-                </Link>
+                </div>
                 <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
                   {next.city}, {next.country} · {dateRange}
                 </div>
@@ -300,7 +300,7 @@ export function HomeHeroPersonal({
                 )}
               </div>
             </div>
-          </div>
+          </Link>
         ) : (
           <div className="panel" style={{ padding: "18px 20px" }}>
             <p style={{ margin: 0, fontSize: 14, color: "var(--text-muted)" }}>{t("hero_no_upcoming")}</p>
