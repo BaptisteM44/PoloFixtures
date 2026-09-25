@@ -27,9 +27,11 @@ export async function POST(req: Request) {
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { name, email, password, country, city } = parsed.data;
+  const { name, password, country, city } = parsed.data;
+  // Email normalisé en minuscules, doublon vérifié sans tenir compte de la casse.
+  const email = parsed.data.email.trim().toLowerCase();
 
-  const existing = await prisma.playerAccount.findUnique({ where: { email } });
+  const existing = await prisma.playerAccount.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
   if (existing) {
     return Response.json({ error: "Cette adresse email est déjà utilisée." }, { status: 409 });
   }

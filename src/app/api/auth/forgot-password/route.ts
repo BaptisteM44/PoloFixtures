@@ -19,8 +19,10 @@ export async function POST(req: Request) {
     return Response.json({ error: "Email invalide" }, { status: 400 });
   }
 
-  const account = await prisma.playerAccount.findUnique({
-    where: { email: parsed.data.email.toLowerCase() },
+  // Insensible à la casse : des comptes ont été créés avec des majuscules
+  // (« Bap@… »), la recherche exacte en minuscules ne les trouvait jamais.
+  const account = await prisma.playerAccount.findFirst({
+    where: { email: { equals: parsed.data.email.trim(), mode: "insensitive" } },
     include: { player: { select: { country: true } } },
   });
 

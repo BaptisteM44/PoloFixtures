@@ -4,6 +4,15 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { Role } from "@prisma/client";
+import { getIp, isRateLimited } from "@/lib/rate-limit";
+
+// Anti-brute-force des connexions (en mémoire, par instance) : avant, rien ne
+// limitait les essais — ni mot de passe joueur, ni code d'accès admin/orga.
+const LOGIN_WINDOW_MS = 15 * 60_000;
+function loginBlocked(request: Request | undefined, key: string, perKey: number) {
+  const ip = request ? getIp(request) : "unknown";
+  return isRateLimited(`login-ip:${ip}`, 40, LOGIN_WINDOW_MS) || isRateLimited(`login:${key}`, perKey, LOGIN_WINDOW_MS);
+}
 
 const accessCodeSchema = z.object({
   code: z.string().min(4),
@@ -26,9 +35,10 @@ export const authConfig = {
         code: { label: "Access Code", type: "password" },
         tournamentId: { label: "Tournament", type: "text" }
       },
-      async authorize(raw) {
+      async authorize(raw, request) {
         const parsed = accessCodeSchema.safeParse(raw);
         if (!parsed.success) return null;
+        if (loginBlocked(request, `code:${request ? getIp(request) : "unknown"}`, 10)) return null;
 
         const { code, tournamentId } = parsed.data;
         const now = new Date();
@@ -55,12 +65,15 @@ export const authConfig = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(raw) {
+      async authorize(raw, request) {
         const parsed = playerSchema.safeParse(raw);
         if (!parsed.success) return null;
+        const email = parsed.data.email.trim().toLowerCase();
+        if (loginBlocked(request, `email:${email}`, 10)) return null;
 
-        const account = await prisma.playerAccount.findUnique({
-          where: { email: parsed.data.email },
+        // Email insensible à la casse (« Bap@… » = « bap@… »).
+        const account = await prisma.playerAccount.findFirst({
+          where: { email: { equals: email, mode: "insensitive" } },
           include: { player: true }
         });
         if (!account) return null;
