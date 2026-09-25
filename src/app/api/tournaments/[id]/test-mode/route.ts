@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
+import { notifyAllAdmins } from "@/lib/notify";
 
 export async function PATCH(
   req: NextRequest,
@@ -24,6 +25,7 @@ export async function PATCH(
       where: { id },
       select: {
         id: true, creatorId: true, testMode: true, hidden: true,
+        slug: true, name: true, city: true, country: true, submissionStatus: true, createdViaSandbox: true,
         coOrganizers: { select: { playerId: true } },
       },
     });
@@ -51,6 +53,26 @@ export async function PATCH(
       data: updateData,
       select: { id: true, testMode: true, hidden: true },
     });
+
+    // Un tournoi en attente de validation qui passe en test sort de la file
+    // admin : on retire la notif « à valider ». S'il redevient réel, il y
+    // retourne et les admins sont prévenus.
+    const pending = tournament.submissionStatus === "PENDING" && !tournament.createdViaSandbox;
+    if (pending && typeof testMode === "boolean" && testMode !== tournament.testMode) {
+      if (testMode) {
+        await prisma.notification.deleteMany({
+          where: { type: "TOURNAMENT_NEEDS_APPROVAL", payload: { path: ["tournamentId"], equals: id } },
+        });
+      } else {
+        notifyAllAdmins("TOURNAMENT_NEEDS_APPROVAL", {
+          tournamentId: id,
+          tournamentSlug: tournament.slug ?? "",
+          tournamentName: tournament.name,
+          city: tournament.city,
+          country: tournament.country,
+        }).catch(() => {});
+      }
+    }
 
     return NextResponse.json(updated);
   } catch (error) {

@@ -8,16 +8,20 @@ import { AdminClubActions } from "@/components/AdminClubActions";
 
 export default async function AdminPage() {
   const t = await getTranslations("admin");
+  // Les tournois de test (mode test ou bac à sable) ne passent pas par la
+  // validation : ils restent consultables/modifiables sur leur page. S'ils
+  // repassent en vrai tournoi, ils réapparaissent ici.
+  const toValidate = { submissionStatus: "PENDING" as const, testMode: false, createdViaSandbox: false };
   const [pendingPlayers, pendingTournaments, rejectedTournaments, activePlayers, totalTournaments] = await Promise.all([
     prisma.player.count({ where: { status: "PENDING" } }),
-    prisma.tournament.count({ where: { submissionStatus: "PENDING" } }),
+    prisma.tournament.count({ where: toValidate }),
     prisma.tournament.count({ where: { submissionStatus: "REJECTED" } }),
     prisma.player.count({ where: { status: "ACTIVE" } }),
     prisma.tournament.count()
   ]);
 
   const pending = await prisma.tournament.findMany({
-    where: { submissionStatus: "PENDING" },
+    where: toValidate,
     select: { id: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, createdAt: true, testMode: true, creator: { select: { id: true, name: true, slug: true } } },
     orderBy: { createdAt: "asc" }
   });
