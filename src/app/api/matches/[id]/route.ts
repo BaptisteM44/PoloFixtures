@@ -38,7 +38,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   if (!existing) return new Response("Not found", { status: 404 });
 
   // Auth: allow REF/ADMIN/ORGA roles OR tournament creator/co-organizer
-  const hasRole = session?.user?.role && hasAtLeastRole(session.user.role, "REF");
+  // Rôle par code d'accès : un code REF/ORGA lié à un tournoi ne vaut que pour
+  // CE tournoi (avant, il permettait de modifier les matchs de n'importe quel
+  // tournoi). Un code sans tournoi reste global, comme sur la page arbitre.
+  const role = session?.user?.role;
+  const codeTournament = session?.user?.tournamentId;
+  const hasRole = role === "ADMIN" ||
+    (!!role && hasAtLeastRole(role, "REF") && (!codeTournament || codeTournament === existing.tournamentId));
   let isOrganizer = false;
   const playerId = session?.user?.playerId;
   if (!hasRole && playerId) {
