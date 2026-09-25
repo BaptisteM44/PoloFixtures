@@ -1226,7 +1226,9 @@
     "poll_report_dismissed": "Deine Meldung wurde geprüft, die Umfrage bleibt online",
     "poll_results_available": "Die Ergebnisse einer Umfrage, an der du teilgenommen hast, sind da",
     "poll_closing_soon": "Letzter Tag zum Abstimmen",
-    "poll_vote_milestone": "{count, plural, one {Erste Stimme für deine Umfrage!} other {# Stimmen für deine Umfrage}}"
+    "poll_vote_milestone": "{count, plural, one {Erste Stimme für deine Umfrage!} other {# Stimmen für deine Umfrage}}",
+    "story_reported": "Story von {name} gemeldet",
+    "story_reported_hidden": "Story von {name} nach mehreren Meldungen ausgeblendet"
   },
   "contact": {
     "btn_open": "Kontakt",
@@ -1499,7 +1501,9 @@
     "roadmap_move_down": "Nach unten",
     "roadmap_btn_delete": "Löschen",
     "roadmap_column_empty": "Keine Einträge",
-    "roadmap_confirm_delete": "Diesen Eintrag löschen?"
+    "roadmap_confirm_delete": "Diesen Eintrag löschen?",
+    "nav_polls": "Umfragen",
+    "nav_stories": "Stories"
   },
   "club": {
     "page_title": "Club",
@@ -3124,5 +3128,49 @@
     "desktop_safari_1": "Öffne in der Menüleiste „Ablage“ und dann „Zum Dock hinzufügen“ (ab macOS Sonoma).",
     "desktop_safari_2": "Poloperator öffnet sich danach wie eine App aus dem Dock.",
     "desktop_firefox_1": "Firefox kann auf dem Computer keine Apps installieren: öffne poloperator.com in Chrome oder Edge."
+  },
+  "stories": {
+    "aria_label": "Stories",
+    "add": "Deine Story",
+    "yours": "Du",
+    "empty": "Noch keine Stories: teile einen Polo-Moment 📸",
+    "play": "Abspielen",
+    "pause": "Pause",
+    "close": "Schließen",
+    "delete": "Löschen",
+    "report": "Melden",
+    "pin": "Hervorheben",
+    "edit_pin": "Highlight ändern",
+    "unpin": "Nicht mehr hervorheben",
+    "confirm_delete": "Diese Story löschen?",
+    "confirm_report": "Diese Story an das Poloperator-Team melden?",
+    "pin_prompt": "Unter welchem Titel hervorheben? (z. B. Turniername — leer zum Entfernen)",
+    "deleted": "Story gelöscht",
+    "reported": "Danke, wurde gemeldet.",
+    "already_reported": "Du hast sie bereits gemeldet.",
+    "pinned": "Hervorgehoben ★",
+    "unpinned": "Nicht mehr hervorgehoben",
+    "error": "Etwas ist schiefgelaufen.",
+    "compose_title": "Neue Story",
+    "pick_photo": "Foto auswählen",
+    "caption": "Bildunterschrift",
+    "caption_ph": "Ein Moment, ein Spiel, eine Stimmung…",
+    "tournament": "Verknüpftes Turnier (optional)",
+    "tournament_none": "Keins",
+    "compose_hint": "24 h lang für alle auf der Startseite sichtbar. Keine Fotos von Personen, die nicht einverstanden sind 🙏",
+    "publish": "Veröffentlichen",
+    "publishing": "Wird veröffentlicht…",
+    "err_too_big": "Foto zu groß (max. 5 MB).",
+    "err_not_image": "Diese Datei ist kein Bild.",
+    "err_rate_limited": "Du hast das heutige Story-Limit erreicht.",
+    "err_suspended": "Dein Konto ist gesperrt.",
+    "admin_title": "Stories",
+    "admin_intro": "Gemeldete Stories stehen oben. Ab 3 Meldungen wird eine Story automatisch ausgeblendet, bis du sie prüfst.",
+    "admin_empty": "Keine Stories veröffentlicht.",
+    "admin_expired": "abgelaufen",
+    "admin_hidden": "Ausgeblendet",
+    "admin_hide": "Ausblenden",
+    "admin_unhide": "Wieder einblenden",
+    "admin_reports": "{count, plural, one {# Meldung} other {# Meldungen}}"
   }
 }

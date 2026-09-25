@@ -1221,7 +1221,9 @@
     "poll_report_dismissed": "Ton signalement a été examiné, le sondage reste en ligne",
     "poll_results_available": "Les résultats d'un sondage auquel tu as voté sont disponibles",
     "poll_closing_soon": "Dernier jour pour voter",
-    "poll_vote_milestone": "{count, plural, one {Premier vote sur ton sondage !} other {# votes sur ton sondage}}"
+    "poll_vote_milestone": "{count, plural, one {Premier vote sur ton sondage !} other {# votes sur ton sondage}}",
+    "story_reported": "Story de {name} signalée",
+    "story_reported_hidden": "Story de {name} masquée après plusieurs signalements"
   },
   "contact": {
     "btn_open": "Contact",
@@ -1495,7 +1497,9 @@
     "roadmap_move_down": "Descendre",
     "roadmap_btn_delete": "Supprimer",
     "roadmap_column_empty": "Aucun élément",
-    "roadmap_confirm_delete": "Supprimer cet élément ?"
+    "roadmap_confirm_delete": "Supprimer cet élément ?",
+    "nav_polls": "Sondages",
+    "nav_stories": "Stories"
   },
   "club": {
     "page_title": "Club",
@@ -3120,5 +3124,49 @@
     "desktop_safari_1": "Dans la barre de menus, ouvre « Fichier », puis « Ajouter au Dock » (macOS Sonoma ou plus récent).",
     "desktop_safari_2": "Poloperator s'ouvre ensuite depuis le Dock, comme une app.",
     "desktop_firefox_1": "Firefox ne sait pas installer d'app sur ordinateur : ouvre poloperator.com dans Chrome ou Edge pour l'installer."
+  },
+  "stories": {
+    "aria_label": "Stories",
+    "add": "Ta story",
+    "yours": "Toi",
+    "empty": "Aucune story pour l'instant : partage un moment de polo 📸",
+    "play": "Lecture",
+    "pause": "Pause",
+    "close": "Fermer",
+    "delete": "Supprimer",
+    "report": "Signaler",
+    "pin": "À la une",
+    "edit_pin": "Modifier la une",
+    "unpin": "Retirer de la une",
+    "confirm_delete": "Supprimer cette story ?",
+    "confirm_report": "Signaler cette story à l'équipe Poloperator ?",
+    "pin_prompt": "Épingler à la une sous quel titre ? (ex. le nom du tournoi — vide pour retirer)",
+    "deleted": "Story supprimée",
+    "reported": "Merci, c'est signalé.",
+    "already_reported": "Tu l'as déjà signalée.",
+    "pinned": "Épinglée à la une ★",
+    "unpinned": "Retirée de la une",
+    "error": "Une erreur est survenue.",
+    "compose_title": "Nouvelle story",
+    "pick_photo": "Choisir une photo",
+    "caption": "Légende",
+    "caption_ph": "Un moment, un match, une ambiance…",
+    "tournament": "Tournoi lié (optionnel)",
+    "tournament_none": "Aucun",
+    "compose_hint": "Visible 24 h par tout le monde sur la page d'accueil. Pas de photo de quelqu'un qui n'est pas d'accord 🙏",
+    "publish": "Publier",
+    "publishing": "Publication…",
+    "err_too_big": "Photo trop lourde (5 Mo max).",
+    "err_not_image": "Ce fichier n'est pas une image.",
+    "err_rate_limited": "Tu as atteint la limite de stories pour aujourd'hui.",
+    "err_suspended": "Ton compte est suspendu.",
+    "admin_title": "Stories",
+    "admin_intro": "Les stories signalées apparaissent en premier. À partir de 3 signalements, une story est masquée d'office en attendant ton avis.",
+    "admin_empty": "Aucune story publiée.",
+    "admin_expired": "expirée",
+    "admin_hidden": "Masquée",
+    "admin_hide": "Masquer",
+    "admin_unhide": "Réafficher",
+    "admin_reports": "{count, plural, one {# signalement} other {# signalements}}"
   }
 }

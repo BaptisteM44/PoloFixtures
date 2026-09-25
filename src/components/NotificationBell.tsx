@@ -99,6 +99,8 @@ function useNotifLabel() {
         return { title: t("poll_results_available"), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}` };
       case "POLL_CLOSING_SOON":
         return { title: t("poll_closing_soon"), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}` };
+      case "STORY_REPORTED":
+        return { title: t(p.autoHidden === "1" ? "story_reported_hidden" : "story_reported", { name: p.authorName ?? "" }), sub: p.caption ?? "", href: "/admin/stories" };
       case "POLL_VOTE_MILESTONE":
         return { title: t("poll_vote_milestone", { count: Number(p.count) || 0 }), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}/results` };
       default:

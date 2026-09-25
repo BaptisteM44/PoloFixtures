@@ -216,6 +216,7 @@ enum NotificationType {
   POLL_RESULTS_AVAILABLE // notif votants : les résultats sont visibles
   POLL_CLOSING_SOON // notif public visé n'ayant pas voté : fermeture dans moins de 24 h
   POLL_VOTE_MILESTONE // notif créateur : palier de votes atteint
+  STORY_REPORTED // notif admin : une story a été signalée
 }
 
 enum TaskPriority {
@@ -388,6 +389,7 @@ model Tournament {
   orgaNotes          OrgaNote[]
   orgaLinks          OrgaLink[]
   followers          TournamentFollow[]
+  stories            Story[]
   accommodationHosts AccommodationHost[]
   soloEntries        TournamentSoloEntry[]
   overlayChannels    OverlayChannel[]
@@ -520,6 +522,7 @@ model Player {
   createdPolls           Poll[]                  @relation("CreatedPolls")
   pollVoterEntries       PollVoter[]
   pollReports            PollReport[]            @relation("PollReports")
+  stories                Story[]                 @relation("PlayerStories")
 }
 
 model PushSubscription {
@@ -1531,4 +1534,28 @@ model PollVoter {
   @@unique([pollId, voterHash])
   @@index([verifyToken])
   @@index([playerId])
+}
+
+/// Story de la home (façon Instagram) : photo + légende, visible 24 h. Une
+/// story épinglée « à la une » (highlightTitle) reste visible sans limite,
+/// regroupée par titre. Masquée par la modération = hiddenAt.
+model Story {
+  id             String    @id @default(cuid())
+  authorId       String
+  imagePath      String
+  caption        String?
+  tournamentId   String?
+  highlightTitle String? // non null = épinglée « à la une » (titre du groupe)
+  pinnedAt       DateTime?
+  hiddenAt       DateTime?
+  reportCount    Int       @default(0)
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+
+  author     Player      @relation("PlayerStories", fields: [authorId], references: [id], onDelete: Cascade)
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+
+  @@index([expiresAt])
+  @@index([highlightTitle])
+  @@index([authorId])
 }

@@ -68,6 +68,8 @@ function toPushPayload(
       return { title: "Résultats disponibles 📊", body: p.pollQuestion, url: `/poll/${p.pollId}`, tag: `poll-results-${p.pollId}` };
     case "POLL_CLOSING_SOON":
       return { title: "Sondage : dernier jour ⏳", body: p.pollQuestion, url: `/poll/${p.pollId}`, tag: `poll-closing-${p.pollId}` };
+    case "STORY_REPORTED":
+      return { title: p.autoHidden === "1" ? "Story masquée (signalements) ⚠️" : "Story signalée ⚠️", body: `${p.authorName}${p.caption ? ` — ${p.caption}` : ""}`, url: "/admin/stories", tag: `story-report-${p.storyId}` };
     case "POLL_VOTE_MILESTONE":
       return { title: `${p.count} vote(s) 🎉`, body: p.pollQuestion, url: `/poll/${p.pollId}/results`, tag: `poll-milestone-${p.pollId}` };
     default:

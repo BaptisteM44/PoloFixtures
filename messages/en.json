@@ -1221,7 +1221,9 @@
     "poll_report_dismissed": "Your report was reviewed, the poll stays online",
     "poll_results_available": "Results are out for a poll you voted in",
     "poll_closing_soon": "Last day to vote",
-    "poll_vote_milestone": "{count, plural, one {First vote on your poll!} other {# votes on your poll}}"
+    "poll_vote_milestone": "{count, plural, one {First vote on your poll!} other {# votes on your poll}}",
+    "story_reported": "Story by {name} reported",
+    "story_reported_hidden": "Story by {name} hidden after several reports"
   },
   "contact": {
     "btn_open": "Contact",
@@ -1495,7 +1497,9 @@
     "roadmap_move_down": "Move down",
     "roadmap_btn_delete": "Delete",
     "roadmap_column_empty": "No items",
-    "roadmap_confirm_delete": "Delete this item?"
+    "roadmap_confirm_delete": "Delete this item?",
+    "nav_polls": "Polls",
+    "nav_stories": "Stories"
   },
   "club": {
     "page_title": "Club",
@@ -3119,5 +3123,49 @@
     "desktop_safari_1": "In the menu bar, open “File”, then “Add to Dock” (macOS Sonoma or later).",
     "desktop_safari_2": "Poloperator then opens from the Dock, like an app.",
     "desktop_firefox_1": "Firefox can't install apps on desktop: open poloperator.com in Chrome or Edge to install it."
+  },
+  "stories": {
+    "aria_label": "Stories",
+    "add": "Your story",
+    "yours": "You",
+    "empty": "No stories yet: share a polo moment 📸",
+    "play": "Play",
+    "pause": "Pause",
+    "close": "Close",
+    "delete": "Delete",
+    "report": "Report",
+    "pin": "Feature",
+    "edit_pin": "Edit feature",
+    "unpin": "Unfeature",
+    "confirm_delete": "Delete this story?",
+    "confirm_report": "Report this story to the Poloperator team?",
+    "pin_prompt": "Feature it under which title? (e.g. the tournament name — empty to remove)",
+    "deleted": "Story deleted",
+    "reported": "Thanks, it's been reported.",
+    "already_reported": "You already reported it.",
+    "pinned": "Featured ★",
+    "unpinned": "No longer featured",
+    "error": "Something went wrong.",
+    "compose_title": "New story",
+    "pick_photo": "Pick a photo",
+    "caption": "Caption",
+    "caption_ph": "A moment, a match, a vibe…",
+    "tournament": "Linked tournament (optional)",
+    "tournament_none": "None",
+    "compose_hint": "Visible to everyone on the homepage for 24 h. No photos of people who didn't agree to it 🙏",
+    "publish": "Publish",
+    "publishing": "Publishing…",
+    "err_too_big": "Photo too large (5 MB max).",
+    "err_not_image": "This file isn't an image.",
+    "err_rate_limited": "You've reached today's story limit.",
+    "err_suspended": "Your account is suspended.",
+    "admin_title": "Stories",
+    "admin_intro": "Reported stories come first. From 3 reports, a story is hidden automatically until you review it.",
+    "admin_empty": "No stories published.",
+    "admin_expired": "expired",
+    "admin_hidden": "Hidden",
+    "admin_hide": "Hide",
+    "admin_unhide": "Unhide",
+    "admin_reports": "{count, plural, one {# report} other {# reports}}"
   }
 }
