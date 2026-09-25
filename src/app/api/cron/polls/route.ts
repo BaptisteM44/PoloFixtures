@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sweepPolls } from "@/lib/poll-notify";
+import { sweepPhotoReveals } from "@/lib/tournament-photos";
 
 export const dynamic = "force-dynamic";
 
@@ -15,5 +16,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   await sweepPolls();
+  // Même cron : révélation des pellicules de tournoi (21h le dernier jour).
+  await sweepPhotoReveals();
   return NextResponse.json({ ok: true });
 }

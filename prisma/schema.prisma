@@ -216,7 +216,8 @@ enum NotificationType {
   POLL_RESULTS_AVAILABLE // notif votants : les résultats sont visibles
   POLL_CLOSING_SOON // notif public visé n'ayant pas voté : fermeture dans moins de 24 h
   POLL_VOTE_MILESTONE // notif créateur : palier de votes atteint
-  STORY_REPORTED // notif admin : une story a été signalée
+  TOURNAMENT_PHOTOS_REVEALED // notif participants : la pellicule du tournoi est révélée (21h le dernier jour)
+  TOURNAMENT_PHOTO_REPORTED // notif admin : une photo de pellicule a été signalée
 }
 
 enum TaskPriority {
@@ -334,6 +335,10 @@ model Tournament {
   createdViaSandbox       Boolean          @default(false) // true uniquement pour les tournois créés depuis /sandbox — distinct de testMode (qu'un vrai tournoi peut aussi activer). Exclut des notifs email.
   hidden                  Boolean          @default(false) // Hidden from public tournament list (organizer-controlled)
   timezone                String? // Fuseau IANA du lieu (ex: "Europe/Brussels") — tous les horaires affichés dans CE fuseau
+  // Pellicule jetable : épinglée « à la une » sur la home (admin), et notif
+  // de révélation déjà envoyée (idempotence du balayage).
+  photosPinnedAt          DateTime?
+  photosRevealNotifiedAt  DateTime?
   usesPipeline            Boolean          @default(false) // true = nouveau système de stages (refonte formats)
   approved                Boolean          @default(false)
   submissionStatus        SubmissionStatus @default(PENDING)
@@ -389,7 +394,7 @@ model Tournament {
   orgaNotes          OrgaNote[]
   orgaLinks          OrgaLink[]
   followers          TournamentFollow[]
-  stories            Story[]
+  photos             TournamentPhoto[]
   accommodationHosts AccommodationHost[]
   soloEntries        TournamentSoloEntry[]
   overlayChannels    OverlayChannel[]
@@ -522,7 +527,7 @@ model Player {
   createdPolls           Poll[]                  @relation("CreatedPolls")
   pollVoterEntries       PollVoter[]
   pollReports            PollReport[]            @relation("PollReports")
-  stories                Story[]                 @relation("PlayerStories")
+  tournamentPhotos       TournamentPhoto[]       @relation("TournamentPhotos")
 }
 
 model PushSubscription {
@@ -1536,26 +1541,21 @@ model PollVoter {
   @@index([playerId])
 }
 
-/// Story de la home (façon Instagram) : photo + légende, visible 24 h. Une
-/// story épinglée « à la une » (highlightTitle) reste visible sans limite,
-/// regroupée par titre. Masquée par la modération = hiddenAt.
-model Story {
-  id             String    @id @default(cuid())
-  authorId       String
-  imagePath      String
-  caption        String?
-  tournamentId   String?
-  highlightTitle String? // non null = épinglée « à la une » (titre du groupe)
-  pinnedAt       DateTime?
-  hiddenAt       DateTime?
-  reportCount    Int       @default(0)
-  expiresAt      DateTime
-  createdAt      DateTime  @default(now())
+/// Pellicule jetable d'un tournoi : chaque participant prend jusqu'à 5 photos
+/// pendant le tournoi ; personne ne voit celles des autres avant la
+/// révélation (21h heure locale, le dernier jour). hiddenAt = modération.
+model TournamentPhoto {
+  id           String    @id @default(cuid())
+  tournamentId String
+  authorId     String
+  imagePath    String
+  hiddenAt     DateTime?
+  reportCount  Int       @default(0)
+  createdAt    DateTime  @default(now())
 
-  author     Player      @relation("PlayerStories", fields: [authorId], references: [id], onDelete: Cascade)
-  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  author     Player     @relation("TournamentPhotos", fields: [authorId], references: [id], onDelete: Cascade)
 
-  @@index([expiresAt])
-  @@index([highlightTitle])
-  @@index([authorId])
+  @@index([tournamentId])
+  @@index([authorId, tournamentId])
 }

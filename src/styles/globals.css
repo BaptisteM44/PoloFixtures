@@ -10986,7 +10986,7 @@ details[open] .club-sessions__past-summary::before {
 }
 
 /* ========================
-   STORIES (home, façon Instagram)
+   PELLICULES (bulles façon stories sur la home + visionneuse)
    ======================== */
 .stories-bar { margin: 4px 0 12px; }
 .stories-bar__scroller {
@@ -11042,7 +11042,15 @@ details[open] .club-sessions__past-summary::before {
   justify-content: center;
 }
 .story-bubble__img--initial { font-family: var(--font-display); font-weight: 700; font-size: 24px; background: var(--yellow); color: var(--border); }
-.story-bubble__img--add { font-size: 30px; font-weight: 400; border: none; background: var(--surface); color: var(--text); }
+.story-bubble__img--add { font-size: 26px; font-weight: 400; border: none; background: var(--surface); color: var(--text); }
+.story-bubble { text-decoration: none; }
+.story-bubble__ring { position: relative; }
+.story-bubble__badge {
+  position: absolute; right: -2px; bottom: -2px;
+  min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px;
+  background: var(--teal); color: var(--border); border: 2px solid var(--border);
+  font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+}
 .story-bubble__label {
   font-size: 11px;
   font-weight: 600;
@@ -11127,26 +11135,60 @@ details[open] .club-sessions__past-summary::before {
 }
 .story-viewer__notice { margin: 0; font-size: 13px; font-weight: 700; color: var(--yellow); }
 .story-viewer__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.story-viewer__counter {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 2;
+  color: #fff; font-size: 12px; font-weight: 700; background: rgba(0,0,0,0.4);
+  padding: 2px 10px; border-radius: 999px;
+}
 
-/* Publication */
-.story-composer {
-  position: fixed; inset: 0; z-index: 3000;
-  background: rgba(0,0,0,0.5);
-  display: flex; align-items: center; justify-content: center; padding: 16px;
-  animation: fadeIn 0.15s ease;
+/* Onglet Pellicule d'un tournoi */
+.roll { display: grid; gap: 16px; padding: 20px; }
+.roll__head h2 { margin: 0 0 4px; }
+.roll__head p { margin: 0; }
+.roll__sealed {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px; border: 2px dashed var(--border); border-radius: var(--radius);
+  background: var(--gray);
 }
-.story-composer__panel { width: min(440px, 100%); max-height: 100%; overflow-y: auto; display: grid; gap: 12px; padding: 18px; }
-.story-composer__head { display: flex; justify-content: space-between; align-items: center; }
-.story-composer__head h3 { margin: 0; }
-.story-composer__drop {
-  position: relative; display: flex; align-items: center; justify-content: center;
-  aspect-ratio: 9 / 12; max-height: 46vh; border: 2px dashed var(--border); border-radius: var(--radius);
-  cursor: pointer; overflow: hidden; background: var(--gray); font-weight: 700;
+.roll__sealed p { margin: 0; line-height: 1.5; }
+.roll__sealed-icon { font-size: 30px; flex-shrink: 0; }
+.roll__camera {
+  display: grid; justify-items: center; gap: 10px; text-align: center;
+  padding: 20px 16px; border: 2px solid var(--border); border-radius: var(--radius);
+  background: var(--yellow); box-shadow: var(--shadow);
 }
-.story-composer__drop.has-preview { border-style: solid; background: #000; }
-.story-composer__drop img { width: 100%; height: 100%; object-fit: contain; }
-.story-composer__drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.story-composer__field { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
-.story-composer__field small { justify-self: end; font-weight: 400; color: var(--text-muted); }
-.story-composer__hint { margin: 0; font-size: 12px; color: var(--text-muted); }
-.story-composer__error { margin: 0; font-size: 13px; color: var(--danger); font-weight: 600; }
+.roll__shots { display: flex; gap: 8px; }
+.roll__shot { width: 18px; height: 26px; border-radius: 3px; border: 2px solid var(--border); background: var(--surface); }
+.roll__shot.is-used { background: var(--border); }
+.roll__camera-text { margin: 0; font-weight: 700; font-family: var(--font-display); }
+.roll__shoot { position: relative; overflow: hidden; cursor: pointer; font-size: 16px; padding: 12px 24px; }
+.roll__shoot input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.roll__shoot.is-busy { opacity: 0.7; pointer-events: none; }
+.roll__error { margin: 0; color: var(--danger); font-weight: 600; font-size: 13px; }
+.roll__mine-title { margin: 6px 0 0; }
+.roll__mine { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.roll__thumb { position: relative; width: 64px; height: 64px; }
+.roll__thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; border: 2px solid var(--border); }
+.roll__thumb button {
+  position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; padding: 0;
+  border-radius: 50%; font-size: 11px; line-height: 1; box-shadow: none;
+  background: var(--surface); border: 2px solid var(--border); cursor: pointer;
+}
+.roll__pin { justify-self: start; font-size: 12px; }
+.roll__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.roll__cell {
+  position: relative; aspect-ratio: 1; padding: 0; border: 2px solid var(--border);
+  border-radius: 8px; overflow: hidden; cursor: pointer; background: #000; box-shadow: none;
+}
+.roll__cell img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition); }
+.roll__cell:hover img { transform: scale(1.04); }
+.roll__cell-author {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 6px 4px;
+  font-size: 11px; font-weight: 700; color: #fff; text-align: left;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+@media (max-width: 520px) {
+  .roll__grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .roll__cell-author { display: none; }
+}

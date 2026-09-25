@@ -1,5 +1,7 @@
 // @ts-nocheck
 import { Link } from "@/i18n/navigation";
+import { TournamentRoll } from "@/components/TournamentRoll";
+import { rollPhase } from "@/lib/tournament-photos";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { Tabs } from "@/components/Tabs";
@@ -306,6 +308,7 @@ export default async function TournamentPage({
   const isSoloRegistration = (tournament as { maxSoloPlayers?: number | null }).maxSoloPlayers != null;
   const hasCommunity = !registrationClosed && !isSoloRegistration;
 
+  const rollVisible = rollPhase(tournament) !== "before";
   const tabs = [
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
     { label: t("tab_info"), value: "info", href: `/tournament/${params.id}?tab=info` },
@@ -347,6 +350,8 @@ export default async function TournamentPage({
     { label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` },
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")} (${tournament.freeAgents.length})`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
+    // Pellicule jetable : visible dès le 1er jour du tournoi (heure locale).
+    ...(rollVisible ? [{ label: `📸 ${t("tab_photos")}`, value: "photos", href: `/tournament/${params.id}?tab=photos` }] : []),
     ...(tournament.accommodationAvailable && (!!myTeam || isAccommodationHost) ? [{ label: t("tab_accommodation"), value: "hebergement", href: `/tournament/${params.id}?tab=hebergement` }] : []),
   ];
 
@@ -1932,6 +1937,16 @@ export default async function TournamentPage({
       {/* ── ONGLET CHAT ── */}
       {tab === "hebergement" && tournament.accommodationAvailable && (!!myTeam || isAccommodationHost) && (
         <AccommodationPublicView tournamentId={tournament.id} />
+      )}
+
+      {tab === "photos" && rollVisible && (
+        <TournamentRoll
+          tournamentId={tournament.id}
+          tournamentName={tournament.name}
+          viewerId={currentPlayerId}
+          isAdmin={role === "ADMIN"}
+          isOrga={isOrga}
+        />
       )}
 
       {tab === "chat" && t_.chatMode !== "DISABLED" && (

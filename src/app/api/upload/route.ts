@@ -9,7 +9,7 @@ const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 // Dossiers autorisés (évite un path traversal via `folder` et cantonne les
 // uploads à des usages connus). Toute autre valeur retombe sur "misc".
 const ALLOWED_FOLDERS = new Set([
-  "misc", "players", "clubs", "teams", "squads", "tournaments", "sponsors", "venues", "stories",
+  "misc", "players", "clubs", "teams", "squads", "tournaments", "sponsors", "venues", "tournament-photos",
 ]);
 
 const r2 = new S3Client({

@@ -16,26 +16,33 @@ type TournamentLite = {
  */
 const END_HOUR_LOCAL = 21;
 export function isAfterEndThreshold(dateEnd: Date, timezone: string | null, now: Date): boolean {
-  // Composantes calendaires de dateEnd DANS le fuseau du tournoi (à défaut UTC).
+  return now.getTime() >= localTimeOnDay(dateEnd, timezone, END_HOUR_LOCAL).getTime();
+}
+
+/**
+ * Instant (UTC) correspondant à `hour`:00 heure locale du lieu, le jour
+ * calendaire de `date` dans ce fuseau (à défaut UTC). Ex. 21h le dernier jour
+ * d'un tournoi à Bruxelles = 19:00 UTC l'été.
+ */
+export function localTimeOnDay(date: Date, timezone: string | null, hour: number): Date {
+  // Composantes calendaires de `date` DANS le fuseau du tournoi (à défaut UTC).
   const tz = timezone || "UTC";
   let y: number, mo: number, d: number;
   try {
     const parts = new Intl.DateTimeFormat("en-CA", {
       timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit",
-    }).formatToParts(dateEnd);
+    }).formatToParts(date);
     const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
     y = get("year"); mo = get("month"); d = get("day");
   } catch {
     // Fuseau invalide → fallback UTC
-    y = dateEnd.getUTCFullYear(); mo = dateEnd.getUTCMonth() + 1; d = dateEnd.getUTCDate();
+    y = date.getUTCFullYear(); mo = date.getUTCMonth() + 1; d = date.getUTCDate();
   }
-  // Instant "21h00 local" ce jour-là = on cherche l'UTC correspondant. On calcule
-  // le décalage du fuseau à cette date via une sonde à midi UTC (stable, hors DST
-  // edge de minuit), puis on pose l'heure cible.
+  // On calcule le décalage du fuseau à cette date via une sonde à midi UTC
+  // (stable, hors DST edge de minuit), puis on pose l'heure cible.
   const probe = new Date(Date.UTC(y, mo - 1, d, 12, 0, 0));
   const offsetMin = tzOffsetMinutes(probe, tz);
-  const thresholdUtcMs = Date.UTC(y, mo - 1, d, END_HOUR_LOCAL, 0, 0) - offsetMin * 60_000;
-  return now.getTime() >= thresholdUtcMs;
+  return new Date(Date.UTC(y, mo - 1, d, hour, 0, 0) - offsetMin * 60_000);
 }
 
 // Décalage (minutes) du fuseau `tz` à l'instant `at` : (heure locale - UTC).

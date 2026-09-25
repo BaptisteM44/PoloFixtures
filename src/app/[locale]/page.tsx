@@ -10,8 +10,8 @@ import type { MapTournament } from "@/components/TournamentMap";
 import { HomeHeroPersonal, type HeroNextTournament } from "@/components/HomeHeroPersonal";
 import { EurosVoteBanner } from "@/components/EurosVoteBanner";
 import { HomeInstallBanner } from "@/components/HomeInstallBanner";
-import { StoriesBar } from "@/components/StoriesBar";
-import { loadStoryGroups, storyTournamentOptions } from "@/lib/stories";
+import { HomeRollsBar } from "@/components/HomeRollsBar";
+import { loadHomeRolls } from "@/lib/tournament-photos";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { countryToContinent } from "@/lib/country-utils";
 
@@ -245,15 +245,12 @@ export default async function HomePage() {
   }
 
   const isAdmin = session?.user?.role === "ADMIN";
-  const [storyGroups, storyTournaments] = await Promise.all([
-    loadStoryGroups(currentPlayerId),
-    currentPlayerId ? storyTournamentOptions() : Promise.resolve([]),
-  ]);
+  const { rolls, cameras } = await loadHomeRolls(currentPlayerId);
 
   return (
     <div className="home">
-      {/* ---- STORIES (à la une + stories du jour) ---- */}
-      <StoriesBar groups={storyGroups} viewerId={currentPlayerId} isAdmin={isAdmin} tournaments={storyTournaments} />
+      {/* ---- PELLICULES : appareil des tournois en cours + pellicules révélées ---- */}
+      <HomeRollsBar rolls={rolls} cameras={cameras} viewerId={currentPlayerId} isAdmin={isAdmin} />
 
       {/* ---- HERO : perso si connecté, marketing sinon ---- */}
       {me ? (

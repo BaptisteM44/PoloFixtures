@@ -32,7 +32,7 @@ export async function DELETE() {
     // contenus publics rattachés (stories, annonces agent libre).
     prisma.pushSubscription.deleteMany({ where: { playerId } }),
     prisma.notificationPreference.deleteMany({ where: { playerId } }),
-    prisma.story.deleteMany({ where: { authorId: playerId } }),
+    prisma.tournamentPhoto.deleteMany({ where: { authorId: playerId } }),
     prisma.freeAgent.deleteMany({ where: { playerId } }),
     // Anonymize player data
     prisma.player.update({

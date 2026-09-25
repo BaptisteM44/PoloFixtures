@@ -16,7 +16,7 @@ export function AdminNav() {
     { href: "/admin/countries", label: t("nav_countries") },
     { href: "/admin/settings", label: t("nav_access_codes") },
     { href: "/admin/polls", label: `📊 ${t("nav_polls")}` },
-    { href: "/admin/stories", label: `📸 ${t("nav_stories")}` },
+    { href: "/admin/photos", label: `📸 ${t("nav_photos")}` },
     { href: "/admin/whbpc", label: "WHBPC" },
   ];
 
