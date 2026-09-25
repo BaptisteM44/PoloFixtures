@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { ISO_COUNTRIES } from "@/lib/iso-countries";
+import { PollTargetingEditor, type ClubOption, type TargetingValue } from "@/components/PollTargetingEditor";
 
 type GuestField = { key: string; label: string; required: boolean; type: "text" | "club" };
 type ResultsMode = "IMMEDIATE" | "AT_DATE" | "AT_CLOSE" | "HIDDEN";
@@ -13,15 +13,18 @@ type PollListItem = {
   options: string[]; allowGuests: boolean; multipleChoice: boolean;
   showResults: ResultsMode; openAt: string | null; closeAt: string | null; resultsAt: string | null;
   eligibleClubIds: string[]; eligibleCountries: string[]; eligibleContinents: string[];
-  blockedAt: string | null; blockedReason: string | null;
+  blockedAt: string | null; blockedReason: string | null; visibleToAll: boolean;
+  approvals: Approval[];
   createdBy: { id: string; name: string; slug: string | null } | null;
   _count: { ballots: number; voters: number; reports: number };
   reports?: Report[];
 };
-type ClubOption = { id: string; name: string; city: string };
+type Approval = {
+  id: string; status: "PENDING" | "REJECTED"; reason: string | null;
+  countries: string[]; continents: string[]; global: boolean; club: { name: string } | null;
+};
 
 const RESULTS_MODES: ResultsMode[] = ["IMMEDIATE", "AT_DATE", "AT_CLOSE", "HIDDEN"];
-const CONTINENTS = ["EU", "NA", "SA", "AS", "AF", "OC"] as const;
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: "var(--text-muted)", OPEN: "var(--teal)", CLOSED: "var(--danger)", BLOCKED: "var(--danger)",
 };
@@ -31,50 +34,6 @@ const STATUS_COLOR: Record<string, string> = {
 function localToIso(local: string): string | null {
   if (!local) return null;
   return new Date(local).toISOString();
-}
-
-/** Sélection multiple avec recherche : puces des éléments choisis + suggestions. */
-function ChipPicker({
-  items, selected, onChange, placeholder,
-}: {
-  items: { value: string; label: string }[];
-  selected: string[];
-  onChange: (next: string[]) => void;
-  placeholder: string;
-}) {
-  const [query, setQuery] = useState("");
-  const labelOf = (v: string) => items.find((i) => i.value === v)?.label ?? v;
-  const suggestions = query.trim()
-    ? items
-        .filter((i) => !selected.includes(i.value) && i.label.toLowerCase().includes(query.trim().toLowerCase()))
-        .slice(0, 8)
-    : [];
-  return (
-    <div style={{ display: "grid", gap: 6 }}>
-      {selected.length > 0 && (
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {selected.map((v) => (
-            <button key={v} type="button" className="ghost" style={{ fontSize: 12, padding: "2px 10px" }}
-              onClick={() => onChange(selected.filter((s) => s !== v))}>
-              {labelOf(v)} ✕
-            </button>
-          ))}
-        </div>
-      )}
-      <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={placeholder} style={{ maxWidth: 320 }} />
-      {suggestions.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", border: "1px solid var(--border-light)", borderRadius: 8, maxWidth: 320 }}>
-          {suggestions.map((s) => (
-            <button key={s.value} type="button" className="ghost"
-              style={{ textAlign: "left", border: "none", borderRadius: 0, fontSize: 13 }}
-              onClick={() => { onChange([...selected, s.value]); setQuery(""); }}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 /**
@@ -105,9 +64,14 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
   const [allowComment, setAllowComment] = useState(false);
   const [allowGuests, setAllowGuests] = useState(true);
   const [guestFields, setGuestFields] = useState<GuestField[]>([]);
-  const [eligibleClubIds, setEligibleClubIds] = useState<string[]>([]);
-  const [eligibleCountries, setEligibleCountries] = useState<string[]>([]);
-  const [eligibleContinents, setEligibleContinents] = useState<string[]>([]);
+  const emptyTargeting: TargetingValue = { clubIds: [], countries: [], continents: [] };
+  const [targeting, setTargeting] = useState<TargetingValue>(emptyTargeting);
+  const [visibleToAll, setVisibleToAll] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  // Édition du ciblage d'un sondage existant.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTargeting, setEditTargeting] = useState<TargetingValue>(emptyTargeting);
+  const [editVisible, setEditVisible] = useState(false);
   const [openAt, setOpenAt] = useState("");
   const [closeAt, setCloseAt] = useState("");
   const [showResults, setShowResults] = useState<ResultsMode>("IMMEDIATE");
@@ -117,9 +81,7 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
   const [formOpen, setFormOpen] = useState(isAdminView);
   const [error, setError] = useState<string | null>(null);
 
-  const restricted = eligibleClubIds.length > 0 || eligibleCountries.length > 0 || eligibleContinents.length > 0;
-  const clubItems = useMemo(() => clubs.map((c) => ({ value: c.id, label: `${c.name} — ${c.city}` })), [clubs]);
-  const countryItems = useMemo(() => ISO_COUNTRIES.map((c) => ({ value: c.name, label: c.name })), []);
+  const restricted = targeting.clubIds.length > 0 || targeting.countries.length > 0 || targeting.continents.length > 0;
   const clubName = (id: string) => clubs.find((c) => c.id === id)?.name ?? "?";
 
   const load = async () => {
@@ -139,6 +101,7 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
 
   const create = async () => {
     setError(null);
+    setNotice(null);
     const cleanOptions = options.map((o) => o.trim()).filter(Boolean);
     if (question.trim().length < 3) { setError(t("err_question_short")); return; }
     if (cleanOptions.length < 2) { setError(t("err_options_min")); return; }
@@ -159,9 +122,10 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
           guestFields: restricted ? [] : guestFields
             .filter((f) => f.key.trim() && f.label.trim())
             .map((f) => ({ key: f.key.trim(), label: f.label.trim(), required: f.required, type: f.type })),
-          eligibleClubIds,
-          eligibleCountries,
-          eligibleContinents,
+          eligibleClubIds: targeting.clubIds,
+          eligibleCountries: targeting.countries,
+          eligibleContinents: targeting.continents,
+          visibleToAll: restricted && visibleToAll,
           openAt: localToIso(openAt),
           closeAt: localToIso(closeAt),
           showResults,
@@ -170,10 +134,12 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
       });
       if (res.status === 429) { setError(t("err_rate_limited")); return; }
       if (!res.ok) { setError(t("err_create")); return; }
+      const created = await res.json();
+      setNotice(created.pendingApprovals > 0 ? t("created_pending", { count: created.pendingApprovals }) : t("created_draft"));
       setQuestion(""); setDescription(""); setOptions(["", ""]);
       setGuestFields([]); setMultipleChoice(false); setAllowGuests(true);
       setMinChoices(""); setMaxChoices(""); setAllowComment(false);
-      setEligibleClubIds([]); setEligibleCountries([]); setEligibleContinents([]);
+      setTargeting(emptyTargeting); setVisibleToAll(false);
       setOpenAt(""); setCloseAt(""); setShowResults("IMMEDIATE"); setResultsAt("");
       if (!isAdminView) setFormOpen(false);
       await load();
@@ -188,9 +154,34 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (!res.ok) setActionError(t("err_generic"));
-    load();
+    if (!res.ok) {
+      const code = res.headers.get("content-type")?.includes("json") ? (await res.json()).error : null;
+      setActionError(
+        code === "awaiting_approval" ? t("err_awaiting_approval") :
+        code === "approval_rejected" ? t("err_approval_rejected") :
+        code === "cannot_narrow" ? t("err_cannot_narrow") : t("err_generic"));
+    }
+    await load();
+    return res.ok;
   };
+
+  const startEdit = (p: PollListItem) => {
+    setEditingId(p.id);
+    setEditTargeting({ clubIds: p.eligibleClubIds, countries: p.eligibleCountries, continents: p.eligibleContinents });
+    setEditVisible(p.visibleToAll);
+  };
+  const saveEdit = async (id: string) => {
+    const ok = await patch(id, {
+      eligibleClubIds: editTargeting.clubIds,
+      eligibleCountries: editTargeting.countries,
+      eligibleContinents: editTargeting.continents,
+      visibleToAll: editVisible,
+    });
+    if (ok) setEditingId(null);
+  };
+
+  const approvalLabel = (a: Approval) =>
+    a.club?.name ?? (a.global ? t("target_everyone") : [...a.countries, ...a.continents.map(continentLabel)].join(", "));
 
   const remove = async (id: string) => {
     if (!confirm(t("confirm_delete"))) return;
@@ -296,25 +287,11 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
 
         {/* Qui peut voter ? */}
         <div style={sectionStyle}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{t("eligibility_title")}</span>
-          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("eligibility_hint")}</p>
-          <span style={{ fontSize: 12, fontWeight: 600 }}>{t("eligibility_continents")}</span>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            {CONTINENTS.map((code) => (
-              <label key={code} style={{ fontSize: 13, display: "flex", gap: 6, alignItems: "center" }}>
-                <input type="checkbox" checked={eligibleContinents.includes(code)}
-                  onChange={(e) => setEligibleContinents((prev) => e.target.checked ? [...prev, code] : prev.filter((c) => c !== code))} />
-                {continentLabel(code)}
-              </label>
-            ))}
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 600 }}>{t("eligibility_countries")}</span>
-          <ChipPicker items={countryItems} selected={eligibleCountries} onChange={setEligibleCountries} placeholder={t("search_country_ph")} />
-          <span style={{ fontSize: 12, fontWeight: 600 }}>{t("eligibility_clubs")}</span>
-          <ChipPicker items={clubItems} selected={eligibleClubIds} onChange={setEligibleClubIds} placeholder={t("search_club_ph")} />
-          {restricted && (
-            <p style={{ fontSize: 12, color: "var(--teal)", fontWeight: 600, margin: 0 }}>🎯 {t("eligibility_guests_note")}</p>
-          )}
+          <PollTargetingEditor
+            value={targeting} onChange={setTargeting}
+            visibleToAll={visibleToAll} onVisibleToAllChange={setVisibleToAll}
+            clubs={clubs}
+          />
         </div>
 
         {/* Non-inscrits — sans objet pour un sondage ciblé */}
@@ -408,6 +385,7 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
         <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>{t("draft_hint")}</p>
       </div>
       )}
+      {notice && <p style={{ fontSize: 13, color: "var(--teal)", fontWeight: 600, margin: 0 }}>✓ {notice}</p>}
 
       {/* ── Liste ── (en mode joueur, masquée tant qu’il n’a créé aucun sondage) */}
       {(isAdminView || polls.length > 0) && (
@@ -444,6 +422,39 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
                 </div>
               )}
 
+              {p.approvals.length > 0 && (
+                <div style={{ fontSize: 12, display: "grid", gap: 2 }}>
+                  {p.approvals.map((a) => (
+                    <span key={a.id} style={{ color: a.status === "REJECTED" ? "var(--danger)" : "var(--text-muted)" }}>
+                      {a.status === "PENDING"
+                        ? `⏳ ${t("approval_pending", { target: approvalLabel(a) })}`
+                        : `❌ ${t("approval_rejected", { target: approvalLabel(a) })}${a.reason ? ` — ${a.reason}` : ""}`}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {p.visibleToAll && summary && (
+                <div style={{ fontSize: 12, color: "var(--text-muted)" }}>👁️ {t("visible_to_all_badge")}</div>
+              )}
+
+              {editingId === p.id && (
+                <div style={{ border: "1px solid var(--border-light)", borderRadius: 8, padding: 12, display: "grid", gap: 8 }}>
+                  {p.status !== "DRAFT" && <p style={{ fontSize: 12, margin: 0, color: "var(--text-muted)" }}>{t("edit_widen_only")}</p>}
+                  <PollTargetingEditor
+                    value={editTargeting} onChange={setEditTargeting}
+                    visibleToAll={editVisible} onVisibleToAllChange={setEditVisible}
+                    clubs={clubs} pollId={p.id}
+                    lockedTargets={p.status !== "DRAFT" && !isAdminView
+                      ? { clubIds: p.eligibleClubIds, countries: p.eligibleCountries, continents: p.eligibleContinents }
+                      : undefined}
+                  />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button className="primary" style={{ fontSize: 12 }} onClick={() => saveEdit(p.id)}>{t("btn_save_targeting")}</button>
+                    <button className="ghost" style={{ fontSize: 12 }} onClick={() => setEditingId(null)}>{t("btn_cancel")}</button>
+                  </div>
+                </div>
+              )}
+
               {isAdminView && p._count.reports > 0 && (
                 <details style={{ fontSize: 13 }}>
                   <summary style={{ cursor: "pointer", color: "var(--danger)", fontWeight: 700 }}>
@@ -463,10 +474,17 @@ export function PollManager({ mode }: { mode: "admin" | "mine" }) {
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                 {(!blocked || isAdminView) && (
                   <>
-                    {p.status === "DRAFT" && <button className="primary" style={{ fontSize: 12 }} onClick={() => patch(p.id, { status: "OPEN" })}>{t("btn_open")}</button>}
+                    {p.status === "DRAFT" && (
+                      <button className="primary" style={{ fontSize: 12 }} disabled={p.approvals.length > 0}
+                        title={p.approvals.length > 0 ? t("err_awaiting_approval") : undefined}
+                        onClick={() => patch(p.id, { status: "OPEN" })}>{t("btn_open")}</button>
+                    )}
                     {p.status === "OPEN" && <button className="ghost" style={{ fontSize: 12 }} onClick={() => patch(p.id, { status: "CLOSED" })}>{t("btn_close")}</button>}
                     {p.status === "CLOSED" && <button className="ghost" style={{ fontSize: 12 }} onClick={() => patch(p.id, { status: "OPEN" })}>{t("btn_reopen")}</button>}
                   </>
+                )}
+                {(!blocked || isAdminView) && editingId !== p.id && (
+                  <button className="ghost" style={{ fontSize: 12 }} onClick={() => startEdit(p)}>🎯 {t("btn_edit_targeting")}</button>
                 )}
                 <button className="ghost" style={{ fontSize: 12 }} onClick={() => copyLink(p.id)}>
                   {copiedId === p.id ? t("btn_copied") : t("btn_copy")}

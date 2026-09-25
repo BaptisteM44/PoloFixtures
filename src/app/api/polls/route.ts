@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { isRateLimited } from "@/lib/rate-limit";
-import { isPollRestricted } from "@/lib/poll-vote";
+import { applyTargeting, previewTargeting } from "@/lib/poll-targeting";
 
 // Un champ du formulaire libre demandé aux guests. L'email n'est PAS ici : il
 // est toujours demandé séparément (anti-fraude). type "club" affiche une liste
@@ -31,9 +31,13 @@ const createSchema = z.object({
   eligibleClubIds: z.array(z.string().min(1)).max(50).optional().default([]),
   eligibleCountries: z.array(z.string().min(1).max(80)).max(100).optional().default([]),
   eligibleContinents: z.array(z.enum(["EU", "NA", "SA", "AS", "AF", "OC"])).max(6).optional().default([]),
+  visibleToAll: z.boolean().optional().default(false),
 });
 
-/** Création d'un sondage — tout joueur inscrit (l'admin peut ensuite le bloquer). */
+/**
+ * Création d'un sondage — tout joueur inscrit (l'admin peut ensuite le bloquer).
+ * Ses clubs et son pays sont ciblés d'office ; le reste part en validation.
+ */
 export async function POST(request: Request) {
   const session = await auth();
   const playerId = session?.user?.playerId;
@@ -57,14 +61,12 @@ export async function POST(request: Request) {
   const clubIds = d.eligibleClubIds.length > 0
     ? (await prisma.club.findMany({ where: { id: { in: d.eligibleClubIds } }, select: { id: true } })).map((c) => c.id)
     : [];
-  const eligibility = {
-    eligibleClubIds: clubIds,
-    eligibleCountries: [...new Set(d.eligibleCountries.map((c) => c.trim()).filter(Boolean))],
-    eligibleContinents: [...new Set(d.eligibleContinents)],
-  };
-  // Un invité ne peut pas prouver son club/pays : dès qu'un ciblage est posé,
-  // seuls les inscrits votent.
-  const restricted = isPollRestricted(eligibility);
+  const requested = { clubIds, countries: d.eligibleCountries, continents: d.eligibleContinents };
+  // Un invité ne peut pas prouver son club/pays : dès qu'un ciblage est posé
+  // (accordé ou demandé), seuls les inscrits votent.
+  const preview = await previewTargeting(requested, playerId, isAdmin);
+  const restricted = preview.effective.clubIds.length + preview.effective.countries.length + preview.effective.continents.length > 0
+    || preview.requests.some((r) => r.kind === "club" || !r.global);
 
   const poll = await prisma.poll.create({
     data: {
@@ -81,14 +83,18 @@ export async function POST(request: Request) {
       closeAt: d.closeAt ? new Date(d.closeAt) : null,
       showResults: d.showResults,
       resultsAt: d.resultsAt ? new Date(d.resultsAt) : null,
-      ...eligibility,
+      visibleToAll: d.visibleToAll,
       createdById: playerId,
       status: "DRAFT",
     },
-    select: { id: true },
+    select: {
+      id: true, question: true, status: true, createdById: true,
+      eligibleClubIds: true, eligibleCountries: true, eligibleContinents: true,
+    },
   });
+  const { requests } = await applyTargeting(poll, requested, { playerId, isAdmin, name: session?.user?.name });
 
-  return Response.json({ id: poll.id });
+  return Response.json({ id: poll.id, pendingApprovals: requests.length });
 }
 
 /**
@@ -111,7 +117,11 @@ export async function GET(request: Request) {
       allowGuests: true, multipleChoice: true, openAt: true, closeAt: true,
       showResults: true, resultsAt: true, createdAt: true,
       eligibleClubIds: true, eligibleCountries: true, eligibleContinents: true,
-      blockedAt: true, blockedReason: true,
+      blockedAt: true, blockedReason: true, visibleToAll: true,
+      approvals: {
+        where: { status: { in: ["PENDING", "REJECTED"] } },
+        select: { id: true, status: true, reason: true, countries: true, continents: true, global: true, club: { select: { name: true } } },
+      },
       createdBy: { select: { id: true, name: true, slug: true } },
       _count: { select: { ballots: true, voters: true, reports: true } },
       // Le détail des signalements (qui, pourquoi) n'est montré qu'à l'admin.

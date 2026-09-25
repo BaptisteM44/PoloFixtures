@@ -209,6 +209,13 @@ enum NotificationType {
   POLL_REPORTED // notif admin : un sondage a été signalé
   POLL_BLOCKED // notif créateur : son sondage a été bloqué par la modération
   POLL_OPENED // notif public visé : un sondage ciblé (club/pays/continent) vient d'ouvrir
+  POLL_APPROVAL_REQUESTED // notif gérant de club / admin : un ciblage hors périmètre attend sa validation
+  POLL_APPROVAL_DECIDED // notif créateur : sa demande de ciblage a été acceptée ou refusée
+  POLL_UNBLOCKED // notif créateur : son sondage a été débloqué
+  POLL_REPORT_HANDLED // notif signaleur : son signalement a été traité (bloqué / classé)
+  POLL_RESULTS_AVAILABLE // notif votants : les résultats sont visibles
+  POLL_CLOSING_SOON // notif public visé n'ayant pas voté : fermeture dans moins de 24 h
+  POLL_VOTE_MILESTONE // notif créateur : palier de votes atteint
 }
 
 enum TaskPriority {
@@ -897,6 +904,7 @@ model Club {
   equipment         ClubEquipment[]
   announcements     ClubAnnouncement[]
   hostedTournaments Tournament[]       @relation("HostedTournaments")
+  pollApprovals     PollApproval[]
 
   @@index([continentCode])
   @@index([country])
@@ -1382,48 +1390,82 @@ enum PollResultsMode {
 }
 
 model Poll {
-  id             String          @id @default(cuid())
-  question       String
-  description    String?
-  options        String[] // choix possibles (ex: ["Oui","Non"] ou plus)
-  status         PollStatus      @default(DRAFT)
-  multipleChoice Boolean         @default(false) // un seul choix (false) ou plusieurs (true)
+  id                 String          @id @default(cuid())
+  question           String
+  description        String?
+  options            String[] // choix possibles (ex: ["Oui","Non"] ou plus)
+  status             PollStatus      @default(DRAFT)
+  multipleChoice     Boolean         @default(false) // un seul choix (false) ou plusieurs (true)
   // Bornes du nombre de choix quand multipleChoice=true (null = pas de borne) :
   // minChoices=maxChoices=2 → "choisis exactement 2" ; maxChoices=3 → "3 max".
-  minChoices     Int? // nb minimum de choix requis
-  maxChoices     Int? // nb maximum de choix autorisés
-  allowComment   Boolean         @default(false) // proposer un commentaire (anonyme) avec le vote
-  allowGuests    Boolean         @default(true) // autoriser les non-inscrits (via formulaire + email)
+  minChoices         Int? // nb minimum de choix requis
+  maxChoices         Int? // nb maximum de choix autorisés
+  allowComment       Boolean         @default(false) // proposer un commentaire (anonyme) avec le vote
+  allowGuests        Boolean         @default(true) // autoriser les non-inscrits (via formulaire + email)
   // Formulaire libre demandé aux GUESTS (les inscrits ne le remplissent pas).
   // L'email n'est PAS ici : il est toujours demandé séparément (anti-fraude).
   // Format : [{ "key":"club", "label":"Club", "required":false }, ...]
-  guestFields    Json            @default("[]")
-  openAt         DateTime? // ouverture programmée (optionnelle)
-  closeAt        DateTime? // fermeture programmée (optionnelle)
+  guestFields        Json            @default("[]")
+  openAt             DateTime? // ouverture programmée (optionnelle)
+  closeAt            DateTime? // fermeture programmée (optionnelle)
   // Visibilité des résultats pour les VOTANTS (l'admin voit toujours tout) :
   // IMMEDIATE = dès que t'as voté ; AT_DATE = à partir de resultsAt ; AT_CLOSE
   // = seulement quand le sondage est fermé ; HIDDEN = jamais montrés aux votants.
-  showResults    PollResultsMode @default(IMMEDIATE)
-  resultsAt      DateTime? // date d'ouverture des résultats si showResults = AT_DATE
-  // Ciblage des votants. Liste vide = pas de restriction sur ce critère. Les
-  // critères non vides se cumulent (ET) ; à l'intérieur d'un critère, un seul
-  // élément suffit (OU). Dès qu'un critère est posé, seuls les inscrits peuvent
-  // voter (club/pays d'un invité non vérifiables).
-  eligibleClubIds    String[] @default([])
-  eligibleCountries  String[] @default([]) // noms de pays, même format que Player.country
-  eligibleContinents String[] @default([]) // codes continent (EU, NA…)
+  showResults        PollResultsMode @default(IMMEDIATE)
+  resultsAt          DateTime? // date d'ouverture des résultats si showResults = AT_DATE
+  // Ciblage des votants (ciblage EFFECTIF, déjà autorisé). Tout vide = ouvert à
+  // tous. Sinon il suffit de correspondre à UN élément, toutes listes
+  // confondues (OU) : membre d'un des clubs, OU d'un des pays, OU d'un des
+  // continents. Dès qu'un ciblage est posé, seuls les inscrits peuvent voter
+  // (club/pays d'un invité non vérifiables). Les cibles hors périmètre du
+  // créateur attendent dans PollApproval avant d'arriver ici.
+  eligibleClubIds    String[]        @default([])
+  eligibleCountries  String[]        @default([]) // noms de pays, même format que Player.country
+  eligibleContinents String[]        @default([]) // codes continent (EU, NA…)
   // Modération : un sondage bloqué n'accepte plus de votes et n'est plus listé.
-  blockedAt      DateTime?
-  blockedReason  String?
-  createdById    String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  blockedAt          DateTime?
+  blockedReason      String?
+  // Sondage ciblé mais listé pour tout le monde (consultable, vote réservé).
+  visibleToAll       Boolean         @default(false)
+  // Horodatage des notifs déjà envoyées (le balayage périodique est idempotent).
+  openNotifiedAt     DateTime?
+  reminderSentAt     DateTime?
+  resultsNotifiedAt  DateTime?
+  createdById        String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
-  createdBy Player?      @relation("CreatedPolls", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy Player?        @relation("CreatedPolls", fields: [createdById], references: [id], onDelete: SetNull)
   ballots   PollBallot[]
   voters    PollVoter[]
   reports   PollReport[]
+  approvals PollApproval[]
 
+  @@index([status])
+}
+
+/// Demande de ciblage hors périmètre du créateur (un joueur cible librement ses
+/// clubs et son pays). clubId renseigné = validée par les gérants/admins de ce
+/// club (ou l'admin du site) ; sinon = validée par l'admin du site (autres
+/// pays, continents, ou `global` = ouvert à tout le monde).
+model PollApproval {
+  id          String    @id @default(cuid())
+  pollId      String
+  clubId      String?
+  countries   String[]  @default([])
+  continents  String[]  @default([])
+  global      Boolean   @default(false)
+  status      String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  reason      String?
+  decidedById String?
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  poll Poll  @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  club Club? @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@index([pollId])
+  @@index([clubId, status])
   @@index([status])
 }
 

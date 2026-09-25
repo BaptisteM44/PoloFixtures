@@ -51,21 +51,19 @@ export function isPollRestricted(poll: PollEligibility): boolean {
 
 /**
  * Le votant peut-il voter ? Un invité (voter = null) ne le peut que si le
- * sondage n'a aucune restriction. Pour un inscrit, chaque critère non vide doit
- * être satisfait (ET entre critères) par au moins un élément (OU dans le critère).
+ * sondage n'a aucune restriction. Pour un inscrit, il suffit de correspondre à
+ * UN des éléments ciblés, toutes listes confondues (OU) : un des clubs, OU un
+ * des pays, OU un des continents. Ajouter une cible élargit donc toujours le
+ * public — ce qui permet d'« ouvrir à d'autres » un sondage en cours.
  */
 export function isVoterEligible(poll: PollEligibility, voter: VoterProfile | null): boolean {
   if (!isPollRestricted(poll)) return true;
   if (!voter) return false;
   const norm = (s: string) => s.trim().toLowerCase();
-  if (poll.eligibleClubIds.length > 0 && !voter.clubIds.some((id) => poll.eligibleClubIds.includes(id))) return false;
-  if (poll.eligibleCountries.length > 0) {
-    if (!voter.country || !poll.eligibleCountries.some((c) => norm(c) === norm(voter.country!))) return false;
-  }
-  if (poll.eligibleContinents.length > 0) {
-    if (!voter.continent || !poll.eligibleContinents.includes(voter.continent)) return false;
-  }
-  return true;
+  if (voter.clubIds.some((id) => poll.eligibleClubIds.includes(id))) return true;
+  if (voter.country && poll.eligibleCountries.some((c) => norm(c) === norm(voter.country!))) return true;
+  if (voter.continent && poll.eligibleContinents.includes(voter.continent)) return true;
+  return false;
 }
 
 /** Un sondage accepte-t-il des votes MAINTENANT (statut + fenêtre de dates) ? */

@@ -1206,7 +1206,17 @@
     "new_tournament_published": "New tournament: {tournamentName}",
     "poll_reported": "A poll has been reported",
     "poll_blocked": "Your poll was blocked by moderation",
-    "poll_opened": "New poll for you"
+    "poll_opened": "New poll for you",
+    "poll_approval_requested": "{name} wants to run a poll for {target}",
+    "poll_approval_accepted": "Targeting approved: {target}",
+    "poll_approval_rejected": "Targeting rejected: {target}",
+    "poll_target_everyone": "everyone",
+    "poll_unblocked": "Your poll has been unblocked",
+    "poll_report_blocked": "Thanks: the poll you reported has been blocked",
+    "poll_report_dismissed": "Your report was reviewed, the poll stays online",
+    "poll_results_available": "Results are out for a poll you voted in",
+    "poll_closing_soon": "Last day to vote",
+    "poll_vote_milestone": "{count, plural, one {First vote on your poll!} other {# votes on your poll}}"
   },
   "contact": {
     "btn_open": "Contact",
@@ -1649,7 +1659,14 @@
     "sessions_color_none": "None",
     "edit_venues_title": "Training venues",
     "edit_venues_add": "+ Add",
-    "edit_venues_desc": "Add your venues with a note on when you play there. They will be suggested when creating sessions."
+    "edit_venues_desc": "Add your venues with a note on when you play there. They will be suggested when creating sessions.",
+    "tab_polls": "Polls",
+    "polls_create": "+ Create a poll for the club",
+    "polls_empty": "No polls for this club yet.",
+    "polls_closed": "Closed · {count} voters",
+    "polls_voted": "Voted",
+    "polls_vote": "Vote",
+    "polls_open": "Open"
   },
   "continent": {
     "page_title": "Continent",
@@ -2926,7 +2943,9 @@
     "login_required": "Log in to report a poll.",
     "manage_link": "📊 Manage my poll and see the results",
     "create_btn": "+ Create a poll",
-    "restricted_badge": "Targeted"
+    "restricted_badge": "Targeted",
+    "view_only": "View only — you're not in the targeted audience",
+    "already_voted_badge": "Already voted"
   },
   "poll_manage": {
     "admin_title": "Polls",
@@ -2956,7 +2975,7 @@
     "preset_country": "Country",
     "free_field": "+ Free field",
     "eligibility_title": "Who can vote?",
-    "eligibility_hint": "Leave empty to open the poll to everyone. Filled criteria add up: voters must match all of them.",
+    "eligibility_hint": "Matching ONE target is enough (one of the clubs, countries or continents). You can freely target your clubs and your country; anything else is approved by the targeted club or by the admin. No target = open to everyone (admin approval).",
     "eligibility_clubs": "Clubs",
     "eligibility_countries": "Countries",
     "eligibility_continents": "Continents",
@@ -3030,6 +3049,34 @@
     "col_date": "Date",
     "col_name": "Name",
     "type_guest": "Guest",
-    "type_registered": "Registered"
+    "type_registered": "Registered",
+    "own_scope_label": "No approval needed:",
+    "audience_count": "{count, plural, =0 {No player matches yet} one {# player concerned (notified when it opens)} other {# players concerned (notified when it opens)}}",
+    "audience_everyone": "Open to everyone ({count} players) — no notification, a badge flags the poll",
+    "approval_needed_title": "Approval needed before opening",
+    "approval_needed_club": "{club}: approved by that club's managers",
+    "approval_needed_admin": "{list}: approved by the admin",
+    "approval_needed_global": "Everyone: approved by the admin",
+    "approval_needed_hint": "You'll be notified of the decision. The poll stays a draft until then.",
+    "visible_to_all": "Visible to everyone in the list (only the targeted audience can vote)",
+    "visible_to_all_badge": "Visible to all, voting limited to the targeted audience",
+    "created_draft": "Poll created as a draft. Open it when you're ready.",
+    "created_pending": "{count, plural, one {Poll created as a draft: # approval request sent.} other {Poll created as a draft: # approval requests sent.}}",
+    "err_awaiting_approval": "Some targets are still awaiting approval: the poll can open afterwards.",
+    "err_approval_rejected": "A target was rejected: change the targeting to open the poll.",
+    "err_cannot_narrow": "The poll is open: you can widen the audience, not narrow it.",
+    "target_everyone": "everyone",
+    "approval_pending": "Awaiting approval: {target}",
+    "approval_rejected": "Rejected: {target}",
+    "edit_widen_only": "Poll in progress: you can add targets (newly concerned players get notified), not remove them.",
+    "btn_edit_targeting": "Targeting",
+    "btn_save_targeting": "Save targeting",
+    "btn_cancel": "Cancel",
+    "approvals_title": "{count, plural, one {# poll to approve} other {# polls to approve}}",
+    "approvals_intro": "Players want to target your club (or an audience that needs admin approval). Check that the question is acceptable.",
+    "approval_wants": "wants to target: {target}",
+    "approval_reject_prompt": "Why reject it? (shown to the creator)",
+    "btn_approve": "Approve",
+    "btn_reject": "Reject"
   }
 }

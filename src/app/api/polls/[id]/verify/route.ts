@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { checkVoteMilestone } from "@/lib/poll-notify";
 
 /**
  * Confirme le vote d'un GUEST (clic sur le lien reçu par mail) : c'est ICI que
@@ -60,6 +61,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       },
     });
   });
+  await checkVoteMilestone(params.id);
 
   redirect(`${base}?verify=success`);
 }

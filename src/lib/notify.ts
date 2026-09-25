@@ -56,6 +56,20 @@ function toPushPayload(
       return { title: "Sondage bloqué", body: p.pollQuestion, url: "/polls", tag: `poll-blocked-${p.pollId}` };
     case "POLL_OPENED":
       return { title: "Nouveau sondage 📊", body: p.pollQuestion, url: `/poll/${p.pollId}`, tag: `poll-open-${p.pollId}` };
+    case "POLL_APPROVAL_REQUESTED":
+      return { title: "Sondage à valider 🎯", body: `${p.requesterName} — ${p.pollQuestion}`, url: "/polls#approvals", tag: `poll-approval-${p.pollId}` };
+    case "POLL_APPROVAL_DECIDED":
+      return { title: p.approved === "1" ? "Ciblage accepté ✅" : "Ciblage refusé", body: p.pollQuestion, url: "/polls", tag: `poll-decided-${p.pollId}` };
+    case "POLL_UNBLOCKED":
+      return { title: "Sondage débloqué", body: p.pollQuestion, url: "/polls", tag: `poll-unblocked-${p.pollId}` };
+    case "POLL_REPORT_HANDLED":
+      return { title: "Signalement traité", body: p.pollQuestion, url: "/polls", tag: `poll-report-done-${p.pollId}` };
+    case "POLL_RESULTS_AVAILABLE":
+      return { title: "Résultats disponibles 📊", body: p.pollQuestion, url: `/poll/${p.pollId}`, tag: `poll-results-${p.pollId}` };
+    case "POLL_CLOSING_SOON":
+      return { title: "Sondage : dernier jour ⏳", body: p.pollQuestion, url: `/poll/${p.pollId}`, tag: `poll-closing-${p.pollId}` };
+    case "POLL_VOTE_MILESTONE":
+      return { title: `${p.count} vote(s) 🎉`, body: p.pollQuestion, url: `/poll/${p.pollId}/results`, tag: `poll-milestone-${p.pollId}` };
     default:
       return { title: "Poloperator", body: "New notification", url: "/", tag: type };
   }

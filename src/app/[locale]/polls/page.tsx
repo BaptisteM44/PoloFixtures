@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import { isPollRestricted, isVoterEligible } from "@/lib/poll-vote";
 import { loadVoterProfile } from "@/lib/poll-access";
 import { PollManager } from "@/components/PollManager";
+import { PollApprovalQueue } from "@/components/PollApprovalQueue";
+import { hashPlayerVoter } from "@/lib/poll-hash";
 
 export const dynamic = "force-dynamic";
 
@@ -22,19 +24,34 @@ export default async function PollsPage() {
     orderBy: [{ status: "asc" }, { createdAt: "desc" }], // OPEN avant CLOSED
     select: {
       id: true, question: true, description: true, status: true, createdById: true,
-      eligibleClubIds: true, eligibleCountries: true, eligibleContinents: true,
+      eligibleClubIds: true, eligibleCountries: true, eligibleContinents: true, visibleToAll: true,
       _count: { select: { voters: true } },
     },
   });
 
-  // Un sondage ciblé (club/pays/continent) n’est listé que pour son public et
-  // l’admin — il reste accessible par lien direct pour les autres. Les sondages
-  // du visiteur ne sont pas répétés ici : ils sont dans « Mes sondages ».
+  // Un sondage ciblé (club/pays/continent) n’est listé que pour son public,
+  // l’admin, ou tout le monde si son créateur l’a rendu visible (consultation
+  // seule pour les non-concernés). Les sondages du visiteur ne sont pas
+  // répétés ici : ils sont dans « Mes sondages ».
   const viewer = playerId ? await loadVoterProfile(playerId) : null;
-  const polls = allPolls.filter((p) =>
-    p.createdById !== playerId && (!isPollRestricted(p) || isAdmin || isVoterEligible(p, viewer)));
+  const polls = allPolls
+    .filter((p) => p.createdById !== playerId)
+    .map((p) => ({ ...p, eligible: isVoterEligible(p, viewer) }))
+    .filter((p) => p.eligible || isAdmin || p.visibleToAll);
 
-  const open = polls.filter((p) => p.status === "OPEN");
+  // A-t-il déjà voté ? (émargement par hash, sans lien avec le bulletin)
+  const openIds = polls.filter((p) => p.status === "OPEN").map((p) => p.id);
+  const votedIds = new Set<string>();
+  if (playerId && openIds.length > 0) {
+    const rows = await prisma.pollVoter.findMany({
+      where: { verified: true, OR: openIds.map((id) => ({ pollId: id, voterHash: hashPlayerVoter(id, playerId) })) },
+      select: { pollId: true },
+    });
+    rows.forEach((r) => votedIds.add(r.pollId));
+  }
+  // Ce qui reste à voter d’abord, puis le déjà voté, puis la consultation seule.
+  const rank = (p: (typeof polls)[number]) => (!p.eligible ? 2 : votedIds.has(p.id) ? 1 : 0);
+  const open = polls.filter((p) => p.status === "OPEN").sort((a, b) => rank(a) - rank(b));
   const closed = polls.filter((p) => p.status === "CLOSED");
 
   return (
@@ -44,7 +61,8 @@ export default async function PollsPage() {
 
       {/* Connecté : bouton de création + gestion de ses propres sondages */}
       {playerId && (
-        <div style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: 32, display: "grid", gap: 16 }}>
+          <PollApprovalQueue />
           <PollManager mode="mine" />
         </div>
       )}
@@ -71,8 +89,10 @@ export default async function PollsPage() {
                   {isPollRestricted(p) && <>🎯 {t("restricted_badge")} · </>}● {t("open_badge")}
                 </span>
               </div>
-              <div style={{ marginTop: 10, fontSize: 13, color: "var(--teal)", fontWeight: 600 }}>
-                {t("vote")} →
+              <div style={{ marginTop: 10, fontSize: 13, fontWeight: 600, color: !p.eligible || votedIds.has(p.id) ? "var(--text-muted)" : "var(--teal)" }}>
+                {!p.eligible
+                  ? <>🔒 {t("view_only")}</>
+                  : votedIds.has(p.id) ? <>✓ {t("already_voted_badge")}</> : <>{t("vote")} →</>}
               </div>
             </Link>
           ))}

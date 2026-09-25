@@ -1206,7 +1206,17 @@
     "new_tournament_published": "Nouveau tournoi : {tournamentName}",
     "poll_reported": "Un sondage a été signalé",
     "poll_blocked": "Ton sondage a été bloqué par la modération",
-    "poll_opened": "Nouveau sondage qui te concerne"
+    "poll_opened": "Nouveau sondage qui te concerne",
+    "poll_approval_requested": "{name} veut lancer un sondage pour {target}",
+    "poll_approval_accepted": "Ciblage accepté : {target}",
+    "poll_approval_rejected": "Ciblage refusé : {target}",
+    "poll_target_everyone": "tout le monde",
+    "poll_unblocked": "Ton sondage a été débloqué",
+    "poll_report_blocked": "Merci : le sondage que tu as signalé a été bloqué",
+    "poll_report_dismissed": "Ton signalement a été examiné, le sondage reste en ligne",
+    "poll_results_available": "Les résultats d'un sondage auquel tu as voté sont disponibles",
+    "poll_closing_soon": "Dernier jour pour voter",
+    "poll_vote_milestone": "{count, plural, one {Premier vote sur ton sondage !} other {# votes sur ton sondage}}"
   },
   "contact": {
     "btn_open": "Contact",
@@ -1649,7 +1659,14 @@
     "sessions_color_none": "Aucune",
     "edit_venues_title": "Terrains d'entraînement",
     "edit_venues_add": "+ Ajouter",
-    "edit_venues_desc": "Ajoutez vos terrains avec une note sur quand vous y jouez. Ils seront proposés à la création de sessions."
+    "edit_venues_desc": "Ajoutez vos terrains avec une note sur quand vous y jouez. Ils seront proposés à la création de sessions.",
+    "tab_polls": "Sondages",
+    "polls_create": "+ Créer un sondage pour le club",
+    "polls_empty": "Aucun sondage pour ce club pour l'instant.",
+    "polls_closed": "Fermé · {count} votants",
+    "polls_voted": "Voté",
+    "polls_vote": "Voter",
+    "polls_open": "Ouvert"
   },
   "continent": {
     "page_title": "Continent",
@@ -2927,7 +2944,9 @@
     "login_required": "Connecte-toi pour signaler un sondage.",
     "manage_link": "📊 Gérer mon sondage et voir les résultats",
     "create_btn": "+ Créer un sondage",
-    "restricted_badge": "Ciblé"
+    "restricted_badge": "Ciblé",
+    "view_only": "Consultation seule — tu n'es pas dans le public ciblé",
+    "already_voted_badge": "Déjà voté"
   },
   "poll_manage": {
     "admin_title": "Sondages",
@@ -2957,7 +2976,7 @@
     "preset_country": "Pays",
     "free_field": "+ Champ libre",
     "eligibility_title": "Qui peut voter ?",
-    "eligibility_hint": "Laisse vide pour ouvrir le sondage à tout le monde. Les critères remplis se cumulent : il faut tous les respecter.",
+    "eligibility_hint": "Il suffit de correspondre à UNE des cibles (un des clubs, un des pays ou un des continents). Tu cibles librement tes clubs et ton pays ; le reste est validé par le club visé ou par l'admin. Sans cible = ouvert à tout le monde (validation admin).",
     "eligibility_clubs": "Clubs",
     "eligibility_countries": "Pays",
     "eligibility_continents": "Continents",
@@ -3031,6 +3050,34 @@
     "col_date": "Date",
     "col_name": "Nom",
     "type_guest": "Invité",
-    "type_registered": "Inscrit"
+    "type_registered": "Inscrit",
+    "own_scope_label": "Sans validation :",
+    "audience_count": "{count, plural, =0 {Aucun joueur concerné pour l'instant} one {# joueur concerné (notifié à l'ouverture)} other {# joueurs concernés (notifiés à l'ouverture)}}",
+    "audience_everyone": "Ouvert à tout le monde ({count} joueurs) — pas de notification, une pastille signale le sondage",
+    "approval_needed_title": "Validation nécessaire avant l'ouverture",
+    "approval_needed_club": "{club} : validé par les gérants de ce club",
+    "approval_needed_admin": "{list} : validé par l'admin",
+    "approval_needed_global": "Tout le monde : validé par l'admin",
+    "approval_needed_hint": "Tu seras notifié·e de la décision. Le sondage reste en brouillon d'ici là.",
+    "visible_to_all": "Visible par tout le monde dans la liste (seul le public ciblé peut voter)",
+    "visible_to_all_badge": "Visible par tous, vote réservé au public ciblé",
+    "created_draft": "Sondage créé en brouillon. Ouvre-le quand tu es prêt·e.",
+    "created_pending": "{count, plural, one {Sondage créé en brouillon : # demande de validation envoyée.} other {Sondage créé en brouillon : # demandes de validation envoyées.}}",
+    "err_awaiting_approval": "Des cibles attendent encore leur validation : le sondage pourra s'ouvrir ensuite.",
+    "err_approval_rejected": "Une cible a été refusée : modifie le ciblage pour pouvoir ouvrir le sondage.",
+    "err_cannot_narrow": "Le sondage est ouvert : tu peux élargir le public, pas le réduire.",
+    "target_everyone": "tout le monde",
+    "approval_pending": "En attente de validation : {target}",
+    "approval_rejected": "Refusé : {target}",
+    "edit_widen_only": "Sondage en cours : tu peux ajouter des cibles (les nouveaux concernés seront notifiés), pas en retirer.",
+    "btn_edit_targeting": "Ciblage",
+    "btn_save_targeting": "Enregistrer le ciblage",
+    "btn_cancel": "Annuler",
+    "approvals_title": "{count, plural, one {# sondage à valider} other {# sondages à valider}}",
+    "approvals_intro": "Des joueurs veulent cibler ton club (ou un public qui demande l'accord de l'admin). Vérifie que la question est recevable.",
+    "approval_wants": "veut cibler : {target}",
+    "approval_reject_prompt": "Pourquoi refuser ? (visible par le créateur)",
+    "btn_approve": "Accepter",
+    "btn_reject": "Refuser"
   }
 }

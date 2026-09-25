@@ -1211,7 +1211,17 @@
     "new_tournament_published": "Neues Turnier: {tournamentName}",
     "poll_reported": "Eine Umfrage wurde gemeldet",
     "poll_blocked": "Deine Umfrage wurde von der Moderation gesperrt",
-    "poll_opened": "Neue Umfrage für dich"
+    "poll_opened": "Neue Umfrage für dich",
+    "poll_approval_requested": "{name} möchte eine Umfrage für {target} starten",
+    "poll_approval_accepted": "Zielgruppe freigegeben: {target}",
+    "poll_approval_rejected": "Zielgruppe abgelehnt: {target}",
+    "poll_target_everyone": "alle",
+    "poll_unblocked": "Deine Umfrage wurde entsperrt",
+    "poll_report_blocked": "Danke: die gemeldete Umfrage wurde gesperrt",
+    "poll_report_dismissed": "Deine Meldung wurde geprüft, die Umfrage bleibt online",
+    "poll_results_available": "Die Ergebnisse einer Umfrage, an der du teilgenommen hast, sind da",
+    "poll_closing_soon": "Letzter Tag zum Abstimmen",
+    "poll_vote_milestone": "{count, plural, one {Erste Stimme für deine Umfrage!} other {# Stimmen für deine Umfrage}}"
   },
   "contact": {
     "btn_open": "Kontakt",
@@ -1653,7 +1663,14 @@
     "sessions_color_none": "Keine",
     "edit_venues_title": "Trainingsplätze",
     "edit_venues_add": "+ Hinzufügen",
-    "edit_venues_desc": "Füge deine Spielorte mit einer Notiz hinzu, wann ihr dort spielt. Sie werden beim Erstellen von Sessions vorgeschlagen."
+    "edit_venues_desc": "Füge deine Spielorte mit einer Notiz hinzu, wann ihr dort spielt. Sie werden beim Erstellen von Sessions vorgeschlagen.",
+    "tab_polls": "Umfragen",
+    "polls_create": "+ Umfrage für den Club erstellen",
+    "polls_empty": "Noch keine Umfragen für diesen Club.",
+    "polls_closed": "Geschlossen · {count} Teilnehmende",
+    "polls_voted": "Abgestimmt",
+    "polls_vote": "Abstimmen",
+    "polls_open": "Offen"
   },
   "continent": {
     "page_title": "Kontinent",
@@ -2931,7 +2948,9 @@
     "login_required": "Melde dich an, um eine Umfrage zu melden.",
     "manage_link": "📊 Meine Umfrage verwalten und Ergebnisse ansehen",
     "create_btn": "+ Umfrage erstellen",
-    "restricted_badge": "Gezielt"
+    "restricted_badge": "Gezielt",
+    "view_only": "Nur ansehen — du gehörst nicht zur Zielgruppe",
+    "already_voted_badge": "Bereits abgestimmt"
   },
   "poll_manage": {
     "admin_title": "Umfragen",
@@ -2961,7 +2980,7 @@
     "preset_country": "Land",
     "free_field": "+ Freies Feld",
     "eligibility_title": "Wer darf abstimmen?",
-    "eligibility_hint": "Leer lassen, um die Umfrage für alle zu öffnen. Ausgefüllte Kriterien gelten zusammen: Abstimmende müssen alle erfüllen.",
+    "eligibility_hint": "Es reicht, EINEM Ziel zu entsprechen (einem der Clubs, Länder oder Kontinente). Deine Clubs und dein Land kannst du frei auswählen; alles andere wird vom betroffenen Club oder vom Admin freigegeben. Kein Ziel = offen für alle (Admin-Freigabe).",
     "eligibility_clubs": "Clubs",
     "eligibility_countries": "Länder",
     "eligibility_continents": "Kontinente",
@@ -3035,6 +3054,34 @@
     "col_date": "Datum",
     "col_name": "Name",
     "type_guest": "Gast",
-    "type_registered": "Registriert"
+    "type_registered": "Registriert",
+    "own_scope_label": "Ohne Freigabe:",
+    "audience_count": "{count, plural, =0 {Noch keine passenden Spieler*innen} one {# betroffene Person (wird bei Öffnung benachrichtigt)} other {# betroffene Personen (werden bei Öffnung benachrichtigt)}}",
+    "audience_everyone": "Offen für alle ({count} Spieler*innen) — keine Benachrichtigung, ein Badge weist auf die Umfrage hin",
+    "approval_needed_title": "Freigabe vor dem Öffnen nötig",
+    "approval_needed_club": "{club}: Freigabe durch die Club-Verantwortlichen",
+    "approval_needed_admin": "{list}: Freigabe durch den Admin",
+    "approval_needed_global": "Alle: Freigabe durch den Admin",
+    "approval_needed_hint": "Du wirst über die Entscheidung benachrichtigt. Bis dahin bleibt die Umfrage ein Entwurf.",
+    "visible_to_all": "Für alle in der Liste sichtbar (nur die Zielgruppe kann abstimmen)",
+    "visible_to_all_badge": "Für alle sichtbar, Abstimmung nur für die Zielgruppe",
+    "created_draft": "Umfrage als Entwurf erstellt. Öffne sie, wenn du bereit bist.",
+    "created_pending": "{count, plural, one {Umfrage als Entwurf erstellt: # Freigabeanfrage gesendet.} other {Umfrage als Entwurf erstellt: # Freigabeanfragen gesendet.}}",
+    "err_awaiting_approval": "Einige Ziele warten noch auf Freigabe: danach kann die Umfrage geöffnet werden.",
+    "err_approval_rejected": "Ein Ziel wurde abgelehnt: ändere die Zielgruppe, um die Umfrage zu öffnen.",
+    "err_cannot_narrow": "Die Umfrage läuft: du kannst die Zielgruppe erweitern, nicht verkleinern.",
+    "target_everyone": "alle",
+    "approval_pending": "Wartet auf Freigabe: {target}",
+    "approval_rejected": "Abgelehnt: {target}",
+    "edit_widen_only": "Laufende Umfrage: du kannst Ziele hinzufügen (neu Betroffene werden benachrichtigt), aber nicht entfernen.",
+    "btn_edit_targeting": "Zielgruppe",
+    "btn_save_targeting": "Zielgruppe speichern",
+    "btn_cancel": "Abbrechen",
+    "approvals_title": "{count, plural, one {# Umfrage freizugeben} other {# Umfragen freizugeben}}",
+    "approvals_intro": "Spieler*innen möchten deinen Club ansprechen (oder eine Zielgruppe, die eine Admin-Freigabe braucht). Prüfe, ob die Frage in Ordnung ist.",
+    "approval_wants": "möchte ansprechen: {target}",
+    "approval_reject_prompt": "Warum ablehnen? (für die erstellende Person sichtbar)",
+    "btn_approve": "Freigeben",
+    "btn_reject": "Ablehnen"
   }
 }

@@ -1210,7 +1210,17 @@
     "new_tournament_published": "Nuevo torneo: {tournamentName}",
     "poll_reported": "Se ha denunciado una encuesta",
     "poll_blocked": "Tu encuesta fue bloqueada por la moderación",
-    "poll_opened": "Nueva encuesta para ti"
+    "poll_opened": "Nueva encuesta para ti",
+    "poll_approval_requested": "{name} quiere lanzar una encuesta para {target}",
+    "poll_approval_accepted": "Público aceptado: {target}",
+    "poll_approval_rejected": "Público rechazado: {target}",
+    "poll_target_everyone": "todos",
+    "poll_unblocked": "Tu encuesta ha sido desbloqueada",
+    "poll_report_blocked": "Gracias: la encuesta que reportaste ha sido bloqueada",
+    "poll_report_dismissed": "Tu reporte fue revisado, la encuesta sigue en línea",
+    "poll_results_available": "Ya están los resultados de una encuesta en la que votaste",
+    "poll_closing_soon": "Último día para votar",
+    "poll_vote_milestone": "{count, plural, one {¡Primer voto en tu encuesta!} other {# votos en tu encuesta}}"
   },
   "contact": {
     "btn_open": "Contacto",
@@ -1652,7 +1662,14 @@
     "sessions_color_none": "Ninguno",
     "edit_venues_title": "Terrenos de entrenamiento",
     "edit_venues_add": "+ Añadir",
-    "edit_venues_desc": "Añade tus terrenos con una nota sobre cuándo jugáis ahí. Se propondrán al crear sesiones."
+    "edit_venues_desc": "Añade tus terrenos con una nota sobre cuándo jugáis ahí. Se propondrán al crear sesiones.",
+    "tab_polls": "Encuestas",
+    "polls_create": "+ Crear una encuesta para el club",
+    "polls_empty": "Todavía no hay encuestas para este club.",
+    "polls_closed": "Cerrada · {count} votantes",
+    "polls_voted": "Votado",
+    "polls_vote": "Votar",
+    "polls_open": "Abierta"
   },
   "continent": {
     "page_title": "Continente",
@@ -2930,7 +2947,9 @@
     "login_required": "Inicia sesión para denunciar una encuesta.",
     "manage_link": "📊 Gestionar mi encuesta y ver los resultados",
     "create_btn": "+ Crear una encuesta",
-    "restricted_badge": "Dirigida"
+    "restricted_badge": "Dirigida",
+    "view_only": "Solo consulta — no formas parte del público elegido",
+    "already_voted_badge": "Ya votaste"
   },
   "poll_manage": {
     "admin_title": "Encuestas",
@@ -2960,7 +2979,7 @@
     "preset_country": "País",
     "free_field": "+ Campo libre",
     "eligibility_title": "¿Quién puede votar?",
-    "eligibility_hint": "Déjalo vacío para abrir la encuesta a todos. Los criterios rellenados se suman: hay que cumplirlos todos.",
+    "eligibility_hint": "Basta con coincidir con UN objetivo (uno de los clubes, países o continentes). Puedes elegir libremente tus clubes y tu país; lo demás lo valida el club elegido o el admin. Sin objetivo = abierta a todos (validación del admin).",
     "eligibility_clubs": "Clubes",
     "eligibility_countries": "Países",
     "eligibility_continents": "Continentes",
@@ -3034,6 +3053,34 @@
     "col_date": "Fecha",
     "col_name": "Nombre",
     "type_guest": "Invitado",
-    "type_registered": "Registrado"
+    "type_registered": "Registrado",
+    "own_scope_label": "Sin validación:",
+    "audience_count": "{count, plural, =0 {Ningún jugador por ahora} one {# jugador concernido (notificado al abrir)} other {# jugadores concernidos (notificados al abrir)}}",
+    "audience_everyone": "Abierta a todos ({count} jugadores) — sin notificación, un indicador señala la encuesta",
+    "approval_needed_title": "Validación necesaria antes de abrir",
+    "approval_needed_club": "{club}: lo validan los responsables de ese club",
+    "approval_needed_admin": "{list}: lo valida el admin",
+    "approval_needed_global": "Todos: lo valida el admin",
+    "approval_needed_hint": "Recibirás una notificación con la decisión. Mientras tanto, la encuesta queda en borrador.",
+    "visible_to_all": "Visible para todos en la lista (solo el público elegido puede votar)",
+    "visible_to_all_badge": "Visible para todos, voto reservado al público elegido",
+    "created_draft": "Encuesta creada en borrador. Ábrela cuando estés listo·a.",
+    "created_pending": "{count, plural, one {Encuesta creada en borrador: # solicitud de validación enviada.} other {Encuesta creada en borrador: # solicitudes de validación enviadas.}}",
+    "err_awaiting_approval": "Algunos objetivos esperan validación: la encuesta podrá abrirse después.",
+    "err_approval_rejected": "Se rechazó un objetivo: cambia el público para poder abrir la encuesta.",
+    "err_cannot_narrow": "La encuesta está abierta: puedes ampliar el público, no reducirlo.",
+    "target_everyone": "todos",
+    "approval_pending": "Pendiente de validación: {target}",
+    "approval_rejected": "Rechazado: {target}",
+    "edit_widen_only": "Encuesta en curso: puedes añadir objetivos (los nuevos concernidos serán notificados), no quitarlos.",
+    "btn_edit_targeting": "Público",
+    "btn_save_targeting": "Guardar público",
+    "btn_cancel": "Cancelar",
+    "approvals_title": "{count, plural, one {# encuesta por validar} other {# encuestas por validar}}",
+    "approvals_intro": "Hay jugadores que quieren dirigirse a tu club (o a un público que requiere la validación del admin). Comprueba que la pregunta es aceptable.",
+    "approval_wants": "quiere dirigirse a: {target}",
+    "approval_reject_prompt": "¿Por qué rechazarla? (visible para quien la creó)",
+    "btn_approve": "Aceptar",
+    "btn_reject": "Rechazar"
   }
 }

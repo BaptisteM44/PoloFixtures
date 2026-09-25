@@ -5,6 +5,7 @@ import { randomBytes } from "crypto";
 import { hashPlayerVoter, hashGuestVoter } from "@/lib/poll-hash";
 import { isPollOpen, validateChoices, castVote, isPollRestricted, isVoterEligible, type PollLite, type PollEligibility } from "@/lib/poll-vote";
 import { loadVoterProfile } from "@/lib/poll-access";
+import { checkVoteMilestone } from "@/lib/poll-notify";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { sendMail } from "@/lib/mailer";
 import { SITE_URL } from "@/lib/site-url";
@@ -56,6 +57,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     if (!res.ok && res.reason === "already_voted") {
       return Response.json({ error: "already_voted" }, { status: 409 });
     }
+    if (res.ok) await checkVoteMilestone(poll.id);
     return Response.json({ ok: true, mode: "registered" });
   }
 

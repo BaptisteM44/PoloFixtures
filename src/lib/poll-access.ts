@@ -33,17 +33,21 @@ export async function findPollAudience(poll: PollEligibility & { createdById: st
     where: {
       status: "ACTIVE",
       account: { isNot: null },
-      // Pré-filtre SQL grossier ; le filtre exact est fait par isVoterEligible.
-      ...(poll.eligibleClubIds.length > 0
-        ? {
+      // Pré-filtre SQL (OU entre les cibles, comme isVoterEligible) ; les
+      // continents se déduisent du pays côté JS, donc pas de pré-filtre s'il y en a.
+      ...(poll.eligibleContinents.length > 0
+        ? {}
+        : {
             OR: [
-              { clubMemberships: { some: { clubId: { in: poll.eligibleClubIds }, status: "MEMBER" } } },
-              { managedClubs: { some: { id: { in: poll.eligibleClubIds } } } },
+              ...(poll.eligibleClubIds.length > 0
+                ? [
+                    { clubMemberships: { some: { clubId: { in: poll.eligibleClubIds }, status: "MEMBER" as const } } },
+                    { managedClubs: { some: { id: { in: poll.eligibleClubIds } } } },
+                  ]
+                : []),
+              ...poll.eligibleCountries.map((c) => ({ country: { equals: c.trim(), mode: "insensitive" as const } })),
             ],
-          }
-        : poll.eligibleCountries.length > 0
-          ? { OR: poll.eligibleCountries.map((c) => ({ country: { equals: c.trim(), mode: "insensitive" as const } })) }
-          : {}),
+          }),
     },
     select: {
       id: true,

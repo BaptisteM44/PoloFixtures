@@ -83,6 +83,24 @@ function useNotifLabel() {
         return { title: t("poll_blocked"), sub: p.pollQuestion ?? "", href: "/polls" };
       case "POLL_OPENED":
         return { title: t("poll_opened"), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}` };
+      case "POLL_APPROVAL_REQUESTED":
+        return { title: t("poll_approval_requested", { name: p.requesterName ?? "", target: p.target || "—" }), sub: p.pollQuestion ?? "", href: "/polls#approvals" };
+      case "POLL_APPROVAL_DECIDED":
+        return {
+          title: t(p.approved === "1" ? "poll_approval_accepted" : "poll_approval_rejected", { target: p.target === "*" ? t("poll_target_everyone") : (p.target ?? "") }),
+          sub: p.reason ? `${p.pollQuestion ?? ""} — ${p.reason}` : (p.pollQuestion ?? ""),
+          href: "/polls",
+        };
+      case "POLL_UNBLOCKED":
+        return { title: t("poll_unblocked"), sub: p.pollQuestion ?? "", href: "/polls" };
+      case "POLL_REPORT_HANDLED":
+        return { title: t(p.outcome === "blocked" ? "poll_report_blocked" : "poll_report_dismissed"), sub: p.pollQuestion ?? "", href: p.outcome === "blocked" ? "/polls" : `/poll/${p.pollId}` };
+      case "POLL_RESULTS_AVAILABLE":
+        return { title: t("poll_results_available"), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}` };
+      case "POLL_CLOSING_SOON":
+        return { title: t("poll_closing_soon"), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}` };
+      case "POLL_VOTE_MILESTONE":
+        return { title: t("poll_vote_milestone", { count: Number(p.count) || 0 }), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}/results` };
       default:
         return { title: t("default"), sub: "", href: "/my-teams" };
     }

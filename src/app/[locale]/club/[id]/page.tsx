@@ -12,6 +12,7 @@ import { ClubAdminPanel } from "@/components/ClubAdminPanel";
 import { ClubEquipment } from "@/components/ClubEquipment";
 import { ClubAnnouncements } from "@/components/ClubAnnouncements";
 import { getTranslations, getLocale } from "next-intl/server";
+import { hashPlayerVoter } from "@/lib/poll-hash";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +72,22 @@ export default async function ClubPage({
     player: { id: m.player.id, name: m.player.name, slug: m.player.slug },
   }));
 
+  // Sondages qui visent ce club : visibles des membres/admins du club, de
+  // l'admin du site, et de tous si le créateur les a rendus publics.
+  const canSeeClubPolls = isMember || isClubAdmin || isSiteAdmin;
+  const clubPolls = await prisma.poll.findMany({
+    where: {
+      eligibleClubIds: { has: club.id },
+      status: { in: ["OPEN", "CLOSED"] },
+      blockedAt: null,
+      ...(canSeeClubPolls ? {} : { visibleToAll: true }),
+    },
+    orderBy: [{ status: "desc" }, { createdAt: "desc" }], // OPEN avant CLOSED
+    take: 30,
+    select: { id: true, question: true, status: true, closeAt: true, _count: { select: { voters: true } } },
+  });
+  const openClubPolls = clubPolls.filter((p) => p.status === "OPEN").length;
+
   // Determine active tab
   const tab = searchParams.tab ?? "members";
   const basePath = `/club/${club.id}`;
@@ -82,8 +99,20 @@ export default async function ClubPage({
     ...(isMember ? [{ label: t("tab_competitions"), value: "competitions", href: `${basePath}?tab=competitions` }] : []),
     ...(isMember ? [{ label: t("tab_equipment"), value: "equipment", href: `${basePath}?tab=equipment` }] : []),
     ...(isMember ? [{ label: t("tab_chat"), value: "chat", href: `${basePath}?tab=chat` }] : []),
+    ...(canSeeClubPolls || clubPolls.length > 0
+      ? [{ label: openClubPolls > 0 ? `${t("tab_polls")} (${openClubPolls})` : t("tab_polls"), value: "polls", href: `${basePath}?tab=polls` }]
+      : []),
     ...(isClubAdmin ? [{ label: t("tab_admin"), value: "admin", href: `${basePath}?tab=admin` }] : []),
   ];
+
+  const votedPollIds = new Set<string>();
+  if (tab === "polls" && currentPlayerId && clubPolls.length > 0) {
+    const rows = await prisma.pollVoter.findMany({
+      where: { verified: true, OR: clubPolls.map((p) => ({ pollId: p.id, voterHash: hashPlayerVoter(p.id, currentPlayerId) })) },
+      select: { pollId: true },
+    });
+    rows.forEach((r) => votedPollIds.add(r.pollId));
+  }
 
   // Fetch tab-specific data
   let sessions: any[] = [];
@@ -390,6 +419,26 @@ export default async function ClubPage({
               />
             </div>
           )}
+        </div>
+      )}
+
+      {tab === "polls" && (
+        <div style={{ display: "grid", gap: 10, maxWidth: 720 }}>
+          {(isMember || isClubAdmin) && (
+            <Link href="/polls" className="ghost" style={{ justifySelf: "start", fontSize: 13 }}>{t("polls_create")}</Link>
+          )}
+          {clubPolls.length === 0 && <div className="empty-state"><p>{t("polls_empty")}</p></div>}
+          {clubPolls.map((p) => (
+            <Link key={p.id} href={`/poll/${p.id}`} className="panel"
+              style={{ padding: 14, textDecoration: "none", color: "inherit", display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", opacity: p.status === "CLOSED" ? 0.8 : 1 }}>
+              <span style={{ fontWeight: 600 }}>{p.question}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, flexShrink: 0, color: p.status === "OPEN" && !votedPollIds.has(p.id) && (isMember || isManager) ? "var(--teal)" : "var(--text-muted)" }}>
+                {p.status === "CLOSED"
+                  ? t("polls_closed", { count: p._count.voters })
+                  : votedPollIds.has(p.id) ? `✓ ${t("polls_voted")}` : (isMember || isManager) ? `${t("polls_vote")} →` : t("polls_open")}
+              </span>
+            </Link>
+          ))}
         </div>
       )}
 

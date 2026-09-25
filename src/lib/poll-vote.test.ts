@@ -79,10 +79,11 @@ describe("isVoterEligible (ciblage des votants)", () => {
     expect(isVoterEligible(poll, nyc)).toBe(false);
   });
 
-  it("plusieurs critères se cumulent (ET)", () => {
-    const poll = { ...none, eligibleContinents: ["EU"], eligibleCountries: ["France"] };
-    expect(isVoterEligible(poll, lyon)).toBe(true);
-    expect(isVoterEligible(poll, brussels)).toBe(false);
+  it("plusieurs critères : un seul suffit (OU) — ajouter une cible élargit", () => {
+    const poll = { ...none, eligibleClubIds: ["club-bxl"], eligibleCountries: ["France"] };
+    expect(isVoterEligible(poll, brussels)).toBe(true); // via le club
+    expect(isVoterEligible(poll, lyon)).toBe(true);     // via le pays
+    expect(isVoterEligible(poll, nyc)).toBe(false);
   });
 
   it("joueur sans pays renseigné exclu d'un ciblage par pays", () => {
