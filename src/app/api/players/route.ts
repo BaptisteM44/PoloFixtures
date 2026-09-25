@@ -1,8 +1,11 @@
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { toSlug } from "@/lib/utils";
+import { auth } from "@/lib/auth";
 
 export async function GET(request: Request) {
+  const session = await auth();
+  const isAdmin = session?.user?.role === "ADMIN";
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const search = searchParams.get("search");
@@ -22,11 +25,12 @@ export async function GET(request: Request) {
     excludedPlayerIds = teamPlayers.map((tp) => tp.playerId);
   }
 
-  // By default only return ACTIVE players (real accounts).
-  // Pass status=PENDING or status=all only for admin use cases.
+  // Par défaut uniquement les joueurs ACTIVE. Les autres statuts (en attente,
+  // refusés, tous) sont réservés à l'admin : sinon n'importe qui listait les
+  // comptes suspendus/en attente.
   const statusFilter =
-    status === "all" ? undefined
-    : status === "PENDING" || status === "REJECTED" ? { status: status as "PENDING" | "REJECTED" }
+    isAdmin && status === "all" ? undefined
+    : isAdmin && (status === "PENDING" || status === "REJECTED") ? { status: status as "PENDING" | "REJECTED" }
     : { status: "ACTIVE" as const };
 
   // For browse mode, filter by country/continent via club membership
@@ -42,10 +46,17 @@ export async function GET(request: Request) {
   const whereClause = {
     ...statusFilter,
     ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
-    ...(excludedPlayerIds.length > 0 ? { id: { notIn: excludedPlayerIds } } : {}),
+    // Les deux filtres sur id se combinent (avant, le second écrasait le premier).
+    ...(excludedPlayerIds.length > 0 || continentPlayerIds !== undefined
+      ? {
+          id: {
+            ...(excludedPlayerIds.length > 0 ? { notIn: excludedPlayerIds } : {}),
+            ...(continentPlayerIds !== undefined ? { in: continentPlayerIds } : {}),
+          },
+        }
+      : {}),
     ...(hasAccount ? { account: { email: { not: "" } } } : {}),
     ...(country ? { country: { equals: country, mode: "insensitive" as const } } : {}),
-    ...(continentPlayerIds !== undefined ? { id: { in: continentPlayerIds } } : {}),
   };
 
   if (browse) {
@@ -75,11 +86,27 @@ export async function GET(request: Request) {
     return Response.json(result);
   }
 
+  // Admin : fiche complète (+ email du compte pour la modération). Sinon,
+  // uniquement les champs publics : avant, n'importe qui (sans connexion)
+  // récupérait TOUS les joueurs avec email, allergies et régime alimentaire.
+  if (isAdmin) {
+    const players = await prisma.player.findMany({
+      where: whereClause,
+      orderBy: { name: "asc" },
+      take: search ? 10 : undefined,
+      include: status ? { account: { select: { email: true } } } : undefined,
+    });
+    return Response.json(players);
+  }
   const players = await prisma.player.findMany({
     where: whereClause,
     orderBy: { name: "asc" },
-    take: search ? 10 : undefined,
-    include: status ? { account: { select: { email: true } } } : undefined,
+    take: search ? 10 : 50,
+    select: {
+      id: true, name: true, slug: true, country: true, city: true, photoPath: true,
+      // Régime : utile au formulaire d'inscription d'équipe (connecté).
+      ...(session?.user ? { diets: true } : {}),
+    },
   });
   return Response.json(players);
 }
@@ -91,7 +118,10 @@ const createSchema = z.object({
   photoPath: z.string().optional().nullable()
 });
 
+/** Création d'un profil joueur sans compte — réservée à l'admin. */
 export async function POST(request: Request) {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") return new Response("Réservé aux administrateurs", { status: 403 });
   const body = await request.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {

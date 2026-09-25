@@ -1,9 +1,14 @@
 import { prisma } from "@/lib/db";
 import { OverlayControlCenter } from "@/components/OverlayControlCenter";
+import { auth } from "@/lib/auth";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function OverlayDownoverPage() {
+  // Régie des canaux OBS : réservée à l'admin (les API le sont aussi).
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") notFound();
   const [channels, tournaments] = await Promise.all([
     prisma.overlayChannel.findMany({
       include: { tournament: { select: { id: true, name: true, status: true } } },

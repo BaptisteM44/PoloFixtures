@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { auth } from "@/lib/auth";
 
 const createSchema = z.object({
   slug: z.string().min(1).max(32).regex(/^[a-z0-9-]+$/, "Slug: lettres minuscules, chiffres et tirets uniquement"),
@@ -18,7 +19,10 @@ export async function GET() {
 }
 
 // POST /api/overlay/channels — crée un canal
+// Réservé à l'admin : sans garde, n'importe qui pouvait créer des canaux.
 export async function POST(req: Request) {
+  const session = await auth();
+  if (session?.user?.role !== "ADMIN") return Response.json({ error: "Réservé aux administrateurs" }, { status: 403 });
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {
