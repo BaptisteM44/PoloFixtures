@@ -62,7 +62,9 @@
     "close_menu": "Menü schließen",
     "open_menu": "Menü öffnen",
     "polls": "Umfragen",
-    "go_back": "Zurück"
+    "go_back": "Zurück",
+    "tools": "Tools",
+    "sandbox": "Sandbox"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -1208,7 +1210,8 @@
     "club_needs_approval": "Neuer Club zu prüfen",
     "new_tournament_published": "Neues Turnier: {tournamentName}",
     "poll_reported": "Eine Umfrage wurde gemeldet",
-    "poll_blocked": "Deine Umfrage wurde von der Moderation gesperrt"
+    "poll_blocked": "Deine Umfrage wurde von der Moderation gesperrt",
+    "poll_opened": "Neue Umfrage für dich"
   },
   "contact": {
     "btn_open": "Kontakt",

@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
-import { canManagePoll } from "@/lib/poll-access";
+import { canManagePoll, findPollAudience } from "@/lib/poll-access";
 import { createNotification } from "@/lib/notify";
 
 // Tous les champs sont optionnels : le PATCH ne modifie que ce qui est fourni
@@ -23,7 +23,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const session = await auth();
   const poll = await prisma.poll.findUnique({
     where: { id: params.id },
-    select: { id: true, question: true, createdById: true, blockedAt: true },
+    select: {
+      id: true, question: true, createdById: true, blockedAt: true, status: true,
+      eligibleClubIds: true, eligibleCountries: true, eligibleContinents: true,
+    },
   });
   if (!poll) return new Response("Sondage introuvable", { status: 404 });
   if (!canManagePoll(poll, session)) return new Response("Non autorisé", { status: 403 });
@@ -43,6 +46,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (poll.blockedAt && !isAdmin) return Response.json({ error: "blocked" }, { status: 409 });
 
   const willBlock = d.blocked === true && !poll.blockedAt;
+  // Première ouverture (brouillon → ouvert) : on prévient le public visé. Une
+  // réouverture après fermeture ne renotifie pas.
+  const firstOpening = poll.status === "DRAFT" && d.status === "OPEN" && !poll.blockedAt && d.blocked !== true;
 
   await prisma.poll.update({
     where: { id: params.id },
@@ -68,6 +74,19 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       pollQuestion: poll.question.slice(0, 120),
       reason: d.blockedReason?.trim() || "",
     });
+  }
+
+  if (firstOpening) {
+    const already = await prisma.notification.count({
+      where: { type: "POLL_OPENED", payload: { path: ["pollId"], equals: poll.id } },
+    });
+    if (already === 0) {
+      const audience = await findPollAudience(poll);
+      const payload = { pollId: poll.id, pollQuestion: poll.question.slice(0, 120) };
+      for (let i = 0; i < audience.length; i += 20) {
+        await Promise.all(audience.slice(i, i + 20).map((id) => createNotification(id, "POLL_OPENED", payload)));
+      }
+    }
   }
 
   return Response.json({ ok: true });

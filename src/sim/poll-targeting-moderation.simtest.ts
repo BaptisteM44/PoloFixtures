@@ -17,6 +17,7 @@ import { PATCH as patchPoll, DELETE as deletePoll } from "@/app/api/polls/[id]/r
 import { POST as vote } from "@/app/api/polls/[id]/vote/route";
 import { GET as results } from "@/app/api/polls/[id]/results/route";
 import { POST as report } from "@/app/api/polls/[id]/report/route";
+import { countPendingPolls } from "@/lib/poll-access";
 
 const as = (playerId: string | null, role: string | null = null, name = "Joueur") => {
   session.current = playerId || role ? { user: { id: `u-${playerId}`, playerId, role, name } } : null;
@@ -26,7 +27,10 @@ const json = (body: unknown) =>
 const ctx = (id: string) => ({ params: { id } });
 
 async function mkPlayer(name: string, country: string) {
-  return prisma.player.create({ data: { name, country, status: "ACTIVE" }, select: { id: true } });
+  const p = await prisma.player.create({ data: { name, country, status: "ACTIVE" }, select: { id: true } });
+  // Un compte est requis pour recevoir des notifs de sondage.
+  await prisma.playerAccount.create({ data: { playerId: p.id, email: `${p.id}@sim.test`, passwordHash: "x" } });
+  return p;
 }
 
 let creator: string, member: string, outsider: string, admin: string, clubId: string;
@@ -176,5 +180,52 @@ describe("Modération : blocage et signalement", () => {
     as(admin, "ADMIN");
     await patchPoll(json({ dismissReports: true }), ctx(id));
     expect(await prisma.pollReport.count({ where: { pollId: id } })).toBe(0);
+  });
+});
+
+describe("Notification d'ouverture et pastille", () => {
+  const openedFor = () =>
+    (notify.createNotification.mock.calls as unknown as [string, string][])
+      .filter(([, type]) => type === "POLL_OPENED").map(([id]) => id).sort();
+
+  it("sondage club : seuls les membres (hors créateur) sont notifiés, une seule fois", async () => {
+    const id = await mkClubPoll();
+    expect(openedFor()).toEqual([member]);
+    // Fermeture puis réouverture : pas de nouvelle notif.
+    notify.createNotification.mockClear();
+    as(creator);
+    await patchPoll(json({ status: "CLOSED" }), ctx(id));
+    await patchPoll(json({ status: "OPEN" }), ctx(id));
+    expect(openedFor()).toEqual([]);
+  });
+
+  it("sondage pays : les joueurs du pays ; sondage global : personne", async () => {
+    as(creator);
+    const fr = await (await createPoll(json({ question: "France ?", options: ["A", "B"], eligibleCountries: ["france"] }))).json();
+    await patchPoll(json({ status: "OPEN" }), ctx(fr.id));
+    expect(openedFor()).toEqual([outsider]);
+
+    notify.createNotification.mockClear();
+    const all = await (await createPoll(json({ question: "Tout le monde ?", options: ["A", "B"] }))).json();
+    await patchPoll(json({ status: "OPEN" }), ctx(all.id));
+    expect(openedFor()).toEqual([]);
+  });
+
+  it("pastille : sondages ouverts qui me concernent et pas encore votés", async () => {
+    const id = await mkClubPoll();
+    as(creator);
+    const all = await (await createPoll(json({ question: "Tout le monde ?", options: ["A", "B"] }))).json();
+    await patchPoll(json({ status: "OPEN" }), ctx(all.id));
+
+    expect(await countPendingPolls(member)).toBe(2);   // club + global
+    expect(await countPendingPolls(outsider)).toBe(1); // global seulement
+    expect(await countPendingPolls(creator)).toBe(0);  // ses propres sondages exclus
+    as(member);
+    await vote(json({ choices: ["Oui"] }), ctx(id));
+    expect(await countPendingPolls(member)).toBe(1);
+
+    // Sondage historique sans créateur (createdById NULL) : bien compté.
+    await prisma.poll.create({ data: { question: "Ancien ?", options: ["A", "B"], status: "OPEN" } });
+    expect(await countPendingPolls(creator)).toBe(1);
   });
 });

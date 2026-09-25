@@ -62,7 +62,9 @@
     "close_menu": "Fermer le menu",
     "open_menu": "Ouvrir le menu",
     "polls": "Sondages",
-    "go_back": "Retour"
+    "go_back": "Retour",
+    "tools": "Outils",
+    "sandbox": "Bac à sable"
   },
   "header": {
     "brand_name": "Poloperator",
@@ -1203,7 +1205,8 @@
     "club_needs_approval": "Nouveau club à valider",
     "new_tournament_published": "Nouveau tournoi : {tournamentName}",
     "poll_reported": "Un sondage a été signalé",
-    "poll_blocked": "Ton sondage a été bloqué par la modération"
+    "poll_blocked": "Ton sondage a été bloqué par la modération",
+    "poll_opened": "Nouveau sondage qui te concerne"
   },
   "contact": {
     "btn_open": "Contact",

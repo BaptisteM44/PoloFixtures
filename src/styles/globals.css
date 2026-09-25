@@ -970,6 +970,82 @@ a {
   color: var(--text);
 }
 
+/* Menu « Outils » (sondages, labs, bac à sable) */
+.nav-tools { position: relative; }
+.nav-tools__btn {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: background var(--transition);
+}
+.nav-tools__btn:hover,
+.nav-tools__btn[aria-expanded="true"] { background: var(--yellow); color: var(--text); }
+.nav-tools__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 200px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 4px 4px 0 var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  z-index: 150;
+  animation: notif-slide-down 0.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.nav-tools__menu a { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--danger);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+}
+.burger-btn { position: relative; }
+.burger-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  border: 2px solid var(--surface);
+}
+.nav-drawer__section {
+  padding: 16px 20px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.nav-drawer__links a { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
 .header-actions {
   display: flex;
   gap: 8px;

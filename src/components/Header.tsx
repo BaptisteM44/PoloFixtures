@@ -9,6 +9,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { DarkModeToggle } from "@/components/DarkModeToggle";
 import { AppBackButton } from "@/components/AppBackButton";
+import { ToolsMenu, PendingBadge, usePendingPolls, useToolLinks } from "@/components/ToolsMenu";
 
 export function Header() {
   const { data: session } = useSession();
@@ -19,6 +20,8 @@ export function Header() {
   const isSuspended = (session?.user as any)?.playerStatus === "REJECTED";
   const clubId = (session?.user as any)?.clubId ?? null;
   const [menuOpen, setMenuOpen] = useState(false);
+  const pendingPolls = usePendingPolls(hasPlayer);
+  const toolLinks = useToolLinks(hasPlayer, pendingPolls);
 
   // Fermer le menu sur changement de route
   useEffect(() => {
@@ -56,7 +59,7 @@ export function Header() {
         <Link href="/tournaments">{t("nav.tournaments")}</Link>
         <Link href="/calendar">{t("nav.calendar")}</Link>
         <Link href="/clubs">{t("nav.clubs")}</Link>
-        <Link href="/labs">🧪 Labs</Link>
+        <ToolsMenu links={toolLinks} pending={pendingPolls} />
         <Link href="/about">{t("nav.about")}</Link>
         {isAdmin && <Link href="/admin">{t("nav.admin")}</Link>}
       </nav>
@@ -81,6 +84,7 @@ export function Header() {
           <span className={`burger-icon${menuOpen ? " burger-icon--open" : ""}`}>
             <span /><span /><span />
           </span>
+          {!menuOpen && pendingPolls > 0 && <span className="burger-dot" aria-hidden />}
         </button>
       </div>
 
@@ -103,9 +107,14 @@ export function Header() {
               <Link href="/tournaments" onClick={() => setMenuOpen(false)}>{t("nav.tournaments")}</Link>
               <Link href="/calendar" onClick={() => setMenuOpen(false)}>{t("nav.calendar")}</Link>
               <Link href="/clubs" onClick={() => setMenuOpen(false)}>{t("nav.clubs")}</Link>
-              <Link href="/labs" onClick={() => setMenuOpen(false)}>🧪 Labs</Link>
               <Link href="/about" onClick={() => setMenuOpen(false)}>{t("nav.about")}</Link>
               {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)}>{t("nav.admin")}</Link>}
+              <div className="nav-drawer__section">{t("nav.tools")}</div>
+              {toolLinks.map((l) => (
+                <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)}>
+                  {l.label} <PendingBadge count={l.badge ?? 0} />
+                </Link>
+              ))}
             </div>
             <div className="nav-drawer__footer">
               <AuthStatus onNavigate={() => setMenuOpen(false)} inDrawer />

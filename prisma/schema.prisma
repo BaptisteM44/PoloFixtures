@@ -208,6 +208,7 @@ enum NotificationType {
   NEW_TOURNAMENT_PUBLISHED // notif joueurs : tournoi approuvé/publié
   POLL_REPORTED // notif admin : un sondage a été signalé
   POLL_BLOCKED // notif créateur : son sondage a été bloqué par la modération
+  POLL_OPENED // notif public visé : un sondage ciblé (club/pays/continent) vient d'ouvrir
 }
 
 enum TaskPriority {
