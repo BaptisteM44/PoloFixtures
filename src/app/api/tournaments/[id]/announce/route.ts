@@ -113,8 +113,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     try {
       await sendMail({ to: r.email, subject: emailSubject, html });
       sent++;
-    } catch {
+    } catch (err) {
       errors.push(r.email);
+      // Login refusé ou serveur injoignable : insister multiplierait les
+      // tentatives de connexion, exactement ce qui fait bloquer le compte.
+      const code = (err as { code?: string })?.code;
+      if (code === "EAUTH" || code === "ECONNECTION" || code === "ETIMEDOUT") break;
     }
   }
 

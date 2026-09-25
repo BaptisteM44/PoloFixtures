@@ -10,6 +10,29 @@ export function isMailerConfigured() {
   return !!(host && user && pass);
 }
 
+// Une seule connexion SMTP partagée, un seul login, et un envoi par seconde
+// au plus. Recréer un transport à chaque email = un login SMTP par destinataire :
+// une annonce à tout un tournoi déclenchait des dizaines de connexions en
+// quelques secondes, que Mailo bloquait comme une tentative de piratage.
+let transporter: nodemailer.Transporter | null = null;
+
+function getTransporter() {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 100,
+      rateDelta: 1000,
+      rateLimit: 1,
+    });
+  }
+  return transporter;
+}
+
 export async function sendMail({
   to,
   subject,
@@ -24,15 +47,8 @@ export async function sendMail({
     return;
   }
 
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
-
   try {
-    await transporter.sendMail({ from, to, subject, html });
+    await getTransporter().sendMail({ from, to, subject, html });
     console.log("[mailer] Email envoyé à", to, "—", subject);
   } catch (err) {
     console.error("[mailer] Échec envoi à", to, ":", err);
