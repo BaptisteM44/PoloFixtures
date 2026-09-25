@@ -93,3 +93,44 @@ export function countryToContinent(input: string): string | null {
 export function countryToContinentOrDefault(input: string, fallback: string): string {
   return countryToContinent(input) ?? fallback;
 }
+
+// Variantes courantes que la librairie ne reconnaît pas.
+const COUNTRY_ALIASES: Record<string, string> = {
+  england: "GB", scotland: "GB", wales: "GB", "northern ireland": "GB",
+  holland: "NL", "the netherlands": "NL",
+};
+
+/**
+ * Code ISO alpha-2 d'un pays saisi sous n'importe quelle forme : code (« fr »,
+ * « UK »…), nom en EN/FR/DE/ES (« Allemagne », « Deutschland »), alias
+ * (« USA », « England »). null si inconnu (ex. « XX »).
+ */
+export function countryToIso(input: string | null | undefined): string | null {
+  const trimmed = input?.trim();
+  if (!trimmed) return null;
+  const upper = trimmed.toUpperCase();
+  if (upper === "UK") return "GB";
+  if (upper.length === 2) return ISO_TO_CONTINENT[upper] ? upper : null;
+  const alias = COUNTRY_ALIASES[trimmed.toLowerCase()];
+  if (alias) return alias;
+  for (const locale of LOCALES) {
+    const code = countries.getAlpha2Code(trimmed, locale);
+    if (code) return code;
+  }
+  return null;
+}
+
+/** Nom officiel anglais (celui des listes déroulantes) d'un pays, ou null. */
+export function canonicalCountryName(input: string | null | undefined): string | null {
+  const code = countryToIso(input);
+  return code ? countries.getName(code, "en", { select: "official" }) ?? null : null;
+}
+
+/** Deux saisies désignent-elles le même pays ? (« FR » = « France » = « france ») */
+export function sameCountry(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  const ca = countryToIso(a);
+  const cb = countryToIso(b);
+  if (ca && cb) return ca === cb;
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}

@@ -6,6 +6,7 @@ import { fixImageOrientation } from "@/lib/fix-orientation";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { ISO_COUNTRIES } from "@/lib/iso-countries";
+import { canonicalCountryName } from "@/lib/country-utils";
 import { CURRENCIES } from "@/lib/currencies";
 import { RegistrationFieldsEditor } from "@/components/RegistrationFieldsEditor";
 
@@ -467,7 +468,14 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           </label>
           <label className="field-row">
             {t("field_country")}
-            <select name="country" defaultValue={tournament.country}>
+            {/* Pays enregistré sous une autre forme (« USA », « BE »…) : on
+                présélectionne le nom officiel ; s'il est inconnu, on le garde
+                tel quel en tête de liste. Avant, le navigateur retombait sur la
+                1re option (« Afghanistan ») et l'enregistrait en silence. */}
+            <select name="country" defaultValue={canonicalCountryName(tournament.country) ?? tournament.country}>
+              {!canonicalCountryName(tournament.country) && (
+                <option value={tournament.country}>{tournament.country}</option>
+              )}
               {ISO_COUNTRIES.map((c) => (
                 <option key={c.code} value={c.name}>{c.name}</option>
               ))}

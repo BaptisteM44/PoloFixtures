@@ -1,3 +1,4 @@
+import { sameCountry } from "@/lib/country-utils";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 
@@ -59,9 +60,9 @@ export function isPollRestricted(poll: PollEligibility): boolean {
 export function isVoterEligible(poll: PollEligibility, voter: VoterProfile | null): boolean {
   if (!isPollRestricted(poll)) return true;
   if (!voter) return false;
-  const norm = (s: string) => s.trim().toLowerCase();
   if (voter.clubIds.some((id) => poll.eligibleClubIds.includes(id))) return true;
-  if (voter.country && poll.eligibleCountries.some((c) => norm(c) === norm(voter.country!))) return true;
+  // « FR » = « France » = « france » (les profils ont des pays sous toutes les formes).
+  if (voter.country && poll.eligibleCountries.some((c) => sameCountry(c, voter.country))) return true;
   if (voter.continent && poll.eligibleContinents.includes(voter.continent)) return true;
   return false;
 }

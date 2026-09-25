@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { NotificationType } from "@prisma/client";
 import { sendMail } from "@/lib/mailer";
 import { sendPushToPlayer } from "@/lib/web-push";
+import { sameCountry } from "@/lib/country-utils";
 
 /** Build a human-readable push payload from notification type + payload */
 function toPushPayload(
@@ -341,7 +342,7 @@ export async function notifyPlayersNewTournament(t: {
       const matches =
         noFilter ||
         pref.continents.includes(t.continentCode) ||
-        pref.countries.includes(t.country);
+        pref.countries.some((c) => sameCountry(c, t.country));
       if (!matches) continue;
       await createNotification(pref.playerId, "NEW_TOURNAMENT_PUBLISHED", {
         tournamentId: t.id,

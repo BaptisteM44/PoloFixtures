@@ -86,6 +86,13 @@ describe("isVoterEligible (ciblage des votants)", () => {
     expect(isVoterEligible(poll, nyc)).toBe(false);
   });
 
+  it("pays saisi sous une autre forme : « FR » / « Allemagne » / « UK » reconnus", () => {
+    expect(isVoterEligible({ ...none, eligibleCountries: ["France"] }, { country: "FR", continent: "EU", clubIds: [] })).toBe(true);
+    expect(isVoterEligible({ ...none, eligibleCountries: ["Germany"] }, { country: "Deutschland", continent: "EU", clubIds: [] })).toBe(true);
+    expect(isVoterEligible({ ...none, eligibleCountries: ["United Kingdom of Great Britain and Northern Ireland"] }, { country: "UK", continent: "EU", clubIds: [] })).toBe(true);
+    expect(isVoterEligible({ ...none, eligibleCountries: ["France"] }, { country: "BE", continent: "EU", clubIds: [] })).toBe(false);
+  });
+
   it("joueur sans pays renseigné exclu d'un ciblage par pays", () => {
     const poll = { ...none, eligibleCountries: ["France"] };
     expect(isVoterEligible(poll, { country: null, continent: null, clubIds: [] })).toBe(false);

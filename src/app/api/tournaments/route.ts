@@ -4,6 +4,7 @@ import { z } from "zod";
 import { generateTournamentSlug } from "@/lib/slug";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { notifyAllAdmins } from "@/lib/notify";
+import { canonicalCountryName } from "@/lib/country-utils";
 import { isRateLimited } from "@/lib/rate-limit";
 
 export async function GET() {
@@ -69,6 +70,12 @@ export async function POST(request: Request) {
   }
 
   const { coOrganizerIds, ...data } = parsed.data;
+  // Pays saisi librement (« USA », « FR »…) → nom officiel des listes, pour que
+  // la page d'édition le retrouve (sinon elle affichait « Afghanistan », 1re
+  // option, et l'écrasait à l'enregistrement). Espaces parasites retirés.
+  data.country = canonicalCountryName(data.country) ?? data.country.trim();
+  data.city = data.city.trim();
+  data.name = data.name.trim();
 
   // Validate date logic
   const start = new Date(data.dateStart);

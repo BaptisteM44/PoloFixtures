@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { canonicalCountryName } from "@/lib/country-utils";
 import { z } from "zod";
 import { generateTournamentSlug } from "@/lib/slug";
 import { revalidatePath } from "next/cache";
@@ -129,6 +130,9 @@ export async function updateTournamentAction(formData: FormData) {
   }
 
   const data = parsed.data;
+  // Pays sous sa forme officielle (cf. création) + espaces parasites retirés.
+  data.country = canonicalCountryName(data.country) ?? data.country.trim();
+  data.city = data.city.trim();
   const denied = await requireTournamentOrgaAccess(data.id);
   if (denied) return denied;
 
