@@ -1,10 +1,64 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import html2canvas from "html2canvas-pro";
+import { domToCanvas } from "modern-screenshot";
 
+// Le bucket R2 public (et l'ancien Supabase) n'envoie pas d'en-têtes CORS :
+// ces images sont relues via /_next/image, même origine, où ces domaines sont
+// déjà autorisés (remotePatterns).
 const PROXIED_HOSTS = /(\.r2\.dev|\.r2\.cloudflarestorage\.com|\.supabase\.co)$/;
+
+async function fetchViaProxy(url: string): Promise<string | false> {
+  let parsed: URL;
+  try { parsed = new URL(url, window.location.href); } catch { return false; }
+  if (!PROXIED_HOSTS.test(parsed.hostname)) return false;
+  const res = await fetch(`/_next/image?url=${encodeURIComponent(parsed.href)}&w=1080&q=90`);
+  if (!res.ok) return false;
+  const blob = await res.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => resolve(false);
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Rend la carte telle que le navigateur l'affiche (SVG foreignObject), puis
+ * ajoute le filigrane. Exporté pour pouvoir être testé hors du bouton.
+ */
+export async function captureCardBlob(el: HTMLElement): Promise<Blob | null> {
+  // Le tilt (souris / scroll mobile) est posé en style inline sur la racine.
+  const originalTransform = el.style.transform;
+  el.style.transform = "none";
+  let canvas: HTMLCanvasElement;
+  try {
+    canvas = await domToCanvas(el, {
+      scale: 2,
+      backgroundColor: null,
+      fetchFn: fetchViaProxy,
+      timeout: 15000,
+    });
+  } finally {
+    el.style.transform = originalTransform;
+  }
+
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const pad = 10 * 2;
+    ctx.font = `600 ${13 * 2}px Inter, system-ui, sans-serif`;
+    ctx.textAlign = "right";
+    ctx.textBaseline = "bottom";
+    ctx.shadowColor = "rgba(0,0,0,0.55)";
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = "rgba(255,255,255,0.82)";
+    ctx.fillText("poloperator.com", canvas.width - pad, canvas.height - pad);
+    ctx.shadowBlur = 0;
+  }
+
+  return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png"));
+}
 
 type Props = {
   /** Ref to the card DOM element to capture */
@@ -19,71 +73,7 @@ export function ShareCardButton({ cardRef, playerName }: Props) {
 
   const capture = useCallback(async (): Promise<Blob | null> => {
     if (!cardRef.current) return null;
-
-    // Reset 3D transforms before capture
-    const el = cardRef.current;
-    const originalStyle = el.style.cssText;
-    el.style.transform = "none";
-
-    // Le bucket R2 public (et l'ancien Supabase) n'envoie pas d'en-têtes CORS :
-    // html2canvas ne peut pas relire ces images et les omet (photo absente).
-    // On les fait passer le temps de la capture par /_next/image, même origine,
-    // où ces domaines sont déjà autorisés (remotePatterns).
-    const images = Array.from(el.querySelectorAll("img"));
-    const swapped: Array<[HTMLImageElement, string]> = [];
-    for (const img of images) {
-      const original = img.getAttribute("src");
-      if (!original) continue;
-      const url = new URL(original, window.location.href);
-      if (!PROXIED_HOSTS.test(url.hostname)) continue;
-      swapped.push([img, original]);
-      img.src = `/_next/image?url=${encodeURIComponent(url.href)}&w=1080&q=90`;
-    }
-
-    await Promise.all(
-      images.map(
-        (img) =>
-          new Promise<void>((resolve) => {
-            if (img.complete && img.naturalWidth > 0) { resolve(); return; }
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
-          })
-      )
-    );
-
-    let canvas: HTMLCanvasElement;
-    try {
-      canvas = await html2canvas(el, {
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: null,
-        scale: 2,
-        imageTimeout: 8000,
-      });
-    } finally {
-      for (const [img, original] of swapped) img.src = original;
-      el.style.cssText = originalStyle;
-    }
-
-    // Watermark poloperator.com en bas de la carte
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      const pad = 10 * 2; // scale 2
-      const fontSize = 13 * 2;
-      ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
-      ctx.textAlign = "right";
-      ctx.textBaseline = "bottom";
-      // Halo blanc pour lisibilité sur fond sombre ou clair
-      ctx.shadowColor = "rgba(0,0,0,0.55)";
-      ctx.shadowBlur = 6;
-      ctx.fillStyle = "rgba(255,255,255,0.82)";
-      ctx.fillText("poloperator.com", canvas.width - pad, canvas.height - pad);
-      ctx.shadowBlur = 0;
-    }
-
-    return new Promise((resolve) =>
-      canvas.toBlob((blob) => resolve(blob), "image/png")
-    );
+    return captureCardBlob(cardRef.current);
   }, [cardRef]);
 
   const handleShare = useCallback(async () => {
