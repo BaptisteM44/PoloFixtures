@@ -64,7 +64,14 @@ export async function POST(request: Request) {
   // un fichier qui n'est pas une vraie image lève ici → 415, pas un 500 opaque.
   let webpBuffer: Buffer;
   try {
-    webpBuffer = await sharp(buffer).rotate().webp({ quality: 82 }).toBuffer();
+    // Redimensionnée à 2048 px max (côté le plus long) : une photo de téléphone
+    // (4000 px, plusieurs Mo) alourdissait inutilement les pages (stories,
+    // photos de profil, bannières). Jamais agrandie.
+    webpBuffer = await sharp(buffer)
+      .rotate()
+      .resize({ width: 2048, height: 2048, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 82 })
+      .toBuffer();
   } catch {
     return new Response("Fichier image invalide ou corrompu", { status: 415 });
   }
