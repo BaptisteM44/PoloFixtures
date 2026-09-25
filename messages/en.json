@@ -287,7 +287,8 @@
     "continent_eu": "Europe",
     "continent_af": "Africa",
     "continent_as": "Asia",
-    "continent_oc": "Oceania"
+    "continent_oc": "Oceania",
+    "euros_vote_dismiss": "Don't show again"
   },
   "tournaments": {
     "page_title": "All tournaments",

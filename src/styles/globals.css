@@ -1520,6 +1520,7 @@ button:disabled,
 
 .euros-vote-banner {
   display: flex;
+  position: relative;
   align-items: center;
   gap: 14px;
   width: calc((100% - 20px) * 3 / 5);
@@ -1562,6 +1563,18 @@ button:disabled,
   font-weight: 700;
   font-size: 13px;
   white-space: nowrap;
+}
+
+.euros-vote-banner__close {
+  background: none;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px 6px;
+  color: var(--border);
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
