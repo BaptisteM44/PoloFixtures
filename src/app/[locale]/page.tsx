@@ -323,8 +323,10 @@ export default async function HomePage() {
         </section>
       )}
 
-      <HomeInstallBanner />
-      <EurosVoteBanner />
+      <div className="home-banners">
+        <HomeInstallBanner />
+        <EurosVoteBanner />
+      </div>
 
       {/* ---- MAP SECTION (WIP) ---- */}
       {process.env.NEXT_PUBLIC_MAP_ENABLED === "true" && mapTournaments.length > 0 && (

@@ -1482,13 +1482,22 @@ button:disabled,
    dessous (.map-section-layout est en grid-template-columns: 3fr 2fr,
    gap 20px) — calc() reproduit le même calcul de grille, collée à gauche
    plutôt que pleine largeur ou centrée. */
+/* Regroupe les bandeaux de la home (install app + vote Euros) : garde un
+   écart constant au-dessus/en dessous même quand l'un des deux est fermé. */
+.home-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin: 20px 0;
+}
+.home-banners:empty { display: none; }
+
 /* Encart home « installe l'app » (au-dessus du bandeau vote Euros) */
 .home-install-banner {
   display: flex;
   align-items: flex-start;
   gap: 14px;
   width: calc((100% - 20px) * 3 / 5);
-  margin: 20px 0 0;
   padding: 14px 16px 14px 20px;
   background: var(--teal);
   border: 2px solid var(--border);
@@ -1524,7 +1533,6 @@ button:disabled,
   align-items: center;
   gap: 14px;
   width: calc((100% - 20px) * 3 / 5);
-  margin: 20px 0;
   padding: 14px 20px;
   background: var(--purple);
   border: 2px solid var(--border);
