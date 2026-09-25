@@ -32,6 +32,7 @@ export function useToolLinks(hasPlayer: boolean, pendingPolls: number): ToolLink
   return [
     { href: "/polls", label: `📊 ${t("polls")}`, badge: pendingPolls },
     { href: "/labs", label: "🧪 Labs" },
+    { href: "/overlay", label: `📺 ${t("overlay")}` },
     ...(hasPlayer ? [{ href: "/sandbox", label: `🛠️ ${t("sandbox")}` }] : []),
   ];
 }

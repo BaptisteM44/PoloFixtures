@@ -64,7 +64,8 @@
     "polls": "Encuestas",
     "go_back": "Volver",
     "tools": "Herramientas",
-    "sandbox": "Sandbox"
+    "sandbox": "Sandbox",
+    "overlay": "Overlay de stream"
   },
   "header": {
     "brand_name": "Poloperator",

@@ -64,7 +64,8 @@
     "polls": "Sondages",
     "go_back": "Retour",
     "tools": "Outils",
-    "sandbox": "Bac à sable"
+    "sandbox": "Bac à sable",
+    "overlay": "Overlay stream"
   },
   "header": {
     "brand_name": "Poloperator",
