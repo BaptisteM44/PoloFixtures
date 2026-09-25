@@ -10709,6 +10709,11 @@ details[open] .club-sessions__past-summary::before {
   border-color: var(--text);
   color: var(--text);
 }
+@media (max-width: 768px) {
+  .tournament-card__follow { flex-direction: column; }
+  .follow-btn,
+  .follow-btn:hover { box-shadow: none; transform: none; }
+}
 /* Bouton partage (même pastille ronde que l'étoile) + confirmation « lien copié » */
 .share-btn { position: relative; }
 .share-btn__toast {
