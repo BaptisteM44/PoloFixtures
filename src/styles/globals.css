@@ -10696,11 +10696,14 @@ details[open] .club-sessions__past-summary::before {
   text-transform: none;
   letter-spacing: normal;
   font-family: inherit;
-  transition: border-color 0.12s ease, color 0.12s ease;
+  box-shadow: var(--shadow);
+  transition: border-color 0.12s ease, color 0.12s ease, transform var(--transition), box-shadow var(--transition);
 }
 .follow-btn:hover {
   border-color: var(--text);
   color: var(--text);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-lg);
 }
 .follow-btn--active {
   border-color: var(--text);
