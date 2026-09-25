@@ -11165,6 +11165,8 @@ details[open] .club-sessions__past-summary::before {
 .roll__shoot input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .roll__shoot.is-busy { opacity: 0.7; pointer-events: none; }
 .roll__error { margin: 0; color: var(--danger); font-weight: 600; font-size: 13px; }
+.roll__notice { margin: 0; font-weight: 600; font-size: 13px; }
+.roll__hint { margin: -4px 0 0; font-size: 12px; }
 .roll__mine-title { margin: 6px 0 0; }
 .roll__mine { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .roll__thumb { position: relative; width: 64px; height: 64px; }

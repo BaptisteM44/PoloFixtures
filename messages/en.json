@@ -3137,7 +3137,7 @@
     "countdown_hours": "{h} h {m} min",
     "countdown_minutes": "{m} min",
     "shots_left": "{count, plural, =0 {Roll finished!} one {# shot left} other {# shots left}}",
-    "shoot": "Take a photo",
+    "shoot": "{count, plural, one {Add a photo} other {Add photos}}",
     "developing": "Uploading…",
     "mine_hint": "Your shots (only you see them before the reveal — deleting one gives it back):",
     "login_to_shoot": "Log in to take part if you're playing this tournament.",
@@ -3159,7 +3159,7 @@
     "already_reported": "You already reported it.",
     "error": "Something went wrong.",
     "err_too_big": "Photo too large (5 MB max).",
-    "err_not_image": "This file isn't an image.",
+    "err_not_image": "Unsupported format: use a JPG, PNG or WebP photo.",
     "err_no_shots": "You've used your 5 shots.",
     "err_revealed": "The roll has already been revealed.",
     "err_not_participant": "Only the tournament's players and organizers can take photos.",
@@ -3170,6 +3170,9 @@
     "admin_hidden": "Hidden",
     "admin_hide": "Hide",
     "admin_unhide": "Unhide",
-    "admin_reports": "{count, plural, one {# report} other {# reports}}"
+    "admin_reports": "{count, plural, one {# report} other {# reports}}",
+    "shoot_hint": "Take one now or pick from your gallery — you can select several at once.",
+    "uploading_n": "Uploading {done}/{total}…",
+    "too_many": "{count, plural, one {You only had 1 shot left: only the first photo was added.} other {You only had # shots left: only the first # were added.}}"
   }
 }

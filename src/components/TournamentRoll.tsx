@@ -38,6 +38,8 @@ export function TournamentRoll({
   const [state, setState] = useState<RollState | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [viewer, setViewer] = useState<{ photos: RollPhoto[]; start: number } | null>(null);
   const [, setTick] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -70,27 +72,43 @@ export function TournamentRoll({
     return d > 0 ? t("countdown_days", { d, h }) : h > 0 ? t("countdown_hours", { h, m }) : t("countdown_minutes", { m });
   };
 
-  const shoot = async (file: File) => {
+  /** Envoie UNE photo ; renvoie un message d'erreur, ou null si tout va bien. */
+  const uploadOne = async (file: File): Promise<string | null> => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("folder", "tournament-photos");
+    const up = await fetch("/api/upload", { method: "POST", body: form });
+    if (!up.ok) return up.status === 413 ? t("err_too_big") : up.status === 415 ? t("err_not_image") : t("error");
+    const { path } = await up.json();
+    const res = await fetch(`/api/tournaments/${tournamentId}/photos`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imagePath: path }),
+    });
+    if (res.ok) return null;
+    const code = res.headers.get("content-type")?.includes("json") ? (await res.json()).error : null;
+    return code === "no_shots_left" ? t("err_no_shots") : code === "revealed" ? t("err_revealed") : code === "not_participant" ? t("err_not_participant") : t("error");
+  };
+
+  /**
+   * Photos prises sur le moment OU importées de la galerie, plusieurs d'un
+   * coup : on n'envoie que ce qui tient dans les crédits restants, une par une.
+   */
+  const addPhotos = async (files: File[]) => {
+    if (!state || files.length === 0) return;
+    const batch = files.slice(0, state.remaining);
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("folder", "tournament-photos");
-      const up = await fetch("/api/upload", { method: "POST", body: form });
-      if (!up.ok) { setError(up.status === 413 ? t("err_too_big") : up.status === 415 ? t("err_not_image") : t("error")); return; }
-      const { path } = await up.json();
-      const res = await fetch(`/api/tournaments/${tournamentId}/photos`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ imagePath: path }),
-      });
-      if (!res.ok) {
-        const code = res.headers.get("content-type")?.includes("json") ? (await res.json()).error : null;
-        setError(code === "no_shots_left" ? t("err_no_shots") : code === "revealed" ? t("err_revealed") : code === "not_participant" ? t("err_not_participant") : t("error"));
-        return;
+      for (let i = 0; i < batch.length; i++) {
+        setProgress({ done: i + 1, total: batch.length });
+        const err = await uploadOne(batch[i]);
+        if (err) { setError(err); break; }
       }
+      if (files.length > batch.length) setNotice(t("too_many", { count: batch.length }));
       await load();
     } finally {
       setBusy(false);
+      setProgress(null);
       if (inputRef.current) inputRef.current.value = "";
     }
   };
@@ -146,12 +164,18 @@ export function TournamentRoll({
               </div>
               <p className="roll__camera-text">{t("shots_left", { count: state.remaining })}</p>
               {state.remaining > 0 && (
+                // Sans « capture » : le téléphone propose l'appareil photo OU la
+                // galerie ; « multiple » permet d'en importer plusieurs d'un coup.
                 <label className={`primary roll__shoot${busy ? " is-busy" : ""}`}>
-                  {busy ? t("developing") : `📷 ${t("shoot")}`}
-                  <input ref={inputRef} type="file" accept="image/*" capture="environment" disabled={busy}
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) shoot(f); }} />
+                  {busy
+                    ? (progress && progress.total > 1 ? t("uploading_n", progress) : t("developing"))
+                    : `📷 ${t("shoot", { count: state.remaining })}`}
+                  <input ref={inputRef} type="file" accept="image/*" multiple disabled={busy}
+                    onChange={(e) => addPhotos(Array.from(e.target.files ?? []))} />
                 </label>
               )}
+              {state.remaining > 0 && !busy && <p className="meta roll__hint">{t("shoot_hint")}</p>}
+              {notice && <p className="roll__notice">{notice}</p>}
               {error && <p className="roll__error">{error}</p>}
 
               {state.mine.length > 0 && (

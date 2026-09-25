@@ -3138,7 +3138,7 @@
     "countdown_hours": "{h} h {m} min",
     "countdown_minutes": "{m} min",
     "shots_left": "{count, plural, =0 {Pellicule terminée !} one {Il te reste # photo} other {Il te reste # photos}}",
-    "shoot": "Prendre une photo",
+    "shoot": "{count, plural, one {Ajouter une photo} other {Ajouter des photos}}",
     "developing": "Envoi…",
     "mine_hint": "Tes photos (toi seul les vois avant la révélation — supprimer en rend une) :",
     "login_to_shoot": "Connecte-toi pour participer à la pellicule si tu joues ce tournoi.",
@@ -3160,7 +3160,7 @@
     "already_reported": "Tu l'as déjà signalée.",
     "error": "Une erreur est survenue.",
     "err_too_big": "Photo trop lourde (5 Mo max).",
-    "err_not_image": "Ce fichier n'est pas une image.",
+    "err_not_image": "Format non pris en charge : utilise une photo JPG, PNG ou WebP.",
     "err_no_shots": "Tu as utilisé tes 5 photos.",
     "err_revealed": "La pellicule est déjà révélée.",
     "err_not_participant": "Seuls les joueurs et l'orga du tournoi peuvent prendre des photos.",
@@ -3171,6 +3171,9 @@
     "admin_hidden": "Masquée",
     "admin_hide": "Masquer",
     "admin_unhide": "Réafficher",
-    "admin_reports": "{count, plural, one {# signalement} other {# signalements}}"
+    "admin_reports": "{count, plural, one {# signalement} other {# signalements}}",
+    "shoot_hint": "Sur le moment ou depuis ta galerie — tu peux en choisir plusieurs d'un coup.",
+    "uploading_n": "Envoi {done}/{total}…",
+    "too_many": "{count, plural, one {Il ne te restait qu'une photo : seule la première a été ajoutée.} other {Il ne te restait que # photos : seules les # premières ont été ajoutées.}}"
   }
 }

@@ -3142,7 +3142,7 @@
     "countdown_hours": "{h} Std {m} Min",
     "countdown_minutes": "{m} Min",
     "shots_left": "{count, plural, =0 {Rolle voll!} one {Noch # Foto} other {Noch # Fotos}}",
-    "shoot": "Foto machen",
+    "shoot": "{count, plural, one {Foto hinzufügen} other {Fotos hinzufügen}}",
     "developing": "Wird hochgeladen…",
     "mine_hint": "Deine Fotos (nur du siehst sie vor der Enthüllung — Löschen gibt dir eins zurück):",
     "login_to_shoot": "Melde dich an, um mitzumachen, wenn du bei diesem Turnier spielst.",
@@ -3164,7 +3164,7 @@
     "already_reported": "Du hast es bereits gemeldet.",
     "error": "Etwas ist schiefgelaufen.",
     "err_too_big": "Foto zu groß (max. 5 MB).",
-    "err_not_image": "Diese Datei ist kein Bild.",
+    "err_not_image": "Format nicht unterstützt: nutze ein JPG-, PNG- oder WebP-Foto.",
     "err_no_shots": "Du hast deine 5 Fotos verbraucht.",
     "err_revealed": "Die Rolle wurde bereits enthüllt.",
     "err_not_participant": "Nur die Spieler*innen und das Orga-Team des Turniers können Fotos machen.",
@@ -3175,6 +3175,9 @@
     "admin_hidden": "Ausgeblendet",
     "admin_hide": "Ausblenden",
     "admin_unhide": "Wieder einblenden",
-    "admin_reports": "{count, plural, one {# Meldung} other {# Meldungen}}"
+    "admin_reports": "{count, plural, one {# Meldung} other {# Meldungen}}",
+    "shoot_hint": "Direkt aufnehmen oder aus der Galerie wählen — auch mehrere auf einmal.",
+    "uploading_n": "Upload {done}/{total}…",
+    "too_many": "{count, plural, one {Du hattest nur noch 1 Foto: nur das erste wurde hinzugefügt.} other {Du hattest nur noch # Fotos: nur die ersten # wurden hinzugefügt.}}"
   }
 }
