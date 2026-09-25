@@ -26,7 +26,7 @@ export const PlayerCollectibleCard = forwardRef<HTMLDivElement, Props>(function 
 
   if (card.custom === "whbpc" && whbpcData) {
     // Same base photo as every other card — no separate photo to manage.
-    return <WhbpcCard playerName={pokemonProps.name} {...whbpcData} photoUrl={pokemonProps.photoPath} />;
+    return <WhbpcCard playerName={pokemonProps.name} {...whbpcData} photoUrl={pokemonProps.photoPath} cardRef={ref} />;
   }
 
   return <PokemonCard ref={ref} {...pokemonProps} {...card.style} />;

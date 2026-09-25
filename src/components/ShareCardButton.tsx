@@ -4,6 +4,8 @@ import { useRef, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import html2canvas from "html2canvas-pro";
 
+const PROXIED_HOSTS = /(\.r2\.dev|\.r2\.cloudflarestorage\.com|\.supabase\.co)$/;
+
 type Props = {
   /** Ref to the card DOM element to capture */
   cardRef: React.RefObject<HTMLDivElement | null>;
@@ -23,28 +25,45 @@ export function ShareCardButton({ cardRef, playerName }: Props) {
     const originalStyle = el.style.cssText;
     el.style.transform = "none";
 
-    // Force all images to load with crossOrigin before capture
-    const images = el.querySelectorAll("img");
+    // Le bucket R2 public (et l'ancien Supabase) n'envoie pas d'en-têtes CORS :
+    // html2canvas ne peut pas relire ces images et les omet (photo absente).
+    // On les fait passer le temps de la capture par /_next/image, même origine,
+    // où ces domaines sont déjà autorisés (remotePatterns).
+    const images = Array.from(el.querySelectorAll("img"));
+    const swapped: Array<[HTMLImageElement, string]> = [];
+    for (const img of images) {
+      const original = img.getAttribute("src");
+      if (!original) continue;
+      const url = new URL(original, window.location.href);
+      if (!PROXIED_HOSTS.test(url.hostname)) continue;
+      swapped.push([img, original]);
+      img.src = `/_next/image?url=${encodeURIComponent(url.href)}&w=1080&q=90`;
+    }
+
     await Promise.all(
-      Array.from(images).map(
+      images.map(
         (img) =>
           new Promise<void>((resolve) => {
-            if (img.complete) { resolve(); return; }
+            if (img.complete && img.naturalWidth > 0) { resolve(); return; }
             img.onload = () => resolve();
             img.onerror = () => resolve();
           })
       )
     );
 
-    const canvas = await html2canvas(el, {
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: null,
-      scale: 2,
-      imageTimeout: 8000,
-    });
-
-    el.style.cssText = originalStyle;
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await html2canvas(el, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        scale: 2,
+        imageTimeout: 8000,
+      });
+    } finally {
+      for (const [img, original] of swapped) img.src = original;
+      el.style.cssText = originalStyle;
+    }
 
     // Watermark poloperator.com en bas de la carte
     const ctx = canvas.getContext("2d");

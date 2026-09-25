@@ -124,6 +124,8 @@ export type WhbpcCardProps = WhbpcCardData & {
   onFlipChange?: (flipped: boolean) => void;
   /** Called with the new values when the player saves the back-of-card form. Its presence enables editing. */
   onSave?: (data: WhbpcCardData) => Promise<{ ok?: boolean; error?: string }>;
+  /** Exposes the card's root element (e.g. for image capture when sharing). */
+  cardRef?: React.Ref<HTMLDivElement>;
 };
 
 const HAND_OPTIONS: Array<{ value: "RIGHTIE" | "LEFTIE"; label: string }> = [
@@ -146,6 +148,7 @@ export function WhbpcCard({
   flipped = false,
   onFlipChange,
   onSave,
+  cardRef,
 }: WhbpcCardProps) {
   const t = useTranslations("common");
   const editable = !!onSave;
@@ -153,6 +156,11 @@ export function WhbpcCard({
   const attributeLines = [pedals, hand, `${wheelSize}"`];
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const setRootRef = useCallback((node: HTMLDivElement | null) => {
+    rootRef.current = node;
+    if (typeof cardRef === "function") cardRef(node);
+    else if (cardRef) (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+  }, [cardRef]);
   const innerRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
 
@@ -193,7 +201,7 @@ export function WhbpcCard({
 
   return (
     <div
-      ref={rootRef}
+      ref={setRootRef}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={handleMouseLeave}

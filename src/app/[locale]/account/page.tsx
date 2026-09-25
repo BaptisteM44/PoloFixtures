@@ -348,7 +348,7 @@ export default function AccountPage() {
               gearRatio: player.whbpcCard.gearRatio,
             } : null}
           />
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
             <ShareCardButton cardRef={cardRef} playerName={player.name} />
             <label style={{ cursor: "pointer" }}>
               <span className="ghost" style={{ fontSize: 12, display: "inline-block", cursor: "pointer" }}>
