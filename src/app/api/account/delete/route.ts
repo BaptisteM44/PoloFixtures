@@ -28,6 +28,12 @@ export async function DELETE() {
   await prisma.$transaction([
     // Delete login credentials (LoginDay cascade-deleted via schema)
     prisma.playerAccount.deleteMany({ where: { playerId } }),
+    // Plus aucune notif sur ses appareils, plus de préférences, plus de
+    // contenus publics rattachés (stories, annonces agent libre).
+    prisma.pushSubscription.deleteMany({ where: { playerId } }),
+    prisma.notificationPreference.deleteMany({ where: { playerId } }),
+    prisma.story.deleteMany({ where: { authorId: playerId } }),
+    prisma.freeAgent.deleteMany({ where: { playerId } }),
     // Anonymize player data
     prisma.player.update({
       where: { id: playerId },
@@ -41,6 +47,9 @@ export async function DELETE() {
         gender: null,
         showGender: false,
         diets: [],
+        // Données de santé : à effacer en priorité (oubliées jusqu'ici).
+        petAllergies: null,
+        foodAllergies: null,
         badges: [],
         pinnedBadges: [],
         clubLogoPath: null,
