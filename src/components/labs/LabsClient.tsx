@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { CommunityItem, CommunityItemDetail, VoteType } from "@/types/community";
 import { LabsItemModal } from "./LabsItemModal";
 import { LabsNewItemModal } from "./LabsNewItemModal";
+import { ShareIcon, shareItemUrl } from "./ShareIcon";
 
 // ── Types de tabs ─────────────────────────────────────────────────────────────
 type Tab = "trending" | "idea" | "bug" | "translation" | "done";
@@ -75,6 +77,14 @@ export function LabsClient({ playerId, isAdmin, charterAccepted }: Props) {
       setSelectedItem(data);
     }
   };
+
+  // Lien partagé (?id=xxx) : ouvre directement la proposition au chargement.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const sharedId = searchParams.get("id");
+    if (sharedId) openItem(sharedId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleVote = async (itemId: string, vote: VoteType, comment?: string) => {
     if (votingId) return;
@@ -346,6 +356,16 @@ function ItemCard({ item, playerId, isAdmin, voting, onVote, onUnvote, onOpen, o
     setMehComment("");
   };
 
+  const [copied, setCopied] = useState(false);
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // n'ouvre pas la modale en dessous
+    const result = await shareItemUrl(item.id, item.title, t("share_copy_fallback"));
+    if (result === "copied") {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    }
+  };
+
   return (
     <div
       style={{
@@ -398,6 +418,16 @@ function ItemCard({ item, playerId, isAdmin, voting, onVote, onUnvote, onOpen, o
         <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: "auto" }}>
           {item.authorName} · {timeAgo(item.createdAt)}
         </span>
+        <button
+          type="button"
+          onClick={handleShare}
+          className="header-icon-btn"
+          aria-label={t("share_button")}
+          title={t("share_button")}
+          style={{ flexShrink: 0 }}
+        >
+          {copied ? "✓" : <ShareIcon size={15} />}
+        </button>
       </div>
 
       {/* Title */}

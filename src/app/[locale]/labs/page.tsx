@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { LabsClient } from "@/components/labs/LabsClient";
 
@@ -10,10 +11,14 @@ export default async function LabsPage() {
   const charterAccepted = (session?.user as any)?.charterAccepted ?? false;
 
   return (
-    <LabsClient
-      playerId={playerId}
-      isAdmin={isAdmin}
-      charterAccepted={charterAccepted}
-    />
+    // LabsClient lit ?id= (useSearchParams) pour ouvrir directement une
+    // proposition partagée — requiert un Suspense boundary en App Router.
+    <Suspense fallback={null}>
+      <LabsClient
+        playerId={playerId}
+        isAdmin={isAdmin}
+        charterAccepted={charterAccepted}
+      />
+    </Suspense>
   );
 }

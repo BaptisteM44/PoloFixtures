@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import type { CommunityItemDetail, CommunityReply, VoteType } from "@/types/community";
 import { Link } from "@/i18n/navigation";
+import { ShareIcon, shareItemUrl } from "./ShareIcon";
 
 const STATUS_META: Record<string, { label: string; color: string; bg: string }> = {
   open:        { label: "status_open",        color: "#1a1a1a", bg: "var(--teal)" },
@@ -57,9 +58,18 @@ export function LabsItemModal({ item, playerId, isAdmin, charterAccepted, onClos
   const [mehComment, setMehComment] = useState("");
   const [liking, setLiking] = useState<string | null>(null);
   const [replyAnon, setReplyAnon] = useState(false);
+  const [copied, setCopied] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
 
   const status = STATUS_META[item.status] ?? STATUS_META.open;
+
+  const handleShare = async () => {
+    const result = await shareItemUrl(item.id, item.title, t("share_copy_fallback"));
+    if (result === "copied") {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    }
+  };
 
   // Escape key
   useEffect(() => {
@@ -213,14 +223,25 @@ export function LabsItemModal({ item, playerId, isAdmin, charterAccepted, onClos
               </span>
             )}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="header-icon-btn"
-            aria-label="Fermer"
-          >
-            ✕
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              type="button"
+              onClick={handleShare}
+              className="header-icon-btn"
+              aria-label={t("share_button")}
+              title={t("share_button")}
+            >
+              {copied ? "✓" : <ShareIcon size={16} />}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="header-icon-btn"
+              aria-label="Fermer"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* ── Content ─────────────────────────────────────────────── */}
