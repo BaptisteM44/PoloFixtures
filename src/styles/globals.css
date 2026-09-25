@@ -1524,7 +1524,22 @@ button:disabled,
   font-size: 16px; line-height: 1; padding: 4px 6px; color: var(--border); flex-shrink: 0;
 }
 @media (max-width: 768px) {
-  .home-install-banner { width: 100%; }
+  /* Icône + titre + ✕ sur la 1re ligne, le reste sur toute la largeur */
+  .home-install-banner {
+    width: 100%;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 8px;
+    padding: 14px;
+  }
+  .home-install-banner__body { display: contents; }
+  .home-install-banner__icon { grid-column: 1; grid-row: 1; }
+  .home-install-banner__body strong { grid-column: 2; grid-row: 1; line-height: 1.3; }
+  .home-install-banner__close { grid-column: 3; grid-row: 1; align-self: start; }
+  .home-install-banner__body > :not(strong) { grid-column: 1 / -1; }
+  .home-install-banner__browsers > span { flex-basis: 100%; }
 }
 
 .euros-vote-banner {
