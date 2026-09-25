@@ -53,3 +53,7 @@ src/lib/debug_*.test.ts
 
 # Scripts sensibles (contiennent des credentials)
 scripts/backup.sh
+
+# Dumps de base de données : ne jamais committer (données personnelles)
+db-backup-*
+*.dump

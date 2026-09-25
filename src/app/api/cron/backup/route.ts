@@ -13,11 +13,19 @@ const r2 = new S3Client({
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
-  // Sécurité : token Bearer requis
-  const authHeader = request.headers.get("authorization");
-  const isValidSecret = authHeader === `Bearer ${process.env.CRON_SECRET}`;
-  if (!isValidSecret) {
+  // Sécurité : token Bearer requis. Sans CRON_SECRET, on refuse (avant, le
+  // secret attendu devenait littéralement « Bearer undefined »).
+  const secret = process.env.CRON_SECRET;
+  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  // La sauvegarde contient TOUTES les données (fiches joueurs, messages privés…).
+  // Elle ne doit JAMAIS aller dans le bucket « uploads », qui est public
+  // (r2.dev) : il faut un bucket privé dédié. Sans lui, on ne sauvegarde pas.
+  const backupBucket = process.env.R2_BACKUP_BUCKET;
+  if (!backupBucket || backupBucket === "uploads") {
+    return Response.json({ error: "R2_BACKUP_BUCKET (bucket privé) non configuré" }, { status: 503 });
   }
 
   const [
@@ -59,14 +67,14 @@ export async function GET(request: Request) {
 
   try {
     await r2.send(new PutObjectCommand({
-      Bucket: "uploads",
+      Bucket: backupBucket,
       Key: filename,
       Body: Buffer.from(json),
       ContentType: "application/json",
     }));
   } catch (err) {
     console.error("Backup upload error:", err);
-    return Response.json({ error: String(err) }, { status: 500 });
+    return Response.json({ error: "Backup upload failed" }, { status: 500 });
   }
 
   return Response.json({
