@@ -3135,7 +3135,7 @@
     "home_aria": "Turnier-Filmrollen",
     "title": "Einwegkamera",
     "intro": "Während des Turniers hat jede Person {count} Fotos. Niemand sieht die der anderen: die ganze Rolle wird am letzten Tag um 21 Uhr enthüllt.",
-    "before": "Die Kamera öffnet am {opens}. Die Rolle wird am {reveal} enthüllt.",
+    "before": "Die Kamera öffnet am {opens} (oder sobald das Orga-Team das Turnier startet). Enthüllung am {reveal}.",
     "sealed_count": "{count, plural, =0 {Noch keine Fotos} one {# Foto auf der Rolle} other {# Fotos auf der Rolle}}",
     "sealed_reveal": "Enthüllung {when} (in {countdown})",
     "countdown_days": "{d} T {h} Std",
@@ -3178,6 +3178,7 @@
     "admin_reports": "{count, plural, one {# Meldung} other {# Meldungen}}",
     "shoot_hint": "Direkt aufnehmen oder aus der Galerie wählen — auch mehrere auf einmal.",
     "uploading_n": "Upload {done}/{total}…",
-    "too_many": "{count, plural, one {Du hattest nur noch 1 Foto: nur das erste wurde hinzugefügt.} other {Du hattest nur noch # Fotos: nur die ersten # wurden hinzugefügt.}}"
+    "too_many": "{count, plural, one {Du hattest nur noch 1 Foto: nur das erste wurde hinzugefügt.} other {Du hattest nur noch # Fotos: nur die ersten # wurden hinzugefügt.}}",
+    "participant_before": "Du spielst bei diesem Turnier: du hast {count} Fotos."
   }
 }

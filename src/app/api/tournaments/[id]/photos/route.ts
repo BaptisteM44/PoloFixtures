@@ -2,8 +2,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import {
-  PHOTOS_PER_PLAYER, isRollParticipant, revealAt, rollPhase, shootingOpensAt, type RollPhoto,
+  PHOTOS_PER_PLAYER, isRollParticipant, revealAt, rollPhase, rollTournamentSelect, shootingOpensAt, type RollPhoto,
 } from "@/lib/tournament-photos";
+import { tournamentTimezone } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ const photoSelect = {
 async function loadTournament(id: string) {
   return prisma.tournament.findUnique({
     where: { id },
-    select: { id: true, dateStart: true, dateEnd: true, timezone: true, photosPinnedAt: true, hidden: true, approved: true },
+    select: { id: true, ...rollTournamentSelect, photosPinnedAt: true, hidden: true, approved: true },
   });
 }
 
@@ -30,12 +31,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const playerId = session?.user?.playerId ?? null;
   const phase = rollPhase(t);
 
-  const [total, mine, canShoot] = await Promise.all([
+  const [total, mine, participant] = await Promise.all([
     prisma.tournamentPhoto.count({ where: { tournamentId: t.id, hiddenAt: null } }),
     playerId
       ? prisma.tournamentPhoto.findMany({ where: { tournamentId: t.id, authorId: playerId }, orderBy: { createdAt: "asc" }, select: photoSelect })
       : Promise.resolve([]),
-    playerId && phase === "shooting" ? isRollParticipant(t.id, playerId) : Promise.resolve(false),
+    playerId && phase !== "revealed" ? isRollParticipant(t.id, playerId) : Promise.resolve(false),
   ]);
   const photos = phase === "revealed"
     ? await prisma.tournamentPhoto.findMany({ where: { tournamentId: t.id, hiddenAt: null }, orderBy: { createdAt: "asc" }, select: photoSelect })
@@ -46,10 +47,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     phase,
     opensAt: shootingOpensAt(t).toISOString(),
     revealAt: revealAt(t).toISOString(),
-    timezone: t.timezone,
+    timezone: tournamentTimezone(t),
     total,
     perPlayer: PHOTOS_PER_PLAYER,
-    canShoot,
+    // Participant : « tu auras 5 photos » avant le tournoi, l'appareil pendant.
+    participant,
+    canShoot: participant && phase === "shooting",
     remaining: Math.max(0, PHOTOS_PER_PLAYER - mine.length),
     mine: mine.map(iso) as RollPhoto[],
     photos: photos.map(iso) as RollPhoto[],

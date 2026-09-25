@@ -3134,7 +3134,7 @@
     "home_aria": "Carretes de los torneos",
     "title": "Cámara desechable",
     "intro": "Durante el torneo, cada jugador tiene {count} fotos. Nadie ve las de los demás: todo el carrete se revela el último día a las 21 h.",
-    "before": "La cámara se abre el {opens}. El carrete se revelará el {reveal}.",
+    "before": "La cámara se abre el {opens} (o en cuanto la organización inicie el torneo). Revelación el {reveal}.",
     "sealed_count": "{count, plural, =0 {Aún no hay fotos} one {# foto en el carrete} other {# fotos en el carrete}}",
     "sealed_reveal": "Se revela {when} (en {countdown})",
     "countdown_days": "{d} d {h} h",
@@ -3177,6 +3177,7 @@
     "admin_reports": "{count, plural, one {# reporte} other {# reportes}}",
     "shoot_hint": "Hazla en el momento o elígela de tu galería — puedes seleccionar varias a la vez.",
     "uploading_n": "Subiendo {done}/{total}…",
-    "too_many": "{count, plural, one {Solo te quedaba 1 foto: solo se añadió la primera.} other {Solo te quedaban # fotos: solo se añadieron las # primeras.}}"
+    "too_many": "{count, plural, one {Solo te quedaba 1 foto: solo se añadió la primera.} other {Solo te quedaban # fotos: solo se añadieron las # primeras.}}",
+    "participant_before": "Juegas este torneo: tendrás {count} fotos."
   }
 }

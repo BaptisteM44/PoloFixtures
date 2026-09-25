@@ -12,6 +12,7 @@ type RollState = {
   timezone: string | null;
   total: number;
   perPlayer: number;
+  participant: boolean;
   canShoot: boolean;
   remaining: number;
   mine: RollPhoto[];
@@ -140,7 +141,10 @@ export function TournamentRoll({
       {state.phase === "before" && (
         <div className="roll__sealed">
           <span className="roll__sealed-icon" aria-hidden>🎞️</span>
-          <p>{t("before", { opens: fmt(state.opensAt), reveal: fmt(state.revealAt) })}</p>
+          <p>
+            {t("before", { opens: fmt(state.opensAt), reveal: fmt(state.revealAt) })}
+            {state.participant && <><br /><strong>✅ {t("participant_before", { count: state.perPlayer })}</strong></>}
+          </p>
         </div>
       )}
 

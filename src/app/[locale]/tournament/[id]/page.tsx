@@ -308,7 +308,12 @@ export default async function TournamentPage({
   const isSoloRegistration = (tournament as { maxSoloPlayers?: number | null }).maxSoloPlayers != null;
   const hasCommunity = !registrationClosed && !isSoloRegistration;
 
-  const rollVisible = rollPhase(tournament) !== "before";
+  // Pellicule : onglet visible avant le tournoi (découverte) et pendant ;
+  // après la révélation seulement s'il y a des photos (pas sur les vieux
+  // tournois d'avant la fonctionnalité).
+  const rollPhaseNow = rollPhase(tournament);
+  const rollVisible = rollPhaseNow !== "revealed"
+    || (await prisma.tournamentPhoto.count({ where: { tournamentId: tournament.id, hiddenAt: null } })) > 0;
   const tabs = [
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
     { label: t("tab_info"), value: "info", href: `/tournament/${params.id}?tab=info` },
@@ -350,7 +355,6 @@ export default async function TournamentPage({
     { label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` },
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")} (${tournament.freeAgents.length})`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
-    // Pellicule jetable : visible dès le 1er jour du tournoi (heure locale).
     ...(rollVisible ? [{ label: `📸 ${t("tab_photos")}`, value: "photos", href: `/tournament/${params.id}?tab=photos` }] : []),
     ...(tournament.accommodationAvailable && (!!myTeam || isAccommodationHost) ? [{ label: t("tab_accommodation"), value: "hebergement", href: `/tournament/${params.id}?tab=hebergement` }] : []),
   ];

@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { isRateLimited } from "@/lib/rate-limit";
 import { notifyAllAdmins } from "@/lib/notify";
-import { rollPhase } from "@/lib/tournament-photos";
+import { rollPhase, rollTournamentSelect } from "@/lib/tournament-photos";
 
 // Masquée d'office à partir de ce nombre de signalements, en attendant l'admin.
 const AUTO_HIDE_REPORTS = 3;
@@ -18,7 +18,7 @@ export async function POST(_req: Request, { params }: { params: { photoId: strin
     select: {
       id: true, authorId: true, hiddenAt: true,
       author: { select: { name: true } },
-      tournament: { select: { name: true, dateStart: true, dateEnd: true, timezone: true } },
+      tournament: { select: { name: true, ...rollTournamentSelect } },
     },
   });
   if (!photo || photo.hiddenAt || rollPhase(photo.tournament) !== "revealed") return Response.json({ error: "not_found" }, { status: 404 });

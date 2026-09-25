@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { getTranslations } from "next-intl/server";
 import { AdminNav } from "@/components/AdminNav";
 import { AdminPhotos, type AdminPhoto } from "@/components/AdminPhotos";
-import { rollPhase } from "@/lib/tournament-photos";
+import { rollPhase, rollTournamentSelect } from "@/lib/tournament-photos";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export default async function AdminPhotosPage() {
     select: {
       id: true, imagePath: true, createdAt: true, hiddenAt: true, reportCount: true,
       author: { select: { name: true, slug: true } },
-      tournament: { select: { id: true, slug: true, name: true, dateStart: true, dateEnd: true, timezone: true } },
+      tournament: { select: { id: true, slug: true, name: true, ...rollTournamentSelect } },
     },
   });
   const photos: AdminPhoto[] = rows.map((p) => ({

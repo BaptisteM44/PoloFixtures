@@ -5,6 +5,7 @@ import { generateTournamentSlug } from "@/lib/slug";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { notifyAllAdmins } from "@/lib/notify";
 import { canonicalCountryName } from "@/lib/country-utils";
+import { guessTimezone } from "@/lib/timezone";
 import { isRateLimited } from "@/lib/rate-limit";
 
 export async function GET() {
@@ -122,6 +123,9 @@ export async function POST(request: Request) {
       approved: false,
       submissionStatus: "PENDING",
       creatorId: session.user.playerId,
+      // Fuseau du lieu (jusqu'ici jamais renseigné → tous les horaires « locaux »
+      // tombaient en UTC, et le planning retombait sur Europe/Brussels).
+      timezone: guessTimezone(data.country, data.lng),
       // Tout nouveau tournoi utilise le système de formats "pipeline" (étapes
       // composables) plutôt que l'ancien système figé — l'orga choisit son
       // format depuis le dashboard (onglet Format & étapes), pas ici.

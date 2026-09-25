@@ -3130,7 +3130,7 @@
     "home_aria": "Tournament photo rolls",
     "title": "Disposable camera",
     "intro": "During the tournament, each player gets {count} shots. Nobody sees anyone else's: the whole roll is revealed on the last day at 9 pm.",
-    "before": "The camera opens on {opens}. The roll will be revealed on {reveal}.",
+    "before": "The camera opens on {opens} (or as soon as the organizers start the tournament). Reveal on {reveal}.",
     "sealed_count": "{count, plural, =0 {No shots taken yet} one {# shot on the roll} other {# shots on the roll}}",
     "sealed_reveal": "Revealed {when} (in {countdown})",
     "countdown_days": "{d} d {h} h",
@@ -3173,6 +3173,7 @@
     "admin_reports": "{count, plural, one {# report} other {# reports}}",
     "shoot_hint": "Take one now or pick from your gallery — you can select several at once.",
     "uploading_n": "Uploading {done}/{total}…",
-    "too_many": "{count, plural, one {You only had 1 shot left: only the first photo was added.} other {You only had # shots left: only the first # were added.}}"
+    "too_many": "{count, plural, one {You only had 1 shot left: only the first photo was added.} other {You only had # shots left: only the first # were added.}}",
+    "participant_before": "You're playing this tournament: you'll get {count} shots."
   }
 }

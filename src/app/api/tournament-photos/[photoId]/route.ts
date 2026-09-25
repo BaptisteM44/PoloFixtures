@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
-import { rollPhase } from "@/lib/tournament-photos";
+import { rollPhase, rollTournamentSelect } from "@/lib/tournament-photos";
 
 /**
  * Supprimer une photo : son auteur (à tout moment — ça lui rend le crédit
@@ -13,7 +13,7 @@ export async function DELETE(_req: Request, { params }: { params: { photoId: str
   const session = await auth();
   const photo = await prisma.tournamentPhoto.findUnique({
     where: { id: params.photoId },
-    select: { authorId: true, tournamentId: true, tournament: { select: { dateStart: true, dateEnd: true, timezone: true } } },
+    select: { authorId: true, tournamentId: true, tournament: { select: rollTournamentSelect } },
   });
   if (!photo) return Response.json({ ok: true });
   const isAuthor = !!session?.user?.playerId && session.user.playerId === photo.authorId;

@@ -1,5 +1,6 @@
 import { TournamentStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { tournamentTimezone } from "@/lib/timezone";
 
 type TournamentLite = {
   id: string;
@@ -21,25 +22,19 @@ export function isAfterEndThreshold(dateEnd: Date, timezone: string | null, now:
 
 /**
  * Instant (UTC) correspondant à `hour`:00 heure locale du lieu, le jour
- * calendaire de `date` dans ce fuseau (à défaut UTC). Ex. 21h le dernier jour
- * d'un tournoi à Bruxelles = 19:00 UTC l'été.
+ * calendaire de `date`. Ex. 21h le dernier jour d'un tournoi à Bruxelles =
+ * 19:00 UTC l'été.
+ *
+ * Le jour est lu en UTC : les dates de tournoi sont saisies comme des dates
+ * (« 2026-10-04 ») et stockées à minuit UTC. Les lire dans le fuseau du lieu
+ * donnerait LA VEILLE pour tout fuseau à l'ouest de Greenwich (Amériques) :
+ * minuit UTC = 20h la veille à New York.
  */
 export function localTimeOnDay(date: Date, timezone: string | null, hour: number): Date {
-  // Composantes calendaires de `date` DANS le fuseau du tournoi (à défaut UTC).
   const tz = timezone || "UTC";
-  let y: number, mo: number, d: number;
-  try {
-    const parts = new Intl.DateTimeFormat("en-CA", {
-      timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit",
-    }).formatToParts(date);
-    const get = (t: string) => Number(parts.find((p) => p.type === t)?.value);
-    y = get("year"); mo = get("month"); d = get("day");
-  } catch {
-    // Fuseau invalide → fallback UTC
-    y = date.getUTCFullYear(); mo = date.getUTCMonth() + 1; d = date.getUTCDate();
-  }
-  // On calcule le décalage du fuseau à cette date via une sonde à midi UTC
-  // (stable, hors DST edge de minuit), puis on pose l'heure cible.
+  const y = date.getUTCFullYear(), mo = date.getUTCMonth() + 1, d = date.getUTCDate();
+  // Décalage du fuseau à cette date via une sonde à midi UTC (stable, hors DST
+  // edge de minuit), puis on pose l'heure cible.
   const probe = new Date(Date.UTC(y, mo - 1, d, 12, 0, 0));
   const offsetMin = tzOffsetMinutes(probe, tz);
   return new Date(Date.UTC(y, mo - 1, d, hour, 0, 0) - offsetMin * 60_000);
@@ -79,11 +74,14 @@ async function isPipelineComplete(tournamentId: string, dateEnd: Date, timezone:
   return allStagesDone && isAfterEndThreshold(dateEnd, timezone, now);
 }
 
+type TzFields = { usesPipeline: boolean; timezone: string | null; country: string | null; lng: number | null };
+
 export async function syncTournamentCompletionById(tournamentId: string): Promise<TournamentStatus | null> {
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
-    select: { id: true, status: true, dateEnd: true, usesPipeline: true, timezone: true } as never,
-  }) as (TournamentLite & { usesPipeline: boolean; timezone: string | null }) | null;
+    // Pays + longitude : fuseau de secours quand timezone n'est pas renseigné.
+    select: { id: true, status: true, dateEnd: true, usesPipeline: true, timezone: true, country: true, lng: true } as never,
+  }) as (TournamentLite & TzFields) | null;
 
   if (!tournament) return null;
   if (tournament.status !== "LIVE") return tournament.status;
@@ -91,13 +89,13 @@ export async function syncTournamentCompletionById(tournamentId: string): Promis
   const now = new Date();
   let shouldComplete: boolean;
   if (tournament.usesPipeline) {
-    shouldComplete = await isPipelineComplete(tournamentId, tournament.dateEnd, tournament.timezone, now);
+    shouldComplete = await isPipelineComplete(tournamentId, tournament.dateEnd, tournamentTimezone(tournament), now);
   } else {
     // Legacy : on ne passe COMPLETED qu'après 21h (heure locale) le jour de
     // dateEnd — jamais dès qu'un bracket final est joué. Un tournoi sur 2 jours
     // dont la finale du samedi est saisie ne doit pas basculer en « Terminé »
     // alors qu'il reste le dimanche. L'orga garde le bouton « Terminer » manuel.
-    shouldComplete = isAfterEndThreshold(tournament.dateEnd, tournament.timezone, now);
+    shouldComplete = isAfterEndThreshold(tournament.dateEnd, tournamentTimezone(tournament), now);
   }
   if (!shouldComplete) return tournament.status;
 
@@ -112,8 +110,8 @@ export async function syncTournamentCompletionById(tournamentId: string): Promis
 export async function syncLiveTournamentsCompletion(): Promise<string[]> {
   const liveTournaments = await prisma.tournament.findMany({
     where: { status: "LIVE" },
-    select: { id: true, status: true, dateEnd: true, usesPipeline: true, timezone: true } as never,
-  }) as unknown as Array<TournamentLite & { usesPipeline: boolean; timezone: string | null }>;
+    select: { id: true, status: true, dateEnd: true, usesPipeline: true, timezone: true, country: true, lng: true } as never,
+  }) as unknown as Array<TournamentLite & TzFields>;
 
   if (liveTournaments.length === 0) return [];
 
@@ -139,7 +137,7 @@ export async function syncLiveTournamentsCompletion(): Promise<string[]> {
     for (const tm of pipelineTournaments) {
       const tmStages = stagesByTournament.get(tm.id) ?? [];
       const allDone = tmStages.length > 0 && tmStages.every((s) => s.status === "DONE" || s.status === "SKIPPED");
-      if (allDone && isAfterEndThreshold(tm.dateEnd, tm.timezone, now)) {
+      if (allDone && isAfterEndThreshold(tm.dateEnd, tournamentTimezone(tm), now)) {
         pipelineIdsToComplete.push(tm.id);
       }
     }
@@ -149,7 +147,7 @@ export async function syncLiveTournamentsCompletion(): Promise<string[]> {
   // jour de dateEnd — jamais dès qu'un bracket final est joué (un tournoi sur 2
   // jours resterait LIVE le dimanche même si la finale du samedi est saisie).
   const legacyIdsToComplete = legacyTournaments
-    .filter((t) => isAfterEndThreshold(t.dateEnd, t.timezone, now))
+    .filter((t) => isAfterEndThreshold(t.dateEnd, tournamentTimezone(t), now))
     .map((t) => t.id);
 
   const idsToComplete = [...pipelineIdsToComplete, ...legacyIdsToComplete];

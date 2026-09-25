@@ -8,24 +8,39 @@
 import { prisma } from "@/lib/db";
 import { createNotification } from "@/lib/notify";
 import { localTimeOnDay } from "@/lib/tournament-status";
+import { tournamentTimezone } from "@/lib/timezone";
 
 export const PHOTOS_PER_PLAYER = 5;
 export const REVEAL_HOUR_LOCAL = 21;
 /** Durée pendant laquelle une pellicule révélée reste sur la home (hors « à la une »). */
 export const HOME_ROLL_DAYS = 21;
 
-type TournamentDates = { dateStart: Date; dateEnd: Date; timezone: string | null };
+/**
+ * Ce qu'il faut d'un tournoi pour situer sa pellicule. Pays et longitude
+ * servent de secours quand le fuseau n'est pas renseigné (cf. lib/timezone).
+ */
+export type TournamentDates = {
+  dateStart: Date; dateEnd: Date; timezone: string | null;
+  country?: string | null; lng?: number | null; status?: string | null;
+};
+export const rollTournamentSelect = {
+  dateStart: true, dateEnd: true, timezone: true, country: true, lng: true, status: true,
+} as const;
 
 /** Ouverture de l'appareil : 0h (heure locale) le premier jour. */
-export const shootingOpensAt = (t: TournamentDates) => localTimeOnDay(t.dateStart, t.timezone, 0);
+export const shootingOpensAt = (t: TournamentDates) => localTimeOnDay(t.dateStart, tournamentTimezone(t), 0);
 /** Révélation : 21h (heure locale) le dernier jour. */
-export const revealAt = (t: TournamentDates) => localTimeOnDay(t.dateEnd, t.timezone, REVEAL_HOUR_LOCAL);
+export const revealAt = (t: TournamentDates) => localTimeOnDay(t.dateEnd, tournamentTimezone(t), REVEAL_HOUR_LOCAL);
 
 export type RollPhase = "before" | "shooting" | "revealed";
+/**
+ * Avant / pendant / après. L'appareil s'ouvre le 1er jour à 0h, ou dès que
+ * l'orga lance le tournoi (statut LIVE) s'il le fait plus tôt.
+ */
 export function rollPhase(t: TournamentDates, now = new Date()): RollPhase {
-  if (now < shootingOpensAt(t)) return "before";
-  if (now < revealAt(t)) return "shooting";
-  return "revealed";
+  if (now >= revealAt(t)) return "revealed";
+  if (now >= shootingOpensAt(t) || t.status === "LIVE") return "shooting";
+  return "before";
 }
 
 /**
@@ -92,7 +107,7 @@ export async function loadHomeRolls(viewerId: string | null, now = new Date()): 
       OR: [{ photosPinnedAt: { not: null } }, { dateEnd: { gte: recent, lte: now } }],
     },
     select: {
-      id: true, slug: true, name: true, dateStart: true, dateEnd: true, timezone: true, photosPinnedAt: true,
+      id: true, slug: true, name: true, ...rollTournamentSelect, photosPinnedAt: true,
       photos: { where: { hiddenAt: null }, orderBy: { createdAt: "asc" }, take: 80, select: photoSelect },
     },
     take: 40,
@@ -120,16 +135,21 @@ export async function loadHomeRolls(viewerId: string | null, now = new Date()): 
     const live = await prisma.tournament.findMany({
       where: {
         approved: true, hidden: false, testMode: false,
-        dateStart: { lte: soon }, dateEnd: { gte: yesterday },
-        OR: [
-          { teams: { some: { selected: true, players: { some: { playerId: viewerId } } } } },
-          { soloEntries: { some: { playerId: viewerId, waitlisted: false } } },
-          { creatorId: viewerId },
-          { coOrganizers: { some: { playerId: viewerId } } },
+        AND: [
+          // En cours d'après les dates, ou lancé en avance par l'orga.
+          { OR: [{ dateStart: { lte: soon }, dateEnd: { gte: yesterday } }, { status: "LIVE" }] },
+          {
+            OR: [
+              { teams: { some: { selected: true, players: { some: { playerId: viewerId } } } } },
+              { soloEntries: { some: { playerId: viewerId, waitlisted: false } } },
+              { creatorId: viewerId },
+              { coOrganizers: { some: { playerId: viewerId } } },
+            ],
+          },
         ],
       },
       select: {
-        id: true, slug: true, name: true, dateStart: true, dateEnd: true, timezone: true,
+        id: true, slug: true, name: true, ...rollTournamentSelect,
         _count: { select: { photos: { where: { authorId: viewerId } } } },
       },
     });
@@ -158,7 +178,7 @@ export async function sweepPhotoReveals(now = new Date()) {
       photos: { some: { hiddenAt: null } },
     },
     select: {
-      id: true, slug: true, name: true, dateStart: true, dateEnd: true, timezone: true, creatorId: true,
+      id: true, slug: true, name: true, ...rollTournamentSelect, creatorId: true,
       coOrganizers: { select: { playerId: true } },
       teams: { where: { selected: true }, select: { players: { select: { playerId: true } } } },
       soloEntries: { where: { waitlisted: false }, select: { playerId: true } },

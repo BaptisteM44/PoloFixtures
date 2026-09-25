@@ -79,6 +79,13 @@ beforeEach(async () => {
 });
 
 describe("Phases et heure de révélation", () => {
+  it("sans fuseau renseigné : déduit du pays (21h à Lisbonne, pas 21h UTC)", () => {
+    const t = { dateStart: new Date("2026-10-02T00:00:00Z"), dateEnd: new Date("2026-10-04T00:00:00Z"), timezone: null, country: "Portugal", lng: -8.78 };
+    expect(revealAt(t).toISOString()).toBe("2026-10-04T20:00:00.000Z"); // 21h WEST = 20h UTC
+    const philly = { ...t, country: "United States of America", lng: -75.16 };
+    expect(revealAt(philly).toISOString()).toBe("2026-10-05T01:00:00.000Z"); // 21h EDT
+  });
+
   it("révélation à 21h heure locale le dernier jour", () => {
     const t = { dateStart: new Date("2026-07-11T00:00:00Z"), dateEnd: new Date("2026-07-12T00:00:00Z"), timezone: "Europe/Brussels" };
     expect(revealAt(t).toISOString()).toBe("2026-07-12T19:00:00.000Z"); // 21h CEST
@@ -108,8 +115,15 @@ describe("Prise de vue", () => {
   });
 
   it("pas de photo avant le tournoi ni après la révélation", async () => {
+    await prisma.tournament.update({ where: { id: tid }, data: { status: "UPCOMING" } });
     await setDates(3, 4);
     expect((await take(p1)).body.error).toBe("not_started");
+    // Mais le joueur sait déjà qu'il participera.
+    const before = await roll(p1);
+    expect([before.phase, before.participant, before.canShoot]).toEqual(["before", true, false]);
+    // L'orga lance le tournoi en avance : l'appareil s'ouvre.
+    await prisma.tournament.update({ where: { id: tid }, data: { status: "LIVE" } });
+    expect((await take(p1)).status).toBe(200);
     await setDates(-4, -2);
     expect((await take(p1)).body.error).toBe("revealed");
   });

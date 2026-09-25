@@ -3131,7 +3131,7 @@
     "home_aria": "Pellicules des tournois",
     "title": "Pellicule jetable",
     "intro": "Pendant le tournoi, chaque joueur a {count} photos. Personne ne voit celles des autres : toute la pellicule est révélée le dernier jour à 21h.",
-    "before": "La pellicule s'ouvrira le {opens}. Elle sera révélée le {reveal}.",
+    "before": "La pellicule s'ouvrira le {opens} (ou dès que l'orga lance le tournoi). Révélation le {reveal}.",
     "sealed_count": "{count, plural, =0 {Aucune photo prise pour l'instant} one {# photo dans la pellicule} other {# photos dans la pellicule}}",
     "sealed_reveal": "Révélation {when} (dans {countdown})",
     "countdown_days": "{d} j {h} h",
@@ -3174,6 +3174,7 @@
     "admin_reports": "{count, plural, one {# signalement} other {# signalements}}",
     "shoot_hint": "Sur le moment ou depuis ta galerie — tu peux en choisir plusieurs d'un coup.",
     "uploading_n": "Envoi {done}/{total}…",
-    "too_many": "{count, plural, one {Il ne te restait qu'une photo : seule la première a été ajoutée.} other {Il ne te restait que # photos : seules les # premières ont été ajoutées.}}"
+    "too_many": "{count, plural, one {Il ne te restait qu'une photo : seule la première a été ajoutée.} other {Il ne te restait que # photos : seules les # premières ont été ajoutées.}}",
+    "participant_before": "Tu joues ce tournoi : tu auras {count} photos à prendre."
   }
 }
