@@ -1482,6 +1482,35 @@ button:disabled,
    dessous (.map-section-layout est en grid-template-columns: 3fr 2fr,
    gap 20px) — calc() reproduit le même calcul de grille, collée à gauche
    plutôt que pleine largeur ou centrée. */
+/* Encart home « installe l'app » (au-dessus du bandeau vote Euros) */
+.home-install-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: calc((100% - 20px) * 3 / 5);
+  margin: 20px 0 0;
+  padding: 14px 16px 14px 20px;
+  background: var(--teal);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--border);
+}
+.home-install-banner__icon { font-size: 22px; line-height: 1; flex-shrink: 0; }
+.home-install-banner__body { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; display: grid; gap: 6px; }
+.home-install-banner__body strong { font-family: var(--font-display); }
+.home-install-banner__body p { margin: 0; }
+.home-install-banner__steps { margin: 0; padding-left: 20px; display: grid; gap: 2px; }
+.home-install-banner__note { font-size: 12px; opacity: 0.8; }
+.home-install-banner__body button { justify-self: start; font-size: 13px; }
+.home-install-banner__close {
+  background: none; border: none; box-shadow: none; cursor: pointer;
+  font-size: 16px; line-height: 1; padding: 4px 6px; color: var(--border); flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .home-install-banner { width: 100%; }
+}
+
 .euros-vote-banner {
   display: flex;
   align-items: center;

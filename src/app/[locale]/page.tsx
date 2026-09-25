@@ -9,6 +9,7 @@ import TournamentMapClient from "@/components/TournamentMapClient";
 import type { MapTournament } from "@/components/TournamentMap";
 import { HomeHeroPersonal, type HeroNextTournament } from "@/components/HomeHeroPersonal";
 import { EurosVoteBanner } from "@/components/EurosVoteBanner";
+import { HomeInstallBanner } from "@/components/HomeInstallBanner";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { countryToContinent } from "@/lib/country-utils";
 
@@ -322,6 +323,7 @@ export default async function HomePage() {
         </section>
       )}
 
+      <HomeInstallBanner />
       <EurosVoteBanner />
 
       {/* ---- MAP SECTION (WIP) ---- */}

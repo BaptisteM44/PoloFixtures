@@ -3083,5 +3083,22 @@
     "approval_reject_prompt": "Warum ablehnen? (für die erstellende Person sichtbar)",
     "btn_approve": "Freigeben",
     "btn_reject": "Ablehnen"
+  },
+  "install_banner": {
+    "title": "Installiere die Poloperator-App auf deinem Handy",
+    "body": "Kostenlos, ohne App-Store – und nur so bekommst du Benachrichtigungen: Spiele, Team, Nachrichten, Umfragen…",
+    "ios_step_share": "Tippe auf „Teilen“ (das Quadrat mit dem Pfeil nach oben).",
+    "ios_step_add": "Wähle „Zum Home-Bildschirm“ und dann „Hinzufügen“.",
+    "ios_step_open": "Öffne Poloperator über das Icon und aktiviere die Benachrichtigungen (Glocke 🔔).",
+    "ios_other_step_safari": "Öffne poloperator.com in Safari (auf dem iPhone geht die Installation nur über Safari).",
+    "ios_note": "Auf dem iPhone funktionieren Benachrichtigungen nur mit der installierten App (ab iOS 16.4).",
+    "android_step_menu": "Öffne das Browser-Menü (⋮ oben rechts).",
+    "android_step_install": "Wähle „App installieren“ oder „Zum Startbildschirm hinzufügen“.",
+    "android_step_open": "Öffne Poloperator über das Icon und aktiviere die Benachrichtigungen (Glocke 🔔).",
+    "install_btn": "App installieren",
+    "notif_title": "Benachrichtigungen aktivieren",
+    "notif_body": "Die App ist installiert: erlaube nur noch Benachrichtigungen, um über Spiele, Nachrichten und Umfragen informiert zu werden.",
+    "notif_btn": "Benachrichtigungen aktivieren",
+    "dismiss": "Nicht mehr anzeigen"
   }
 }

@@ -3079,5 +3079,22 @@
     "approval_reject_prompt": "Pourquoi refuser ? (visible par le créateur)",
     "btn_approve": "Accepter",
     "btn_reject": "Refuser"
+  },
+  "install_banner": {
+    "title": "Installe l'app Poloperator sur ton téléphone",
+    "body": "C'est gratuit, sans passer par un store, et c'est ce qui te permet de recevoir les notifications : matchs, équipe, messages, sondages…",
+    "ios_step_share": "Touche le bouton Partager (le carré avec une flèche vers le haut).",
+    "ios_step_add": "Choisis « Sur l'écran d'accueil », puis « Ajouter ».",
+    "ios_step_open": "Ouvre Poloperator depuis l'icône et active les notifications (cloche 🔔).",
+    "ios_other_step_safari": "Ouvre poloperator.com dans Safari (l'installation passe par Safari sur iPhone).",
+    "ios_note": "Sur iPhone, les notifications ne fonctionnent qu'avec l'app installée (iOS 16.4 ou plus récent).",
+    "android_step_menu": "Ouvre le menu du navigateur (⋮ en haut à droite).",
+    "android_step_install": "Choisis « Installer l'application » ou « Ajouter à l'écran d'accueil ».",
+    "android_step_open": "Ouvre Poloperator depuis l'icône et active les notifications (cloche 🔔).",
+    "install_btn": "Installer l'app",
+    "notif_title": "Active les notifications",
+    "notif_body": "L'app est installée : il ne reste qu'à autoriser les notifications pour être prévenu·e des matchs, messages et sondages.",
+    "notif_btn": "Activer les notifications",
+    "dismiss": "Ne plus afficher"
   }
 }
