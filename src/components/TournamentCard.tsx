@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { getLocale } from "next-intl/server";
 import { Tournament } from "@prisma/client";
 import { FollowButton } from "@/components/FollowButton";
+import { ShareTournamentButton } from "@/components/ShareTournamentButton";
 
 // Statut d'inscription unifié — partagé avec TournamentBrowser
 export function getTournamentStatusBadge(
@@ -107,6 +108,7 @@ export async function TournamentCard({
           initialFollowing={initialFollowing}
           isLoggedIn={isLoggedIn}
         />
+        <ShareTournamentButton path={`/tournament/${tournament.slug ?? tournament.id}`} title={tournament.name} />
       </div>
     </div>
   );

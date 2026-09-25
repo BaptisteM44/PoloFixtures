@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { FollowButton } from "@/components/FollowButton";
+import { ShareTournamentButton } from "@/components/ShareTournamentButton";
 import { getTournamentStatusBadge } from "@/components/TournamentCard";
 
 type TournamentRow = {
@@ -345,6 +346,7 @@ export function TournamentBrowser({
                       initialFollowing={followedIds.includes(tour.id)}
                       isLoggedIn={isLoggedIn}
                     />
+                    <ShareTournamentButton path={`/tournament/${tour.slug ?? tour.id}`} title={tour.name} />
                   </div>
                 </div>
               );
