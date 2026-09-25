@@ -8,11 +8,13 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     where: { id: params.id },
     include: {
       sponsors: true,
+      // API publique : champs publics des joueurs seulement (avant : fiche
+      // complète avec allergies/régime), et jamais les notes privées de l'orga.
       teams: {
         include: {
           players: {
             include: {
-              player: true
+              player: { select: { id: true, name: true, slug: true, country: true, city: true, photoPath: true } }
             }
           }
         }
@@ -34,7 +36,8 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   });
 
   if (!tournament) return new Response("Not found", { status: 404 });
-  return Response.json(tournament);
+  const teams = tournament.teams.map(({ orgaNote: _o, registrationNote: _r, ...team }) => team);
+  return Response.json({ ...tournament, teams });
 }
 
 const updateSchema = z.object({
