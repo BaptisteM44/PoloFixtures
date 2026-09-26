@@ -45,6 +45,10 @@ export async function GET(request: Request) {
   }
 
   const whereClause = {
+    // Jamais les faux joueurs générés par le bac à sable (slug « sandbox-… ») :
+    // ils noyaient la liste admin des joueurs refusés.
+    // (OR slug null : un NOT seul exclurait aussi les joueurs sans slug.)
+    OR: [{ slug: null }, { NOT: { slug: { startsWith: "sandbox-" } } }],
     ...statusFilter,
     ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
     // Les deux filtres sur id se combinent (avant, le second écrasait le premier).

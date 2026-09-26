@@ -17,7 +17,8 @@ export default async function AdminPage() {
     prisma.tournament.count({ where: toValidate }),
     prisma.tournament.count({ where: { submissionStatus: "REJECTED" } }),
     prisma.player.count({ where: { status: "ACTIVE" } }),
-    prisma.tournament.count()
+    // Hors tournois de test et bacs à sable (44 sur 134 en prod).
+    prisma.tournament.count({ where: { testMode: false, createdViaSandbox: false } })
   ]);
 
   const pending = await prisma.tournament.findMany({
