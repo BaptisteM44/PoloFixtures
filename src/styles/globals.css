@@ -11214,3 +11214,11 @@ details[open] .club-sessions__past-summary::before {
   .roll__grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
   .roll__cell-author { display: none; }
 }
+
+/* Panneau d'arbitrage : actions en attente de renvoi (réseau coupé, redéploiement) */
+.ref-outbox {
+  position: sticky; top: 0; z-index: 50;
+  margin: 0 0 8px; padding: 8px 12px; border-radius: var(--radius-sm);
+  background: var(--yellow); border: 2px solid var(--border);
+  font-weight: 700; font-size: 14px; text-align: center;
+}

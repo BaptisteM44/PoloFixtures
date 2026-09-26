@@ -2754,7 +2754,8 @@
     "not_assigned": "— Nicht zugewiesen —",
     "saving": "Speichern…",
     "enter_fullscreen": "Vollbild",
-    "exit_fullscreen": "Vollbild beenden"
+    "exit_fullscreen": "Vollbild beenden",
+    "outbox_pending": "{count, plural, one {# Aktion wartet auf Übertragung} other {# Aktionen warten auf Übertragung}} — wird automatisch gesendet, sobald die Verbindung zurück ist"
   },
   "pool_tables": {
     "overall_standings": "Gesamtklassement",

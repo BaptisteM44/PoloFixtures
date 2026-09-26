@@ -2749,7 +2749,8 @@
     "not_assigned": "— Not assigned —",
     "saving": "Saving…",
     "enter_fullscreen": "Fullscreen",
-    "exit_fullscreen": "Exit fullscreen"
+    "exit_fullscreen": "Exit fullscreen",
+    "outbox_pending": "{count, plural, one {# action waiting to be sent} other {# actions waiting to be sent}} — resent automatically as soon as the connection is back"
   },
   "pool_tables": {
     "overall_standings": "Overall standings",

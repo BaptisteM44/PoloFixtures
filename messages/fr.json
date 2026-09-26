@@ -2750,7 +2750,8 @@
     "main_referee": "Arbitre principal",
     "co_referee_phone": "Co-arbitre (téléphone)",
     "not_assigned": "— Non assigné —",
-    "saving": "Enregistrement…"
+    "saving": "Enregistrement…",
+    "outbox_pending": "{count, plural, one {# action en attente d'envoi} other {# actions en attente d'envoi}} — renvoi automatique dès que la connexion revient"
   },
   "pool_tables": {
     "overall_standings": "Classement général",

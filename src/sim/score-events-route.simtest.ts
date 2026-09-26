@@ -104,3 +104,21 @@ describe("Route events — score correct sous saisies concurrentes", () => {
     expect(m.scoreA, "le score ne descend pas sous 0").toBe(0);
   });
 });
+
+describe("Route events — renvoi automatique du panneau d'arbitrage", () => {
+  it("la même action renvoyée (même clientEventId) ne compte qu'une fois", async () => {
+    const { matchId, teamAId } = await mkMatch();
+    const { POST } = await import("@/app/api/matches/[id]/events/route");
+    const req = () => new Request(`http://sim.local/api/matches/${matchId}/events`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type: "GOAL", matchClockSec: 60, teamId: teamAId, delta: 1, clientEventId: "evt-0123456789" }),
+    });
+    await POST(req(), { params: { id: matchId } });
+    const second = await (await POST(req(), { params: { id: matchId } })).json();
+    expect(second.duplicate).toBe(true);
+    const m = await prisma.match.findUniqueOrThrow({ where: { id: matchId } });
+    expect(m.scoreA).toBe(1);
+    expect(await prisma.matchEvent.count({ where: { matchId, type: "GOAL" } })).toBe(1);
+  });
+});

@@ -2753,7 +2753,8 @@
     "not_assigned": "— No asignado —",
     "saving": "Guardando…",
     "enter_fullscreen": "Pantalla completa",
-    "exit_fullscreen": "Salir de pantalla completa"
+    "exit_fullscreen": "Salir de pantalla completa",
+    "outbox_pending": "{count, plural, one {# acción pendiente de envío} other {# acciones pendientes de envío}} — se reenvía automáticamente en cuanto vuelva la conexión"
   },
   "pool_tables": {
     "overall_standings": "Clasificación general",

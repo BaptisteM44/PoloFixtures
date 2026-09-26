@@ -399,14 +399,69 @@ export function TournamentRefereePanel({
   }, [clockSec, gameDurSec, running, muted, buzzerPlayed]);
 
   // ── API helper ────────────────────────────────────────────────────────────
-  const postEvent = useCallback(async (type: string, extra: Record<string, unknown> = {}) => {
-    if (!selectedMatchId) return;
-    setActionError(null);
-    const res = await fetch(`/api/matches/${selectedMatchId}/events`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, matchClockSec: clockSec, ...extra }),
+  // File d'envoi : si le réseau coupe ou si le serveur redémarre (déploiement),
+  // l'action n'est pas perdue. Elle est gardée (aussi dans le navigateur, au
+  // cas où la page se recharge) et renvoyée automatiquement, dans l'ordre. Un
+  // identifiant unique par action évite qu'un but renvoyé compte deux fois.
+  type QueuedEvent = { id: string; matchId: string; type: string; body: Record<string, unknown> };
+  const outboxKey = `ref_outbox_${tournament.id}`;
+  const [outbox, setOutbox] = useState<QueuedEvent[]>([]);
+  const outboxRef = useRef<QueuedEvent[]>([]);
+  const saveOutbox = useCallback((next: QueuedEvent[]) => {
+    outboxRef.current = next;
+    setOutbox(next);
+    try { localStorage.setItem(outboxKey, JSON.stringify(next)); } catch { /* navigation privée */ }
+  }, [outboxKey]);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(outboxKey) || "[]");
+      if (Array.isArray(saved) && saved.length > 0) saveOutbox(saved);
+    } catch { /* ignore */ }
+  }, [outboxKey, saveOutbox]);
+
+  const applyEventResponse = useCallback((matchId: string, type: string, data: { event?: MatchEvent; match?: Partial<MatchInfo> }) => {
+    setMatchMap((prev) => {
+      const cur = prev.get(matchId);
+      if (!cur) return prev;
+      const next = new Map(prev);
+      // For score-changing events (GOAL, GOLDEN_GOAL, END), use server scores
+      // For other events (START, PAUSE, TIMEOUT, PENALTY), keep local scores to avoid overwriting optimistic updates
+      const scoreEvents = ["GOAL", "GOLDEN_GOAL", "END"];
+      const mergeMatch = data.match ? (scoreEvents.includes(type)
+        ? data.match
+        : { ...data.match, scoreA: undefined, scoreB: undefined }
+      ) : {};
+      next.set(matchId, {
+        ...cur,
+        ...mergeMatch,
+        scoreA: mergeMatch.scoreA !== undefined ? mergeMatch.scoreA : cur.scoreA,
+        scoreB: mergeMatch.scoreB !== undefined ? mergeMatch.scoreB : cur.scoreB,
+        events: data.event ? [...cur.events, data.event] : cur.events,
+      });
+      return next;
     });
+    if (matchId !== selectedMatchIdRef.current) return; // action rejouée pour un autre match
+    if (data.match?.status === "FINISHED") { setRunning(false); setMatchEnded(true); }
+    // Le chrono ne se (re)lance QUE sur un START explicite. Auparavant, tout
+    // event LIVE (GOAL, PENALTY…) forçait setRunning(true) : ajouter un but ou une
+    // faute pendant une PAUSE relançait le chrono tout seul. Chaque action gère
+    // désormais son propre running (onStart, onPause, redémarrage last-2-min).
+    if (data.match?.status === "LIVE" && type === "START") setRunning(true);
+  }, []);
+
+  /** "ok" = enregistré ; "refused" = refusé par le serveur (inutile de réessayer) ; "retry" = réseau/serveur indisponible. */
+  const sendEvent = useCallback(async (item: QueuedEvent): Promise<"ok" | "refused" | "retry"> => {
+    let res: Response;
+    try {
+      res = await fetch(`/api/matches/${item.matchId}/events`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(item.body),
+      });
+    } catch {
+      return "retry";
+    }
+    if (res.status >= 500 || res.status === 408 || res.status === 429) return "retry";
     if (!res.ok) {
       let message = t("action_refused");
       try {
@@ -418,36 +473,48 @@ export function TournamentRefereePanel({
         }
       } catch {}
       setActionError(message);
-      return;
+      return "refused";
     }
-    const data = await res.json() as { event?: MatchEvent; match?: Partial<MatchInfo> };
-    setMatchMap((prev) => {
-      const cur = prev.get(selectedMatchId);
-      if (!cur) return prev;
-      const next = new Map(prev);
-      // For score-changing events (GOAL, GOLDEN_GOAL, END), use server scores
-      // For other events (START, PAUSE, TIMEOUT, PENALTY), keep local scores to avoid overwriting optimistic updates
-      const scoreEvents = ["GOAL", "GOLDEN_GOAL", "END"];
-      const mergeMatch = data.match ? (scoreEvents.includes(type)
-        ? data.match
-        : { ...data.match, scoreA: undefined, scoreB: undefined }
-      ) : {};
-      next.set(selectedMatchId, {
-        ...cur,
-        ...mergeMatch,
-        scoreA: mergeMatch.scoreA !== undefined ? mergeMatch.scoreA : cur.scoreA,
-        scoreB: mergeMatch.scoreB !== undefined ? mergeMatch.scoreB : cur.scoreB,
-        events: data.event ? [...cur.events, data.event] : cur.events,
-      });
-      return next;
-    });
-    if (data.match?.status === "FINISHED") { setRunning(false); setMatchEnded(true); }
-    // Le chrono ne se (re)lance QUE sur un START explicite. Auparavant, tout
-    // event LIVE (GOAL, PENALTY…) forçait setRunning(true) : ajouter un but ou une
-    // faute pendant une PAUSE relançait le chrono tout seul. Chaque action gère
-    // désormais son propre running (onStart, onPause, redémarrage last-2-min).
-    if (data.match?.status === "LIVE" && type === "START") setRunning(true);
-  }, [selectedMatchId, clockSec]);
+    const data = await res.json().catch(() => ({})) as { event?: MatchEvent; match?: Partial<MatchInfo> };
+    applyEventResponse(item.matchId, item.type, data);
+    return "ok";
+  }, [applyEventResponse, t]);
+
+  const postEvent = useCallback(async (type: string, extra: Record<string, unknown> = {}) => {
+    if (!selectedMatchId) return;
+    setActionError(null);
+    const id = typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const item: QueuedEvent = { id, matchId: selectedMatchId, type, body: { type, matchClockSec: clockSec, ...extra, clientEventId: id } };
+    // Des actions attendent déjà : on garde l'ordre (un but après un START…).
+    if (outboxRef.current.length > 0) { saveOutbox([...outboxRef.current, item]); return; }
+    if ((await sendEvent(item)) === "retry") saveOutbox([...outboxRef.current, item]);
+  }, [selectedMatchId, clockSec, sendEvent, saveOutbox]);
+
+  // Renvoi automatique : toutes les 3 s, et dès que la connexion revient.
+  useEffect(() => {
+    if (outbox.length === 0) return;
+    let flushing = false;
+    const flush = async () => {
+      if (flushing) return;
+      flushing = true;
+      try {
+        while (outboxRef.current.length > 0) {
+          const [first] = outboxRef.current;
+          const result = await sendEvent(first);
+          if (result === "retry") break;
+          saveOutbox(outboxRef.current.slice(1)); // "ok" ou "refused" (erreur affichée) : suivante
+        }
+      } finally {
+        flushing = false;
+      }
+    };
+    flush();
+    const timer = setInterval(flush, 3000);
+    window.addEventListener("online", flush);
+    return () => { clearInterval(timer); window.removeEventListener("online", flush); };
+  }, [outbox.length, sendEvent, saveOutbox]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const onStart = () => { setRunning(true); postEvent("START"); };
@@ -719,6 +786,11 @@ export function TournamentRefereePanel({
 
   return (
     <div className={`ref-page${fullscreen ? " ref-page--fullscreen" : ""}`}>
+      {outbox.length > 0 && (
+        <div className="ref-outbox" role="status">
+          ⏳ {t("outbox_pending", { count: outbox.length })}
+        </div>
+      )}
       {/* Mode immersif : masque le chrome du site (header/footer) et empêche le
           scroll du body pour occuper tout l'écran. */}
       {fullscreen && (

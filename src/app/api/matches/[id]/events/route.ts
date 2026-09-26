@@ -12,7 +12,11 @@ const schema = z.object({
   teamId: z.string().optional().nullable(),
   playerId: z.string().optional().nullable(),
   delta: z.number().optional().nullable(),
-  timeoutType: z.string().optional().nullable()
+  timeoutType: z.string().optional().nullable(),
+  // Identifiant généré par le panneau d'arbitrage : une action renvoyée
+  // automatiquement (réseau coupé, serveur qui redémarre) n'est jamais
+  // appliquée deux fois — un but ne compte qu'une fois.
+  clientEventId: z.string().min(8).max(64).optional().nullable()
 });
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -57,6 +61,18 @@ export async function POST(request: Request, { params }: { params: { id: string 
   // « vainqueur A », mauvaise équipe en finale). Pour corriger un score, il faut
   // d'abord ROUVRIR le match (PUT /api/matches/[id] status=LIVE), pas passer par
   // ici. PENALTY/TIMEOUT (log, sans effet sur le score) restent tolérés.
+  // Renvoi d'une action déjà enregistrée (la réponse s'était perdue) : on
+  // renvoie l'état actuel sans rien réappliquer.
+  if (parsed.data.clientEventId) {
+    const already = await prisma.matchEvent.findFirst({
+      where: { matchId: match.id, payload: { path: ["clientEventId"], equals: parsed.data.clientEventId } },
+    });
+    if (already) {
+      const current = await prisma.match.findUnique({ where: { id: match.id } });
+      return Response.json({ event: already, match: current, advancedMatches: [], duplicate: true });
+    }
+  }
+
   const RESULT_CHANGING = ["GOAL", "GOLDEN_GOAL", "START", "END"];
   if (match.status === "FINISHED" && RESULT_CHANGING.includes(parsed.data.type)) {
     return Response.json(
@@ -69,7 +85,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
     teamId: parsed.data.teamId ?? undefined,
     playerId: parsed.data.playerId ?? undefined,
     delta: parsed.data.delta ?? undefined,
-    timeoutType: parsed.data.timeoutType ?? undefined
+    timeoutType: parsed.data.timeoutType ?? undefined,
+    clientEventId: parsed.data.clientEventId ?? undefined
   };
 
   // Resolve player name to store in payload for display in live feed
