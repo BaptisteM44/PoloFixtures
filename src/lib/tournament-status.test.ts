@@ -56,10 +56,10 @@ describe("isAfterEndThreshold (21h locale du dernier jour)", () => {
 });
 
 describe("isStaleLive (filet de sécurité)", () => {
-  it("LIVE 3 jours après le dernier jour 21h locale → à terminer", async () => {
+  it("LIVE 7 jours après le dernier jour 21h locale → candidat à la clôture", async () => {
     const { isStaleLive } = await import("./tournament-status");
     const end = new Date("2026-07-12T00:00:00Z"); // dimanche ; 21h Bruxelles = 19:00 UTC
-    expect(isStaleLive(end, "Europe/Brussels", new Date("2026-07-15T18:59:00Z"))).toBe(false);
-    expect(isStaleLive(end, "Europe/Brussels", new Date("2026-07-15T19:00:00Z"))).toBe(true);
+    expect(isStaleLive(end, "Europe/Brussels", new Date("2026-07-19T18:59:00Z"))).toBe(false);
+    expect(isStaleLive(end, "Europe/Brussels", new Date("2026-07-19T19:00:00Z"))).toBe(true);
   });
 });

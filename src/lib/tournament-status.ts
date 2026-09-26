@@ -17,14 +17,28 @@ type TournamentLite = {
  */
 const END_HOUR_LOCAL = 21;
 /**
- * Filet de sécurité : un tournoi encore LIVE 3 jours après son dernier jour
- * (21h locale) passe COMPLETED même si une étape n'a jamais été close (orga
- * qui oublie la dernière étape, bac à sable abandonné). Sinon il restait
- * « en cours » indéfiniment sur la home.
+ * Filet de sécurité : un tournoi encore LIVE 7 jours après son dernier jour
+ * (21h locale), SANS aucune activité depuis 3 jours (étape, événement de
+ * match), passe COMPLETED même si une étape n'a jamais été close (orga qui
+ * oublie la dernière étape, bac à sable abandonné). Sinon il restait « en
+ * cours » indéfiniment sur la home. Jamais pendant une saisie : un orga qui
+ * rentre ses feuilles de match quelques jours après reste libre de le faire.
  */
-const STALE_LIVE_DAYS = 3;
+const STALE_LIVE_DAYS = 7;
+const STALE_QUIET_DAYS = 3;
 export function isStaleLive(dateEnd: Date, timezone: string | null, now: Date): boolean {
   return now.getTime() >= localTimeOnDay(dateEnd, timezone, END_HOUR_LOCAL).getTime() + STALE_LIVE_DAYS * 86400_000;
+}
+
+/** Tournois (parmi `ids`) ayant eu une activité récente : étape modifiée ou événement de match. */
+async function recentlyActive(ids: string[], now: Date): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const since = new Date(now.getTime() - STALE_QUIET_DAYS * 86400_000);
+  const [stages, events] = await Promise.all([
+    prisma.stage.findMany({ where: { tournamentId: { in: ids }, updatedAt: { gte: since } }, select: { tournamentId: true }, distinct: ["tournamentId"] }),
+    prisma.matchEvent.findMany({ where: { createdAt: { gte: since }, match: { tournamentId: { in: ids } } }, select: { match: { select: { tournamentId: true } } }, distinct: ["matchId"] }),
+  ]);
+  return new Set([...stages.map((s) => s.tournamentId), ...events.map((e) => e.match.tournamentId)]);
 }
 
 export function isAfterEndThreshold(dateEnd: Date, timezone: string | null, now: Date): boolean {
@@ -87,7 +101,11 @@ async function isPipelineComplete(tournamentId: string, dateEnd: Date, timezone:
 
 type TzFields = { usesPipeline: boolean; timezone: string | null; country: string | null; lng: number | null };
 
-export async function syncTournamentCompletionById(tournamentId: string): Promise<TournamentStatus | null> {
+/**
+ * `duringActivity` : appelé juste après une saisie (routes de match) — le filet
+ * « LIVE depuis trop longtemps » ne s'applique alors jamais.
+ */
+export async function syncTournamentCompletionById(tournamentId: string, opts: { duringActivity?: boolean } = {}): Promise<TournamentStatus | null> {
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
     // Pays + longitude : fuseau de secours quand timezone n'est pas renseigné.
@@ -100,8 +118,10 @@ export async function syncTournamentCompletionById(tournamentId: string): Promis
   const now = new Date();
   let shouldComplete: boolean;
   if (tournament.usesPipeline) {
-    shouldComplete = isStaleLive(tournament.dateEnd, tournamentTimezone(tournament), now)
-      || await isPipelineComplete(tournamentId, tournament.dateEnd, tournamentTimezone(tournament), now);
+    const stale = !opts.duringActivity
+      && isStaleLive(tournament.dateEnd, tournamentTimezone(tournament), now)
+      && !(await recentlyActive([tournamentId], now)).has(tournamentId);
+    shouldComplete = stale || await isPipelineComplete(tournamentId, tournament.dateEnd, tournamentTimezone(tournament), now);
   } else {
     // Legacy : on ne passe COMPLETED qu'après 21h (heure locale) le jour de
     // dateEnd — jamais dès qu'un bracket final est joué. Un tournoi sur 2 jours
@@ -149,10 +169,14 @@ export async function syncLiveTournamentsCompletion(): Promise<string[]> {
     for (const tm of pipelineTournaments) {
       const tmStages = stagesByTournament.get(tm.id) ?? [];
       const allDone = tmStages.length > 0 && tmStages.every((s) => s.status === "DONE" || s.status === "SKIPPED");
-      if ((allDone && isAfterEndThreshold(tm.dateEnd, tournamentTimezone(tm), now)) || isStaleLive(tm.dateEnd, tournamentTimezone(tm), now)) {
-        pipelineIdsToComplete.push(tm.id);
-      }
+      if (allDone && isAfterEndThreshold(tm.dateEnd, tournamentTimezone(tm), now)) pipelineIdsToComplete.push(tm.id);
     }
+    // Filet de sécurité (cf. isStaleLive) : vieux, et plus rien ne bouge.
+    const staleCandidates = pipelineTournaments
+      .filter((tm) => !pipelineIdsToComplete.includes(tm.id) && isStaleLive(tm.dateEnd, tournamentTimezone(tm), now))
+      .map((tm) => tm.id);
+    const active = await recentlyActive(staleCandidates, now);
+    pipelineIdsToComplete.push(...staleCandidates.filter((id) => !active.has(id)));
   }
 
   // Legacy : comme les pipelines, on ne termine qu'après 21h (heure locale) le
