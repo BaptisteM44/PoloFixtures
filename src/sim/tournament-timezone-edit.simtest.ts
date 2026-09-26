@@ -41,7 +41,7 @@ function form(extra: Record<string, string>) {
 describe("Édition : fuseau horaire", () => {
   it("enregistre le fuseau choisi et normalise le pays", async () => {
     const res = await updateTournamentAction(form({ timezone: "America/New_York" }));
-    expect(res?.error).toBeUndefined();
+    expect((res as { error?: string })?.error).toBeUndefined();
     const t = await prisma.tournament.findUniqueOrThrow({ where: { id: tid } });
     expect([t.timezone, t.country, t.city]).toEqual(["America/New_York", "United States of America", "Philadelphia"]);
   });

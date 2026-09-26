@@ -1234,7 +1234,9 @@
     "gallery_end": "📸 {count, plural, one {# Foto} other {# Fotos}} in der Galerie — füg deine hinzu!",
     "gallery_requested": "📸 {count, plural, one {# vorgeschlagenes Foto} other {# vorgeschlagene Fotos}} für deine Galerie — zu prüfen",
     "gallery_approved": "📸 {count, plural, one {Dein Foto ist online} other {Deine # Fotos sind online}} in der Galerie",
-    "gallery_rejected": "{count, plural, one {Dein Foto wurde vom Orga-Team nicht freigegeben} other {Deine # Fotos wurden vom Orga-Team nicht freigegeben}}"
+    "gallery_rejected": "{count, plural, one {Dein Foto wurde vom Orga-Team nicht freigegeben} other {Deine # Fotos wurden vom Orga-Team nicht freigegeben}}",
+    "badges_unlocked_grouped": "🏅 {count} neue Badges",
+    "badge_unlocked_last": "Zuletzt: {badgeName}"
   },
   "contact": {
     "btn_open": "Kontakt",
@@ -2226,7 +2228,7 @@
   "settings_notifications": {
     "title": "Turnier-Benachrichtigungen",
     "subtitle": "Erhalte täglich eine E-Mail, wenn neue Turniere in deinen ausgewählten Regionen veröffentlicht werden.",
-    "enable_notifications": "Turnierbenachrichtigungen empfangen",
+    "enable_notifications": "Benachrichtigungen erhalten",
     "notif_types_title": "Benachrichtigungstypen",
     "notif_new_tournaments": "Neue Turniere in meiner geografischen Zone",
     "notif_followed_closing": "Anmeldeschluss bei verfolgten Turnieren",
@@ -2238,7 +2240,16 @@
     "saving": "Speichern…",
     "saved": "Einstellungen gespeichert!",
     "push_notifications": "Push-Benachrichtigungen",
-    "push_denied_hint": "Benachrichtigungen sind in deinen Browsereinstellungen blockiert."
+    "push_denied_hint": "Benachrichtigungen sind in deinen Browsereinstellungen blockiert.",
+    "categories_title": "Was ich bekomme",
+    "categories_hint": "Jedes Kästchen gilt für Benachrichtigungen in der App und auf dem Handy. Moderation und Orga-Aufgaben kommen immer an.",
+    "category_messages": "Nachrichten (privat und Team)",
+    "category_registrations": "Meine Anmeldungen (Auswahl, Zahlung, Unterkunft)",
+    "category_clubs": "Meine Clubs (Trainings, Ankündigungen, Anfragen)",
+    "category_polls": "Umfragen",
+    "category_photos": "Fotogalerien",
+    "category_badges": "Badges",
+    "category_labs": "Labs (Antworten auf meine Vorschläge)"
   },
   "clubs": {
     "title": "Clubs weltweit",

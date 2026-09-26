@@ -52,7 +52,20 @@ interface Props {
   initialNotifyNewTournaments?: boolean;
   initialNotifyFollowedClosing?: boolean;
   initialNotifySquadInvite?: boolean;
+  initialMutedCategories?: string[];
 }
+
+// Catégories réglables (même liste que NOTIF_CATEGORIES côté serveur, hors
+// « squads » qui garde son réglage historique notifySquadInvite ci-dessous).
+const CATEGORIES = [
+  { key: "messages", icon: "💬" },
+  { key: "registrations", icon: "✅" },
+  { key: "clubs", icon: "🏠" },
+  { key: "polls", icon: "📊" },
+  { key: "photos", icon: "📸" },
+  { key: "badges", icon: "🏅" },
+  { key: "labs", icon: "🧪" },
+] as const;
 
 export function NotificationForm({
   initialEnabled,
@@ -61,6 +74,7 @@ export function NotificationForm({
   initialNotifyNewTournaments = true,
   initialNotifyFollowedClosing = true,
   initialNotifySquadInvite = true,
+  initialMutedCategories = [],
 }: Props) {
   const t = useTranslations("settings_notifications");
   const [enabled, setEnabled] = useState(initialEnabled);
@@ -69,6 +83,9 @@ export function NotificationForm({
   const [notifyNewTournaments, setNotifyNewTournaments] = useState(initialNotifyNewTournaments);
   const [notifyFollowedClosing, setNotifyFollowedClosing] = useState(initialNotifyFollowedClosing);
   const [notifySquadInvite, setNotifySquadInvite] = useState(initialNotifySquadInvite);
+  const [muted, setMuted] = useState<Set<string>>(new Set(initialMutedCategories));
+  const toggleCategory = (key: string, on: boolean) =>
+    setMuted((prev) => { const next = new Set(prev); if (on) next.delete(key); else next.add(key); return next; });
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
@@ -161,6 +178,7 @@ export function NotificationForm({
     if (notifyNewTournaments) formData.set("notifyNewTournaments", "on");
     if (notifyFollowedClosing) formData.set("notifyFollowedClosing", "on");
     if (notifySquadInvite) formData.set("notifySquadInvite", "on");
+    muted.forEach((c) => formData.append("mutedCategories", c));
 
     startTransition(async () => {
       await saveNotificationPreferences(formData);
@@ -199,6 +217,21 @@ export function NotificationForm({
               {t("push_denied_hint")}
             </p>
           )}
+        </div>
+      )}
+
+      {enabled && (
+        <div style={{ marginBottom: 20 }}>
+          <h3 className="settings-section-title">{t("categories_title")}</h3>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 24px" }}>
+            {CATEGORIES.map(({ key, icon }) => (
+              <label key={key} className="settings-toggle-label">
+                <input type="checkbox" checked={!muted.has(key)} onChange={(e) => toggleCategory(key, e.target.checked)} />
+                <span>{icon} {t(`category_${key}`)}</span>
+              </label>
+            ))}
+          </div>
+          <p className="settings-hint" style={{ marginTop: 6 }}>{t("categories_hint")}</p>
         </div>
       )}
 

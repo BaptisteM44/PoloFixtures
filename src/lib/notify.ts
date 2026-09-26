@@ -84,17 +84,44 @@ function toPushPayload(
   }
 }
 
-// Types qui respectent le flag global "enabled" (notifs club)
-const CLUB_TYPES: NotificationType[] = [
-  "CLUB_SESSION",
-  "CLUB_SESSION_JOIN",
-  "CLUB_ANNOUNCEMENT",
-];
+/**
+ * Catégories réglables par le joueur (page Paramètres). null = essentiel,
+ * toujours envoyé (modération, validation admin, tâches d'orga).
+ */
+export const NOTIF_CATEGORIES = ["messages", "registrations", "squads", "clubs", "polls", "photos", "badges", "labs"] as const;
+export type NotifCategory = (typeof NOTIF_CATEGORIES)[number];
 
-// Types qui respectent notifySquadInvite
-const SQUAD_INVITE_TYPES: NotificationType[] = [
-  "SQUAD_INVITE",
-];
+const TYPE_CATEGORY: Partial<Record<NotificationType, NotifCategory>> = {
+  DIRECT_MESSAGE_REQUEST: "messages", DIRECT_MESSAGE_RECEIVED: "messages", TEAM_MESSAGE_RECEIVED: "messages",
+  TEAM_REGISTERED: "registrations", TEAM_SELECTED: "registrations", TEAM_WAITLISTED: "registrations",
+  TEAM_FEE_CONFIRMED: "registrations", ACCOMMODATION_ASSIGNED: "registrations", ACCOMMODATION_GUEST_ADDED: "registrations",
+  SQUAD_INVITE: "squads", SQUAD_INVITE_ACCEPTED: "squads", SQUAD_INVITE_DECLINED: "squads", SQUAD_ROLE_CHANGED: "squads",
+  CLUB_JOIN_REQUEST: "clubs", CLUB_SESSION: "clubs", CLUB_SESSION_JOIN: "clubs", CLUB_ANNOUNCEMENT: "clubs",
+  POLL_OPENED: "polls", POLL_CLOSING_SOON: "polls", POLL_RESULTS_AVAILABLE: "polls", POLL_VOTE_MILESTONE: "polls",
+  POLL_APPROVAL_REQUESTED: "polls", POLL_APPROVAL_DECIDED: "polls",
+  TOURNAMENT_PHOTOS_REVEALED: "photos", TOURNAMENT_PHOTOS_REQUESTED: "photos", TOURNAMENT_PHOTOS_DECIDED: "photos",
+  BADGE_UNLOCKED: "badges",
+  COMMUNITY_STATUS_CHANGED: "labs",
+};
+
+/**
+ * Le joueur veut-il ce type de notif ? Interrupteur général (enabled),
+ * catégorie coupée, et ancien réglage « invitations d'équipe ». Les types
+ * essentiels passent toujours. Sans ligne de préférences : tout est actif.
+ */
+export async function wantsNotification(playerId: string, type: NotificationType): Promise<boolean> {
+  const category = TYPE_CATEGORY[type];
+  if (!category) return true;
+  const prefs = await prisma.notificationPreference.findUnique({
+    where: { playerId },
+    select: { enabled: true, mutedCategories: true, notifySquadInvite: true },
+  });
+  if (!prefs) return true;
+  if (!prefs.enabled) return false;
+  if (prefs.mutedCategories.includes(category)) return false;
+  if (type === "SQUAD_INVITE" && prefs.notifySquadInvite === false) return false;
+  return true;
+}
 
 export async function createNotification(
   playerId: string,
@@ -102,18 +129,26 @@ export async function createNotification(
   payload: Record<string, string | number>
 ) {
   try {
-    // Vérifier les prefs si le type est concerné
-    if (CLUB_TYPES.includes(type) || SQUAD_INVITE_TYPES.includes(type)) {
-      const prefs = await prisma.notificationPreference.findUnique({
-        where: { playerId },
-        select: { enabled: true, notifySquadInvite: true },
+    if (!(await wantsNotification(playerId, type))) return;
+
+    // Badges : une seule notif non lue, dont le compteur monte (« 3 nouveaux
+    // badges »), et jamais de push — ils représentaient 40 % des notifs et
+    // noyaient les importantes (sélection, messages…).
+    if (type === "BADGE_UNLOCKED") {
+      const existing = await prisma.notification.findFirst({
+        where: { playerId, type, read: false },
+        select: { id: true, payload: true },
       });
-
-      // Notifs globalement désactivées
-      if (prefs && prefs.enabled === false) return;
-
-      // Invitations d'équipe désactivées
-      if (SQUAD_INVITE_TYPES.includes(type) && prefs && prefs.notifySquadInvite === false) return;
+      if (existing) {
+        const prev = existing.payload as Record<string, string | number>;
+        await prisma.notification.update({
+          where: { id: existing.id },
+          data: { payload: { ...payload, count: (Number(prev.count) || 1) + 1 } },
+        });
+      } else {
+        await prisma.notification.create({ data: { playerId, type, payload: { ...payload, count: 1 } } });
+      }
+      return;
     }
 
     await prisma.notification.create({
@@ -138,6 +173,7 @@ export async function notifySessionJoin(
   clubId: string,
 ) {
   try {
+    if (!(await wantsNotification(recipientPlayerId, "CLUB_SESSION_JOIN"))) return;
     const existing = await prisma.notification.findFirst({
       where: {
         playerId: recipientPlayerId,
@@ -188,6 +224,7 @@ export async function notifyCommunityReply({
   await Promise.all(
     recipientIds.map(async (playerId) => {
       try {
+        if (!(await wantsNotification(playerId, "COMMUNITY_STATUS_CHANGED"))) return;
         const existing = await prisma.notification.findFirst({
           where: {
             playerId,
@@ -344,12 +381,7 @@ export async function notifyPlayersNewTournament(t: {
       select: { playerId: true, continents: true, countries: true },
     });
     for (const pref of prefs) {
-      const noFilter = pref.continents.length === 0 && pref.countries.length === 0;
-      const matches =
-        noFilter ||
-        pref.continents.includes(t.continentCode) ||
-        pref.countries.some((c) => sameCountry(c, t.country));
-      if (!matches) continue;
+      if (!prefMatchesTournament(pref, t)) continue;
       await createNotification(pref.playerId, "NEW_TOURNAMENT_PUBLISHED", {
         tournamentId: t.id,
         tournamentSlug: t.slug ?? "",
@@ -361,4 +393,21 @@ export async function notifyPlayersNewTournament(t: {
   } catch (e) {
     console.error("[notify] notifyPlayersNewTournament failed:", e);
   }
+}
+
+/**
+ * Le tournoi est-il dans les zones choisies par le joueur ? Pas de zone =
+ * partout. Les pays des préférences sont des codes (« FR ») et ceux des
+ * tournois des noms (« France ») : comparés via sameCountry — avant, un
+ * filtre par pays ne correspondait JAMAIS. « AP » (Asie-Pacifique dans le
+ * formulaire) couvre les continents AS et OC.
+ */
+export function prefMatchesTournament(
+  pref: { continents: string[]; countries: string[] },
+  t: { continentCode: string; country: string },
+): boolean {
+  if (pref.continents.length === 0 && pref.countries.length === 0) return true;
+  const continents = pref.continents.flatMap((c) => (c === "AP" ? ["AS", "OC"] : [c]));
+  if (continents.includes(t.continentCode)) return true;
+  return pref.countries.some((c) => sameCountry(c, t.country));
 }

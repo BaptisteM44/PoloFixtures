@@ -16,5 +16,6 @@ export async function GET() {
     notifyNewTournaments: true,
     notifyFollowedClosing: true,
     notifySquadInvite: true,
+    mutedCategories: [],
   });
 }

@@ -38,7 +38,9 @@ function useNotifLabel() {
       case "TEAM_WAITLISTED":
         return { title: t("team_waitlisted", { teamName: p.teamName, rank: p.rank }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=inscription` };
       case "BADGE_UNLOCKED":
-        return { title: t("badge_unlocked", { badgeName: p.badgeName }), sub: t("badge_unlocked_sub"), href: "/account" };
+        return Number(p.count) > 1
+          ? { title: t("badges_unlocked_grouped", { count: Number(p.count) }), sub: t("badge_unlocked_last", { badgeName: p.badgeName ?? "" }), href: "/account" }
+          : { title: t("badge_unlocked", { badgeName: p.badgeName }), sub: t("badge_unlocked_sub"), href: "/account" };
       case "TEAM_MESSAGE_RECEIVED":
         return { title: t("team_message", { teamName: p.teamName }), sub: p.preview ?? "", href: "/my-tournaments" };
       case "CLUB_JOIN_REQUEST":

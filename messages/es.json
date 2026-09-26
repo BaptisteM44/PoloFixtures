@@ -1233,7 +1233,9 @@
     "gallery_end": "📸 {count, plural, one {# foto} other {# fotos}} en la galería — ¡añade las tuyas!",
     "gallery_requested": "📸 {count, plural, one {# foto propuesta} other {# fotos propuestas}} para tu galería — por validar",
     "gallery_approved": "📸 {count, plural, one {Tu foto está publicada} other {Tus # fotos están publicadas}} en la galería",
-    "gallery_rejected": "{count, plural, one {Tu foto no fue aceptada} other {Tus # fotos no fueron aceptadas}} por la organización"
+    "gallery_rejected": "{count, plural, one {Tu foto no fue aceptada} other {Tus # fotos no fueron aceptadas}} por la organización",
+    "badges_unlocked_grouped": "🏅 {count} nuevas insignias",
+    "badge_unlocked_last": "Última: {badgeName}"
   },
   "contact": {
     "btn_open": "Contacto",
@@ -2225,7 +2227,7 @@
   "settings_notifications": {
     "title": "Notificaciones de torneos",
     "subtitle": "Recibe un email diario cuando se publiquen nuevos torneos en tus zonas seleccionadas.",
-    "enable_notifications": "Recibir notificaciones de torneos",
+    "enable_notifications": "Recibir notificaciones",
     "notif_types_title": "Tipos de notificaciones",
     "notif_new_tournaments": "Nuevos torneos en mi zona geográfica",
     "notif_followed_closing": "Cierre de inscripciones en torneos que sigo",
@@ -2237,7 +2239,16 @@
     "saving": "Guardando…",
     "saved": "¡Preferencias guardadas!",
     "push_notifications": "Notificaciones push",
-    "push_denied_hint": "Las notificaciones están bloqueadas en la configuración de tu navegador."
+    "push_denied_hint": "Las notificaciones están bloqueadas en la configuración de tu navegador.",
+    "categories_title": "Lo que recibo",
+    "categories_hint": "Cada casilla vale para las notificaciones en la app y en el móvil. La moderación y las tareas de organización llegan siempre.",
+    "category_messages": "Mensajes (privados y de equipo)",
+    "category_registrations": "Mis inscripciones (selección, pago, alojamiento)",
+    "category_clubs": "Mis clubes (sesiones, anuncios, solicitudes)",
+    "category_polls": "Encuestas",
+    "category_photos": "Galerías de fotos",
+    "category_badges": "Insignias",
+    "category_labs": "Labs (respuestas a mis propuestas)"
   },
   "clubs": {
     "title": "Clubs de todo el mundo",

@@ -90,6 +90,7 @@ type NotifPrefs = {
   notifyNewTournaments: boolean;
   notifyFollowedClosing: boolean;
   notifySquadInvite: boolean;
+  mutedCategories?: string[];
 };
 
 type ConvSummary = {
@@ -774,6 +775,7 @@ export default function AccountPage() {
                     initialNotifyNewTournaments={notifPrefs.notifyNewTournaments}
                     initialNotifyFollowedClosing={notifPrefs.notifyFollowedClosing}
                     initialNotifySquadInvite={notifPrefs.notifySquadInvite}
+                    initialMutedCategories={notifPrefs.mutedCategories ?? []}
                   />
                 ) : (
                   <p style={{ fontSize: 13, color: "var(--text-muted)" }}>{t("loading")}</p>

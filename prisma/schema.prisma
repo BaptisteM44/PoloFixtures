@@ -1136,6 +1136,9 @@ model NotificationPreference {
   notifyNewTournaments  Boolean  @default(true)
   notifyFollowedClosing Boolean  @default(true)
   notifySquadInvite     Boolean  @default(true)
+  // Catégories coupées (cf. NOTIF_CATEGORIES dans lib/notify) : messages,
+  // registrations, squads, clubs, polls, photos, badges, labs.
+  mutedCategories       String[] @default([])
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }

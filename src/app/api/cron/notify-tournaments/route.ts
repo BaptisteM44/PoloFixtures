@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prefMatchesTournament } from "@/lib/notify";
 import { prisma } from "@/lib/db";
 import { sendMail } from "@/lib/mailer";
 import { getLangFromCountry, tournamentDigestEmail } from "@/lib/email-templates";
@@ -105,13 +106,8 @@ export async function GET(req: NextRequest) {
     const email = pref.player.account?.email;
     if (!email) continue;
 
-    const hasNoFilter = pref.continents.length === 0 && pref.countries.length === 0;
-    const matches = (t: { continentCode: string; country: string }) => {
-      if (hasNoFilter) return true;
-      if (pref.continents.includes(t.continentCode)) return true;
-      if (pref.countries.includes(t.country)) return true;
-      return false;
-    };
+    // « FR » (préférence) = « France » (tournoi) ; « AP » = Asie + Océanie.
+    const matches = (t: { continentCode: string; country: string }) => prefMatchesTournament(pref, t);
 
     // Respect per-type flags (default true if no pref row or missing field)
     const wantsNew = pref.notifyNewTournaments !== false;

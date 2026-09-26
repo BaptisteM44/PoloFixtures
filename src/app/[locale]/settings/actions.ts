@@ -1,5 +1,6 @@
 "use server";
 import { prisma } from "@/lib/db";
+import { NOTIF_CATEGORIES } from "@/lib/notify";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
@@ -14,12 +15,15 @@ export async function saveNotificationPreferences(formData: FormData) {
   const notifyNewTournaments = formData.get("notifyNewTournaments") === "on";
   const notifyFollowedClosing = formData.get("notifyFollowedClosing") === "on";
   const notifySquadInvite = formData.get("notifySquadInvite") === "on";
+  // Catégories décochées = coupées (seules les catégories connues sont gardées).
+  const mutedCategories = (formData.getAll("mutedCategories") as string[])
+    .filter((c) => (NOTIF_CATEGORIES as readonly string[]).includes(c));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (prisma as any).notificationPreference.upsert({
     where: { playerId },
-    create: { playerId, enabled, continents, countries, notifyNewTournaments, notifyFollowedClosing, notifySquadInvite },
-    update: { enabled, continents, countries, notifyNewTournaments, notifyFollowedClosing, notifySquadInvite },
+    create: { playerId, enabled, continents, countries, notifyNewTournaments, notifyFollowedClosing, notifySquadInvite, mutedCategories },
+    update: { enabled, continents, countries, notifyNewTournaments, notifyFollowedClosing, notifySquadInvite, mutedCategories },
   });
 
   revalidatePath("/settings/notifications");

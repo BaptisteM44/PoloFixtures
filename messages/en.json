@@ -1229,7 +1229,9 @@
     "gallery_end": "📸 {count, plural, one {# photo} other {# photos}} in the gallery — add yours!",
     "gallery_requested": "📸 {count, plural, one {# photo suggested} other {# photos suggested}} for your gallery — to review",
     "gallery_approved": "📸 {count, plural, one {Your photo is live} other {Your # photos are live}} in the gallery",
-    "gallery_rejected": "{count, plural, one {Your photo wasn't approved} other {Your # photos weren't approved}} by the organizers"
+    "gallery_rejected": "{count, plural, one {Your photo wasn't approved} other {Your # photos weren't approved}} by the organizers",
+    "badges_unlocked_grouped": "🏅 {count} new badges",
+    "badge_unlocked_last": "Latest: {badgeName}"
   },
   "contact": {
     "btn_open": "Contact",
@@ -2221,7 +2223,7 @@
   "settings_notifications": {
     "title": "Tournament Notifications",
     "subtitle": "Receive a daily email when new tournaments are published in your selected regions.",
-    "enable_notifications": "Receive tournament notifications",
+    "enable_notifications": "Receive notifications",
     "notif_types_title": "Notification types",
     "notif_new_tournaments": "New tournaments in my geographic area",
     "notif_followed_closing": "Registration closing on tournaments I follow",
@@ -2233,7 +2235,16 @@
     "saving": "Saving…",
     "saved": "Preferences saved!",
     "push_notifications": "Push notifications",
-    "push_denied_hint": "Notifications are blocked in your browser settings."
+    "push_denied_hint": "Notifications are blocked in your browser settings.",
+    "categories_title": "What I get",
+    "categories_hint": "Each box applies to in-app and phone notifications. Moderation and organizer tasks always come through.",
+    "category_messages": "Messages (private and team)",
+    "category_registrations": "My registrations (selection, payment, accommodation)",
+    "category_clubs": "My clubs (sessions, announcements, requests)",
+    "category_polls": "Polls",
+    "category_photos": "Photo galleries",
+    "category_badges": "Badges",
+    "category_labs": "Labs (replies to my proposals)"
   },
   "clubs": {
     "title": "Clubs worldwide",
