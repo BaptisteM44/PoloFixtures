@@ -4,14 +4,22 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { Role } from "@prisma/client";
-import { getIp, isRateLimited } from "@/lib/rate-limit";
+import { getIp, recentHits, recordHit } from "@/lib/rate-limit";
 
-// Anti-brute-force des connexions (en mémoire, par instance) : avant, rien ne
-// limitait les essais — ni mot de passe joueur, ni code d'accès admin/orga.
+// Anti-brute-force des connexions (en mémoire, par instance). Seuls les ÉCHECS
+// comptent : sur un tournoi, des dizaines de joueurs se connectent depuis la
+// même IP (wifi du lieu, NAT de l'opérateur mobile) sans jamais être bloqués.
 const LOGIN_WINDOW_MS = 15 * 60_000;
-function loginBlocked(request: Request | undefined, key: string, perKey: number) {
-  const ip = request ? getIp(request) : "unknown";
-  return isRateLimited(`login-ip:${ip}`, 40, LOGIN_WINDOW_MS) || isRateLimited(`login:${key}`, perKey, LOGIN_WINDOW_MS);
+const MAX_FAILS_PER_KEY = 10;  // par email, ou par IP pour les codes d'accès
+const MAX_FAILS_PER_IP = 100;  // tous comptes confondus (anti-balayage)
+const ipOf = (request: Request | undefined) => (request ? getIp(request) : "unknown");
+function loginBlocked(request: Request | undefined, key: string) {
+  return recentHits(`login-fail-ip:${ipOf(request)}`, LOGIN_WINDOW_MS) >= MAX_FAILS_PER_IP
+    || recentHits(`login-fail:${key}`, LOGIN_WINDOW_MS) >= MAX_FAILS_PER_KEY;
+}
+function loginFailed(request: Request | undefined, key: string) {
+  recordHit(`login-fail-ip:${ipOf(request)}`);
+  recordHit(`login-fail:${key}`);
 }
 
 const accessCodeSchema = z.object({
@@ -38,7 +46,8 @@ export const authConfig = {
       async authorize(raw, request) {
         const parsed = accessCodeSchema.safeParse(raw);
         if (!parsed.success) return null;
-        if (loginBlocked(request, `code:${request ? getIp(request) : "unknown"}`, 10)) return null;
+        const codeKey = `code:${ipOf(request)}`;
+        if (loginBlocked(request, codeKey)) return null;
 
         const { code, tournamentId } = parsed.data;
         const now = new Date();
@@ -53,6 +62,7 @@ export const authConfig = {
           const opName = c.operator?.player?.name ?? c.operator?.name ?? c.role;
           return { id: c.id, role: c.role, tournamentId: c.tournamentId ?? tournamentId ?? null, name: opName, playerId: c.operator?.playerId ?? null };
         }
+        loginFailed(request, codeKey);
         return null;
       }
     }),
@@ -68,18 +78,26 @@ export const authConfig = {
       async authorize(raw, request) {
         const parsed = playerSchema.safeParse(raw);
         if (!parsed.success) return null;
-        const email = parsed.data.email.trim().toLowerCase();
-        if (loginBlocked(request, `email:${email}`, 10)) return null;
+        const typed = parsed.data.email.trim();
+        const emailKey = `email:${typed.toLowerCase()}`;
+        if (loginBlocked(request, emailKey)) return null;
 
-        // Email insensible à la casse (« Bap@… » = « bap@… »).
-        const account = await prisma.playerAccount.findFirst({
-          where: { email: { equals: email, mode: "insensitive" } },
-          include: { player: true }
-        });
-        if (!account) return null;
-
-        const ok = await bcrypt.compare(parsed.data.password, account.passwordHash);
-        if (!ok) return null;
+        // Email exact d'abord ; sinon insensible à la casse (« Bap@… » = « bap@… »).
+        // S'il existe plusieurs comptes ne différant que par la casse, on garde
+        // celui dont le mot de passe correspond (personne n'est bloqué dehors).
+        const exact = await prisma.playerAccount.findUnique({ where: { email: typed }, include: { player: true } });
+        const candidates = exact
+          ? [exact]
+          : await prisma.playerAccount.findMany({
+              where: { email: { equals: typed, mode: "insensitive" } },
+              include: { player: true },
+              take: 5,
+            });
+        let account: (typeof candidates)[number] | null = null;
+        for (const c of candidates) {
+          if (await bcrypt.compare(parsed.data.password, c.passwordHash)) { account = c; break; }
+        }
+        if (!account) { loginFailed(request, emailKey); return null; }
 
         // Enregistre le jour de connexion (1 ligne par jour au max)
         const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
