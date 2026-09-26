@@ -16,6 +16,17 @@ type TournamentLite = {
  * (parties jouées en avance, bac à sable enchaîné, etc.).
  */
 const END_HOUR_LOCAL = 21;
+/**
+ * Filet de sécurité : un tournoi encore LIVE 3 jours après son dernier jour
+ * (21h locale) passe COMPLETED même si une étape n'a jamais été close (orga
+ * qui oublie la dernière étape, bac à sable abandonné). Sinon il restait
+ * « en cours » indéfiniment sur la home.
+ */
+const STALE_LIVE_DAYS = 3;
+export function isStaleLive(dateEnd: Date, timezone: string | null, now: Date): boolean {
+  return now.getTime() >= localTimeOnDay(dateEnd, timezone, END_HOUR_LOCAL).getTime() + STALE_LIVE_DAYS * 86400_000;
+}
+
 export function isAfterEndThreshold(dateEnd: Date, timezone: string | null, now: Date): boolean {
   return now.getTime() >= localTimeOnDay(dateEnd, timezone, END_HOUR_LOCAL).getTime();
 }
@@ -89,7 +100,8 @@ export async function syncTournamentCompletionById(tournamentId: string): Promis
   const now = new Date();
   let shouldComplete: boolean;
   if (tournament.usesPipeline) {
-    shouldComplete = await isPipelineComplete(tournamentId, tournament.dateEnd, tournamentTimezone(tournament), now);
+    shouldComplete = isStaleLive(tournament.dateEnd, tournamentTimezone(tournament), now)
+      || await isPipelineComplete(tournamentId, tournament.dateEnd, tournamentTimezone(tournament), now);
   } else {
     // Legacy : on ne passe COMPLETED qu'après 21h (heure locale) le jour de
     // dateEnd — jamais dès qu'un bracket final est joué. Un tournoi sur 2 jours
@@ -137,7 +149,7 @@ export async function syncLiveTournamentsCompletion(): Promise<string[]> {
     for (const tm of pipelineTournaments) {
       const tmStages = stagesByTournament.get(tm.id) ?? [];
       const allDone = tmStages.length > 0 && tmStages.every((s) => s.status === "DONE" || s.status === "SKIPPED");
-      if (allDone && isAfterEndThreshold(tm.dateEnd, tournamentTimezone(tm), now)) {
+      if ((allDone && isAfterEndThreshold(tm.dateEnd, tournamentTimezone(tm), now)) || isStaleLive(tm.dateEnd, tournamentTimezone(tm), now)) {
         pipelineIdsToComplete.push(tm.id);
       }
     }
