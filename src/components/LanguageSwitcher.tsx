@@ -11,6 +11,7 @@ const LABELS: Record<string, string> = {
   en: "EN",
   de: "DE",
   es: "ES",
+  pt: "PT",
 };
 
 /** inline=true → affiche les 4 boutons directement sans dropdown (pour le drawer mobile) */
@@ -52,7 +53,7 @@ export function LanguageSwitcher({ inline = false }: { inline?: boolean }) {
   const switchLocale = (next: string) => {
     const query = searchParams.toString();
     const target = query ? `${pathname}?${query}` : pathname;
-    router.replace(target as Parameters<typeof router.replace>[0], { locale: next as "fr" | "en" | "de" | "es" });
+    router.replace(target as Parameters<typeof router.replace>[0], { locale: next as (typeof routing.locales)[number] });
     closePanel();
   };
 

@@ -6,7 +6,7 @@ import { routing } from "@/i18n/routing";
 import { NextResponse } from "next/server";
 
 const intlMiddleware = createMiddleware(routing);
-const LOCALES_RE = /^\/(fr|en|de|es)/;
+const LOCALES_RE = /^\/(fr|en|de|es|pt)/;
 
 /** Retire le préfixe de locale pour les vérifications d'accès */
 function stripLocale(pathname: string) {

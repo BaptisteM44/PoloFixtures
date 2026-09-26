@@ -14,6 +14,7 @@ const COPY = {
   en: { title: "Page not found", desc: "This page doesn't exist or has moved.", home: "Back to home" },
   de: { title: "Seite nicht gefunden", desc: "Diese Seite existiert nicht oder wurde verschoben.", home: "Zur Startseite" },
   es: { title: "Página no encontrada", desc: "Esta página no existe o se ha movido.", home: "Volver al inicio" },
+  pt: { title: "Página não encontrada", desc: "Esta página não existe ou foi movida.", home: "Voltar ao início" },
 } as const;
 
 type Locale = keyof typeof COPY;

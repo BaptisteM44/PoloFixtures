@@ -153,7 +153,7 @@ export function PwaManager() {
     // Refus définitif de l'encart d'installation de la home : on ne relance pas.
     try { if (localStorage.getItem("home_install_banner_dismissed") === "1") return; } catch { /* navigation privée */ }
     // Sur la home, c'est l'encart dédié (HomeInstallBanner) qui s'en charge.
-    if (/^\/(fr|en|de|es)?\/?$/.test(window.location.pathname)) return;
+    if (/^\/(fr|en|de|es|pt)?\/?$/.test(window.location.pathname)) return;
     // Refus récent → ne pas remontrer
     const dismissedAt = Number(localStorage.getItem(DISMISS_KEY) || 0);
     if (dismissedAt && Date.now() - dismissedAt < DISMISS_DAYS * 24 * 3600 * 1000) return;

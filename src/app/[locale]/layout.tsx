@@ -54,7 +54,7 @@ export function generateStaticParams() {
 
 export default async function LocaleLayout({ children, params: { locale } }: Props) {
   // Valide la locale
-  if (!routing.locales.includes(locale as "fr" | "en" | "de" | "es")) {
+  if (!routing.locales.includes(locale as (typeof routing.locales)[number])) {
     notFound();
   }
 
