@@ -112,7 +112,7 @@ export default function AccountPage() {
 
   const [player, setPlayer] = useState<Player | null>(null);
   const [form, setForm] = useState({
-    name: "", city: "", country: "", bio: "", startYear: "", hand: "",
+    name: "", city: "", country: "", bio: "", aliases: "", startYear: "", hand: "",
     gender: "" as "" | "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY",
     showGender: false, diets: [] as string[],
     petAllergies: "" as string, foodAllergies: "" as string,
@@ -162,7 +162,7 @@ export default function AccountPage() {
       const data = await res.json();
       setPlayer(data);
       setForm({
-        name: data.name, city: data.city ?? "", country: data.country, bio: data.bio ?? "",
+        name: data.name, city: data.city ?? "", country: data.country, bio: data.bio ?? "", aliases: data.aliases ?? "",
         startYear: data.startYear ? String(data.startYear) : "",
         hand: data.hand ?? "",
         gender: data.gender ?? "",
@@ -253,6 +253,7 @@ export default function AccountPage() {
         diets: form.diets,
         petAllergies: form.petAllergies || null,
         foodAllergies: form.foodAllergies || null,
+        aliases: form.aliases.trim() || null,
       }),
     });
     if (res.ok) {
@@ -450,6 +451,15 @@ export default function AccountPage() {
                   onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
                   placeholder={t("field_bio_placeholder")}
                   style={{ resize: "vertical" }}
+                />
+              </label>
+              <label className="field-row">
+                {t("field_aliases")} <span style={{ color: "var(--text-muted)", fontSize: 12 }}>({t("field_aliases_hint")})</span>
+                <input
+                  value={form.aliases}
+                  maxLength={200}
+                  onChange={(e) => setForm((f) => ({ ...f, aliases: e.target.value }))}
+                  placeholder={t("field_aliases_placeholder")}
                 />
               </label>
               <div className="form-grid">

@@ -1231,7 +1231,11 @@
     "gallery_approved": "📸 {count, plural, one {Ta photo est en ligne} other {Tes # photos sont en ligne}} dans la galerie",
     "gallery_rejected": "{count, plural, one {Ta photo n'a pas été retenue} other {Tes # photos n'ont pas été retenues}} par l'orga",
     "badges_unlocked_grouped": "🏅 {count} nouveaux badges",
-    "badge_unlocked_last": "Dernier : {badgeName}"
+    "badge_unlocked_last": "Dernier : {badgeName}",
+    "merge_requested": "{name} dit être « {ghost} »",
+    "merge_requested_sub": "Demande de fusion de profil à valider",
+    "merge_approved": "Profil « {ghost} » fusionné dans le tien ✓",
+    "merge_rejected": "Demande de fusion avec « {ghost} » refusée"
   },
   "contact": {
     "btn_open": "Contact",
@@ -1274,6 +1278,7 @@
     "share_card_title": "Ma carte Bike Polo",
     "share_card_download": "Enregistrer l'image",
     "share_card_error": "Impossible de générer l'image",
+    "share_profile": "Partager ce profil",
     "stats_title": "Statistiques",
     "tournaments_played": "tournoi(s) joué(s)",
     "goals_title": "Buts",
@@ -1787,6 +1792,9 @@
     "field_bio": "Bio",
     "field_bio_hint": "max 500 car.",
     "field_bio_placeholder": "Présente-toi…",
+    "field_aliases": "Autres noms / surnoms",
+    "field_aliases_hint": "jamais affichés, servent seulement à te retrouver dans la recherche",
+    "field_aliases_placeholder": "Ex. : ton vrai nom, ton surnom de polo…",
     "field_current_password": "Mot de passe actuel",
     "field_new_password": "Nouveau mot de passe",
     "field_start_year": "Année de début",
@@ -3233,5 +3241,24 @@
     "tournament_new": "Créer un tournoi",
     "overlay": "Overlay stream",
     "multiplex": "Multiplex"
+  },
+  "merge_request": {
+    "title": "Demandes de fusion de profil",
+    "intro": "Ces joueurs disent être un profil créé sans compte (à une inscription, par exemple). Si c'est bien la même personne, valide : son historique (équipes, buts, badges…) passe sur son vrai profil et le profil fictif disparaît.",
+    "empty": "Aucune demande en attente.",
+    "is": "dit être",
+    "played": "Joué avec",
+    "approve": "Valider la fusion",
+    "reject": "Refuser",
+    "confirm_approve": "Fusionner « {ghost} » dans le profil de {name} ? C'est définitif.",
+    "done_approved": "Profils fusionnés ✓",
+    "done_rejected": "Demande refusée",
+    "error": "Action impossible.",
+    "claim_btn": "C'est moi ? Demander la fusion",
+    "claim_hint": "Ce profil a été créé sans compte. Si c'est toi, demande à le fusionner dans ton profil : l'orga d'un de ses tournois valide.",
+    "claim_confirm": "Tu confirmes être « {ghost} » ? L'orga va vérifier avant de fusionner.",
+    "claim_pending": "Demande de fusion envoyée — en attente de l'orga",
+    "claim_rejected": "Ta demande de fusion a été refusée",
+    "claim_retry": "Redemander"
   }
 }

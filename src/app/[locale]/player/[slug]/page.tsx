@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { PlayerCardWithShare } from "@/components/PlayerCardWithShare";
 import { ContactModal } from "@/components/ContactModal";
+import { ShareTournamentButton } from "@/components/ShareTournamentButton";
+import { ClaimProfileButton } from "@/components/ClaimProfileButton";
 import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
@@ -82,12 +84,18 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
         />
 
         <div style={{ flex: 1, minWidth: 0, paddingTop: 8 }}>
-          <h1 style={{ marginBottom: 4 }}>{player.name}</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <h1 style={{ margin: 0 }}>{player.name}</h1>
+            <ShareTournamentButton path={`/player/${player.slug ?? player.id}`} title={player.name} label={t("share_profile")} />
+          </div>
           <p style={{ color: "var(--text-muted)", fontSize: 14, margin: "0 0 20px" }}>
             {player.city ? `${player.city}, ` : ""}{player.country}
           </p>
           {player.bio && (
             <p style={{ fontSize: 14, lineHeight: 1.7, margin: "0 0 16px", wordBreak: "break-word", overflowWrap: "break-word" }}>{player.bio}</p>
+          )}
+          {currentPlayerId && !hasRealAccount && currentPlayerId !== player.id && (
+            <ClaimProfileButton ghostId={player.id} ghostName={player.name} />
           )}
           {canContact && (
             <div style={{ marginBottom: 24 }}>

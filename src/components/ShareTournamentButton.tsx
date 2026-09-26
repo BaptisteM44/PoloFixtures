@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl";
  * copie du lien. Le lien est sans préfixe de langue : chacun l'ouvre dans la
  * sienne.
  */
-export function ShareTournamentButton({ path, title }: { path: string; title: string }) {
+export function ShareTournamentButton({ path, title, label: shareLabel }: { path: string; title: string; label?: string }) {
   const t = useTranslations("tournament");
   const [copied, setCopied] = useState(false);
 
@@ -31,7 +31,7 @@ export function ShareTournamentButton({ path, title }: { path: string; title: st
     }
   }
 
-  const label = copied ? t("share_copied") : t("share");
+  const label = copied ? t("share_copied") : (shareLabel ?? t("share"));
   return (
     <button type="button" onClick={handleClick} className={`follow-btn share-btn${copied ? " follow-btn--active" : ""}`} title={label} aria-label={label}>
       {copied ? (

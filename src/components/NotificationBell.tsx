@@ -118,6 +118,12 @@ function useNotifLabel() {
         return { title: t(p.autoHidden === "1" ? "photo_reported_hidden" : "photo_reported", { name: p.authorName ?? "" }), sub: p.tournamentName ?? "", href: "/admin/photos" };
       case "POLL_VOTE_MILESTONE":
         return { title: t("poll_vote_milestone", { count: Number(p.count) || 0 }), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}/results` };
+      case "PLAYER_MERGE_REQUESTED":
+        return { title: t("merge_requested", { name: p.requesterName ?? "", ghost: p.ghostName ?? "" }), sub: t("merge_requested_sub"), href: "/merge-requests" };
+      case "PLAYER_MERGE_DECIDED":
+        return p.decision === "approved"
+          ? { title: t("merge_approved", { ghost: p.ghostName ?? "" }), sub: "", href: `/player/${p.requesterSlug}` }
+          : { title: t("merge_rejected", { ghost: p.ghostName ?? "" }), sub: "", href: "/account" };
       default:
         return { title: t("default"), sub: "", href: "/my-teams" };
     }

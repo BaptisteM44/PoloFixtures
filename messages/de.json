@@ -1236,7 +1236,11 @@
     "gallery_approved": "📸 {count, plural, one {Dein Foto ist online} other {Deine # Fotos sind online}} in der Galerie",
     "gallery_rejected": "{count, plural, one {Dein Foto wurde vom Orga-Team nicht freigegeben} other {Deine # Fotos wurden vom Orga-Team nicht freigegeben}}",
     "badges_unlocked_grouped": "🏅 {count} neue Badges",
-    "badge_unlocked_last": "Zuletzt: {badgeName}"
+    "badge_unlocked_last": "Zuletzt: {badgeName}",
+    "merge_requested": "{name} sagt, „{ghost}“ zu sein",
+    "merge_requested_sub": "Profil-Zusammenführung zu prüfen",
+    "merge_approved": "Profil „{ghost}“ mit deinem zusammengeführt ✓",
+    "merge_rejected": "Zusammenführung mit „{ghost}“ abgelehnt"
   },
   "contact": {
     "btn_open": "Kontakt",
@@ -1278,6 +1282,7 @@
     "share_card_title": "Meine Bike-Polo-Karte",
     "share_card_download": "Bild speichern",
     "share_card_error": "Bild konnte nicht erstellt werden",
+    "share_profile": "Dieses Profil teilen",
     "stats_title": "Statistiken",
     "tournaments_played": "Turnier(e) gespielt",
     "goals_title": "Tore",
@@ -1791,6 +1796,9 @@
     "field_bio": "Bio",
     "field_bio_hint": "max. 500 Zeichen",
     "field_bio_placeholder": "Stell dich vor…",
+    "field_aliases": "Andere Namen / Spitznamen",
+    "field_aliases_hint": "werden nie angezeigt, dienen nur dazu, dich in der Suche zu finden",
+    "field_aliases_placeholder": "Z. B. dein echter Name, dein Polo-Spitzname…",
     "field_current_password": "Aktuelles Passwort",
     "field_new_password": "Neues Passwort",
     "field_start_year": "Startjahr",
@@ -3237,5 +3245,24 @@
     "tournament_new": "Turnier erstellen",
     "overlay": "Stream-Overlay",
     "multiplex": "Multiplex"
+  },
+  "merge_request": {
+    "title": "Anfragen zur Profil-Zusammenführung",
+    "intro": "Diese Personen sagen, sie seien ein Profil, das ohne Konto erstellt wurde (z. B. bei einer Anmeldung). Wenn es wirklich dieselbe Person ist, bestätige: ihr Verlauf (Teams, Tore, Badges…) wandert auf ihr echtes Profil und das Platzhalter-Profil verschwindet.",
+    "empty": "Keine offenen Anfragen.",
+    "is": "sagt, zu sein",
+    "played": "Gespielt mit",
+    "approve": "Zusammenführung bestätigen",
+    "reject": "Ablehnen",
+    "confirm_approve": "„{ghost}“ mit dem Profil von {name} zusammenführen? Das ist endgültig.",
+    "done_approved": "Profile zusammengeführt ✓",
+    "done_rejected": "Anfrage abgelehnt",
+    "error": "Aktion nicht möglich.",
+    "claim_btn": "Bist du das? Zusammenführung anfragen",
+    "claim_hint": "Dieses Profil wurde ohne Konto erstellt. Wenn du das bist, frag an, es mit deinem Profil zusammenzuführen: die Orga eines seiner Turniere bestätigt.",
+    "claim_confirm": "Bestätigst du, „{ghost}“ zu sein? Die Orga prüft vor der Zusammenführung.",
+    "claim_pending": "Anfrage gesendet — wartet auf die Orga",
+    "claim_rejected": "Deine Anfrage wurde abgelehnt",
+    "claim_retry": "Erneut anfragen"
   }
 }

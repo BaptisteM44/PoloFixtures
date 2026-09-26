@@ -48,6 +48,7 @@ const updateSchema = z.object({
   city: z.string().optional().nullable(),
   country: z.string().min(2).optional(),
   bio: z.string().max(500).optional().nullable(),
+  aliases: z.string().max(200).optional().nullable(),
   startYear: z.number().int().min(1990).max(2100).optional().nullable(),
   hand: z.enum(["LEFT", "RIGHT"]).optional().nullable(),
   gender: z.enum(["MALE", "FEMALE", "NON_BINARY", "PREFER_NOT_SAY"]).optional().nullable(),

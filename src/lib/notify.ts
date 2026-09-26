@@ -77,6 +77,10 @@ function toPushPayload(
       return { title: Number(p.approved) > 0 ? "📸 Tes photos sont en ligne" : "📸 Photos non retenues", body: p.tournamentName, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos`, tag: `gallery-dec-${p.tournamentId}` };
     case "TOURNAMENT_PHOTO_REPORTED":
       return { title: p.autoHidden === "1" ? "Photo masquée (signalements) ⚠️" : "Photo signalée ⚠️", body: `${p.authorName} — ${p.tournamentName}`, url: "/admin/photos", tag: `photo-report-${p.photoId}` };
+    case "PLAYER_MERGE_REQUESTED":
+      return { title: "Profile merge request", body: `${p.requesterName} says they are ${p.ghostName}`, url: "/merge-requests", tag: `merge-req-${p.ghostSlug}-${p.requesterSlug}` };
+    case "PLAYER_MERGE_DECIDED":
+      return { title: p.decision === "approved" ? "Profiles merged ✓" : "Merge request declined", body: p.ghostName, url: p.decision === "approved" ? `/player/${p.requesterSlug}` : "/account", tag: `merge-dec-${p.requesterSlug}` };
     case "POLL_VOTE_MILESTONE":
       return { title: `${p.count} vote(s) 🎉`, body: p.pollQuestion, url: `/poll/${p.pollId}/results`, tag: `poll-milestone-${p.pollId}` };
     default:

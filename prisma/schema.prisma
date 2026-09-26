@@ -220,6 +220,8 @@ enum NotificationType {
   TOURNAMENT_PHOTO_REPORTED // notif admin : une photo de galerie a été signalée
   TOURNAMENT_PHOTOS_REQUESTED // notif orga : une personne extérieure propose des photos pour la galerie
   TOURNAMENT_PHOTOS_DECIDED // notif auteur : l'orga a accepté / refusé ses photos proposées
+  PLAYER_MERGE_REQUESTED // notif orga / admin : un joueur dit être ce profil fictif et demande la fusion
+  PLAYER_MERGE_DECIDED // notif demandeur : sa demande de fusion a été acceptée ou refusée
 }
 
 enum TaskPriority {
@@ -461,6 +463,7 @@ model Player {
   id               String       @id @default(cuid())
   slug             String?      @unique
   name             String
+  aliases          String? // autres noms / surnoms : jamais affichés, servent uniquement à la recherche
   country          String
   city             String?
   photoPath        String?
@@ -530,6 +533,8 @@ model Player {
   pollVoterEntries       PollVoter[]
   pollReports            PollReport[]            @relation("PollReports")
   tournamentPhotos       TournamentPhoto[]       @relation("TournamentPhotos")
+  mergeRequestsAsGhost PlayerMergeRequest[] @relation("MergeGhost")
+  mergeRequestsMade    PlayerMergeRequest[] @relation("MergeRequester")
 }
 
 model PushSubscription {
@@ -1567,4 +1572,23 @@ model TournamentPhoto {
   @@index([tournamentId])
   @@index([authorId, tournamentId])
   @@index([tournamentId, pendingApproval])
+}
+
+// Un joueur (avec compte) déclare qu'un profil fictif (sans compte, créé par
+// une orga à l'inscription) est lui. L'orga d'un tournoi du profil fictif, ou
+// un admin, valide : la fusion réutilise alors la même logique que celle de l'orga.
+model PlayerMergeRequest {
+  id            String    @id @default(cuid())
+  ghostPlayerId String
+  requesterId   String
+  status        String    @default("PENDING") // PENDING | REJECTED (acceptée = supprimée avec le profil fictif)
+  createdAt     DateTime  @default(now())
+  decidedAt     DateTime?
+  decidedById   String?
+
+  ghost     Player @relation("MergeGhost", fields: [ghostPlayerId], references: [id], onDelete: Cascade)
+  requester Player @relation("MergeRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@unique([ghostPlayerId, requesterId])
+  @@index([status])
 }

@@ -1235,7 +1235,11 @@
     "gallery_approved": "📸 {count, plural, one {Tu foto está publicada} other {Tus # fotos están publicadas}} en la galería",
     "gallery_rejected": "{count, plural, one {Tu foto no fue aceptada} other {Tus # fotos no fueron aceptadas}} por la organización",
     "badges_unlocked_grouped": "🏅 {count} nuevas insignias",
-    "badge_unlocked_last": "Última: {badgeName}"
+    "badge_unlocked_last": "Última: {badgeName}",
+    "merge_requested": "{name} dice ser «{ghost}»",
+    "merge_requested_sub": "Solicitud de fusión de perfil por revisar",
+    "merge_approved": "Perfil «{ghost}» fusionado con el tuyo ✓",
+    "merge_rejected": "Solicitud de fusión con «{ghost}» rechazada"
   },
   "contact": {
     "btn_open": "Contacto",
@@ -1277,6 +1281,7 @@
     "share_card_title": "Mi carta de Bike Polo",
     "share_card_download": "Guardar imagen",
     "share_card_error": "No se pudo generar la imagen",
+    "share_profile": "Compartir este perfil",
     "stats_title": "Estadísticas",
     "tournaments_played": "torneo(s) disputado(s)",
     "goals_title": "Goles",
@@ -1790,6 +1795,9 @@
     "field_bio": "Bio",
     "field_bio_hint": "máx. 500 car.",
     "field_bio_placeholder": "Preséntate…",
+    "field_aliases": "Otros nombres / apodos",
+    "field_aliases_hint": "nunca se muestran, solo sirven para encontrarte en la búsqueda",
+    "field_aliases_placeholder": "Ej.: tu nombre real, tu apodo de polo…",
     "field_current_password": "Contraseña actual",
     "field_new_password": "Nueva contraseña",
     "field_start_year": "Año de inicio",
@@ -3236,5 +3244,24 @@
     "tournament_new": "Crear un torneo",
     "overlay": "Overlay de stream",
     "multiplex": "Multiplex"
+  },
+  "merge_request": {
+    "title": "Solicitudes de fusión de perfil",
+    "intro": "Estos jugadores dicen ser un perfil creado sin cuenta (en una inscripción, por ejemplo). Si es de verdad la misma persona, valida: su historial (equipos, goles, badges…) pasa a su perfil real y el perfil ficticio desaparece.",
+    "empty": "No hay solicitudes pendientes.",
+    "is": "dice ser",
+    "played": "Jugó con",
+    "approve": "Validar la fusión",
+    "reject": "Rechazar",
+    "confirm_approve": "¿Fusionar «{ghost}» con el perfil de {name}? Es definitivo.",
+    "done_approved": "Perfiles fusionados ✓",
+    "done_rejected": "Solicitud rechazada",
+    "error": "Acción imposible.",
+    "claim_btn": "¿Eres tú? Pedir la fusión",
+    "claim_hint": "Este perfil se creó sin cuenta. Si eres tú, pide fusionarlo con tu perfil: la organización de uno de sus torneos lo valida.",
+    "claim_confirm": "¿Confirmas que eres «{ghost}»? La organización lo comprobará antes de fusionar.",
+    "claim_pending": "Solicitud enviada — esperando a la organización",
+    "claim_rejected": "Tu solicitud de fusión fue rechazada",
+    "claim_retry": "Volver a pedir"
   }
 }

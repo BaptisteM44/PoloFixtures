@@ -50,7 +50,17 @@ export async function GET(request: Request) {
     // (OR slug null : un NOT seul exclurait aussi les joueurs sans slug.)
     OR: [{ slug: null }, { NOT: { slug: { startsWith: "sandbox-" } } }],
     ...statusFilter,
-    ...(search ? { name: { contains: search, mode: "insensitive" as const } } : {}),
+    // Nom affiché OU autres noms / surnoms (jamais renvoyés, seulement cherchables).
+    ...(search
+      ? {
+          AND: [{
+            OR: [
+              { name: { contains: search, mode: "insensitive" as const } },
+              { aliases: { contains: search, mode: "insensitive" as const } },
+            ],
+          }],
+        }
+      : {}),
     // Les deux filtres sur id se combinent (avant, le second écrasait le premier).
     ...(excludedPlayerIds.length > 0 || continentPlayerIds !== undefined
       ? {

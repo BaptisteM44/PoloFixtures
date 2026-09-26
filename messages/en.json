@@ -1231,7 +1231,11 @@
     "gallery_approved": "📸 {count, plural, one {Your photo is live} other {Your # photos are live}} in the gallery",
     "gallery_rejected": "{count, plural, one {Your photo wasn't approved} other {Your # photos weren't approved}} by the organizers",
     "badges_unlocked_grouped": "🏅 {count} new badges",
-    "badge_unlocked_last": "Latest: {badgeName}"
+    "badge_unlocked_last": "Latest: {badgeName}",
+    "merge_requested": "{name} says they are “{ghost}”",
+    "merge_requested_sub": "Profile merge request to review",
+    "merge_approved": "Profile “{ghost}” merged into yours ✓",
+    "merge_rejected": "Merge request with “{ghost}” declined"
   },
   "contact": {
     "btn_open": "Contact",
@@ -1274,6 +1278,7 @@
     "share_card_title": "My Bike Polo card",
     "share_card_download": "Save image",
     "share_card_error": "Could not generate image",
+    "share_profile": "Share this profile",
     "stats_title": "Statistics",
     "tournaments_played": "tournament(s) played",
     "goals_title": "Goals",
@@ -1786,6 +1791,9 @@
     "field_bio": "Bio",
     "field_bio_hint": "max 500 chars.",
     "field_bio_placeholder": "Introduce yourself…",
+    "field_aliases": "Other names / nicknames",
+    "field_aliases_hint": "never shown, only used so people can find you in search",
+    "field_aliases_placeholder": "E.g. your real name, your polo nickname…",
     "field_current_password": "Current password",
     "field_new_password": "New password",
     "field_start_year": "Start year",
@@ -3232,5 +3240,24 @@
     "tournament_new": "Create a tournament",
     "overlay": "Stream overlay",
     "multiplex": "Multiplex"
+  },
+  "merge_request": {
+    "title": "Profile merge requests",
+    "intro": "These players say they are a profile created without an account (at a registration, for instance). If it's really the same person, approve: their history (teams, goals, badges…) moves to their real profile and the placeholder disappears.",
+    "empty": "No pending requests.",
+    "is": "says they are",
+    "played": "Played with",
+    "approve": "Approve merge",
+    "reject": "Decline",
+    "confirm_approve": "Merge “{ghost}” into {name}'s profile? This is permanent.",
+    "done_approved": "Profiles merged ✓",
+    "done_rejected": "Request declined",
+    "error": "Action not possible.",
+    "claim_btn": "Is this you? Request a merge",
+    "claim_hint": "This profile was created without an account. If it's you, ask to merge it into your profile: an organizer of one of its tournaments approves.",
+    "claim_confirm": "Do you confirm you are “{ghost}”? The organizers will check before merging.",
+    "claim_pending": "Merge request sent — waiting for the organizers",
+    "claim_rejected": "Your merge request was declined",
+    "claim_retry": "Ask again"
   }
 }
