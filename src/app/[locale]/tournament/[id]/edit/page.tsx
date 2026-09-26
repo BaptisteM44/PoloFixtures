@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { tournamentTimezone } from "@/lib/timezone";
+import { canonicalCountryName } from "@/lib/country-utils";
 import { auth } from "@/lib/auth";
 import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, toggleSelectionLockAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction, updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, launchPipelineGroupAction, resetPipelineToRoundAction, reschedulePipelineStageAction, setTournamentPipelineAction, applyPipelinePresetAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
@@ -349,7 +351,9 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               // Pipeline (nouveau système) — CES CHAMPS SONT CRITIQUES : sans eux,
               // OrgaDashboard/TournamentEditForm croient que le tournoi est legacy
               usesPipeline: (t_ as any).usesPipeline ?? false,
-              timezone: (t_ as any).timezone ?? null,
+              // Fuseau effectif (renseigné, ou déduit du lieu) : planning et formulaire.
+              timezone: tournamentTimezone(t_ as never),
+              countryCanonical: canonicalCountryName(t_.country),
               stages: (t_.stages ?? []).map((s: any) => ({
                 id: s.id,
                 order: s.order,

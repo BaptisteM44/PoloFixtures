@@ -6,7 +6,6 @@ import { fixImageOrientation } from "@/lib/fix-orientation";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { ISO_COUNTRIES } from "@/lib/iso-countries";
-import { canonicalCountryName } from "@/lib/country-utils";
 import { CURRENCIES } from "@/lib/currencies";
 import { RegistrationFieldsEditor } from "@/components/RegistrationFieldsEditor";
 
@@ -24,6 +23,10 @@ type Tournament = {
   continentCode: string;
   region: string | null;
   country: string;
+  /** Nom officiel du pays (calculé côté serveur), null s'il est inconnu. */
+  countryCanonical?: string | null;
+  /** Fuseau effectif du lieu (renseigné ou déduit). */
+  timezone?: string | null;
   city: string;
   dateStart: string;
   dateEnd: string;
@@ -118,6 +121,16 @@ function initMeals(tournament: Tournament): MealDay[] {
 
 const sectionTitleStyle = { fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase" as const, letterSpacing: "0.06em" };
 const subTitleStyle = { fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)", margin: 0, textTransform: "uppercase" as const, letterSpacing: "0.05em" };
+
+/** Tous les fuseaux IANA connus du navigateur (+ celui du tournoi s'il manque). */
+function timezoneOptions(current?: string | null): string[] {
+  let zones: string[] = [];
+  try {
+    zones = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf?.("timeZone") ?? [];
+  } catch { /* vieux navigateur */ }
+  if (current && !zones.includes(current)) zones = [current, ...zones];
+  return zones.length > 0 ? zones : [current ?? "Europe/Brussels"];
+}
 
 export function TournamentEditForm({ tournament, action, toggleLockAction }: Props) {
   const t = useTranslations("tournament_edit");
@@ -472,8 +485,8 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                 présélectionne le nom officiel ; s'il est inconnu, on le garde
                 tel quel en tête de liste. Avant, le navigateur retombait sur la
                 1re option (« Afghanistan ») et l'enregistrait en silence. */}
-            <select name="country" defaultValue={canonicalCountryName(tournament.country) ?? tournament.country}>
-              {!canonicalCountryName(tournament.country) && (
+            <select name="country" defaultValue={tournament.countryCanonical ?? tournament.country}>
+              {!tournament.countryCanonical && (
                 <option value={tournament.country}>{tournament.country}</option>
               )}
               {ISO_COUNTRIES.map((c) => (
@@ -484,6 +497,16 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
           <label className="field-row">
             {t("field_city")}
             <input name="city" defaultValue={tournament.city} required />
+          </label>
+          <label className="field-row">
+            {t("field_timezone")}
+            {/* Heures du planning, fin automatique à 21h locale, galerie photos. */}
+            <select name="timezone" defaultValue={tournament.timezone ?? "Europe/Brussels"}>
+              {timezoneOptions(tournament.timezone).map((tz) => (
+                <option key={tz} value={tz}>{tz.replace(/_/g, " ")}</option>
+              ))}
+            </select>
+            <small className="meta">{t("field_timezone_hint")}</small>
           </label>
 
           {/* Club hôte */}

@@ -230,6 +230,8 @@ export function PipelinePlanning({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Fuseau dans lequel les heures sont saisies (modifiable dans « Infos »). */}
+      <p className="meta" style={{ margin: 0, fontSize: 12 }}>🕐 {t("planning_timezone", { tz: timezone.replace(/_/g, " ") })}</p>
       {simulateStageAction && (
         <div style={{ background: "repeating-linear-gradient(45deg, #f59e0b22, #f59e0b22 10px, transparent 10px, transparent 20px)", border: "1px solid #f59e0b", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 12, fontWeight: 800 }}>{t("pipeline_test_banner")}</span>

@@ -975,7 +975,8 @@
     "share": "Partager ce tournoi",
     "share_copied": "Lien copié !",
     "share_copy_prompt": "Copie ce lien :",
-    "tab_photos": "Galerie"
+    "tab_photos": "Galerie",
+    "planning_timezone": "Horaires en heure locale : {tz} (modifiable dans l'édition du tournoi)"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -2492,7 +2493,9 @@
     "pipeline_format_hint": "Le format de ce tournoi (étapes, groupes, terrains, horaires) se gère dans l'onglet Étapes.",
     "format_summary_mtp_open": "Pool A (sam. matin) + Pool B (sam. après-midi) → Barrage SE×4 → DE×16",
     "format_summary_graz": "2×RR Poules → Regroup 4 groupes → SE Top 8",
-    "format_summary_big_apple": "2×RR Poules (sam.) → Swiss 3 rounds (3-8) + Placement 1&2 → SE Top 8"
+    "format_summary_big_apple": "2×RR Poules (sam.) → Swiss 3 rounds (3-8) + Placement 1&2 → SE Top 8",
+    "field_timezone": "Fuseau horaire",
+    "field_timezone_hint": "Heures du planning, fin automatique du tournoi (21h) et galerie photos. Déduit du lieu : à corriger seulement s'il est faux."
   },
   "team_manager": {
     "registered_teams": "Équipes inscrites ({count})",

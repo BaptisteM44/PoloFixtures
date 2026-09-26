@@ -974,7 +974,8 @@
     "share": "Compartir este torneo",
     "share_copied": "¡Enlace copiado!",
     "share_copy_prompt": "Copia este enlace:",
-    "tab_photos": "Galería"
+    "tab_photos": "Galería",
+    "planning_timezone": "Horarios en hora local: {tz} (editable en la edición del torneo)"
   },
   "registration": {
     "section_title": "Inscribir mi equipo",
@@ -2495,7 +2496,9 @@
     "pipeline_format_hint": "El formato de este torneo (etapas, grupos, pistas, horarios) se gestiona en la pestaña Etapas.",
     "format_summary_mtp_open": "Grupo A (sáb. mañana) + Grupo B (sáb. tarde) → Barraje SE×4 → DE×16",
     "format_summary_graz": "2×RR Grupos → Reagrupación 4 grupos → SE Top 8",
-    "format_summary_big_apple": "2×RR Grupos (sáb.) → Swiss 3 rondas (3-8) + Clasificación 1&2 → SE Top 8"
+    "format_summary_big_apple": "2×RR Grupos (sáb.) → Swiss 3 rondas (3-8) + Clasificación 1&2 → SE Top 8",
+    "field_timezone": "Zona horaria",
+    "field_timezone_hint": "Horarios del planning, fin automático del torneo (21 h) y galería de fotos. Deducida del lugar: cámbiala solo si es incorrecta."
   },
   "team_manager": {
     "registered_teams": "Equipos inscritos ({count})",

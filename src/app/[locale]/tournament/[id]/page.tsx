@@ -2,6 +2,7 @@
 import { Link } from "@/i18n/navigation";
 import { TournamentGallery } from "@/components/TournamentGallery";
 import { galleryPhase } from "@/lib/tournament-photos";
+import { tournamentTimezone } from "@/lib/timezone";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { Tabs } from "@/components/Tabs";
@@ -958,7 +959,7 @@ export default async function TournamentPage({
           que le dashboard, chaque action revérifie les droits côté serveur) */}
       {tab === "stages" && isPipeline && isOrga && (
         <PipelinePlanning
-          tournament={tournament}
+          tournament={{ ...tournament, timezone: tournamentTimezone(tournament) }}
           stages={(tournament as any).stages ?? []}
           launchStageAction={async (order) => {
             "use server";

@@ -35,6 +35,9 @@ async function requireTournamentOrgaAccess(tournamentId: string): Promise<{ erro
 const updateSchema = z.object({
   id: z.string(),
   name: z.string().min(2),
+  // Fuseau IANA du lieu (ex. "America/New_York") : horaires du planning,
+  // fin automatique à 21h locale, galerie photos.
+  timezone: z.string().max(64).optional(),
   continentCode: z.string().min(2),
   region: z.string().optional().nullable(),
   country: z.string().min(2),
@@ -133,6 +136,11 @@ export async function updateTournamentAction(formData: FormData) {
   // Pays sous sa forme officielle (cf. création) + espaces parasites retirés.
   data.country = canonicalCountryName(data.country) ?? data.country.trim();
   data.city = data.city.trim();
+  // Fuseau : ignoré s'il n'est pas un fuseau IANA valide (formulaire trafiqué).
+  if (data.timezone !== undefined) {
+    try { new Intl.DateTimeFormat("en", { timeZone: data.timezone }); } catch { delete data.timezone; }
+    if (data.timezone === "") delete data.timezone;
+  }
   const denied = await requireTournamentOrgaAccess(data.id);
   if (denied) return denied;
 

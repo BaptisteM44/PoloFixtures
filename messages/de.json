@@ -975,7 +975,8 @@
     "share": "Turnier teilen",
     "share_copied": "Link kopiert!",
     "share_copy_prompt": "Kopiere diesen Link:",
-    "tab_photos": "Galerie"
+    "tab_photos": "Galerie",
+    "planning_timezone": "Zeiten in Ortszeit: {tz} (in den Turniereinstellungen änderbar)"
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -2496,7 +2497,9 @@
     "pipeline_format_hint": "Das Format dieses Turniers (Phasen, Gruppen, Courts, Zeitplan) wird im Tab Phasen verwaltet.",
     "format_summary_mtp_open": "Pool A (Sa. Vormittag) + Pool B (Sa. Nachmittag) → Barrage SE×4 → DE×16",
     "format_summary_graz": "2×RR Pools → Regroup 4 Gruppen → SE Top 8",
-    "format_summary_big_apple": "2×RR Pools (Sa.) → Swiss 3 Runden (3-8) + Placement 1&2 → SE Top 8"
+    "format_summary_big_apple": "2×RR Pools (Sa.) → Swiss 3 Runden (3-8) + Placement 1&2 → SE Top 8",
+    "field_timezone": "Zeitzone",
+    "field_timezone_hint": "Zeiten im Spielplan, automatisches Turnierende (21 Uhr) und Fotogalerie. Aus dem Ort abgeleitet: nur ändern, wenn sie falsch ist."
   },
   "team_manager": {
     "registered_teams": "Angemeldete Teams ({count})",
