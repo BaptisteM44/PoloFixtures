@@ -682,8 +682,10 @@ export function TournamentRefereePanel({
     // la route passe le suivant du terrain en LIVE ; il faut donc viser en
     // priorité ce LIVE du terrain courant. À défaut, le prochain match à jouer
     // dans l'ordre CHRONOLOGIQUE (sortedMatches trie déjà par startAt).
+    // Un match sans aucune équipe (ex: finale revanche DE non nécessaire) ne
+    // peut pas être joué : ce n'est jamais le « match suivant ».
     const isNext = (m: (typeof sortedMatches)[number]) =>
-      (m.status === "LIVE" || m.status === "SCHEDULED") && m.id !== selectedMatchId;
+      (m.status === "LIVE" || m.status === "SCHEDULED") && m.id !== selectedMatchId && !!(m.teamAId || m.teamBId);
     return (
       sortedMatches.find((m) => isNext(m) && m.status === "LIVE" && m.courtName === currentCourt) ??
       sortedMatches.find((m) => isNext(m) && m.courtName === currentCourt) ??

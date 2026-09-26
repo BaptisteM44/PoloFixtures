@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getPodiumTeamIdsCached } from "@/lib/podium";
 import { createNotification } from "@/lib/notify";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
 
@@ -214,9 +215,10 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     const played      = allMatches.filter((m) => m.status === "FINISHED");
     if (played.length === 0) continue;
 
-    // Determine tournament champion: the Grand Final (bracketSide === "G")
-    const finalMatch = played.find((m) => BRACKET_PHASES.includes(m.phase as BracketPhase) && m.bracketSide === "G");
-    const isChampion = !!finalMatch && finalMatch.winnerTeamId === tp.teamId;
+    // Champion = 1re place du podium (même calcul que la page du tournoi :
+    // gère la revanche de finale DE et les pipelines sans bracket final).
+    const podium = await getPodiumTeamIdsCached(tp.team.tournament.id);
+    const isChampion = podium.first === tp.teamId;
     if (isChampion) {
       badges.add("champion");
       wonTournamentIds.push(tp.team.tournament.id);
@@ -669,11 +671,8 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     // Map tournament id -> winner team id (team that won the final)
     const tournamentWinners = new Map<string, string>();
     for (const ct of allCompletedTournaments) {
-      const final = await prisma.match.findFirst({
-        where: { tournamentId: ct.id, phase: { in: [...BRACKET_PHASES] }, bracketSide: "G", status: "FINISHED" },
-        select: { winnerTeamId: true },
-      });
-      if (final?.winnerTeamId) tournamentWinners.set(ct.id, final.winnerTeamId);
+      const { first } = await getPodiumTeamIdsCached(ct.id);
+      if (first) tournamentWinners.set(ct.id, first);
     }
     // For each tournament the player participated in, find the previous completed tournament's winner
     dragonSlayer: for (const tp of completedTournaments) {
@@ -794,8 +793,8 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     const teamId = tp.teamId;
     const allMatches = [...tp.team.matchesA, ...tp.team.matchesB].filter((m) => m.status === "FINISHED");
     if (allMatches.length < 3) continue;
-    const finalMatch = allMatches.find((m) => BRACKET_PHASES.includes(m.phase as BracketPhase) && m.bracketSide === "G");
-    if (!finalMatch || finalMatch.winnerTeamId !== teamId) continue;
+    const { first } = await getPodiumTeamIdsCached(tp.team.tournament.id);
+    if (first !== teamId) continue;
     const clean = allMatches.every((m) => {
       const goalsAgainst = tp.team.matchesA.includes(m) ? m.scoreB : m.scoreA;
       return goalsAgainst <= 1;

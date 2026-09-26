@@ -33,7 +33,7 @@ import { TournamentCompletionWatcher } from "@/components/TournamentCompletionWa
 import { BracketActions } from "@/components/BracketActions";
 import { AccommodationPublicView } from "@/components/AccommodationPublicView";
 import { LiveTabView } from "@/components/LiveTabView";
-import { getPipeline, finalStandings } from "@/engine/pipeline-server";
+import { getPodiumTeamIds } from "@/lib/podium";
 import { PipelinePlanning } from "@/components/PipelinePlanning";
 import {
   launchPipelineStageAction, launchPipelineGroupAction, resetPipelineStagesAction,
@@ -368,92 +368,25 @@ export default async function TournamentPage({
   type PodiumTeam = { id: string; name: string; players?: PodiumPlayer[] } | null;
   let podium: { first: PodiumTeam; second: PodiumTeam; third: PodiumTeam } = { first: null, second: null, third: null };
 
-  // Podium d'un pipeline : il vient du bracket qui contient les MEILLEURS
-  // (rangs les plus hauts, ex: DE Top 8), pas forcément le dernier stage —
-  // avec deux DE parallèles (Top 8 / Bottom 8), le podium est celui du Top 8.
-  const pipelineStagesSorted = isPipeline
-    ? [...((tournament as any).stages ?? [])].sort((a: any, b: any) => b.order - a.order)
-    : [];
-  const minFromOf = (s: any): number => {
-    const sources = (s?.entryRules?.sources ?? []).filter((src: any) => src.kind === "stageRanks");
-    if (sources.length === 0) return 1; // registration → rangs de tête
-    return Math.min(...sources.map((src: any) => src.from ?? 1));
-  };
-  const bracketStagesForPodium = pipelineStagesSorted.filter((s: any) => s.type === "SE" || s.type === "DE");
-  // Le bracket "principal" = celui dont la source a le from le plus petit
-  // (rangs 1-x). À égalité, le dernier dans l'ordre du pipeline.
-  const lastPipelineStage = bracketStagesForPodium.length > 0
-    ? [...bracketStagesForPodium].sort((a, b) => minFromOf(a) - minFromOf(b) || b.order - a.order)[0]
-    : (pipelineStagesSorted[0] ?? null);
-  const pipelineEndsWithoutBracket = isPipeline && lastPipelineStage && lastPipelineStage.type !== "SE" && lastPipelineStage.type !== "DE";
-
-  if (isCompleted && pipelineEndsWithoutBracket) {
-    const pipeline = await getPipeline(tournament.id);
-    if (pipeline) {
-      const ranking = finalStandings(pipeline);
-      const teamById = new Map(tournament.teams.map((tm: any) => [tm.id, tm]));
-      const extractPlayers = (team: any): PodiumPlayer[] =>
-        (team?.players ?? []).map((tp: any) => ({ id: tp.player.id, name: tp.player.name, country: tp.player.country ?? "", city: tp.player.city ?? null, photoPath: tp.player.photoPath ?? null, clubLogoPath: tp.player.clubLogoPath ?? null, teamLogoPath: tp.player.teamLogoPath ?? null, badges: tp.player.badges ?? [], pinnedBadges: tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : undefined, startYear: tp.player.startYear ?? null, hand: tp.player.hand ?? null, gender: tp.player.gender ?? null, slug: tp.player.slug ?? null }));
-      const toTeam = (id: string | undefined): PodiumTeam => {
+  if (isCompleted) {
+    const ids = await getPodiumTeamIds(tournament.id);
+    const podiumIds = [ids.first, ids.second, ids.third].filter((x): x is string => !!x);
+    if (podiumIds.length > 0) {
+      const teams = await prisma.team.findMany({
+        where: { id: { in: podiumIds } },
+        include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } },
+      });
+      const teamById = new Map(teams.map((tm) => [tm.id, tm]));
+      const toTeam = (id: string | null): PodiumTeam => {
         const team = id ? teamById.get(id) : null;
-        return team ? { id: team.id, name: team.name, players: extractPlayers(team) } : null;
+        if (!team) return null;
+        return {
+          id: team.id,
+          name: team.name,
+          players: team.players.map((tp) => ({ id: tp.player.id, name: tp.player.name, country: tp.player.country ?? "", city: tp.player.city ?? null, photoPath: tp.player.photoPath ?? null, clubLogoPath: tp.player.clubLogoPath ?? null, teamLogoPath: tp.player.teamLogoPath ?? null, badges: tp.player.badges ?? [], pinnedBadges: tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : undefined, startYear: tp.player.startYear ?? null, hand: tp.player.hand ?? null, gender: tp.player.gender ?? null, slug: tp.player.slug ?? null })),
+        };
       };
-      podium.first = toTeam(ranking[0]);
-      podium.second = toTeam(ranking[1]);
-      podium.third = toTeam(ranking[2]);
-    }
-  } else if (isCompleted) {
-    // Pour un pipeline, ne considérer que le DERNIER stage (celui qui clôt le
-    // tournoi) — un pipeline peut avoir plusieurs stages à bracketSide (ex: un
-    // SE de qualification puis un DE final), il ne faut pas les mélanger.
-    const lastPipelineStageId = isPipeline ? lastPipelineStage?.id ?? null : null;
-    const bracketMatches = await prisma.match.findMany({
-      where: {
-        tournamentId: tournament.id,
-        phase: { in: ["BRACKET", "MTP_DE", "GRAZ_SE", "KIOSQUE_SE", "BIG_APPLE_SE", "STAGE"] },
-        status: "FINISHED",
-        ...(isPipeline ? { stageId: lastPipelineStageId } : {}),
-      },
-      include: {
-        teamA: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
-        teamB: { include: { players: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, slug: true } } } } } },
-      },
-      orderBy: { roundIndex: "desc" },
-    });
-    const extractPlayers = (team: any): PodiumPlayer[] =>
-      (team?.players ?? []).map((tp: any) => ({ id: tp.player.id, name: tp.player.name, country: tp.player.country ?? "", city: tp.player.city ?? null, photoPath: tp.player.photoPath ?? null, clubLogoPath: tp.player.clubLogoPath ?? null, teamLogoPath: tp.player.teamLogoPath ?? null, badges: tp.player.badges ?? [], pinnedBadges: tp.player.pinnedBadges?.length ? tp.player.pinnedBadges : undefined, startYear: tp.player.startYear ?? null, hand: tp.player.hand ?? null, gender: tp.player.gender ?? null, slug: tp.player.slug ?? null }));
-    const toTeam = (t: any): PodiumTeam => t ? { id: t.id, name: t.name, players: extractPlayers(t) } : null;
-    // GF : si un reset a été joué (match BG terminé), c'est LUI le match décisif
-    const gfMatches = bracketMatches.filter((m) => m.bracketSide === "G");
-    const bgPlayed = bracketMatches.find((m) => m.bracketSide === "BG" && m.winnerTeamId);
-    const grandFinal = bgPlayed ?? gfMatches[0]; // déjà trié par roundIndex desc
-    if (grandFinal) {
-      const isAWinner = grandFinal.winnerTeamId === grandFinal.teamAId;
-      podium.first  = toTeam(isAWinner ? grandFinal.teamA : grandFinal.teamB);
-      podium.second = toTeam(isAWinner ? grandFinal.teamB : grandFinal.teamA);
-    }
-    // 3ème : SPLIT_SE → gagnant du match WL (3ème place Winners bracket)
-    //         DE      → perdant du dernier match LB
-    //         SE      → perdant du match L (petite finale)
-    const wlMatch = bracketMatches.find((m) => m.bracketSide === "WL");
-    if (wlMatch) {
-      const isAWinner = wlMatch.winnerTeamId === wlMatch.teamAId;
-      podium.third = toTeam(isAWinner ? wlMatch.teamA : wlMatch.teamB);
-    } else {
-      const lMatches = bracketMatches.filter((m) => m.bracketSide === "L");
-      if (lMatches.length > 0) {
-        const lFinal = lMatches[0]; // sorted by roundIndex desc
-        const isAWinner = lFinal.winnerTeamId === lFinal.teamAId;
-        // SE formats (only 1 "L" match = 3rd place match): winner is 3rd
-        // DE formats (multiple "L" matches = losers bracket): loser of last LB match is 3rd
-        const isSE = lMatches.length === 1;
-        const thirdTeam = toTeam(isSE
-          ? (isAWinner ? lFinal.teamA : lFinal.teamB)
-          : (isAWinner ? lFinal.teamB : lFinal.teamA));
-        if (thirdTeam && thirdTeam.id !== podium.first?.id && thirdTeam.id !== podium.second?.id) {
-          podium.third = thirdTeam;
-        }
-      }
+      podium = { first: toTeam(ids.first), second: toTeam(ids.second), third: toTeam(ids.third) };
     }
   }
 

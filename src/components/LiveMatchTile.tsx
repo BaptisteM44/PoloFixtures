@@ -314,7 +314,9 @@ export function LiveMatchTile({
 
   const liveMatches = matches.filter((m) => m.status === "LIVE").slice(0, maxLive ?? Infinity);
   const upcomingMatches = matches
-    .filter((m) => m.status === "SCHEDULED")
+    // La finale revanche (BG) reste vide tant qu'elle n'est pas nécessaire :
+    // même règle que le planning, elle n'est pas un « prochain match ».
+    .filter((m) => m.status === "SCHEDULED" && !(m.bracketSide === "BG" && !m.teamAId && !m.teamBId))
     .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime());
 
   const defaultSlots = Math.max(0, 3 - liveMatches.length);
