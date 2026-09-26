@@ -33,7 +33,7 @@ const registerSchema = z.object({
   city: z.string().optional().nullable(),
   country: z.string().optional().nullable(),
   registrationNote: z.string().max(500).optional().nullable(),
-  players: z.array(playerSlotSchema).min(1).max(3),
+  players: z.array(playerSlotSchema).min(1).max(5),
   captainIndex: z.number().int().min(0).optional(),
   // ABC format: index (0-based) of the player with level A/B/C in the players array
   playerALevel: z.number().int().min(0).optional(),

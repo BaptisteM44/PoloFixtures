@@ -17,7 +17,7 @@ const CONTINENTS = [
   { code: "AF", label: "Africa" },
 ];
 
-const FORMATS = ["2v2", "3v3", "4v4", "5v5", "ABC", "ABC Chapeau"];
+const FORMATS = ["1v1", "2v2", "3v3", "4v4", "5v5", "ABC", "ABC Chapeau"];
 
 type Props = {
   tournaments: MapTournament[];

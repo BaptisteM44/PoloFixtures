@@ -12,7 +12,7 @@ import { RegistrationFieldsEditor } from "@/components/RegistrationFieldsEditor"
 // Formats legacy proposés dans le menu. Un format hors de cette liste (ex.
 // "pipeline") ne doit jamais être coercé vers "2v2" par un <select> sans option
 // correspondante — d'où le garde-fou dans le rendu du champ.
-const STANDARD_FORMATS = ["2v2", "3v3", "4v4", "5v5", "ABC", "ABC Chapeau"];
+const STANDARD_FORMATS = ["1v1", "2v2", "3v3", "4v4", "5v5", "ABC", "ABC Chapeau"];
 
 type MealDay = { day: number; breakfast: boolean; lunch: boolean; dinner: boolean };
 type FaqItem = { question: string; answer: string };
@@ -550,6 +550,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                 sans être coercé vers la 1re option (2v2). */}
             <select name="format" value={currentFormat} onChange={(e) => setCurrentFormat(e.target.value)} disabled={isLocked} style={isLocked ? { opacity: 0.5 } : undefined}>
               {!STANDARD_FORMATS.includes(currentFormat) && <option value={currentFormat}>{currentFormat}</option>}
+              <option value="1v1">1v1</option>
               <option value="2v2">2v2</option>
               <option value="3v3">3v3</option>
               <option value="4v4">4v4</option>
