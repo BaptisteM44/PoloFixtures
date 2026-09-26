@@ -1,68 +1,72 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
-import {
-  PHOTOS_PER_PLAYER, isRollParticipant, revealAt, rollPhase, rollTournamentSelect, shootingOpensAt, type RollPhoto,
-} from "@/lib/tournament-photos";
+import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { tournamentTimezone } from "@/lib/timezone";
+import {
+  PHOTOS_PER_PLAYER, galleryClosesAt, galleryOpensAt, galleryPhase, galleryPhotoSelect, galleryTournamentSelect,
+  isGalleryParticipant, notifyPhotoRequest, toGalleryPhoto, tournamentEndsAt, visiblePhotoWhere,
+} from "@/lib/tournament-photos";
 
 export const dynamic = "force-dynamic";
-
-const photoSelect = {
-  id: true, imagePath: true, createdAt: true,
-  author: { select: { id: true, name: true, slug: true, photoPath: true } },
-} as const;
 
 async function loadTournament(id: string) {
   return prisma.tournament.findUnique({
     where: { id },
-    select: { id: true, ...rollTournamentSelect, photosPinnedAt: true, hidden: true, approved: true },
+    select: { id: true, ...galleryTournamentSelect, photosPinnedAt: true },
   });
 }
 
 /**
- * État de la pellicule pour le visiteur. Avant la révélation : seulement le
- * nombre total de photos et SES propres photos. Après : toute la pellicule.
+ * État de la galerie pour le visiteur : photos publiques, les siennes (même
+ * en attente), et pour l'orga/l'admin les photos proposées à valider.
  */
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const t = await loadTournament(params.id);
   if (!t) return new Response("Not found", { status: 404 });
   const session = await auth();
   const playerId = session?.user?.playerId ?? null;
-  const phase = rollPhase(t);
+  const isAdmin = session?.user?.role === "ADMIN";
+  const phase = galleryPhase(t);
 
-  const [total, mine, participant] = await Promise.all([
-    prisma.tournamentPhoto.count({ where: { tournamentId: t.id, hiddenAt: null } }),
+  const [photos, mine, participant, moderator] = await Promise.all([
+    prisma.tournamentPhoto.findMany({ where: { tournamentId: t.id, ...visiblePhotoWhere }, orderBy: { createdAt: "asc" }, select: galleryPhotoSelect }),
     playerId
-      ? prisma.tournamentPhoto.findMany({ where: { tournamentId: t.id, authorId: playerId }, orderBy: { createdAt: "asc" }, select: photoSelect })
+      ? prisma.tournamentPhoto.findMany({ where: { tournamentId: t.id, authorId: playerId }, orderBy: { createdAt: "asc" }, select: galleryPhotoSelect })
       : Promise.resolve([]),
-    playerId && phase !== "revealed" ? isRollParticipant(t.id, playerId) : Promise.resolve(false),
+    playerId ? isGalleryParticipant(t.id, playerId) : Promise.resolve(false),
+    isAdmin ? Promise.resolve(true) : getOrgaPlayerId(t.id).then((id) => !!id),
   ]);
-  const photos = phase === "revealed"
-    ? await prisma.tournamentPhoto.findMany({ where: { tournamentId: t.id, hiddenAt: null }, orderBy: { createdAt: "asc" }, select: photoSelect })
+  const pending = moderator
+    ? await prisma.tournamentPhoto.findMany({ where: { tournamentId: t.id, pendingApproval: true, hiddenAt: null }, orderBy: { createdAt: "asc" }, select: galleryPhotoSelect })
     : [];
-  const iso = (p: { createdAt: Date }) => ({ ...p, createdAt: p.createdAt.toISOString() });
 
   return Response.json({
     phase,
-    opensAt: shootingOpensAt(t).toISOString(),
-    revealAt: revealAt(t).toISOString(),
+    opensAt: galleryOpensAt(t).toISOString(),
+    endsAt: tournamentEndsAt(t).toISOString(),
+    closesAt: galleryClosesAt(t).toISOString(),
     timezone: tournamentTimezone(t),
-    total,
     perPlayer: PHOTOS_PER_PLAYER,
-    // Participant : « tu auras 5 photos » avant le tournoi, l'appareil pendant.
+    loggedIn: !!playerId,
+    // Participant / orga : publication directe. Sinon : proposition à valider.
     participant,
-    canShoot: participant && phase === "shooting",
+    canAdd: !!playerId && phase === "open",
     remaining: Math.max(0, PHOTOS_PER_PLAYER - mine.length),
-    mine: mine.map(iso) as RollPhoto[],
-    photos: photos.map(iso) as RollPhoto[],
+    moderator,
+    photos: photos.map(toGalleryPhoto),
+    mine: mine.map(toGalleryPhoto),
+    pending: pending.map(toGalleryPhoto),
     pinned: t.photosPinnedAt !== null,
   });
 }
 
-const shootSchema = z.object({ imagePath: z.string().url().max(500) });
+const addSchema = z.object({ imagePath: z.string().url().max(500) });
 
-/** Prendre une photo (participant, pendant le tournoi, 5 max). */
+/**
+ * Ajouter une photo (5 max par personne, galerie ouverte). Participant ou orga :
+ * publiée. Personne extérieure : en attente, l'orga est prévenue.
+ */
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   const playerId = session?.user?.playerId;
@@ -70,11 +74,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const t = await loadTournament(params.id);
   if (!t) return new Response("Not found", { status: 404 });
 
-  const phase = rollPhase(t);
-  if (phase !== "shooting") return Response.json({ error: phase === "before" ? "not_started" : "revealed" }, { status: 409 });
-  if (!(await isRollParticipant(t.id, playerId))) return Response.json({ error: "not_participant" }, { status: 403 });
+  const phase = galleryPhase(t);
+  if (phase !== "open") return Response.json({ error: phase === "before" ? "not_started" : "closed" }, { status: 409 });
 
-  const parsed = shootSchema.safeParse(await request.json().catch(() => null));
+  const parsed = addSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "invalid" }, { status: 400 });
   // L'image doit venir de notre bucket (upload via /api/upload).
   const bucket = process.env.R2_PUBLIC_URL;
@@ -85,16 +88,18 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const used = await prisma.tournamentPhoto.count({ where: { tournamentId: t.id, authorId: playerId } });
   if (used >= PHOTOS_PER_PLAYER) return Response.json({ error: "no_shots_left" }, { status: 409 });
 
+  const direct = session.user?.role === "ADMIN" || (await isGalleryParticipant(t.id, playerId));
   const photo = await prisma.tournamentPhoto.create({
-    data: { tournamentId: t.id, authorId: playerId, imagePath: parsed.data.imagePath },
+    data: { tournamentId: t.id, authorId: playerId, imagePath: parsed.data.imagePath, pendingApproval: !direct },
     select: { id: true },
   });
-  return Response.json({ id: photo.id, remaining: PHOTOS_PER_PLAYER - used - 1 });
+  if (!direct) await notifyPhotoRequest(t.id);
+  return Response.json({ id: photo.id, pending: !direct, remaining: PHOTOS_PER_PLAYER - used - 1 });
 }
 
 const patchSchema = z.object({ pinned: z.boolean() });
 
-/** Épingler la pellicule « à la une » sur la home (admin). */
+/** Épingler la galerie « à la une » sur la home (admin). */
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") return new Response("Réservé aux administrateurs", { status: 403 });

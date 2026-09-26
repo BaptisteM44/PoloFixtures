@@ -69,8 +69,12 @@ function toPushPayload(
       return { title: "Résultats disponibles 📊", body: p.pollQuestion, url: `/poll/${p.pollId}`, tag: `poll-results-${p.pollId}` };
     case "POLL_CLOSING_SOON":
       return { title: "Sondage : dernier jour ⏳", body: p.pollQuestion, url: `/poll/${p.pollId}`, tag: `poll-closing-${p.pollId}` };
-    case "TOURNAMENT_PHOTOS_REVEALED":
-      return { title: "📸 Pellicule révélée !", body: `${p.tournamentName} — ${p.count} photos`, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos`, tag: `roll-${p.tournamentId}` };
+    case "TOURNAMENT_PHOTOS_REVEALED": // fin de tournoi : galerie à compléter
+      return { title: `📸 ${p.count} photos dans la galerie`, body: `${p.tournamentName} — ajoute les tiennes !`, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos`, tag: `gallery-${p.tournamentId}` };
+    case "TOURNAMENT_PHOTOS_REQUESTED":
+      return { title: "📸 Photos à valider", body: `${p.tournamentName} — ${p.count} en attente`, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos`, tag: `gallery-req-${p.tournamentId}` };
+    case "TOURNAMENT_PHOTOS_DECIDED":
+      return { title: Number(p.approved) > 0 ? "📸 Tes photos sont en ligne" : "📸 Photos non retenues", body: p.tournamentName, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos`, tag: `gallery-dec-${p.tournamentId}` };
     case "TOURNAMENT_PHOTO_REPORTED":
       return { title: p.autoHidden === "1" ? "Photo masquée (signalements) ⚠️" : "Photo signalée ⚠️", body: `${p.authorName} — ${p.tournamentName}`, url: "/admin/photos", tag: `photo-report-${p.photoId}` };
     case "POLL_VOTE_MILESTONE":

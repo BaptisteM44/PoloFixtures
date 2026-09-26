@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Link } from "@/i18n/navigation";
-import { TournamentRoll } from "@/components/TournamentRoll";
-import { rollPhase } from "@/lib/tournament-photos";
+import { TournamentGallery } from "@/components/TournamentGallery";
+import { galleryPhase } from "@/lib/tournament-photos";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { Tabs } from "@/components/Tabs";
@@ -308,14 +308,16 @@ export default async function TournamentPage({
   const isSoloRegistration = (tournament as { maxSoloPlayers?: number | null }).maxSoloPlayers != null;
   const hasCommunity = !registrationClosed && !isSoloRegistration;
 
-  // Pellicule : onglet visible avant le tournoi (découverte) et pendant ;
-  // après la révélation seulement s'il y a des photos (pas sur les vieux
-  // tournois d'avant la fonctionnalité).
-  const rollPhaseNow = rollPhase(tournament);
-  const rollVisible = rollPhaseNow !== "revealed"
-    || (await prisma.tournamentPhoto.count({ where: { tournamentId: tournament.id, hiddenAt: null } })) > 0;
+  // Galerie : onglet visible avant le tournoi (découverte), pendant et tant
+  // que les ajouts sont ouverts ; ensuite seulement s'il y a des photos (pas
+  // sur les vieux tournois d'avant la fonctionnalité).
+  const galleryVisible = galleryPhase(tournament) !== "closed"
+    || (await prisma.tournamentPhoto.count({ where: { tournamentId: tournament.id, hiddenAt: null, pendingApproval: false } })) > 0;
+  const galleryTab = { label: `📸 ${t("tab_photos")}`, value: "photos", href: `/tournament/${params.id}?tab=photos` };
   const tabs = [
     ...(isCompleted ? [{ label: t("tab_recap"), value: "recap", href: `/tournament/${params.id}?tab=recap` }] : []),
+    // Tournoi terminé : la galerie juste à côté du récap.
+    ...(isCompleted && galleryVisible ? [galleryTab] : []),
     { label: t("tab_info"), value: "info", href: `/tournament/${params.id}?tab=info` },
     ...((!registrationClosed || tournament.format === "ABC Chapeau") ? [{ label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` }] : []),
     ...(isLaunched ? [{ label: t("tab_schedule"), value: "schedule", href: `/tournament/${params.id}?tab=schedule` }] : []),
@@ -355,7 +357,7 @@ export default async function TournamentPage({
     { label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` },
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")} (${tournament.freeAgents.length})`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
-    ...(rollVisible ? [{ label: `📸 ${t("tab_photos")}`, value: "photos", href: `/tournament/${params.id}?tab=photos` }] : []),
+    ...(!isCompleted && galleryVisible ? [galleryTab] : []),
     ...(tournament.accommodationAvailable && (!!myTeam || isAccommodationHost) ? [{ label: t("tab_accommodation"), value: "hebergement", href: `/tournament/${params.id}?tab=hebergement` }] : []),
   ];
 
@@ -1943,13 +1945,12 @@ export default async function TournamentPage({
         <AccommodationPublicView tournamentId={tournament.id} />
       )}
 
-      {tab === "photos" && rollVisible && (
-        <TournamentRoll
+      {tab === "photos" && galleryVisible && (
+        <TournamentGallery
           tournamentId={tournament.id}
           tournamentName={tournament.name}
           viewerId={currentPlayerId}
           isAdmin={role === "ADMIN"}
-          isOrga={isOrga}
         />
       )}
 

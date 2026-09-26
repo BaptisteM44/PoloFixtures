@@ -216,8 +216,10 @@ enum NotificationType {
   POLL_RESULTS_AVAILABLE // notif votants : les résultats sont visibles
   POLL_CLOSING_SOON // notif public visé n'ayant pas voté : fermeture dans moins de 24 h
   POLL_VOTE_MILESTONE // notif créateur : palier de votes atteint
-  TOURNAMENT_PHOTOS_REVEALED // notif participants : la pellicule du tournoi est révélée (21h le dernier jour)
-  TOURNAMENT_PHOTO_REPORTED // notif admin : une photo de pellicule a été signalée
+  TOURNAMENT_PHOTOS_REVEALED // notif participants en fin de tournoi : « N photos dans la galerie — ajoute les tiennes »
+  TOURNAMENT_PHOTO_REPORTED // notif admin : une photo de galerie a été signalée
+  TOURNAMENT_PHOTOS_REQUESTED // notif orga : une personne extérieure propose des photos pour la galerie
+  TOURNAMENT_PHOTOS_DECIDED // notif auteur : l'orga a accepté / refusé ses photos proposées
 }
 
 enum TaskPriority {
@@ -335,8 +337,8 @@ model Tournament {
   createdViaSandbox       Boolean          @default(false) // true uniquement pour les tournois créés depuis /sandbox — distinct de testMode (qu'un vrai tournoi peut aussi activer). Exclut des notifs email.
   hidden                  Boolean          @default(false) // Hidden from public tournament list (organizer-controlled)
   timezone                String? // Fuseau IANA du lieu (ex: "Europe/Brussels") — tous les horaires affichés dans CE fuseau
-  // Pellicule jetable : épinglée « à la une » sur la home (admin), et notif
-  // de révélation déjà envoyée (idempotence du balayage).
+  // Galerie photos : épinglée « à la une » sur la home (admin), et notif de fin
+  // de tournoi déjà envoyée (idempotence du balayage ; nom historique).
   photosPinnedAt          DateTime?
   photosRevealNotifiedAt  DateTime?
   usesPipeline            Boolean          @default(false) // true = nouveau système de stages (refonte formats)
@@ -1541,21 +1543,25 @@ model PollVoter {
   @@index([playerId])
 }
 
-/// Pellicule jetable d'un tournoi : chaque participant prend jusqu'à 5 photos
-/// pendant le tournoi ; personne ne voit celles des autres avant la
-/// révélation (21h heure locale, le dernier jour). hiddenAt = modération.
+/// Galerie d'un tournoi : jusqu'à 5 photos par personne, du 1er jour jusqu'à
+/// 7 jours après la fin. Participants et orga publient directement ; une
+/// personne extérieure propose ses photos (pendingApproval) et l'orga les
+/// valide. hiddenAt = modération (signalements, admin).
 model TournamentPhoto {
-  id           String    @id @default(cuid())
-  tournamentId String
-  authorId     String
-  imagePath    String
-  hiddenAt     DateTime?
-  reportCount  Int       @default(0)
-  createdAt    DateTime  @default(now())
+  id              String    @id @default(cuid())
+  tournamentId    String
+  authorId        String
+  imagePath       String
+  // Proposée par une personne extérieure : invisible tant que l'orga n'a pas validé.
+  pendingApproval Boolean   @default(false)
+  hiddenAt        DateTime?
+  reportCount     Int       @default(0)
+  createdAt       DateTime  @default(now())
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
   author     Player     @relation("TournamentPhotos", fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([tournamentId])
   @@index([authorId, tournamentId])
+  @@index([tournamentId, pendingApproval])
 }

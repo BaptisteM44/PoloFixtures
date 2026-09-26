@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import type { RollPhoto } from "@/lib/tournament-photos";
+import type { GalleryPhoto } from "@/lib/tournament-photos";
 
 const AUTOPLAY_MS = 5000;
 
@@ -14,17 +14,19 @@ const AUTOPLAY_MS = 5000;
  */
 export function PhotoViewer({
   photos, start = 0, title, link, autoplay = false, viewerId, isAdmin = false, canModerate = false,
-  onSeen, onClose, onChanged,
+  reportable = true, onSeen, onClose, onChanged,
 }: {
-  photos: RollPhoto[];
+  photos: GalleryPhoto[];
   start?: number;
   title: string;
   link?: { href: string; label: string };
   autoplay?: boolean;
   viewerId: string | null;
   isAdmin?: boolean;
-  /** Orga du tournoi : peut retirer une photo révélée. */
+  /** Orga du tournoi : peut retirer une photo de sa galerie. */
   canModerate?: boolean;
+  /** Bouton « Signaler » (pas sur les photos en attente de validation). */
+  reportable?: boolean;
   onSeen?: (id: string) => void;
   onClose: () => void;
   /** Après suppression : recharger la pellicule. */
@@ -172,7 +174,7 @@ export function PhotoViewer({
           {notice && <p className="story-viewer__notice">{notice}</p>}
           <div className="story-viewer__actions">
             {(isMine || isAdmin || canModerate) && <button type="button" onClick={remove}>🗑 {t("delete")}</button>}
-            {viewerId && !isMine && <button type="button" onClick={report}>⚠ {t("report")}</button>}
+            {reportable && viewerId && !isMine && <button type="button" onClick={report}>⚠ {t("report")}</button>}
           </div>
         </footer>
       </div>

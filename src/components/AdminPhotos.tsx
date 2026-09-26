@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
 export type AdminPhoto = {
-  id: string; imagePath: string; createdAt: string; hidden: boolean; reportCount: number; revealed: boolean;
+  id: string; imagePath: string; createdAt: string; hidden: boolean; reportCount: number; pending: boolean;
   author: { name: string; slug: string | null };
   tournament: { slug: string; name: string };
 };
@@ -45,7 +45,7 @@ export function AdminPhotos({ photos }: { photos: AdminPhoto[] }) {
               <span style={{ color: "var(--text-muted)" }}> · {new Date(p.createdAt).toLocaleString()}</span>
             </span>
             <span style={{ display: "flex", gap: 8, flexWrap: "wrap", fontWeight: 700 }}>
-              {!p.revealed && <span style={{ color: "var(--text-muted)" }}>🔒 {t("admin_sealed")}</span>}
+              {p.pending && <span style={{ color: "var(--text-muted)" }}>⏳ {t("admin_pending")}</span>}
               {p.reportCount > 0 && <span style={{ color: "var(--danger)" }}>⚠ {t("admin_reports", { count: p.reportCount })}</span>}
               {p.hidden && <span style={{ color: "var(--danger)" }}>🚫 {t("admin_hidden")}</span>}
             </span>

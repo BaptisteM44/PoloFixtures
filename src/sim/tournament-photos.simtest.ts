@@ -1,24 +1,30 @@
 /**
- * Pellicule jetable : 5 photos par participant pendant le tournoi, secrètes
- * jusqu'à la révélation (21h heure locale le dernier jour), notif de
- * révélation, bulles de la home, modération.
+ * Galerie d'un tournoi : 5 photos par personne, visibles tout de suite, du 1er
+ * jour jusqu'à 7 jours après la fin. Participants/orga publient directement ;
+ * une personne extérieure propose, l'orga (notifiée) valide. Notif de fin de
+ * tournoi, bulles de la home, modération.
  */
 import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
 
 const session = vi.hoisted(() => ({ current: null as null | { user: { id: string; playerId: string | null; role: string | null; name: string } } }));
 vi.mock("@/lib/auth", () => ({ auth: async () => session.current }));
 const notify = vi.hoisted(() => ({
-  createNotification: vi.fn(async (_id: string, _type: string, _payload: Record<string, unknown>) => {}),
+  // Écrit vraiment la notif : le regroupement (« 3 photos à valider ») lit la table.
+  createNotification: vi.fn(async (playerId: string, type: string, payload: Record<string, unknown>) => {
+    const { prisma } = await import("@/lib/db");
+    await prisma.notification.create({ data: { playerId, type: type as never, payload: payload as never } });
+  }),
   notifyAllAdmins: vi.fn(async (_type: string, _payload: Record<string, unknown>) => {}),
 }));
 vi.mock("@/lib/notify", () => notify);
 
 import { prisma } from "@/lib/db";
 import { assertSimDatabase, resetSimDb } from "./sim-db";
-import { GET as getRoll, POST as shoot, PATCH as pinRoll } from "@/app/api/tournaments/[id]/photos/route";
+import { GET as getGallery, POST as addPhoto, PATCH as pinGallery } from "@/app/api/tournaments/[id]/photos/route";
+import { POST as moderate } from "@/app/api/tournaments/[id]/photos/moderate/route";
 import { DELETE as deletePhoto } from "@/app/api/tournament-photos/[photoId]/route";
 import { POST as reportPhoto } from "@/app/api/tournament-photos/[photoId]/report/route";
-import { loadHomeRolls, revealAt, rollPhase, sweepPhotoReveals } from "@/lib/tournament-photos";
+import { galleryPhase, loadHomeGalleries, sweepGalleryEnds, tournamentEndsAt } from "@/lib/tournament-photos";
 
 const as = (playerId: string | null, role: string | null = null) => {
   session.current = playerId || role ? { user: { id: `u-${playerId}`, playerId, role, name: "X" } } : null;
@@ -29,6 +35,8 @@ const ctx = (id: string) => ({ params: { id } });
 const pctx = (photoId: string) => ({ params: { photoId } });
 const img = () => `https://img.example/tournament-photos/${Math.random().toString(36).slice(2)}.webp`;
 const DAY = 86400_000;
+const calls = (type: string) =>
+  (notify.createNotification.mock.calls as unknown as [string, string, Record<string, unknown>][]).filter(([, t]) => t === type);
 
 let tid: string, orga: string, p1: string, p2: string, waitlisted: string, outsider: string, admin: string;
 
@@ -37,21 +45,24 @@ async function mkPlayer(name: string) {
   await prisma.playerAccount.create({ data: { playerId: p.id, email: `${p.id}@sim.test`, passwordHash: "x" } });
   return p.id;
 }
-/** Dates du tournoi relatives à maintenant (fuseau UTC pour des tests déterministes). */
-async function setDates(startOffsetDays: number, endOffsetDays: number) {
+/** Dates du tournoi relatives à maintenant (fuseau UTC, tests déterministes). */
+async function setDates(startOffsetDays: number, endOffsetDays: number, status = "LIVE") {
   await prisma.tournament.update({
     where: { id: tid },
-    data: { dateStart: new Date(Date.now() + startOffsetDays * DAY), dateEnd: new Date(Date.now() + endOffsetDays * DAY), photosRevealNotifiedAt: null },
+    data: {
+      dateStart: new Date(Date.now() + startOffsetDays * DAY), dateEnd: new Date(Date.now() + endOffsetDays * DAY),
+      status: status as never, photosRevealNotifiedAt: null,
+    },
   });
 }
-async function take(playerId: string) {
+async function add(playerId: string) {
   as(playerId);
-  const res = await shoot(json({ imagePath: img() }), ctx(tid));
+  const res = await addPhoto(json({ imagePath: img() }), ctx(tid));
   return { status: res.status, body: await res.json() };
 }
-async function roll(playerId: string | null) {
-  as(playerId);
-  return (await getRoll(new Request("http://sim.local"), ctx(tid))).json();
+async function gallery(playerId: string | null, role: string | null = null) {
+  as(playerId, role);
+  return (await getGallery(new Request("http://sim.local"), ctx(tid))).json();
 }
 
 beforeAll(async () => {
@@ -61,12 +72,13 @@ beforeAll(async () => {
 beforeEach(async () => {
   await resetSimDb();
   await prisma.tournamentPhoto.deleteMany();
+  await prisma.notification.deleteMany();
   notify.createNotification.mockClear();
   notify.notifyAllAdmins.mockClear();
   [orga, p1, p2, waitlisted, outsider, admin] = await Promise.all(["Orga", "P1", "P2", "Attente", "Dehors", "Admin"].map(mkPlayer));
   const t = await prisma.tournament.create({
     data: {
-      name: "Roll Open", slug: `roll-open-${Math.random().toString(36).slice(2, 7)}`, continentCode: "EU", country: "Belgium", city: "Brussels",
+      name: "Gallery Open", slug: `gallery-open-${Math.random().toString(36).slice(2, 7)}`, continentCode: "EU", country: "Belgium", city: "Brussels",
       dateStart: new Date(Date.now() - DAY), dateEnd: new Date(Date.now() + DAY), format: "pipeline", gameDurationMin: 12, maxTeams: 8,
       registrationFeePerTeam: 0, registrationFeeCurrency: "EUR", contactEmail: "a@b.c", saturdayFormat: "ALL_DAY", sundayFormat: "SE",
       status: "LIVE", courtsCount: 1, timezone: "UTC", approved: true, hidden: false, creatorId: orga,
@@ -78,121 +90,137 @@ beforeEach(async () => {
   await prisma.team.create({ data: { tournamentId: tid, name: "W", seed: 2, selected: false, players: { create: [{ playerId: waitlisted }] } } });
 });
 
-describe("Phases et heure de révélation", () => {
-  it("sans fuseau renseigné : déduit du pays (21h à Lisbonne, pas 21h UTC)", () => {
+describe("Fenêtre d'ouverture", () => {
+  it("ouverte du 1er jour jusqu'à 7 jours après la fin (21h locale), lancement anticipé inclus", () => {
+    const t = { dateStart: new Date("2026-07-11T00:00:00Z"), dateEnd: new Date("2026-07-12T00:00:00Z"), timezone: "Europe/Brussels", status: "UPCOMING" };
+    expect(tournamentEndsAt(t).toISOString()).toBe("2026-07-12T19:00:00.000Z"); // 21h CEST
+    expect(galleryPhase(t, new Date("2026-07-10T20:00:00Z"))).toBe("before");
+    expect(galleryPhase({ ...t, status: "LIVE" }, new Date("2026-07-10T20:00:00Z"))).toBe("open"); // lancé la veille
+    expect(galleryPhase(t, new Date("2026-07-11T08:00:00Z"))).toBe("open");
+    expect(galleryPhase(t, new Date("2026-07-19T18:59:00Z"))).toBe("open");   // J+7, 1 min avant
+    expect(galleryPhase(t, new Date("2026-07-19T19:00:00Z"))).toBe("closed");
+  });
+
+  it("sans fuseau renseigné : déduit du pays (21h à Lisbonne ou à Philadelphie, pas en UTC)", () => {
     const t = { dateStart: new Date("2026-10-02T00:00:00Z"), dateEnd: new Date("2026-10-04T00:00:00Z"), timezone: null, country: "Portugal", lng: -8.78 };
-    expect(revealAt(t).toISOString()).toBe("2026-10-04T20:00:00.000Z"); // 21h WEST = 20h UTC
-    const philly = { ...t, country: "United States of America", lng: -75.16 };
-    expect(revealAt(philly).toISOString()).toBe("2026-10-05T01:00:00.000Z"); // 21h EDT
+    expect(tournamentEndsAt(t).toISOString()).toBe("2026-10-04T20:00:00.000Z"); // 21h WEST
+    expect(tournamentEndsAt({ ...t, country: "United States of America", lng: -75.16 }).toISOString()).toBe("2026-10-05T01:00:00.000Z"); // 21h EDT
   });
 
-  it("révélation à 21h heure locale le dernier jour", () => {
-    const t = { dateStart: new Date("2026-07-11T00:00:00Z"), dateEnd: new Date("2026-07-12T00:00:00Z"), timezone: "Europe/Brussels" };
-    expect(revealAt(t).toISOString()).toBe("2026-07-12T19:00:00.000Z"); // 21h CEST
-    expect(rollPhase(t, new Date("2026-07-10T20:00:00Z"))).toBe("before");
-    expect(rollPhase(t, new Date("2026-07-12T18:59:00Z"))).toBe("shooting");
-    expect(rollPhase(t, new Date("2026-07-12T19:00:00Z"))).toBe("revealed");
+  it("avant : pas d'ajout, mais le joueur sait qu'il pourra ; après fermeture : lecture seule", async () => {
+    await setDates(3, 4, "UPCOMING");
+    expect((await add(p1)).body.error).toBe("not_started");
+    const before = await gallery(p1);
+    expect([before.phase, before.participant, before.canAdd]).toEqual(["before", true, false]);
+    await setDates(-12, -10, "COMPLETED");
+    expect((await add(p1)).body.error).toBe("closed");
+    await setDates(-5, -3, "COMPLETED"); // fini depuis 3 jours : encore ouverte
+    expect((await add(p1)).status).toBe(200);
   });
 });
 
-describe("Prise de vue", () => {
-  it("joueurs sélectionnés et orga peuvent shooter ; liste d'attente et extérieurs non", async () => {
-    expect((await take(p1)).status).toBe(200);
-    expect((await take(orga)).status).toBe(200);
-    expect((await take(waitlisted)).body.error).toBe("not_participant");
-    expect((await take(outsider)).body.error).toBe("not_participant");
+describe("Ajout et validation", () => {
+  it("participants et orga publient directement ; extérieurs et liste d'attente proposent", async () => {
+    expect((await add(p1)).body.pending).toBe(false);
+    expect((await add(orga)).body.pending).toBe(false);
+    expect((await add(outsider)).body.pending).toBe(true);
+    expect((await add(waitlisted)).body.pending).toBe(true);
     as(null);
-    expect((await shoot(json({ imagePath: img() }), ctx(tid))).status).toBe(401);
+    expect((await addPhoto(json({ imagePath: img() }), ctx(tid))).status).toBe(401);
+
+    // Public : seulement les photos publiées. L'extérieur voit la sienne en attente.
+    const anon = await gallery(null);
+    expect([anon.photos.length, anon.pending.length, anon.moderator]).toEqual([2, 0, false]);
+    const mine = await gallery(outsider);
+    expect(mine.mine.map((p: { pending?: boolean }) => !!p.pending)).toEqual([true]);
+    // L'orga voit les photos à valider.
+    expect((await gallery(orga)).pending.length).toBe(2);
   });
 
-  it("5 photos max ; supprimer la sienne rend un crédit", async () => {
-    for (let i = 0; i < 5; i++) expect((await take(p1)).status).toBe(200);
-    expect((await take(p1)).body.error).toBe("no_shots_left");
-    const [first] = (await roll(p1)).mine;
+  it("l'orga est prévenue par UNE notif dont le compteur monte", async () => {
+    await add(outsider); await add(outsider); await add(outsider);
+    const notifs = await prisma.notification.findMany({ where: { playerId: orga, type: "TOURNAMENT_PHOTOS_REQUESTED" } });
+    expect(notifs.length).toBe(1);
+    expect((notifs[0].payload as { count: number }).count).toBe(3);
+  });
+
+  it("valider publie (auteur prévenu), refuser supprime et rend le crédit ; réservé à l'orga", async () => {
+    const a = (await add(outsider)).body.id;
+    const b = (await add(outsider)).body.id;
     as(p1);
-    expect((await deletePhoto(new Request("http://sim.local"), pctx(first.id))).status).toBe(200);
-    expect((await take(p1)).status).toBe(200);
-  });
+    expect((await moderate(json({ photoIds: [a], approve: true }), ctx(tid))).status).toBe(403);
 
-  it("pas de photo avant le tournoi ni après la révélation", async () => {
-    await prisma.tournament.update({ where: { id: tid }, data: { status: "UPCOMING" } });
-    await setDates(3, 4);
-    expect((await take(p1)).body.error).toBe("not_started");
-    // Mais le joueur sait déjà qu'il participera.
-    const before = await roll(p1);
-    expect([before.phase, before.participant, before.canShoot]).toEqual(["before", true, false]);
-    // L'orga lance le tournoi en avance : l'appareil s'ouvre.
-    await prisma.tournament.update({ where: { id: tid }, data: { status: "LIVE" } });
-    expect((await take(p1)).status).toBe(200);
-    await setDates(-4, -2);
-    expect((await take(p1)).body.error).toBe("revealed");
-  });
-});
-
-describe("Secret jusqu'à la révélation", () => {
-  it("avant : chacun ne voit que les siennes + le total ; après : tout le monde voit tout", async () => {
-    await take(p1); await take(p1); await take(p2);
-    const r1 = await roll(p1);
-    expect([r1.phase, r1.total, r1.mine.length, r1.photos.length, r1.remaining, r1.canShoot]).toEqual(["shooting", 3, 2, 0, 3, true]);
-    const anon = await roll(null);
-    expect([anon.total, anon.photos.length, anon.canShoot]).toEqual([3, 0, false]);
-
-    await setDates(-4, -2);
-    const after = await roll(outsider);
-    expect([after.phase, after.photos.length]).toEqual(["revealed", 3]);
-  });
-
-  it("l'orga ne supprime pas une photo avant la révélation, seulement après", async () => {
-    const { body } = await take(p1);
     as(orga);
+    await moderate(json({ photoIds: [a], approve: true }), ctx(tid));
+    await moderate(json({ photoIds: [b], approve: false }), ctx(tid));
+    expect((await gallery(null)).photos.map((p: { id: string }) => p.id)).toEqual([a]);
+    expect(await prisma.tournamentPhoto.count({ where: { id: b } })).toBe(0);
+    expect(calls("TOURNAMENT_PHOTOS_DECIDED").map(([id, , p]) => [id, p.approved, p.rejected])).toEqual([[outsider, 1, 0], [outsider, 0, 1]]);
+    expect((await gallery(outsider)).remaining).toBe(4);
+  });
+
+  it("5 photos max (en attente comprises) ; supprimer la sienne rend un crédit", async () => {
+    for (let i = 0; i < 5; i++) expect((await add(outsider)).status).toBe(200);
+    expect((await add(outsider)).body.error).toBe("no_shots_left");
+    const [first] = (await gallery(outsider)).mine;
+    as(outsider);
+    await deletePhoto(new Request("http://sim.local"), pctx(first.id));
+    expect((await add(outsider)).status).toBe(200);
+  });
+
+  it("l'orga peut retirer n'importe quelle photo de sa galerie, un autre joueur non", async () => {
+    const { body } = await add(p1);
+    as(p2);
     expect((await deletePhoto(new Request("http://sim.local"), pctx(body.id))).status).toBe(403);
-    await setDates(-4, -2);
+    as(orga);
     expect((await deletePhoto(new Request("http://sim.local"), pctx(body.id))).status).toBe(200);
   });
 });
 
-describe("Révélation, home et modération", () => {
-  it("notif de révélation une seule fois aux participants (pas avant 21h)", async () => {
-    await take(p1);
-    await sweepPhotoReveals();
-    expect(notify.createNotification).not.toHaveBeenCalled();
+describe("Fin de tournoi, home et signalements", () => {
+  it("notif de fin (21h dernier jour) une seule fois, s'il y a des photos, aux participants", async () => {
+    await add(p1);
+    await sweepGalleryEnds();
+    expect(calls("TOURNAMENT_PHOTOS_REVEALED")).toEqual([]);
 
-    await setDates(-3, -1.5); // dernier jour ≤ hier (UTC) → révélée quelle que soit l'heure
-    await sweepPhotoReveals();
-    await sweepPhotoReveals();
-    const recipients = (notify.createNotification.mock.calls as unknown as [string, string][]).map(([id]) => id).sort();
-    expect(recipients).toEqual([orga, p1, p2].sort()); // pas la liste d'attente
+    await setDates(-3, -1.5); // dernier jour ≤ hier (UTC) → terminé quelle que soit l'heure
+    await sweepGalleryEnds();
+    await sweepGalleryEnds();
+    expect(calls("TOURNAMENT_PHOTOS_REVEALED").map(([id]) => id).sort()).toEqual([orga, p1, p2].sort());
   });
 
-  it("home : appareil pour le participant pendant le tournoi, puis pellicule révélée", async () => {
-    await take(p1);
-    let home = await loadHomeRolls(p1);
+  it("home : 📷 pour le participant pendant le tournoi, galerie visible tout de suite", async () => {
+    await add(p1);
+    let home = await loadHomeGalleries(p1);
     expect(home.cameras.map((c) => [c.tournamentId, c.remaining])).toEqual([[tid, 4]]);
-    expect(home.rolls).toEqual([]);
-    expect((await loadHomeRolls(outsider)).cameras).toEqual([]);
+    expect(home.galleries.map((g) => [g.tournamentId, g.photos.length])).toEqual([[tid, 1]]);
+    expect((await loadHomeGalleries(outsider)).cameras).toEqual([]);
 
-    await setDates(-3, -1);
-    home = await loadHomeRolls(outsider);
-    expect(home.rolls.map((r) => [r.tournamentId, r.photos.length, r.pinned])).toEqual([[tid, 1, false]]);
+    // Après la fin : plus de 📷, la galerie reste.
+    await setDates(-3, -1.5, "COMPLETED");
+    home = await loadHomeGalleries(p1);
+    expect([home.cameras.length, home.galleries.length]).toEqual([0, 1]);
 
     // Au-delà de 21 jours : disparaît… sauf si l'admin l'a mise à la une.
-    await setDates(-30, -29);
-    expect((await loadHomeRolls(null)).rolls).toEqual([]);
+    await setDates(-30, -29, "COMPLETED");
+    expect((await loadHomeGalleries(null)).galleries).toEqual([]);
     as(admin, "ADMIN");
-    await pinRoll(json({ pinned: true }), ctx(tid));
-    expect((await loadHomeRolls(null)).rolls.map((r) => r.pinned)).toEqual([true]);
+    await pinGallery(json({ pinned: true }), ctx(tid));
+    expect((await loadHomeGalleries(null)).galleries.map((g) => g.pinned)).toEqual([true]);
   });
 
-  it("signalement après révélation : masquée d'office au 3e", async () => {
-    const { body } = await take(p1);
+  it("une photo en attente n'est pas sur la home et ne se signale pas ; publiée : masquée au 3e signalement", async () => {
+    const pending = (await add(outsider)).body.id;
+    expect((await loadHomeGalleries(null)).galleries).toEqual([]);
     as(p2);
-    expect((await reportPhoto(new Request("http://sim.local"), pctx(body.id))).status).toBe(404); // pas encore révélée
-    await setDates(-4, -2);
+    expect((await reportPhoto(new Request("http://sim.local"), pctx(pending))).status).toBe(404);
+
+    const { body } = await add(p1);
     for (const who of [p2, orga, outsider]) {
       as(who);
       await reportPhoto(new Request("http://sim.local"), pctx(body.id));
     }
     expect(notify.notifyAllAdmins).toHaveBeenCalledTimes(3);
-    expect((await roll(null)).photos).toEqual([]);
+    expect((await gallery(null)).photos).toEqual([]);
   });
 });

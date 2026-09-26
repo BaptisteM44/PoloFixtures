@@ -10,8 +10,8 @@ import type { MapTournament } from "@/components/TournamentMap";
 import { HomeHeroPersonal, type HeroNextTournament } from "@/components/HomeHeroPersonal";
 import { EurosVoteBanner } from "@/components/EurosVoteBanner";
 import { HomeInstallBanner } from "@/components/HomeInstallBanner";
-import { HomeRollsBar } from "@/components/HomeRollsBar";
-import { loadHomeRolls } from "@/lib/tournament-photos";
+import { HomeGalleriesBar } from "@/components/HomeGalleriesBar";
+import { loadHomeGalleries } from "@/lib/tournament-photos";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { countryToContinent } from "@/lib/country-utils";
 
@@ -245,12 +245,12 @@ export default async function HomePage() {
   }
 
   const isAdmin = session?.user?.role === "ADMIN";
-  const { rolls, cameras } = await loadHomeRolls(currentPlayerId);
+  const { galleries, cameras } = await loadHomeGalleries(currentPlayerId);
 
   return (
     <div className="home">
-      {/* ---- PELLICULES : appareil des tournois en cours + pellicules révélées ---- */}
-      <HomeRollsBar rolls={rolls} cameras={cameras} viewerId={currentPlayerId} isAdmin={isAdmin} />
+      {/* ---- GALERIES : 📷 des tournois en cours + galeries photos récentes ---- */}
+      <HomeGalleriesBar galleries={galleries} cameras={cameras} viewerId={currentPlayerId} isAdmin={isAdmin} />
 
       {/* ---- HERO : perso si connecté, marketing sinon ---- */}
       {me ? (

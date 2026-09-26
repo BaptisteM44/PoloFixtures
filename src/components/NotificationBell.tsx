@@ -99,8 +99,19 @@ function useNotifLabel() {
         return { title: t("poll_results_available"), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}` };
       case "POLL_CLOSING_SOON":
         return { title: t("poll_closing_soon"), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}` };
-      case "TOURNAMENT_PHOTOS_REVEALED":
-        return { title: t("photos_revealed", { count: Number(p.count) || 0 }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos` };
+      case "TOURNAMENT_PHOTOS_REVEALED": // fin de tournoi : galerie à compléter
+        return { title: t("gallery_end", { count: Number(p.count) || 0 }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos` };
+      case "TOURNAMENT_PHOTOS_REQUESTED":
+        return { title: t("gallery_requested", { count: Number(p.count) || 0 }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos` };
+      case "TOURNAMENT_PHOTOS_DECIDED": {
+        const approved = Number(p.approved) || 0;
+        const rejected = Number(p.rejected) || 0;
+        return {
+          title: approved > 0 ? t("gallery_approved", { count: approved }) : t("gallery_rejected", { count: rejected }),
+          sub: p.tournamentName ?? "",
+          href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos`,
+        };
+      }
       case "TOURNAMENT_PHOTO_REPORTED":
         return { title: t(p.autoHidden === "1" ? "photo_reported_hidden" : "photo_reported", { name: p.authorName ?? "" }), sub: p.tournamentName ?? "", href: "/admin/photos" };
       case "POLL_VOTE_MILESTONE":

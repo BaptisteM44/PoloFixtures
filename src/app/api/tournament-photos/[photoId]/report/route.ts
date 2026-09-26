@@ -2,12 +2,11 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { isRateLimited } from "@/lib/rate-limit";
 import { notifyAllAdmins } from "@/lib/notify";
-import { rollPhase, rollTournamentSelect } from "@/lib/tournament-photos";
 
 // Masquée d'office à partir de ce nombre de signalements, en attendant l'admin.
 const AUTO_HIDE_REPORTS = 3;
 
-/** Signaler une photo révélée (joueur connecté, une fois par photo). */
+/** Signaler une photo publiée (joueur connecté, une fois par photo). */
 export async function POST(_req: Request, { params }: { params: { photoId: string } }) {
   const session = await auth();
   const playerId = session?.user?.playerId;
@@ -16,12 +15,12 @@ export async function POST(_req: Request, { params }: { params: { photoId: strin
   const photo = await prisma.tournamentPhoto.findUnique({
     where: { id: params.photoId },
     select: {
-      id: true, authorId: true, hiddenAt: true,
+      id: true, authorId: true, hiddenAt: true, pendingApproval: true,
       author: { select: { name: true } },
-      tournament: { select: { name: true, ...rollTournamentSelect } },
+      tournament: { select: { name: true } },
     },
   });
-  if (!photo || photo.hiddenAt || rollPhase(photo.tournament) !== "revealed") return Response.json({ error: "not_found" }, { status: 404 });
+  if (!photo || photo.hiddenAt || photo.pendingApproval) return Response.json({ error: "not_found" }, { status: 404 });
   if (photo.authorId === playerId) return Response.json({ error: "own_photo" }, { status: 400 });
   if (isRateLimited(`photo-report:${playerId}:${photo.id}`, 1, 7 * 86400_000)) {
     return Response.json({ error: "already_reported" }, { status: 409 });

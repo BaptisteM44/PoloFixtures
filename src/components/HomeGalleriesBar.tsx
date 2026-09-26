@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { PhotoViewer } from "@/components/PhotoViewer";
-import type { HomeCamera, HomeRoll } from "@/lib/tournament-photos";
+import type { HomeCamera, HomeGallery } from "@/lib/tournament-photos";
 
-const SEEN_KEY = "roll_photos_seen";
+const SEEN_KEY = "gallery_photos_seen";
 
 function readSeen(): Set<string> {
   try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || "[]")); } catch { return new Set(); }
@@ -17,15 +17,14 @@ function writeSeen(seen: Set<string>) {
 }
 
 /**
- * Bandeau façon stories en haut de la home : d'abord l'appareil photo des
- * tournois où je joue en ce moment (raccourci vers l'onglet Pellicule), puis
- * les pellicules révélées récemment (★ = épinglée à la une). Un clic ouvre la
- * pellicule en mode story.
+ * Bandeau façon stories en haut de la home : d'abord le raccourci 📷 des
+ * tournois où je joue en ce moment (vers l'onglet Galerie), puis les galeries
+ * récentes (★ = épinglée à la une). Un clic ouvre la galerie en mode story.
  */
-export function HomeRollsBar({
-  rolls, cameras, viewerId, isAdmin,
+export function HomeGalleriesBar({
+  galleries, cameras, viewerId, isAdmin,
 }: {
-  rolls: HomeRoll[];
+  galleries: HomeGallery[];
   cameras: HomeCamera[];
   viewerId: string | null;
   isAdmin: boolean;
@@ -43,9 +42,9 @@ export function HomeRollsBar({
     });
   }, []);
 
-  if (rolls.length === 0 && cameras.length === 0) return null;
-  const openRoll = open !== null ? rolls[open] : null;
-  const firstUnseen = (r: HomeRoll) => Math.max(0, r.photos.findIndex((p) => !seen.has(p.id)));
+  if (galleries.length === 0 && cameras.length === 0) return null;
+  const openRoll = open !== null ? galleries[open] : null;
+  const firstUnseen = (r: HomeGallery) => Math.max(0, r.photos.findIndex((p) => !seen.has(p.id)));
 
   return (
     <section className="stories-bar" aria-label={t("home_aria")}>
@@ -59,7 +58,7 @@ export function HomeRollsBar({
             <span className="story-bubble__label">{c.tournamentName}</span>
           </Link>
         ))}
-        {rolls.map((r, i) => {
+        {galleries.map((r, i) => {
           const allSeen = r.photos.every((p) => seen.has(p.id));
           return (
             <button key={r.tournamentId} type="button" className="story-bubble" onClick={() => setOpen(i)} title={r.tournamentName}>
