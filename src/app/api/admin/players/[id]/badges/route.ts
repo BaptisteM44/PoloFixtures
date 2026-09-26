@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { apiMsg } from "@/lib/api-messages";
 
 // PATCH /api/admin/players/[id]/badges — ajoute ou retire des badges manuellement
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") {
-    return NextResponse.json({ error: "Interdit" }, { status: 403 });
+    return NextResponse.json({ error: apiMsg("forbidden") }, { status: 403 });
   }
 
   const body = await req.json();
@@ -17,7 +18,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     where: { id: params.id },
     select: { badges: true },
   });
-  if (!player) return NextResponse.json({ error: "Joueur introuvable" }, { status: 404 });
+  if (!player) return NextResponse.json({ error: apiMsg("player_not_found") }, { status: 404 });
 
   const current = new Set<string>(player.badges as string[]);
   for (const b of add) current.add(b);

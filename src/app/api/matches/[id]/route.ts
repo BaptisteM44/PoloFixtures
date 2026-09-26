@@ -12,6 +12,7 @@ import {
 } from "@/app/[locale]/tournament/[id]/edit/berlin-mixed-actions";
 import { generateSplitSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/split-swiss-actions";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({
   status: z.enum(["SCHEDULED", "LIVE", "FINISHED"]).optional(),
@@ -102,7 +103,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       });
     }
 
-    const newStatus = await syncTournamentCompletionById(existing.tournamentId);
+    const newStatus = await syncTournamentCompletionById(existing.tournamentId, { duringActivity: true });
     if (newStatus === "COMPLETED") {
       publishTournamentUpdate({ tournamentId: existing.tournamentId, type: "tournament_completed", status: "COMPLETED" });
     }
@@ -111,7 +112,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
   // Block finishing a BRACKET match on a draw
   if (parsed.data.status === "FINISHED" && existing.phase === "BRACKET" && scoreA === scoreB) {
-    return Response.json({ error: "Impossible de clôturer un match de bracket sur une égalité. Un vainqueur est obligatoire." }, { status: 422 });
+    return Response.json({ error: apiMsg("bracket_draw_close") }, { status: 422 });
   }
 
   const match = await prisma.match.update({
@@ -389,7 +390,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     });
   }
 
-  const newStatus = await syncTournamentCompletionById(match.tournamentId);
+  const newStatus = await syncTournamentCompletionById(match.tournamentId, { duringActivity: true });
   if (newStatus === "COMPLETED") {
     publishTournamentUpdate({
       tournamentId: match.tournamentId,

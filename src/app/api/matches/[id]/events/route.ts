@@ -5,6 +5,7 @@ import { publishMatchUpdate, publishNewMatches } from "@/lib/sse";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({
   type: z.enum(["START", "PAUSE", "GOAL", "GOLDEN_GOAL", "PENALTY", "TIMEOUT", "TIME_ADJUST", "END", "SWAP_SIDES"]),
@@ -76,7 +77,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const RESULT_CHANGING = ["GOAL", "GOLDEN_GOAL", "START", "END"];
   if (match.status === "FINISHED" && RESULT_CHANGING.includes(parsed.data.type)) {
     return Response.json(
-      { error: "Ce match est terminé. Rouvrez-le pour modifier le score." },
+      { error: apiMsg("match_finished_reopen") },
       { status: 409 }
     );
   }
@@ -159,7 +160,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       where: { tournamentId: match.tournamentId, courtName: match.courtName, status: "LIVE", id: { not: match.id } },
     });
     if (alreadyLive) {
-      return Response.json({ error: "Un match est déjà en cours sur ce terrain." }, { status: 409 });
+      return Response.json({ error: apiMsg("court_busy") }, { status: 409 });
     }
     status = "LIVE";
   }
@@ -173,7 +174,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     scoreB = fresh.scoreB;
     // Block ending a BRACKET match on a draw
     if (match.phase === "BRACKET" && scoreA === scoreB) {
-      return Response.json({ error: "Impossible de terminer un match de bracket sur une égalité. Utilisez le Golden Goal pour désigner un vainqueur." }, { status: 422 });
+      return Response.json({ error: apiMsg("bracket_draw_end") }, { status: 422 });
     }
     status = "FINISHED";
     if (match.teamAId && match.teamBId) {
@@ -342,7 +343,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     });
   }
 
-  await syncTournamentCompletionById(match.tournamentId);
+  await syncTournamentCompletionById(match.tournamentId, { duringActivity: true });
 
   return Response.json({ event, match: updated, advancedMatches });
 }

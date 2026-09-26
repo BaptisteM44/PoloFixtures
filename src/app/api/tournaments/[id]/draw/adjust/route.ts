@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const adjustSchema = z.object({
   entries: z.array(z.object({
@@ -17,13 +18,13 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const session = await auth();
   const role = session?.user?.role;
   const playerId = (session?.user as { playerId?: string } | undefined)?.playerId;
-  if (!playerId) return Response.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return Response.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const tournament = await prisma.tournament.findUnique({
     where: { id: params.id },
     include: { coOrganizers: true },
   });
-  if (!tournament) return Response.json({ error: "Tournoi introuvable" }, { status: 404 });
+  if (!tournament) return Response.json({ error: apiMsg("tournament_not_found") }, { status: 404 });
 
   const isOrga =
     (role && hasAtLeastRole(role, "ORGA") && (session?.user as { tournamentId?: string }).tournamentId === params.id) ||
@@ -31,7 +32,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     tournament.creatorId === playerId ||
     tournament.coOrganizers.some((co) => co.playerId === playerId);
 
-  if (!isOrga) return Response.json({ error: "Accès refusé" }, { status: 403 });
+  if (!isOrga) return Response.json({ error: apiMsg("access_denied") }, { status: 403 });
 
   const json = await request.json();
   const parsed = adjustSchema.safeParse(json);

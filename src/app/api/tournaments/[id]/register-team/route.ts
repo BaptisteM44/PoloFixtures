@@ -6,6 +6,7 @@ import { notifyTeamPlayers } from "@/lib/notify";
 import { z } from "zod";
 import { toSlug } from "@/lib/utils";
 import { recomputePlayerBadges } from "@/lib/achievements";
+import { apiMsg } from "@/lib/api-messages";
 
 const playerSlotSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("existing"), playerId: z.string(), needsAccommodation: z.boolean().optional() }),
@@ -44,19 +45,19 @@ const registerSchema = z.object({
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   // Rate limit : 10 inscriptions / 10 min par IP
   if (isRateLimited(getIp(request), 10, 10 * 60 * 1000)) {
-    return Response.json({ error: "Trop de tentatives, réessayez dans quelques minutes." }, { status: 429 });
+    return Response.json({ error: apiMsg("too_many_attempts_minutes") }, { status: 429 });
   }
 
   const tournament = await prisma.tournament.findUnique({ where: { id: params.id } });
-  if (!tournament) return Response.json({ error: "Tournoi introuvable" }, { status: 404 });
-  if (!tournament.approved) return Response.json({ error: "Tournoi non encore approuvé" }, { status: 403 });
+  if (!tournament) return Response.json({ error: apiMsg("tournament_not_found") }, { status: 404 });
+  if (!tournament.approved) return Response.json({ error: apiMsg("tournament_not_approved") }, { status: 403 });
 
   const now = new Date();
   if (tournament.registrationStart && now < tournament.registrationStart) {
-    return Response.json({ error: "Les inscriptions ne sont pas encore ouvertes." }, { status: 403 });
+    return Response.json({ error: apiMsg("registration_not_open") }, { status: 403 });
   }
   if (tournament.registrationEnd && now > tournament.registrationEnd) {
-    return Response.json({ error: "Les inscriptions sont clôturées pour ce tournoi." }, { status: 403 });
+    return Response.json({ error: apiMsg("registration_closed_tournament") }, { status: 403 });
   }
 
   const fmtMatch = tournament.format.match(/^(\d+)v\d+$/i);
@@ -87,21 +88,21 @@ export async function POST(request: Request, { params }: { params: { id: string 
     where: { tournamentId: params.id, name: { equals: teamName, mode: "insensitive" } },
   });
   if (duplicateTeam) {
-    return Response.json({ error: `Une équipe nommée "${teamName}" est déjà inscrite à ce tournoi.` }, { status: 400 });
+    return Response.json({ error: apiMsg("team_name_taken", { team: teamName }) }, { status: 400 });
   }
 
   // Check: no duplicate playerIds in the same submission
   const existingSlots = players.filter((s) => s.type === "existing") as { type: "existing"; playerId: string }[];
   const uniqueIds = new Set(existingSlots.map((s) => s.playerId));
   if (uniqueIds.size < existingSlots.length) {
-    return Response.json({ error: "Un même joueur ne peut pas apparaître deux fois dans la même équipe." }, { status: 400 });
+    return Response.json({ error: apiMsg("duplicate_player_team") }, { status: 400 });
   }
 
   // Check: no duplicate manual player names in the same submission
   const manualSlots = players.filter((s) => s.type === "manual") as { type: "manual"; name: string }[];
   const manualNames = manualSlots.map((s) => s.name.trim().toLowerCase());
   if (new Set(manualNames).size < manualNames.length) {
-    return Response.json({ error: "Le même joueur apparaît deux fois dans le formulaire." }, { status: 400 });
+    return Response.json({ error: apiMsg("duplicate_player_form") }, { status: 400 });
   }
 
   // Check: manual player name already registered in this tournament (case-insensitive, any status)
@@ -113,7 +114,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       },
     });
     if (alreadyManual) {
-      return Response.json({ error: `Un joueur nommé "${slot.name}" est déjà inscrit dans une équipe de ce tournoi.` }, { status: 400 });
+      return Response.json({ error: apiMsg("player_name_taken", { name: slot.name }) }, { status: 400 });
     }
   }
 
@@ -124,15 +125,15 @@ export async function POST(request: Request, { params }: { params: { id: string 
   for (const slot of players) {
     if (slot.type === "existing") {
       const player = await prisma.player.findUnique({ where: { id: slot.playerId } });
-      if (!player) return Response.json({ error: `Joueur ${slot.playerId} introuvable` }, { status: 400 });
-      if (player.status === "REJECTED") return Response.json({ error: `${player.name} est suspendu·e et ne peut pas participer à un tournoi.` }, { status: 403 });
+      if (!player) return Response.json({ error: apiMsg("player_not_found") }, { status: 400 });
+      if (player.status === "REJECTED") return Response.json({ error: apiMsg("player_suspended", { name: player.name }) }, { status: 403 });
 
       // Check: player already in a team for this tournament?
       const alreadyInTeam = await prisma.teamPlayer.findFirst({
         where: { playerId: slot.playerId, team: { tournamentId: params.id } }
       });
       if (alreadyInTeam) {
-        return Response.json({ error: `${player.name} est déjà inscrit·e dans une équipe de ce tournoi.` }, { status: 400 });
+        return Response.json({ error: apiMsg("player_already_in_team", { name: player.name }) }, { status: 400 });
       }
 
       resolvedPlayerIds.push(player.id);
@@ -243,14 +244,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
 export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   const playerId = (session?.user as { playerId?: string } | undefined)?.playerId;
-  if (!playerId) return Response.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return Response.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const tournament = await prisma.tournament.findUnique({ where: { id: params.id } });
-  if (!tournament) return Response.json({ error: "Tournoi introuvable" }, { status: 404 });
+  if (!tournament) return Response.json({ error: apiMsg("tournament_not_found") }, { status: 404 });
 
   const now = new Date();
   if (tournament.registrationEnd && now > tournament.registrationEnd) {
-    return Response.json({ error: "Les inscriptions sont clôturées, contacte l'organisateur." }, { status: 403 });
+    return Response.json({ error: apiMsg("registration_closed_contact") }, { status: 403 });
   }
 
   // Find the team where this player is captain
@@ -259,7 +260,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     include: { team: true },
   });
   if (!captainEntry) {
-    return Response.json({ error: "Tu n'es pas capitaine d'une équipe inscrite à ce tournoi." }, { status: 403 });
+    return Response.json({ error: apiMsg("not_team_captain") }, { status: 403 });
   }
 
   const teamId = captainEntry.teamId;

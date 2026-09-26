@@ -5,6 +5,7 @@ import { canManagePoll } from "@/lib/poll-access";
 import { createNotification } from "@/lib/notify";
 import { applyTargeting, narrows, openBlocker } from "@/lib/poll-targeting";
 import { notifyPollAudience, sweepPolls } from "@/lib/poll-notify";
+import { apiMsg } from "@/lib/api-messages";
 
 // Tous les champs sont optionnels : le PATCH ne modifie que ce qui est fourni
 // (ex: juste { status: "OPEN" } pour ouvrir, ou juste { showResults: "HIDDEN" }).
@@ -36,8 +37,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       allowGuests: true,
     },
   });
-  if (!poll) return new Response("Sondage introuvable", { status: 404 });
-  if (!canManagePoll(poll, session)) return new Response("Non autorisé", { status: 403 });
+  if (!poll) return new Response(apiMsg("poll_not_found"), { status: 404 });
+  if (!canManagePoll(poll, session)) return new Response(apiMsg("not_authorized"), { status: 403 });
   const isAdmin = session?.user?.role === "ADMIN";
 
   const json = await request.json();
@@ -48,7 +49,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const d = parsed.data;
 
   const touchesModeration = d.blocked !== undefined || d.blockedReason !== undefined || d.dismissReports !== undefined;
-  if (touchesModeration && !isAdmin) return new Response("Réservé aux administrateurs", { status: 403 });
+  if (touchesModeration && !isAdmin) return new Response(apiMsg("admins_only"), { status: 403 });
 
   // Un sondage bloqué est gelé pour son créateur : seul l'admin peut le débloquer.
   if (poll.blockedAt && !isAdmin) return Response.json({ error: "blocked" }, { status: 409 });
@@ -143,7 +144,7 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     select: { createdById: true, blockedAt: true },
   });
   if (!poll) return Response.json({ ok: true });
-  if (!canManagePoll(poll, session)) return new Response("Non autorisé", { status: 403 });
+  if (!canManagePoll(poll, session)) return new Response(apiMsg("not_authorized"), { status: 403 });
   // Un créateur ne peut pas effacer les traces d'un sondage bloqué (preuve de
   // modération) : seul l'admin peut le supprimer.
   if (poll.blockedAt && session?.user?.role !== "ADMIN") {

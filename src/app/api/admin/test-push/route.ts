@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { prisma } from "@/lib/db";
 import webpush from "web-push";
+import { apiMsg } from "@/lib/api-messages";
 
 export async function POST() {
   try {
@@ -32,7 +33,7 @@ export async function POST() {
 
     if (subscriptions.length === 0) {
       return Response.json({
-        error: "Aucune subscription push trouvée. Active les notifs push dans Paramètres > Notifications.",
+        error: apiMsg("no_push_subscription"),
         sent: 0,
         failed: 0,
         total: 0,

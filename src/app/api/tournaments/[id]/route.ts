@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   const tournament = await prisma.tournament.findUnique({
@@ -146,7 +147,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
 
   // Bloquer la suppression si le tournoi est LIVE ou COMPLETED
   if (tournament.status === "LIVE" || tournament.status === "COMPLETED") {
-    return Response.json({ error: "Impossible de supprimer un tournoi en cours ou terminé." }, { status: 400 });
+    return Response.json({ error: apiMsg("cannot_delete_started") }, { status: 400 });
   }
 
   await prisma.tournament.delete({ where: { id: params.id } });

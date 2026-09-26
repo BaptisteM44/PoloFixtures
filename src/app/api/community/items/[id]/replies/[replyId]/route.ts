@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { createNotification } from "@/lib/notify";
+import { apiMsg } from "@/lib/api-messages";
 
 const patchSchema = z.object({
   isKeyReply: z.boolean(),
@@ -14,20 +15,20 @@ export async function PATCH(
 ) {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    return NextResponse.json({ error: apiMsg("not_authorized") }, { status: 403 });
   }
 
   const body = await request.json();
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Données invalides" }, { status: 400 });
+    return NextResponse.json({ error: apiMsg("invalid_data") }, { status: 400 });
   }
 
   const reply = await prisma.communityReply.findFirst({
     where: { id: params.replyId, itemId: params.id },
     include: { item: { select: { title: true } } },
   });
-  if (!reply) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+  if (!reply) return NextResponse.json({ error: apiMsg("not_found") }, { status: 404 });
 
   const updated = await prisma.communityReply.update({
     where: { id: params.replyId },
@@ -57,10 +58,10 @@ export async function DELETE(
   const reply = await prisma.communityReply.findFirst({
     where: { id: params.replyId, itemId: params.id },
   });
-  if (!reply) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+  if (!reply) return NextResponse.json({ error: apiMsg("not_found") }, { status: 404 });
 
   if (!isAdmin && reply.authorId !== playerId) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    return NextResponse.json({ error: apiMsg("not_authorized") }, { status: 403 });
   }
 
   await prisma.communityReply.delete({ where: { id: params.replyId } });

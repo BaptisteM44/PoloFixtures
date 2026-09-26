@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { apiMsg } from "@/lib/api-messages";
 
 async function getClubRole(clubId: string, playerId: string) {
   const club = await prisma.club.findUnique({ where: { id: clubId }, select: { managerId: true } });
@@ -14,7 +15,7 @@ async function getClubRole(clubId: string, playerId: string) {
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string; equipmentId: string } }) {
   const session = await auth();
-  if (!session?.user?.playerId) return new Response("Non autorisé", { status: 401 });
+  if (!session?.user?.playerId) return new Response(apiMsg("not_authorized"), { status: 401 });
   const { isMember } = await getClubRole(params.id, session.user.playerId);
   if (!isMember) return new Response("Membres uniquement", { status: 403 });
 
@@ -29,9 +30,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(_: NextRequest, { params }: { params: { id: string; equipmentId: string } }) {
   const session = await auth();
-  if (!session?.user?.playerId) return new Response("Non autorisé", { status: 401 });
+  if (!session?.user?.playerId) return new Response(apiMsg("not_authorized"), { status: 401 });
   const { isAdmin } = await getClubRole(params.id, session.user.playerId);
-  if (!isAdmin) return new Response("Réservé aux admins", { status: 403 });
+  if (!isAdmin) return new Response(apiMsg("admins_only"), { status: 403 });
 
   await prisma.clubEquipment.delete({ where: { id: params.equipmentId } });
   return new Response(null, { status: 204 });

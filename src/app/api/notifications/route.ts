@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { apiMsg } from "@/lib/api-messages";
 
 // GET /api/notifications — notifications du joueur connecté
 export async function GET() {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const notifications = await prisma.notification.findMany({
     where: { playerId },
@@ -21,7 +22,7 @@ export async function GET() {
 export async function DELETE(request: Request) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
@@ -35,7 +36,7 @@ export async function DELETE(request: Request) {
 export async function POST() {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   await prisma.notification.updateMany({
     where: { playerId, read: false },

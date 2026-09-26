@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 async function isCreatorOrAdmin(tournamentId: string, role: string | null | undefined, playerId: string | undefined | null) {
   if (role && hasAtLeastRole(role as never, "ADMIN")) return true;
@@ -35,7 +36,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (!parsed.success) return Response.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const player = await prisma.player.findUnique({ where: { id: parsed.data.playerId } });
-  if (!player) return Response.json({ error: "Joueur introuvable" }, { status: 404 });
+  if (!player) return Response.json({ error: apiMsg("player_not_found") }, { status: 404 });
 
   const organizer = await prisma.tournamentOrganizer.upsert({
     where: { tournamentId_playerId: { tournamentId: params.id, playerId: parsed.data.playerId } },

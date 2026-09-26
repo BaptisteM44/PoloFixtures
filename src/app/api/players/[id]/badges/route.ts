@@ -4,24 +4,25 @@ import { auth } from "@/lib/auth";
 import { recomputePlayerBadges } from "@/lib/achievements";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
 import { createNotification } from "@/lib/notify";
+import { apiMsg } from "@/lib/api-messages";
 
 // POST /api/players/[id]/badges — recalcule et sauvegarde les badges du joueur
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   // Un joueur ne peut recalculer que ses propres badges (sauf admin)
   const isAdmin = session?.user?.role === "ADMIN";
   if (params.id !== playerId && !isAdmin) {
-    return NextResponse.json({ error: "Interdit" }, { status: 403 });
+    return NextResponse.json({ error: apiMsg("forbidden") }, { status: 403 });
   }
 
   const player = await prisma.player.findUnique({
     where: { id: params.id },
     select: { badges: true, account: { select: { id: true } } },
   });
-  if (!player) return NextResponse.json({ error: "Joueur introuvable" }, { status: 404 });
+  if (!player) return NextResponse.json({ error: apiMsg("player_not_found") }, { status: 404 });
 
   const oldBadges = new Set<string>(player.badges as string[]);
   // Remplace l'existant calculé (retire un badge plus mérité, ex: head_ref

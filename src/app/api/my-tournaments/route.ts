@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
+import { apiMsg } from "@/lib/api-messages";
 
 export async function GET() {
   const session = await auth();
   const playerId = session?.user?.playerId;
   if (!playerId) {
-    return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+    return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
   }
 
   await syncLiveTournamentsCompletion();

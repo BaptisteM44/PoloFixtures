@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const subscribeSchema = z.object({
   endpoint: z.string().url(),
@@ -15,7 +16,7 @@ const subscribeSchema = z.object({
 export async function POST(request: Request) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecte" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const body = await request.json();
   const parsed = subscribeSchema.safeParse(body);
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecte" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const { endpoint } = await request.json();
   if (!endpoint) return NextResponse.json({ error: "Missing endpoint" }, { status: 400 });

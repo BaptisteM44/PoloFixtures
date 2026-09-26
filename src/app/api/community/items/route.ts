@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { createNotification } from "@/lib/notify";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
+import { apiMsg } from "@/lib/api-messages";
 
 const createSchema = z.object({
   type: z.enum(["idea", "bug", "translation"]),
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Données invalides", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: apiMsg("invalid_data"), details: parsed.error.flatten() }, { status: 400 });
   }
 
   const session = await auth();

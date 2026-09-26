@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { createNotification } from "@/lib/notify";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
+import { apiMsg } from "@/lib/api-messages";
 
 async function grantBadge(playerId: string, badge: string) {
   try {
@@ -51,7 +52,7 @@ export async function GET(
     },
   });
 
-  if (!item) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+  if (!item) return NextResponse.json({ error: apiMsg("not_found") }, { status: 404 });
 
   const up = item.votes.filter((v) => v.vote === "up").length;
   const meh = item.votes.filter((v) => v.vote === "meh").length;
@@ -95,13 +96,13 @@ export async function PATCH(
 ) {
   const session = await auth();
   if (session?.user?.role !== "ADMIN") {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    return NextResponse.json({ error: apiMsg("not_authorized") }, { status: 403 });
   }
 
   const body = await request.json();
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Données invalides" }, { status: 400 });
+    return NextResponse.json({ error: apiMsg("invalid_data") }, { status: 400 });
   }
 
   const item = await prisma.communityItem.findUnique({
@@ -110,7 +111,7 @@ export async function PATCH(
       votes: { select: { playerId: true, vote: true }, orderBy: { createdAt: "asc" } },
     },
   });
-  if (!item) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+  if (!item) return NextResponse.json({ error: apiMsg("not_found") }, { status: 404 });
 
   // Transition de statut atomique : la condition status:{not:...} est vérifiée
   // par la base au moment de l'écriture, pas sur la valeur lue plus haut — deux
@@ -203,10 +204,10 @@ export async function DELETE(
   const isAdmin = session?.user?.role === "ADMIN";
 
   const item = await prisma.communityItem.findUnique({ where: { id: params.id } });
-  if (!item) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+  if (!item) return NextResponse.json({ error: apiMsg("not_found") }, { status: 404 });
 
   if (!isAdmin && item.authorId !== playerId) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    return NextResponse.json({ error: apiMsg("not_authorized") }, { status: 403 });
   }
 
   await prisma.communityItem.delete({ where: { id: params.id } });

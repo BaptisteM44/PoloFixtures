@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { isRateLimited } from "@/lib/rate-limit";
 import { notifyAllAdmins } from "@/lib/notify";
+import { apiMsg } from "@/lib/api-messages";
 
 const reportSchema = z.object({ reason: z.string().trim().min(5).max(500) });
 
@@ -24,7 +25,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     where: { id: params.id },
     select: { id: true, question: true, createdById: true, status: true },
   });
-  if (!poll || poll.status === "DRAFT") return new Response("Sondage introuvable", { status: 404 });
+  if (!poll || poll.status === "DRAFT") return new Response(apiMsg("poll_not_found"), { status: 404 });
   if (poll.createdById === playerId) return Response.json({ error: "own_poll" }, { status: 400 });
 
   try {

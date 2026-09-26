@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const createSchema = z.object({
   name: z.string().min(2).max(60),
@@ -14,7 +15,7 @@ const createSchema = z.object({
 export async function GET() {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const squads = await prisma.squad.findMany({
     where: { members: { some: { playerId } } },
@@ -35,11 +36,11 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
   const parsed = createSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Données invalides" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: apiMsg("invalid_data") }, { status: 400 });
 
   const squad = await prisma.squad.create({
     data: {

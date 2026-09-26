@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { createNotification, notifyCommunityReply } from "@/lib/notify";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
+import { apiMsg } from "@/lib/api-messages";
 
 async function grantBadge(playerId: string, badge: string) {
   try {
@@ -77,14 +78,14 @@ export async function POST(
   const body = await request.json();
   const parsed = replySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Données invalides", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json({ error: apiMsg("invalid_data"), details: parsed.error.flatten() }, { status: 400 });
   }
 
   const item = await prisma.communityItem.findUnique({
     where: { id: params.id },
     select: { id: true, authorId: true, title: true },
   });
-  if (!item) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+  if (!item) return NextResponse.json({ error: apiMsg("not_found") }, { status: 404 });
 
   const session = await auth();
   const playerId = session?.user?.playerId ?? null;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const voteSchema = z.object({
   vote: z.enum(["up", "meh", "down"]),
@@ -15,14 +16,14 @@ export async function POST(
   const body = await request.json();
   const parsed = voteSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Données invalides" }, { status: 400 });
+    return NextResponse.json({ error: apiMsg("invalid_data") }, { status: 400 });
   }
 
   const { vote, comment } = parsed.data;
 
   if (vote === "meh" && !comment?.trim()) {
     return NextResponse.json(
-      { error: "Un commentaire est obligatoire pour ce type de vote" },
+      { error: apiMsg("comment_required_vote") },
       { status: 400 }
     );
   }
@@ -32,7 +33,7 @@ export async function POST(
     select: { id: true },
   });
   if (!itemExists) {
-    return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+    return NextResponse.json({ error: apiMsg("not_found") }, { status: 404 });
   }
 
   const session = await auth();
@@ -66,7 +67,7 @@ export async function DELETE(
 ) {
   const session = await auth();
   const playerId = session?.user?.playerId ?? null;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   await prisma.communityVote.deleteMany({
     where: { itemId: params.id, playerId },

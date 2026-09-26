@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { areResultsVisibleToVoters } from "@/lib/poll-vote";
 import { canManagePoll } from "@/lib/poll-access";
+import { apiMsg } from "@/lib/api-messages";
 
 /**
  * Résultats AGRÉGÉS et anonymes d'un sondage : nombre de bulletins par option.
@@ -26,7 +27,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
       eligibleClubIds: true, eligibleCountries: true, eligibleContinents: true,
     },
   });
-  if (!poll) return new Response("Sondage introuvable", { status: 404 });
+  if (!poll) return new Response(apiMsg("poll_not_found"), { status: 404 });
 
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN";

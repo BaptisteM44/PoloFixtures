@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { sendMail, isMailerConfigured } from "@/lib/mailer";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
+import { apiMsg } from "@/lib/api-messages";
 
 const contactSchema = z.object({
   name: z.string().min(1).max(100),
@@ -11,7 +12,7 @@ const contactSchema = z.object({
 
 export async function POST(req: Request) {
   if (isRateLimited(getIp(req), 3, 10 * 60 * 1000)) {
-    return Response.json({ error: "Trop de tentatives. Réessayez dans 10 minutes." }, { status: 429 });
+    return Response.json({ error: apiMsg("too_many_attempts_10min") }, { status: 429 });
   }
 
   const body = await req.json();

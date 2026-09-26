@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
+import { apiMsg } from "@/lib/api-messages";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -40,7 +41,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
       });
       if (laterRound) {
         return Response.json(
-          { error: "Un round suivant existe déjà — utilise « revenir à ce round » dans l'onglet Étapes." },
+          { error: apiMsg("next_round_exists") },
           { status: 422 }
         );
       }
@@ -61,7 +62,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
           : null;
       if (propagatedTeam && propagatedTeam === currentWinnerId) {
         return Response.json(
-          { error: "Ce match a une suite — modifiez les scores plutôt que de le réinitialiser." },
+          { error: apiMsg("match_has_next") },
           { status: 422 }
         );
       }

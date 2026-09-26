@@ -1,6 +1,7 @@
 import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { sendMail, isMailerConfigured } from "@/lib/mailer";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({
   name: z.string().min(2).max(100),
@@ -12,13 +13,13 @@ const schema = z.object({
 export async function POST(request: Request) {
   // Rate limit : 3 messages / 30 min par IP
   if (isRateLimited(getIp(request), 3, 30 * 60 * 1000)) {
-    return Response.json({ error: "Trop de messages envoyés. Réessayez dans 30 minutes." }, { status: 429 });
+    return Response.json({ error: apiMsg("too_many_messages") }, { status: 429 });
   }
 
   const json = await request.json().catch(() => null);
   const parsed = schema.safeParse(json);
   if (!parsed.success) {
-    return Response.json({ error: "Données invalides." }, { status: 400 });
+    return Response.json({ error: apiMsg("invalid_data") }, { status: 400 });
   }
 
   const { name, email, subject, message } = parsed.data;

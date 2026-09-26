@@ -2,17 +2,18 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 // GET /api/squads/[squadId]/messages
 export async function GET(_req: Request, { params }: { params: { squadId: string } }) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const member = await prisma.squadMember.findUnique({
     where: { squadId_playerId: { squadId: params.squadId, playerId } },
   });
-  if (!member) return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  if (!member) return NextResponse.json({ error: apiMsg("access_denied") }, { status: 403 });
 
   const messages = await prisma.squadMessage.findMany({
     where: { squadId: params.squadId },
@@ -28,16 +29,16 @@ export async function GET(_req: Request, { params }: { params: { squadId: string
 export async function POST(req: Request, { params }: { params: { squadId: string } }) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const member = await prisma.squadMember.findUnique({
     where: { squadId_playerId: { squadId: params.squadId, playerId } },
   });
-  if (!member) return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  if (!member) return NextResponse.json({ error: apiMsg("access_denied") }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
   const parsed = z.object({ content: z.string().min(1).max(1000) }).safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Message invalide" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: apiMsg("invalid_message") }, { status: 400 });
 
   const message = await prisma.squadMessage.create({
     data: { squadId: params.squadId, authorId: playerId, content: parsed.data.content },

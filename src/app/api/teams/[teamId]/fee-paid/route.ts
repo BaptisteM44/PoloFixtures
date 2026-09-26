@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { notifyTeamPlayers } from "@/lib/notify";
+import { apiMsg } from "@/lib/api-messages";
 
 // PATCH /api/teams/:teamId/fee-paid — toggle feePaid for a team
 // Only orga/admin of the tournament containing this team
@@ -26,7 +27,7 @@ export async function PATCH(request: Request, { params }: { params: { teamId: st
 
   // Une équipe en liste d'attente ne joue pas (encore) — le paiement n'a pas de sens.
   if (team.selected === false) {
-    return Response.json({ error: "Impossible de marquer le paiement d'une équipe en liste d'attente." }, { status: 400 });
+    return Response.json({ error: apiMsg("fee_waitlisted") }, { status: 400 });
   }
 
   const isAdmin = session.user.role === "ADMIN";

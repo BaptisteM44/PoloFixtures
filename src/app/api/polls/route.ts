@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { isRateLimited } from "@/lib/rate-limit";
 import { applyTargeting, previewTargeting } from "@/lib/poll-targeting";
+import { apiMsg } from "@/lib/api-messages";
 
 // Un champ du formulaire libre demandé aux guests. L'email n'est PAS ici : il
 // est toujours demandé séparément (anti-fraude). type "club" affiche une liste
@@ -41,7 +42,7 @@ const createSchema = z.object({
 export async function POST(request: Request) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return new Response("Connexion requise", { status: 401 });
+  if (!playerId) return new Response(apiMsg("login_required"), { status: 401 });
   const isAdmin = session?.user?.role === "ADMIN";
 
   // Anti-spam : 5 sondages par jour et par joueur (l'admin n'est pas limité).
@@ -105,7 +106,7 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return new Response("Connexion requise", { status: 401 });
+  if (!playerId) return new Response(apiMsg("login_required"), { status: 401 });
   const isAdmin = session?.user?.role === "ADMIN";
   const mine = new URL(request.url).searchParams.get("mine") === "1";
 

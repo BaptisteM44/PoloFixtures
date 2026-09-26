@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { findPollAudience } from "@/lib/poll-access";
 import { ownScope, previewTargeting, isGlobal } from "@/lib/poll-targeting";
+import { apiMsg } from "@/lib/api-messages";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ const list = (v: string | null) => (v ? v.split(",").map((s) => s.trim()).filter
 export async function GET(request: Request) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return new Response("Connexion requise", { status: 401 });
+  if (!playerId) return new Response(apiMsg("login_required"), { status: 401 });
   const isAdmin = session?.user?.role === "ADMIN";
   const sp = new URL(request.url).searchParams;
   const requested = { clubIds: list(sp.get("clubs")), countries: list(sp.get("countries")), continents: list(sp.get("continents")) };

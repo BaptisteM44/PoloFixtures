@@ -4,6 +4,7 @@ import { getLangFromCountry, resetPasswordEmail } from "@/lib/email-templates";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { randomBytes } from "crypto";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({ email: z.string().email() });
 
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
   const body = await req.json();
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return Response.json({ error: "Email invalide" }, { status: 400 });
+    return Response.json({ error: apiMsg("invalid_email") }, { status: 400 });
   }
 
   // Insensible à la casse : des comptes ont été créés avec des majuscules

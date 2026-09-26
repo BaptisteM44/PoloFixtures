@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const addGuestSchema = z.object({
   teamPlayerId: z.string(),
@@ -24,7 +25,7 @@ export async function POST(req: Request, { params }: { params: { id: string; hos
     include: { team: { select: { tournamentId: true } } },
   });
   if (!teamPlayer || teamPlayer.team.tournamentId !== params.id) {
-    return Response.json({ error: "Joueur introuvable dans ce tournoi." }, { status: 400 });
+    return Response.json({ error: apiMsg("player_not_in_tournament") }, { status: 400 });
   }
 
   const guest = await prisma.accommodationGuest.create({

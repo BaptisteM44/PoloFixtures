@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { countryToContinentOrDefault, normalizeCountry } from "@/lib/country-utils";
+import { apiMsg } from "@/lib/api-messages";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   const club = await prisma.club.findUnique({
@@ -21,7 +22,7 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
       },
     },
   });
-  if (!club) return new Response("Club introuvable", { status: 404 });
+  if (!club) return new Response(apiMsg("club_not_found"), { status: 404 });
   return Response.json(club);
 }
 
@@ -38,10 +39,10 @@ const updateSchema = z.object({
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.playerId) return new Response("Non autorisé", { status: 401 });
+  if (!session?.user?.playerId) return new Response(apiMsg("not_authorized"), { status: 401 });
 
   const club = await prisma.club.findUnique({ where: { id: params.id } });
-  if (!club) return new Response("Introuvable", { status: 404 });
+  if (!club) return new Response(apiMsg("not_found"), { status: 404 });
   // Tout membre actif du club peut modifier (pas seulement le manager)
   const membership = await prisma.clubMember.findUnique({
     where: { clubId_playerId: { clubId: params.id, playerId: session.user.playerId } },
@@ -49,7 +50,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const isMember = membership?.status === "MEMBER";
   const isAdmin = session.user.role === "ADMIN";
   if (!isMember && !isAdmin) {
-    return new Response("Non autorisé", { status: 403 });
+    return new Response(apiMsg("not_authorized"), { status: 403 });
   }
 
   const body = await request.json();

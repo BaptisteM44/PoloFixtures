@@ -4,16 +4,17 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { createNotification } from "@/lib/notify";
 import { publishDirectMessage } from "@/lib/sse";
+import { apiMsg } from "@/lib/api-messages";
 
 async function getConvAndPlayer(id: string) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return { error: "Non connecté", status: 401 } as const;
+  if (!playerId) return { error: apiMsg("not_logged_in"), status: 401 } as const;
 
   const conv = await prisma.directConversation.findUnique({ where: { id } });
-  if (!conv) return { error: "Conversation introuvable", status: 404 } as const;
+  if (!conv) return { error: apiMsg("conversation_not_found"), status: 404 } as const;
   if (conv.playerAId !== playerId && conv.playerBId !== playerId)
-    return { error: "Accès refusé", status: 403 } as const;
+    return { error: apiMsg("access_denied"), status: 403 } as const;
 
   const recipientId = conv.playerAId === playerId ? conv.playerBId : conv.playerAId;
   return { playerId, conv, recipientId };
@@ -95,9 +96,9 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
   // Only the author can delete their own message
   const message = await prisma.directMessage.findUnique({ where: { id: parsed.data.messageId } });
   if (!message || message.conversationId !== params.id)
-    return NextResponse.json({ error: "Message introuvable" }, { status: 404 });
+    return NextResponse.json({ error: apiMsg("message_not_found") }, { status: 404 });
   if (message.authorId !== ctx.playerId)
-    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+    return NextResponse.json({ error: apiMsg("access_denied") }, { status: 403 });
 
   await prisma.directMessage.delete({ where: { id: parsed.data.messageId } });
   publishDirectMessage({
@@ -119,9 +120,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const message = await prisma.directMessage.findUnique({ where: { id: parsed.data.messageId } });
   if (!message || message.conversationId !== params.id)
-    return NextResponse.json({ error: "Message introuvable" }, { status: 404 });
+    return NextResponse.json({ error: apiMsg("message_not_found") }, { status: 404 });
   if (message.authorId !== ctx.playerId)
-    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+    return NextResponse.json({ error: apiMsg("access_denied") }, { status: 403 });
 
   const updated = await prisma.directMessage.update({
     where: { id: parsed.data.messageId },

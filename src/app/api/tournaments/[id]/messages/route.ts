@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { apiMsg } from "@/lib/api-messages";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const { searchParams } = new URL(req.url);
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user?.playerId) {
-    return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+    return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
   }
 
   const body = await req.json();
@@ -73,7 +74,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   // Multiplex chat is always open; regular chat checks chatMode
   if (!isMultiplex) {
     if (tournament.chatMode === "DISABLED") {
-      return NextResponse.json({ error: "Chat désactivé" }, { status: 403 });
+      return NextResponse.json({ error: apiMsg("chat_disabled") }, { status: 403 });
     }
     const isOrga =
       session.user.role === "ADMIN" ||
@@ -81,13 +82,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       tournament.creatorId === session.user.playerId ||
       tournament.coOrganizers.some((co) => co.playerId === session.user.playerId);
     if (tournament.chatMode === "ORG_ONLY" && !isOrga) {
-      return NextResponse.json({ error: "Réservé à l'organisateur" }, { status: 403 });
+      return NextResponse.json({ error: apiMsg("organizer_only") }, { status: 403 });
     }
   }
 
   const content = (body.content ?? "").trim();
   if (!content || content.length > 1000) {
-    return NextResponse.json({ error: "Message invalide" }, { status: 400 });
+    return NextResponse.json({ error: apiMsg("invalid_message") }, { status: 400 });
   }
 
   const message = await prisma.tournamentMessage.create({
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
   if (!session?.user?.playerId) {
-    return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+    return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
   }
 
   const tournament = await prisma.tournament.findUnique({
@@ -117,7 +118,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     tournament.coOrganizers.some((co) => co.playerId === session.user.playerId);
 
   if (!isOrga) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    return NextResponse.json({ error: apiMsg("not_authorized") }, { status: 403 });
   }
 
   const { searchParams } = new URL(req.url);
@@ -130,7 +131,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     where: { id: messageId },
   });
   if (!message || message.tournamentId !== params.id) {
-    return NextResponse.json({ error: "Message introuvable" }, { status: 404 });
+    return NextResponse.json({ error: apiMsg("message_not_found") }, { status: 404 });
   }
 
   await prisma.tournamentMessage.update({

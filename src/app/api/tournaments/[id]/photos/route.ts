@@ -7,6 +7,7 @@ import {
   PHOTOS_PER_PLAYER, galleryClosesAt, galleryOpensAt, galleryPhase, galleryPhotoSelect, galleryTournamentSelect,
   isGalleryParticipant, notifyPhotoRequest, toGalleryPhoto, tournamentEndsAt, visiblePhotoWhere,
 } from "@/lib/tournament-photos";
+import { apiMsg } from "@/lib/api-messages";
 
 export const dynamic = "force-dynamic";
 
@@ -102,7 +103,7 @@ const patchSchema = z.object({ pinned: z.boolean() });
 /** Épingler la galerie « à la une » sur la home (admin). */
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") return new Response("Réservé aux administrateurs", { status: 403 });
+  if (session?.user?.role !== "ADMIN") return new Response(apiMsg("admins_only"), { status: 403 });
   const parsed = patchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "invalid" }, { status: 400 });
   await prisma.tournament.update({

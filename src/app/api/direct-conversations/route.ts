@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { createNotification } from "@/lib/notify";
 import { publishDirectMessage } from "@/lib/sse";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({
   recipientId: z.string(),
@@ -14,7 +15,7 @@ const schema = z.object({
 export async function GET() {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const [conversations, account] = await Promise.all([
     prisma.directConversation.findMany({
@@ -51,7 +52,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const body = await req.json();
   const parsed = schema.safeParse(body);
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
   const { recipientId, message, freeAgentId } = parsed.data;
 
   if (recipientId === playerId)
-    return NextResponse.json({ error: "Impossible de se contacter soi-même" }, { status: 400 });
+    return NextResponse.json({ error: apiMsg("cannot_contact_self") }, { status: 400 });
 
   // Ensure consistent ordering (smaller id = playerA) to satisfy @@unique
   const [aId, bId] = [playerId, recipientId].sort();

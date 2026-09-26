@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { apiMsg } from "@/lib/api-messages";
 
 async function getClubRole(clubId: string, playerId: string) {
   const club = await prisma.club.findUnique({ where: { id: clubId }, select: { managerId: true } });
@@ -23,12 +24,12 @@ export async function GET(_: NextRequest, { params }: { params: { id: string } }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.playerId) return new Response("Non autorisé", { status: 401 });
+  if (!session?.user?.playerId) return new Response(apiMsg("not_authorized"), { status: 401 });
   const { isAdmin } = await getClubRole(params.id, session.user.playerId);
-  if (!isAdmin) return new Response("Réservé aux admins", { status: 403 });
+  if (!isAdmin) return new Response(apiMsg("admins_only"), { status: 403 });
 
   const { name, category, notes } = await req.json();
-  if (!name || !category) return new Response("Données manquantes", { status: 400 });
+  if (!name || !category) return new Response(apiMsg("missing_data"), { status: 400 });
 
   const item = await prisma.clubEquipment.create({
     data: { clubId: params.id, name, category, notes: notes ?? null },

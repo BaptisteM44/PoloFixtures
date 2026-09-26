@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { notifyPhotoDecision } from "@/lib/tournament-photos";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({
   photoIds: z.array(z.string().min(1)).min(1).max(100),
@@ -17,7 +18,7 @@ const schema = z.object({
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN";
-  if (!isAdmin && !(await getOrgaPlayerId(params.id))) return new Response("Non autorisé", { status: 403 });
+  if (!isAdmin && !(await getOrgaPlayerId(params.id))) return new Response(apiMsg("not_authorized"), { status: 403 });
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "invalid" }, { status: 400 });
 

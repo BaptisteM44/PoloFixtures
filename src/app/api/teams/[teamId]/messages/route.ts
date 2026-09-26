@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { createNotification } from "@/lib/notify";
+import { apiMsg } from "@/lib/api-messages";
 
 /** Check whether the authenticated player belongs to this team */
 async function isMember(playerId: string, teamId: string) {
@@ -17,11 +18,11 @@ export async function GET(
 ) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const isAdmin = session?.user?.role === "ADMIN";
   if (!isAdmin && !(await isMember(playerId, params.teamId))) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    return NextResponse.json({ error: apiMsg("not_authorized") }, { status: 403 });
   }
 
   const messages = await prisma.teamMessage.findMany({
@@ -40,17 +41,17 @@ export async function POST(
 ) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const isAdmin = session?.user?.role === "ADMIN";
   if (!isAdmin && !(await isMember(playerId, params.teamId))) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    return NextResponse.json({ error: apiMsg("not_authorized") }, { status: 403 });
   }
 
   const body = await req.json();
   const content = (body.content ?? "").trim();
   if (!content || content.length > 1000) {
-    return NextResponse.json({ error: "Message invalide" }, { status: 400 });
+    return NextResponse.json({ error: apiMsg("invalid_message") }, { status: 400 });
   }
 
   const message = await prisma.teamMessage.create({

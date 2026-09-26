@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({
   currentPassword: z.string().min(1),
@@ -11,7 +12,7 @@ const schema = z.object({
 export async function PATCH(req: Request) {
   const session = await auth();
   if (!session?.user?.playerId) {
-    return Response.json({ error: "Non authentifié" }, { status: 401 });
+    return Response.json({ error: apiMsg("not_logged_in") }, { status: 401 });
   }
 
   const body = await req.json();
@@ -24,7 +25,7 @@ export async function PATCH(req: Request) {
     where: { playerId: session.user.playerId },
   });
   if (!account) {
-    return Response.json({ error: "Compte introuvable" }, { status: 404 });
+    return Response.json({ error: apiMsg("account_not_found") }, { status: 404 });
   }
 
   const ok = await bcrypt.compare(parsed.data.currentPassword, account.passwordHash);

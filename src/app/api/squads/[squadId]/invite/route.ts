@@ -3,17 +3,18 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { createNotification } from "@/lib/notify";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 // POST /api/squads/[squadId]/invite — inviter un joueur
 export async function POST(req: Request, { params }: { params: { squadId: string } }) {
   const session = await auth();
   const currentPlayerId = session?.user?.playerId;
-  if (!currentPlayerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!currentPlayerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const member = await prisma.squadMember.findUnique({
     where: { squadId_playerId: { squadId: params.squadId, playerId: currentPlayerId } },
   });
-  if (!member) return NextResponse.json({ error: "Pas membre de cette équipe" }, { status: 403 });
+  if (!member) return NextResponse.json({ error: apiMsg("not_team_member") }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
   const parsed = z.object({ playerId: z.string() }).safeParse(body);
@@ -25,14 +26,14 @@ export async function POST(req: Request, { params }: { params: { squadId: string
   const alreadyMember = await prisma.squadMember.findUnique({
     where: { squadId_playerId: { squadId: params.squadId, playerId: invitedPlayerId } },
   });
-  if (alreadyMember) return NextResponse.json({ error: "Déjà membre de l'équipe" }, { status: 400 });
+  if (alreadyMember) return NextResponse.json({ error: apiMsg("already_team_member") }, { status: 400 });
 
   // Invitation déjà en attente ?
   const existing = await prisma.squadInvitation.findUnique({
     where: { squadId_invitedPlayerId: { squadId: params.squadId, invitedPlayerId } },
   });
   if (existing && existing.status === "PENDING") {
-    return NextResponse.json({ error: "Invitation déjà envoyée" }, { status: 400 });
+    return NextResponse.json({ error: apiMsg("invitation_already_sent") }, { status: 400 });
   }
 
   // Recréer l'invitation si elle avait été refusée
@@ -61,12 +62,12 @@ export async function POST(req: Request, { params }: { params: { squadId: string
 export async function DELETE(req: Request, { params }: { params: { squadId: string } }) {
   const session = await auth();
   const currentPlayerId = session?.user?.playerId;
-  if (!currentPlayerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!currentPlayerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const member = await prisma.squadMember.findUnique({
     where: { squadId_playerId: { squadId: params.squadId, playerId: currentPlayerId } },
   });
-  if (!member) return NextResponse.json({ error: "Pas membre de cette équipe" }, { status: 403 });
+  if (!member) return NextResponse.json({ error: apiMsg("not_team_member") }, { status: 403 });
 
   const { searchParams } = new URL(req.url);
   const invitationId = searchParams.get("invitationId");

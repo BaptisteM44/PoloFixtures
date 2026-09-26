@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { PlayerStatus } from "@prisma/client";
 import { computeCareerBadges } from "@/lib/achievements";
 import { toSlug } from "@/lib/utils";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -19,7 +20,7 @@ const schema = z.object({
 export async function POST(req: Request) {
   // Rate limit : 5 créations de compte / 30 min par IP
   if (isRateLimited(getIp(req), 5, 30 * 60 * 1000)) {
-    return Response.json({ error: "Trop de tentatives, réessayez plus tard." }, { status: 429 });
+    return Response.json({ error: apiMsg("too_many_attempts") }, { status: 429 });
   }
 
   const body = await req.json();
@@ -34,7 +35,7 @@ export async function POST(req: Request) {
 
   const existing = await prisma.playerAccount.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
   if (existing) {
-    return Response.json({ error: "Cette adresse email est déjà utilisée." }, { status: 409 });
+    return Response.json({ error: apiMsg("email_taken") }, { status: 409 });
   }
 
   const passwordHash = await bcrypt.hash(password, 10);

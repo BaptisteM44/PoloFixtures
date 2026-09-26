@@ -9,6 +9,7 @@ import { checkVoteMilestone } from "@/lib/poll-notify";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { sendMail } from "@/lib/mailer";
 import { SITE_URL } from "@/lib/site-url";
+import { apiMsg } from "@/lib/api-messages";
 
 const voteSchema = z.object({
   choices: z.array(z.string()).min(1).max(20),
@@ -28,7 +29,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     },
   })) as (PollLite & PollEligibility & { allowGuests: boolean; allowComment: boolean; blockedAt: Date | null }) | null;
 
-  if (!poll) return new Response("Sondage introuvable", { status: 404 });
+  if (!poll) return new Response(apiMsg("poll_not_found"), { status: 404 });
   if (poll.blockedAt) return Response.json({ error: "blocked" }, { status: 409 });
   if (!isPollOpen(poll)) return Response.json({ error: "closed" }, { status: 409 });
 

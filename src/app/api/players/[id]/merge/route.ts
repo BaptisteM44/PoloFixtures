@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
+import { apiMsg } from "@/lib/api-messages";
 
 // POST /api/players/:id/merge
 // Body: { targetPlayerId: string }
@@ -38,12 +39,12 @@ export async function POST(request: Request, { params }: { params: { id: string 
     prisma.player.findUnique({ where: { id: params.id } }),
     prisma.player.findUnique({ where: { id: targetPlayerId } }),
   ]);
-  if (!source) return Response.json({ error: "Joueur source introuvable" }, { status: 404 });
-  if (!target) return Response.json({ error: "Joueur cible introuvable" }, { status: 404 });
+  if (!source) return Response.json({ error: apiMsg("source_player_not_found") }, { status: 404 });
+  if (!target) return Response.json({ error: apiMsg("target_player_not_found") }, { status: 404 });
 
   const sourceAccount = await prisma.playerAccount.findUnique({ where: { playerId: params.id } });
   if (sourceAccount) {
-    return Response.json({ error: "Ce joueur possède un compte — fusion non autorisée" }, { status: 409 });
+    return Response.json({ error: apiMsg("merge_has_account") }, { status: 409 });
   }
 
   await prisma.$transaction(async (tx) => {

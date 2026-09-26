@@ -3,6 +3,7 @@ import { z } from "zod";
 import { publishChannelUpdate } from "@/lib/sse";
 import { auth } from "@/lib/auth";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
+import { apiMsg } from "@/lib/api-messages";
 
 /**
  * Qui pilote un canal (ce qui s'affiche en direct dans OBS) : l'admin, ou un
@@ -36,7 +37,7 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
     where: { slug: params.slug },
     include: { tournament: { select: { id: true, name: true, gameDurationMin: true, status: true } } },
   });
-  if (!channel) return Response.json({ error: "Canal introuvable" }, { status: 404 });
+  if (!channel) return Response.json({ error: apiMsg("channel_not_found") }, { status: 404 });
   return Response.json(channel);
 }
 
@@ -48,11 +49,11 @@ export async function PATCH(req: Request, { params }: { params: { slug: string }
     return Response.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
   const current = await prisma.overlayChannel.findUnique({ where: { slug: params.slug }, select: { tournamentId: true } });
-  if (!current) return Response.json({ error: "Canal introuvable" }, { status: 404 });
-  if (!(await canControl(current.tournamentId))) return Response.json({ error: "Non autorisé" }, { status: 403 });
+  if (!current) return Response.json({ error: apiMsg("channel_not_found") }, { status: 404 });
+  if (!(await canControl(current.tournamentId))) return Response.json({ error: apiMsg("not_authorized") }, { status: 403 });
   // Réassigner le canal à un autre tournoi : il faut aussi en être organisateur.
   if (parsed.data.tournamentId && parsed.data.tournamentId !== current.tournamentId && !(await canControl(parsed.data.tournamentId))) {
-    return Response.json({ error: "Non autorisé" }, { status: 403 });
+    return Response.json({ error: apiMsg("not_authorized") }, { status: 403 });
   }
 
   const channel = await prisma.overlayChannel.update({
@@ -76,7 +77,7 @@ export async function PATCH(req: Request, { params }: { params: { slug: string }
 // DELETE /api/overlay/channels/[slug]
 export async function DELETE(_req: Request, { params }: { params: { slug: string } }) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") return Response.json({ error: "Réservé aux administrateurs" }, { status: 403 });
+  if (session?.user?.role !== "ADMIN") return Response.json({ error: apiMsg("admins_only") }, { status: 403 });
   await prisma.overlayChannel.delete({ where: { slug: params.slug } }).catch(() => {});
   return Response.json({ ok: true });
 }

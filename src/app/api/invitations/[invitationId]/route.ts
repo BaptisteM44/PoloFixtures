@@ -3,12 +3,13 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { createNotification } from "@/lib/notify";
+import { apiMsg } from "@/lib/api-messages";
 
 // PATCH /api/invitations/[invitationId] — accepter ou refuser
 export async function PATCH(req: Request, { params }: { params: { invitationId: string } }) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
   const parsed = z.object({ action: z.enum(["accept", "decline"]) }).safeParse(body);
@@ -19,9 +20,9 @@ export async function PATCH(req: Request, { params }: { params: { invitationId: 
     include: { squad: { select: { id: true, name: true } } },
   });
 
-  if (!invitation) return NextResponse.json({ error: "Invitation introuvable" }, { status: 404 });
-  if (invitation.invitedPlayerId !== playerId) return NextResponse.json({ error: "Pas pour vous" }, { status: 403 });
-  if (invitation.status !== "PENDING") return NextResponse.json({ error: "Invitation déjà traitée" }, { status: 400 });
+  if (!invitation) return NextResponse.json({ error: apiMsg("invitation_not_found") }, { status: 404 });
+  if (invitation.invitedPlayerId !== playerId) return NextResponse.json({ error: apiMsg("not_for_you") }, { status: 403 });
+  if (invitation.status !== "PENDING") return NextResponse.json({ error: apiMsg("invitation_already_handled") }, { status: 400 });
 
   const invitedPlayer = await prisma.player.findUnique({ where: { id: playerId }, select: { name: true } });
 

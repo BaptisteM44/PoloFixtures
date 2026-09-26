@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({
   token: z.string().min(1),
@@ -12,7 +13,7 @@ export async function POST(req: Request) {
   // Rate-limit par IP : sans lui, on pourrait brute-forcer les tokens de reset.
   // 10 tentatives / 10 min suffisent largement pour un usage légitime.
   if (isRateLimited(`reset-pw:${getIp(req)}`, 10, 10 * 60 * 1000)) {
-    return Response.json({ error: "Trop de tentatives, réessayez plus tard." }, { status: 429 });
+    return Response.json({ error: apiMsg("too_many_attempts") }, { status: 429 });
   }
 
   const body = await req.json();
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
   });
 
   if (!account || !account.resetTokenExpiry || account.resetTokenExpiry < new Date()) {
-    return Response.json({ error: "Lien invalide ou expiré" }, { status: 400 });
+    return Response.json({ error: apiMsg("invalid_or_expired_link") }, { status: 400 });
   }
 
   const newHash = await bcrypt.hash(parsed.data.password, 12);

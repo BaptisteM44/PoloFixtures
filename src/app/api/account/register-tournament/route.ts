@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({
   tournamentId: z.string(),
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
   const tournament = await prisma.tournament.findUnique({ where: { id: parsed.data.tournamentId } });
   if (!tournament) return Response.json({ error: "Tournament not found" }, { status: 404 });
   if (tournament.status === "COMPLETED") {
-    return Response.json({ error: "Ce tournoi est terminé." }, { status: 400 });
+    return Response.json({ error: apiMsg("tournament_finished") }, { status: 400 });
   }
 
   // Check if already registered
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
     }
   });
   if (existing) {
-    return Response.json({ error: "Déjà inscrit à ce tournoi." }, { status: 409 });
+    return Response.json({ error: apiMsg("already_registered_short") }, { status: 409 });
   }
 
   // Retrieve email from PlayerAccount if it exists

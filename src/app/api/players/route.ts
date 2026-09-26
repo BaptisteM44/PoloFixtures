@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { toSlug } from "@/lib/utils";
 import { auth } from "@/lib/auth";
+import { apiMsg } from "@/lib/api-messages";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -121,7 +122,7 @@ const createSchema = z.object({
 /** Création d'un profil joueur sans compte — réservée à l'admin. */
 export async function POST(request: Request) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") return new Response("Réservé aux administrateurs", { status: 403 });
+  if (session?.user?.role !== "ADMIN") return new Response(apiMsg("admins_only"), { status: 403 });
   const body = await request.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {

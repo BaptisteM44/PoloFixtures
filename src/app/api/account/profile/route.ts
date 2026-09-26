@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { getPublicBadgeCatalog } from "@/lib/badge-catalog";
 import { resolveOwnedCards } from "@/lib/card-catalog";
+import { apiMsg } from "@/lib/api-messages";
 
 export async function GET() {
   const session = await auth();
@@ -80,7 +81,7 @@ export async function PATCH(req: Request) {
     const ownedCards = current?.whbpcCard ? [...(current.ownedCards ?? []), "whbpc"] : current?.ownedCards ?? [];
     const owned = resolveOwnedCards(ownedCards);
     if (!owned.has(parsed.data.activeCard)) {
-      return Response.json({ error: "Carte non débloquée." }, { status: 400 });
+      return Response.json({ error: apiMsg("card_locked") }, { status: 400 });
     }
   }
 

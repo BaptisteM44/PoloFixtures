@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 // POST : manager invite un joueur  OR  un joueur demande à rejoindre
 const postSchema = z.object({
@@ -11,11 +12,11 @@ const postSchema = z.object({
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.playerId) return new Response("Non autorisé", { status: 401 });
+  if (!session?.user?.playerId) return new Response(apiMsg("not_authorized"), { status: 401 });
 
   const club = await prisma.club.findUnique({ where: { id: params.id } });
-  if (!club) return new Response("Club introuvable", { status: 404 });
-  if (!club.approved) return new Response("Club en attente d'approbation", { status: 403 });
+  if (!club) return new Response(apiMsg("club_not_found"), { status: 404 });
+  if (!club.approved) return new Response(apiMsg("club_pending_approval"), { status: 403 });
 
   const body = await request.json();
   const data = postSchema.safeParse(body);
@@ -25,12 +26,12 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   if (data.data.action === "invite") {
     // Seulement le manager peut inviter
-    if (!isManager) return new Response("Réservé au manager du club", { status: 403 });
+    if (!isManager) return new Response(apiMsg("club_manager_only"), { status: 403 });
     const targetId = data.data.playerId;
     if (!targetId) return Response.json({ error: "playerId requis" }, { status: 400 });
 
     const existing = await prisma.clubMember.findUnique({ where: { clubId_playerId: { clubId: params.id, playerId: targetId } } });
-    if (existing) return Response.json({ error: "Déjà membre ou invitation en cours" }, { status: 409 });
+    if (existing) return Response.json({ error: apiMsg("already_member_or_invited") }, { status: 409 });
 
     const member = await prisma.clubMember.create({
       data: { clubId: params.id, playerId: targetId, status: "PENDING_BY_MANAGER" },
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const existing = await prisma.clubMember.findUnique({
       where: { clubId_playerId: { clubId: params.id, playerId: session.user.playerId } },
     });
-    if (existing) return Response.json({ error: "Déjà membre ou demande en cours" }, { status: 409 });
+    if (existing) return Response.json({ error: apiMsg("already_member_or_pending") }, { status: 409 });
 
     const member = await prisma.clubMember.create({
       data: { clubId: params.id, playerId: session.user.playerId, status: "MEMBER" },
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const existing = await prisma.clubMember.findUnique({
       where: { clubId_playerId: { clubId: params.id, playerId: session.user.playerId } },
     });
-    if (existing) return Response.json({ error: "Déjà membre ou demande en cours" }, { status: 409 });
+    if (existing) return Response.json({ error: apiMsg("already_member_or_pending") }, { status: 409 });
 
     const member = await prisma.clubMember.create({
       data: { clubId: params.id, playerId: session.user.playerId, status: "PENDING_BY_PLAYER" },
@@ -69,10 +70,10 @@ const patchSchema = z.object({
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.playerId) return new Response("Non autorisé", { status: 401 });
+  if (!session?.user?.playerId) return new Response(apiMsg("not_authorized"), { status: 401 });
 
   const club = await prisma.club.findUnique({ where: { id: params.id } });
-  if (!club) return new Response("Club introuvable", { status: 404 });
+  if (!club) return new Response(apiMsg("club_not_found"), { status: 404 });
 
   const body = await request.json();
   const data = patchSchema.safeParse(body);
@@ -88,11 +89,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
   // Manager accepte/refuse une demande de joueur
   if (membership.status === "PENDING_BY_PLAYER" && !isManager) {
-    return new Response("Réservé au manager", { status: 403 });
+    return new Response(apiMsg("club_manager_only"), { status: 403 });
   }
   // Joueur accepte/refuse une invitation
   if (membership.status === "PENDING_BY_MANAGER" && !isTargetPlayer) {
-    return new Response("Réservé au joueur concerné", { status: 403 });
+    return new Response(apiMsg("player_only"), { status: 403 });
   }
 
   if (data.data.action === "accept") {
@@ -112,18 +113,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 // DELETE : retirer un membre (manager ou le joueur lui-même)
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session?.user?.playerId) return new Response("Non autorisé", { status: 401 });
+  if (!session?.user?.playerId) return new Response(apiMsg("not_authorized"), { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const playerId = searchParams.get("playerId") ?? session.user.playerId;
 
   const club = await prisma.club.findUnique({ where: { id: params.id } });
-  if (!club) return new Response("Club introuvable", { status: 404 });
+  if (!club) return new Response(apiMsg("club_not_found"), { status: 404 });
 
   const isManager = club.managerId === session.user.playerId;
   const isSelf = playerId === session.user.playerId;
 
-  if (!isManager && !isSelf) return new Response("Non autorisé", { status: 403 });
+  if (!isManager && !isSelf) return new Response(apiMsg("not_authorized"), { status: 403 });
 
   // Si le manager quitte, transférer le managership au prochain membre
   if (playerId === club.managerId) {

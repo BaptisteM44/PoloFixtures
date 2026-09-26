@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
+import { apiMsg } from "@/lib/api-messages";
 
 const createSchema = z.object({
   slug: z.string().min(1).max(32).regex(/^[a-z0-9-]+$/, "Slug: lettres minuscules, chiffres et tirets uniquement"),
@@ -22,7 +23,7 @@ export async function GET() {
 // Réservé à l'admin : sans garde, n'importe qui pouvait créer des canaux.
 export async function POST(req: Request) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") return Response.json({ error: "Réservé aux administrateurs" }, { status: 403 });
+  if (session?.user?.role !== "ADMIN") return Response.json({ error: apiMsg("admins_only") }, { status: 403 });
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
 
   const existing = await prisma.overlayChannel.findUnique({ where: { slug: parsed.data.slug } });
   if (existing) {
-    return Response.json({ error: "Ce slug est déjà utilisé" }, { status: 409 });
+    return Response.json({ error: apiMsg("slug_taken") }, { status: 409 });
   }
 
   const channel = await prisma.overlayChannel.create({ data: parsed.data });

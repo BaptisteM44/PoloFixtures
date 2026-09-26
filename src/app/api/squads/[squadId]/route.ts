@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const updateSchema = z.object({
   name: z.string().min(2).max(60).optional(),
@@ -14,7 +15,7 @@ const updateSchema = z.object({
 export async function GET(_req: Request, { params }: { params: { squadId: string } }) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const squad = await prisma.squad.findUnique({
     where: { id: params.squadId },
@@ -33,10 +34,10 @@ export async function GET(_req: Request, { params }: { params: { squadId: string
     },
   });
 
-  if (!squad) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+  if (!squad) return NextResponse.json({ error: apiMsg("not_found") }, { status: 404 });
 
   const isMember = squad.members.some((m) => m.playerId === playerId);
-  if (!isMember) return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  if (!isMember) return NextResponse.json({ error: apiMsg("access_denied") }, { status: 403 });
 
   return NextResponse.json(squad);
 }
@@ -45,16 +46,16 @@ export async function GET(_req: Request, { params }: { params: { squadId: string
 export async function PATCH(req: Request, { params }: { params: { squadId: string } }) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const member = await prisma.squadMember.findUnique({
     where: { squadId_playerId: { squadId: params.squadId, playerId } },
   });
-  if (!member || member.role !== "CAPTAIN") return NextResponse.json({ error: "Capitaine requis" }, { status: 403 });
+  if (!member || member.role !== "CAPTAIN") return NextResponse.json({ error: apiMsg("captain_required") }, { status: 403 });
 
   const body = await req.json().catch(() => ({}));
   const parsed = updateSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Données invalides" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: apiMsg("invalid_data") }, { status: 400 });
 
   const squad = await prisma.squad.update({
     where: { id: params.squadId },
@@ -73,12 +74,12 @@ export async function PATCH(req: Request, { params }: { params: { squadId: strin
 export async function DELETE(_req: Request, { params }: { params: { squadId: string } }) {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("not_logged_in") }, { status: 401 });
 
   const member = await prisma.squadMember.findUnique({
     where: { squadId_playerId: { squadId: params.squadId, playerId } },
   });
-  if (!member || member.role !== "CAPTAIN") return NextResponse.json({ error: "Capitaine requis" }, { status: 403 });
+  if (!member || member.role !== "CAPTAIN") return NextResponse.json({ error: apiMsg("captain_required") }, { status: 403 });
 
   await prisma.squad.delete({ where: { id: params.squadId } });
   return NextResponse.json({ ok: true });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { createNotification } from "@/lib/notify";
+import { apiMsg } from "@/lib/api-messages";
 
 export async function POST(
   _request: NextRequest,
@@ -9,13 +10,13 @@ export async function POST(
 ) {
   const session = await auth();
   const playerId = session?.user?.playerId ?? null;
-  if (!playerId) return NextResponse.json({ error: "Connexion requise" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("login_required") }, { status: 401 });
 
   const reply = await prisma.communityReply.findFirst({
     where: { id: params.replyId, itemId: params.id },
     include: { item: { select: { title: true } } },
   });
-  if (!reply) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+  if (!reply) return NextResponse.json({ error: apiMsg("not_found") }, { status: 404 });
 
   const existingLike = await prisma.communityReplyLike.findUnique({
     where: { replyId_playerId: { replyId: params.replyId, playerId } },
@@ -45,7 +46,7 @@ export async function DELETE(
 ) {
   const session = await auth();
   const playerId = session?.user?.playerId ?? null;
-  if (!playerId) return NextResponse.json({ error: "Connexion requise" }, { status: 401 });
+  if (!playerId) return NextResponse.json({ error: apiMsg("login_required") }, { status: 401 });
 
   await prisma.communityReplyLike.deleteMany({
     where: { replyId: params.replyId, playerId },

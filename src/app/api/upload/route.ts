@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@/lib/auth";
 import { isRateLimited } from "@/lib/rate-limit";
+import { apiMsg } from "@/lib/api-messages";
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
   // Rate-limit par utilisateur : 30 images / 5 min (largement suffisant pour de
   // l'édition de profil/club/tournoi, bloque un compte qui spammerait le bucket).
   if (isRateLimited(`upload:${playerId}`, 30, 5 * 60 * 1000)) {
-    return new Response("Trop d'uploads, réessayez dans quelques minutes.", { status: 429 });
+    return new Response(apiMsg("too_many_uploads"), { status: 429 });
   }
 
   const formData = await request.formData();
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
 
   const mime = (file as File).type ?? "";
   if (!mime.startsWith("image/")) {
-    return new Response("Seules les images sont acceptées", { status: 415 });
+    return new Response(apiMsg("images_only"), { status: 415 });
   }
 
   // sharp valide le CONTENU réel (pas juste le type MIME déclaré, falsifiable) :
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       .webp({ quality: 82 })
       .toBuffer();
   } catch {
-    return new Response("Fichier image invalide ou corrompu", { status: 415 });
+    return new Response(apiMsg("invalid_image_file"), { status: 415 });
   }
   const filename = `${folder}/${nanoid(8)}.webp`;
 

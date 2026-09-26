@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({
   matchAId: z.string(),
@@ -13,10 +14,10 @@ export async function POST(req: Request) {
 
   const body = await req.json();
   const parsed = schema.safeParse(body);
-  if (!parsed.success) return Response.json({ error: "Paramètres invalides" }, { status: 400 });
+  if (!parsed.success) return Response.json({ error: apiMsg("invalid_parameters") }, { status: 400 });
 
   const { matchAId, matchBId } = parsed.data;
-  if (matchAId === matchBId) return Response.json({ error: "Même match" }, { status: 400 });
+  if (matchAId === matchBId) return Response.json({ error: apiMsg("same_match") }, { status: 400 });
 
   const [matchA, matchB] = await Promise.all([
     prisma.match.findUnique({ where: { id: matchAId } }),
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
 
   if (!matchA || !matchB) return new Response("Not found", { status: 404 });
   if (matchA.tournamentId !== matchB.tournamentId)
-    return Response.json({ error: "Les matchs doivent appartenir au même tournoi" }, { status: 422 });
+    return Response.json({ error: apiMsg("matches_same_tournament") }, { status: 422 });
 
   // Orga only
   const hasRole = session?.user?.role && hasAtLeastRole(session.user.role, "ADMIN");

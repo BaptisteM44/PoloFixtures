@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { COUNTRIES } from "@/lib/countries";
 import { createNotification } from "@/lib/notify";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const querySchema = z.object({
   city: z.string().min(1).max(80),
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
 // POST : rejoint un club existant (par clubId ou match exact city/pays)
 export async function POST(request: NextRequest) {
   const session = await auth();
-  if (!session?.user?.playerId) return new Response("Non autorise", { status: 401 });
+  if (!session?.user?.playerId) return new Response(apiMsg("not_authorized"), { status: 401 });
 
   const playerId = session.user.playerId;
   const body = await request.json();

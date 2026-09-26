@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { canDecide, decideApproval } from "@/lib/poll-targeting";
+import { apiMsg } from "@/lib/api-messages";
 
 const schema = z.object({
   approve: z.boolean(),
@@ -11,16 +12,16 @@ const schema = z.object({
 /** Accepte ou refuse une demande de ciblage. */
 export async function POST(request: Request, { params }: { params: { approvalId: string } }) {
   const session = await auth();
-  if (!session?.user) return new Response("Connexion requise", { status: 401 });
+  if (!session?.user) return new Response(apiMsg("login_required"), { status: 401 });
   const row = await prisma.pollApproval.findUnique({
     where: { id: params.approvalId },
     select: { clubId: true, poll: { select: { createdById: true } } },
   });
-  if (!row) return new Response("Demande introuvable", { status: 404 });
+  if (!row) return new Response(apiMsg("request_not_found"), { status: 404 });
   const isAdmin = session.user.role === "ADMIN";
-  if (!(await canDecide(row, session))) return new Response("Non autorisé", { status: 403 });
+  if (!(await canDecide(row, session))) return new Response(apiMsg("not_authorized"), { status: 403 });
   // On ne valide pas sa propre demande (sauf l'admin du site).
-  if (!isAdmin && row.poll.createdById === session.user.playerId) return new Response("Non autorisé", { status: 403 });
+  if (!isAdmin && row.poll.createdById === session.user.playerId) return new Response(apiMsg("not_authorized"), { status: 403 });
 
   const parsed = schema.safeParse(await request.json());
   if (!parsed.success) return Response.json({ error: "invalid" }, { status: 400 });
