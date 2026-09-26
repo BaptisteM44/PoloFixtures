@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { normalizeCountry } from "@/lib/country-utils";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -48,8 +49,8 @@ export async function POST(req: Request) {
   const player = await prisma.player.create({
     data: {
       name,
-      country,
-      city: city ?? null,
+      country: normalizeCountry(country), // le formulaire envoie un code (« FR »)
+      city: city?.trim() || null,
       slug,
       status: PlayerStatus.ACTIVE,
       badges: [],

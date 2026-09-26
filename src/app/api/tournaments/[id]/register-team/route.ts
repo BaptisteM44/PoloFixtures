@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { normalizeCountry } from "@/lib/country-utils";
 import { prisma } from "@/lib/db";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { notifyTeamPlayers } from "@/lib/notify";
@@ -149,7 +150,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
         data: {
           name: slot.name,
           city: slot.city ?? null,
-          country: slot.country,
+          country: normalizeCountry(slot.country),
           slug,
           status: "PENDING",
           badges: [],

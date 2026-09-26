@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { canonicalCountryName } from "@/lib/country-utils";
+import { canonicalCountryName, normalizeCountry } from "@/lib/country-utils";
 import { z } from "zod";
 import { generateTournamentSlug } from "@/lib/slug";
 import { revalidatePath } from "next/cache";
@@ -1986,7 +1986,7 @@ export async function addPlayerToTeamAction(
     let si = 2;
     while (await prisma.player.findUnique({ where: { slug } })) slug = `${base}-${si++}`;
     const created = await prisma.player.create({
-      data: { name: playerData.name, city: playerData.city ?? null, country: playerData.country, slug, status: "PENDING", badges: [] }
+      data: { name: playerData.name, city: playerData.city ?? null, country: normalizeCountry(playerData.country), slug, status: "PENDING", badges: [] }
     });
     await prisma.teamPlayer.create({ data: { teamId, playerId: created.id, isCaptain: false } });
   }

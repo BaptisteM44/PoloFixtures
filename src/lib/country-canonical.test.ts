@@ -13,3 +13,12 @@ describe("country", () => {
     expect(sameCountry("FR","Belgium")).toBe(false);
   });
 });
+
+describe("normalizeCountry", () => {
+  it("variantes réelles vues en prod → nom officiel ; inconnu → saisie nettoyée", async () => {
+    const { normalizeCountry } = await import("@/lib/country-utils");
+    expect(["FR", "france", "Allemagne", "Россия", "🇬🇧", "Swizerland", "Berlin"].map(normalizeCountry))
+      .toEqual(["France", "France", "Germany", "Russian Federation", "United Kingdom", "Switzerland", "Germany"]);
+    expect(normalizeCountry("  TBA ")).toBe("TBA");
+  });
+});

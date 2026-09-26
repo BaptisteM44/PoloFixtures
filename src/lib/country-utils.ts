@@ -96,9 +96,23 @@ export function countryToContinentOrDefault(input: string, fallback: string): st
 
 // Variantes courantes que la librairie ne reconnaît pas.
 const COUNTRY_ALIASES: Record<string, string> = {
-  england: "GB", scotland: "GB", wales: "GB", "northern ireland": "GB",
+  england: "GB", scotland: "GB", wales: "GB", "northern ireland": "GB", inglaterra: "GB", angleterre: "GB",
   holland: "NL", "the netherlands": "NL",
+  // Saisies réelles vues sur les profils (fautes, surnoms, russe, villes).
+  swiss: "CH", swizerland: "CH", suiss: "CH", "czech republik": "CZ", franc: "FR", cataluña: "ES", catalunya: "ES",
+  "россия": "RU", "санкт-петербург": "RU", "москва": "RU",
+  berlin: "DE", vienna: "AT", wien: "AT", linz: "AT", bern: "CH", zurich: "CH", london: "GB", ny: "US", "new york": "US",
+  bordeaux: "FR", paris: "FR", lyon: "FR",
 };
+
+/** Drapeau emoji (🇬🇧) → code ISO (GB). */
+function flagToIso(input: string): string | null {
+  const chars = [...input];
+  if (chars.length !== 2) return null;
+  const codes = chars.map((c) => (c.codePointAt(0) ?? 0) - 0x1f1e6);
+  if (codes.some((n) => n < 0 || n > 25)) return null;
+  return String.fromCharCode(65 + codes[0], 65 + codes[1]);
+}
 
 /**
  * Code ISO alpha-2 d'un pays saisi sous n'importe quelle forme : code (« fr »,
@@ -111,6 +125,8 @@ export function countryToIso(input: string | null | undefined): string | null {
   const upper = trimmed.toUpperCase();
   if (upper === "UK") return "GB";
   if (upper.length === 2) return ISO_TO_CONTINENT[upper] ? upper : null;
+  const flag = flagToIso(trimmed);
+  if (flag && ISO_TO_CONTINENT[flag]) return flag;
   const alias = COUNTRY_ALIASES[trimmed.toLowerCase()];
   if (alias) return alias;
   for (const locale of LOCALES) {
@@ -118,6 +134,15 @@ export function countryToIso(input: string | null | undefined): string | null {
     if (code) return code;
   }
   return null;
+}
+
+/**
+ * Pays à enregistrer : son nom officiel s'il est reconnu, sinon la saisie
+ * nettoyée. Toutes les écritures (« FR », « france », « Deutschland »…) d'un
+ * même pays finissent ainsi identiques en base.
+ */
+export function normalizeCountry(input: string): string {
+  return canonicalCountryName(input) ?? input.trim();
 }
 
 /** Nom officiel anglais (celui des listes déroulantes) d'un pays, ou null. */

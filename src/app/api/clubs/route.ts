@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { normalizeCountry } from "@/lib/country-utils";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
@@ -92,8 +93,8 @@ export async function POST(request: NextRequest) {
   const club = await prisma.club.create({
     data: {
       name: data.data.name,
-      city: data.data.city,
-      country: data.data.country,
+      city: data.data.city.trim(),
+      country: normalizeCountry(data.data.country),
       continentCode,
       description: data.data.description ?? null,
       website: data.data.website || null,

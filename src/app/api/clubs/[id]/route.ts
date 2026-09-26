@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
-import { countryToContinentOrDefault } from "@/lib/country-utils";
+import { countryToContinentOrDefault, normalizeCountry } from "@/lib/country-utils";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   const club = await prisma.club.findUnique({
@@ -58,6 +58,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 
   const updateData: Record<string, unknown> = { ...data.data };
   if (data.data.country) {
+    updateData.country = normalizeCountry(data.data.country);
     updateData.continentCode = countryToContinentOrDefault(data.data.country, "EU");
   }
   if (data.data.trainingMapLink === "") {

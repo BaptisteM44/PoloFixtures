@@ -1,4 +1,5 @@
 import { auth } from "@/lib/auth";
+import { normalizeCountry } from "@/lib/country-utils";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { getPublicBadgeCatalog } from "@/lib/badge-catalog";
@@ -85,7 +86,10 @@ export async function PATCH(req: Request) {
 
   const updated = await prisma.player.update({
     where: { id: session.user.playerId },
-    data: parsed.data
+    data: {
+      ...parsed.data,
+      ...(parsed.data.country !== undefined ? { country: normalizeCountry(parsed.data.country) } : {}),
+    }
   });
 
   return Response.json(updated);
