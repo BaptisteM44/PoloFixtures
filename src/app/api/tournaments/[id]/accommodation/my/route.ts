@@ -18,12 +18,12 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         include: {
           host: {
             include: {
-              player: { select: { id: true, slug: true } },
+              player: { select: { id: true, slug: true, account: { select: { email: true } } } },
               guests: {
                 include: {
                   teamPlayer: {
                     include: {
-                      player: { select: { id: true, slug: true, name: true, photoPath: true } },
+                      player: { select: { id: true, slug: true, name: true, photoPath: true, account: { select: { email: true } } } },
                       team: { select: { id: true, name: true } },
                     },
                   },
@@ -44,7 +44,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         include: {
           teamPlayer: {
             include: {
-              player: { select: { id: true, slug: true, name: true, photoPath: true } },
+              player: { select: { id: true, slug: true, name: true, photoPath: true, account: { select: { email: true } } } },
               team: { select: { id: true, name: true } },
             },
           },
@@ -65,6 +65,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
           // playerId/slug null si l'hôte n'est pas un joueur enregistré (saisi en texte libre)
           hostPlayerId: accommodationGuest.host.player?.id ?? null,
           hostPlayerSlug: accommodationGuest.host.player?.slug ?? null,
+          hostHasAccount: !!accommodationGuest.host.player?.account?.email,
           coGuests: accommodationGuest.host.guests
             .filter((g) => g.teamPlayerId !== teamPlayer!.id)
             .map((g) => ({
@@ -73,6 +74,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
               playerName: g.teamPlayer.player.name,
               teamName: g.teamPlayer.team.name,
               photoPath: g.teamPlayer.player.photoPath,
+              hasAccount: !!g.teamPlayer.player.account?.email,
             })),
         }
       : null,
@@ -88,6 +90,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
             playerName: g.teamPlayer.player.name,
             teamName: g.teamPlayer.team.name,
             photoPath: g.teamPlayer.player.photoPath,
+            hasAccount: !!g.teamPlayer.player.account?.email,
           })),
         }
       : null,

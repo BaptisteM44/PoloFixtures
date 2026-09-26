@@ -3,15 +3,50 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { ContactModal } from "@/components/ContactModal";
 
-type CoGuestInfo = { playerName: string; teamName: string; photoPath: string | null };
-type GuestHostInfo = { playerName: string; teamName: string; photoPath: string | null };
+type PersonInfo = {
+  playerId: string;
+  playerSlug: string | null;
+  playerName: string;
+  teamName: string;
+  photoPath: string | null;
+  hasAccount: boolean;
+};
 
-type MyAccommodation =
-  | { role: "none" }
-  | { role: "guest"; asGuest: { hostName: string; hostContact: string | null; coGuests: CoGuestInfo[] } }
-  | { role: "host"; asHost: { hostId: string; name: string; contact: string | null; guests: GuestHostInfo[] } }
-  | { role: "host"; asHost: { hostId: string; name: string; contact: string | null; guests: GuestHostInfo[] }; asGuest: { hostName: string; hostContact: string | null; coGuests: CoGuestInfo[] } | null };
+type AsGuest = {
+  hostName: string;
+  hostContact: string | null;
+  hostPlayerId: string | null;
+  hostPlayerSlug: string | null;
+  hostHasAccount: boolean;
+  coGuests: PersonInfo[];
+};
+type AsHost = { hostId: string; name: string; contact: string | null; guests: PersonInfo[] };
+
+type MyAccommodation = {
+  role: "none" | "guest" | "host";
+  asGuest?: AsGuest | null;
+  asHost?: AsHost | null;
+  myPlayerId?: string;
+};
+
+/** Ligne joueur : photo, nom cliquable vers le profil, bouton message si possible. */
+function PersonRow({ person, canContact, size = 32 }: { person: PersonInfo; canContact: boolean; size?: number }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "var(--bg-muted)", borderRadius: 8, flexWrap: "wrap" }}>
+      {person.photoPath && <Image src={person.photoPath} alt={person.playerName} width={size} height={size} style={{ borderRadius: "50%", objectFit: "cover" }} />}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <Link href={`/player/${person.playerSlug ?? person.playerId}`} style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--text)", textDecoration: "underline" }}>
+          {person.playerName}
+        </Link>
+        <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>{person.teamName}</p>
+      </div>
+      {canContact && person.hasAccount && <ContactModal recipientId={person.playerId} recipientName={person.playerName} />}
+    </div>
+  );
+}
 
 export function AccommodationPublicView({ tournamentId }: { tournamentId: string }) {
   const t = useTranslations("tournament");
@@ -38,13 +73,23 @@ export function AccommodationPublicView({ tournamentId }: { tournamentId: string
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* As guest */}
-      {data.role === "guest" && data.asGuest && (
+      {data.asGuest && (
         <div className="panel" style={{ padding: 20 }}>
           <h3 style={{ margin: "0 0 12px", fontFamily: "var(--font-display)", fontSize: 16 }}>{t("accommodation_your_host")}</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <p style={{ margin: 0, fontSize: 14 }}>
-              <strong>{t("accommodation_host_label")}</strong> {data.asGuest.hostName}
-            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <p style={{ margin: 0, fontSize: 14 }}>
+                <strong>{t("accommodation_host_label")}</strong>{" "}
+                {data.asGuest.hostPlayerId ? (
+                  <Link href={`/player/${data.asGuest.hostPlayerSlug ?? data.asGuest.hostPlayerId}`} style={{ color: "var(--text)", textDecoration: "underline" }}>
+                    {data.asGuest.hostName}
+                  </Link>
+                ) : data.asGuest.hostName}
+              </p>
+              {data.asGuest.hostPlayerId && data.asGuest.hostHasAccount && data.asGuest.hostPlayerId !== data.myPlayerId && (
+                <ContactModal recipientId={data.asGuest.hostPlayerId} recipientName={data.asGuest.hostName} />
+              )}
+            </div>
             {data.asGuest.hostContact && (
               <p style={{ margin: 0, fontSize: 13 }}>
                 <strong>{t("accommodation_contact_label")}</strong>{" "}
@@ -60,11 +105,8 @@ export function AccommodationPublicView({ tournamentId }: { tournamentId: string
                 {t("accommodation_co_guests", { hostName: data.asGuest.hostName })}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {data.asGuest.coGuests.map((g, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    {g.photoPath && <Image src={g.photoPath} alt={g.playerName} width={28} height={28} style={{ borderRadius: "50%", objectFit: "cover" }} />}
-                    <span style={{ fontSize: 13 }}>{g.playerName} <span className="meta">· {g.teamName}</span></span>
-                  </div>
+                {data.asGuest.coGuests.map((g) => (
+                  <PersonRow key={g.playerId} person={g} canContact size={28} />
                 ))}
               </div>
             </div>
@@ -73,7 +115,7 @@ export function AccommodationPublicView({ tournamentId }: { tournamentId: string
       )}
 
       {/* As host */}
-      {(data.role === "host") && data.asHost && (
+      {data.asHost && (
         <div className="panel" style={{ padding: 20 }}>
           <h3 style={{ margin: "0 0 4px", fontFamily: "var(--font-display)", fontSize: 16 }}>{t("accommodation_you_host")}</h3>
           <p className="meta" style={{ margin: "0 0 12px", fontSize: 12 }}>
@@ -83,14 +125,8 @@ export function AccommodationPublicView({ tournamentId }: { tournamentId: string
             <p className="meta" style={{ fontSize: 13 }}>{t("accommodation_no_guests")}</p>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {data.asHost.guests.map((g, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "var(--bg-muted)", borderRadius: 8 }}>
-                  {g.photoPath && <Image src={g.photoPath} alt={g.playerName} width={32} height={32} style={{ borderRadius: "50%", objectFit: "cover" }} />}
-                  <div>
-                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>{g.playerName}</p>
-                    <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>{g.teamName}</p>
-                  </div>
-                </div>
+              {data.asHost.guests.map((g) => (
+                <PersonRow key={g.playerId} person={g} canContact={g.playerId !== data.myPlayerId} />
               ))}
             </div>
           )}
