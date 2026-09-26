@@ -4,6 +4,11 @@ import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { CreateSquadForm } from "@/components/CreateSquadForm";
 import { PendingInvites } from "@/components/PendingInvites";
+import { pageMetadata } from "@/lib/page-metadata";
+
+export async function generateMetadata() {
+  return pageMetadata("my_teams");
+}
 
 export default async function MyTeamsPage() {
   const t = await getTranslations("my_teams");

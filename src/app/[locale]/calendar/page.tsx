@@ -3,6 +3,11 @@ import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import { CalendarGrid } from "@/components/CalendarGrid";
 import type { CalendarTournament } from "@/components/CalendarGrid";
+import { pageMetadata } from "@/lib/page-metadata";
+
+export async function generateMetadata() {
+  return pageMetadata("calendar", true);
+}
 
 export default async function CalendarPage() {
   const t = await getTranslations("calendar");

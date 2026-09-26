@@ -7,10 +7,27 @@ import { hashPlayerVoter } from "@/lib/poll-hash";
 import { areResultsVisibleToVoters, isPollRestricted, isVoterEligible } from "@/lib/poll-vote";
 import { canManagePoll, loadVoterProfile } from "@/lib/poll-access";
 import { PollVote, type PollData } from "@/components/PollVote";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic"; // résultats/état de vote toujours frais
 
 const KNOWN_CONTINENTS = ["EU", "NA", "SA", "AS", "AF", "OC"];
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const poll = await prisma.poll.findUnique({
+    where: { id: params.id },
+    select: { question: true, description: true, status: true, blockedAt: true },
+  });
+  // Brouillon ou bloqué : rien de révélé dans l'aperçu.
+  if (!poll || poll.status === "DRAFT" || poll.blockedAt) return { title: "Poll" };
+  const description = poll.description?.slice(0, 160) || "📊 Poloperator poll — vote now";
+  return {
+    title: poll.question,
+    description,
+    openGraph: { title: `📊 ${poll.question}`, description },
+    twitter: { card: "summary", title: `📊 ${poll.question}`, description },
+  };
+}
 
 export default async function PollPage({
   params,

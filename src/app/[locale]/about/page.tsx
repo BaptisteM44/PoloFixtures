@@ -3,6 +3,11 @@ import { Link } from "@/i18n/navigation";
 import { PokemonCard } from "@/components/PokemonCard";
 import { ContactForm } from "@/components/ContactForm";
 import { ParallaxImage } from "@/components/ParallaxImage";
+import { pageMetadata } from "@/lib/page-metadata";
+
+export async function generateMetadata() {
+  return pageMetadata("about", true);
+}
 
 export default async function AboutPage() {
   const t = await getTranslations("about");

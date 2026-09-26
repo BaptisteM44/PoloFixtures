@@ -7,8 +7,13 @@ import { loadVoterProfile } from "@/lib/poll-access";
 import { PollManager } from "@/components/PollManager";
 import { PollApprovalQueue } from "@/components/PollApprovalQueue";
 import { hashPlayerVoter } from "@/lib/poll-hash";
+import { pageMetadata } from "@/lib/page-metadata";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMetadata("polls", true);
+}
 
 export default async function PollsPage() {
   const t = await getTranslations("poll");

@@ -6,6 +6,11 @@ import { ClubsPageTabs } from "@/components/ClubsPageTabs";
 import { ClubMapClient } from "@/components/ClubMapClient";
 import type { MapClub } from "@/components/ClubMapClient";
 import { countryToContinent } from "@/lib/country-utils";
+import { pageMetadata } from "@/lib/page-metadata";
+
+export async function generateMetadata() {
+  return pageMetadata("clubs", true);
+}
 
 export default async function ClubsPage() {
   const t = await getTranslations("clubs");

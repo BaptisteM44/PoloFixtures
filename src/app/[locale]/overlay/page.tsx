@@ -1,6 +1,11 @@
 import { prisma } from "@/lib/db";
 import { getTranslations } from "next-intl/server";
 import { OverlayHub } from "@/components/OverlayHub";
+import { pageMetadata } from "@/lib/page-metadata";
+
+export async function generateMetadata() {
+  return pageMetadata("overlay");
+}
 
 export default async function OverlayHubPage() {
   const t = await getTranslations("overlay");

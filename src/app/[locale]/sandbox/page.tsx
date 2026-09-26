@@ -9,9 +9,14 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { PIPELINE_PRESETS } from "@/engine/presets";
 import { SandboxHome } from "@/components/sandbox/SandboxHome";
+import { pageMetadata } from "@/lib/page-metadata";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export async function generateMetadata() {
+  return pageMetadata("sandbox", true);
+}
 
 export default async function SandboxPage() {
   noStore(); // jamais de rendu statique : la page dépend de la session

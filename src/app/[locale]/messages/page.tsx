@@ -2,6 +2,11 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getTranslations } from "next-intl/server";
 import { MessagesClient } from "./MessagesClient";
+import { pageMetadata } from "@/lib/page-metadata";
+
+export async function generateMetadata() {
+  return pageMetadata("messages");
+}
 
 export default async function MessagesPage() {
   const t = await getTranslations("messages");

@@ -2,12 +2,17 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { MultiplexView } from "@/components/MultiplexView";
 import type { MatchWithTeams } from "@/components/ScheduleBoard";
+import { pageMetadata } from "@/lib/page-metadata";
 
 interface Props {
   searchParams: {
     stream?: string;
     tournamentId?: string;
   };
+}
+
+export async function generateMetadata() {
+  return pageMetadata("multiplex");
 }
 
 export default async function MultiplexPage({ searchParams }: Props) {

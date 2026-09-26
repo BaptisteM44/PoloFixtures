@@ -4,6 +4,11 @@ import { getTranslations } from "next-intl/server";
 import { TournamentBrowser } from "@/components/TournamentBrowser";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { countryToContinent } from "@/lib/country-utils";
+import { pageMetadata } from "@/lib/page-metadata";
+
+export async function generateMetadata() {
+  return pageMetadata("tournaments", true);
+}
 
 export default async function TournamentsPage({ searchParams }: { searchParams: { continent?: string } }) {
   await syncLiveTournamentsCompletion();

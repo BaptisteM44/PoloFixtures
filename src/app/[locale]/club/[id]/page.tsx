@@ -13,8 +13,25 @@ import { ClubEquipment } from "@/components/ClubEquipment";
 import { ClubAnnouncements } from "@/components/ClubAnnouncements";
 import { getTranslations, getLocale } from "next-intl/server";
 import { hashPlayerVoter } from "@/lib/poll-hash";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const club = await prisma.club.findUnique({
+    where: { id: params.id },
+    select: { name: true, city: true, country: true, logoPath: true, description: true, approved: true },
+  });
+  if (!club || !club.approved) return { title: "Club" };
+  const description = club.description?.slice(0, 160) || `Bike polo club — ${club.city}, ${club.country}`;
+  const images = club.logoPath ? [{ url: club.logoPath }] : undefined;
+  return {
+    title: `${club.name} · ${club.city}`,
+    description,
+    openGraph: { title: club.name, description, images },
+    twitter: { card: "summary", title: club.name, description, images: club.logoPath ? [club.logoPath] : undefined },
+  };
+}
 
 export default async function ClubPage({
   params,

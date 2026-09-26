@@ -1,8 +1,13 @@
 import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { LabsClient } from "@/components/labs/LabsClient";
+import { pageMetadata } from "@/lib/page-metadata";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata() {
+  return pageMetadata("labs", true);
+}
 
 export default async function LabsPage() {
   const session = await auth();
