@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { Link } from "@/i18n/navigation";
 import { TournamentGallery } from "@/components/TournamentGallery";
+import { RefereeTab } from "@/components/RefereeTab";
+import { parseRefereeSettings } from "@/lib/referees";
 import { galleryPhase } from "@/lib/tournament-photos";
 import { tournamentTimezone } from "@/lib/timezone";
 import { getTranslations } from "next-intl/server";
@@ -131,6 +133,7 @@ export default async function TournamentPage({
           teamB: true,
           referee: { select: { id: true, name: true } },
           coReferee: { select: { id: true, name: true } },
+          refereeTeam: { select: { id: true, name: true } },
           ...(needsEvents ? { events: true } : {}),
         },
         orderBy: { startAt: "asc" },
@@ -176,6 +179,10 @@ export default async function TournamentPage({
     (!!currentPlayerId && currentPlayerId === tournament.creatorId) ||
     tournament.coOrganizers.some((co) => co.playerId === currentPlayerId);
   const isOrga = canEdit;
+  // Désignations d'arbitrage cachées par l'orga : invisibles des joueurs.
+  if (!isOrga && parseRefereeSettings((tournament as any).refereeSettings).hidden) {
+    for (const m of (tournament.matches ?? []) as any[]) { m.refereeTeam = null; m.refereeTeamId = null; }
+  }
   // In test mode, matches are hidden from the public (orgas/refs still see everything)
   const isTestMode = !!(tournament as any).testMode && !isOrga;
 
@@ -356,6 +363,8 @@ export default async function TournamentPage({
     // pas besoin de stream ni de chat pour le justifier. Le contenu s'adapte au
     // statut du tournoi (à venir / en cours / terminé).
     { label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` },
+    // Arbitrage par équipe : dès que le planning existe (ou pour l'orga).
+    ...(isLaunched || isOrga ? [{ label: `🟨 ${t("tab_referees")}`, value: "referees", href: `/tournament/${params.id}?tab=referees` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")} (${tournament.freeAgents.length})`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
     ...(!isCompleted && galleryVisible ? [galleryTab] : []),
@@ -1877,6 +1886,10 @@ export default async function TournamentPage({
       {/* ── ONGLET CHAT ── */}
       {tab === "hebergement" && tournament.accommodationAvailable && (!!myTeam || isAccommodationHost) && (
         <AccommodationPublicView tournamentId={tournament.id} />
+      )}
+
+      {tab === "referees" && (isLaunched || isOrga) && (
+        <RefereeTab tournamentId={tournament.id} tournamentSlug={tournament.slug ?? tournament.id} />
       )}
 
       {tab === "photos" && galleryVisible && (

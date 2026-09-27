@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { publishMatchUpdate, publishNewMatches, publishTournamentUpdate } from "@/lib/sse";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
+import { autoFillReferees, isRefereeTeamMember } from "@/lib/referees";
 import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import {
   generateFridaySwissRoundAction,
@@ -56,8 +57,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     isOrganizer = tournament?.creatorId === playerId ||
       tournament?.coOrganizers.some((co) => co.playerId === playerId) || false;
   }
+  // Arbitre désigné : le joueur lui-même, ou un joueur de l'équipe arbitre.
   const isAssignedReferee = playerId != null &&
-    (existing.refereePlayerId === playerId || existing.coRefereePlayerId === playerId);
+    (existing.refereePlayerId === playerId || existing.coRefereePlayerId === playerId
+      || await isRefereeTeamMember(playerId, existing.refereeTeamId));
   if (!hasRole && !isOrganizer && !isAssignedReferee) {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -390,6 +393,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     });
   }
 
+  if (isNowFinished) await autoFillReferees(match.tournamentId);
   const newStatus = await syncTournamentCompletionById(match.tournamentId, { duringActivity: true });
   if (newStatus === "COMPLETED") {
     publishTournamentUpdate({

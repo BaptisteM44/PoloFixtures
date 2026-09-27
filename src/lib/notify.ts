@@ -55,6 +55,10 @@ function toPushPayload(
       return { title: "Sondage signalé ⚠️", body: `${p.pollQuestion} — ${p.reason}`, url: "/admin/polls", tag: `poll-report-${p.pollId}` };
     case "POLL_BLOCKED":
       return { title: "Sondage bloqué", body: p.pollQuestion, url: "/polls", tag: `poll-blocked-${p.pollId}` };
+    case "MATCH_SOON":
+      return { title: `🏑 Ton match à ${p.time}${p.court ? ` — ${p.court}` : ""}`, body: `vs ${p.opponent} · ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=schedule`, tag: `match-${p.matchId}` };
+    case "REFEREE_SOON":
+      return { title: `🟨 Tu arbitres à ${p.time}${p.court ? ` — ${p.court}` : ""}`, body: `${p.matchLabel} · ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=referees`, tag: `ref-${p.matchId}` };
     case "POLL_OPENED":
       return { title: "Nouveau sondage 📊", body: p.pollQuestion, url: `/poll/${p.pollId}`, tag: `poll-open-${p.pollId}` };
     case "POLL_APPROVAL_REQUESTED":
@@ -92,10 +96,11 @@ function toPushPayload(
  * Catégories réglables par le joueur (page Paramètres). null = essentiel,
  * toujours envoyé (modération, validation admin, tâches d'orga).
  */
-export const NOTIF_CATEGORIES = ["messages", "registrations", "squads", "clubs", "polls", "photos", "badges", "labs"] as const;
+export const NOTIF_CATEGORIES = ["matches", "messages", "registrations", "squads", "clubs", "polls", "photos", "badges", "labs"] as const;
 export type NotifCategory = (typeof NOTIF_CATEGORIES)[number];
 
 const TYPE_CATEGORY: Partial<Record<NotificationType, NotifCategory>> = {
+  MATCH_SOON: "matches", REFEREE_SOON: "matches",
   DIRECT_MESSAGE_REQUEST: "messages", DIRECT_MESSAGE_RECEIVED: "messages", TEAM_MESSAGE_RECEIVED: "messages",
   TEAM_REGISTERED: "registrations", TEAM_SELECTED: "registrations", TEAM_WAITLISTED: "registrations",
   TEAM_FEE_CONFIRMED: "registrations", ACCOMMODATION_ASSIGNED: "registrations", ACCOMMODATION_GUEST_ADDED: "registrations",

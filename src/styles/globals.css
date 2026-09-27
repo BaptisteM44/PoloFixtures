@@ -11222,3 +11222,43 @@ details[open] .club-sessions__past-summary::before {
   background: var(--yellow); border: 2px solid var(--border);
   font-weight: 700; font-size: 14px; text-align: center;
 }
+
+/* Onglet Arbitrage (équipes arbitres) */
+.ref-tab { display: grid; gap: 16px; padding: 20px; }
+.ref-tab__mine {
+  display: grid; gap: 8px; padding: 14px; border: 2px solid var(--border); border-radius: var(--radius);
+  background: var(--yellow); color: #111; box-shadow: var(--shadow);
+}
+.ref-tab__mine .meta, .ref-tab__mine .ref-tab__court { color: #333; }
+.ref-tab__mine ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.ref-tab__mine li { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.ref-tab__hidden { margin: 0; padding: 10px 14px; border: 2px dashed var(--border); border-radius: var(--radius); background: var(--gray); font-weight: 600; }
+.ref-tab__settings { display: grid; gap: 10px; padding: 14px; border: 2px solid var(--border-light); border-radius: var(--radius); }
+.ref-tab__rule { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-weight: 600; font-size: 14px; }
+.ref-tab__rule select { max-width: 320px; }
+.ref-tab__toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.ref-tab__notice { margin: 0; font-weight: 600; font-size: 13px; }
+.ref-tab__conflict { margin: 0; color: var(--danger); font-weight: 700; font-size: 12px; }
+.ref-tab__load { display: flex; flex-wrap: wrap; gap: 6px; }
+.ref-tab__chip { font-size: 12px; font-weight: 600; padding: 3px 10px; border: 1px solid var(--border-light); border-radius: 999px; }
+.ref-tab__chip.is-mine { background: var(--yellow); color: #111; border-color: var(--border); }
+.ref-tab__stage h3 { margin: 0 0 8px; font-size: 15px; }
+.ref-tab__list { display: grid; gap: 4px; }
+.ref-tab__row {
+  display: grid; grid-template-columns: 52px 80px 1fr minmax(160px, auto); gap: 8px; align-items: center;
+  padding: 8px 10px; border: 1px solid var(--border-light); border-radius: 8px; font-size: 14px;
+}
+.ref-tab__row.is-done { opacity: 0.55; }
+.ref-tab__row.is-mine { background: color-mix(in srgb, var(--yellow) 45%, var(--surface)); border-color: var(--border); }
+.ref-tab__row.is-conflict { border-color: var(--danger); }
+.ref-tab__time { font-weight: 700; font-variant-numeric: tabular-nums; }
+.ref-tab__court { font-size: 12px; color: var(--text-muted); }
+.ref-tab__teams { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ref-tab__ref { display: grid; gap: 2px; font-weight: 600; }
+.ref-tab__ref select { font-size: 13px; }
+@media (max-width: 560px) {
+  .ref-tab__row { grid-template-columns: 48px 1fr; }
+  .ref-tab__court { grid-column: 2; grid-row: 2; }
+  .ref-tab__teams { grid-column: 2; grid-row: 1; }
+  .ref-tab__ref { grid-column: 1 / -1; }
+}

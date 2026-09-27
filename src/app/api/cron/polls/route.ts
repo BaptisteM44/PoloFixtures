@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sweepPolls } from "@/lib/poll-notify";
 import { sweepGalleryEnds } from "@/lib/tournament-photos";
+import { sweepMatchReminders } from "@/lib/referees";
 
 export const dynamic = "force-dynamic";
 
@@ -18,5 +19,7 @@ export async function GET(req: NextRequest) {
   await sweepPolls();
   // Même cron : notif de fin de tournoi des galeries photos (21h le dernier jour).
   await sweepGalleryEnds();
+  // Rappels « ton match / ton arbitrage dans 15 min » (idéalement toutes les 5 min).
+  await sweepMatchReminders();
   return NextResponse.json({ ok: true });
 }

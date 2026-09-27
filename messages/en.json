@@ -976,7 +976,8 @@
     "share_copied": "Link copied!",
     "share_copy_prompt": "Copy this link:",
     "tab_photos": "Gallery",
-    "planning_timezone": "Times in local time: {tz} (editable in the tournament settings)"
+    "planning_timezone": "Times in local time: {tz} (editable in the tournament settings)",
+    "tab_referees": "Refereeing"
   },
   "registration": {
     "section_title": "Register my team",
@@ -1235,7 +1236,9 @@
     "merge_requested": "{name} says they are “{ghost}”",
     "merge_requested_sub": "Profile merge request to review",
     "merge_approved": "Profile “{ghost}” merged into yours ✓",
-    "merge_rejected": "Merge request with “{ghost}” declined"
+    "merge_rejected": "Merge request with “{ghost}” declined",
+    "match_soon": "🏑 Your match at {time}{where}",
+    "referee_soon": "🟨 You referee at {time}{where}"
   },
   "contact": {
     "btn_open": "Contact",
@@ -2252,7 +2255,8 @@
     "category_polls": "Polls",
     "category_photos": "Photo galleries",
     "category_badges": "Badges",
-    "category_labs": "Labs (replies to my proposals)"
+    "category_labs": "Labs (replies to my proposals)",
+    "category_matches": "My matches and refereeing (15 min before)"
   },
   "clubs": {
     "title": "Clubs worldwide",
@@ -3260,5 +3264,33 @@
     "claim_pending": "Merge request sent — waiting for the organizers",
     "claim_rejected": "Your merge request was declined",
     "claim_retry": "Ask again"
+  },
+  "referee_tab": {
+    "title": "Refereeing",
+    "intro": "Each match is refereed by a team: it's up to them to decide who refs.",
+    "loading": "Loading…",
+    "error": "Something went wrong.",
+    "my_duties": "{count, plural, one {Your team referees # match} other {Your team referees # matches}}",
+    "my_duties_hint": "Any player of your team can open the referee panel for these matches. You'll get a notification 15 min before.",
+    "open_panel": "🟨 Open the referee panel",
+    "hidden_for_players": "The organizers haven't published the referee assignments yet.",
+    "settings_title": "Refereeing rules",
+    "all_matches": "All matches",
+    "rule_rotation": "Play → rest → referee",
+    "rule_cross_groups": "Cross groups (the other group referees)",
+    "rule_manual": "Manual",
+    "rules_hint": "Assignments happen automatically when each stage starts and as the bracket goes on. A team never referees its own match or during one of its matches, and the load is balanced. Your manual choices are never overwritten.",
+    "visible_toggle": "Show assignments to players (as soon as the schedule is out)",
+    "btn_fill": "Assign matches without a referee",
+    "btn_recompute": "Recompute everything",
+    "confirm_recompute": "Recompute all automatic assignments? Your manual choices are kept.",
+    "assigned": "{count, plural, =0 {No match to assign} one {# match assigned} other {# matches assigned}}{conflicts, plural, =0 {} one { · # conflict} other { · # conflicts}}",
+    "conflicts": "{count, plural, one {# match without a possible referee or in conflict} other {# matches without a possible referee or in conflict}}",
+    "conflict_no_candidate": "No team available",
+    "conflict_plays_same_slot": "This team plays at the same time",
+    "conflict_own_match": "This team plays this match",
+    "auto": "auto",
+    "manual": "manual",
+    "no_matches": "No matches yet: assignments come with the schedule."
   }
 }

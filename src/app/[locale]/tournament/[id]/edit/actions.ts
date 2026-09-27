@@ -4150,6 +4150,8 @@ export async function launchPipelineStageAction(
 
   const { launchStage } = await import("@/engine/pipeline-server");
   const res = await launchStage(id, stageOrder);
+  // Arbitrage : désignation automatique des équipes arbitres (si une règle est choisie).
+  if (res.ok) { const { autoFillReferees } = await import("@/lib/referees"); await autoFillReferees(id); }
 
   revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);
@@ -4273,6 +4275,7 @@ export async function launchPipelineGroupAction(
   if (denied) return denied;
   const { launchNextGroup } = await import("@/engine/pipeline-server");
   const res = await launchNextGroup(id, stageOrder);
+  if (res.ok) { const { autoFillReferees } = await import("@/lib/referees"); await autoFillReferees(id); }
   revalidatePath(`/tournament/${id}`);
   revalidatePath(`/tournament/${id}/edit`);
   return res;

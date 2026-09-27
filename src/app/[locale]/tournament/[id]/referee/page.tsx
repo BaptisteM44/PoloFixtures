@@ -60,8 +60,18 @@ export default async function RefereeMatchPage({
   const isCoOrga =
     playerId && tournament.coOrganizers.some((co) => co.playerId === playerId);
 
-  const hasAccess =
+  const fullAccess =
     hasTokenAccess || isAdmin || isOrgaForTournament || isRefForTournament || isCreator || isCoOrga;
+
+  // Arbitrage par équipe : un joueur de l'équipe désignée accède au panneau,
+  // limité aux matchs que son équipe arbitre (encore à jouer).
+  const myTeamIds = !fullAccess && playerId
+    ? (await prisma.teamPlayer.findMany({ where: { playerId, team: { tournamentId: tournament.id } }, select: { teamId: true } })).map((x) => x.teamId)
+    : [];
+  const refereedMatches = myTeamIds.length > 0
+    ? tournament.matches.filter((m) => m.refereeTeamId && myTeamIds.includes(m.refereeTeamId) && m.status !== "FINISHED")
+    : [];
+  const hasAccess = fullAccess || refereedMatches.length > 0;
 
   if (!hasAccess) {
     redirect(`/tournament/${params.id}?error=unauthorized`);
@@ -87,7 +97,7 @@ export default async function RefereeMatchPage({
             name: tp.player.name,
           })),
         })),
-        matches: tournament.matches.map((m) => ({
+        matches: (fullAccess ? tournament.matches : refereedMatches).map((m) => ({
           id: m.id,
           phase: m.phase,
           roundIndex: m.roundIndex,

@@ -976,7 +976,8 @@
     "share_copied": "Lien copié !",
     "share_copy_prompt": "Copie ce lien :",
     "tab_photos": "Galerie",
-    "planning_timezone": "Horaires en heure locale : {tz} (modifiable dans l'édition du tournoi)"
+    "planning_timezone": "Horaires en heure locale : {tz} (modifiable dans l'édition du tournoi)",
+    "tab_referees": "Arbitrage"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -1235,7 +1236,9 @@
     "merge_requested": "{name} dit être « {ghost} »",
     "merge_requested_sub": "Demande de fusion de profil à valider",
     "merge_approved": "Profil « {ghost} » fusionné dans le tien ✓",
-    "merge_rejected": "Demande de fusion avec « {ghost} » refusée"
+    "merge_rejected": "Demande de fusion avec « {ghost} » refusée",
+    "match_soon": "🏑 Ton match à {time}{where}",
+    "referee_soon": "🟨 Tu arbitres à {time}{where}"
   },
   "contact": {
     "btn_open": "Contact",
@@ -2253,7 +2256,8 @@
     "category_polls": "Sondages",
     "category_photos": "Galeries photos",
     "category_badges": "Badges",
-    "category_labs": "Labs (réponses à mes propositions)"
+    "category_labs": "Labs (réponses à mes propositions)",
+    "category_matches": "Mes matchs et arbitrages (15 min avant)"
   },
   "clubs": {
     "title": "Clubs du monde entier",
@@ -3261,5 +3265,33 @@
     "claim_pending": "Demande de fusion envoyée — en attente de l'orga",
     "claim_rejected": "Ta demande de fusion a été refusée",
     "claim_retry": "Redemander"
+  },
+  "referee_tab": {
+    "title": "Arbitrage",
+    "intro": "Chaque match est arbitré par une équipe : à elle de s'organiser pour savoir qui arbitre.",
+    "loading": "Chargement…",
+    "error": "Une erreur est survenue.",
+    "my_duties": "{count, plural, one {Ton équipe arbitre # match} other {Ton équipe arbitre # matchs}}",
+    "my_duties_hint": "N'importe quel joueur de ton équipe peut ouvrir le panneau d'arbitrage de ces matchs. Tu recevras une notif 15 min avant.",
+    "open_panel": "🟨 Ouvrir le panneau d'arbitrage",
+    "hidden_for_players": "L'orga n'a pas encore publié les arbitrages.",
+    "settings_title": "Règles d'arbitrage",
+    "all_matches": "Tous les matchs",
+    "rule_rotation": "Jouer → repos → arbitrer",
+    "rule_cross_groups": "Groupes croisés (l'autre groupe arbitre)",
+    "rule_manual": "Manuel",
+    "rules_hint": "La répartition se fait automatiquement au lancement de chaque étape et au fil du bracket. Une équipe n'arbitre jamais son match ni pendant un de ses matchs, et la charge est équilibrée. Tes choix manuels ne sont jamais écrasés.",
+    "visible_toggle": "Montrer les arbitrages aux joueurs (dès que le planning est publié)",
+    "btn_fill": "Répartir les matchs sans arbitre",
+    "btn_recompute": "Tout recalculer",
+    "confirm_recompute": "Recalculer toutes les désignations automatiques ? Tes choix manuels sont conservés.",
+    "assigned": "{count, plural, =0 {Aucun match à désigner} one {# match désigné} other {# matchs désignés}}{conflicts, plural, =0 {} one { · # conflit} other { · # conflits}}",
+    "conflicts": "{count, plural, one {# match sans arbitre possible ou en conflit} other {# matchs sans arbitre possible ou en conflit}}",
+    "conflict_no_candidate": "Aucune équipe libre",
+    "conflict_plays_same_slot": "Cette équipe joue au même moment",
+    "conflict_own_match": "Cette équipe joue ce match",
+    "auto": "auto",
+    "manual": "manuel",
+    "no_matches": "Pas encore de matchs : les arbitrages arrivent avec le planning."
   }
 }

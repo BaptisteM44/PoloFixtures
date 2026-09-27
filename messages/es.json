@@ -975,7 +975,8 @@
     "share_copied": "¡Enlace copiado!",
     "share_copy_prompt": "Copia este enlace:",
     "tab_photos": "Galería",
-    "planning_timezone": "Horarios en hora local: {tz} (editable en la edición del torneo)"
+    "planning_timezone": "Horarios en hora local: {tz} (editable en la edición del torneo)",
+    "tab_referees": "Arbitraje"
   },
   "registration": {
     "section_title": "Inscribir mi equipo",
@@ -1239,7 +1240,9 @@
     "merge_requested": "{name} dice ser «{ghost}»",
     "merge_requested_sub": "Solicitud de fusión de perfil por revisar",
     "merge_approved": "Perfil «{ghost}» fusionado con el tuyo ✓",
-    "merge_rejected": "Solicitud de fusión con «{ghost}» rechazada"
+    "merge_rejected": "Solicitud de fusión con «{ghost}» rechazada",
+    "match_soon": "🏑 Tu partido a las {time}{where}",
+    "referee_soon": "🟨 Arbitras a las {time}{where}"
   },
   "contact": {
     "btn_open": "Contacto",
@@ -2256,7 +2259,8 @@
     "category_polls": "Encuestas",
     "category_photos": "Galerías de fotos",
     "category_badges": "Insignias",
-    "category_labs": "Labs (respuestas a mis propuestas)"
+    "category_labs": "Labs (respuestas a mis propuestas)",
+    "category_matches": "Mis partidos y arbitrajes (15 min antes)"
   },
   "clubs": {
     "title": "Clubs de todo el mundo",
@@ -3264,5 +3268,33 @@
     "claim_pending": "Solicitud enviada — esperando a la organización",
     "claim_rejected": "Tu solicitud de fusión fue rechazada",
     "claim_retry": "Volver a pedir"
+  },
+  "referee_tab": {
+    "title": "Arbitraje",
+    "intro": "Cada partido lo arbitra un equipo: el equipo decide quién arbitra.",
+    "loading": "Cargando…",
+    "error": "Algo salió mal.",
+    "my_duties": "{count, plural, one {Tu equipo arbitra # partido} other {Tu equipo arbitra # partidos}}",
+    "my_duties_hint": "Cualquier jugador de tu equipo puede abrir el panel de arbitraje de estos partidos. Recibirás una notificación 15 min antes.",
+    "open_panel": "🟨 Abrir el panel de arbitraje",
+    "hidden_for_players": "La organización aún no ha publicado los arbitrajes.",
+    "settings_title": "Reglas de arbitraje",
+    "all_matches": "Todos los partidos",
+    "rule_rotation": "Jugar → descansar → arbitrar",
+    "rule_cross_groups": "Grupos cruzados (el otro grupo arbitra)",
+    "rule_manual": "Manual",
+    "rules_hint": "El reparto se hace automáticamente al lanzar cada etapa y a medida que avanza el cuadro. Un equipo nunca arbitra su propio partido ni durante uno de sus partidos, y la carga se equilibra. Tus elecciones manuales nunca se sobrescriben.",
+    "visible_toggle": "Mostrar los arbitrajes a los jugadores (en cuanto se publique el horario)",
+    "btn_fill": "Asignar los partidos sin árbitro",
+    "btn_recompute": "Recalcular todo",
+    "confirm_recompute": "¿Recalcular todas las asignaciones automáticas? Tus elecciones manuales se mantienen.",
+    "assigned": "{count, plural, =0 {Ningún partido por asignar} one {# partido asignado} other {# partidos asignados}}{conflicts, plural, =0 {} one { · # conflicto} other { · # conflictos}}",
+    "conflicts": "{count, plural, one {# partido sin árbitro posible o en conflicto} other {# partidos sin árbitro posible o en conflicto}}",
+    "conflict_no_candidate": "Ningún equipo libre",
+    "conflict_plays_same_slot": "Este equipo juega a la misma hora",
+    "conflict_own_match": "Este equipo juega este partido",
+    "auto": "auto",
+    "manual": "manual",
+    "no_matches": "Aún no hay partidos: los arbitrajes llegan con el horario."
   }
 }

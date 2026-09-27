@@ -208,6 +208,8 @@ enum NotificationType {
   NEW_TOURNAMENT_PUBLISHED // notif joueurs : tournoi approuvé/publié
   POLL_REPORTED // notif admin : un sondage a été signalé
   POLL_BLOCKED // notif créateur : son sondage a été bloqué par la modération
+  MATCH_SOON // notif joueurs : ton match commence dans ~15 min (terrain, adversaire)
+  REFEREE_SOON // notif équipe arbitre : tu arbitres dans ~15 min
   POLL_OPENED // notif public visé : un sondage ciblé (club/pays/continent) vient d'ouvrir
   POLL_APPROVAL_REQUESTED // notif gérant de club / admin : un ciblage hors périmètre attend sa validation
   POLL_APPROVAL_DECIDED // notif créateur : sa demande de ciblage a été acceptée ou refusée
@@ -343,6 +345,8 @@ model Tournament {
   // de tournoi déjà envoyée (idempotence du balayage ; nom historique).
   photosPinnedAt          DateTime?
   photosRevealNotifiedAt  DateTime?
+  // Arbitrage : { rules: { [stageId | "default"]: "rotation" | "cross_groups" | "manual" }, hidden: boolean }
+  refereeSettings         Json?
   usesPipeline            Boolean          @default(false) // true = nouveau système de stages (refonte formats)
   approved                Boolean          @default(false)
   submissionStatus        SubmissionStatus @default(PENDING)
@@ -446,15 +450,16 @@ model Team {
   playerBLevel String?
   playerCLevel String?
 
-  tournament          Tournament            @relation(fields: [tournamentId], references: [id])
-  players             TeamPlayer[]
-  poolTeams           PoolTeam[]
-  matchesA            Match[]               @relation("TeamA")
-  matchesB            Match[]               @relation("TeamB")
-  stageEntries        StageEntry[]
-  messages            TeamMessage[]
-  soloEntries         TournamentSoloEntry[]
-  registrationAnswers RegistrationAnswer[]
+  tournament            Tournament            @relation(fields: [tournamentId], references: [id])
+  players               TeamPlayer[]
+  poolTeams             PoolTeam[]
+  matchesA              Match[]               @relation("TeamA")
+  matchesB              Match[]               @relation("TeamB")
+  stageEntries          StageEntry[]
+  messages              TeamMessage[]
+  soloEntries           TournamentSoloEntry[]
+  registrationAnswers   RegistrationAnswer[]
+  refereedMatchesAsTeam Match[]               @relation("RefereeTeam")
 
   @@index([tournamentId])
 }
@@ -533,8 +538,8 @@ model Player {
   pollVoterEntries       PollVoter[]
   pollReports            PollReport[]            @relation("PollReports")
   tournamentPhotos       TournamentPhoto[]       @relation("TournamentPhotos")
-  mergeRequestsAsGhost PlayerMergeRequest[] @relation("MergeGhost")
-  mergeRequestsMade    PlayerMergeRequest[] @relation("MergeRequester")
+  mergeRequestsAsGhost   PlayerMergeRequest[]    @relation("MergeGhost")
+  mergeRequestsMade      PlayerMergeRequest[]    @relation("MergeRequester")
 }
 
 model PushSubscription {
@@ -632,18 +637,25 @@ model Match {
   goldenGoal        Boolean      @default(false)
   refereePlayerId   String?
   coRefereePlayerId String?
+  // Équipe désignée pour arbitrer (elle s'organise en interne). refereeAuto :
+  // désignée par l'algorithme (recalculable), sinon choix manuel de l'orga.
+  refereeTeamId     String?
+  refereeAuto       Boolean      @default(false)
+  // Notifs « ton match / ton arbitrage dans 15 min » déjà envoyées.
+  remindersSentAt   DateTime?
   // Pipeline (nouveau système) : rattachement à un Stage + groupe éventuel
   stageId           String?
   groupKey          String? // "A", "B", … pour les stages multi-groupes
 
-  tournament Tournament   @relation(fields: [tournamentId], references: [id])
-  pool       Pool?        @relation(fields: [poolId], references: [id])
-  stage      Stage?       @relation(fields: [stageId], references: [id])
-  teamA      Team?        @relation("TeamA", fields: [teamAId], references: [id])
-  teamB      Team?        @relation("TeamB", fields: [teamBId], references: [id])
-  referee    Player?      @relation("RefereedMatches", fields: [refereePlayerId], references: [id])
-  coReferee  Player?      @relation("CoRefereedMatches", fields: [coRefereePlayerId], references: [id])
-  events     MatchEvent[]
+  tournament  Tournament   @relation(fields: [tournamentId], references: [id])
+  pool        Pool?        @relation(fields: [poolId], references: [id])
+  stage       Stage?       @relation(fields: [stageId], references: [id])
+  teamA       Team?        @relation("TeamA", fields: [teamAId], references: [id])
+  teamB       Team?        @relation("TeamB", fields: [teamBId], references: [id])
+  referee     Player?      @relation("RefereedMatches", fields: [refereePlayerId], references: [id])
+  refereeTeam Team?        @relation("RefereeTeam", fields: [refereeTeamId], references: [id], onDelete: SetNull)
+  coReferee   Player?      @relation("CoRefereedMatches", fields: [coRefereePlayerId], references: [id])
+  events      MatchEvent[]
 
   @@index([tournamentId])
   @@index([poolId])

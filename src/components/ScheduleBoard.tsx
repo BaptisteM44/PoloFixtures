@@ -63,6 +63,7 @@ export type MatchWithTeams = Match & {
   events?: MatchEvent[];
   referee?: { id: string; name: string } | null;
   coReferee?: { id: string; name: string } | null;
+  refereeTeam?: { id: string; name: string } | null;
 };
 
 const PHASE_LABEL: Record<string, string> = {
@@ -505,8 +506,9 @@ export function ScheduleBoard({
           <div className={`match-card__team${match.status === "FINISHED" && match.scoreB > match.scoreA ? " match-winner" : ""}`}>
             {teamSlot(match, "B")}
           </div>
-          {(match.referee || match.coReferee) && (
+          {(match.referee || match.coReferee || match.refereeTeam) && (
             <div className="match-card__referees">
+              {match.refereeTeam && <span title="Referee team">🟨 {match.refereeTeam.name}</span>}
               {match.referee && <span title="Referee">🏁 {match.referee.name}</span>}
               {match.coReferee && <span title="Co-referee">📱 {match.coReferee.name}</span>}
             </div>

@@ -58,6 +58,7 @@ interface Props {
 // Catégories réglables (même liste que NOTIF_CATEGORIES côté serveur, hors
 // « squads » qui garde son réglage historique notifySquadInvite ci-dessous).
 const CATEGORIES = [
+  { key: "matches", icon: "🏑" },
   { key: "messages", icon: "💬" },
   { key: "registrations", icon: "✅" },
   { key: "clubs", icon: "🏠" },

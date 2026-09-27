@@ -83,6 +83,10 @@ function useNotifLabel() {
         return { title: t("poll_reported"), sub: p.pollQuestion ?? "", href: "/admin/polls" };
       case "POLL_BLOCKED":
         return { title: t("poll_blocked"), sub: p.pollQuestion ?? "", href: "/polls" };
+      case "MATCH_SOON":
+        return { title: t("match_soon", { time: p.time ?? "", where: p.court ? ` — ${p.court}` : "" }), sub: `vs ${p.opponent ?? ""} · ${p.tournamentName ?? ""}`, href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=schedule` };
+      case "REFEREE_SOON":
+        return { title: t("referee_soon", { time: p.time ?? "", where: p.court ? ` — ${p.court}` : "" }), sub: `${p.matchLabel ?? ""} · ${p.tournamentName ?? ""}`, href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=referees` };
       case "POLL_OPENED":
         return { title: t("poll_opened"), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}` };
       case "POLL_APPROVAL_REQUESTED":

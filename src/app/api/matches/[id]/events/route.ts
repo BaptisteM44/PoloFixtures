@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { publishMatchUpdate, publishNewMatches } from "@/lib/sse";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
+import { autoFillReferees, isRefereeTeamMember } from "@/lib/referees";
 import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
@@ -50,8 +51,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
     isOrganizer = tournament?.creatorId === playerId ||
       tournament?.coOrganizers.some((co) => co.playerId === playerId) || false;
   }
+  // Arbitre désigné : le joueur lui-même, ou un joueur de l'équipe arbitre.
   const isAssignedReferee = playerId != null &&
-    (match.refereePlayerId === playerId || match.coRefereePlayerId === playerId);
+    (match.refereePlayerId === playerId || match.coRefereePlayerId === playerId
+      || await isRefereeTeamMember(playerId, match.refereeTeamId));
   if (!hasRole && !isOrganizer && !isAssignedReferee) {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -343,6 +346,14 @@ export async function POST(request: Request, { params }: { params: { id: string 
     });
   }
 
+  // Arbitrage par équipe : le joueur qui lance le match « prend » l'arbitrage
+  // (crédité pour les badges) ; à la fin d'un match, les équipes du tour
+  // suivant sont connues → on complète les désignations.
+  if (parsed.data.type === "START" && playerId && !match.refereePlayerId && match.refereeTeamId
+    && await isRefereeTeamMember(playerId, match.refereeTeamId)) {
+    await prisma.match.update({ where: { id: match.id }, data: { refereePlayerId: playerId } });
+  }
+  if (triggerAdvance) await autoFillReferees(match.tournamentId);
   await syncTournamentCompletionById(match.tournamentId, { duringActivity: true });
 
   return Response.json({ event, match: updated, advancedMatches });
