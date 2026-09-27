@@ -25,8 +25,6 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   if (!player) return NextResponse.json({ error: apiMsg("player_not_found") }, { status: 404 });
 
   const oldBadges = new Set<string>(player.badges as string[]);
-  // Remplace l'existant calculé (retire un badge plus mérité, ex: head_ref
-  // accordé à tort) tout en préservant badges externes/manuels + épinglés.
   const mergedBadges = await recomputePlayerBadges(params.id);
 
   await prisma.player.update({ where: { id: params.id }, data: { badges: mergedBadges } });

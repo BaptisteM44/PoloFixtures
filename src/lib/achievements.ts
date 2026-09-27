@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { getPodiumTeamIdsCached } from "@/lib/podium";
 import { createNotification } from "@/lib/notify";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
+import { guessTimezone } from "@/lib/timezone";
 
 // All match phases that represent a bracket (used to detect finals, champions, etc.)
 // "STAGE" = pipeline (refonte formats) : seules les étapes SE/DE produisent des
@@ -388,13 +389,17 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   // glhf
   if (allMessages.some((m) => /\bgl(hf)?\b/i.test(m.content))) badges.add("glhf");
 
+  // Heures « de nuit » dans le fuseau du pays du joueur : le serveur tourne en
+  // UTC, donc 4h55 serveur = 6h55 en France l'été, et personne ne les obtenait.
+  const playerTz = guessTimezone(player?.country) ?? "UTC";
+
   // afterparty: message sent between 4:00 and 5:00 AM
-  if (allMessages.some((m) => { const h = m.createdAt.getHours(); return h >= 4 && h < 5; }))
+  if (allMessages.some((m) => { const { h } = localHourMinute(m.createdAt, playerTz); return h >= 4 && h < 5; }))
     badges.add("afterparty");
 
   // night_owl: message sent between 4h55 and 5h05
   if (allMessages.some((m) => {
-    const h = m.createdAt.getHours(), min = m.createdAt.getMinutes();
+    const { h, min } = localHourMinute(m.createdAt, playerTz);
     return (h === 4 && min >= 55) || (h === 5 && min <= 5);
   })) badges.add("night_owl");
 
@@ -1010,12 +1015,11 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
       if (maxStreak >= 30) badges.add("habit_formed");
     }
 
-    // night_owl — se connecter entre 4h55 et 5h05 UTC
+    // night_owl — se connecter entre 4h55 et 5h05, heure locale du joueur
     // (complète la condition existante sur les messages de chat)
     if (!badges.has("night_owl")) {
       const hadNightLogin = loginDays.some((l) => {
-        const h = l.loggedAt.getUTCHours();
-        const m = l.loggedAt.getUTCMinutes();
+        const { h, min: m } = localHourMinute(l.loggedAt, playerTz);
         return (h === 4 && m >= 55) || (h === 5 && m <= 5);
       });
       if (hadNightLogin) badges.add("night_owl");
@@ -1030,43 +1034,34 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   return Array.from(badges);
 }
 
-// ---------------------------------------------------------------------------
-// Badges attribués HORS de computeCareerBadges (communauté/Labs + distinctions
-// manuelles). computeCareerBadges ne les recrache jamais : lors d'un recalcul
-// qui REMPLACE (et non fusionne), il faut les préserver explicitement, sinon
-// ils seraient effacés. Tout le reste est entièrement dérivé du calcul, donc
-// remplaçable — c'est ce qui permet de RETIRER un badge accordé à tort après
-// correction d'une condition (ex: head_ref).
-// ---------------------------------------------------------------------------
-export const EXTERNALLY_GRANTED_BADGES = [
-  "first_feedback",
-  "community_voice",
-  "early_backer",
-  "constructive",
-  "debate_starter",
-  "grenouille_platine",
-] as const;
-
 /**
- * Recalcule la liste de badges d'un joueur et renvoie la liste FINALE à
- * persister : résultat frais du calcul + badges externes déjà acquis + badges
- * épinglés (toujours légitimes). Remplace donc l'existant calculé (permet de
- * retirer un badge qui n'est plus mérité) sans jamais toucher aux badges
- * externes/manuels.
+ * Recalcule les badges d'un joueur et renvoie la liste FINALE à persister :
+ * badges déjà acquis + nouveaux badges mérités. Un badge obtenu reste acquis
+ * (ils disparaissaient au recalcul quand la donnée qui les avait déclenchés
+ * changeait : messages supprimés, tournoi réinitialisé, ajout manuel admin…).
+ * Retirer un badge accordé à tort = action manuelle de l'admin.
  */
 export async function recomputePlayerBadges(playerId: string): Promise<string[]> {
   const player = await prisma.player.findUnique({
     where: { id: playerId },
-    select: { badges: true, pinnedBadges: true },
+    select: { badges: true },
   });
-  const existing = new Set<string>((player?.badges as string[]) ?? []);
   const computed = await computeCareerBadges(playerId);
+  const all = new Set([...((player?.badges as string[]) ?? []), ...computed]);
+  // Collector / Completionist comptent TOUS les badges détenus, y compris ceux
+  // déjà acquis que le calcul ne reproduit plus.
+  const count = [...all].filter((b) => b !== "collector" && b !== "completionist").length;
+  if (count >= 20) all.add("collector");
+  if (count >= 35) all.add("completionist");
+  return Array.from(all);
+}
 
-  const preserved = [
-    ...EXTERNALLY_GRANTED_BADGES.filter((b) => existing.has(b)),
-    ...((player?.pinnedBadges as string[]) ?? []),
-  ];
-  return Array.from(new Set([...computed, ...preserved]));
+function localHourMinute(date: Date, timeZone: string): { h: number; min: number } {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date);
+  return {
+    h: Number(parts.find((p) => p.type === "hour")?.value ?? 0),
+    min: Number(parts.find((p) => p.type === "minute")?.value ?? 0),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1085,8 +1080,6 @@ export async function recomputeAllBadges(): Promise<{ updated: number; errors: n
   for (const player of players) {
     try {
       const oldBadges = new Set<string>(player.badges);
-      // Remplace l'existant calculé (retire les badges plus mérités) tout en
-      // préservant les badges externes/manuels et épinglés.
       const merged = await recomputePlayerBadges(player.id);
       await prisma.player.update({ where: { id: player.id }, data: { badges: merged } });
 

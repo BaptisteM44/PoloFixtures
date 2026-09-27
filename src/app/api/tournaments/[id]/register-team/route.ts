@@ -229,8 +229,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     tournamentSlug: tournament.slug ?? "",
   }).catch(console.error);
 
-  // Recalculer les badges en parallèle (fire-and-forget). Remplace l'existant
-  // calculé (retire un badge plus mérité) en préservant externes/manuels + épinglés.
+  // Recalculer les badges en parallèle (fire-and-forget).
   Promise.all(
     existingAccountPlayerIds.map(async (pid) => {
       const merged = await recomputePlayerBadges(pid);

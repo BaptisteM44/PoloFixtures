@@ -123,8 +123,6 @@ export async function POST(req: Request) {
   for (const player of players) {
     try {
       const oldBadges = new Set<string>(player.badges as string[]);
-      // Remplace l'existant calculé (retire les badges plus mérités) en
-      // préservant les badges externes/manuels + épinglés.
       const newBadges = await recomputePlayerBadges(player.id);
       await prisma.player.update({ where: { id: player.id }, data: { badges: newBadges } });
 
