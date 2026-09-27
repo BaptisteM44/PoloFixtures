@@ -194,9 +194,11 @@ export function SelectionManager({
 
   function handleGuarantee(teamId: string, current: boolean) {
     const removing = current; // current=true → on retire un garanti
+    const promotedRank = !current ? teams.find((t) => t.id === teamId)?.waitlistPosition ?? null : null;
     setTeams((prev) =>
       prev.map((t) => {
-        if (t.id === teamId) return { ...t, guaranteed: !current, selected: !current ? true : t.selected };
+        if (t.id === teamId) return { ...t, guaranteed: !current, selected: !current ? true : t.selected, waitlistPosition: !current ? null : t.waitlistPosition };
+        if (promotedRank !== null && t.waitlistPosition !== null && t.waitlistPosition > promotedRank) return { ...t, waitlistPosition: t.waitlistPosition - 1 };
         // Quand on retire un garanti, remettre toutes les WL en pool libre
         if (removing && t.waitlistPosition !== null) return { ...t, waitlistPosition: null };
         return t;

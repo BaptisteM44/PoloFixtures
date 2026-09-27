@@ -1747,6 +1747,30 @@ async function requireSelectionUnlocked(tournamentId: string): Promise<{ error: 
   return null;
 }
 
+/** Après une action de sélection : sans ça, la page publique (et le cache du
+ *  navigateur) montrait encore l'ancienne liste IN / liste d'attente. */
+function refreshTournamentPages() {
+  revalidatePath("/[locale]/tournament/[id]", "page");
+  revalidatePath("/[locale]/tournament/[id]/edit", "page");
+}
+
+/** Une équipe qui passe IN quitte la liste d'attente : on libère son rang et
+ *  on resserre les suivants (même logique que removeFromWaitlistAction). */
+async function leaveWaitlist(tournamentId: string, teamId: string) {
+  const team = await prisma.team.findUnique({ where: { id: teamId }, select: { waitlistPosition: true } });
+  if (!team || team.waitlistPosition === null) return;
+  const removedRank = team.waitlistPosition;
+  await prisma.team.update({ where: { id: teamId }, data: { waitlistPosition: null } });
+  const toRenumber = await prisma.team.findMany({
+    where: { tournamentId, waitlistPosition: { gt: removedRank } },
+    select: { id: true, waitlistPosition: true },
+    orderBy: { waitlistPosition: "asc" },
+  });
+  for (const t of toRenumber) {
+    await prisma.team.update({ where: { id: t.id }, data: { waitlistPosition: (t.waitlistPosition ?? 0) - 1 } });
+  }
+}
+
 export async function toggleTeamSelectedAction(
   teamId: string,
   tournamentId: string,
@@ -1758,6 +1782,8 @@ export async function toggleTeamSelectedAction(
   if (locked) return locked;
 
   await prisma.team.update({ where: { id: teamId }, data: { selected } });
+  if (selected) await leaveWaitlist(tournamentId, teamId);
+  refreshTournamentPages();
   return { ok: true };
 }
 
@@ -1776,6 +1802,7 @@ export async function toggleTeamGuaranteedAction(
     where: { id: teamId },
     data: { guaranteed, ...(guaranteed ? { selected: true } : {}) },
   });
+  if (guaranteed) await leaveWaitlist(tournamentId, teamId);
   // Quand on retire un garanti, remettre toutes les WL en pool libre
   if (!guaranteed) {
     await prisma.team.updateMany({
@@ -1783,6 +1810,7 @@ export async function toggleTeamGuaranteedAction(
       data: { waitlistPosition: null },
     });
   }
+  refreshTournamentPages();
   return { ok: true };
 }
 
@@ -1822,6 +1850,7 @@ export async function drawTeamsAction(
     where: { tournamentId, id: { notIn: Array.from(selectedIds) } },
     data: { selected: false, guaranteed: false },
   });
+  refreshTournamentPages();
   return { ok: true };
 }
 
@@ -1881,6 +1910,7 @@ export async function drawOneTeamAction(
     tournamentId,
     tournamentSlug: tournament?.slug ?? "",
   });
+  refreshTournamentPages();
   return { ok: true, winnerId: winner.id };
 }
 
@@ -1928,6 +1958,7 @@ export async function drawOneWaitlistAction(
     tournamentSlug: tournament?.slug ?? "",
     rank: nextRank,
   });
+  refreshTournamentPages();
   return { ok: true, winnerId: winner.id, waitlistPosition: nextRank };
 }
 
@@ -1960,6 +1991,7 @@ export async function removeFromWaitlistAction(
     await prisma.team.update({ where: { id: t.id }, data: { waitlistPosition: (t.waitlistPosition ?? 0) - 1 } });
   }
 
+  refreshTournamentPages();
   return { ok: true };
 }
 
