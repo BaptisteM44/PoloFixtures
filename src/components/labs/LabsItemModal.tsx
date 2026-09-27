@@ -320,6 +320,23 @@ export function LabsItemModal({ item, playerId, isAdmin, charterAccepted, onClos
             })}
           </div>
 
+          {(item.mehComments?.length ?? 0) > 0 && (
+            <div style={{ marginTop: 14, display: "grid", gap: 6 }}>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                🔄 {t("meh_comments_title", { count: item.mehComments.length })}
+              </p>
+              {item.mehComments.map((c, i) => (
+                <p key={i} style={{
+                  margin: 0, fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap",
+                  background: "var(--surface-2)", borderLeft: "3px solid var(--yellow)",
+                  padding: "6px 10px", borderRadius: "0 6px 6px 0",
+                }}>
+                  {c}
+                </p>
+              ))}
+            </div>
+          )}
+
           {item.myVote?.comment && !showMeh && (
             <p style={{ marginTop: 10, fontSize: 13, color: "var(--text)", fontStyle: "italic",
               background: "var(--surface-2)", borderLeft: "3px solid var(--yellow)",

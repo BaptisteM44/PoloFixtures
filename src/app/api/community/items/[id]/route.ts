@@ -41,7 +41,7 @@ export async function GET(
     where: { id: params.id },
     include: {
       author: { select: { id: true, name: true, slug: true } },
-      votes: { select: { vote: true, comment: true, playerId: true } },
+      votes: { select: { vote: true, comment: true, playerId: true }, orderBy: { createdAt: "asc" } },
       replies: {
         include: {
           author: { select: { id: true, name: true, slug: true } },
@@ -76,6 +76,11 @@ export async function GET(
     down,
     score: up * 3 + meh + item.replies.length * 0.5 - down,
     myVote: myVote ? { vote: myVote.vote, comment: myVote.comment } : null,
+    // Les « bonne idée mais… » expliquent leur réserve : visibles de tous pour
+    // lancer le débat, mais sans nom (les votes ont été faits sans cette promesse).
+    mehComments: item.votes
+      .filter((v) => v.vote === "meh" && v.comment?.trim())
+      .map((v) => v.comment!.trim()),
     replies: item.replies.map((r) => ({
       id: r.id,
       authorId: r.authorId,

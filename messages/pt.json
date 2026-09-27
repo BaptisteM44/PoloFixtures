@@ -2838,6 +2838,7 @@
     "meh_placeholder": "Porquê 'boa ideia, mas…'? (obrigatório)",
     "meh_comment_label": "💬 O teu comentário: « {comment} »",
     "meh_card_placeholder": "O teu comentário (obrigatório)…",
+    "meh_comments_title": "Boa ideia, mas… ({count})",
     "send": "Enviar",
     "pinned": "Fixado",
     "view": "Ver →",

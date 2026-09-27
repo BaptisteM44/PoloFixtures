@@ -2843,6 +2843,7 @@
     "meh_placeholder": "Warum 'gute Idee, aber…'? (erforderlich)",
     "meh_comment_label": "💬 Dein Kommentar: « {comment} »",
     "meh_card_placeholder": "Dein Kommentar (erforderlich)…",
+    "meh_comments_title": "Gute Idee, aber… ({count})",
     "send": "Senden",
     "pinned": "Angepinnt",
     "view": "Ansehen →",

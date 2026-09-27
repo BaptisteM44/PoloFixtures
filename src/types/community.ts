@@ -43,4 +43,5 @@ export interface MyVoteDetail {
 export interface CommunityItemDetail extends Omit<CommunityItem, "myVote"> {
   myVote: MyVoteDetail | null;
   replies: CommunityReply[];
+  mehComments: string[];
 }

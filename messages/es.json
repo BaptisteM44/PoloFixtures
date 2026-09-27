@@ -2842,6 +2842,7 @@
     "meh_placeholder": "¿Por qué 'buena idea pero…'? (obligatorio)",
     "meh_comment_label": "💬 Tu comentario: « {comment} »",
     "meh_card_placeholder": "Tu comentario (obligatorio)…",
+    "meh_comments_title": "Buena idea, pero… ({count})",
     "send": "Enviar",
     "pinned": "Anclado",
     "view": "Ver →",

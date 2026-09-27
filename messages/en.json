@@ -2838,6 +2838,7 @@
     "meh_placeholder": "Why 'good idea but…'? (required)",
     "meh_comment_label": "💬 Your comment: « {comment} »",
     "meh_card_placeholder": "Your comment (required)…",
+    "meh_comments_title": "Good idea but… ({count})",
     "send": "Send",
     "pinned": "Pinned",
     "view": "View →",

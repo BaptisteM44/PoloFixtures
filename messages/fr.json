@@ -2839,6 +2839,7 @@
     "meh_placeholder": "Pourquoi « bonne idée mais… » ? (obligatoire)",
     "meh_comment_label": "💬 Ton commentaire : « {comment} »",
     "meh_card_placeholder": "Ton commentaire (obligatoire)…",
+    "meh_comments_title": "Bonne idée mais… ({count})",
     "send": "Envoyer",
     "pinned": "Épinglé",
     "view": "Voir →",
