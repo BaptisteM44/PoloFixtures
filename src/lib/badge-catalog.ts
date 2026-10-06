@@ -100,7 +100,7 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   night_owl:     { id: "night_owl",     name: "Night Owl",     emoji: "🦩", description: "Envoyer un message entre 4h55 et 5h05",                  category: "secret", rarity: "rare" },
   night_ride:    { id: "night_ride",    name: "Night Ride",    emoji: "🌙", description: "Jouer un match commençant après 22h",                    category: "secret", rarity: "rare" },
   collector:     { id: "collector",     name: "Collector",     emoji: "🃏", description: "Débloquer 20+ badges",                                  category: "secret", rarity: "epic" },
-  completionist: { id: "completionist", name: "Completionist", emoji: "🏅", description: "Débloquer 40+ badges",                                  category: "secret", rarity: "mythic" },
+  completionist: { id: "completionist", name: "Completionist", emoji: "🏅", description: "Débloquer 35+ badges",                                  category: "secret", rarity: "mythic" },
   phantom:       { id: "phantom",       name: "Phantom",       emoji: "👻", description: "Jouer un tournoi sans apparaître dans le top 5…puis en gagner un", category: "secret", rarity: "legendary" },
   askip:         { id: "askip",         name: "Askip",         emoji: "🐬", description: "Perdre tous ses matchs d'un tournoi — et revenir jouer un autre",   category: "secret", rarity: "mythic" },
   birthday_ride: { id: "birthday_ride", name: "Birthday Ride", emoji: "🎂", description: "Participer à un tournoi le jour de son anniversaire",                 category: "secret", rarity: "epic" },
