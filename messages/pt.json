@@ -489,6 +489,8 @@
     "announce_error": "Ocorreu um erro. Tenta novamente.",
     "announce_mailer_unavailable": "O serviço de email está indisponível neste momento. Nenhum email foi enviado — tenta mais tarde.",
     "announce_none_sent": "Não foi possível enviar nenhum email.",
+    "announce_fail_reason": "Motivo indicado pelo servidor de email: {reason}",
+    "announce_skipped": "{count, plural, one {# destinatário ignorado: sem email (perfil sem conta) ou conta suspensa.} other {# destinatários ignorados: sem email (perfis sem conta) ou contas suspensas.}}",
     "tab_recap": "Resumo",
     "recap_podium_title": "Pódio",
     "recap_1st": "1.º lugar",

@@ -490,6 +490,8 @@
     "announce_error": "Ein Fehler ist aufgetreten. Bitte erneut versuchen.",
     "announce_mailer_unavailable": "Der E-Mail-Dienst ist derzeit nicht verfügbar. Es wurde keine E-Mail gesendet — bitte später erneut versuchen.",
     "announce_none_sent": "Es konnte keine E-Mail gesendet werden.",
+    "announce_fail_reason": "Grund laut Mailserver: {reason}",
+    "announce_skipped": "{count, plural, one {# Empfänger übersprungen: keine E-Mail (Profil ohne Konto) oder gesperrtes Konto.} other {# Empfänger übersprungen: keine E-Mail (Profile ohne Konto) oder gesperrte Konten.}}",
     "tab_recap": "Rückblick",
     "recap_podium_title": "Podium",
     "recap_1st": "1. Platz",

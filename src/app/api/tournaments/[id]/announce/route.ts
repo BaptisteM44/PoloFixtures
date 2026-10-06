@@ -94,10 +94,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const messageHtml = message.replace(/\n/g, "<br>");
 
   let sent = 0;
+  let skipped = 0;
   const errors: string[] = [];
+  // Raison renvoyée par le serveur mail au 1er échec (ex: « EAUTH 535 … ») :
+  // affichée à l'orga, sinon un échec reste invisible sans les logs serveur.
+  let failReason: string | null = null;
 
   for (const r of recipients) {
-    if (!r.email || r.status !== "ACTIVE") continue;
+    if (!r.email || r.status !== "ACTIVE") { skipped++; continue; }
 
     const lang = getLangFromCountry(r.country as any);
     const appUrl = process.env.NEXTAUTH_URL ?? "https://poloperator.com";
@@ -115,6 +119,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       sent++;
     } catch (err) {
       errors.push(r.email);
+      if (!failReason) {
+        const e = err as { code?: string; responseCode?: number; response?: string; message?: string };
+        failReason = [e.code, e.responseCode, e.response ?? e.message].filter(Boolean).join(" ").slice(0, 200) || null;
+      }
       // Login refusé ou serveur injoignable : insister multiplierait les
       // tentatives de connexion, exactement ce qui fait bloquer le compte.
       const code = (err as { code?: string })?.code;
@@ -122,5 +130,5 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
   }
 
-  return NextResponse.json({ ok: true, sent, errors });
+  return NextResponse.json({ ok: true, sent, errors, skipped, failReason });
 }

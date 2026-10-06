@@ -15,7 +15,7 @@ export function AnnouncePanel({ tournamentId, format }: Props) {
   const [message, setMessage] = useState("");
   const [target, setTarget] = useState<"captains" | "all">("captains");
   const [status, setStatus] = useState<"idle" | "sending" | "ok" | "error" | "mailer_unavailable">("idle");
-  const [result, setResult] = useState<{ sent: number; errors: string[] } | null>(null);
+  const [result, setResult] = useState<{ sent: number; errors: string[]; skipped: number; failReason: string | null } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +33,7 @@ export function AnnouncePanel({ tournamentId, format }: Props) {
       });
       const data = await res.json();
       if (res.ok) {
-        setResult({ sent: data.sent, errors: data.errors ?? [] });
+        setResult({ sent: data.sent, errors: data.errors ?? [], skipped: data.skipped ?? 0, failReason: data.failReason ?? null });
         setStatus("ok");
         setSubject("");
         setMessage("");
@@ -133,6 +133,16 @@ export function AnnouncePanel({ tournamentId, format }: Props) {
               {result.errors.length > 0 && ` (${result.errors.length} échec${result.errors.length > 1 ? "s" : ""})`}
             </p>
           )
+        )}
+        {status === "ok" && result && result.failReason && (
+          <p style={{ color: "var(--danger)", fontSize: 12, margin: 0, fontFamily: "monospace", wordBreak: "break-word" }}>
+            {t("announce_fail_reason", { reason: result.failReason })}
+          </p>
+        )}
+        {status === "ok" && result && result.skipped > 0 && (
+          <p className="meta" style={{ fontSize: 12, margin: 0 }}>
+            {t("announce_skipped", { count: result.skipped })}
+          </p>
         )}
 
         <div>

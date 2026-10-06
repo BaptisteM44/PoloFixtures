@@ -489,6 +489,8 @@
     "announce_error": "An error occurred. Please try again.",
     "announce_mailer_unavailable": "The email service is currently unavailable. No email was sent — please try again later.",
     "announce_none_sent": "No email could be sent.",
+    "announce_fail_reason": "Reason given by the mail server: {reason}",
+    "announce_skipped": "{count, plural, one {# recipient skipped: no email (profile without an account) or suspended account.} other {# recipients skipped: no email (profiles without an account) or suspended accounts.}}",
     "tab_recap": "Recap",
     "recap_podium_title": "Podium",
     "recap_1st": "1st place",
