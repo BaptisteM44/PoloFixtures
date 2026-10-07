@@ -74,10 +74,16 @@ function groupByMonth(items: TournamentRow[], locale: string): MonthGroup[] {
 
 // ─── smart defaults ─────────────────────────────────────────────────────────
 
-function getDefaultYear(): string {
-  const now = new Date();
-  // From October onward, show next year by default (season shift)
-  return String(now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear());
+/** Année du prochain tournoi pas encore terminé ; à défaut, l'année en cours.
+ *  (L'ancienne règle « dès octobre, l'année suivante » cachait les tournois
+ *  d'octobre à décembre.) */
+function getDefaultYear(tournaments: { dateEnd: string }[]): string {
+  const now = Date.now();
+  const upcoming = tournaments
+    .map((tour) => new Date(tour.dateEnd))
+    .filter((d) => d.getTime() >= now)
+    .sort((x, y) => x.getTime() - y.getTime());
+  return String((upcoming[0] ?? new Date()).getFullYear());
 }
 
 
@@ -153,7 +159,7 @@ export function TournamentBrowser({
   };
   const [statusFilter, setStatusFilter] = useState("");
   const [countryFilter, setCountryFilter] = useState("");
-  const [yearFilter, setYearFilter] = useState(() => getDefaultYear());
+  const [yearFilter, setYearFilter] = useState(() => getDefaultYear(tournaments));
   const [monthFilter, setMonthFilter] = useState("");
   const [continent, setContinent] = useState(() => defaultContinent ?? "");
 
