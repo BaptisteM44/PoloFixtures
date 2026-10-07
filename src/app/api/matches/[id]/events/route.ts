@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { publishMatchUpdate, publishNewMatches } from "@/lib/sse";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
-import { autoFillReferees, isRefereeTeamMember } from "@/lib/referees";
+import { autoFillReferees, isRefereeTeamMember, remindNextUp } from "@/lib/referees";
 import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
@@ -353,7 +353,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
     && await isRefereeTeamMember(playerId, match.refereeTeamId)) {
     await prisma.match.update({ where: { id: match.id }, data: { refereePlayerId: playerId } });
   }
-  if (triggerAdvance) await autoFillReferees(match.tournamentId);
+  // Fin de match : planning recalé + équipes du tour suivant connues →
+  // désignations complétées/réparées. Lancement ou fin : les suivants sur le
+  // terrain sont prévenus (« c'est bientôt à vous »).
+  if (triggerAdvance || isNowFinished) await autoFillReferees(match.tournamentId);
+  if (parsed.data.type === "START" || isNowFinished) remindNextUp(match.tournamentId);
   await syncTournamentCompletionById(match.tournamentId, { duringActivity: true });
 
   return Response.json({ event, match: updated, advancedMatches });

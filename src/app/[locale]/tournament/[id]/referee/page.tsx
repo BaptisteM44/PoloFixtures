@@ -65,10 +65,10 @@ export default async function RefereeMatchPage({
 
   // Arbitrage par équipe : un joueur de l'équipe désignée accède au panneau,
   // limité aux matchs que son équipe arbitre (encore à jouer).
-  const myTeamIds = !fullAccess && playerId
+  const myTeamIds = playerId
     ? (await prisma.teamPlayer.findMany({ where: { playerId, team: { tournamentId: tournament.id } }, select: { teamId: true } })).map((x) => x.teamId)
     : [];
-  const refereedMatches = myTeamIds.length > 0
+  const refereedMatches = !fullAccess && myTeamIds.length > 0
     ? tournament.matches.filter((m) => m.refereeTeamId && myTeamIds.includes(m.refereeTeamId) && m.status !== "FINISHED")
     : [];
   const hasAccess = fullAccess || refereedMatches.length > 0;
@@ -88,6 +88,8 @@ export default async function RefereeMatchPage({
         slug: tournament.slug,
         name: tournament.name,
         gameDurationMin: tournament.gameDurationMin,
+        currentPlayerId: playerId,
+        myTeamIds,
         teams: tournament.teams.map((t) => ({
           id: t.id,
           name: t.name,
@@ -113,6 +115,8 @@ export default async function RefereeMatchPage({
           scoreB: m.scoreB,
           refereePlayerId: m.refereePlayerId ?? null,
           coRefereePlayerId: m.coRefereePlayerId ?? null,
+          refereeTeamId: m.refereeTeamId ?? null,
+          refereeTeamName: tournament.teams.find((t) => t.id === m.refereeTeamId)?.name ?? null,
           events: m.events.map((e) => ({
             id: e.id,
             type: e.type,

@@ -286,6 +286,9 @@ export default async function TournamentPage({
 
   // When tournament is launched (LIVE/COMPLETED), show selected teams count instead of total registered
   const isLaunched = tournament.status === "LIVE" || tournament.status === "COMPLETED";
+  // Onglet Arbitres pour les joueurs : désignations publiées (au moins une, non cachées).
+  const showRefereeTab = isLaunched && !parseRefereeSettings((tournament as any).refereeSettings).hidden
+    && (await prisma.match.count({ where: { tournamentId: tournament.id, refereeTeamId: { not: null } } })) > 0;
   const selectedTeams = tournament.teams.filter((t: any) => t.selected !== false);
   // Dès qu'un tri a été fait (au moins une équipe explicitement écartée /
   // en liste d'attente), on affiche le compte des équipes IN — sans attendre
@@ -363,8 +366,9 @@ export default async function TournamentPage({
     // pas besoin de stream ni de chat pour le justifier. Le contenu s'adapte au
     // statut du tournoi (à venir / en cours / terminé).
     { label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` },
-    // Arbitrage par équipe : dès que le planning existe (ou pour l'orga).
-    ...(isLaunched || isOrga ? [{ label: `🟨 ${t("tab_referees")}`, value: "referees", href: `/tournament/${params.id}?tab=referees` }] : []),
+    // Arbitres (bêta) : l'orga le voit toujours (pour l'activer) ; les joueurs
+    // seulement quand des désignations sont publiées.
+    ...(isOrga || showRefereeTab ? [{ label: `🟨 ${t("tab_referees")}`, value: "referees", href: `/tournament/${params.id}?tab=referees` }] : []),
     ...(hasCommunity ? [{ label: `${t("tab_free_agent")} (${tournament.freeAgents.length})`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
     ...(!isCompleted && galleryVisible ? [galleryTab] : []),
@@ -894,7 +898,7 @@ export default async function TournamentPage({
 
       {tab === "schedule" && (isTestMode
         ? <div className="panel" style={{ padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>🧪 {t("test_mode_hidden")}</div>
-        : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} pools={(tournament.pools ?? []).map((p: any) => ({ id: p.id, name: p.name }))} isOrganizer={isOrga} poolRounds={(tournament as any).poolRounds ?? null} testMode={!!(tournament as any).testMode} gameDurationMin={tournament.gameDurationMin} sundayFormat={(tournament as any).sundayFormat} stages={((tournament as any).stages ?? []).map((s: any) => ({ id: s.id, name: s.name, order: s.order }))} />
+        : <ScheduleBoard tournamentId={tournament.id} initialMatches={tournament.matches} teams={tournament.teams} pools={(tournament.pools ?? []).map((p: any) => ({ id: p.id, name: p.name }))} isOrganizer={isOrga} poolRounds={(tournament as any).poolRounds ?? null} testMode={!!(tournament as any).testMode} gameDurationMin={tournament.gameDurationMin} sundayFormat={(tournament as any).sundayFormat} stages={((tournament as any).stages ?? []).map((s: any) => ({ id: s.id, name: s.name, order: s.order }))} myTeamId={myTeam?.id ?? null} refereesVisible={isOrga || !parseRefereeSettings((tournament as any).refereeSettings).hidden} />
       )}
 
       {/* Pipeline : pilotage des étapes (orga/co-orga uniquement — mêmes actions
@@ -1888,7 +1892,7 @@ export default async function TournamentPage({
         <AccommodationPublicView tournamentId={tournament.id} />
       )}
 
-      {tab === "referees" && (isLaunched || isOrga) && (
+      {tab === "referees" && (isOrga || showRefereeTab) && (
         <RefereeTab tournamentId={tournament.id} tournamentSlug={tournament.slug ?? tournament.id} />
       )}
 

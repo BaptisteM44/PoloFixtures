@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { publishMatchUpdate, publishNewMatches, publishTournamentUpdate } from "@/lib/sse";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
-import { autoFillReferees, isRefereeTeamMember } from "@/lib/referees";
+import { autoFillReferees, isRefereeTeamMember, remindNextUp } from "@/lib/referees";
 import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import {
   generateFridaySwissRoundAction,
@@ -106,6 +106,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       });
     }
 
+    // Arbitrage par équipe : équipes du tour suivant connues → désignations
+    // complétées ; les suivants sur le terrain sont prévenus.
+    await autoFillReferees(existing.tournamentId);
+    remindNextUp(existing.tournamentId);
     const newStatus = await syncTournamentCompletionById(existing.tournamentId, { duringActivity: true });
     if (newStatus === "COMPLETED") {
       publishTournamentUpdate({ tournamentId: existing.tournamentId, type: "tournament_completed", status: "COMPLETED" });
@@ -394,6 +398,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 
   if (isNowFinished) await autoFillReferees(match.tournamentId);
+  if (isNowFinished || (parsed.data.status === "LIVE" && existing.status !== "LIVE")) remindNextUp(match.tournamentId);
   const newStatus = await syncTournamentCompletionById(match.tournamentId, { duringActivity: true });
   if (newStatus === "COMPLETED") {
     publishTournamentUpdate({

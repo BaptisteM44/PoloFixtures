@@ -1,24 +1,45 @@
 /**
- * Désignation des équipes arbitres (fonction pure, sans base de données).
+ * Désignation des équipes arbitres (fonction pure, sans base de données —
+ * utilisable aussi côté client pour le sélecteur de l'orga).
  *
  * Dans un tournoi de bike polo, ce sont les équipes qui arbitrent : l'équipe
  * désignée s'organise en interne. On désigne donc une ÉQUIPE par match.
  *
- * Règles (au choix de l'orga, par étape) :
- *  - "rotation"     : jouer → repos → arbitrer. Idéal : l'équipe a joué deux
- *                     créneaux plus tôt et se repose au créneau d'avant.
- *  - "cross_groups" : les équipes d'un autre groupe arbitrent (le groupe de
- *                     l'après-midi arbitre le matin, et inversement).
- *  - "manual"       : rien d'automatique.
+ * LE TEMPS : on ne raisonne pas à la minute près (le planning glisse en
+ * permanence : chaque fin de match recale la suite du terrain).
+ *  - Sur un même terrain, c'est l'ORDRE des matchs qui compte (match n−1,
+ *    n+1…) — insensible aux retards.
+ *  - Entre deux terrains, on compare les heures estimées (recalées à chaque
+ *    fin de match) avec la marge d'un créneau entier : deux matchs à moins
+ *    d'un créneau d'écart sont « en même temps ».
  *
- * Contraintes dures : jamais son propre match, jamais pendant un de ses
- * matchs (même créneau). Puis l'ÉQUITÉ (on prend parmi les équipes libres les
- * moins chargées), puis le confort : repos au créneau précédent, pas de match
- * au suivant, même terrain que son dernier match, équipe de l'étape.
+ * Règle INVIOLABLE : une équipe n'arbitre jamais pendant qu'elle joue (ni son
+ * propre match, ni deux matchs à la fois).
+ * Puis, dans l'ordre :
+ *  1. le repos choisi par l'orga (jamais juste après avoir joué ; ou ni juste
+ *     avant ni juste après) — relâché seulement si personne d'autre n'est
+ *     libre, et signalé à l'orga ;
+ *  2. les équipes qui n'ont plus de match (éliminées, poule finie) d'abord ;
+ *  3. l'équité (les moins chargées) ;
+ *  4. le confort : jouer → repos → arbitrer, rester sur son terrain, pas
+ *     deux arbitrages d'affilée.
+ *
+ * Règles (au choix de l'orga, par étape) :
+ *  - "rotation"     : automatique, toutes les équipes libres.
+ *  - "cross_groups" : les équipes d'un AUTRE groupe de l'étape (le groupe de
+ *                     l'après-midi arbitre le matin, et inversement). Sans
+ *                     au moins deux groupes dans l'étape : comme "rotation".
+ *  - "manual"       : rien d'automatique.
  */
 
 export type RefereeRule = "rotation" | "cross_groups" | "manual";
 export const REFEREE_RULES: RefereeRule[] = ["rotation", "cross_groups", "manual"];
+
+/** Repos garanti : aucun ; jamais juste après avoir joué ; ni juste avant ni juste après. */
+export type RestPolicy = "none" | "after" | "both";
+export const REST_POLICIES: RestPolicy[] = ["after", "both", "none"];
+
+export const DEFAULT_SLOT_MS = 16 * 60_000;
 
 export type RefMatch = {
   id: string;
@@ -29,133 +50,249 @@ export type RefMatch = {
   stageKey: string; // id de l'étape, ou "default" (tournoi sans étapes)
   groupKey: string | null;
   status: string; // SCHEDULED | LIVE | FINISHED
+  /** Le jeu a commencé (chrono lancé) ou le match est fini. Par défaut : statut ≠ SCHEDULED. */
+  started?: boolean;
   refereeTeamId: string | null;
   refereeAuto: boolean; // désigné par l'algorithme (recalculable)
 };
 
-export type RefConflict = { matchId: string; reason: "no_candidate" | "plays_same_slot" | "own_match" };
+export type RefOptions = {
+  rules: Record<string, RefereeRule>; // par stageKey ; absent = "manual"
+  rest?: RestPolicy; // défaut "after"
+  excluded?: string[]; // équipes dispensées d'arbitrage
+  slotMs?: number; // durée d'un créneau (match + battement)
+};
 
-/** Créneaux : chaque heure de début distincte du tournoi, dans l'ordre. */
-function slotIndex(matches: RefMatch[]): Map<number, number> {
-  const times = [...new Set(matches.map((m) => m.startAt.getTime()))].sort((a, b) => a - b);
-  return new Map(times.map((t, i) => [t, i]));
+export type RefConflictReason =
+  | "no_candidate" // personne de libre
+  | "own_match" // l'équipe joue ce match
+  | "plays_same_slot" // l'équipe joue en même temps
+  | "double_duty" // l'équipe arbitre déjà un autre match en même temps
+  | "excluded" // équipe dispensée (ou plus sélectionnée)
+  | "rest"; // repos choisi par l'orga non respecté (faute de mieux)
+export type RefConflict = { matchId: string; reason: RefConflictReason };
+
+/** État d'une équipe vis-à-vis d'un match à arbitrer (du pire au meilleur). */
+export type CandidateState = "own" | "excluded" | "plays" | "refs" | "just_played" | "plays_next" | "ok";
+const HARD: CandidateState[] = ["own", "excluded", "plays", "refs"];
+export const isHardBlocked = (s: CandidateState) => HARD.includes(s);
+
+export type Candidate = {
+  teamId: string;
+  state: CandidateState;
+  load: number; // arbitrages déjà attribués
+  done: boolean; // plus aucun match à jouer après celui-ci (éliminée…)
+  rested: boolean; // a joué deux matchs plus tôt et se repose (idéal)
+  score: number; // confort
+};
+
+const isStarted = (m: RefMatch) => m.started ?? m.status !== "SCHEDULED";
+/** Match à désigner : pas encore commencé, les deux équipes connues. */
+export const isAssignable = (m: RefMatch) => !isStarted(m) && m.status !== "FINISHED" && !!m.teamAId && !!m.teamBId;
+
+/**
+ * Contexte de calcul : ordre des matchs par terrain, matchs de chaque équipe,
+ * groupes par étape. `rel(a, b)` = position de b par rapport à a, en créneaux :
+ * 0 = en même temps, −1 = juste avant, +1 = juste après, null = loin.
+ */
+export function buildContext(matches: RefMatch[], options: RefOptions) {
+  const slotMs = options.slotMs ?? DEFAULT_SLOT_MS;
+  const byStart = (a: RefMatch, b: RefMatch) => a.startAt.getTime() - b.startAt.getTime() || a.id.localeCompare(b.id);
+
+  const rank = new Map<string, number>();
+  const courts = new Map<string, RefMatch[]>();
+  for (const m of matches) {
+    const k = m.courtName ?? "";
+    if (!courts.has(k)) courts.set(k, []);
+    courts.get(k)!.push(m);
+  }
+  for (const list of courts.values()) list.sort(byStart).forEach((m, i) => rank.set(m.id, i));
+
+  const rel = (a: RefMatch, b: RefMatch): number | null => {
+    if (a.id === b.id) return 0;
+    const dt = (b.startAt.getTime() - a.startAt.getTime()) / slotMs;
+    if (a.courtName && a.courtName === b.courtName) {
+      const d = rank.get(b.id)! - rank.get(a.id)!;
+      // Une vraie pause entre les deux (déjeuner, autre jour) : sans lien.
+      if (Math.abs(dt) > Math.abs(d) + 1.5) return null;
+      return d;
+    }
+    if (Math.abs(dt) < 1) return 0;
+    if (Math.abs(dt) >= 3) return null;
+    return Math.sign(dt) * Math.floor(Math.abs(dt));
+  };
+
+  const plays = new Map<string, RefMatch[]>();
+  const stageGroups = new Map<string, Set<string>>();
+  const groupOf = new Map<string, string>(); // `${stage}|${team}` → groupe
+  for (const m of matches) {
+    for (const t of [m.teamAId, m.teamBId]) {
+      if (!t) continue;
+      if (!plays.has(t)) plays.set(t, []);
+      plays.get(t)!.push(m);
+      if (m.groupKey) groupOf.set(`${m.stageKey}|${t}`, m.groupKey);
+    }
+    if (m.groupKey) {
+      if (!stageGroups.has(m.stageKey)) stageGroups.set(m.stageKey, new Set());
+      stageGroups.get(m.stageKey)!.add(m.groupKey);
+    }
+  }
+  return { slotMs, rank, rel, plays, groupOf, stageGroups, rest: options.rest ?? "after", excluded: new Set(options.excluded ?? []) };
 }
+type Ctx = ReturnType<typeof buildContext>;
+
+/** Règle effective d'une étape (« groupes croisés » sans groupes = rotation). */
+export function effectiveRule(ctx: Ctx, options: RefOptions, stageKey: string): RefereeRule {
+  const r = options.rules[stageKey] ?? "manual";
+  if (r === "cross_groups" && (ctx.stageGroups.get(stageKey)?.size ?? 0) < 2) return "rotation";
+  return r;
+}
+
+/** Évalue une équipe pour arbitrer `m`, compte tenu des autres arbitrages `refsOf(team)`. */
+function evaluate(ctx: Ctx, m: RefMatch, team: string, refsOf: (t: string) => RefMatch[], load: number): Candidate {
+  const mk = (state: CandidateState, done = false, rested = false, score = 0): Candidate => ({ teamId: team, state, load, done, rested, score });
+  if (team === m.teamAId || team === m.teamBId) return mk("own");
+  if (ctx.excluded.has(team)) return mk("excluded");
+  const mine = ctx.plays.get(team) ?? [];
+  const rels = mine.filter((p) => p.id !== m.id).map((p) => ({ p, r: ctx.rel(m, p) }));
+  if (rels.some((x) => x.r === 0)) return mk("plays");
+  const duties = refsOf(team).filter((r) => r.id !== m.id).map((r) => ctx.rel(m, r));
+  if (duties.some((r) => r === 0)) return mk("refs");
+
+  const justPlayed = rels.some((x) => x.r === -1);
+  const playsNext = rels.some((x) => x.r === 1);
+  const rested = !justPlayed && rels.some((x) => x.r === -2);
+  // Plus aucun match connu à partir de celui-ci : éliminée, poule terminée…
+  const done = !mine.some((p) => p.id !== m.id && p.startAt.getTime() >= m.startAt.getTime() && p.status !== "FINISHED");
+  let score = 0;
+  if (rested) score += 4; // jouer → repos → arbitrer
+  if (rels.some((x) => (x.r === -1 || x.r === -2) && x.p.courtName === m.courtName)) score += 1; // déjà sur ce terrain
+  if (playsNext) score -= 3;
+  if (duties.some((r) => r === -1 || r === 1)) score -= 2; // deux arbitrages d'affilée
+  const state: CandidateState = justPlayed ? "just_played" : playsNext ? "plays_next" : "ok";
+  return mk(state, done, rested, score);
+}
+
+/** Respecte le repos choisi par l'orga ? */
+const restOk = (rest: RestPolicy, s: CandidateState) =>
+  rest === "none" ? true : rest === "after" ? s !== "just_played" : s !== "just_played" && s !== "plays_next";
+
+/**
+ * Meilleur candidat : éliminées d'abord, puis les moins chargées, puis le
+ * confort. Jouer juste après compte comme un arbitrage de plus : on ne choisit
+ * une équipe qui enchaîne que si l'équité l'exige vraiment.
+ */
+const effLoad = (c: Candidate) => c.load + (c.state === "plays_next" ? 1 : 0) + (c.state === "just_played" ? 2 : 0);
+const better = (a: Candidate, b: Candidate) =>
+  (a.done === b.done ? 0 : a.done ? -1 : 1) || effLoad(a) - effLoad(b) || b.score - a.score || a.teamId.localeCompare(b.teamId);
 
 /**
  * Désigne une équipe arbitre pour les matchs à pourvoir.
- * `mode` : "fill" = seulement les matchs sans arbitre ; "recompute" = aussi
- * ceux désignés automatiquement (jamais ceux choisis à la main par l'orga).
- * Seuls les matchs non commencés, aux deux équipes connues, sont traités.
- * Retourne les nouvelles désignations et les conflits (à signaler à l'orga).
+ * `mode` :
+ *  - "fill"      : seulement les matchs sans arbitre ;
+ *  - "repair"    : + les désignations automatiques devenues impossibles
+ *                  (l'équipe joue désormais en même temps, dispensée…) ;
+ *  - "recompute" : + toutes les désignations automatiques.
+ * Les choix manuels de l'orga ne sont JAMAIS modifiés.
  */
 export function assignRefereeTeams(input: {
   matches: RefMatch[]; // TOUS les matchs du tournoi (pour savoir qui joue quand)
   teamIds: string[]; // équipes pouvant arbitrer (sélectionnées)
-  rules: Record<string, RefereeRule>; // par stageKey ; absent = "manual"
-  mode: "fill" | "recompute";
+  options: RefOptions;
+  mode: "fill" | "repair" | "recompute";
 }): { assignments: Map<string, string>; conflicts: RefConflict[] } {
-  const { matches, teamIds, rules, mode } = input;
-  const slots = slotIndex(matches);
-  const slotOf = (m: RefMatch) => slots.get(m.startAt.getTime()) ?? 0;
+  const { matches, teamIds, options, mode } = input;
+  const ctx = buildContext(matches, options);
+  const selected = new Set(teamIds);
 
-  // Qui joue à quel créneau, sur quel terrain ; dans quel groupe par étape.
-  const playsAt = new Map<string, Map<number, string | null>>(); // team → slot → court
-  const groupOf = new Map<string, string>(); // `${stageKey}|${team}` → groupKey
-  const stageTeams = new Map<string, Set<string>>(); // stageKey → équipes
-  for (const m of matches) {
-    for (const t of [m.teamAId, m.teamBId]) {
-      if (!t) continue;
-      if (!playsAt.has(t)) playsAt.set(t, new Map());
-      playsAt.get(t)!.set(slotOf(m), m.courtName);
-      if (m.groupKey) groupOf.set(`${m.stageKey}|${t}`, m.groupKey);
-      if (!stageTeams.has(m.stageKey)) stageTeams.set(m.stageKey, new Set());
-      stageTeams.get(m.stageKey)!.add(t);
-    }
-  }
+  const current = new Map<string, string>(); // matchId → équipe (état courant)
+  for (const m of matches) if (m.refereeTeamId) current.set(m.id, m.refereeTeamId);
+  const byId = new Map(matches.map((m) => [m.id, m]));
+  const refsOf = (team: string) => [...current].filter(([, t]) => t === team).map(([id]) => byId.get(id)!);
+  const loadOf = (team: string) => [...current.values()].filter((t) => t === team).length;
 
-  // Charge déjà acquise (désignations conservées), pour équilibrer.
-  const load = new Map<string, number>(teamIds.map((t) => [t, 0]));
+  const eligible = (m: RefMatch) => isAssignable(m) && effectiveRule(ctx, options, m.stageKey) !== "manual";
+  const broken = (m: RefMatch) => {
+    const t = m.refereeTeamId!;
+    return !selected.has(t) || isHardBlocked(evaluate(ctx, m, t, refsOf, 0).state);
+  };
+  const pending = matches
+    .filter((m) => eligible(m) && (!m.refereeTeamId
+      || (m.refereeAuto && (mode === "recompute" || (mode === "repair" && broken(m))))))
+    .sort((a, b) => a.startAt.getTime() - b.startAt.getTime() || (ctx.rank.get(a.id)! - ctx.rank.get(b.id)!) || (a.courtName ?? "").localeCompare(b.courtName ?? ""));
+  for (const m of pending) current.delete(m.id);
+
   const assignments = new Map<string, string>();
   const conflicts: RefConflict[] = [];
-
-  const toAssign = (m: RefMatch) => {
-    const rule = rules[m.stageKey] ?? "manual";
-    if (rule === "manual") return false;
-    if (m.status !== "SCHEDULED" || !m.teamAId || !m.teamBId) return false;
-    if (!m.refereeTeamId) return true;
-    return mode === "recompute" && m.refereeAuto;
-  };
-  const pending = matches.filter(toAssign).sort((a, b) => a.startAt.getTime() - b.startAt.getTime() || (a.courtName ?? "").localeCompare(b.courtName ?? ""));
-  const pendingIds = new Set(pending.map((m) => m.id));
-  for (const m of matches) {
-    if (m.refereeTeamId && !pendingIds.has(m.id)) load.set(m.refereeTeamId, (load.get(m.refereeTeamId) ?? 0) + 1);
-  }
-
-  // Une équipe n'arbitre qu'un match par créneau.
-  const busyRef = new Map<number, Set<string>>();
-  for (const m of matches) {
-    if (m.refereeTeamId && !pendingIds.has(m.id)) {
-      const s = slotOf(m);
-      if (!busyRef.has(s)) busyRef.set(s, new Set());
-      busyRef.get(s)!.add(m.refereeTeamId);
-    }
-  }
-
   for (const m of pending) {
-    const rule = rules[m.stageKey];
-    const s = slotOf(m);
-    const myGroup = m.groupKey;
-    const inStage = stageTeams.get(m.stageKey) ?? new Set<string>();
-    const candidates: { team: string; score: number; load: number }[] = [];
-    for (const team of teamIds) {
-      if (team === m.teamAId || team === m.teamBId) continue;
-      const plays = playsAt.get(team) ?? new Map<number, string | null>();
-      if (plays.has(s)) continue; // joue au même créneau
-      if (busyRef.get(s)?.has(team)) continue; // arbitre déjà à ce créneau
-      if (rule === "cross_groups") {
-        const g = groupOf.get(`${m.stageKey}|${team}`);
-        // Doit appartenir à l'étape, dans un AUTRE groupe.
-        if (!g || !myGroup || g === myGroup) continue;
-      }
-      let score = 0;
-      if (plays.has(s - 1)) score -= 6; // sort de match : il faut du repos
-      if (plays.has(s + 1)) score -= 3; // enchaîne ensuite sur un match
-      if (plays.has(s - 2)) score += 4; // jouer → repos → arbitrer
-      if (plays.get(s - 2) === m.courtName || plays.get(s - 1) === m.courtName) score += 1; // déjà sur ce terrain
-      if (inStage.has(team)) score += 2; // équipe de l'étape
-      candidates.push({ team, score, load: load.get(team) ?? 0 });
+    const rule = effectiveRule(ctx, options, m.stageKey);
+    let pool = teamIds
+      .map((team) => evaluate(ctx, m, team, refsOf, loadOf(team)))
+      .filter((c) => !isHardBlocked(c.state));
+    if (rule === "cross_groups") {
+      pool = pool.filter((c) => {
+        const g = ctx.groupOf.get(`${m.stageKey}|${c.teamId}`);
+        return !!g && !!m.groupKey && g !== m.groupKey;
+      });
     }
-    // Équité d'abord : parmi les équipes libres, seulement les moins chargées
-    // (sinon une équipe qui joue un créneau sur deux, jamais « reposée »,
-    // n'arbitrerait jamais et les autres arbitreraient 3 fois). Le confort
-    // (repos, terrain) départage ensuite.
-    // Exception : si toutes les moins chargées sortent de match, une équipe
-    // reposée avec UN arbitrage de plus est préférée (écart toujours ≤ 1).
-    const minLoad = Math.min(...candidates.map((c) => c.load));
-    const pick = (pool: typeof candidates) => pool.reduce<(typeof candidates)[number] | null>(
-      (b, c) => (!b || c.score > b.score || (c.score === b.score && c.team < b.team) ? c : b), null);
-    let chosen = pick(candidates.filter((c) => c.load === minLoad));
-    if (chosen && (playsAt.get(chosen.team)?.has(s - 1) ?? false)) {
-      const rested = pick(candidates.filter((c) => c.load === minLoad + 1 && !(playsAt.get(c.team)?.has(s - 1) ?? false)));
-      if (rested) chosen = rested;
-    }
-    const best = chosen ? { team: chosen.team, score: chosen.score } : null;
-
+    // Repos : relâché seulement si personne d'autre (d'abord « juste avant de
+    // jouer », puis « juste après avoir joué »), et signalé à l'orga.
+    let ok = pool.filter((c) => restOk(ctx.rest, c.state));
+    let restBroken = false;
+    if (ok.length === 0 && ctx.rest === "both") { ok = pool.filter((c) => c.state !== "just_played"); restBroken = ok.length > 0; }
+    if (ok.length === 0) { ok = pool; restBroken = ok.length > 0 && ctx.rest !== "none"; }
+    const best = ok.sort(better)[0];
     if (!best) {
       conflicts.push({ matchId: m.id, reason: "no_candidate" });
       continue;
     }
-    assignments.set(m.id, best.team);
-    load.set(best.team, (load.get(best.team) ?? 0) + 1);
-    if (!busyRef.has(s)) busyRef.set(s, new Set());
-    busyRef.get(s)!.add(best.team);
+    if (restBroken) conflicts.push({ matchId: m.id, reason: "rest" });
+    assignments.set(m.id, best.teamId);
+    current.set(m.id, best.teamId);
   }
 
-  // Conflits sur les désignations conservées (choix manuels incohérents…).
-  for (const m of matches) {
-    if (!m.refereeTeamId || pendingIds.has(m.id) || m.status === "FINISHED") continue;
-    if (m.refereeTeamId === m.teamAId || m.refereeTeamId === m.teamBId) conflicts.push({ matchId: m.id, reason: "own_match" });
-    else if (playsAt.get(m.refereeTeamId)?.has(slotOf(m))) conflicts.push({ matchId: m.id, reason: "plays_same_slot" });
+  // Désignations conservées : signaler les incohérences (choix manuels…).
+  const pendingIds = new Set(pending.map((m) => m.id));
+  for (const c of checkRefereeAssignments({ matches, teamIds, options })) {
+    if (!pendingIds.has(c.matchId)) conflicts.push(c);
   }
   return { assignments, conflicts };
+}
+
+/** Problèmes des désignations actuelles (matchs pas encore commencés). */
+export function checkRefereeAssignments(input: { matches: RefMatch[]; teamIds: string[]; options: RefOptions }): RefConflict[] {
+  const { matches, teamIds, options } = input;
+  const ctx = buildContext(matches, options);
+  const selected = new Set(teamIds);
+  const byId = new Map(matches.map((m) => [m.id, m]));
+  const refsOf = (team: string) => matches.filter((x) => x.refereeTeamId === team).map((x) => byId.get(x.id)!);
+  const out: RefConflict[] = [];
+  for (const m of matches) {
+    if (!m.refereeTeamId || isStarted(m)) continue;
+    if (!selected.has(m.refereeTeamId)) { out.push({ matchId: m.id, reason: "excluded" }); continue; }
+    const s = evaluate(ctx, m, m.refereeTeamId, refsOf, 0).state;
+    const reason: RefConflictReason | null =
+      s === "own" ? "own_match" : s === "plays" ? "plays_same_slot" : s === "refs" ? "double_duty"
+        : s === "excluded" ? "excluded" : !restOk(ctx.rest, s) ? "rest" : null;
+    if (reason) out.push({ matchId: m.id, reason });
+  }
+  return out;
+}
+
+/**
+ * Pour le sélecteur de l'orga : chaque équipe, son état pour ce match et sa
+ * charge, de la plus recommandée à la plus déconseillée.
+ */
+export function rankCandidates(input: { matches: RefMatch[]; teamIds: string[]; options: RefOptions; matchId: string }): Candidate[] {
+  const { matches, teamIds, options, matchId } = input;
+  const ctx = buildContext(matches, options);
+  const m = matches.find((x) => x.id === matchId);
+  if (!m) return [];
+  const byId = new Map(matches.map((x) => [x.id, x]));
+  const refsOf = (team: string) => matches.filter((x) => x.refereeTeamId === team && x.id !== matchId).map((x) => byId.get(x.id)!);
+  const load = (team: string) => matches.filter((x) => x.refereeTeamId === team && x.id !== matchId).length;
+  const order = (c: Candidate) => (isHardBlocked(c.state) ? 2 : restOk(ctx.rest, c.state) ? 0 : 1);
+  return teamIds
+    .map((t) => evaluate(ctx, m, t, refsOf, load(t)))
+    .sort((a, b) => order(a) - order(b) || better(a, b));
 }

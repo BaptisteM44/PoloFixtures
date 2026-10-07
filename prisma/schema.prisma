@@ -210,6 +210,7 @@ enum NotificationType {
   POLL_BLOCKED // notif créateur : son sondage a été bloqué par la modération
   MATCH_SOON // notif joueurs : ton match commence dans ~15 min (terrain, adversaire)
   REFEREE_SOON // notif équipe arbitre : tu arbitres dans ~15 min
+  REFEREE_ASSIGNED // notif équipe arbitre : désignations (nouvelles ou modifiées)
   POLL_OPENED // notif public visé : un sondage ciblé (club/pays/continent) vient d'ouvrir
   POLL_APPROVAL_REQUESTED // notif gérant de club / admin : un ciblage hors périmètre attend sa validation
   POLL_APPROVAL_DECIDED // notif créateur : sa demande de ciblage a été acceptée ou refusée

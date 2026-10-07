@@ -19,10 +19,16 @@ type MatchInfo = {
   scoreA: number; scoreB: number; events: MatchEvent[];
   refereePlayerId?: string | null;
   coRefereePlayerId?: string | null;
+  /** Arbitrage par équipe : équipe désignée pour arbitrer ce match. */
+  refereeTeamId?: string | null;
+  refereeTeamName?: string | null;
 };
 type TournamentData = {
   id: string; slug?: string | null; name: string; gameDurationMin: number;
   teams: TeamInfo[]; matches: MatchInfo[];
+  /** Joueur connecté et ses équipes (bandeau « ton équipe arbitre ce match »). */
+  currentPlayerId?: string | null;
+  myTeamIds?: string[];
 };
 
 type GoalModal = { teamId: string; teamName: string; delta: number } | null;
@@ -81,7 +87,8 @@ function matchLabel(m: MatchInfo, t: (key: string) => string, num?: number) {
   const dayKey = DAY_KEYS[m.dayIndex];
   const phaseKey = PHASE_KEYS[m.phase];
   const prefix = num != null ? `#${num} · ` : "";
-  return `${prefix}${dayKey ? t(dayKey) : m.dayIndex} · ${m.courtName} · ${phaseKey ? t(phaseKey) : m.phase} R${m.roundIndex + 1} — ${a} vs ${b}`;
+  // Équipes en tête : sur mobile, le <select> coupe la fin du libellé.
+  return `${prefix}${a} vs ${b} — ${m.courtName} · ${phaseKey ? t(phaseKey) : m.phase} R${m.roundIndex + 1} · ${dayKey ? t(dayKey) : m.dayIndex}`;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -1004,6 +1011,25 @@ export function TournamentRefereePanel({
 
       {selectedMatch && (
         <>
+          {/* ── Arbitrage par équipe : c'est mon équipe qui arbitre ────── */}
+          {selectedMatch.refereeTeamId && (tournament.myTeamIds ?? []).includes(selectedMatch.refereeTeamId) && !matchEnded && (
+            <div className="ref-team-banner">
+              <span>🟨 {t("team_refs_this", { team: selectedMatch.refereeTeamName ?? "" })}</span>
+              {tournament.currentPlayerId && localRefereeId !== tournament.currentPlayerId ? (
+                <button type="button" className="primary" disabled={refSaving}
+                  onClick={() => {
+                    const me = tournament.currentPlayerId!;
+                    const co = localCoRefereeId === me ? "" : localCoRefereeId;
+                    setLocalRefereeId(me); setLocalCoRefereeId(co); saveReferees(me, co);
+                  }}>
+                  ✋ {t("take_refereeing")}
+                </button>
+              ) : tournament.currentPlayerId ? (
+                <strong>✅ {t("you_referee_it")}</strong>
+              ) : null}
+            </div>
+          )}
+
           {/* ── Assignation arbitres ───────────────────────────────────── */}
           {!matchEnded && (
             <div className="ref-section" style={{ padding: "12px 16px", display: "grid", gap: 10 }}>

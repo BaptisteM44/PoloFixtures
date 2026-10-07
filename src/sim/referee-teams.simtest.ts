@@ -88,9 +88,10 @@ describe("Répartition (orga)", () => {
     expect((await assignRefs(req("POST", { mode: "fill" }), ctx(tid))).status).toBe(403);
 
     as(orga);
-    expect((await patchRefs(req("PATCH", { rules: { default: "rotation" } }), ctx(tid))).status).toBe(200);
-    const res = await (await assignRefs(req("POST", { mode: "fill" }), ctx(tid))).json();
+    // Choisir une règle automatique répartit tout de suite.
+    const res = await (await patchRefs(req("PATCH", { rules: { default: "rotation" } }), ctx(tid))).json();
     expect(res.assigned).toBe(6);
+    expect((await (await assignRefs(req("POST", { mode: "fill" }), ctx(tid))).json()).assigned).toBe(0);
     let ms = await refsOf();
     for (const m of ms) {
       expect(m.refereeTeamId).toBeTruthy();
@@ -118,6 +119,39 @@ describe("Répartition (orga)", () => {
     expect((await refsOf()).every((m) => m.refereeTeamId)).toBe(true);
   });
 
+  it("si je joue, je n'arbitre pas : choix manuel refusé pour une équipe qui joue en même temps (autre terrain, en retard)", async () => {
+    const [m0] = await mkMatches(Date.now() + 2 * 3600_000);
+    const match = await prisma.match.findUniqueOrThrow({ where: { id: m0 } });
+    const [c, d] = teams.filter((x) => x.id !== match.teamAId && x.id !== match.teamBId);
+    // C et D jouent sur le terrain 2, 6 min après (le terrain a dérivé).
+    await prisma.match.create({ data: {
+      tournamentId: tid, phase: "POOL", courtName: "Court 2", roundIndex: 1, positionInRound: 9, status: "SCHEDULED",
+      teamAId: c.id, teamBId: d.id, scoreA: 0, scoreB: 0, dayIndex: "SAT", startAt: new Date(match.startAt.getTime() + 6 * MIN),
+    } as never });
+    as(orga);
+    const r = await setMatchRef(req("POST", { matchId: m0, teamId: c.id }), ctx(tid));
+    expect(r.status).toBe(400);
+    expect((await r.json()).error).toBe("plays");
+  });
+
+  it("« groupes croisés » refusé dans une étape sans plusieurs groupes", async () => {
+    await mkMatches(Date.now() + 2 * 3600_000);
+    as(orga);
+    expect((await patchRefs(req("PATCH", { rules: { default: "cross_groups" } }), ctx(tid))).status).toBe(400);
+  });
+
+  it("équipe dispensée : ses arbitrages auto sont réattribués, elle n'en reçoit plus", async () => {
+    await mkMatches(Date.now() + 2 * 3600_000);
+    as(orga);
+    await patchRefs(req("PATCH", { rules: { default: "rotation" } }), ctx(tid));
+    const loaded = (await refsOf()).map((m) => m.refereeTeamId);
+    const busiest = teams.map((x) => x.id).sort((a, b) => loaded.filter((y) => y === b).length - loaded.filter((y) => y === a).length)[0];
+    await patchRefs(req("PATCH", { excluded: [busiest] }), ctx(tid));
+    const after = await refsOf();
+    expect(after.some((m) => m.refereeTeamId === busiest)).toBe(false);
+    expect(after.every((m) => m.refereeTeamId)).toBe(true);
+  });
+
   it("désignations cachées : les joueurs ne les voient pas, l'orga si", async () => {
     await mkMatches(Date.now() + 2 * 3600_000);
     await prisma.tournament.update({ where: { id: tid }, data: { refereeSettings: { rules: { default: "rotation" }, hidden: true } } });
@@ -134,6 +168,38 @@ describe("Répartition (orga)", () => {
     const own = await (await getRefs(req("GET"), ctx(tid))).json();
     expect(own.canManage).toBe(true);
     expect(own.matches.every((m: { refereeTeam: string | null }) => m.refereeTeam)).toBe(true);
+  });
+});
+
+describe("Notifs de désignation", () => {
+  it("chaque joueur des équipes désignées est prévenu ; rien si caché, tout le monde au dévoilement", async () => {
+    await mkMatches(Date.now() + 2 * 3600_000);
+    as(orga);
+    await patchRefs(req("PATCH", { hidden: true }), ctx(tid));
+    await patchRefs(req("PATCH", { rules: { default: "rotation" } }), ctx(tid));
+    expect(calls("REFEREE_ASSIGNED")).toHaveLength(0);
+
+    await patchRefs(req("PATCH", { hidden: false }), ctx(tid));
+    const sent = calls("REFEREE_ASSIGNED");
+    const refTeams = new Set((await refsOf()).map((m) => m.refereeTeamId));
+    const expected = teams.filter((x) => refTeams.has(x.id)).flatMap((x) => x.players);
+    expect(sent.map(([id]) => id).sort()).toEqual([...expected].sort());
+    const [, , payload] = sent[0];
+    expect(Number(payload.count)).toBeGreaterThan(0);
+    expect(payload.nextTime).toMatch(/^\d{2}:\d{2}$/);
+  });
+
+  it("choix manuel : l'ancienne et la nouvelle équipe sont prévenues", async () => {
+    const [m0] = await mkMatches(Date.now() + 2 * 3600_000);
+    const match = await prisma.match.findUniqueOrThrow({ where: { id: m0 } });
+    const [c, d] = teams.filter((x) => x.id !== match.teamAId && x.id !== match.teamBId);
+    await prisma.match.update({ where: { id: m0 }, data: { refereeTeamId: c.id } });
+    as(orga);
+    expect((await setMatchRef(req("POST", { matchId: m0, teamId: d.id }), ctx(tid))).status).toBe(200);
+    const who = new Set(calls("REFEREE_ASSIGNED").map(([id]) => id));
+    expect([...c.players, ...d.players].every((p) => who.has(p))).toBe(true);
+    const cPayload = calls("REFEREE_ASSIGNED").find(([id]) => id === c.players[0])![2];
+    expect(Number(cPayload.count)).toBe(0);
   });
 });
 
@@ -178,6 +244,32 @@ describe("Rappels 15 min avant", () => {
     await sweepMatchReminders();
     expect(notify.createNotification).not.toHaveBeenCalled();
     expect((await prisma.match.findUniqueOrThrow({ where: { id: m1 } })).remindersSentAt).toBeNull();
+  });
+
+  it("ça glisse : le rappel part quand le match d'avant est lancé, même si l'horaire prévu est loin", async () => {
+    // Planning en avance sur l'horaire : m1 « prévu » dans 1 h, mais m0 vient d'être lancé.
+    const [m0, m1, m2] = await mkMatches(Date.now() + 40 * MIN);
+    await sweepMatchReminders();
+    expect(notify.createNotification).not.toHaveBeenCalled(); // 40 min : trop tôt pour le premier match
+
+    await prisma.match.update({ where: { id: m0 }, data: { status: "LIVE", remindersSentAt: new Date() } });
+    await prisma.matchEvent.create({ data: { matchId: m0, type: "START", matchClockSec: 0, payload: {} } as never });
+    await sweepMatchReminders({ tournamentId: tid });
+    const soon = calls("MATCH_SOON");
+    expect(new Set(soon.map(([, , p]) => p.matchId))).toEqual(new Set([m1])); // pas m2 : il y a encore m1 avant
+    expect(soon[0][2]).toMatchObject({ next: 1 });
+    expect(String(soon[0][2].afterLabel)).toContain("–");
+    expect((await prisma.match.findUniqueOrThrow({ where: { id: m2 } })).remindersSentAt).toBeNull();
+  });
+
+  it("direct pas utilisé (rien n'est lancé) : on se rabat sur l'heure", async () => {
+    // Le match d'avant aurait dû finir depuis longtemps mais personne ne l'a lancé.
+    const [m0, m1] = await mkMatches(Date.now() - 30 * MIN);
+    await prisma.match.update({ where: { id: m1 }, data: { startAt: new Date(Date.now() + 5 * MIN) } });
+    await prisma.match.update({ where: { id: m0 }, data: { remindersSentAt: new Date() } });
+    await sweepMatchReminders({ tournamentId: tid });
+    expect(new Set(calls("MATCH_SOON").map(([, , p]) => p.matchId))).toEqual(new Set([m1]));
+    expect(calls("MATCH_SOON")[0][2]).toMatchObject({ next: 0 });
   });
 
   it("désignations cachées : pas de rappel d'arbitrage (mais celui du match, oui)", async () => {

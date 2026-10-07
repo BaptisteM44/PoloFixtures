@@ -123,6 +123,8 @@ export function ScheduleBoard({
   gameDurationMin = 15,
   sundayFormat,
   stages,
+  myTeamId = null,
+  refereesVisible = true,
 }: {
   tournamentId: string;
   initialMatches: MatchWithTeams[];
@@ -135,6 +137,10 @@ export function ScheduleBoard({
   sundayFormat?: string;
   /** Pipeline (nouveau système) : nom + ordre de chaque Stage, pour libellés et tri corrects. */
   stages?: { id: string; name: string; order: number }[];
+  /** Équipe du joueur connecté : son arbitrage est mis en avant sur la carte. */
+  myTeamId?: string | null;
+  /** Désignations d'arbitrage visibles (l'orga peut les cacher aux joueurs). */
+  refereesVisible?: boolean;
 }) {
   const t = useTranslations("tournament");
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
@@ -506,9 +512,12 @@ export function ScheduleBoard({
           <div className={`match-card__team${match.status === "FINISHED" && match.scoreB > match.scoreA ? " match-winner" : ""}`}>
             {teamSlot(match, "B")}
           </div>
-          {(match.referee || match.coReferee || match.refereeTeam) && (
+          {(match.referee || match.coReferee || (refereesVisible && match.refereeTeamId)) && (
             <div className="match-card__referees">
-              {match.refereeTeam && <span title="Referee team">🟨 {match.refereeTeam.name}</span>}
+              {/* Équipe arbitre : lue depuis refereeTeamId (tenu à jour par le direct). */}
+              {refereesVisible && match.refereeTeamId && (
+                <span title="Referee team" className={match.refereeTeamId === myTeamId ? "match-card__ref-mine" : undefined}>🟨 {teamName(match.refereeTeamId)}</span>
+              )}
               {match.referee && <span title="Referee">🏁 {match.referee.name}</span>}
               {match.coReferee && <span title="Co-referee">📱 {match.coReferee.name}</span>}
             </div>

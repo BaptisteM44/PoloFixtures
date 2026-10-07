@@ -56,9 +56,23 @@ function toPushPayload(
     case "POLL_BLOCKED":
       return { title: "Sondage bloqué", body: p.pollQuestion, url: "/polls", tag: `poll-blocked-${p.pollId}` };
     case "MATCH_SOON":
-      return { title: `🏑 Ton match à ${p.time}${p.court ? ` — ${p.court}` : ""}`, body: `vs ${p.opponent} · ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=schedule`, tag: `match-${p.matchId}` };
+      return {
+        title: Number(p.next) ? `🏑 C'est bientôt à toi${p.court ? ` — ${p.court}` : ""}` : `🏑 Ton match vers ${p.time}${p.court ? ` — ${p.court}` : ""}`,
+        body: `vs ${p.opponent}${Number(p.next) && p.afterLabel ? ` · après ${p.afterLabel}` : ""} · ${p.tournamentName}`,
+        url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=schedule`, tag: `match-${p.matchId}`,
+      };
     case "REFEREE_SOON":
-      return { title: `🟨 Tu arbitres à ${p.time}${p.court ? ` — ${p.court}` : ""}`, body: `${p.matchLabel} · ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=referees`, tag: `ref-${p.matchId}` };
+      return {
+        title: Number(p.next) ? `🟨 Vous arbitrez bientôt${p.court ? ` — ${p.court}` : ""}` : `🟨 Vous arbitrez vers ${p.time}${p.court ? ` — ${p.court}` : ""}`,
+        body: `${p.matchLabel}${Number(p.next) && p.afterLabel ? ` · après ${p.afterLabel}` : ""} · ${p.tournamentName}`,
+        url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=referees`, tag: `ref-${p.matchId}`,
+      };
+    case "REFEREE_ASSIGNED":
+      return {
+        title: Number(p.count) ? `🟨 ${p.teamName} arbitre ${p.count} match${Number(p.count) > 1 ? "s" : ""}` : `🟨 ${p.teamName} : plus d'arbitrage prévu`,
+        body: `${p.nextLabel ? `Prochain : ${p.nextLabel} vers ${p.nextTime} · ` : ""}${p.tournamentName}`,
+        url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=referees`, tag: `ref-assign-${p.tournamentId}`,
+      };
     case "POLL_OPENED":
       return { title: "Nouveau sondage 📊", body: p.pollQuestion, url: `/poll/${p.pollId}`, tag: `poll-open-${p.pollId}` };
     case "POLL_APPROVAL_REQUESTED":
@@ -100,7 +114,7 @@ export const NOTIF_CATEGORIES = ["matches", "messages", "registrations", "squads
 export type NotifCategory = (typeof NOTIF_CATEGORIES)[number];
 
 const TYPE_CATEGORY: Partial<Record<NotificationType, NotifCategory>> = {
-  MATCH_SOON: "matches", REFEREE_SOON: "matches",
+  MATCH_SOON: "matches", REFEREE_SOON: "matches", REFEREE_ASSIGNED: "matches",
   DIRECT_MESSAGE_REQUEST: "messages", DIRECT_MESSAGE_RECEIVED: "messages", TEAM_MESSAGE_RECEIVED: "messages",
   TEAM_REGISTERED: "registrations", TEAM_SELECTED: "registrations", TEAM_WAITLISTED: "registrations",
   TEAM_FEE_CONFIRMED: "registrations", ACCOMMODATION_ASSIGNED: "registrations", ACCOMMODATION_GUEST_ADDED: "registrations",
@@ -158,6 +172,13 @@ export async function createNotification(
         await prisma.notification.create({ data: { playerId, type, payload: { ...payload, count: 1 } } });
       }
       return;
+    }
+
+    // Désignations d'arbitrage : une seule notif à jour par tournoi.
+    if (type === "REFEREE_ASSIGNED") {
+      await prisma.notification.deleteMany({
+        where: { playerId, type, read: false, payload: { path: ["tournamentId"], equals: payload.tournamentId } },
+      });
     }
 
     await prisma.notification.create({

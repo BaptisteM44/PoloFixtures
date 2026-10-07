@@ -83,10 +83,22 @@ function useNotifLabel() {
         return { title: t("poll_reported"), sub: p.pollQuestion ?? "", href: "/admin/polls" };
       case "POLL_BLOCKED":
         return { title: t("poll_blocked"), sub: p.pollQuestion ?? "", href: "/polls" };
-      case "MATCH_SOON":
-        return { title: t("match_soon", { time: p.time ?? "", where: p.court ? ` — ${p.court}` : "" }), sub: `vs ${p.opponent ?? ""} · ${p.tournamentName ?? ""}`, href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=schedule` };
-      case "REFEREE_SOON":
-        return { title: t("referee_soon", { time: p.time ?? "", where: p.court ? ` — ${p.court}` : "" }), sub: `${p.matchLabel ?? ""} · ${p.tournamentName ?? ""}`, href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=referees` };
+      case "MATCH_SOON": {
+        const where = p.court ? ` — ${p.court}` : "";
+        const after = Number(p.next) && p.afterLabel ? ` · ${t("after_match", { match: p.afterLabel })}` : "";
+        return { title: Number(p.next) ? t("match_next", { where }) : t("match_soon", { time: p.time ?? "", where }), sub: `vs ${p.opponent ?? ""}${after} · ${p.tournamentName ?? ""}`, href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=schedule` };
+      }
+      case "REFEREE_SOON": {
+        const where = p.court ? ` — ${p.court}` : "";
+        const after = Number(p.next) && p.afterLabel ? ` · ${t("after_match", { match: p.afterLabel })}` : "";
+        return { title: Number(p.next) ? t("referee_next", { where }) : t("referee_soon", { time: p.time ?? "", where }), sub: `${p.matchLabel ?? ""}${after} · ${p.tournamentName ?? ""}`, href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=referees` };
+      }
+      case "REFEREE_ASSIGNED":
+        return {
+          title: Number(p.count) ? t("referee_assigned", { team: p.teamName ?? "", count: Number(p.count) }) : t("referee_assigned_none", { team: p.teamName ?? "" }),
+          sub: `${p.nextLabel ? `${t("referee_assigned_next", { match: p.nextLabel, time: p.nextTime ?? "" })} · ` : ""}${p.tournamentName ?? ""}`,
+          href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=referees`,
+        };
       case "POLL_OPENED":
         return { title: t("poll_opened"), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}` };
       case "POLL_APPROVAL_REQUESTED":
