@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useWakeLock } from "@/lib/useWakeLock";
+import { isEliminationMatch } from "@/lib/match-kind";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -12,7 +13,7 @@ type PlayerInfo = { id: string; name: string };
 type TeamInfo = { id: string; name: string; color: string | null; players: PlayerInfo[] };
 type MatchEvent = { id: string; type: string; matchClockSec: number; payload: Record<string, unknown>; createdAt?: string };
 type MatchInfo = {
-  id: string; phase: string; roundIndex: number; courtName: string;
+  id: string; phase: string; bracketSide?: string | null; roundIndex: number; courtName: string;
   dayIndex: string; startAt: string; status: string;
   teamAId: string | null; teamBId: string | null;
   teamAName: string | null; teamBName: string | null;
@@ -94,8 +95,8 @@ function matchLabel(m: MatchInfo, t: (key: string) => string, num?: number) {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function TournamentRefereePanel({
-  tournament, canManageRefs,
-}: { tournament: TournamentData; canManageRefs: boolean }) {
+  tournament, canManageRefs, showAllMatches = true,
+}: { tournament: TournamentData; canManageRefs: boolean; showAllMatches?: boolean }) {
   const t = useTranslations("referee_panel");
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -232,6 +233,27 @@ export function TournamentRefereePanel({
     const es = new EventSource(`/api/sse?tournamentId=${tournament.id}`);
     es.addEventListener("match", (evt) => {
       const payload = JSON.parse((evt as MessageEvent).data);
+      // Round suivant généré (Swiss…) : l'ajouter sans recharger la page. Pas en
+      // accès « équipe arbitre », limité aux matchs que l'équipe arbitre.
+      if (payload?.type === "new_matches" && Array.isArray(payload.matches)) {
+        if (!showAllMatches) return;
+        setMatchMap((prev) => {
+          const next = new Map(prev);
+          for (const m of payload.matches as Array<Record<string, any>>) {
+            if (!m?.id || next.has(m.id)) continue;
+            next.set(m.id, {
+              id: m.id, phase: m.phase, bracketSide: m.bracketSide ?? null, roundIndex: m.roundIndex,
+              courtName: m.courtName, dayIndex: m.dayIndex, startAt: new Date(m.startAt).toISOString(), status: m.status,
+              teamAId: m.teamAId ?? null, teamBId: m.teamBId ?? null,
+              teamAName: m.teamA?.name ?? null, teamBName: m.teamB?.name ?? null,
+              scoreA: m.scoreA ?? 0, scoreB: m.scoreB ?? 0, events: [],
+              refereePlayerId: m.refereePlayerId ?? null, coRefereePlayerId: m.coRefereePlayerId ?? null,
+            });
+          }
+          return next;
+        });
+        return;
+      }
       const updatedMatch: Partial<MatchInfo> | undefined =
         payload?.data?.match ?? (payload?.data?.id ? payload.data : undefined);
       if (updatedMatch?.id) {
@@ -259,7 +281,7 @@ export function TournamentRefereePanel({
       }
     });
     return () => es.close();
-  }, [tournament.id]);
+  }, [tournament.id, showAllMatches]);
 
   // Garder l'écran allumé tant que running
   useWakeLock(running || !!timeoutTimer || fullscreen);
@@ -722,7 +744,7 @@ export function TournamentRefereePanel({
       return true;
     }).sort((a, b) => a.name.localeCompare(b.name));
   }, [tournament.teams]);
-  const cannotEndBracketDraw = !!selectedMatch && selectedMatch.phase === "BRACKET" && selectedMatch.scoreA === selectedMatch.scoreB;
+  const cannotEndBracketDraw = !!selectedMatch && isEliminationMatch(selectedMatch) && selectedMatch.scoreA === selectedMatch.scoreB;
 
   // Changement de match : purge les décomptes (exclusions 30s + timeout) du
   // match précédent — ils ne concernent pas le nouveau match sélectionné.
@@ -813,7 +835,8 @@ export function TournamentRefereePanel({
         <div className="ref-timeout-overlay">
           <p className="ref-timeout-label">{timeoutTimer.label}</p>
           <div className="ref-timeout-clock">{fmtClock(timeoutTimer.sec)}</div>
-          <button className="primary" onClick={() => { setTimeoutTimer(null); setRunning(true); }}>
+          {/* Ferme seulement le timeout : l'arbitre relance avec Play quand tout le monde est prêt. */}
+          <button className="primary" onClick={() => setTimeoutTimer(null)}>
             {t("btn_resume")}
           </button>
         </div>
@@ -1149,7 +1172,7 @@ export function TournamentRefereePanel({
 
                     {/* Buts */}
                     <div className="ref-score-btns">
-                      {clockSec >= gameDurSec && selectedMatch.phase === "BRACKET" ? (
+                      {clockSec >= gameDurSec && isEliminationMatch(selectedMatch) ? (
                         <button className="primary ref-bigbtn"
                           disabled={selectedMatch.scoreA !== selectedMatch.scoreB}
                           style={selectedMatch.scoreA === selectedMatch.scoreB ? { background: "var(--yellow)", color: "var(--text)", border: "none" } : undefined}

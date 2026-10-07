@@ -7,6 +7,7 @@ import { autoFillReferees, isRefereeTeamMember, remindNextUp } from "@/lib/refer
 import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
+import { isEliminationMatch } from "@/lib/match-kind";
 
 const schema = z.object({
   type: z.enum(["START", "PAUSE", "GOAL", "GOLDEN_GOAL", "PENALTY", "TIMEOUT", "TIME_ADJUST", "END", "SWAP_SIDES"]),
@@ -176,7 +177,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     scoreA = fresh.scoreA;
     scoreB = fresh.scoreB;
     // Block ending a BRACKET match on a draw
-    if (match.phase === "BRACKET" && scoreA === scoreB) {
+    if (isEliminationMatch(match) && scoreA === scoreB) {
       return Response.json({ error: apiMsg("bracket_draw_end") }, { status: 422 });
     }
     status = "FINISHED";
@@ -353,6 +354,28 @@ export async function POST(request: Request, { params }: { params: { id: string 
     && await isRefereeTeamMember(playerId, match.refereeTeamId)) {
     await prisma.match.update({ where: { id: match.id }, data: { refereePlayerId: playerId } });
   }
+  // Nouveau moteur (phase STAGE) : un match fini à la console doit passer par
+  // le moteur, comme depuis le planning — sinon le round Swiss suivant ne se
+  // générait pas tant qu'on ne ré-enregistrait pas un match depuis le planning.
+  // applyScore ré-applique le même score/vainqueur/propagation (idempotent),
+  // puis avanceStage : round suivant, fin d'étape, GF reset du DE.
+  if (isNowFinished && match.phase === "STAGE" && match.stageId) {
+    const { applyScore } = await import("@/engine/pipeline-server");
+    const fresh = await prisma.match.findUniqueOrThrow({ where: { id: match.id }, select: { scoreA: true, scoreB: true } });
+    const beforeIds = new Set(
+      (await prisma.match.findMany({ where: { stageId: match.stageId }, select: { id: true } })).map((m) => m.id)
+    );
+    const res = await applyScore(match.id, fresh.scoreA, fresh.scoreB).catch((e) => ({ error: String(e) }));
+    if (res.error) console.error("[events] applyScore", match.id, res.error);
+    const created = await prisma.match.findMany({
+      where: { stageId: match.stageId, id: { notIn: [...beforeIds] } },
+      include: { teamA: true, teamB: true },
+    });
+    if (created.length > 0) {
+      publishNewMatches({ tournamentId: match.tournamentId, type: "new_matches", matches: created as unknown as Record<string, unknown>[] });
+    }
+  }
+
   // Fin de match : planning recalé + équipes du tour suivant connues →
   // désignations complétées/réparées. Lancement ou fin : les suivants sur le
   // terrain sont prévenus (« c'est bientôt à vous »).

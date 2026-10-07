@@ -102,6 +102,7 @@ export default async function RefereeMatchPage({
         matches: (fullAccess ? tournament.matches : refereedMatches).map((m) => ({
           id: m.id,
           phase: m.phase,
+          bracketSide: m.bracketSide ?? null,
           roundIndex: m.roundIndex,
           courtName: m.courtName,
           dayIndex: m.dayIndex,
@@ -127,6 +128,7 @@ export default async function RefereeMatchPage({
         })),
       }}
       canManageRefs={!!canManageRefs}
+      showAllMatches={!!fullAccess}
     />
   );
 }
