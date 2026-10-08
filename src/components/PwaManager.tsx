@@ -132,9 +132,18 @@ export function PwaManager() {
       if (!session?.user?.playerId) return;
       if (!("PushManager" in window)) return;
 
-      // Check if already subscribed
+      // Déjà abonné : on resynchronise la langue de l'appareil (les push
+      // arrivent dans la langue du site, même si elle a changé depuis).
       const existing = await registration.pushManager.getSubscription();
-      if (existing) return;
+      if (existing) {
+        const json = existing.toJSON();
+        fetch("/api/push-subscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys, locale: currentLocale() }),
+        }).catch(() => {});
+        return;
+      }
 
       // Check if permission was already denied
       if (Notification.permission === "denied") return;
@@ -249,11 +258,18 @@ export async function subscribeToPush(registration?: ServiceWorkerRegistration) 
       body: JSON.stringify({
         endpoint: json.endpoint,
         keys: json.keys,
+        locale: currentLocale(),
       }),
     });
   } catch (e) {
     console.error("[pwa] Push subscription failed:", e);
   }
+}
+
+/** Langue du site affiché (<html lang>), pour envoyer les push dans cette langue. */
+function currentLocale(): string | undefined {
+  const l = document.documentElement.lang?.slice(0, 2);
+  return ["fr", "en", "de", "es", "pt"].includes(l) ? l : undefined;
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {

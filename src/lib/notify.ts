@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { NotificationType } from "@prisma/client";
 import { sendMail } from "@/lib/mailer";
 import { sendPushToPlayer } from "@/lib/web-push";
+import { localizedPush } from "@/lib/push-i18n";
 import { sameCountry } from "@/lib/country-utils";
 
 /** Build a human-readable push payload from notification type + payload */
@@ -186,7 +187,8 @@ export async function createNotification(
     });
 
     // Fire-and-forget push notification
-    sendPushToPlayer(playerId, toPushPayload(type, payload)).catch(() => {});
+    // Push dans la langue de chaque appareil (même texte que la cloche).
+    sendPushToPlayer(playerId, (locale) => localizedPush(locale, type, payload, toPushPayload(type, payload).tag)).catch(() => {});
   } catch (e) {
     console.error("[notify] Failed to create notification:", type, e);
   }
@@ -266,11 +268,8 @@ export async function notifyCommunityReply({
         });
 
         const isParticipant = playerId !== itemAuthorId;
-        // La cloche traduit le titre à l'affichage (via count + isParticipant) :
-        // on ne stocke PAS de `message` figé dans le payload. Le push natif, lui,
-        // n'a pas de contexte i18n → texte de secours en français (préposition
-        // "sur" pour l'auteur du post, "dans" pour un participant du fil).
-        const prep = isParticipant ? "dans" : "sur";
+        // La cloche et le push traduisent le titre selon la langue du lecteur
+        // (via count + isParticipant) : pas de `message` figé dans le payload.
 
         if (existing) {
           const payload = existing.payload as Record<string, string | number>;
@@ -282,8 +281,8 @@ export async function notifyCommunityReply({
             where: { id: existing.id },
             data: { payload: { itemId, itemTitle, status: "reply", count, isParticipant: String(isParticipant) } },
           });
-          const pushMsg = `💬 ${count} nouvelles réponses ${prep} "${itemTitle}"`;
-          sendPushToPlayer(playerId, toPushPayload("COMMUNITY_STATUS_CHANGED", { itemId, itemTitle, status: "reply", message: pushMsg })).catch(() => {});
+          const pushPayload = { itemId, itemTitle, status: "reply", count, isParticipant: String(isParticipant) };
+          sendPushToPlayer(playerId, (locale) => localizedPush(locale, "COMMUNITY_STATUS_CHANGED", pushPayload, `labs-${itemId}`)).catch(() => {});
         } else {
           await prisma.notification.create({
             data: {
@@ -292,8 +291,8 @@ export async function notifyCommunityReply({
               payload: { itemId, itemTitle, status: "reply", count: 1, isParticipant: String(isParticipant) },
             },
           });
-          const pushMsg = `💬 Nouvelle réponse ${prep} "${itemTitle}"`;
-          sendPushToPlayer(playerId, toPushPayload("COMMUNITY_STATUS_CHANGED", { itemId, itemTitle, status: "reply", message: pushMsg })).catch(() => {});
+          const pushPayload = { itemId, itemTitle, status: "reply", count: 1, isParticipant: String(isParticipant) };
+          sendPushToPlayer(playerId, (locale) => localizedPush(locale, "COMMUNITY_STATUS_CHANGED", pushPayload, `labs-${itemId}`)).catch(() => {});
         }
       } catch (e) {
         console.error("[notify] Failed to create/update community reply notification:", e);

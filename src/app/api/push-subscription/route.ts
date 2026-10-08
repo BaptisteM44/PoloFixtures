@@ -10,6 +10,8 @@ const subscribeSchema = z.object({
     p256dh: z.string(),
     auth: z.string(),
   }),
+  // Langue de l'appareil : les notifications push arrivent dans cette langue.
+  locale: z.enum(["fr", "en", "de", "es", "pt"]).optional(),
 });
 
 // POST /api/push-subscription — save push subscription
@@ -22,13 +24,13 @@ export async function POST(request: Request) {
   const parsed = subscribeSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
 
-  const { endpoint, keys } = parsed.data;
+  const { endpoint, keys, locale } = parsed.data;
 
   // Upsert: if endpoint already exists, update it
   await prisma.pushSubscription.upsert({
     where: { endpoint },
-    update: { playerId, p256dh: keys.p256dh, auth: keys.auth },
-    create: { playerId, endpoint, p256dh: keys.p256dh, auth: keys.auth },
+    update: { playerId, p256dh: keys.p256dh, auth: keys.auth, ...(locale ? { locale } : {}) },
+    create: { playerId, endpoint, p256dh: keys.p256dh, auth: keys.auth, locale: locale ?? null },
   });
 
   return NextResponse.json({ ok: true });

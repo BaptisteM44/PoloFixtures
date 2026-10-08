@@ -550,6 +550,8 @@ model PushSubscription {
   endpoint  String   @unique
   p256dh    String
   auth      String
+  /// Langue de l'appareil (fr, en, de, es, pt) : les push arrivent dans cette langue.
+  locale    String?
   createdAt DateTime @default(now())
 
   @@index([playerId])
