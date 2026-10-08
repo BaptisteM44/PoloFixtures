@@ -12,6 +12,7 @@ import {
   BerlinMatchInput,
 } from "@/lib/berlin-mixed";
 import { MatchPhase } from "@prisma/client";
+import { apiMsg } from "@/lib/api-messages";
 
 // ─── Schedule helpers ─────────────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ function computeNextRoundStart(
 
 async function requireOrgaAccess(tournamentId: string) {
   const playerId = await getOrgaPlayerId(tournamentId);
-  if (!playerId) return { error: "Accès refusé." };
+  if (!playerId) return { error: apiMsg("access_denied") };
   return null;
 }
 
@@ -82,7 +83,7 @@ export async function generateFridaySwissRoundAction(
     where: { id: tournamentId },
     include: { teams: { where: { selected: true, fridayGroup: group } }, matches: true },
   });
-  if (!tournament) return { error: "Tournoi introuvable" };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const phase: MatchPhase = group === "A" ? "FRIDAY_A" : "FRIDAY_B";
   const groupMatches = tournament.matches.filter((m) => m.phase === phase);
@@ -94,13 +95,13 @@ export async function generateFridaySwissRoundAction(
     const unfinished = latestRound.filter((m) => m.status !== "FINISHED");
     if (unfinished.length > 0)
       return {
-        error: `Le tour Vendredi-${group} ${existingRounds} a encore ${unfinished.length} match(es) non terminé(s).`,
+        error: apiMsg("act_tour_vendredi_encore_match_es_non", { p0: group, p1: existingRounds, p2: unfinished.length }),
       };
   }
 
   const maxRounds = (tournament as any).fridayRounds ?? 5;
   if (existingRounds >= maxRounds)
-    return { error: `Tous les ${maxRounds} tours Vendredi-${group} sont terminés.` };
+    return { error: apiMsg("act_tous_tours_vendredi_termines", { p0: maxRounds, p1: group }) };
 
   const standings = computeStandings(
     tournament.teams,
@@ -127,7 +128,7 @@ export async function generateFridaySwissRoundAction(
   );
 
   if (newMatches.length === 0)
-    return { error: "Impossible de générer des pairings pour ce tour." };
+    return { error: apiMsg("act_impossible_generer_pairings_tour") };
 
   await prisma.$transaction(
     newMatches.map((match) =>
@@ -170,7 +171,7 @@ export async function computeSaturdayGroupsAction(tournamentId: string) {
       matches: { where: { phase: { in: ["FRIDAY_A", "FRIDAY_B"] }, status: "FINISHED" } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable" };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const teamsA = tournament.teams.filter((t) => t.fridayGroup === "A");
   const teamsB = tournament.teams.filter((t) => t.fridayGroup === "B");
@@ -178,10 +179,10 @@ export async function computeSaturdayGroupsAction(tournamentId: string) {
   const matchesB = tournament.matches.filter((m) => m.phase === "FRIDAY_B");
 
   if (teamsA.length === 0 || teamsB.length === 0) {
-    return { error: `Groupes vendredi incomplets: A=${teamsA.length}, B=${teamsB.length}` };
+    return { error: apiMsg("act_groupes_vendredi_incomplets_b", { p0: teamsA.length, p1: teamsB.length }) };
   }
   if (matchesA.length === 0 || matchesB.length === 0) {
-    return { error: `Matchs vendredi incomplets: A=${matchesA.length}, B=${matchesB.length}` };
+    return { error: apiMsg("act_matchs_vendredi_incomplets_b", { p0: matchesA.length, p1: matchesB.length }) };
   }
 
   // Standings per Friday group
@@ -237,7 +238,7 @@ export async function generateSaturdaySwissRoundAction(
       matches: true,
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable" };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const phase: MatchPhase = group === "A" ? "SATURDAY_A" : "SATURDAY_B";
   const groupMatches = tournament.matches.filter((m) => m.phase === phase);
@@ -249,13 +250,13 @@ export async function generateSaturdaySwissRoundAction(
     const unfinished = latestRound.filter((m) => m.status !== "FINISHED");
     if (unfinished.length > 0)
       return {
-        error: `Le tour Samedi-${group} ${existingRounds} a encore ${unfinished.length} match(es) non terminé(s).`,
+        error: apiMsg("act_tour_samedi_encore_match_es_non", { p0: group, p1: existingRounds, p2: unfinished.length }),
       };
   }
 
   const maxRounds = (tournament as any).saturdayRounds ?? 5;
   if (existingRounds >= maxRounds)
-    return { error: `Tous les ${maxRounds} tours Samedi-${group} sont terminés.` };
+    return { error: apiMsg("act_tous_tours_samedi_termines", { p0: maxRounds, p1: group }) };
 
   // All prior matches (Fri + Sat) to avoid rematches
   const fridayMatches = tournament.matches.filter(
@@ -297,7 +298,7 @@ export async function generateSaturdaySwissRoundAction(
   );
 
   if (newMatches.length === 0)
-    return { error: "Impossible de générer des pairings pour ce tour." };
+    return { error: apiMsg("act_impossible_generer_pairings_tour") };
 
   await prisma.$transaction(
     newMatches.map((match) =>
@@ -336,7 +337,7 @@ export async function generateSundaySwissRoundAction(tournamentId: string) {
     where: { id: tournamentId },
     include: { teams: { where: { selected: true } }, matches: true },
   });
-  if (!tournament) return { error: "Tournoi introuvable" };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const sundayMatches = tournament.matches.filter((m) => m.phase === "SUNDAY_SWISS");
   const existingRounds =
@@ -347,13 +348,13 @@ export async function generateSundaySwissRoundAction(tournamentId: string) {
     const unfinished = latestRound.filter((m) => m.status !== "FINISHED");
     if (unfinished.length > 0)
       return {
-        error: `Le tour Dimanche ${existingRounds} a encore ${unfinished.length} match(es) non terminé(s).`,
+        error: apiMsg("act_tour_dimanche_encore_match_es_non", { p0: existingRounds, p1: unfinished.length }),
       };
   }
 
   const maxRounds = (tournament as any).sundayRounds ?? 2;
   if (existingRounds >= maxRounds)
-    return { error: `Tous les ${maxRounds} tours Dimanche Swiss sont terminés.` };
+    return { error: apiMsg("act_tous_tours_dimanche_swiss_termines", { p0: maxRounds }) };
 
   // All prior matches: Fri + Sat + Sunday so far
   const fridaySatMatches = tournament.matches.filter((m) =>
@@ -387,7 +388,7 @@ export async function generateSundaySwissRoundAction(tournamentId: string) {
   );
 
   if (newMatches.length === 0)
-    return { error: "Impossible de générer des pairings pour ce tour." };
+    return { error: apiMsg("act_impossible_generer_pairings_tour") };
 
   await prisma.$transaction(
     newMatches.map((match) =>
@@ -427,7 +428,7 @@ export async function generateBerlinFinalBracketsAction(tournamentId: string) {
     where: { id: tournamentId },
     include: { teams: { where: { selected: true } }, matches: true },
   });
-  if (!tournament) return { error: "Tournoi introuvable" };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   // Classement cumulatif Ven + Sam + Dim pour le seeding des brackets
   const allCumulativeMatches = tournament.matches.filter((m) =>

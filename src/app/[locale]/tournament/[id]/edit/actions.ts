@@ -25,10 +25,11 @@ import { createDEBracket } from "@/engine/persist-de";
 import { computeStandings } from "@/lib/standings";
 import { recomputePlayerBadges } from "@/lib/achievements";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
+import { apiMsg } from "@/lib/api-messages";
 
 async function requireTournamentOrgaAccess(tournamentId: string): Promise<{ error: string } | null> {
   const playerId = await getOrgaPlayerId(tournamentId);
-  if (!playerId) return { error: "Accès refusé." };
+  if (!playerId) return { error: apiMsg("access_denied") };
   return null;
 }
 
@@ -145,7 +146,7 @@ export async function updateTournamentAction(formData: FormData) {
   if (denied) return denied;
 
   const tournament = await prisma.tournament.findUnique({ where: { id: data.id } });
-  if (!tournament) return { error: "Not found" };
+  if (!tournament) return { error: apiMsg("not_found") };
 
   if (tournament.locked) {
     const structuralFields = ["format", "maxTeams", "courtsCount", "saturdayFormat", "sundayFormat", "poolCount", "crossPool"] as const;
@@ -153,7 +154,7 @@ export async function updateTournamentAction(formData: FormData) {
       const submitted = (data as Record<string, unknown>)[field];
       if (submitted === undefined) continue; // champ non soumis (pipeline) → pas de changement
       if (submitted !== (tournament as Record<string, unknown>)[field]) {
-        return { error: `${field} cannot be changed when locked` };
+        return { error: apiMsg("act_cannot_be_changed_when_locked", { p0: field }) };
       }
     }
   }
@@ -285,7 +286,7 @@ export async function savePoolAssignmentAction(
   if (denied) return denied;
 
   const tournament = await prisma.tournament.findUnique({ where: { id } });
-  if (!tournament) return { error: "Not found" };
+  if (!tournament) return { error: apiMsg("not_found") };
 
   await prisma.$transaction(async (tx) => {
     // Clear existing pool assignments
@@ -329,14 +330,14 @@ export async function launchPoolAction(id: string, poolLetter: "A" | "B") {
       pools: { include: { teams: true } },
     },
   });
-  if (!tournament) return { error: "Not found" };
+  if (!tournament) return { error: apiMsg("not_found") };
   if (tournament.saturdayFormat !== "SPLIT_POOLS") {
-    return { error: "Ce tournoi n'utilise pas le format à poules séparées." };
+    return { error: apiMsg("act_tournoi_n_utilise_pas_format_poules") };
   }
 
   const poolName = `Pool ${poolLetter}`;
   const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "POOL", pool: { name: poolName } } });
-  if (existing) return { error: `${poolName} a déjà été générée.` };
+  if (existing) return { error: apiMsg("act_deja_ete_generee", { p0: poolName }) };
 
   // Ensure pools exist (generate + persist assignment if missing)
   let pools = tournament.pools;
@@ -352,9 +353,9 @@ export async function launchPoolAction(id: string, poolLetter: "A" | "B") {
   }
 
   const poolRecord = pools.find((p) => p.name === poolName);
-  if (!poolRecord) return { error: `${poolName} introuvable.` };
+  if (!poolRecord) return { error: apiMsg("act_introuvable", { p0: poolName }) };
   const poolTeams = poolRecord.teams.map((pt) => tournament.teams.find((t) => t.id === pt.teamId)!).filter(Boolean);
-  if (poolTeams.length < 2) return { error: `Pas assez d'équipes dans ${poolName}.` };
+  if (poolTeams.length < 2) return { error: apiMsg("act_pas_assez_equipes", { p0: poolName }) };
 
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
   const t = tournament as any;
@@ -410,11 +411,11 @@ export async function generatePoolsAction(id: string) {
       pools: { include: { teams: true } }
     }
   });
-  if (!tournament) return { error: "Not found" };
+  if (!tournament) return { error: apiMsg("not_found") };
 
   // Swiss format: cannot generate fixed pools, use generateSwissRoundAction instead
   if (tournament.saturdayFormat === "SWISS") {
-    return { error: "Ce tournoi utilise le format Swiss. Utilisez \"Générer tour Swiss\" à la place." };
+    return { error: apiMsg("act_tournoi_utilise_format_swiss_utilisez_generer") };
   }
 
   // If pools already exist (e.g., manually assigned), use them. Otherwise generate new ones.
@@ -507,9 +508,9 @@ export async function generateBracketAction(id: string) {
     where: { id },
     include: { teams: { where: { selected: true } }, matches: true }
   });
-  if (!tournament) return { error: "Not found" };
+  if (!tournament) return { error: apiMsg("not_found") };
   if (tournament.crossPool) {
-    return { error: "Ce tournoi utilise le format cross-pool. Générez le bracket depuis l'onglet Planning (Cross-Pool → SE → DE)." };
+    return { error: apiMsg("act_tournoi_utilise_format_cross_pool_generez") };
   }
 
   // Auto-seed depuis les standings Pool/Swiss si disponibles
@@ -1067,12 +1068,12 @@ export async function applySeedingAction(id: string) {
     where: { id },
     include: { teams: { where: { selected: true } }, matches: true }
   });
-  if (!tournament) return { error: "Not found" };
+  if (!tournament) return { error: apiMsg("not_found") };
 
   const qualifyingMatches = tournament.matches.filter(
     (m) => m.phase === "POOL" || m.phase === "SWISS"
   );
-  if (qualifyingMatches.length === 0) return { error: "Aucun match qualificatif disponible pour le seeding." };
+  if (qualifyingMatches.length === 0) return { error: apiMsg("act_aucun_match_qualificatif_disponible_seeding") };
 
   const standings = computeStandings(tournament.teams, qualifyingMatches, tournament.scoringSystem);
 
@@ -1102,9 +1103,9 @@ export async function generateCrossPoolAction(id: string) {
       matches: true,
     }
   });
-  if (!tournament) return { error: "Not found" };
-  if (!tournament.crossPool) return { error: "Cross-pool non activé pour ce tournoi." };
-  if (tournament.pools.length < 2) return { error: "Il faut au moins 2 groupes pour le cross-pool." };
+  if (!tournament) return { error: apiMsg("not_found") };
+  if (!tournament.crossPool) return { error: apiMsg("act_cross_pool_non_active_tournoi") };
+  if (tournament.pools.length < 2) return { error: apiMsg("act_moins_2_groupes_cross_pool") };
 
   // Compute standings per pool
   const poolMatches = tournament.matches.filter((m) => m.phase === "POOL" || m.phase === "SWISS");
@@ -1166,15 +1167,15 @@ export async function generateCrossPoolSEAction(id: string) {
     where: { id },
     include: { teams: { where: { selected: true } }, matches: true }
   });
-  if (!tournament) return { error: "Not found" };
+  if (!tournament) return { error: apiMsg("not_found") };
 
   // Seed from cross-pool results
   const crossPoolMatches = tournament.matches.filter((m) => m.phase === "CROSS_POOL");
-  if (crossPoolMatches.length === 0) return { error: "Aucun match cross-pool trouvé. Générez d'abord les matchs cross-pool." };
+  if (crossPoolMatches.length === 0) return { error: apiMsg("act_aucun_match_cross_pool_trouve_generez") };
 
   // Check all cross-pool matches are finished
   const unfinished = crossPoolMatches.filter((m) => m.status !== "FINISHED");
-  if (unfinished.length > 0) return { error: `${unfinished.length} match(s) cross-pool non terminé(s).` };
+  if (unfinished.length > 0) return { error: apiMsg("act_match_s_cross_pool_non_termine", { p0: unfinished.length }) };
 
   // Use all qualifying matches (pool + cross-pool) for seeding
   const qualifyingMatches = tournament.matches.filter(
@@ -1258,15 +1259,15 @@ export async function generateCrossPoolDEAction(id: string) {
     where: { id },
     include: { teams: { where: { selected: true } }, matches: true }
   });
-  if (!tournament) return { error: "Not found" };
+  if (!tournament) return { error: apiMsg("not_found") };
 
   const bracketMatches = tournament.matches.filter((m) => m.phase === "BRACKET");
-  if (bracketMatches.length === 0) return { error: "Aucun match SE trouvé. Générez d'abord le bracket SE." };
+  if (bracketMatches.length === 0) return { error: apiMsg("act_aucun_match_se_trouve_generez_abord") };
 
   // Only round 1 of the SE bracket matters — those are the "SE elimination" matches
   const seRound1 = bracketMatches.filter((m) => m.roundIndex === 1);
   const unfinished = seRound1.filter((m) => m.status !== "FINISHED");
-  if (unfinished.length > 0) return { error: `${unfinished.length} match(s) SE non terminé(s).` };
+  if (unfinished.length > 0) return { error: apiMsg("act_match_s_se_non_termine_s", { p0: unfinished.length }) };
 
   // Teams that played in the SE round
   const seTeamIds = new Set<string>();
@@ -1294,7 +1295,7 @@ export async function generateCrossPoolDEAction(id: string) {
   // Survivors = BYE teams + SE winners, sorted by seed
   const survivors = [...byeTeams, ...seWinners].sort((a, b) => a.seed - b.seed);
 
-  if (survivors.length < 4) return { error: `Seulement ${survivors.length} survivants — il en faut au moins 4 pour un bracket DE.` };
+  if (survivors.length < 4) return { error: apiMsg("act_seulement_survivants_moins_4_bracket", { p0: survivors.length }) };
 
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
   const gfReset = (tournament as any).gfReset ?? false;
@@ -1513,7 +1514,7 @@ export async function generateSwissRoundAction(id: string) {
     where: { id },
     include: { teams: { where: { selected: true } }, matches: true }
   });
-  if (!tournament) return { error: "Tournoi introuvable" };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const swissMatches = tournament.matches.filter((m) => m.phase === "SWISS");
   const existingRounds = swissMatches.length > 0
@@ -1525,14 +1526,14 @@ export async function generateSwissRoundAction(id: string) {
     const latestRound = swissMatches.filter((m) => m.roundIndex === existingRounds);
     const unfinished = latestRound.filter((m) => m.status !== "FINISHED");
     if (unfinished.length > 0) {
-      return { error: `Le tour Swiss ${existingRounds} contient encore ${unfinished.length} match(es) non terminé(s).` };
+      return { error: apiMsg("act_tour_swiss_contient_encore_match_es", { p0: existingRounds, p1: unfinished.length }) };
     }
   }
 
   // Stop generating rounds if we've reached the configured limit
   const maxRounds = (tournament as any).swissRounds ?? 5;
   if (existingRounds >= maxRounds) {
-    return { error: `Tous les ${maxRounds} tours Swiss sont terminés.` };
+    return { error: apiMsg("act_tous_tours_swiss_termines", { p0: maxRounds }) };
   }
 
   const standings = computeStandings(tournament.teams, swissMatches, tournament.scoringSystem);
@@ -1561,7 +1562,7 @@ export async function generateSwissRoundAction(id: string) {
 
   const realMatches = newMatches.filter((m) => m.teamBId !== null);
   if (realMatches.length === 0) {
-    return { error: "Impossible de générer des pairings (toutes les combinaisons ont déjà été jouées)." };
+    return { error: apiMsg("act_impossible_generer_pairings_toutes_combinaisons_ont") };
   }
 
   await prisma.$transaction(
@@ -1614,7 +1615,7 @@ export async function toggleLockAction(id: string, confirmReset: boolean = false
     where: { id },
     include: { matches: { select: { id: true } } }
   });
-  if (!tournament) return { error: "Tournoi introuvable" };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   // On verrouille → pas de risque
   if (!tournament.locked) {
@@ -1639,7 +1640,7 @@ export async function addSponsorAction(
   const denied = await requireTournamentOrgaAccess(tournamentId);
   if (denied) return denied;
 
-  if (!name.trim()) return { error: "Le nom est requis." };
+  if (!name.trim()) return { error: apiMsg("act_nom_requis") };
   await prisma.sponsor.create({
     data: { tournamentId, name: name.trim(), url: url || null, logoPath: logoPath || null }
   });
@@ -1683,7 +1684,7 @@ export async function renameTeamAction(
   if (denied) return denied;
 
   const trimmed = name.trim();
-  if (!trimmed) return { error: "Le nom ne peut pas être vide." };
+  if (!trimmed) return { error: apiMsg("act_nom_ne_peut_pas_etre_vide") };
   await prisma.team.update({ where: { id: teamId }, data: { name: trimmed } });
   revalidatePath(`/tournament/${tournamentId}/edit`);
   revalidatePath(`/tournament/${tournamentId}`);
@@ -1742,7 +1743,7 @@ export async function removePlayerFromTeamAction(
 async function requireSelectionUnlocked(tournamentId: string): Promise<{ error: string } | null> {
   const tournament = await prisma.tournament.findUnique({ where: { id: tournamentId }, select: { selectionLocked: true } });
   if ((tournament as any)?.selectionLocked) {
-    return { error: "La sélection est validée et figée. Déverrouille-la d'abord pour la modifier." };
+    return { error: apiMsg("act_selection_validee_figee_deverrouille_abord_modifier") };
   }
   return null;
 }
@@ -1886,14 +1887,14 @@ export async function drawOneTeamAction(
   const locked = await requireSelectionUnlocked(tournamentId);
   if (locked) return locked;
 
-  if (candidateIds.length === 0) return { error: "Aucune équipe candidate." };
+  if (candidateIds.length === 0) return { error: apiMsg("act_aucune_equipe_candidate") };
 
   // Vérifie que ces équipes appartiennent bien au tournoi et ne sont pas déjà garanties
   const valid = await prisma.team.findMany({
     where: { tournamentId, id: { in: candidateIds }, guaranteed: false },
     select: { id: true },
   });
-  if (valid.length === 0) return { error: "Aucune équipe valide dans le tirage." };
+  if (valid.length === 0) return { error: apiMsg("act_aucune_equipe_valide_tirage") };
 
   const winner = valid[Math.floor(Math.random() * valid.length)];
   const [winnerTeam, tournament] = await Promise.all([
@@ -1927,13 +1928,13 @@ export async function drawOneWaitlistAction(
   const locked = await requireSelectionUnlocked(tournamentId);
   if (locked) return locked;
 
-  if (candidateIds.length === 0) return { error: "Aucune équipe candidate." };
+  if (candidateIds.length === 0) return { error: apiMsg("act_aucune_equipe_candidate") };
 
   const valid = await prisma.team.findMany({
     where: { tournamentId, id: { in: candidateIds }, guaranteed: false, waitlistPosition: null },
     select: { id: true },
   });
-  if (valid.length === 0) return { error: "Aucune équipe valide dans le tirage." };
+  if (valid.length === 0) return { error: apiMsg("act_aucune_equipe_valide_tirage") };
 
   // Prochain rang = max actuel + 1
   const maxRank = await prisma.team.aggregate({
@@ -1976,7 +1977,7 @@ export async function removeFromWaitlistAction(
   if (locked) return locked;
 
   const team = await prisma.team.findUnique({ where: { id: teamId }, select: { waitlistPosition: true } });
-  if (!team || team.waitlistPosition === null) return { error: "Équipe introuvable ou pas en WL." };
+  if (!team || team.waitlistPosition === null) return { error: apiMsg("act_equipe_introuvable_ou_pas_wl") };
 
   const removedRank = team.waitlistPosition;
   await prisma.team.update({ where: { id: teamId }, data: { waitlistPosition: null } });
@@ -2005,11 +2006,11 @@ export async function addPlayerToTeamAction(
 
   if (playerData.type === "existing") {
     const player = await prisma.player.findUnique({ where: { id: playerData.playerId } });
-    if (!player) return { error: "Joueur introuvable." };
+    if (!player) return { error: apiMsg("player_not_found") };
     const alreadyIn = await prisma.teamPlayer.findFirst({
       where: { playerId: playerData.playerId, team: { tournamentId } }
     });
-    if (alreadyIn) return { error: `${player.name} est déjà dans une équipe de ce tournoi.` };
+    if (alreadyIn) return { error: apiMsg("act_deja_equipe_tournoi", { p0: player.name }) };
     await prisma.teamPlayer.create({ data: { teamId, playerId: playerData.playerId, isCaptain: false } });
   } else {
     const { toSlug } = await import("@/lib/utils");
@@ -2035,7 +2036,7 @@ export async function createTeamAction(
   if (denied) return denied;
 
   const trimmed = name.trim();
-  if (!trimmed) return { error: "Le nom ne peut pas être vide." };
+  if (!trimmed) return { error: apiMsg("act_nom_ne_peut_pas_etre_vide") };
 
   const maxSeed = await prisma.team.aggregate({
     where: { tournamentId },
@@ -2067,8 +2068,8 @@ export async function resubmitTournamentAction(id: string): Promise<{ ok?: boole
   if (denied) return denied;
 
   const tournament = await prisma.tournament.findUnique({ where: { id } });
-  if (!tournament) return { error: "Tournoi introuvable" };
-  if (tournament.submissionStatus !== "REJECTED") return { error: "Ce tournoi n'est pas dans l'état REJECTED." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if (tournament.submissionStatus !== "REJECTED") return { error: apiMsg("act_tournoi_n_pas_etat_rejected") };
 
   await prisma.tournament.update({
     where: { id },
@@ -2092,12 +2093,12 @@ export async function launchTournamentAction(
     where: { id },
     include: { teams: { where: { selected: true } }, matches: { select: { id: true } } },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if (tournament.status === "LIVE" && tournament.matches.length > 0) return { error: "Le tournoi est déjà en cours avec des matchs." };
-  if (tournament.status === "COMPLETED") return { error: "Le tournoi est déjà terminé." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if (tournament.status === "LIVE" && tournament.matches.length > 0) return { error: apiMsg("act_tournoi_deja_cours_avec_matchs") };
+  if (tournament.status === "COMPLETED") return { error: apiMsg("act_tournoi_deja_termine") };
 
   const selectedCount = tournament.teams.length;
-  if (selectedCount < 3) return { error: `Pas assez d'équipes sélectionnées (${selectedCount}). Minimum 3.` };
+  if (selectedCount < 3) return { error: apiMsg("act_pas_assez_equipes_selectionnees_minimum_3", { p0: selectedCount }) };
 
   // Format-specific guards
   const poolCount = (tournament as any).poolCount ?? 2;
@@ -2113,7 +2114,7 @@ export async function launchTournamentAction(
 
   // KIOSQUE: set LIVE, then generate Pool A + Pool B Swiss rounds
   if ((tournament as any).saturdayFormat === "KIOSQUE") {
-    if (selectedCount < 4) return { error: "Le format Kiosque requiert au minimum 4 équipes." };
+    if (selectedCount < 4) return { error: apiMsg("act_format_kiosque_requiert_minimum_4_equipes") };
     await prisma.tournament.update({ where: { id }, data: { status: "LIVE", locked: true } });
     await launchKiosquePoolsAction(id);
     revalidatePath(`/tournament/${id}`);
@@ -2123,10 +2124,10 @@ export async function launchTournamentAction(
 
   // BIG_APPLE: set LIVE, then generate both pools' full RR (Saturday, 2 courts)
   if ((tournament as any).saturdayFormat === "BIG_APPLE") {
-    if (selectedCount < 4) return { error: "Le format Big Apple requiert au minimum 4 équipes." };
+    if (selectedCount < 4) return { error: apiMsg("act_format_big_apple_requiert_minimum_4") };
     await prisma.tournament.update({ where: { id }, data: { status: "LIVE", locked: true } });
     const res = await launchBigApplePoolsAction(id);
-    if ("error" in res && res.error) return { error: `Lancement OK mais erreur Big Apple : ${res.error}` };
+    if ("error" in res && res.error) return { error: apiMsg("act_lancement_ok_mais_erreur_big_apple", { p0: res.error }) };
     revalidatePath(`/tournament/${id}`);
     revalidatePath(`/tournament/${id}/edit`);
     return { ok: true };
@@ -2135,10 +2136,10 @@ export async function launchTournamentAction(
   // Saturday format guards
   // Swiss supporte les nombres impairs (BYE automatique)
   if (tournament.saturdayFormat === "SPLIT_POOLS" && selectedCount < poolCount * 2) {
-    return { error: `Le format ${poolCount} poules requiert au minimum ${poolCount * 2} équipes (2 par poule). Vous avez ${selectedCount} équipes.` };
+    return { error: apiMsg("act_format_poules_requiert_minimum_equipes_2", { p0: poolCount, p1: poolCount * 2, p2: selectedCount }) };
   }
   if (tournament.saturdayFormat === "ALL_DAY" && selectedCount < 3) {
-    return { error: `Le format Single Pool requiert au minimum 3 équipes. Vous avez ${selectedCount} équipes.` };
+    return { error: apiMsg("act_format_single_pool_requiert_minimum_3", { p0: selectedCount }) };
   }
 
   // Cross-pool balance guard
@@ -2146,19 +2147,19 @@ export async function launchTournamentAction(
     const base = Math.floor(selectedCount / poolCount);
     const extra = selectedCount % poolCount;
     if (extra !== 0 && base === 0) {
-      return { error: `Pas assez d'équipes pour ${poolCount} poules de cross-pool.` };
+      return { error: apiMsg("act_pas_assez_equipes_poules_cross_pool", { p0: poolCount }) };
     }
     if (extra !== 0 && base < 2) {
-      return { error: `Les poules de cross-pool sont trop inégales (${selectedCount} équipes, ${poolCount} poules). Ajoutez ou retirez des équipes pour équilibrer.` };
+      return { error: apiMsg("act_poules_cross_pool_trop_inegales_equipes", { p0: selectedCount, p1: poolCount }) };
     }
   }
 
   // Sunday format guards
   if (tournament.sundayFormat === "SWISS_SPLIT_SE" && selectedCount < 18) {
-    return { error: `Le format Swiss Split SE requiert au minimum 18 équipes. Vous avez ${selectedCount} équipes sélectionnées.` };
+    return { error: apiMsg("act_format_swiss_split_se_requiert_minimum", { p0: selectedCount }) };
   }
   if ((tournament.sundayFormat === "DE" || tournament.sundayFormat === "SE") && selectedCount < 4) {
-    return { error: `Le format bracket requiert au minimum 4 équipes. Vous avez ${selectedCount} équipes.` };
+    return { error: apiMsg("act_format_bracket_requiert_minimum_4_equipes", { p0: selectedCount }) };
   }
 
   // Verrouiller + passer LIVE
@@ -2172,18 +2173,18 @@ export async function launchTournamentAction(
   // Graz: génère seulement Pool A (5 rounds samedi matin) — Pool B lancé séparément
   if (tournament.saturdayFormat === "SWISS") {
     const res = await generateSwissRoundAction(id);
-    if ("error" in res && res.error) return { error: `Lancement OK mais erreur Swiss : ${res.error}` };
+    if ("error" in res && res.error) return { error: apiMsg("act_lancement_ok_mais_erreur_swiss", { p0: res.error }) };
   } else if (tournament.saturdayFormat === "GRAZ") {
     const res = await launchGrazPoolAction(id, "Pool A");
-    if ("error" in res && res.error) return { error: `Lancement OK mais erreur Graz Pool A : ${res.error}` };
+    if ("error" in res && res.error) return { error: apiMsg("act_lancement_ok_mais_erreur_graz_pool", { p0: res.error }) };
   } else if (tournament.saturdayFormat === "SPLIT_POOLS" && tournament.crossPool) {
     // Cross-pool: launch Pool A only. Pool B is launched separately by the organizer
     // so matches are scheduled in the right order (Pool A finishes before Pool B starts).
     const res = await launchPoolAction(id, "A");
-    if ("error" in res && res.error) return { error: `Lancement OK mais erreur Pool A : ${res.error}` };
+    if ("error" in res && res.error) return { error: apiMsg("act_lancement_ok_mais_erreur_pool", { p0: res.error }) };
   } else if (tournament.saturdayFormat !== "BERLIN_MIXED") {
     const res = await generatePoolsAction(id);
-    if ("error" in res && res.error) return { error: `Lancement OK mais erreur Poules : ${res.error}` };
+    if ("error" in res && res.error) return { error: apiMsg("act_lancement_ok_mais_erreur_poules", { p0: res.error }) };
   }
 
   revalidatePath(`/tournament/${id}`);
@@ -2202,7 +2203,7 @@ export async function resetMatchesAction(
   if (denied) return denied;
 
   const tournament = await prisma.tournament.findUnique({ where: { id } });
-  if (!tournament) return { error: "Tournoi introuvable." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const teamPlayers = await prisma.teamPlayer.findMany({
     where: { team: { tournamentId: id } },
@@ -2241,7 +2242,7 @@ export async function resetTournamentAction(
   if (denied) return denied;
 
   const tournament = await prisma.tournament.findUnique({ where: { id } });
-  if (!tournament) return { error: "Tournoi introuvable." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   // Collect all player IDs from this tournament before deleting
   const teamPlayers = await prisma.teamPlayer.findMany({
@@ -2295,8 +2296,8 @@ export async function launchGrazPoolAction(
       pools: { include: { teams: { include: { team: true } } } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: "Ce tournoi n'utilise pas le format Graz." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: apiMsg("act_tournoi_n_utilise_pas_format_graz") };
 
   // Check if this pool's rounds already exist
   const poolAlreadyGenerated = await prisma.match.findFirst({
@@ -2307,7 +2308,7 @@ export async function launchGrazPoolAction(
       pool: { name: poolName },
     },
   });
-  if (poolAlreadyGenerated) return { error: `Les matchs du jour 1 pour ${poolName} ont déjà été générés.` };
+  if (poolAlreadyGenerated) return { error: apiMsg("act_matchs_jour_1_ont_deja_ete", { p0: poolName }) };
 
   // Get or create pool record
   let poolRecord = tournament.pools.find((p) => p.name === poolName);
@@ -2315,7 +2316,7 @@ export async function launchGrazPoolAction(
   // Generate the two pools from teams if not already assigned
   const grazPools = generateGrazPools(tournament.teams);
   const targetPool = grazPools.find((p) => p.name === poolName);
-  if (!targetPool) return { error: `Pool ${poolName} introuvable.` };
+  if (!targetPool) return { error: apiMsg("act_pool_introuvable", { p0: poolName }) };
 
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
 
@@ -2396,22 +2397,22 @@ export async function launchGrazSundayRRAction(
       pools: { include: { teams: { include: { team: true } } } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: "Ce tournoi n'utilise pas le format Graz." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: apiMsg("act_tournoi_n_utilise_pas_format_graz") };
 
   // Check all day 1 matches are done
   const day1Matches = await prisma.match.findMany({
     where: { tournamentId: id, phase: "GRAZ_RR", dayIndex: "SAT" },
   });
-  if (day1Matches.length === 0) return { error: "Générez d'abord les matchs du samedi." };
+  if (day1Matches.length === 0) return { error: apiMsg("act_generez_abord_matchs_samedi") };
   const unfinishedDay1 = day1Matches.filter((m) => m.status !== "FINISHED");
-  if (unfinishedDay1.length > 0) return { error: `${unfinishedDay1.length} match(s) du samedi non terminé(s).` };
+  if (unfinishedDay1.length > 0) return { error: apiMsg("act_match_s_samedi_non_termine_s", { p0: unfinishedDay1.length }) };
 
   // Check rounds 6-7 not already generated
   const sundayRRExists = await prisma.match.findFirst({
     where: { tournamentId: id, phase: "GRAZ_RR", dayIndex: "SUN" },
   });
-  if (sundayRRExists) return { error: "Les matchs du dimanche matin sont déjà générés." };
+  if (sundayRRExists) return { error: apiMsg("act_matchs_dimanche_matin_deja_generes") };
 
   const grazPools = generateGrazPools(tournament.teams);
   const poolA = grazPools.find((p) => p.name === "Pool A")!;
@@ -2521,23 +2522,23 @@ export async function launchGrazRegroupAction(
       matches: { where: { phase: "GRAZ_RR" }, include: { teamA: true, teamB: true } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: "Ce tournoi n'utilise pas le format Graz." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: apiMsg("act_tournoi_n_utilise_pas_format_graz") };
 
   // All 7 RR rounds must be finished
   const rrMatches = tournament.matches;
-  if (rrMatches.length === 0) return { error: "Aucun match RR trouvé." };
+  if (rrMatches.length === 0) return { error: apiMsg("act_aucun_match_rr_trouve") };
   const unfinished = rrMatches.filter((m) => m.status !== "FINISHED");
-  if (unfinished.length > 0) return { error: `${unfinished.length} match(s) RR non terminé(s).` };
+  if (unfinished.length > 0) return { error: apiMsg("act_match_s_rr_non_termine_s", { p0: unfinished.length }) };
 
   // Regroup already generated?
   const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "GRAZ_REGROUP" } });
-  if (existing) return { error: "Le Regroup a déjà été généré." };
+  if (existing) return { error: apiMsg("act_regroup_deja_ete_genere") };
 
   // Compute standings for each pool
   const poolARecord = tournament.pools.find((p) => p.name === "Pool A");
   const poolBRecord = tournament.pools.find((p) => p.name === "Pool B");
-  if (!poolARecord || !poolBRecord) return { error: "Pools introuvables." };
+  if (!poolARecord || !poolBRecord) return { error: apiMsg("act_pools_introuvables") };
 
   const poolATeams = poolARecord.teams.map((pt) => pt.team);
   const poolBTeams = poolBRecord.teams.map((pt) => pt.team);
@@ -2614,18 +2615,18 @@ export async function launchGrazSEAction(
       matches: { where: { phase: { in: ["GRAZ_RR", "GRAZ_REGROUP"] } } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: "Ce tournoi n'utilise pas le format Graz." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "GRAZ") return { error: apiMsg("act_tournoi_n_utilise_pas_format_graz") };
 
   // All regroup matches must be finished
   const regroupMatches = tournament.matches.filter((m) => m.phase === "GRAZ_REGROUP");
-  if (regroupMatches.length === 0) return { error: "Générez d'abord le Regroup." };
+  if (regroupMatches.length === 0) return { error: apiMsg("act_generez_abord_regroup") };
   const unfinished = regroupMatches.filter((m) => m.status !== "FINISHED");
-  if (unfinished.length > 0) return { error: `${unfinished.length} match(s) Regroup non terminé(s).` };
+  if (unfinished.length > 0) return { error: apiMsg("act_match_s_regroup_non_termine_s", { p0: unfinished.length }) };
 
   // SE already generated?
   const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "GRAZ_SE" } });
-  if (existing) return { error: "Le SE a déjà été généré." };
+  if (existing) return { error: apiMsg("act_se_deja_ete_genere") };
 
   // Compute standings for each regroup group (RR matches + Regroup matches combined)
   const rrMatches = tournament.matches.filter((m) => m.phase === "GRAZ_RR");
@@ -2650,7 +2651,7 @@ export async function launchGrazSEAction(
   }
 
   const seTeamIds = selectSETeams(regroupStandings);
-  if (seTeamIds.length < 4) return { error: "Pas assez d'équipes qualifiées pour le SE." };
+  if (seTeamIds.length < 4) return { error: apiMsg("act_pas_assez_equipes_qualifiees_se") };
 
   // Start time: now + 15min (orga just clicked the button)
   const seStart = new Date(Date.now() + 15 * 60 * 1000);
@@ -2719,11 +2720,11 @@ export async function launchBigApplePoolsAction(
       pools: { include: { teams: { include: { team: true } } } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: "Ce tournoi n'utilise pas le format Big Apple." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: apiMsg("act_tournoi_n_utilise_pas_format_big") };
 
   const already = await prisma.match.findFirst({ where: { tournamentId: id, phase: "BIG_APPLE_RR" } });
-  if (already) return { error: "Les matchs RR ont déjà été générés." };
+  if (already) return { error: apiMsg("act_matchs_rr_ont_deja_ete_generes") };
 
   const pools = generateBigApplePools(tournament.teams);
   const poolA = pools.find((p) => p.name === "Pool A")!;
@@ -2796,27 +2797,27 @@ export async function launchBigAppleSwissRoundAction(
       matches: { where: { phase: { in: ["BIG_APPLE_RR", "BIG_APPLE_SWISS"] } }, include: { teamA: true, teamB: true } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: "Ce tournoi n'utilise pas le format Big Apple." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: apiMsg("act_tournoi_n_utilise_pas_format_big") };
 
   const rrMatches = tournament.matches.filter((m) => m.phase === "BIG_APPLE_RR");
-  if (rrMatches.length === 0) return { error: "Aucun match RR trouvé." };
+  if (rrMatches.length === 0) return { error: apiMsg("act_aucun_match_rr_trouve") };
   const unfinishedRR = rrMatches.filter((m) => m.status !== "FINISHED");
-  if (unfinishedRR.length > 0) return { error: `${unfinishedRR.length} match(s) RR non terminé(s).` };
+  if (unfinishedRR.length > 0) return { error: apiMsg("act_match_s_rr_non_termine_s", { p0: unfinishedRR.length }) };
 
   const swissMatches = tournament.matches.filter((m) => m.phase === "BIG_APPLE_SWISS");
   const doneRounds = swissMatches.length > 0 ? Math.max(...swissMatches.map((m) => m.roundIndex)) : 0;
-  if (doneRounds >= 3) return { error: "Les 3 rounds de Swiss ont déjà été générés." };
+  if (doneRounds >= 3) return { error: apiMsg("act_3_rounds_swiss_ont_deja_ete") };
 
   // Previous Swiss rounds must be finished before generating the next
   if (doneRounds > 0) {
     const unfinishedSwiss = swissMatches.filter((m) => m.status !== "FINISHED");
-    if (unfinishedSwiss.length > 0) return { error: `${unfinishedSwiss.length} match(s) Swiss non terminé(s).` };
+    if (unfinishedSwiss.length > 0) return { error: apiMsg("act_match_s_swiss_non_termine_s", { p0: unfinishedSwiss.length }) };
   }
 
   const poolARecord = tournament.pools.find((p) => p.name === "Pool A");
   const poolBRecord = tournament.pools.find((p) => p.name === "Pool B");
-  if (!poolARecord || !poolBRecord) return { error: "Pools introuvables." };
+  if (!poolARecord || !poolBRecord) return { error: apiMsg("act_pools_introuvables") };
 
   const poolATeams = poolARecord.teams.map((pt) => pt.team);
   const poolBTeams = poolBRecord.teams.map((pt) => pt.team);
@@ -2831,7 +2832,7 @@ export async function launchBigAppleSwissRoundAction(
   const swissTeams = swissTeamIds
     .map((tid) => allTeams.find((t) => t.id === tid))
     .filter(Boolean) as typeof allTeams;
-  if (swissTeams.length < 2) return { error: "Pas assez d'équipes pour le Swiss." };
+  if (swissTeams.length < 2) return { error: apiMsg("act_pas_assez_equipes_swiss") };
 
   // Overall standings for the Swiss group carry Saturday points:
   // combine each team's intra-pool RR matches + previous Swiss matches.
@@ -2901,16 +2902,16 @@ export async function launchBigApplePlacementAction(
       matches: { where: { phase: "BIG_APPLE_RR" } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: "Ce tournoi n'utilise pas le format Big Apple." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: apiMsg("act_tournoi_n_utilise_pas_format_big") };
 
   const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "BIG_APPLE_PLACEMENT" } });
-  if (existing) return { error: "Les matchs de placement ont déjà été générés." };
+  if (existing) return { error: apiMsg("act_matchs_placement_ont_deja_ete_generes") };
 
   const rrMatches = tournament.matches;
   const poolARecord = tournament.pools.find((p) => p.name === "Pool A");
   const poolBRecord = tournament.pools.find((p) => p.name === "Pool B");
-  if (!poolARecord || !poolBRecord) return { error: "Pools introuvables." };
+  if (!poolARecord || !poolBRecord) return { error: apiMsg("act_pools_introuvables") };
 
   const poolATeams = poolARecord.teams.map((pt) => pt.team);
   const poolBTeams = poolBRecord.teams.map((pt) => pt.team);
@@ -2966,22 +2967,22 @@ export async function launchBigAppleSEAction(
       matches: { where: { phase: { in: ["BIG_APPLE_RR", "BIG_APPLE_SWISS", "BIG_APPLE_PLACEMENT"] } } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: "Ce tournoi n'utilise pas le format Big Apple." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "BIG_APPLE") return { error: apiMsg("act_tournoi_n_utilise_pas_format_big") };
 
   const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "BIG_APPLE_SE" } });
-  if (existing) return { error: "Le bracket SE a déjà été généré." };
+  if (existing) return { error: apiMsg("act_bracket_se_deja_ete_genere") };
 
   const placementMatches = tournament.matches.filter((m) => m.phase === "BIG_APPLE_PLACEMENT");
-  if (placementMatches.length < 2) return { error: "Générez d'abord les matchs de placement." };
+  if (placementMatches.length < 2) return { error: apiMsg("act_generez_abord_matchs_placement") };
   const unfinishedPlacement = placementMatches.filter((m) => m.status !== "FINISHED");
-  if (unfinishedPlacement.length > 0) return { error: `${unfinishedPlacement.length} match(s) de placement non terminé(s).` };
+  if (unfinishedPlacement.length > 0) return { error: apiMsg("act_match_s_placement_non_termine_s", { p0: unfinishedPlacement.length }) };
 
   const swissMatches = tournament.matches.filter((m) => m.phase === "BIG_APPLE_SWISS");
   const swissRounds = swissMatches.length > 0 ? Math.max(...swissMatches.map((m) => m.roundIndex)) : 0;
-  if (swissRounds < 3) return { error: "Les 3 rounds de Swiss doivent être générés et terminés." };
+  if (swissRounds < 3) return { error: apiMsg("act_3_rounds_swiss_doivent_etre_generes") };
   const unfinishedSwiss = swissMatches.filter((m) => m.status !== "FINISHED");
-  if (unfinishedSwiss.length > 0) return { error: `${unfinishedSwiss.length} match(s) Swiss non terminé(s).` };
+  if (unfinishedSwiss.length > 0) return { error: apiMsg("act_match_s_swiss_non_termine_s", { p0: unfinishedSwiss.length }) };
 
   // Determine winners/losers of the placement matches (positionInRound 0 → seeds 1/2, 1 → seeds 3/4)
   const p12 = placementMatches.find((m) => m.positionInRound === 0);
@@ -2999,7 +3000,7 @@ export async function launchBigAppleSEAction(
   // Swiss top 4 from final Swiss standings (RR + Swiss combined)
   const poolARecord = tournament.pools.find((p) => p.name === "Pool A");
   const poolBRecord = tournament.pools.find((p) => p.name === "Pool B");
-  if (!poolARecord || !poolBRecord) return { error: "Pools introuvables." };
+  if (!poolARecord || !poolBRecord) return { error: apiMsg("act_pools_introuvables") };
   const poolATeams = poolARecord.teams.map((pt) => pt.team);
   const poolBTeams = poolBRecord.teams.map((pt) => pt.team);
   const rrMatches = tournament.matches.filter((m) => m.phase === "BIG_APPLE_RR");
@@ -3014,7 +3015,7 @@ export async function launchBigAppleSEAction(
   const swissTop4 = swissStandings.slice(0, 4).map((s) => s.teamId);
 
   const seeds = selectSESeeds(placement12, placement34, swissTop4);
-  if (seeds.filter(Boolean).length < 4) return { error: "Pas assez d'équipes qualifiées pour le bracket." };
+  if (seeds.filter(Boolean).length < 4) return { error: apiMsg("act_pas_assez_equipes_qualifiees_bracket") };
 
   const courtNames = Array.from({ length: tournament.courtsCount }, (_, i) => `Court ${i + 1}`);
   const seStart = new Date(Date.now() + 15 * 60 * 1000);
@@ -3095,7 +3096,7 @@ export async function saveInfoTilesLayoutAction(
 
   const parsed = infoTilesLayoutSchema.safeParse(layout);
   if (!parsed.success) {
-    return { error: "Données de layout invalides." };
+    return { error: apiMsg("act_donnees_layout_invalides") };
   }
   const clean = parsed.data.map(({ i, x, y, w, h }) => ({ i, x, y, w, h }));
   await prisma.tournament.update({
@@ -3122,14 +3123,14 @@ export async function launchMtpPoolAction(
       pools: { include: { teams: true } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: apiMsg("act_format_mtp_open_requis") };
 
   const phase = pool === "A" ? "MTP_POOL_A" : "MTP_POOL_B";
   const poolName = `Pool ${pool}`;
 
   const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase } });
-  if (existing) return { error: `${poolName} déjà générée.` };
+  if (existing) return { error: apiMsg("act_deja_generee", { p0: poolName }) };
 
   // Use manually assigned pool if it exists in DB, otherwise fallback to splitMtpPools
   const dbPool = tournament.pools.find((p) => p.name === poolName);
@@ -3140,7 +3141,7 @@ export async function launchMtpPoolAction(
     const { poolA, poolB } = splitMtpPools(tournament.teams);
     teams = pool === "A" ? poolA : poolB;
   }
-  if (teams.length < 2) return { error: "Pas assez d'équipes." };
+  if (teams.length < 2) return { error: apiMsg("act_pas_assez_equipes_2") };
 
   const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
   const t = tournament as any;
@@ -3193,23 +3194,23 @@ export async function launchMtpNextRoundAction(
       pools: { include: { teams: true } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: apiMsg("act_format_mtp_open_requis") };
 
   const existingMatches = tournament.matches;
-  if (existingMatches.length === 0) return { error: "Aucun match trouvé pour cette pool." };
+  if (existingMatches.length === 0) return { error: apiMsg("act_aucun_match_trouve_cette_pool") };
 
   const maxRound = Math.max(...existingMatches.map((m) => m.roundIndex));
   const swissRounds = (tournament as any).swissRounds ?? 6;
-  if (maxRound >= swissRounds) return { error: `Tous les ${swissRounds} rounds ont déjà été générés.` };
+  if (maxRound >= swissRounds) return { error: apiMsg("act_tous_rounds_ont_deja_ete_generes", { p0: swissRounds }) };
 
   const currentRoundMatches = existingMatches.filter((m) => m.roundIndex === maxRound);
   const unfinished = currentRoundMatches.filter((m) => m.status !== "FINISHED");
-  if (unfinished.length > 0) return { error: `Le round ${maxRound} n'est pas encore terminé (${unfinished.length} match(s) restant(s)).` };
+  if (unfinished.length > 0) return { error: apiMsg("act_round_n_pas_encore_termine_match", { p0: maxRound, p1: unfinished.length }) };
 
   // Already have next round?
   const nextRoundExists = existingMatches.some((m) => m.roundIndex === maxRound + 1);
-  if (nextRoundExists) return { error: `Le round ${maxRound + 1} a déjà été généré.` };
+  if (nextRoundExists) return { error: apiMsg("act_round_deja_ete_genere", { p0: maxRound + 1 }) };
 
   // Compute standings — use manually assigned pool if available
   const dbPool = tournament.pools.find((p) => p.name === poolName);
@@ -3250,7 +3251,7 @@ export async function launchMtpNextRoundAction(
   );
 
   const poolRecord = await prisma.pool.findFirst({ where: { tournamentId: id, name: poolName } });
-  if (!poolRecord) return { error: "Pool introuvable en base." };
+  if (!poolRecord) return { error: apiMsg("act_pool_introuvable_base") };
 
   await prisma.$transaction(async (tx) => {
     for (const m of newMatches) {
@@ -3297,29 +3298,29 @@ export async function launchMtpCrossPoolAction(id: string): Promise<{ ok?: boole
       pools: { include: { teams: true } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: apiMsg("act_format_mtp_open_requis") };
 
   const existingCross = await prisma.match.findFirst({ where: { tournamentId: id, phase: "CROSS_POOL" } });
-  if (existingCross) return { error: "Le cross-pool a déjà été généré." };
+  if (existingCross) return { error: apiMsg("act_cross_pool_deja_ete_genere") };
 
   const poolAMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_A");
   const poolBMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_B");
-  if (poolAMatches.length === 0 || poolBMatches.length === 0) return { error: "Générez d'abord les deux pools." };
+  if (poolAMatches.length === 0 || poolBMatches.length === 0) return { error: apiMsg("act_generez_abord_deux_pools") };
   if (!poolAMatches.every((m) => m.status === "FINISHED") || !poolBMatches.every((m) => m.status === "FINISHED")) {
-    return { error: "Tous les matchs des pools doivent être terminés." };
+    return { error: apiMsg("act_tous_matchs_pools_doivent_etre_termines") };
   }
 
   const { poolA, poolB } = resolveMtpPoolTeams(tournament.teams, tournament.pools);
   const poolAStandings = computeStandings(poolA as any, poolAMatches as any, (tournament as any).scoringSystem);
   const poolBStandings = computeStandings(poolB as any, poolBMatches as any, (tournament as any).scoringSystem);
 
-  if (poolAStandings.length === 0 || poolBStandings.length === 0) return { error: "Il faut des équipes classées dans chaque pool pour le cross-pool." };
+  if (poolAStandings.length === 0 || poolBStandings.length === 0) return { error: apiMsg("act_equipes_classees_chaque_pool_cross_pool") };
 
   const teamMap = new Map(tournament.teams.map((t) => [t.id, t]));
   const poolATeams = poolAStandings.map((s) => teamMap.get(s.teamId)!).filter(Boolean);
   const poolBTeams = poolBStandings.map((s) => teamMap.get(s.teamId)!).filter(Boolean);
-  if (poolATeams.length === 0 || poolBTeams.length === 0) return { error: "Données insuffisantes pour le cross-pool." };
+  if (poolATeams.length === 0 || poolBTeams.length === 0) return { error: apiMsg("act_donnees_insuffisantes_cross_pool") };
 
   const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
   const t = tournament as any;
@@ -3356,19 +3357,19 @@ export async function launchMtpBarrageAction(id: string): Promise<{ ok?: boolean
       pools: { include: { teams: true } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: apiMsg("act_format_mtp_open_requis") };
 
   const existingBarrage = await prisma.match.findFirst({ where: { tournamentId: id, phase: "MTP_BARRAGE" } });
-  if (existingBarrage) return { error: "Le barrage a déjà été généré." };
+  if (existingBarrage) return { error: apiMsg("act_barrage_deja_ete_genere") };
 
   const poolAMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_A");
   const poolBMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_B");
   const crossMatches = tournament.matches.filter((m) => m.phase === "CROSS_POOL");
-  if (poolAMatches.length === 0 || poolBMatches.length === 0) return { error: "Générez d'abord les deux pools." };
-  if (crossMatches.length === 0) return { error: "Générez d'abord le cross-pool." };
+  if (poolAMatches.length === 0 || poolBMatches.length === 0) return { error: apiMsg("act_generez_abord_deux_pools") };
+  if (crossMatches.length === 0) return { error: apiMsg("act_generez_abord_cross_pool") };
   if (!crossMatches.every((m) => m.status === "FINISHED")) {
-    return { error: "Tous les matchs cross-pool doivent être terminés." };
+    return { error: apiMsg("act_tous_matchs_cross_pool_doivent_etre") };
   }
 
   // Use overall standings (pool + cross-pool) — same as public "Overall standings" table
@@ -3376,11 +3377,11 @@ export async function launchMtpBarrageAction(id: string): Promise<{ ok?: boolean
   const allMatches = [...poolAMatches, ...poolBMatches, ...crossMatches];
   const combined = computeStandings(allTeams as any, allMatches as any, (tournament as any).scoringSystem);
 
-  if (combined.length < 16) return { error: "Il faut au moins 16 équipes classées." };
+  if (combined.length < 16) return { error: apiMsg("act_moins_16_equipes_classees") };
   const seeds13to20 = combined.slice(12, 20);
   const teamMap = new Map(tournament.teams.map((t) => [t.id, t]));
   const barrageTeams = seeds13to20.map((s) => teamMap.get(s.teamId)!).filter(Boolean);
-  if (barrageTeams.length < 8) return { error: "Données insuffisantes pour le barrage." };
+  if (barrageTeams.length < 8) return { error: apiMsg("act_donnees_insuffisantes_barrage") };
 
   const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
   const t = tournament as any;
@@ -3421,15 +3422,15 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
       pools: { include: { teams: true } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: "Format MTP Open requis." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "MTP_OPEN") return { error: apiMsg("act_format_mtp_open_requis") };
 
   const existingDE = await prisma.match.findFirst({ where: { tournamentId: id, phase: "MTP_DE" } });
-  if (existingDE) return { error: "Le bracket DE a déjà été généré." };
+  if (existingDE) return { error: apiMsg("act_bracket_deja_ete_genere") };
 
   const barrageMatches = tournament.matches.filter((m) => m.phase === "MTP_BARRAGE");
-  if (barrageMatches.length < 4) return { error: "Générez d'abord le barrage." };
-  if (!barrageMatches.every((m) => m.status === "FINISHED")) return { error: "Tous les matchs du barrage doivent être terminés." };
+  if (barrageMatches.length < 4) return { error: apiMsg("act_generez_abord_barrage") };
+  if (!barrageMatches.every((m) => m.status === "FINISHED")) return { error: apiMsg("act_tous_matchs_barrage_doivent_etre_termines") };
 
   // Use overall standings (pool + cross-pool) — same as public "Overall standings" table
   const poolAMatches = tournament.matches.filter((m) => m.phase === "MTP_POOL_A");
@@ -3456,7 +3457,7 @@ export async function launchMtpDEAction(id: string): Promise<{ ok?: boolean; err
   const barrageWinnerTeams = barrageWinners.map((w) => w.team);
 
   const seeded16 = [...top12, ...barrageWinnerTeams];
-  if (seeded16.length < 16) return { error: `Seulement ${seeded16.length} équipes disponibles, il en faut 16.` };
+  if (seeded16.length < 16) return { error: apiMsg("act_seulement_equipes_disponibles_16", { p0: seeded16.length }) };
 
   const courtNames = Array.from({ length: Math.max(tournament.courtsCount, 1) }, (_, i) => `Court ${i + 1}`);
   const t = tournament as any;
@@ -3679,7 +3680,7 @@ export async function updatePoolRoundsAction(tournamentId: string, poolRounds: n
   const denied = await requireTournamentOrgaAccess(tournamentId);
   if (denied) return denied;
   if (poolRounds !== null && (poolRounds < 1 || poolRounds > 50 || !Number.isInteger(poolRounds))) {
-    return { error: "Valeur invalide" };
+    return { error: apiMsg("act_valeur_invalide") };
   }
   await prisma.tournament.update({
     where: { id: tournamentId },
@@ -3728,7 +3729,7 @@ export async function launchKiosquePoolsAction(
     where: { id },
     include: { teams: { where: { selected: true } } },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const pools = generateKiosquePools(tournament.teams);
 
@@ -3773,10 +3774,10 @@ export async function launchKiosquePoolRoundAction(
       pools: { include: { teams: { include: { team: true } } } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const poolRecord = tournament.pools.find((p) => p.name === poolName);
-  if (!poolRecord) return { error: `Pool "${poolName}" introuvable.` };
+  if (!poolRecord) return { error: apiMsg("act_pool_introuvable_2", { p0: poolName }) };
 
   const poolTeams = poolRecord.teams.map((pt) => pt.team);
   const swissRounds = (tournament as any).swissRounds ?? 5;
@@ -3790,13 +3791,13 @@ export async function launchKiosquePoolRoundAction(
   const maxRound = poolMatches.length > 0 ? Math.max(...poolMatches.map((m) => m.roundIndex)) : 0;
   const nextRound = maxRound + 1;
 
-  if (nextRound > swissRounds) return { error: `Tous les ${swissRounds} rounds sont déjà générés pour ${poolName}.` };
+  if (nextRound > swissRounds) return { error: apiMsg("act_tous_rounds_deja_generes", { p0: swissRounds, p1: poolName }) };
 
   // Check current round is finished before generating next
   if (maxRound > 0) {
     const currentRoundMatches = poolMatches.filter((m) => m.roundIndex === maxRound);
     const unfinished = currentRoundMatches.filter((m) => m.status !== "FINISHED");
-    if (unfinished.length > 0) return { error: `${unfinished.length} match(s) du Round ${maxRound} non terminé(s).` };
+    if (unfinished.length > 0) return { error: apiMsg("act_match_s_round_non_termine_s", { p0: unfinished.length, p1: maxRound }) };
   }
 
   // Compute standings from all finished pool matches
@@ -3853,21 +3854,21 @@ export async function launchKiosqueRegroupAction(
       matches: { where: { phase: "KIOSQUE_POOL" } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "KIOSQUE") return { error: "Format Kiosque uniquement." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "KIOSQUE") return { error: apiMsg("act_format_kiosque_uniquement") };
 
   const poolMatches = (tournament as any).matches;
   const unfinished = poolMatches.filter((m: any) => m.status !== "FINISHED");
-  if (unfinished.length > 0) return { error: `${unfinished.length} match(s) J1 non terminé(s).` };
-  if (poolMatches.length === 0) return { error: "Aucun match J1 trouvé." };
+  if (unfinished.length > 0) return { error: apiMsg("act_match_s_j1_non_termine_s", { p0: unfinished.length }) };
+  if (poolMatches.length === 0) return { error: apiMsg("act_aucun_match_j1_trouve") };
 
   const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: { in: ["KIOSQUE_TOP4", "KIOSQUE_BOTTOM12"] } } });
-  if (existing) return { error: "Le regroup a déjà été généré." };
+  if (existing) return { error: apiMsg("act_regroup_deja_ete_genere_2") };
 
   // Compute overall standings from both pools
   const poolARecord = tournament.pools.find((p: any) => p.name === "Pool A");
   const poolBRecord = tournament.pools.find((p: any) => p.name === "Pool B");
-  if (!poolARecord || !poolBRecord) return { error: "Pools introuvables." };
+  if (!poolARecord || !poolBRecord) return { error: apiMsg("act_pools_introuvables") };
 
   const allTeams = tournament.teams;
   const overallStandings = computeStandings(allTeams, poolMatches, (tournament as any).scoringSystem);
@@ -3946,19 +3947,19 @@ export async function launchKiosqueNextRoundAction(
       pools: { include: { teams: { include: { team: true } } } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const groupPool = tournament.pools.find((p: any) => p.name === group);
-  if (!groupPool) return { error: `Groupe "${group}" introuvable.` };
+  if (!groupPool) return { error: apiMsg("act_groupe_introuvable", { p0: group }) };
 
   const groupMatches = await prisma.match.findMany({ where: { tournamentId: id, phase } });
   const maxRound = groupMatches.length > 0 ? Math.max(...groupMatches.map((m: any) => m.roundIndex)) : 0;
 
-  if (maxRound >= maxRounds) return { error: `Le groupe ${group} a déjà joué ses ${maxRounds} rounds.` };
+  if (maxRound >= maxRounds) return { error: apiMsg("act_groupe_deja_joue_ses_rounds", { p0: group, p1: maxRounds }) };
 
   const currentRoundMatches = groupMatches.filter((m: any) => m.roundIndex === maxRound);
   const unfinished = currentRoundMatches.filter((m: any) => m.status !== "FINISHED");
-  if (unfinished.length > 0) return { error: `${unfinished.length} match(s) du round ${maxRound} non terminé(s).` };
+  if (unfinished.length > 0) return { error: apiMsg("act_match_s_round_non_termine_s_2", { p0: unfinished.length, p1: maxRound }) };
 
   // All J1 + group matches for rematch avoidance
   const j1Matches = await prisma.match.findMany({ where: { tournamentId: id, phase: "KIOSQUE_POOL" } });
@@ -4008,11 +4009,11 @@ export async function launchKiosqueSEAction(
       pools: { include: { teams: { include: { team: true } } } },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
-  if ((tournament as any).saturdayFormat !== "KIOSQUE") return { error: "Format Kiosque uniquement." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
+  if ((tournament as any).saturdayFormat !== "KIOSQUE") return { error: apiMsg("act_format_kiosque_uniquement") };
 
   const existing = await prisma.match.findFirst({ where: { tournamentId: id, phase: "KIOSQUE_SE" } });
-  if (existing) return { error: "La SE a déjà été générée." };
+  if (existing) return { error: apiMsg("act_se_deja_ete_generee") };
 
   // Check all regroup rounds are done
   const top4Matches = await prisma.match.findMany({ where: { tournamentId: id, phase: "KIOSQUE_TOP4" } });
@@ -4021,13 +4022,13 @@ export async function launchKiosqueSEAction(
   const top4Rounds = top4Matches.length > 0 ? Math.max(...top4Matches.map((m: any) => m.roundIndex)) : 0;
   const bottom12Rounds = bottom12Matches.length > 0 ? Math.max(...bottom12Matches.map((m: any) => m.roundIndex)) : 0;
 
-  if (top4Rounds < 2) return { error: `Top 4 doit avoir joué 2 rounds (actuellement ${top4Rounds}).` };
-  if (bottom12Rounds < 3) return { error: `Bottom 12 doit avoir joué 3 rounds (actuellement ${bottom12Rounds}).` };
+  if (top4Rounds < 2) return { error: apiMsg("act_top_4_doit_avoir_joue_2", { p0: top4Rounds }) };
+  if (bottom12Rounds < 3) return { error: apiMsg("act_bottom_12_doit_avoir_joue_3", { p0: bottom12Rounds }) };
 
   const unfinishedTop4 = top4Matches.filter((m: any) => m.status !== "FINISHED");
   const unfinishedBottom12 = bottom12Matches.filter((m: any) => m.status !== "FINISHED");
-  if (unfinishedTop4.length > 0) return { error: `${unfinishedTop4.length} match(s) Top 4 non terminé(s).` };
-  if (unfinishedBottom12.length > 0) return { error: `${unfinishedBottom12.length} match(s) Bottom 12 non terminé(s).` };
+  if (unfinishedTop4.length > 0) return { error: apiMsg("act_match_s_top_4_non_termine", { p0: unfinishedTop4.length }) };
+  if (unfinishedBottom12.length > 0) return { error: apiMsg("act_match_s_bottom_12_non_termine", { p0: unfinishedBottom12.length }) };
 
   // Compute final overall standings (J1 + regroups)
   const j1Matches = await prisma.match.findMany({ where: { tournamentId: id, phase: "KIOSQUE_POOL" } });
@@ -4223,10 +4224,10 @@ export async function applyPipelinePresetAction(
   const denied = await requireTournamentOrgaAccess(id);
   if (denied) return denied;
   const t = await prisma.tournament.findUnique({ where: { id }, select: { maxTeams: true } });
-  if (!t) return { error: "Tournoi introuvable." };
+  if (!t) return { error: apiMsg("tournament_not_found") };
   const { getPreset } = await import("@/engine/presets");
   const preset = getPreset(presetKey);
-  if (!preset) return { error: "Preset inconnu." };
+  if (!preset) return { error: apiMsg("act_preset_inconnu") };
   const stages = preset.build(Math.max(t.maxTeams ?? preset.minTeams, preset.minTeams));
   const { setTournamentPipeline } = await import("@/engine/pipeline-server");
   const res = await setTournamentPipeline(id, stages);
@@ -4354,7 +4355,7 @@ export async function simulatePipelineStageAction(id: string): Promise<{ ok?: bo
   const denied = await requireTournamentOrgaAccess(id);
   if (denied) return denied;
   const t = await prisma.tournament.findUnique({ where: { id }, select: { testMode: true } });
-  if (!t?.testMode) return { error: "Simulation réservée aux tournois de test." };
+  if (!t?.testMode) return { error: apiMsg("act_simulation_reservee_tournois_test") };
 
   const { simulateStage } = await import("@/engine/pipeline-server");
   const res = await simulateStage(id);

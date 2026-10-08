@@ -5,10 +5,11 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { addMinutes } from "date-fns";
+import { apiMsg } from "@/lib/api-messages";
 
 async function requireTournamentOrgaAccess(tournamentId: string): Promise<{ error: string } | null> {
   const playerId = await getOrgaPlayerId(tournamentId);
-  if (!playerId) return { error: "Accès refusé." };
+  if (!playerId) return { error: apiMsg("access_denied") };
   return null;
 }
 
@@ -33,12 +34,12 @@ export async function reschedulePoolMatchesAction(
       },
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable." };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const poolAStart = saturdayPoolAStart ? new Date(saturdayPoolAStart) : tournament.saturdayPoolAStart;
   const poolBStart = saturdayPoolBStart ? new Date(saturdayPoolBStart) : tournament.saturdayPoolBStart;
 
-  if (!poolAStart && !poolBStart) return { error: "Aucune heure de début fournie." };
+  if (!poolAStart && !poolBStart) return { error: apiMsg("act_aucune_heure_debut_fournie") };
 
   const slotDuration = tournament.gameDurationMin + 4; // match + 4min break
 

@@ -3,11 +3,12 @@ import { prisma } from "@/lib/db";
 import { NOTIF_CATEGORIES } from "@/lib/notify";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { apiMsg } from "@/lib/api-messages";
 
 export async function saveNotificationPreferences(formData: FormData) {
   const session = await auth();
   const playerId = (session?.user as any)?.playerId;
-  if (!playerId) return { error: "Non connecté" };
+  if (!playerId) return { error: apiMsg("not_logged_in") };
 
   const enabled = formData.get("enabled") === "on";
   const continents = formData.getAll("continents") as string[];

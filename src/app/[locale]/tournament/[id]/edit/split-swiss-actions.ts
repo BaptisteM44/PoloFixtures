@@ -10,10 +10,11 @@ import {
 } from "@/lib/berlin-mixed";
 import { generateBracketAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { MatchPhase } from "@prisma/client";
+import { apiMsg } from "@/lib/api-messages";
 
 async function requireOrgaAccess(tournamentId: string) {
   const playerId = await getOrgaPlayerId(tournamentId);
-  if (!playerId) return { error: "Accès refusé." };
+  if (!playerId) return { error: apiMsg("access_denied") };
   return null;
 }
 
@@ -65,7 +66,7 @@ export async function generateSplitSwissRoundAction(
       matches: true,
     },
   });
-  if (!tournament) return { error: "Tournoi introuvable" };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const phase: MatchPhase = group === "A" ? "SWISS_A" : "SWISS_B";
   const groupMatches = tournament.matches.filter((m) => m.phase === phase);
@@ -77,13 +78,13 @@ export async function generateSplitSwissRoundAction(
     const unfinished = latestRound.filter((m) => m.status !== "FINISHED");
     if (unfinished.length > 0)
       return {
-        error: `Le tour Groupe-${group} ${existingRounds} a encore ${unfinished.length} match(es) non terminé(s).`,
+        error: apiMsg("act_tour_groupe_encore_match_es_non", { p0: group, p1: existingRounds, p2: unfinished.length }),
       };
   }
 
   const maxRounds = (tournament as any).saturdayRounds ?? (tournament as any).swissRounds ?? 5;
   if (existingRounds >= maxRounds)
-    return { error: `Tous les ${maxRounds} tours du Groupe ${group} sont terminés.` };
+    return { error: apiMsg("act_tous_tours_groupe_termines", { p0: maxRounds, p1: group }) };
 
   const standings = computeStandings(
     tournament.teams,
@@ -112,7 +113,7 @@ export async function generateSplitSwissRoundAction(
   );
 
   if (newMatches.length === 0)
-    return { error: "Impossible de générer des pairings pour ce tour." };
+    return { error: apiMsg("act_impossible_generer_pairings_tour") };
 
   await prisma.$transaction(
     newMatches.map((match) =>
@@ -150,13 +151,13 @@ export async function generateSplitSwissBracketAction(tournamentId: string) {
     where: { id: tournamentId },
     include: { teams: { where: { selected: true } }, matches: true },
   });
-  if (!tournament) return { error: "Tournoi introuvable" };
+  if (!tournament) return { error: apiMsg("tournament_not_found") };
 
   const allSwissMatches = tournament.matches.filter(
     (m) => m.phase === "SWISS_A" || m.phase === "SWISS_B"
   );
   if (allSwissMatches.length === 0)
-    return { error: "Aucun match Swiss trouvé pour calculer le classement." };
+    return { error: apiMsg("act_aucun_match_swiss_trouve_calculer_classement") };
 
   // Compute interleaved A1/B1/A2/B2… seed order
   const teamsA = tournament.teams.filter((t: any) => t.saturdayGroup === "A");

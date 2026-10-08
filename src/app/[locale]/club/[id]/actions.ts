@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { createNotification, notifySessionJoin } from "@/lib/notify";
+import { apiMsg } from "@/lib/api-messages";
 
 async function getClubRole(clubId: string) {
   const session = await auth();
@@ -26,10 +27,10 @@ async function getClubRole(clubId: string) {
 
 export async function addClubAdminAction(clubId: string, playerId: string) {
   const { isManager } = await getClubRole(clubId);
-  if (!isManager) return { error: "Seul le manager peut ajouter des admins." };
+  if (!isManager) return { error: apiMsg("act_seul_manager_peut_ajouter_admins") };
 
   const membership = await prisma.clubMember.findUnique({ where: { clubId_playerId: { clubId, playerId } } });
-  if (membership?.status !== "MEMBER") return { error: "Ce joueur n'est pas membre du club." };
+  if (membership?.status !== "MEMBER") return { error: apiMsg("act_joueur_n_pas_membre_club") };
 
   await prisma.clubAdmin.upsert({
     where: { clubId_playerId: { clubId, playerId } },
@@ -42,7 +43,7 @@ export async function addClubAdminAction(clubId: string, playerId: string) {
 
 export async function removeClubAdminAction(clubId: string, playerId: string) {
   const { isManager } = await getClubRole(clubId);
-  if (!isManager) return { error: "Seul le manager peut retirer des admins." };
+  if (!isManager) return { error: apiMsg("act_seul_manager_peut_retirer_admins") };
 
   await prisma.clubAdmin.deleteMany({ where: { clubId, playerId } });
   revalidatePath(`/club/${clubId}`);
@@ -53,12 +54,12 @@ export async function removeClubAdminAction(clubId: string, playerId: string) {
 
 export async function transferManagerAction(clubId: string, newManagerPlayerId: string) {
   const { playerId, isManager } = await getClubRole(clubId);
-  if (!isManager || !playerId) return { error: "Seul le manager peut transférer la gestion." };
+  if (!isManager || !playerId) return { error: apiMsg("act_seul_manager_peut_transferer_gestion") };
 
   const membership = await prisma.clubMember.findUnique({
     where: { clubId_playerId: { clubId, playerId: newManagerPlayerId } },
   });
-  if (membership?.status !== "MEMBER") return { error: "Ce joueur n'est pas membre du club." };
+  if (membership?.status !== "MEMBER") return { error: apiMsg("act_joueur_n_pas_membre_club") };
 
   await prisma.club.update({ where: { id: clubId }, data: { managerId: newManagerPlayerId } });
   revalidatePath(`/club/${clubId}`);
@@ -80,7 +81,7 @@ export async function createSessionAction(clubId: string, data: {
   color?: string;
 }) {
   const { playerId, isMember } = await getClubRole(clubId);
-  if (!playerId || !isMember) return { error: "Réservé aux membres du club." };
+  if (!playerId || !isMember) return { error: apiMsg("act_reserve_membres_club") };
 
   await prisma.clubSession.create({
     data: {
@@ -118,13 +119,13 @@ export async function createSessionAction(clubId: string, data: {
 
 export async function deleteSessionAction(clubId: string, sessionId: string) {
   const { playerId, isAdmin } = await getClubRole(clubId);
-  if (!playerId) return { error: "Non connecté." };
+  if (!playerId) return { error: apiMsg("not_logged_in") };
 
   const session = await prisma.clubSession.findUnique({ where: { id: sessionId } });
-  if (!session || session.clubId !== clubId) return { error: "Session introuvable." };
+  if (!session || session.clubId !== clubId) return { error: apiMsg("act_session_introuvable") };
 
   // Creator or admin can delete
-  if (session.createdById !== playerId && !isAdmin) return { error: "Non autorisé." };
+  if (session.createdById !== playerId && !isAdmin) return { error: apiMsg("not_authorized") };
 
   await prisma.clubSession.delete({ where: { id: sessionId } });
   revalidatePath(`/club/${clubId}`);
@@ -143,11 +144,11 @@ export async function updateSessionAction(clubId: string, sessionId: string, dat
   color?: string;
 }) {
   const { playerId, isAdmin } = await getClubRole(clubId);
-  if (!playerId) return { error: "Non connecté." };
+  if (!playerId) return { error: apiMsg("not_logged_in") };
 
   const session = await prisma.clubSession.findUnique({ where: { id: sessionId } });
-  if (!session || session.clubId !== clubId) return { error: "Session introuvable." };
-  if (session.createdById !== playerId && !isAdmin) return { error: "Non autorisé." };
+  if (!session || session.clubId !== clubId) return { error: apiMsg("act_session_introuvable") };
+  if (session.createdById !== playerId && !isAdmin) return { error: apiMsg("not_authorized") };
 
   const updateData: any = {};
   if (data.title !== undefined) updateData.title = data.title || null;
@@ -173,10 +174,10 @@ export async function joinSessionAction(
   opts?: { arrivalTime?: string; minPlayers?: number }
 ) {
   const { playerId, isMember } = await getClubRole(clubId);
-  if (!playerId) return { error: "Non connecté." };
+  if (!playerId) return { error: apiMsg("not_logged_in") };
 
   const session = await prisma.clubSession.findUnique({ where: { id: sessionId } });
-  if (!session || session.clubId !== clubId) return { error: "Session introuvable." };
+  if (!session || session.clubId !== clubId) return { error: apiMsg("act_session_introuvable") };
 
   const data = {
     arrivalTime: opts?.arrivalTime || null,
@@ -236,7 +237,7 @@ export async function joinSessionAction(
 
 export async function leaveSessionAction(clubId: string, sessionId: string) {
   const { playerId } = await getClubRole(clubId);
-  if (!playerId) return { error: "Non connecté." };
+  if (!playerId) return { error: apiMsg("not_logged_in") };
 
   await prisma.clubSessionAttendee.deleteMany({ where: { sessionId, playerId } });
   revalidatePath(`/club/${clubId}`);
@@ -245,7 +246,7 @@ export async function leaveSessionAction(clubId: string, sessionId: string) {
 
 export async function approveSessionAttendeeAction(clubId: string, sessionId: string, playerId: string) {
   const { isAdmin } = await getClubRole(clubId);
-  if (!isAdmin) return { error: "Réservé aux admins." };
+  if (!isAdmin) return { error: apiMsg("act_reserve_admins") };
 
   await prisma.clubSessionAttendee.updateMany({
     where: { sessionId, playerId, status: "PENDING" },
@@ -276,7 +277,7 @@ export async function approveSessionAttendeeAction(clubId: string, sessionId: st
 
 export async function rejectSessionAttendeeAction(clubId: string, sessionId: string, playerId: string) {
   const { isAdmin } = await getClubRole(clubId);
-  if (!isAdmin) return { error: "Réservé aux admins." };
+  if (!isAdmin) return { error: apiMsg("act_reserve_admins") };
 
   await prisma.clubSessionAttendee.deleteMany({ where: { sessionId, playerId } });
   revalidatePath(`/club/${clubId}`);
@@ -285,10 +286,10 @@ export async function rejectSessionAttendeeAction(clubId: string, sessionId: str
 
 export async function cancelSessionAction(clubId: string, sessionId: string) {
   const { playerId, isAdmin } = await getClubRole(clubId);
-  if (!playerId || !isAdmin) return { error: "Réservé aux admins." };
+  if (!playerId || !isAdmin) return { error: apiMsg("act_reserve_admins") };
 
   const session = await prisma.clubSession.findUnique({ where: { id: sessionId }, select: { clubId: true, date: true, title: true } });
-  if (!session || session.clubId !== clubId) return { error: "Session introuvable." };
+  if (!session || session.clubId !== clubId) return { error: apiMsg("act_session_introuvable") };
 
   await prisma.clubSession.update({
     where: { id: sessionId },
@@ -317,8 +318,8 @@ export async function cancelSessionAction(clubId: string, sessionId: string) {
 
 export async function sendClubMessageAction(clubId: string, content: string) {
   const { playerId, isMember } = await getClubRole(clubId);
-  if (!playerId || !isMember) return { error: "Réservé aux membres du club." };
-  if (!content.trim()) return { error: "Message vide." };
+  if (!playerId || !isMember) return { error: apiMsg("act_reserve_membres_club") };
+  if (!content.trim()) return { error: apiMsg("act_message_vide") };
 
   await prisma.clubMessage.create({
     data: { clubId, playerId, content: content.trim() },
@@ -330,11 +331,11 @@ export async function sendClubMessageAction(clubId: string, content: string) {
 
 export async function deleteClubMessageAction(clubId: string, messageId: string) {
   const { playerId, isAdmin } = await getClubRole(clubId);
-  if (!playerId) return { error: "Non connecté." };
+  if (!playerId) return { error: apiMsg("not_logged_in") };
 
   const msg = await prisma.clubMessage.findUnique({ where: { id: messageId } });
-  if (!msg || msg.clubId !== clubId) return { error: "Message introuvable." };
-  if (msg.playerId !== playerId && !isAdmin) return { error: "Non autorisé." };
+  if (!msg || msg.clubId !== clubId) return { error: apiMsg("message_not_found") };
+  if (msg.playerId !== playerId && !isAdmin) return { error: apiMsg("not_authorized") };
 
   await prisma.clubMessage.delete({ where: { id: messageId } });
   revalidatePath(`/club/${clubId}`);
@@ -345,7 +346,7 @@ export async function deleteClubMessageAction(clubId: string, messageId: string)
 
 export async function generateNextRecurringSessionAction(clubId: string, templateId?: string) {
   const { isAdmin } = await getClubRole(clubId);
-  if (!isAdmin) return { error: "Réservé aux admins." };
+  if (!isAdmin) return { error: apiMsg("act_reserve_admins") };
 
   const templates = await prisma.clubSession.findMany({
     where: {
@@ -416,11 +417,11 @@ export async function generateNextRecurringSessionAction(clubId: string, templat
 
 export async function sendSessionMessageAction(clubId: string, sessionId: string, content: string) {
   const { playerId, isMember } = await getClubRole(clubId);
-  if (!playerId || !isMember) return { error: "Réservé aux membres du club." };
-  if (!content.trim()) return { error: "Message vide." };
+  if (!playerId || !isMember) return { error: apiMsg("act_reserve_membres_club") };
+  if (!content.trim()) return { error: apiMsg("act_message_vide") };
 
   const session = await prisma.clubSession.findUnique({ where: { id: sessionId } });
-  if (!session || session.clubId !== clubId) return { error: "Session introuvable." };
+  if (!session || session.clubId !== clubId) return { error: apiMsg("act_session_introuvable") };
 
   await prisma.clubSessionMessage.create({
     data: { sessionId, playerId, content: content.trim() },
@@ -432,11 +433,11 @@ export async function sendSessionMessageAction(clubId: string, sessionId: string
 
 export async function deleteSessionMessageAction(clubId: string, messageId: string) {
   const { playerId, isAdmin } = await getClubRole(clubId);
-  if (!playerId) return { error: "Non connecté." };
+  if (!playerId) return { error: apiMsg("not_logged_in") };
 
   const msg = await prisma.clubSessionMessage.findUnique({ where: { id: messageId } });
-  if (!msg) return { error: "Message introuvable." };
-  if (msg.playerId !== playerId && !isAdmin) return { error: "Non autorisé." };
+  if (!msg) return { error: apiMsg("message_not_found") };
+  if (msg.playerId !== playerId && !isAdmin) return { error: apiMsg("not_authorized") };
 
   await prisma.clubSessionMessage.delete({ where: { id: messageId } });
   revalidatePath(`/club/${clubId}`);
@@ -453,8 +454,8 @@ export async function createVenueAction(clubId: string, data: {
   color?: string;
 }) {
   const { isMember, isAdmin } = await getClubRole(clubId);
-  if (!isMember && !isAdmin) return { error: "Réservé aux membres du club." };
-  if (!data.name.trim()) return { error: "Nom requis." };
+  if (!isMember && !isAdmin) return { error: apiMsg("act_reserve_membres_club") };
+  if (!data.name.trim()) return { error: apiMsg("name_required") };
 
   await prisma.clubVenue.create({
     data: {
@@ -479,7 +480,7 @@ export async function updateVenueAction(clubId: string, venueId: string, data: {
   color?: string;
 }) {
   const { isMember, isAdmin } = await getClubRole(clubId);
-  if (!isMember && !isAdmin) return { error: "Réservé aux membres du club." };
+  if (!isMember && !isAdmin) return { error: apiMsg("act_reserve_membres_club") };
 
   await prisma.clubVenue.update({
     where: { id: venueId },
@@ -498,7 +499,7 @@ export async function updateVenueAction(clubId: string, venueId: string, data: {
 
 export async function deleteVenueAction(clubId: string, venueId: string) {
   const { isAdmin } = await getClubRole(clubId);
-  if (!isAdmin) return { error: "Réservé aux admins." };
+  if (!isAdmin) return { error: apiMsg("act_reserve_admins") };
 
   await prisma.clubVenue.delete({ where: { id: venueId } });
   revalidatePath(`/club/${clubId}`);

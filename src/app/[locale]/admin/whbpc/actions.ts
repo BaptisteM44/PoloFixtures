@@ -4,11 +4,12 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 async function requireAdmin() {
   const session = await auth();
   const role = (session?.user as any)?.role;
-  if (role !== "ADMIN") throw new Error("Unauthorized");
+  if (role !== "ADMIN") throw new Error(apiMsg("not_authorized"));
 }
 
 const assignSchema = z.object({
@@ -43,7 +44,7 @@ export async function assignWhbpcCardAction(data: z.infer<typeof assignSchema>) 
 
   const { playerId, ...cardData } = parsed.data;
   const player = await prisma.player.findUnique({ where: { id: playerId }, select: { id: true } });
-  if (!player) return { error: "Joueur introuvable." };
+  if (!player) return { error: apiMsg("player_not_found") };
 
   // Posséder la carte = avoir une ligne WhbpcCard (voir api/account/profile —
   // ownedCards la dérive dynamiquement, pas besoin de la stocker en double).

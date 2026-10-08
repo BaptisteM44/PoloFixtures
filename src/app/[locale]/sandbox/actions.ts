@@ -21,11 +21,12 @@ import { getPreset } from "@/engine/presets";
 import { validateCustomPipeline } from "@/engine/pipeline-validation";
 import { generateTournamentSlug } from "@/lib/slug";
 import { hasAtLeastRole } from "@/lib/rbac";
+import { apiMsg } from "@/lib/api-messages";
 
 async function requireSandboxAccess(): Promise<{ playerId: string; isAdmin: boolean } | { error: string }> {
   const session = await auth();
   const playerId = session?.user?.playerId;
-  if (!playerId) return { error: "Connexion requise." };
+  if (!playerId) return { error: apiMsg("login_required") };
   return { playerId, isAdmin: hasAtLeastRole(session?.user?.role, "ADMIN") };
 }
 
@@ -108,7 +109,7 @@ export async function createSandboxAction(input: {
   if ("error" in access) return { error: access.error };
 
   const preset = getPreset(input.presetKey);
-  if (!preset) return { error: "Preset inconnu." };
+  if (!preset) return { error: apiMsg("act_preset_inconnu") };
   const teamCount = Math.max(preset.minTeams, Math.min(input.teamCount, 64));
 
   const now = new Date();
@@ -209,7 +210,7 @@ export async function createCustomSandboxAction(input: {
 export async function launchStageAction(tournamentId: string, stageOrder: number) {
   const access = await requireSandboxAccess();
   if ("error" in access) return { error: access.error };
-  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: "Tournoi bac à sable introuvable." };
+  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: apiMsg("act_tournoi_bac_sable_introuvable") };
   const res = await launchStage(tournamentId, stageOrder);
   revalidatePath(`/sandbox/${tournamentId}`);
   return res;
@@ -218,7 +219,7 @@ export async function launchStageAction(tournamentId: string, stageOrder: number
 export async function simulatePassAction(tournamentId: string) {
   const access = await requireSandboxAccess();
   if ("error" in access) return { error: access.error };
-  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: "Tournoi bac à sable introuvable." };
+  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: apiMsg("act_tournoi_bac_sable_introuvable") };
   const res = await simulateOnePass(tournamentId);
   revalidatePath(`/sandbox/${tournamentId}`);
   return res;
@@ -227,7 +228,7 @@ export async function simulatePassAction(tournamentId: string) {
 export async function simulateStageAction(tournamentId: string) {
   const access = await requireSandboxAccess();
   if ("error" in access) return { error: access.error };
-  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: "Tournoi bac à sable introuvable." };
+  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: apiMsg("act_tournoi_bac_sable_introuvable") };
   const res = await simulateStage(tournamentId);
   revalidatePath(`/sandbox/${tournamentId}`);
   return res;
@@ -236,7 +237,7 @@ export async function simulateStageAction(tournamentId: string) {
 export async function simulateAllAction(tournamentId: string) {
   const access = await requireSandboxAccess();
   if ("error" in access) return { error: access.error };
-  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: "Tournoi bac à sable introuvable." };
+  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: apiMsg("act_tournoi_bac_sable_introuvable") };
   const res = await simulateAll(tournamentId);
   revalidatePath(`/sandbox/${tournamentId}`);
   return res;
@@ -245,7 +246,7 @@ export async function simulateAllAction(tournamentId: string) {
 export async function resetStagesAction(tournamentId: string, fromOrder: number) {
   const access = await requireSandboxAccess();
   if ("error" in access) return { error: access.error };
-  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: "Tournoi bac à sable introuvable." };
+  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: apiMsg("act_tournoi_bac_sable_introuvable") };
   const res = await resetStages(tournamentId, fromOrder);
   await prisma.tournament.update({ where: { id: tournamentId }, data: { status: fromOrder === 0 ? "UPCOMING" : "LIVE" } }).catch(() => {});
   revalidatePath(`/sandbox/${tournamentId}`);
@@ -255,9 +256,9 @@ export async function resetStagesAction(tournamentId: string, fromOrder: number)
 export async function setScoreAction(tournamentId: string, matchId: string, scoreA: number, scoreB: number) {
   const access = await requireSandboxAccess();
   if ("error" in access) return { error: access.error };
-  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: "Tournoi bac à sable introuvable." };
+  if (!(await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin))) return { error: apiMsg("act_tournoi_bac_sable_introuvable") };
   const match = await prisma.match.findUnique({ where: { id: matchId }, select: { tournamentId: true } });
-  if (match?.tournamentId !== tournamentId) return { error: "Match étranger au tournoi." };
+  if (match?.tournamentId !== tournamentId) return { error: apiMsg("act_match_etranger_tournoi") };
   const res = await applyScore(matchId, scoreA, scoreB);
   revalidatePath(`/sandbox/${tournamentId}`);
   return res;
@@ -267,7 +268,7 @@ export async function deleteSandboxAction(tournamentId: string) {
   const access = await requireSandboxAccess();
   if ("error" in access) return { error: access.error };
   const t = await requireSandboxTournament(tournamentId, access.playerId, access.isAdmin);
-  if (!t) return { error: "Tournoi bac à sable introuvable." };
+  if (!t) return { error: apiMsg("act_tournoi_bac_sable_introuvable") };
 
   await prisma.$transaction(async (tx) => {
     await tx.matchEvent.deleteMany({ where: { match: { tournamentId } } });
