@@ -2234,6 +2234,32 @@ button:disabled,
 }
 
 /* ── Mois passés : déroulant grisé ── */
+/* Mois passés : une rangée de pastilles, un seul mois ouvert à la fois */
+.agenda-past { margin-bottom: 36px; }
+.agenda-past__title {
+  margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted);
+}
+.agenda-past__pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.agenda-pill {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 4px 12px;
+  border: 1.5px solid var(--border-light); border-radius: 999px; background: var(--surface); color: var(--text-muted);
+  font-size: 13px; font-weight: 700; text-transform: capitalize; box-shadow: none; cursor: pointer;
+}
+.agenda-pill:hover { border-color: var(--border); color: var(--text); }
+.agenda-pill__count {
+  min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--gray); color: var(--text);
+  font-size: 11px; line-height: 18px; text-align: center;
+}
+.agenda-pill.is-open { border-color: var(--border); background: var(--text); color: var(--bg); }
+.agenda-pill.is-open .agenda-pill__count { background: var(--bg); color: var(--text); }
+.agenda-past__panel { margin-top: 16px; opacity: .8; }
+@media (max-width: 600px) {
+  /* Mobile : une seule ligne qu'on fait glisser du doigt */
+  .agenda-past__pills { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; scrollbar-width: none; }
+  .agenda-past__pills::-webkit-scrollbar { display: none; }
+  .agenda-pill { flex-shrink: 0; }
+}
+
 details.agenda-month--past {
   opacity: 0.55;
   transition: opacity 0.2s;

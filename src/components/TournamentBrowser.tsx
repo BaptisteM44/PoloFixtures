@@ -161,6 +161,8 @@ export function TournamentBrowser({
   const [countryFilter, setCountryFilter] = useState("");
   const [yearFilter, setYearFilter] = useState(() => getDefaultYear(tournaments));
   const [monthFilter, setMonthFilter] = useState("");
+  // Mois passés en pastilles : un seul ouvert à la fois.
+  const [openPastMonth, setOpenPastMonth] = useState<string | null>(null);
   const [continent, setContinent] = useState(() => defaultContinent ?? "");
 
   const countries = [...new Set(tournaments.map((tour) => tour.country))].sort();
@@ -197,6 +199,78 @@ export function TournamentBrowser({
   const groups = groupByMonth(sorted, locale);
 
   const currentMonthKey = toMonthKey(new Date().toISOString());
+  // Mois passés repliés en une rangée de pastilles (on voit tout d'un coup et
+  // le mois en cours arrive tout de suite) — seulement s'il reste des mois à
+  // venir ; sinon (année passée, filtre) la liste s'affiche normalement.
+  const pastGroups = groups.filter((g) => g.key < currentMonthKey);
+  const pillMode = pastGroups.length > 0 && pastGroups.length < groups.length;
+  const openPast = pillMode ? pastGroups.find((g) => g.key === openPastMonth) ?? null : null;
+  const shortMonth = (key: string) => {
+    const [y, m] = key.split("-").map(Number);
+    const label = new Date(y, m - 1, 1).toLocaleString(locale, { month: "short" });
+    return y === new Date().getFullYear() ? label : `${label} ${y}`;
+  };
+
+  const renderGrid = (group: MonthGroup) => (
+          <div className="tournament-grid">
+            {group.tournaments.map((tour) => {
+              const dStart = new Date(tour.dateStart);
+              const dEnd = new Date(tour.dateEnd);
+              const dayStart = dStart.getDate();
+              const monthStart = dStart.toLocaleString(locale, { month: "short" });
+              const dayEnd = dEnd.getDate();
+              const monthEnd = dEnd.toLocaleString(locale, { month: "short" });
+              const sameDay = dayStart === dayEnd && monthStart === monthEnd;
+              const { label: statusLabel, cls: statusCls } = getTournamentStatusBadge(tour.status, tour.registrationStart, tour.registrationEnd, statusLabels);
+
+              return (
+                <div key={tour.id} className={`tournament-card-wrapper${tour.bannerPath ? " tournament-card-wrapper--has-banner" : ""}`}>
+                  <Link className={`tournament-card${tour.bannerPath ? " tournament-card--has-banner" : ""}`} href={`/tournament/${tour.slug ?? tour.id}`}>
+                    {/* Date column */}
+                    <div className="tournament-card__date">
+                      <span className="tournament-card__day">{dayStart}</span>
+                      <span className="tournament-card__month">{monthStart}</span>
+                      {!sameDay && (
+                        <>
+                          <span className="tournament-card__date-arrow">↓</span>
+                          <span className="tournament-card__day-end">{dayEnd}</span>
+                          <span className="tournament-card__month-end">{monthEnd}</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Body */}
+                    <div className="tournament-card__body">
+                      <div className="tournament-card__header">
+                        <h3>{tour.name}</h3>
+                        <span className={`status ${statusCls}`}>{statusLabel}</span>
+                      </div>
+                      <p className="tournament-card__location">📍 {tour.city}, {tour.country}</p>
+                      <p className="meta">{tour.format} · {t("teams_slots", { count: tour.teamCount, max: tour.maxTeams })}</p>
+                    </div>
+
+                    {/* Banner full height */}
+                    {tour.bannerPath && (
+                      <div className="tournament-card__banner">
+                        <Image src={tour.bannerPath} alt="" fill sizes="90px" style={{ objectFit: "cover" }} />
+                      </div>
+                    )}
+                  </Link>
+
+                  {/* Follow button — outside the link */}
+                  <div className="tournament-card__follow">
+                    <FollowButton
+                      tournamentId={tour.id}
+                      initialFollowing={followedIds.includes(tour.id)}
+                      isLoggedIn={isLoggedIn}
+                    />
+                    <ShareTournamentButton path={`/tournament/${tour.slug ?? tour.id}`} title={tour.name} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+  );
 
   return (
     <div>
@@ -291,7 +365,35 @@ export function TournamentBrowser({
         </div>
       )}
 
-      {groups.map((group) => {
+      {pillMode && (
+        <section className="agenda-past" aria-label={t("past_months")}>
+          <p className="agenda-past__title">{t("past_months")}</p>
+          <div className="agenda-past__pills">
+            {pastGroups.map((g) => {
+              const open = openPast?.key === g.key;
+              return (
+                <button key={g.key} type="button" aria-expanded={open} title={g.label}
+                  className={`agenda-pill${open ? " is-open" : ""}`}
+                  onClick={() => setOpenPastMonth(open ? null : g.key)}>
+                  <span className="agenda-pill__month">{shortMonth(g.key)}</span>
+                  <span className="agenda-pill__count">{g.tournaments.length}</span>
+                </button>
+              );
+            })}
+          </div>
+          {openPast && (
+            <div className="agenda-past__panel">
+              <h2 className="agenda-month__heading agenda-month__heading--past">
+                {openPast.label}
+                <span className="agenda-month__count"> · {openPast.tournaments.length} {openPast.tournaments.length > 1 ? t("count_plural") : t("count_singular")}</span>
+              </h2>
+              {renderGrid(openPast)}
+            </div>
+          )}
+        </section>
+      )}
+
+      {(pillMode ? groups.filter((g) => g.key >= currentMonthKey) : groups).map((group) => {
         const isPast = group.key < currentMonthKey;
         const heading = (
           <>
@@ -299,66 +401,7 @@ export function TournamentBrowser({
             <span className="agenda-month__count"> · {group.tournaments.length} {group.tournaments.length > 1 ? t("count_plural") : t("count_singular")}</span>
           </>
         );
-        const grid = (
-          <div className="tournament-grid">
-            {group.tournaments.map((tour) => {
-              const dStart = new Date(tour.dateStart);
-              const dEnd = new Date(tour.dateEnd);
-              const dayStart = dStart.getDate();
-              const monthStart = dStart.toLocaleString(locale, { month: "short" });
-              const dayEnd = dEnd.getDate();
-              const monthEnd = dEnd.toLocaleString(locale, { month: "short" });
-              const sameDay = dayStart === dayEnd && monthStart === monthEnd;
-              const { label: statusLabel, cls: statusCls } = getTournamentStatusBadge(tour.status, tour.registrationStart, tour.registrationEnd, statusLabels);
-
-              return (
-                <div key={tour.id} className={`tournament-card-wrapper${tour.bannerPath ? " tournament-card-wrapper--has-banner" : ""}`}>
-                  <Link className={`tournament-card${tour.bannerPath ? " tournament-card--has-banner" : ""}`} href={`/tournament/${tour.slug ?? tour.id}`}>
-                    {/* Date column */}
-                    <div className="tournament-card__date">
-                      <span className="tournament-card__day">{dayStart}</span>
-                      <span className="tournament-card__month">{monthStart}</span>
-                      {!sameDay && (
-                        <>
-                          <span className="tournament-card__date-arrow">↓</span>
-                          <span className="tournament-card__day-end">{dayEnd}</span>
-                          <span className="tournament-card__month-end">{monthEnd}</span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Body */}
-                    <div className="tournament-card__body">
-                      <div className="tournament-card__header">
-                        <h3>{tour.name}</h3>
-                        <span className={`status ${statusCls}`}>{statusLabel}</span>
-                      </div>
-                      <p className="tournament-card__location">📍 {tour.city}, {tour.country}</p>
-                      <p className="meta">{tour.format} · {t("teams_slots", { count: tour.teamCount, max: tour.maxTeams })}</p>
-                    </div>
-
-                    {/* Banner full height */}
-                    {tour.bannerPath && (
-                      <div className="tournament-card__banner">
-                        <Image src={tour.bannerPath} alt="" fill sizes="90px" style={{ objectFit: "cover" }} />
-                      </div>
-                    )}
-                  </Link>
-
-                  {/* Follow button — outside the link */}
-                  <div className="tournament-card__follow">
-                    <FollowButton
-                      tournamentId={tour.id}
-                      initialFollowing={followedIds.includes(tour.id)}
-                      isLoggedIn={isLoggedIn}
-                    />
-                    <ShareTournamentButton path={`/tournament/${tour.slug ?? tour.id}`} title={tour.name} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        );
+        const grid = renderGrid(group);
 
         if (isPast) {
           return (

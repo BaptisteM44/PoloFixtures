@@ -320,7 +320,8 @@
     "view_agenda": "Agenda",
     "view_grid": "Grelha",
     "create_new": "+ Criar um torneio",
-    "upcoming_title": "Próximos torneios"
+    "upcoming_title": "Próximos torneios",
+    "past_months": "Meses passados"
   },
   "tournament": {
     "not_found": "Torneio não encontrado.",

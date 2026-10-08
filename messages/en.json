@@ -320,7 +320,8 @@
     "view_agenda": "Agenda",
     "view_grid": "Grid",
     "create_new": "+ Create a tournament",
-    "upcoming_title": "Upcoming tournaments"
+    "upcoming_title": "Upcoming tournaments",
+    "past_months": "Past months"
   },
   "tournament": {
     "not_found": "Tournament not found.",

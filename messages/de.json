@@ -320,7 +320,8 @@
     "continent_eu": "Europa",
     "continent_af": "Afrika",
     "continent_as": "Asien",
-    "continent_oc": "Ozeanien"
+    "continent_oc": "Ozeanien",
+    "past_months": "Vergangene Monate"
   },
   "tournament": {
     "not_found": "Turnier nicht gefunden.",
