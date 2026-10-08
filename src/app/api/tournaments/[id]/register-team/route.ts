@@ -150,7 +150,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       const created = await prisma.player.create({
         data: {
           name: slot.name,
-          city: slot.city ?? null,
+          city: slot.city?.trim() || null,
           country: normalizeCountry(slot.country),
           slug,
           status: "PENDING",
@@ -181,7 +181,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     data: {
       tournamentId: params.id,
       name: teamName,
-      city: city ?? null,
+      city: city?.trim() || null,
       country: country ?? null,
       registrationNote: registrationNote ?? null,
       seed,

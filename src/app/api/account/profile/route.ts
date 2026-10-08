@@ -91,6 +91,8 @@ export async function PATCH(req: Request) {
     data: {
       ...parsed.data,
       ...(parsed.data.country !== undefined ? { country: normalizeCountry(parsed.data.country) } : {}),
+      // « Berlin␣ » ou « BERLIN » : une même ville ne doit pas exister en plusieurs écritures.
+      ...(parsed.data.city !== undefined ? { city: parsed.data.city?.trim() || null } : {}),
     }
   });
 
