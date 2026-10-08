@@ -10635,6 +10635,14 @@ details[open] .club-sessions__past-summary::before {
 .header-icon-btn:hover {
   box-shadow: var(--shadow);
 }
+a.header-icon-btn { text-decoration: none; }
+/* Compteur sur une pastille du header (messages non lus) — même style que la cloche */
+.header-icon-badge {
+  position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--pink); color: #fff; border: 2px solid var(--bg);
+  font-size: 10px; font-weight: 700; font-family: var(--font-body, inherit);
+  display: flex; align-items: center; justify-content: center;
+}
 
 /* ── Avatar dropdown ───────────────────────────────────────────────────────── */
 

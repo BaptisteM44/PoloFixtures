@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { AuthStatus } from "@/components/AuthStatus";
 import { NotificationBell } from "@/components/NotificationBell";
+import { MessagesButton } from "@/components/MessagesButton";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { DarkModeToggle } from "@/components/DarkModeToggle";
 import { AppBackButton } from "@/components/AppBackButton";
@@ -68,12 +69,14 @@ export function Header() {
       <div className="header-actions header-actions--desktop">
         <DarkModeToggle />
         <LanguageSwitcher />
+        {hasPlayer && <MessagesButton />}
         {hasPlayer && <NotificationBell />}
         <AuthStatus />
       </div>
 
       {/* Zone mobile : cloche + burger */}
       <div className="header-mobile-actions">
+        {hasPlayer && <MessagesButton />}
         {hasPlayer && <NotificationBell />}
         <button
           className="burger-btn"
