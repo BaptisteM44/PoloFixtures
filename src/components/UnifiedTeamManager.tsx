@@ -22,7 +22,7 @@ type TeamPlayer = {
     name: string;
     country: string;
     slug?: string;
-    account?: { id: string } | null;
+    account?: { id: string; email?: string | null } | null;
     diets?: string[];
   };
 };
@@ -141,6 +141,9 @@ function PlayerChip({
           <Link href={`/player/${slug}`} style={{ fontWeight: 600, color: "inherit", textDecoration: "none" }}>{tp.player.name}</Link>
         )}
         <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{tp.player.country}</span>
+        {tp.player.account?.email && (
+          <span style={{ fontSize: 11, color: "var(--text-muted)", userSelect: "all", wordBreak: "break-all" }}>{tp.player.account.email}</span>
+        )}
         {isEditing && !hasAccount && (
           <button
             onClick={() => { setMerging((m) => !m); setMergeError(null); setQuery(""); setResults([]); }}

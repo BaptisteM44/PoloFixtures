@@ -990,7 +990,9 @@
     "announce_group_waitlist": "Waitlist",
     "announce_group_registered": "Registered",
     "announce_failed_list": "Not delivered: {names}",
-    "announce_recheck_failed": "Tick only these people (to resend later)"
+    "announce_recheck_failed": "Tick only these people (to resend later)",
+    "announce_copy_emails": "📋 Copy ticked emails",
+    "announce_emails_copied": "✓ Emails copied"
   },
   "registration": {
     "section_title": "Register my team",

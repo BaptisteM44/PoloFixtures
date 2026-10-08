@@ -110,8 +110,11 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const candidates = await loadCandidates(tournament.id, tournament.format);
   return NextResponse.json({
     isSolo: tournament.format === "ABC Chapeau",
+    // Email visible de l'orga (route réservée) : bouton « Copier les emails »,
+    // pour écrire depuis sa propre messagerie quand l'envoi groupé coince.
     recipients: candidates.map(({ email, active, country: _country, label: _label, ...c }) => ({
       ...c,
+      email: active ? email : null,
       reachable: !!email && active,
     })),
   });

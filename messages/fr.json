@@ -990,7 +990,9 @@
     "announce_group_waitlist": "Liste d'attente",
     "announce_group_registered": "Inscrits",
     "announce_failed_list": "Pas reçu : {names}",
-    "announce_recheck_failed": "Recocher seulement ces personnes (pour renvoyer plus tard)"
+    "announce_recheck_failed": "Recocher seulement ces personnes (pour renvoyer plus tard)",
+    "announce_copy_emails": "📋 Copier les emails cochés",
+    "announce_emails_copied": "✓ Emails copiés"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",

@@ -16,7 +16,8 @@ export default async function TournamentEditPage({ params }: { params: { id: str
   const tournament = await prisma.tournament.findFirst({
     where: { OR: [{ id: params.id }, { slug: params.id }] },
     include: {
-      teams: { include: { players: { include: { player: true } } } },
+      // Email du compte : visible par l'orga seulement (page réservée), pour le copier.
+      teams: { include: { players: { include: { player: { include: { account: { select: { id: true, email: true } } } } } } } },
       freeAgents: true,
       creator: true,
       pools: { include: { teams: { include: { team: { select: { id: true, name: true, seed: true } } } } } },
@@ -24,7 +25,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       stages: { orderBy: { order: "asc" }, include: { entries: true, matches: { select: { id: true, status: true, groupKey: true } } } },
       sponsors: { orderBy: { name: "asc" } },
       coOrganizers: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true } } }, orderBy: { addedAt: "asc" } },
-      soloEntries: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true } } }, orderBy: { createdAt: "asc" } },
+      soloEntries: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true, account: { select: { email: true } } } } }, orderBy: { createdAt: "asc" } },
     }
   });
 

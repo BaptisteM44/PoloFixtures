@@ -990,7 +990,9 @@
     "announce_group_waitlist": "Warteliste",
     "announce_group_registered": "Angemeldet",
     "announce_failed_list": "Nicht zugestellt: {names}",
-    "announce_recheck_failed": "Nur diese Personen auswählen (später erneut senden)"
+    "announce_recheck_failed": "Nur diese Personen auswählen (später erneut senden)",
+    "announce_copy_emails": "📋 Ausgewählte E-Mails kopieren",
+    "announce_emails_copied": "✓ E-Mails kopiert"
   },
   "registration": {
     "section_title": "Mein Team anmelden",

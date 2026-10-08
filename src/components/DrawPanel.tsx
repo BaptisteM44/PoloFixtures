@@ -6,7 +6,7 @@ import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-methods
 
 type SoloEntry = {
   id: string;
-  player: { id: string; name: string };
+  player: { id: string; name: string; account?: { email?: string | null } | null };
   level: string;
   teamId: string | null;
   waitlisted: boolean;
@@ -273,6 +273,11 @@ export function DrawPanel({
                       {openAnswers[entry.id] ? "▾" : "▸"}
                     </button>
                     {entry.player.name}
+                    {entry.player.account?.email && (
+                      <div style={{ fontSize: 11, color: "var(--text-muted)", userSelect: "all", wordBreak: "break-all", paddingLeft: 17 }}>
+                        {entry.player.account.email}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: "8px 10px" }}>
                     <span className="level-badge" data-level={getLevelTier(entry.level)}>{entry.level}</span>

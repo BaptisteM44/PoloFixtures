@@ -18,6 +18,7 @@ type Recipient = {
   feePaid: boolean;
   needsAccommodation: boolean;
   reachable: boolean;
+  email: string | null;
 };
 
 type Preset = "in" | "waitlist" | "unpaid" | "accommodation" | "captains";
@@ -73,6 +74,21 @@ export function AnnouncePanel({ tournamentId }: Props) {
       for (const id of ids) (on ? next.add(id) : next.delete(id));
       return next;
     });
+
+  const [copied, setCopied] = useState(false);
+  const copyEmails = async () => {
+    const emails = (recipients ?? [])
+      .filter((r) => checked.has(r.playerId) && r.email)
+      .map((r) => r.email as string);
+    const text = emails.join(", ");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt(t("announce_copy_emails"), text);
+    }
+  };
 
   const groupLabel = (g: { id: string; name: string }) =>
     g.name || (g.id === "waitlist" ? t("announce_group_waitlist") : t("announce_group_registered"));
@@ -167,7 +183,12 @@ export function AnnouncePanel({ tournamentId }: Props) {
                   );
                 })}
               </div>
-              <p className="meta" style={{ margin: 0, fontSize: 12 }}>{t("announce_selected_count", { count: checked.size })}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <p className="meta" style={{ margin: 0, fontSize: 12 }}>{t("announce_selected_count", { count: checked.size })}</p>
+                <button type="button" style={chip(false)} disabled={checked.size === 0} onClick={copyEmails}>
+                  {copied ? t("announce_emails_copied") : t("announce_copy_emails")}
+                </button>
+              </div>
             </>
           )}
         </div>
