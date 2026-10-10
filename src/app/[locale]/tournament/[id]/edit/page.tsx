@@ -23,7 +23,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       creator: true,
       pools: { include: { teams: { include: { team: { select: { id: true, name: true, seed: true } } } } } },
       matches: { select: { id: true, phase: true, roundIndex: true, positionInRound: true, status: true, winnerTeamId: true, poolId: true, poolSessionIndex: true, teamAId: true, teamBId: true, dayIndex: true, stageId: true, groupKey: true, bracketSide: true, startAt: true, courtName: true } },
-      stages: { orderBy: { order: "asc" }, include: { entries: true, matches: { select: { id: true, status: true, groupKey: true } } } },
+      stages: { orderBy: { order: "asc" }, include: { entries: true, matches: { select: { id: true, status: true, groupKey: true, roundIndex: true } } } },
       sponsors: { orderBy: { name: "asc" } },
       coOrganizers: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true } } }, orderBy: { addedAt: "asc" } },
       soloEntries: { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true, account: { select: { email: true } } } } }, orderBy: { createdAt: "asc" } },
@@ -367,7 +367,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
                 entryRules: s.entryRules,
                 startAt: s.startAt?.toISOString() ?? null,
                 entries: (s.entries ?? []).map((e: any) => ({ id: e.id, slot: e.slot, groupKey: e.groupKey, teamId: e.teamId })),
-                matches: (s.matches ?? []).map((m: any) => ({ id: m.id, status: m.status, groupKey: m.groupKey ?? null })),
+                matches: (s.matches ?? []).map((m: any) => ({ id: m.id, status: m.status, groupKey: m.groupKey ?? null, roundIndex: m.roundIndex })),
               })),
             }}
             teams={t_.teams}

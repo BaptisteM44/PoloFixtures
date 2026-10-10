@@ -148,7 +148,7 @@ export default async function TournamentPage({
         ? { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true, activeCard: true, whbpcCard: true } } }, orderBy: { createdAt: "asc" as const } }
         : false,
       hostClub: { select: { id: true, name: true, logoPath: true } },
-      stages: { orderBy: { order: "asc" }, include: { entries: true, matches: { select: { id: true, status: true, groupKey: true } } } },
+      stages: { orderBy: { order: "asc" }, include: { entries: true, matches: { select: { id: true, status: true, groupKey: true, roundIndex: true } } } },
     }
   }) as any;
 

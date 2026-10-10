@@ -1015,7 +1015,8 @@
     "swap_team_a": "Primeira equipa",
     "swap_team_b": "Segunda equipa",
     "swap_do": "Trocar",
-    "swap_hint": "Enquanto nenhum jogo da etapa tiver começado: grupo, jogos e lugar no quadro são trocados."
+    "swap_hint": "Enquanto nenhum jogo da etapa tiver começado: grupo, jogos e lugar no quadro são trocados.",
+    "pipeline_launch_group_hint": "Última ronda em curso: boa altura para lançar o grupo {group}."
   },
   "registration": {
     "section_title": "Inscrever a minha equipa",

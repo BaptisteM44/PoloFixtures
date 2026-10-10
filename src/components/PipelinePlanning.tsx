@@ -387,15 +387,26 @@ export function PipelinePlanning({
                 const matchGroups = new Set((stage.matches ?? []).map((m: any) => m.groupKey ?? ""));
                 const nextGroup = entryGroups.find((g) => g && !matchGroups.has(g));
                 if (!nextGroup) return null;
-                const launchedDone = (stage.matches ?? []).length > 0 && (stage.matches ?? []).every((m: any) => m.status === "FINISHED");
+                const ms = (stage.matches ?? []) as any[];
+                const launchedDone = ms.length > 0 && ms.every((m) => m.status === "FINISHED");
+                // Le groupe en cours entame son dernier round : c'est en général le
+                // moment de lancer le suivant (l'orga reste maître du clic).
+                const maxRound = Math.max(0, ...ms.map((m) => m.roundIndex ?? 0));
+                const lastRound = stage.type === "SWISS"
+                  ? maxRound >= Number((stage.config as any)?.rounds ?? 0)
+                  : maxRound > 0 && ms.filter((m) => (m.roundIndex ?? 0) < maxRound).every((m) => m.status === "FINISHED");
+                const timeToLaunch = launchedDone || lastRound;
                 return (
-                  <button className={launchedDone ? "primary" : "ghost"} style={{ fontSize: 13 }} disabled={pending}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (window.confirm(t("pipeline_launch_group_confirm", { group: nextGroup }))) act(() => launchGroupAction(stage.order));
-                    }}>
-                    ▶ {t("pipeline_launch_group", { group: nextGroup })}
-                  </button>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <button className={timeToLaunch ? "primary" : "ghost"} style={{ fontSize: 13 }} disabled={pending}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(t("pipeline_launch_group_confirm", { group: nextGroup }))) act(() => launchGroupAction(stage.order));
+                      }}>
+                      ▶ {t("pipeline_launch_group", { group: nextGroup })}
+                    </button>
+                    {timeToLaunch && !launchedDone && <small className="meta">{t("pipeline_launch_group_hint", { group: nextGroup })}</small>}
+                  </span>
                 );
               })()}
               {isPendingStage && updateStageAction && !isEditing && (

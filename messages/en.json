@@ -1015,7 +1015,8 @@
     "swap_team_a": "First team",
     "swap_team_b": "Second team",
     "swap_do": "Swap",
-    "swap_hint": "As long as no match of the stage has started: group, matches and bracket spot are swapped."
+    "swap_hint": "As long as no match of the stage has started: group, matches and bracket spot are swapped.",
+    "pipeline_launch_group_hint": "Last round under way: a good time to launch group {group}."
   },
   "registration": {
     "section_title": "Register my team",

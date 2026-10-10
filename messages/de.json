@@ -1015,7 +1015,8 @@
     "swap_team_a": "Erstes Team",
     "swap_team_b": "Zweites Team",
     "swap_do": "Tauschen",
-    "swap_hint": "Solange kein Spiel der Etappe begonnen hat: Gruppe, Spiele und Bracket-Platz werden getauscht."
+    "swap_hint": "Solange kein Spiel der Etappe begonnen hat: Gruppe, Spiele und Bracket-Platz werden getauscht.",
+    "pipeline_launch_group_hint": "Letzte Runde läuft: guter Zeitpunkt, um Gruppe {group} zu starten."
   },
   "registration": {
     "section_title": "Mein Team anmelden",
