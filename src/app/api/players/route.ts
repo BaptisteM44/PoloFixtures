@@ -4,6 +4,23 @@ import { toSlug } from "@/lib/utils";
 import { auth } from "@/lib/auth";
 import { apiMsg } from "@/lib/api-messages";
 
+// Lettres accentuées → lettre de base (minuscules ; on compare en lower()).
+const ACCENTED = "àáâãäåāăąçćčďđèéêëēėęěìíîïīįıñńňòóôõöøōőùúûüūůűųýÿžźżśšşřł";
+const PLAIN    = "aaaaaaaaacccddeeeeeeeeiiiiiiinnnoooooooouuuuuuuuyyzzzsssrl";
+
+/** Ids des joueurs dont le nom ou les surnoms contiennent la recherche, sans
+ *  tenir compte des accents ni de la casse (translate() natif de PostgreSQL :
+ *  pas d'extension à installer). */
+async function accentInsensitiveMatches(search: string): Promise<string[]> {
+  const rows = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT id FROM "Player"
+    WHERE strpos(translate(lower(name), ${ACCENTED}, ${PLAIN}), translate(lower(${search}), ${ACCENTED}, ${PLAIN})) > 0
+       OR strpos(translate(lower(coalesce(aliases, '')), ${ACCENTED}, ${PLAIN}), translate(lower(${search}), ${ACCENTED}, ${PLAIN})) > 0
+    LIMIT 500
+  `;
+  return rows.map((r) => r.id);
+}
+
 export async function GET(request: Request) {
   const session = await auth();
   const isAdmin = session?.user?.role === "ADMIN";
@@ -50,17 +67,9 @@ export async function GET(request: Request) {
     // (OR slug null : un NOT seul exclurait aussi les joueurs sans slug.)
     OR: [{ slug: null }, { NOT: { slug: { startsWith: "sandbox-" } } }],
     ...statusFilter,
-    // Nom affiché OU autres noms / surnoms (jamais renvoyés, seulement cherchables).
-    ...(search
-      ? {
-          AND: [{
-            OR: [
-              { name: { contains: search, mode: "insensitive" as const } },
-              { aliases: { contains: search, mode: "insensitive" as const } },
-            ],
-          }],
-        }
-      : {}),
+    // Nom affiché OU autres noms / surnoms, sans tenir compte des accents
+    // (« Beatrice » trouve « Béatrice ») : voir accentInsensitiveMatches.
+    ...(search ? { AND: [{ id: { in: await accentInsensitiveMatches(search) } }] } : {}),
     // Les deux filtres sur id se combinent (avant, le second écrasait le premier).
     ...(excludedPlayerIds.length > 0 || continentPlayerIds !== undefined
       ? {
