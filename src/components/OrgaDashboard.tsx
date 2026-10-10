@@ -1928,6 +1928,7 @@ export function OrgaDashboard({
                     <TournamentFormatTab
                       tournamentId={tournament.id}
                       courtsCount={tournament.courtsCount ?? 2}
+                      teamCount={selectedTeams > 0 ? selectedTeams : tournament.maxTeams}
                       hasPlayedMatches={false}
                       currentStages={stages.map((s: any) => ({ name: s.name, type: s.type, config: s.config, entryRules: s.entryRules }))}
                       applyPresetAction={applyPipelinePresetAction!}
@@ -1939,6 +1940,7 @@ export function OrgaDashboard({
                 <TournamentFormatTab
                   tournamentId={tournament.id}
                   courtsCount={tournament.courtsCount ?? 2}
+                  teamCount={selectedTeams > 0 ? selectedTeams : tournament.maxTeams}
                   hasPlayedMatches={false}
                   currentStages={stages.map((s: any) => ({ name: s.name, type: s.type, config: s.config, entryRules: s.entryRules }))}
                   applyPresetAction={applyPipelinePresetAction!}

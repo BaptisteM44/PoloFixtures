@@ -1,4 +1,5 @@
 "use client";
+import { FormatFlow } from "@/components/FormatFlow";
 
 /**
  * Pilotage du pipeline d'étapes (refonte formats) : timeline des étapes,
@@ -245,6 +246,14 @@ export function PipelinePlanning({
         </div>
       )}
       {error && <p style={{ color: "var(--danger)", fontSize: 12, padding: "8px 0" }}>{error}</p>}
+      <details className="panel format-flow-details">
+        <summary>🧭 {t("pipeline_flow_summary")}</summary>
+        <FormatFlow
+          stages={sorted.map((s: any) => ({ name: s.name, type: s.type, config: s.config ?? {}, entryRules: s.entryRules }))}
+          teamCount={((tournament as any).teams ?? []).filter((x: any) => x.selected !== false).length || (tournament as any).maxTeams || 8}
+          audience="orga"
+        />
+      </details>
       {sorted.map((stage) => {
         const color = STAGE_STATUS_COLOR[stage.status] ?? STAGE_STATUS_COLOR.PENDING;
         const isOpen = openOrder === stage.order;

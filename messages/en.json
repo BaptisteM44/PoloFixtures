@@ -1004,7 +1004,8 @@
     "pipeline_tie_text": "{teams}: perfect tie for place {rank} in “{stage}”.",
     "pipeline_tie_hint": "The stage didn't start on its own. Break the tie (shoot-out: add a goal to the winner in one of its matches), or launch anyway: the entry order will decide.",
     "final_ranking_title": "Final standings",
-    "final_ranking_tied": "tied"
+    "final_ranking_tied": "tied",
+    "pipeline_flow_summary": "Format overview (who goes where, number of matches, issues)"
   },
   "registration": {
     "section_title": "Register my team",
@@ -3395,5 +3396,33 @@
     "cand_excluded": "Exempt",
     "cand_done": "no matches left to play",
     "cand_load": "{count, plural, one {# duty} other {# duties}}"
+  },
+  "format_flow": {
+    "title_public": "How the tournament works",
+    "title_orga": "Format overview",
+    "based_on": "Planned for {count} teams.",
+    "simulate_for": "Computed for",
+    "total": "≈ {count} matches in total",
+    "teams": "{count, plural, one {# team} other {# teams}}",
+    "groups": "{count} groups of {sizes}",
+    "rounds": "{count, plural, one {# round} other {# rounds}}",
+    "matches": "≈ {count} matches",
+    "type_RR": "Round robin",
+    "type_SWISS": "Swiss system: opponents of the same level, no rematch",
+    "type_CROSS_POOL": "Cross matches between groups",
+    "type_PLACEMENT": "Placement matches (1st vs 1st, 2nd vs 2nd…)",
+    "type_SE": "Single elimination",
+    "type_SE_third": "Single elimination + 3rd place match",
+    "type_DE": "Double elimination: you're out after two losses",
+    "out_ranks": "Places {from} to {to} → {stage}",
+    "out_ranks_group": "Places {from} to {to} of group {group} → {stage}",
+    "rest_ranked": "The others finish ranked from this stage.",
+    "final_stage": "The winner wins the tournament.",
+    "warn_range_beyond": "“{stage}” takes places {from} to {to} of “{source}”, which will only have {size}: only {size} will go through.",
+    "warn_range_empty": "“{stage}” takes teams from place {from} of “{source}”, which will only have {size}: nobody will go through.",
+    "warn_swiss_too_long": "{rounds} rounds is too many: beyond {max}, teams will have to play each other again.",
+    "warn_overlap": "Places {from} to {to} of “{source}” are already taken by “{other}”: teams would play two stages at once.",
+    "warn_too_small": "Only {teams} team(s) in this stage: at least {min} are needed.",
+    "warn_cross_pool_groups": "A cross-pool needs two groups as input."
   }
 }

@@ -1004,7 +1004,8 @@
     "pipeline_tie_text": "{teams} : égalité parfaite pour la {rank}e place de « {stage} ».",
     "pipeline_tie_hint": "L'étape ne s'est pas lancée toute seule. Départagez-les (tir au but : ajoutez un but au vainqueur dans un de ses matchs), ou lancez quand même : l'ordre d'entrée tranchera.",
     "final_ranking_title": "Classement final",
-    "final_ranking_tied": "ex æquo"
+    "final_ranking_tied": "ex æquo",
+    "pipeline_flow_summary": "Aperçu du parcours (qui va où, nombre de matchs, incohérences)"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -3396,5 +3397,33 @@
     "cand_excluded": "Dispensée",
     "cand_done": "plus de match à jouer",
     "cand_load": "{count, plural, =0 {0 arbitrage} one {# arbitrage} other {# arbitrages}}"
+  },
+  "format_flow": {
+    "title_public": "Comment se joue le tournoi",
+    "title_orga": "Aperçu du parcours",
+    "based_on": "Prévu pour {count} équipes.",
+    "simulate_for": "Calculé pour",
+    "total": "≈ {count} matchs au total",
+    "teams": "{count, plural, one {# équipe} other {# équipes}}",
+    "groups": "{count} groupes de {sizes}",
+    "rounds": "{count, plural, one {# round} other {# rounds}}",
+    "matches": "≈ {count} matchs",
+    "type_RR": "Chacun contre chacun",
+    "type_SWISS": "Système suisse : adversaires de même niveau, sans revanche",
+    "type_CROSS_POOL": "Matchs croisés entre les groupes",
+    "type_PLACEMENT": "Matchs de classement (1er contre 1er, 2e contre 2e…)",
+    "type_SE": "Élimination directe",
+    "type_SE_third": "Élimination directe + petite finale",
+    "type_DE": "Double élimination : il faut perdre deux fois pour sortir",
+    "out_ranks": "Rangs {from} à {to} → {stage}",
+    "out_ranks_group": "Rangs {from} à {to} du groupe {group} → {stage}",
+    "rest_ranked": "Les autres terminent classés d'après cette étape.",
+    "final_stage": "Le vainqueur remporte le tournoi.",
+    "warn_range_beyond": "« {stage} » prend les rangs {from} à {to} de « {source} », qui n'en aura que {size} : seulement {size} y entreront.",
+    "warn_range_empty": "« {stage} » prend les équipes à partir de la {from}e place de « {source} », qui n'en aura que {size} : personne n'y entrera.",
+    "warn_swiss_too_long": "{rounds} rounds, c'est trop : au-delà de {max}, des équipes devront se rejouer.",
+    "warn_overlap": "Les rangs {from} à {to} de « {source} » sont déjà pris par « {other} » : des équipes joueraient deux étapes à la fois.",
+    "warn_too_small": "Seulement {teams} équipe(s) dans cette étape : il en faut au moins {min}.",
+    "warn_cross_pool_groups": "Le cross-pool a besoin de deux groupes en entrée."
   }
 }

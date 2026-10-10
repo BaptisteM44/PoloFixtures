@@ -1,4 +1,5 @@
 "use client";
+import { FormatFlow } from "@/components/FormatFlow";
 
 /**
  * Onglet « Format » du dashboard orga (tournois pipeline) : choisir un preset
@@ -23,9 +24,12 @@ export function TournamentFormatTab({
   currentStages,
   applyPresetAction,
   setPipelineAction,
+  teamCount = 8,
 }: {
   tournamentId: string;
   courtsCount: number;
+  /** Équipes attendues (sélectionnées, sinon le maximum) : base de l'aperçu du parcours. */
+  teamCount?: number;
   hasPlayedMatches: boolean;
   currentStages: StageLite[];
   applyPresetAction: (presetKey: string) => Promise<{ ok?: boolean; error?: string }>;
@@ -106,6 +110,7 @@ export function TournamentFormatTab({
           {t("format_custom_title")}
         </p>
         <PipelineStageList stages={stages} courtsCount={courtsCount} onChange={setStages} />
+        <FormatFlow stages={stages.map(({ name, type, config, entryRules }) => ({ name, type, config, entryRules }) as never)} teamCount={teamCount} audience="orga" />
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <button className="primary" disabled={pending} onClick={saveCustom}>
             {pending ? "…" : t("format_save")}

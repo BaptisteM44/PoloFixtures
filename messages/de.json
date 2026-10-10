@@ -1004,7 +1004,8 @@
     "pipeline_tie_text": "{teams}: perfekter Gleichstand um Platz {rank} in „{stage}“.",
     "pipeline_tie_hint": "Die Etappe wurde nicht automatisch gestartet. Entscheide den Gleichstand (Penalty: gib dem Sieger in einem seiner Spiele ein Tor dazu) oder starte trotzdem: dann entscheidet die Setzreihenfolge.",
     "final_ranking_title": "Endstand",
-    "final_ranking_tied": "geteilt"
+    "final_ranking_tied": "geteilt",
+    "pipeline_flow_summary": "Ablauf-Vorschau (wer wohin kommt, Anzahl Spiele, Probleme)"
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -3400,5 +3401,33 @@
     "cand_excluded": "Befreit",
     "cand_done": "keine Spiele mehr",
     "cand_load": "{count, plural, one {# Einsatz} other {# Einsätze}}"
+  },
+  "format_flow": {
+    "title_public": "So läuft das Turnier",
+    "title_orga": "Ablauf-Vorschau",
+    "based_on": "Geplant für {count} Teams.",
+    "simulate_for": "Berechnet für",
+    "total": "≈ {count} Spiele insgesamt",
+    "teams": "{count, plural, one {# Team} other {# Teams}}",
+    "groups": "{count} Gruppen à {sizes}",
+    "rounds": "{count, plural, one {# Runde} other {# Runden}}",
+    "matches": "≈ {count} Spiele",
+    "type_RR": "Jeder gegen jeden",
+    "type_SWISS": "Schweizer System: Gegner auf gleichem Niveau, keine Revanche",
+    "type_CROSS_POOL": "Überkreuzspiele zwischen den Gruppen",
+    "type_PLACEMENT": "Platzierungsspiele (1. gegen 1., 2. gegen 2.…)",
+    "type_SE": "K.-o.-System",
+    "type_SE_third": "K.-o.-System + Spiel um Platz 3",
+    "type_DE": "Double Elimination: erst nach zwei Niederlagen raus",
+    "out_ranks": "Plätze {from} bis {to} → {stage}",
+    "out_ranks_group": "Plätze {from} bis {to} der Gruppe {group} → {stage}",
+    "rest_ranked": "Die anderen werden nach dieser Etappe platziert.",
+    "final_stage": "Der Sieger gewinnt das Turnier.",
+    "warn_range_beyond": "„{stage}“ nimmt die Plätze {from} bis {to} aus „{source}“, das nur {size} haben wird: nur {size} kommen weiter.",
+    "warn_range_empty": "„{stage}“ nimmt Teams ab Platz {from} aus „{source}“, das nur {size} haben wird: niemand kommt weiter.",
+    "warn_swiss_too_long": "{rounds} Runden sind zu viele: ab {max} müssen Teams erneut gegeneinander spielen.",
+    "warn_overlap": "Die Plätze {from} bis {to} aus „{source}“ sind schon von „{other}“ belegt: Teams würden zwei Etappen gleichzeitig spielen.",
+    "warn_too_small": "Nur {teams} Team(s) in dieser Etappe: mindestens {min} nötig.",
+    "warn_cross_pool_groups": "Ein Cross-Pool braucht zwei Gruppen als Eingang."
   }
 }

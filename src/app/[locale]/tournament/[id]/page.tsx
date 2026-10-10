@@ -4,6 +4,7 @@ import { TournamentGallery } from "@/components/TournamentGallery";
 import { RefereeTab } from "@/components/RefereeTab";
 import { pipelineTieWarnings, getPipeline, finalRanking } from "@/engine/pipeline-server";
 import { FinalRankingTable } from "@/components/FinalRankingTable";
+import { FormatFlow } from "@/components/FormatFlow";
 import { parseRefereeSettings } from "@/lib/referees";
 import { galleryPhase } from "@/lib/tournament-photos";
 import { tournamentTimezone } from "@/lib/timezone";
@@ -588,6 +589,18 @@ export default async function TournamentPage({
       {/* ── INFO TAB — 12-column flexible grid ── */}
       {tab === "info" && (
         <div className="info-layout">
+          {/* Format du tournoi, connu à l'avance : comment ça se joue, qui va où */}
+          {isPipeline && ((tournament as any).stages ?? []).length > 0 && (
+            <div className="info-tile col-span-12">
+              <div className="panel">
+                <FormatFlow
+                  stages={((tournament as any).stages as any[]).map((s) => ({ name: s.name, type: s.type, config: s.config ?? {}, entryRules: s.entryRules }))}
+                  teamCount={(isLaunched || selectionMade) && selectedTeams.length > 0 ? selectedTeams.length : tournament.maxTeams}
+                  audience="public"
+                />
+              </div>
+            </div>
+          )}
 
           {/* ── LEFT COLUMN (span 6) — Lieux, FAQ, Live ── */}
           <div className="info-tile col-span-6">

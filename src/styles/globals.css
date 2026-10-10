@@ -11432,3 +11432,23 @@ a.header-icon-btn { text-decoration: none; }
   .ref-sheet-backdrop { align-items: flex-end; }
   .ref-sheet { width: 100%; max-height: 88vh; border-radius: 16px 16px 0 0; border-bottom: 0; }
 }
+
+/* Parcours du tournoi (joueurs : « Comment se joue le tournoi » ; orga : aperçu) */
+.format-flow { display: grid; gap: 10px; }
+.format-flow h3 { margin: 0; }
+.format-flow .meta { margin: 0; }
+.format-flow__count input { width: 64px; margin-left: 4px; }
+.format-flow__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: none; }
+.format-flow__stage { padding: 10px 12px; border: 1.5px solid var(--border-light); border-radius: var(--radius); background: var(--surface); display: grid; gap: 4px; }
+.format-flow__stage.has-warn { border-color: var(--danger); }
+.format-flow__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.format-flow__num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 12px; font-weight: 800; }
+.format-flow__type { font-size: 13px; color: var(--text-muted); }
+.format-flow__facts { margin: 0; font-size: 13px; font-weight: 600; }
+.format-flow__out { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 13px; }
+.format-flow__out .meta { font-size: 12px; }
+.format-flow__final { margin: 0; font-size: 13px; font-weight: 700; }
+.format-flow__warn { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; font-size: 12px; color: var(--danger); font-weight: 600; }
+.format-flow-details { padding: 12px 16px; }
+.format-flow-details > summary { cursor: pointer; font-weight: 700; font-size: 14px; }
+.format-flow-details[open] > summary { margin-bottom: 10px; }
