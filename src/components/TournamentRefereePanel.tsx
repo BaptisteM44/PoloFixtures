@@ -13,7 +13,7 @@ type PlayerInfo = { id: string; name: string };
 type TeamInfo = { id: string; name: string; color: string | null; players: PlayerInfo[] };
 type MatchEvent = { id: string; type: string; matchClockSec: number; payload: Record<string, unknown>; createdAt?: string };
 type MatchInfo = {
-  id: string; phase: string; bracketSide?: string | null; roundIndex: number; courtName: string;
+  id: string; phase: string; bracketSide?: string | null; stageType?: string | null; roundIndex: number; courtName: string;
   dayIndex: string; startAt: string; status: string;
   teamAId: string | null; teamBId: string | null;
   teamAName: string | null; teamBName: string | null;
@@ -89,7 +89,11 @@ function matchLabel(m: MatchInfo, t: (key: string) => string, num?: number) {
   const phaseKey = PHASE_KEYS[m.phase];
   const prefix = num != null ? `#${num} · ` : "";
   // Équipes en tête : sur mobile, le <select> coupe la fin du libellé.
-  return `${prefix}${a} vs ${b} — ${m.courtName} · ${phaseKey ? t(phaseKey) : m.phase} R${m.roundIndex + 1} · ${dayKey ? t(dayKey) : m.dayIndex}`;
+  // Tournoi en étapes : le vrai jour du match (dayIndex y vaut toujours « SAT »).
+  const day = m.phase === "STAGE"
+    ? new Date(m.startAt).toLocaleDateString(undefined, { weekday: "short" })
+    : (dayKey ? t(dayKey) : m.dayIndex);
+  return `${prefix}${a} vs ${b} — ${m.courtName} · ${phaseKey ? t(phaseKey) : m.phase} R${m.roundIndex + 1} · ${day}`;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────

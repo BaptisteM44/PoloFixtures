@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Match, MatchEvent, Team } from "@prisma/client";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { formatTime } from "@/lib/utils";
 import { MatchEditPanel, type MatchForEdit } from "./MatchEditPanel";
 import { MatchRecapModal } from "./MatchRecapModal";
@@ -65,6 +65,12 @@ export type MatchWithTeams = Match & {
   coReferee?: { id: string; name: string } | null;
   refereeTeam?: { id: string; name: string } | null;
 };
+
+/** Date locale du match (AAAA-MM-JJ), pour filtrer par jour réel. */
+function dayKeyOf(startAt: Date | string): string {
+  const d = new Date(startAt);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 const PHASE_LABEL: Record<string, string> = {
   POOL: "Poule", SWISS: "Swiss", CROSS_POOL: "Cross-pool", BRACKET: "Tableau",
@@ -143,7 +149,9 @@ export function ScheduleBoard({
   refereesVisible?: boolean;
 }) {
   const t = useTranslations("tournament");
+  const locale = useLocale();
   const [matches, setMatches] = useState<MatchWithTeams[]>(initialMatches);
+  const hasStages = (stages ?? []).length > 0 && matches.some((m) => m.phase === "STAGE");
   const [filterTeamId, setFilterTeamId] = useState("");
   const [filterDay, setFilterDay] = useState("ALL");
   const [filterPhase, setFilterPhase] = useState("ALL");
@@ -289,8 +297,10 @@ export function ScheduleBoard({
       // Hide GF reset match until it has teams (i.e. LB champion actually won the GF)
       if ((match as any).bracketSide === "BG" && !match.teamAId && !match.teamBId) return false;
       if (filterTeamId && match.teamAId !== filterTeamId && match.teamBId !== filterTeamId) return false;
-      if (filterDay !== "ALL" && match.dayIndex !== filterDay) return false;
-      if (filterPhase !== "ALL" && match.phase !== filterPhase) return false;
+      // Jour réel (date du match), pas le champ dayIndex figé.
+      if (filterDay !== "ALL" && dayKeyOf(match.startAt) !== filterDay) return false;
+      // Tournoi en étapes : on filtre par étape (sinon par phase de l'ancien système).
+      if (filterPhase !== "ALL" && (hasStages ? match.stageId !== filterPhase : match.phase !== filterPhase)) return false;
       return true;
     });
   }, [matches, filterTeamId, filterDay, filterPhase]);
@@ -396,6 +406,13 @@ export function ScheduleBoard({
   }, [matches, stageOrderById]);
 
   const phases = [...new Set(matches.map((m) => m.phase))];
+  // Étapes présentes dans le planning, dans l'ordre du format.
+  const stageOptions = (stages ?? []).filter((s) => matches.some((m) => m.stageId === s.id)).sort((a, b) => a.order - b.order);
+  const dayOptions = [...new Set(matches.map((m) => dayKeyOf(m.startAt)))].sort();
+  const dayLabel = (key: string) => {
+    const [y, mo, d] = key.split("-").map(Number);
+    return new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "short" }).format(new Date(y, mo - 1, d));
+  };
 
   // For multi-court: group matches by court within a round
   const byCourtInRound = (roundMatches: MatchWithTeams[]) => {
@@ -581,27 +598,28 @@ export function ScheduleBoard({
           <label>
             {t("filter_team")}
             <select value={filterTeamId} onChange={(e) => setFilterTeamId(e.target.value)}>
-              <option value="">Toutes</option>
+              <option value="">{t("filter_all_teams")}</option>
               {teams.filter((tm) => (tm as any).selected !== false).map((team) => (
                 <option key={team.id} value={team.id}>{team.name}</option>
               ))}
             </select>
           </label>
+          {dayOptions.length > 1 && (
+            <label>
+              {t("filter_day")}
+              <select value={filterDay} onChange={(e) => setFilterDay(e.target.value)}>
+                <option value="ALL">{t("filter_all_days")}</option>
+                {dayOptions.map((d) => <option key={d} value={d}>{dayLabel(d)}</option>)}
+              </select>
+            </label>
+          )}
           <label>
-            Jour
-            <select value={filterDay} onChange={(e) => setFilterDay(e.target.value)}>
-              <option value="ALL">Tous</option>
-              <option value="SAT">Samedi</option>
-              <option value="SUN">Dimanche</option>
-            </select>
-          </label>
-          <label>
-            Phase
+            {hasStages ? t("filter_stage") : t("filter_phase")}
             <select value={filterPhase} onChange={(e) => setFilterPhase(e.target.value)}>
-              <option value="ALL">Toutes</option>
-              {phases.map((p) => (
-                <option key={p} value={p}>{PHASE_LABEL[p] ?? p}</option>
-              ))}
+              <option value="ALL">{t("filter_all_phases")}</option>
+              {hasStages
+                ? stageOptions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)
+                : phases.map((p) => <option key={p} value={p}>{PHASE_LABEL[p] ?? p}</option>)}
             </select>
           </label>
         </div>

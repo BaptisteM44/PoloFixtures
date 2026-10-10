@@ -3,6 +3,7 @@
  * avec planning multi-terrains et liens vainqueur/perdant câblés.
  * Sert au legacy (phase BRACKET) comme au pipeline (phase STAGE + stageId).
  */
+import { slotMinutes } from "@/lib/match-timing";
 import type { MatchPhase, Prisma } from "@prisma/client";
 import type { BracketPlan } from "./bracket-core";
 
@@ -23,7 +24,7 @@ export async function persistBracketPlan(
   params: PersistPlanParams
 ): Promise<{ created: number }> {
   const { tournamentId, plan, seededTeamIds, courtNames, startAt, gameDurationMin } = params;
-  const slotMin = gameDurationMin + 5;
+  const slotMin = slotMinutes(gameDurationMin);
   const courts = Math.max(courtNames.length, 1);
 
   // Planning : matchs émis en ordre chronologique ; curseur avancé par round.

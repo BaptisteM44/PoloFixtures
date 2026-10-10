@@ -156,8 +156,13 @@ export function swissPairings(
 
 /**
  * Chaque équipe du groupe A affronte `opponents` équipes du groupe B, par
- * décalage de rang : round r (0-based) → A[i] vs B[(i + r) % nB].
- * Les deux groupes arrivent TRIÉS par classement.
+ * décalage de rang : round r (0-based) → A[i] vs B[(i + r) % n], n = taille
+ * du plus grand groupe. Les deux groupes arrivent TRIÉS par classement.
+ *
+ * Groupes inégaux (ex: 7 contre 6) : l'équipe en surnombre ne joue pas ce
+ * round (BYE, compté 1-0 au classement) — et ce n'est pas toujours la même,
+ * le décalage la fait tourner. Avant, une équipe du petit groupe jouait deux
+ * fois dans le même round.
  */
 export function crossPoolPairings(
   rankedA: string[],
@@ -165,18 +170,25 @@ export function crossPoolPairings(
   opponents: number
 ): Pairing[] {
   const out: Pairing[] = [];
+  const nA = rankedA.length;
   const nB = rankedB.length;
-  if (nB === 0 || rankedA.length === 0) return out;
+  if (nB === 0 || nA === 0) return out;
+  const n = Math.max(nA, nB);
 
-  const rounds = Math.min(opponents, nB);
+  const rounds = Math.min(opponents, n);
   for (let r = 0; r < rounds; r++) {
-    for (let i = 0; i < rankedA.length; i++) {
+    let pos = 0;
+    for (let i = 0; i < n; i++) {
+      const a = i < nA ? rankedA[i] : null;
+      const j = (i + r) % n;
+      const b = j < nB ? rankedB[j] : null;
+      if (!a && !b) continue;
       out.push({
         roundIndex: r + 1,
-        positionInRound: i,
+        positionInRound: pos++,
         groupKey: "",
-        teamAId: rankedA[i],
-        teamBId: rankedB[(i + r) % nB],
+        teamAId: (a ?? b)!,
+        teamBId: a && b ? b : null, // null = BYE
       });
     }
   }

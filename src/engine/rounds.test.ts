@@ -175,3 +175,24 @@ describe("planSE", () => {
     expect(semis).toHaveLength(2);
   });
 });
+
+describe("crossPoolPairings — groupes inégaux", () => {
+  it("7 contre 6 : personne ne joue deux fois dans un round, l'équipe en surnombre a un BYE qui tourne", () => {
+    const A = ["a1", "a2", "a3", "a4", "a5", "a6", "a7"];
+    const B = ["b1", "b2", "b3", "b4", "b5", "b6"];
+    const ps = crossPoolPairings(A, B, 3);
+    const byes: string[] = [];
+    for (const r of [1, 2, 3]) {
+      const round = ps.filter((p) => p.roundIndex === r);
+      const teams = round.flatMap((p) => [p.teamAId, p.teamBId].filter(Boolean));
+      expect(new Set(teams).size).toBe(teams.length); // jamais deux fois
+      expect(teams.length).toBe(13); // tout le monde présent (12 en match + 1 BYE)
+      const bye = round.filter((p) => p.teamBId === null);
+      expect(bye).toHaveLength(1);
+      byes.push(bye[0].teamAId);
+    }
+    expect(new Set(byes).size).toBe(3); // pas toujours la même équipe
+    // Round 1 : même rang contre même rang
+    expect(ps.filter((p) => p.roundIndex === 1 && p.teamBId).map((p) => [p.teamAId, p.teamBId])).toContainEqual(["a1", "b1"]);
+  });
+});

@@ -5,6 +5,7 @@
  * (désignation, « c'est bientôt à vous »).
  */
 import { prisma } from "@/lib/db";
+import { slotMinutes } from "@/lib/match-timing";
 import { createNotification } from "@/lib/notify";
 import { tournamentTimezone } from "@/lib/timezone";
 import {
@@ -39,9 +40,9 @@ export function parseRefereeSettings(raw: unknown): RefereeSettings {
 
 export const hasAutoRule = (s: RefereeSettings) => Object.values(s.rules).some((r) => r !== "manual");
 
-/** Durée d'un créneau : le match + le battement du recalage automatique (4 min). */
+/** Durée d'un créneau : le match + la pause entre deux matchs (lib/match-timing). */
 export const slotMsFor = (gameDurationMin: number | null | undefined) =>
-  gameDurationMin ? (gameDurationMin + 4) * 60_000 : DEFAULT_SLOT_MS;
+  gameDurationMin ? slotMinutes(gameDurationMin) * 60_000 : DEFAULT_SLOT_MS;
 
 export const refOptions = (s: RefereeSettings, gameDurationMin: number | null | undefined): RefOptions =>
   ({ rules: s.rules, rest: s.rest, excluded: s.excluded, slotMs: slotMsFor(gameDurationMin) });

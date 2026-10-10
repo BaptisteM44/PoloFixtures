@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { CHANGEOVER_MIN, slotMinutes } from "@/lib/match-timing";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { publishMatchUpdate, publishNewMatches } from "@/lib/sse";
@@ -31,7 +32,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const match = await prisma.match.findUnique({ where: { id: params.id }, include: { tournament: { select: { gfReset: true } } } });
+  const match = await prisma.match.findUnique({ where: { id: params.id }, include: { tournament: { select: { gfReset: true } }, stage: { select: { type: true } } } });
   if (!match) return new Response("Not found", { status: 404 });
 
   // Auth: allow REF/ADMIN/ORGA roles OR tournament creator/co-organizer
@@ -276,7 +277,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       where: { id: match.tournamentId },
       select: { gameDurationMin: true },
     });
-    const slotMin = (tournament?.gameDurationMin ?? 15) + 4;
+    const slotMin = slotMinutes(tournament?.gameDurationMin);
 
     const upcomingOnCourt = await prisma.match.findMany({
       where: {
@@ -289,7 +290,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     if (upcomingOnCourt.length > 0) {
       const realFinishTime = new Date();
-      let cursor = new Date(realFinishTime.getTime() + 4 * 60 * 1000);
+      let cursor = new Date(realFinishTime.getTime() + CHANGEOVER_MIN * 60 * 1000);
 
       for (let i = 0; i < upcomingOnCourt.length; i++) {
         const m = upcomingOnCourt[i];

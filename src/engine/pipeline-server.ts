@@ -20,6 +20,7 @@ import { planSE } from "./se";
 import { planDE } from "./de";
 import { persistBracketPlan } from "./persist-plan";
 import { scheduleRounds } from "./scheduler";
+import { slotMinutes as slotMinutesFor } from "@/lib/match-timing";
 
 // ─── Types de config par étape (stockés dans Stage.config) ──────────────────
 
@@ -219,7 +220,9 @@ export async function setTournamentPipeline(
 
     await tx.tournament.update({
       where: { id: tournamentId },
-      data: { usesPipeline: true, format: "pipeline" } as never,
+      // `format` = type d'équipe (3v3, 4v4, ABC…) : on n'y touche pas. Avant,
+      // on y écrivait "pipeline", ce qui effaçait le type d'inscription.
+      data: { usesPipeline: true },
     });
 
     for (let i = 0; i < validated.stages.length; i++) {
@@ -246,7 +249,7 @@ function nextStartAt(t: PipelineTournament): Date {
   const all = t.stages.flatMap((s) => s.matches);
   if (all.length === 0) return t.dateStart < new Date() ? new Date(Date.now() + 10 * 60_000) : new Date(t.dateStart);
   const lastMs = Math.max(...all.map((m) => new Date(m.startAt).getTime()));
-  return new Date(Math.max(lastMs + (t.gameDurationMin + 5) * 60_000, Date.now()));
+  return new Date(Math.max(lastMs + (slotMinutesFor(t.gameDurationMin)) * 60_000, Date.now()));
 }
 
 function courtNamesOf(t: PipelineTournament): string[] {
@@ -287,7 +290,7 @@ async function persistPairings(
   poolIdByGroup: Map<string, string>
 ): Promise<void> {
   const allCourts = courtNamesOf(t);
-  const slotMinutes = t.gameDurationMin + 5;
+  const slotMinutes = slotMinutesFor(t.gameDurationMin);
   const groups = [...new Set(pairings.map((p) => p.groupKey))].sort();
   const stageConfig = stage.config as Record<string, unknown> | null;
   const courtMode: CourtMode = (stageConfig?.courtMode as CourtMode | undefined) ?? "sequential";
@@ -368,7 +371,9 @@ async function persistPairings(
         courtName,
         startAt: matchStart,
         dayIndex: "SAT",
-        status: p.teamBId === null ? "FINISHED" : "SCHEDULED", // BYE = terminé
+        // BYE = terminé, victoire 1-0 (comme au classement)
+        status: p.teamBId === null ? "FINISHED" : "SCHEDULED",
+        ...(p.teamBId === null ? { scoreA: 1, scoreB: 0, winnerTeamId: p.teamAId } : {}),
         teamAId: p.teamAId,
         teamBId: p.teamBId,
       },
@@ -618,7 +623,8 @@ export async function applyScore(
   if (!match || !match.stageId || !match.stage) return { error: "Match pipeline introuvable." };
   if (!match.teamAId || !match.teamBId) return { error: "Les deux équipes ne sont pas encore connues." };
 
-  const isBracket = match.stage.type === "SE" || match.stage.type === "DE";
+  // Tableau ou match de placement : il faut un vainqueur (golden goal).
+  const isBracket = match.stage.type === "SE" || match.stage.type === "DE" || match.stage.type === "PLACEMENT";
   if (isBracket && scoreA === scoreB) return { error: "Égalité interdite en bracket : un vainqueur est obligatoire." };
 
   const winnerId = scoreA > scoreB ? match.teamAId : scoreB > scoreA ? match.teamBId : null;
@@ -1176,7 +1182,7 @@ export async function rescheduleStage(
   if (pending.length === 0) return { error: "Aucun match à replanifier (tous joués)." };
 
   const courts = courtNamesOf(t);
-  const slotMinutes = t.gameDurationMin + 5;
+  const slotMinutes = slotMinutesFor(t.gameDurationMin);
   // Regroupe par round pour caler chaque round sur des créneaux successifs.
   const byRound = new Map<number, typeof pending>();
   for (const m of pending) {

@@ -993,7 +993,13 @@
     "announce_failed_list": "Pas reçu : {names}",
     "announce_recheck_failed": "Recocher seulement ces personnes (pour renvoyer plus tard)",
     "announce_copy_emails": "📋 Copier les emails cochés",
-    "announce_emails_copied": "✓ Emails copiés"
+    "announce_emails_copied": "✓ Emails copiés",
+    "filter_day": "Jour",
+    "filter_all_days": "Tous les jours",
+    "filter_stage": "Étape",
+    "filter_phase": "Phase",
+    "filter_all_phases": "Toutes",
+    "filter_all_teams": "Toutes"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",

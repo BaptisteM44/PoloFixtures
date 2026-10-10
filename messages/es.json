@@ -992,7 +992,13 @@
     "announce_failed_list": "No recibido: {names}",
     "announce_recheck_failed": "Marcar solo a estas personas (para reenviar más tarde)",
     "announce_copy_emails": "📋 Copiar los emails marcados",
-    "announce_emails_copied": "✓ Emails copiados"
+    "announce_emails_copied": "✓ Emails copiados",
+    "filter_day": "Día",
+    "filter_all_days": "Todos los días",
+    "filter_stage": "Etapa",
+    "filter_phase": "Fase",
+    "filter_all_phases": "Todas",
+    "filter_all_teams": "Todos"
   },
   "registration": {
     "section_title": "Inscribir mi equipo",

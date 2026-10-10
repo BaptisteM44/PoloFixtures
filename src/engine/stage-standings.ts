@@ -30,26 +30,47 @@ export type StandingRow = {
   losses: number;
   goalsFor: number;
   goalsAgainst: number;
+  goalDiff: number;
   points: number;
+  /** Somme des points des adversaires rencontrés (force du calendrier). */
+  buchholz: number;
+  /** Somme des points des adversaires battus. */
+  sonnebornBerger: number;
 };
 
 // ─── Étapes à points (RR / Swiss / Cross-pool) ───────────────────────────────
 
+const isBye = (m: MatchLite) => m.status === "FINISHED" && !!m.teamAId && !m.teamBId;
+
 /**
- * Classement aux points. `teamIds` fixe la population (et l'ordre en cas
- * d'égalité parfaite : l'ordre d'entrée = seed du stage fait foi).
- * Départage : points > diff > buts marqués > confrontation directe.
+ * LE classement à points — utilisé à la fois par le moteur (qui se qualifie)
+ * et par les tableaux affichés aux joueurs : les deux sont toujours identiques.
+ *
+ * `teamIds` fixe la population (et l'ordre en cas d'égalité parfaite : l'ordre
+ * d'entrée = seed du stage fait foi). Un BYE compte comme une victoire 1-0.
+ * Départage : points > différence de buts > Buchholz > Sonneborn-Berger >
+ * buts marqués > confrontation directe > ordre d'entrée.
  */
-export function pointsStandings(
+export function standingsTable(
   teamIds: string[],
   matches: MatchLite[],
   scoring: ScoringConfig = DEFAULT_SCORING
-): string[] {
+): StandingRow[] {
   const rows = new Map<string, StandingRow>();
   for (const id of teamIds) {
-    rows.set(id, { teamId: id, played: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, points: 0 });
+    rows.set(id, { teamId: id, played: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDiff: 0, points: 0, buchholz: 0, sonnebornBerger: 0 });
   }
+  const opponents = new Map<string, string[]>();
+  const defeated = new Map<string, string[]>();
+  const push = (map: Map<string, string[]>, k: string, v: string) => { if (!map.has(k)) map.set(k, []); map.get(k)!.push(v); };
 
+  for (const m of matches) {
+    // BYE = victoire 1-0 (pas d'adversaire, donc rien pour le Buchholz).
+    if (isBye(m)) {
+      const a = rows.get(m.teamAId!);
+      if (a) { a.played++; a.wins++; a.goalsFor += 1; a.points += scoring.win; }
+    }
+  }
   const finished = matches.filter((m) => m.status === "FINISHED" && m.teamAId && m.teamBId);
   for (const m of finished) {
     const a = rows.get(m.teamAId!);
@@ -59,37 +80,73 @@ export function pointsStandings(
     // pas rejoint le Swiss) — on compte quand même les stats de l'équipe
     // présente, sans créer de ligne pour l'adversaire absent.
     if (!a && !b) continue;
+    if (a && b) { push(opponents, a.teamId, b.teamId); push(opponents, b.teamId, a.teamId); }
     if (a) {
       a.played++;
       a.goalsFor += m.scoreA; a.goalsAgainst += m.scoreB;
-      if (m.scoreA > m.scoreB) { a.wins++; a.points += scoring.win; }
+      if (m.scoreA > m.scoreB) { a.wins++; a.points += scoring.win; if (b) push(defeated, a.teamId, b.teamId); }
       else if (m.scoreB > m.scoreA) { a.losses++; a.points += scoring.loss; }
       else { a.draws++; a.points += scoring.draw; }
     }
     if (b) {
       b.played++;
       b.goalsFor += m.scoreB; b.goalsAgainst += m.scoreA;
-      if (m.scoreB > m.scoreA) { b.wins++; b.points += scoring.win; }
+      if (m.scoreB > m.scoreA) { b.wins++; b.points += scoring.win; if (a) push(defeated, b.teamId, a.teamId); }
       else if (m.scoreA > m.scoreB) { b.losses++; b.points += scoring.loss; }
       else { b.draws++; b.points += scoring.draw; }
     }
   }
-
-  // BYE = victoire ? Convention existante : match sans teamB terminé = pas compté.
+  for (const r of rows.values()) {
+    r.goalDiff = r.goalsFor - r.goalsAgainst;
+    r.buchholz = (opponents.get(r.teamId) ?? []).reduce((sum, o) => sum + (rows.get(o)?.points ?? 0), 0);
+    r.sonnebornBerger = (defeated.get(r.teamId) ?? []).reduce((sum, o) => sum + (rows.get(o)?.points ?? 0), 0);
+  }
 
   const order = new Map(teamIds.map((id, i) => [id, i]));
-  const sorted = [...rows.values()].sort((x, y) => {
-    if (y.points !== x.points) return y.points - x.points;
-    const dx = x.goalsFor - x.goalsAgainst;
-    const dy = y.goalsFor - y.goalsAgainst;
-    if (dy !== dx) return dy - dx;
-    if (y.goalsFor !== x.goalsFor) return y.goalsFor - x.goalsFor;
-    // Confrontation directe
-    const h2h = headToHead(x.teamId, y.teamId, finished);
-    if (h2h !== 0) return h2h;
-    return (order.get(x.teamId) ?? 0) - (order.get(y.teamId) ?? 0);
-  });
-  return sorted.map((r) => r.teamId);
+  return [...rows.values()].sort((x, y) =>
+    compareOnResults(x, y, finished) || (order.get(x.teamId) ?? 0) - (order.get(y.teamId) ?? 0));
+}
+
+/** Compare deux lignes sur les résultats seuls (0 = égalité parfaite, que seul l'ordre d'entrée départage). */
+function compareOnResults(x: StandingRow, y: StandingRow, finished: MatchLite[]): number {
+  if (y.points !== x.points) return y.points - x.points;
+  if (y.goalDiff !== x.goalDiff) return y.goalDiff - x.goalDiff;
+  if (y.buchholz !== x.buchholz) return y.buchholz - x.buchholz;
+  if (y.sonnebornBerger !== x.sonnebornBerger) return y.sonnebornBerger - x.sonnebornBerger;
+  if (y.goalsFor !== x.goalsFor) return y.goalsFor - x.goalsFor;
+  return headToHead(x.teamId, y.teamId, finished);
+}
+
+/** Classement aux points : teamIds triés (voir standingsTable). */
+export function pointsStandings(
+  teamIds: string[],
+  matches: MatchLite[],
+  scoring: ScoringConfig = DEFAULT_SCORING
+): string[] {
+  return standingsTable(teamIds, matches, scoring).map((r) => r.teamId);
+}
+
+/**
+ * Égalités parfaites : équipes voisines au classement que RIEN ne départage
+ * (points, diff, Buchholz, Sonneborn-Berger, buts, confrontation directe) —
+ * seul l'ordre d'entrée les sépare. Renvoie les rangs (1-based) concernés,
+ * par paquets : [[4, 5]] = la 4e et la 5e sont à égalité parfaite.
+ */
+export function perfectTieRanks(
+  teamIds: string[],
+  matches: MatchLite[],
+  scoring: ScoringConfig = DEFAULT_SCORING
+): number[][] {
+  const table = standingsTable(teamIds, matches, scoring);
+  const finished = matches.filter((m) => m.status === "FINISHED" && m.teamAId && m.teamBId);
+  const out: number[][] = [];
+  let cur: number[] = [1];
+  for (let i = 1; i < table.length; i++) {
+    if (compareOnResults(table[i - 1], table[i], finished) === 0) cur.push(i + 1);
+    else { if (cur.length > 1) out.push(cur); cur = [i + 1]; }
+  }
+  if (cur.length > 1) out.push(cur);
+  return out;
 }
 
 function headToHead(a: string, b: string, finished: MatchLite[]): number {

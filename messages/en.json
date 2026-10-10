@@ -993,7 +993,13 @@
     "announce_failed_list": "Not delivered: {names}",
     "announce_recheck_failed": "Tick only these people (to resend later)",
     "announce_copy_emails": "📋 Copy ticked emails",
-    "announce_emails_copied": "✓ Emails copied"
+    "announce_emails_copied": "✓ Emails copied",
+    "filter_day": "Day",
+    "filter_all_days": "All days",
+    "filter_stage": "Stage",
+    "filter_phase": "Phase",
+    "filter_all_phases": "All",
+    "filter_all_teams": "All"
   },
   "registration": {
     "section_title": "Register my team",

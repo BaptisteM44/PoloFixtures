@@ -993,7 +993,13 @@
     "announce_failed_list": "Nicht zugestellt: {names}",
     "announce_recheck_failed": "Nur diese Personen auswählen (später erneut senden)",
     "announce_copy_emails": "📋 Ausgewählte E-Mails kopieren",
-    "announce_emails_copied": "✓ E-Mails kopiert"
+    "announce_emails_copied": "✓ E-Mails kopiert",
+    "filter_day": "Tag",
+    "filter_all_days": "Alle Tage",
+    "filter_stage": "Etappe",
+    "filter_phase": "Phase",
+    "filter_all_phases": "Alle",
+    "filter_all_teams": "Alle"
   },
   "registration": {
     "section_title": "Mein Team anmelden",
