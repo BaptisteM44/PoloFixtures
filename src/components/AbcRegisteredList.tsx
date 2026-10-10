@@ -89,7 +89,7 @@ export function AbcRegisteredList({ entries }: { entries: AbcEntry[] }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
           {active.map((e) => {
             const card = (
-              <div style={{ position: "relative" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
                 <PlayerCollectibleCard
                   name={e.player.name}
                   country={e.player.country}
@@ -104,9 +104,8 @@ export function AbcRegisteredList({ entries }: { entries: AbcEntry[] }) {
                   activeCard={e.player.activeCard}
                   whbpcData={e.player.whbpcCard ? { ...e.player.whbpcCard, hand: e.player.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
                 />
-                <div style={{ position: "absolute", top: 8, right: 8, fontWeight: 700, fontSize: 12, background: "rgba(0,0,0,0.7)", color: "#fff", borderRadius: 6, padding: "2px 7px" }}>
-                  {e.level}
-                </div>
+                {/* Sous la carte (et non par-dessus) : la carte 3D passait devant l'étiquette. */}
+                <span className="level-badge" data-level={e.level.charAt(0).toUpperCase()}>{e.level}</span>
               </div>
             );
             return e.player.slug ? (
