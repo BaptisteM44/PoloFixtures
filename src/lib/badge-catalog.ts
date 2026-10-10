@@ -160,8 +160,8 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   seven_nations:   { id: "seven_nations",   name: "Seven Nations",  emoji: "🌐", description: "Avoir joué avec des coéquipiers de 7 nationalités différentes",          category: "team",    rarity: "epic" },
   the_historian:   { id: "the_historian",   name: "The Historian",  emoji: "📚", description: "Envoyer un message dans un chat de tournoi terminé depuis 6+ mois",     category: "secret",  rarity: "rare" },
   squeaky_clean:   { id: "squeaky_clean",   name: "Squeaky Clean",  emoji: "🧹", description: "Gagner un tournoi en n'encaissant jamais plus d'1 but par match",      category: "performance", rarity: "legendary" },
-  ref_duty:        { id: "ref_duty",        name: "Ref & Player",   emoji: "🪬", description: "Arbitrer 3 matchs ET jouer 3 matchs dans la même journée",              category: "secret",  rarity: "mythic" },
-  double_duty:     { id: "double_duty",     name: "Double Duty",    emoji: "🎝️", description: "Arbitrer 5 matchs ET jouer 5 matchs dans la même journée",              category: "secret",  rarity: "legendary" },
+  ref_duty:        { id: "ref_duty",        name: "Ref & Player",   emoji: "🪬", description: "Arbitrer 3 matchs ET jouer 3 matchs dans la même journée",              category: "secret",  rarity: "rare" },
+  double_duty:     { id: "double_duty",     name: "Double Duty",    emoji: "🎝️", description: "Arbitrer 5 matchs ET jouer 5 matchs dans la même journée",              category: "secret",  rarity: "epic" },
 
   // ─────────────────────────────────────────────────────
   // 🏁 Arbitrage — badges dédiés (valorisation arbitres)
