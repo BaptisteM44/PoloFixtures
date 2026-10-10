@@ -999,7 +999,10 @@
     "filter_stage": "Etapa",
     "filter_phase": "Fase",
     "filter_all_phases": "Todas",
-    "filter_all_teams": "Todas"
+    "filter_all_teams": "Todas",
+    "pipeline_tie_title": "Empate perfeito a desempatar",
+    "pipeline_tie_text": "{teams}: empate perfeito pelo {rank}.º lugar em «{stage}».",
+    "pipeline_tie_hint": "A etapa não arrancou sozinha. Desempata (desempate por penáltis: acrescenta um golo ao vencedor num dos seus jogos) ou lança mesmo assim: decide a ordem de entrada."
   },
   "registration": {
     "section_title": "Inscrever a minha equipa",

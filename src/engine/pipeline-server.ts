@@ -14,7 +14,7 @@
 import { prisma } from "@/lib/db";
 import type { Prisma, Stage, StageEntry, Match, StageType } from "@prisma/client";
 import { resolveEntries, type EntryRules, type ResolvedEntry } from "./transitions";
-import { pointsStandings, placementStandings, bracketStandings, type MatchLite, type ScoringConfig } from "./stage-standings";
+import { pointsStandings, perfectTieRanks, placementStandings, bracketStandings, type MatchLite, type ScoringConfig } from "./stage-standings";
 import { rrRounds, swissPairings, crossPoolPairings, placementPairings, pairKey, type Pairing } from "./rounds";
 import { planSE } from "./se";
 import { planDE } from "./de";
@@ -71,53 +71,68 @@ function scoringOf(t: { scoringSystem?: string | null }): ScoringConfig {
   return t.scoringSystem === "1/0.5" ? { win: 1, draw: 0.5, loss: 0 } : { win: 3, draw: 1, loss: 0 };
 }
 
+/** Équipes d'une étape (ou d'un de ses groupes), dans l'ordre d'entrée. */
+function entryIdsOf(stage: StageFull, group?: string): string[] {
+  return stage.entries
+    .filter((e) => (group === undefined ? true : e.groupKey === group))
+    .sort((a, b) => (a.groupKey === b.groupKey ? a.slot - b.slot : a.groupKey.localeCompare(b.groupKey)))
+    .map((e) => e.teamId)
+    .filter((id): id is string => !!id);
+}
+
+/**
+ * Entrées d'un classement à points (RR / Swiss / cross-pool) : population et
+ * matchs, avec le cumul optionnel des étapes précédentes (carryPoints =
+ * depuis l'étape juste avant ; inheritFrom = depuis une étape précise, gardé
+ * pour la rétrocompat du Swiss).
+ */
+function pointsInputs(t: PipelineTournament, stage: StageFull, group?: string): { entryIds: string[]; all: MatchLite[] } {
+  const entryIds = entryIdsOf(stage, group);
+  const matches = stage.matches.filter((m) => (group === undefined ? true : m.groupKey === group)) as unknown as MatchLite[];
+  const cfg = stage.config as { carryPoints?: boolean; inheritFrom?: number };
+  const sourceOrder = cfg.inheritFrom ?? (cfg.carryPoints ? stage.order - 1 : undefined);
+  let all = [...matches];
+  if (sourceOrder !== undefined && sourceOrder >= 0) {
+    const entrySet = new Set(entryIds);
+    // Si deux équipes se réaffrontent dans CETTE étape (rematch forcé,
+    // faute d'adversaires "frais" disponibles), leur duel hérité ne doit
+    // pas être compté en plus du nouveau — on ne garde que le plus récent
+    // pour chaque paire, sinon le même résultat est compté deux fois
+    // (points/victoires fantômes, nombre de matchs incohérent).
+    const rematchedPairs = new Set(
+      matches.filter((m) => m.teamAId && m.teamBId).map((m) => pairKey(m.teamAId!, m.teamBId!)),
+    );
+    // On remonte toutes les étapes ≤ sourceOrder (cumul en cascade) et on
+    // garde tout match impliquant AU MOINS une équipe de CETTE étape —
+    // y compris contre une équipe absente (ex: tête de série qui n'a pas
+    // rejoint le Swiss) : ce match compte quand même dans l'historique de
+    // l'équipe présente (pointsStandings ignore l'adversaire absent).
+    const inherited = t.stages
+      .filter((s) => s.order <= sourceOrder)
+      .flatMap((s) => s.matches as unknown as MatchLite[])
+      .filter(
+        (m) =>
+          m.teamAId &&
+          m.teamBId &&
+          (entrySet.has(m.teamAId) || entrySet.has(m.teamBId)) &&
+          !rematchedPairs.has(pairKey(m.teamAId, m.teamBId)),
+      );
+    all = [...inherited, ...matches];
+  }
+  return { entryIds, all };
+}
+
 /** Classement d'une étape (teamIds triés). group=undefined → toutes équipes confondues. */
 export function stageStandings(t: PipelineTournament, stageOrder: number, group?: string): string[] {
   const stage = t.stages.find((s) => s.order === stageOrder);
   if (!stage) return [];
-  const entries = stage.entries
-    .filter((e) => (group === undefined ? true : e.groupKey === group))
-    .sort((a, b) => (a.groupKey === b.groupKey ? a.slot - b.slot : a.groupKey.localeCompare(b.groupKey)));
-  const entryIds = entries.map((e) => e.teamId).filter((id): id is string => !!id);
   const matches = stage.matches.filter((m) => (group === undefined ? true : m.groupKey === group)) as unknown as MatchLite[];
 
   switch (stage.type) {
     case "RR":
     case "CROSS_POOL":
     case "SWISS": {
-      // Classement à points, avec cumul optionnel des étapes précédentes
-      // (carryPoints = depuis l'étape juste avant ; inheritFrom = depuis une
-      // étape précise, gardé pour la rétrocompat du Swiss).
-      const cfg = stage.config as { carryPoints?: boolean; inheritFrom?: number };
-      const sourceOrder = cfg.inheritFrom ?? (cfg.carryPoints ? stage.order - 1 : undefined);
-      let all = [...matches];
-      if (sourceOrder !== undefined && sourceOrder >= 0) {
-        const entrySet = new Set(entryIds);
-        // Si deux équipes se réaffrontent dans CETTE étape (rematch forcé,
-        // faute d'adversaires "frais" disponibles), leur duel hérité ne doit
-        // pas être compté en plus du nouveau — on ne garde que le plus récent
-        // pour chaque paire, sinon le même résultat est compté deux fois
-        // (points/victoires fantômes, nombre de matchs incohérent).
-        const rematchedPairs = new Set(
-          matches.filter((m) => m.teamAId && m.teamBId).map((m) => pairKey(m.teamAId!, m.teamBId!)),
-        );
-        // On remonte toutes les étapes ≤ sourceOrder (cumul en cascade) et on
-        // garde tout match impliquant AU MOINS une équipe de CETTE étape —
-        // y compris contre une équipe absente (ex: tête de série qui n'a pas
-        // rejoint le Swiss) : ce match compte quand même dans l'historique de
-        // l'équipe présente (pointsStandings ignore l'adversaire absent).
-        const inherited = t.stages
-          .filter((s) => s.order <= sourceOrder)
-          .flatMap((s) => s.matches as unknown as MatchLite[])
-          .filter(
-            (m) =>
-              m.teamAId &&
-              m.teamBId &&
-              (entrySet.has(m.teamAId) || entrySet.has(m.teamBId)) &&
-              !rematchedPairs.has(pairKey(m.teamAId, m.teamBId)),
-          );
-        all = [...inherited, ...matches];
-      }
+      const { entryIds, all } = pointsInputs(t, stage, group);
       const ranked = pointsStandings(entryIds, all, scoringOf(t));
 
       // Cross-pool « rang de poule verrouillé » (preserveSeeding) : on classe PAR
@@ -146,8 +161,37 @@ export function stageStandings(t: PipelineTournament, stageOrder: number, group?
     case "DE":
       return bracketStandings(matches);
     default:
-      return entryIds;
+      return entryIdsOf(stage, group);
   }
+}
+
+/**
+ * Égalités parfaites à cheval sur une ligne de qualification : pour chaque
+ * source « rangs X à Y » d'une étape, les équipes que RIEN ne départage et
+ * dont une partie entre, l'autre non. Seul l'ordre d'entrée les sépare : c'est
+ * à l'orga de trancher (tir au but → un but de plus au vainqueur) avant de
+ * lancer l'étape. Le lancement automatique attend dans ce cas.
+ */
+export type QualificationTie = { fromStage: string; group: string | null; rank: number; teamIds: string[] };
+export function qualificationTies(t: PipelineTournament, stage: { entryRules: unknown }): QualificationTie[] {
+  const rules = stage.entryRules as unknown as EntryRules;
+  const out: QualificationTie[] = [];
+  for (const src of rules.sources) {
+    if (src.kind !== "stageRanks") continue;
+    const from = t.stages.find((s) => s.order === src.stageOrder);
+    if (!from || !["RR", "SWISS", "CROSS_POOL"].includes(from.type)) continue;
+    if (from.type === "CROSS_POOL" && (from.config as { preserveSeeding?: boolean }).preserveSeeding) continue;
+    const { entryIds, all } = pointsInputs(t, from, src.group);
+    const ranked = pointsStandings(entryIds, all, scoringOf(t));
+    for (const ranks of perfectTieRanks(entryIds, all, scoringOf(t))) {
+      // Ligne « avant from » et ligne « après to » : la coupe passe au milieu du paquet ?
+      const crosses = (line: number) => ranks.some((r) => r <= line) && ranks.some((r) => r > line);
+      if (crosses(src.from - 1) || crosses(src.to)) {
+        out.push({ fromStage: from.name, group: src.group ?? null, rank: Math.min(...ranks), teamIds: ranks.map((r) => ranked[r - 1]) });
+      }
+    }
+  }
+  return out;
 }
 
 /** Classement final du tournoi (1→N) : dernière étape DONE, complété par les précédentes. */
@@ -780,6 +824,9 @@ async function autoLaunchDependents(tournamentId: string, justFinishedOrder: num
       })
       .sort((a, b) => a.order - b.order);
     for (const next of candidates) {
+      // Égalité parfaite sur la ligne de qualification : on attend que l'orga
+      // tranche (l'onglet Étapes l'affiche) plutôt que de trancher en silence.
+      if (qualificationTies(t, next).length > 0) continue;
       const res = await launchStage(tournamentId, next.order);
       // res.error attendu et sans gravité si une AUTRE dépendance de `next`
       // n'est pas encore terminée — on n'agit pas dessus.
@@ -843,6 +890,26 @@ export async function launchNextGroup(tournamentId: string, stageOrder: number):
     return { error: e instanceof Error ? e.message : String(e) };
   }
   return { ok: true, group: next };
+}
+
+/**
+ * Alertes « égalité à départager » des étapes pas encore lancées dont les
+ * étapes sources sont terminées (pour l'onglet Étapes de l'orga).
+ */
+export async function pipelineTieWarnings(tournamentId: string): Promise<Record<number, Array<QualificationTie & { teamNames: string[] }>>> {
+  const t = await getPipeline(tournamentId);
+  if (!t) return {};
+  const names = new Map(t.teams.map((x) => [x.id, x.name]));
+  const out: Record<number, Array<QualificationTie & { teamNames: string[] }>> = {};
+  for (const s of t.stages) {
+    if (s.status !== "PENDING") continue;
+    const rules = s.entryRules as unknown as EntryRules;
+    const deps = rules.sources.filter((x) => x.kind === "stageRanks").map((x) => (x as { stageOrder: number }).stageOrder);
+    if (deps.length === 0 || !deps.every((o) => t.stages.find((x) => x.order === o)?.status === "DONE")) continue;
+    const ties = qualificationTies(t, s);
+    if (ties.length > 0) out[s.order] = ties.map((x) => ({ ...x, teamNames: x.teamIds.map((id) => names.get(id) ?? "?") }));
+  }
+  return out;
 }
 
 // ─── Composition manuelle des groupes (avant lancement) ─────────────────────

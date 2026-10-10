@@ -2,6 +2,7 @@
 import { Link } from "@/i18n/navigation";
 import { TournamentGallery } from "@/components/TournamentGallery";
 import { RefereeTab } from "@/components/RefereeTab";
+import { pipelineTieWarnings } from "@/engine/pipeline-server";
 import { parseRefereeSettings } from "@/lib/referees";
 import { galleryPhase } from "@/lib/tournament-photos";
 import { tournamentTimezone } from "@/lib/timezone";
@@ -905,6 +906,7 @@ export default async function TournamentPage({
           que le dashboard, chaque action revérifie les droits côté serveur) */}
       {tab === "stages" && isPipeline && isOrga && (
         <PipelinePlanning
+          tieWarnings={await pipelineTieWarnings(t_.id)}
           tournament={{ ...tournament, timezone: tournamentTimezone(tournament) }}
           stages={(tournament as any).stages ?? []}
           launchStageAction={async (order) => {

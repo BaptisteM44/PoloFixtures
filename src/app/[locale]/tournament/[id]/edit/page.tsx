@@ -6,6 +6,7 @@ import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsor
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { ChecklistDetails } from "@/components/ChecklistDetails";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
+import { pipelineTieWarnings } from "@/engine/pipeline-server";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
@@ -276,6 +277,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
         {/* Main content — colonne droite */}
         <div className="edit-main">
       <OrgaDashboard
+            tieWarnings={(t_ as any).usesPipeline ? await pipelineTieWarnings(t_.id) : undefined}
             tournament={{
               id: t_.id,
               name: t_.name,

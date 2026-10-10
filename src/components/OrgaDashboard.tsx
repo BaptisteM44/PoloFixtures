@@ -1477,6 +1477,8 @@ type OrgaDashboardProps = {
   resetPipelineToRoundAction?: (order: number, round: number, group?: string) => Promise<{ ok?: boolean; error?: string }>;
   reschedulePipelineStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
   setTournamentPipelineAction?: (stages: unknown) => Promise<{ ok?: boolean; error?: string }>;
+  /** Égalités parfaites à départager avant de lancer une étape (onglet Étapes). */
+  tieWarnings?: Record<number, Array<{ fromStage: string; group: string | null; rank: number; teamNames: string[] }>>;
   applyPipelinePresetAction?: (presetKey: string) => Promise<{ ok?: boolean; error?: string }>;
   // Orga tab data
   orgaTasks: Array<{ id: string; title: string; description: string | null; deadline: string | null; completed: boolean; priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT"; assignees: Array<{ player: { id: string; name: string } }>; createdBy: { id: string; name: string }; createdAt: string }>;
@@ -1581,6 +1583,7 @@ export function OrgaDashboard({
   resetPipelineToRoundAction,
   reschedulePipelineStageAction,
   setTournamentPipelineAction,
+  tieWarnings,
   applyPipelinePresetAction,
   orgaTasks,
   orgaNotes,
@@ -1947,6 +1950,7 @@ export function OrgaDashboard({
             {/* Pilotage des étapes (si le tournoi est déjà pipeline) */}
             {isPipeline && (
               <PipelinePlanning
+                tieWarnings={tieWarnings}
                 tournament={tournament}
                 stages={stages}
                 launchStageAction={launchStageAction}

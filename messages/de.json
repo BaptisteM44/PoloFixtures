@@ -999,7 +999,10 @@
     "filter_stage": "Etappe",
     "filter_phase": "Phase",
     "filter_all_phases": "Alle",
-    "filter_all_teams": "Alle"
+    "filter_all_teams": "Alle",
+    "pipeline_tie_title": "Perfekter Gleichstand",
+    "pipeline_tie_text": "{teams}: perfekter Gleichstand um Platz {rank} in „{stage}“.",
+    "pipeline_tie_hint": "Die Etappe wurde nicht automatisch gestartet. Entscheide den Gleichstand (Penalty: gib dem Sieger in einem seiner Spiele ein Tor dazu) oder starte trotzdem: dann entscheidet die Setzreihenfolge."
   },
   "registration": {
     "section_title": "Mein Team anmelden",

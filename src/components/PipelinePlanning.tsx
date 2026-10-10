@@ -152,6 +152,7 @@ export function PipelinePlanning({
   moveStageAction,
   resetToRoundAction,
   rescheduleStageAction,
+  tieWarnings,
 }: {
   tournament: any;
   stages: any[];
@@ -167,6 +168,8 @@ export function PipelinePlanning({
   moveStageAction?: (order: number, dir: -1 | 1) => Promise<{ ok?: boolean; error?: string }>;
   resetToRoundAction?: (order: number, round: number, group?: string) => Promise<{ ok?: boolean; error?: string }>;
   rescheduleStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
+  /** Égalités parfaites sur une ligne de qualification, par étape (pipelineTieWarnings). */
+  tieWarnings?: Record<number, Array<{ fromStage: string; group: string | null; rank: number; teamNames: string[] }>>;
 }) {
   const t = useTranslations("tournament");
   const ts = useTranslations("sandbox"); // libellés des modes de répartition des terrains
@@ -294,6 +297,17 @@ export function PipelinePlanning({
                 <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "6px 0 0" }}>{bits.join(" · ")}</p>
               ) : null;
             })()}
+
+            {/* Égalité parfaite sur la ligne de qualification : l'étape attend l'orga */}
+            {(tieWarnings?.[stage.order] ?? []).length > 0 && (
+              <div className="pipeline-tie" role="alert">
+                <strong>⚖️ {t("pipeline_tie_title")}</strong>
+                {tieWarnings![stage.order].map((w, i) => (
+                  <p key={i}>{t("pipeline_tie_text", { teams: w.teamNames.join(" / "), rank: w.rank, stage: w.group ? `${w.fromStage} · ${w.group}` : w.fromStage })}</p>
+                ))}
+                <p className="meta">{t("pipeline_tie_hint")}</p>
+              </div>
+            )}
 
             <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
               {isNextLaunchable && (
