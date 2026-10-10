@@ -4,6 +4,15 @@ import { createNotification } from "@/lib/notify";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
 import { guessTimezone } from "@/lib/timezone";
 
+/** Valeur d'un événement de but : une annulation d'arbitre est un GOAL de
+ *  delta -1. Compter les événements au lieu de les sommer faisait d'un but
+ *  annulé… un but de plus (Eruption donnée à tort, buts de carrière gonflés). */
+function goalDelta(e: { type: string; payload: unknown }): number {
+  if (e.type === "GOLDEN_GOAL") return 1;
+  const d = Number((e.payload as { delta?: number } | null)?.delta ?? 1);
+  return Number.isFinite(d) ? d : 1;
+}
+
 // All match phases that represent a bracket (used to detect finals, champions, etc.)
 // "STAGE" = pipeline (refonte formats) : seules les étapes SE/DE produisent des
 // matchs bracketSide "G", donc l'inclure est sûr pour les détections de finale.
@@ -19,9 +28,9 @@ export function computePlayerBadgesForTournament(
   playerId: string,
   events: { type: string; payload: unknown }[]
 ): string[] {
-  const goals = events.filter(
-    (e) => (e.type === "GOAL" || e.type === "GOLDEN_GOAL") && e.payload != null && (e.payload as { playerId?: string }).playerId === playerId
-  ).length;
+  const goals = events
+    .filter((e) => (e.type === "GOAL" || e.type === "GOLDEN_GOAL") && e.payload != null && (e.payload as { playerId?: string }).playerId === playerId)
+    .reduce((sum, e) => sum + goalDelta(e), 0);
   const penalties = events.filter(
     (e) => e.type === "PENALTY" && e.payload != null && (e.payload as { playerId?: string }).playerId === playerId
   ).length;
@@ -125,7 +134,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   // Filter out test tournaments
   const filteredEvents = allEvents.filter((e) => !e.match.tournament.testMode);
 
-  const totalGoals     = filteredEvents.filter((e) => e.type === "GOAL" || e.type === "GOLDEN_GOAL").length;
+  const totalGoals     = filteredEvents.filter((e) => e.type === "GOAL" || e.type === "GOLDEN_GOAL").reduce((sum, e) => sum + goalDelta(e), 0);
   const totalPenalties = filteredEvents.filter((e) => e.type === "PENALTY").length;
 
   if (totalGoals >= 1)   badges.add("first_blood");
@@ -140,7 +149,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   const tournamentPenalties = new Map<string, number>();
   for (const e of filteredEvents) {
     const tid = e.match.tournamentId;
-    if (e.type === "GOAL" || e.type === "GOLDEN_GOAL") tournamentGoals.set(tid, (tournamentGoals.get(tid) ?? 0) + 1);
+    if (e.type === "GOAL" || e.type === "GOLDEN_GOAL") tournamentGoals.set(tid, (tournamentGoals.get(tid) ?? 0) + goalDelta(e));
     if (e.type === "PENALTY") tournamentPenalties.set(tid, (tournamentPenalties.get(tid) ?? 0) + 1);
   }
   for (const [tid, g] of tournamentGoals) {
@@ -208,7 +217,9 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   if (winterCount >= 5) badges.add("into_the_storm");
 
   // champion / unbeaten / back_to_back
-  const completedTournaments = teamPlayers.filter((tp) => tp.team.tournament.status === "COMPLETED" && !tp.team.tournament.testMode);
+  // Équipe retenue uniquement : une équipe perdue au tirage (selected=false)
+  // n'a pas « participé » (Circus Act, Team Player, Veteran… comptés à tort).
+  const completedTournaments = teamPlayers.filter((tp) => tp.team.tournament.status === "COMPLETED" && !tp.team.tournament.testMode && tp.team.selected !== false);
   const wonTournamentIds: string[] = [];
 
   for (const tp of completedTournaments) {
@@ -453,7 +464,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
       let myScore = 0, oppScore = 0;
       for (const e of (eventsByMatch.get(m.id) ?? [])) {
         const scorer = (e.payload as { teamId?: string }).teamId;
-        if (scorer === myTeamId) myScore++; else oppScore++;
+        if (scorer === myTeamId) myScore += goalDelta({ type: "GOAL", payload: e.payload }); else oppScore += goalDelta({ type: "GOAL", payload: e.payload });
         if (oppScore - myScore >= 3) { badges.add("reverse_sweep"); break reverseSweep; }
       }
     }
@@ -603,12 +614,12 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   // eruption: 5+ goals by the player in a single match (3v3 or 4v4 only)
   if (playerTeamIds.length > 0) {
     const goalEventsByMatch = new Map<string, number>();
-    for (const e of allEvents) {
+    for (const e of filteredEvents) {
       if (e.type === "GOAL" || e.type === "GOLDEN_GOAL") {
         const fmt = e.match?.tournament?.format ?? "";
         if (fmt !== "3v3" && fmt !== "4v4") continue;
         const mid = e.matchId;
-        goalEventsByMatch.set(mid, (goalEventsByMatch.get(mid) ?? 0) + 1);
+        goalEventsByMatch.set(mid, (goalEventsByMatch.get(mid) ?? 0) + goalDelta(e));
       }
     }
     if ([...goalEventsByMatch.values()].some((c) => c >= 5)) badges.add("eruption");
@@ -658,7 +669,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
         let myScore = 0, oppScore = 0;
         for (const e of (cbEventsByMatch.get(m.id) ?? [])) {
           const scorer = (e.payload as { teamId?: string }).teamId;
-          if (scorer === myTeamId) myScore++; else oppScore++;
+          if (scorer === myTeamId) myScore += goalDelta({ type: "GOAL", payload: e.payload }); else oppScore += goalDelta({ type: "GOAL", payload: e.payload });
           if (oppScore - myScore >= 3) { badges.add("comeback_kid"); break comebackKid; }
         }
       }
@@ -743,7 +754,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
       const scorerCounts = new Map<string, number>();
       for (const e of tGoalEvents) {
         const pid = (e.payload as { playerId?: string }).playerId;
-        if (pid) scorerCounts.set(pid, (scorerCounts.get(pid) ?? 0) + 1);
+        if (pid) scorerCounts.set(pid, (scorerCounts.get(pid) ?? 0) + goalDelta({ type: "GOAL", payload: e.payload }));
       }
       const top5 = [...scorerCounts.entries()]
         .sort((a, b) => b[1] - a[1])
