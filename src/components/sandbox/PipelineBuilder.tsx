@@ -47,7 +47,7 @@ export function defaultConfig(type: StageType): Record<string, unknown> {
   // étape précédente. Décocher est possible mais expose à des rematchs.
   switch (type) {
     case "RR": return { carryPoints: true };
-    case "SWISS": return { rounds: 5, carryPoints: true };
+    case "SWISS": return { rounds: 5, carryPoints: true, firstRound: "fold" };
     case "CROSS_POOL": return { opponents: 1 };
     case "PLACEMENT": return { count: 2 };
     case "SE": return { thirdPlace: true };
@@ -272,6 +272,13 @@ export function StageConfigFields({ type, config, groupCount, courtsCount, canCa
       return (
         <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 13 }}>
           <label>{t("cfg_rounds")} <input type="number" min={1} max={15} value={Number(config.rounds ?? 5)} onChange={(e) => set("rounds", Number(e.target.value))} style={{ width: 60 }} /></label>
+          <label>{t("cfg_first_round")}{" "}
+            <select value={(config.firstRound as string) ?? "adjacent"} onChange={(e) => set("firstRound", e.target.value)}>
+              <option value="fold">{t("first_round_fold")}</option>
+              <option value="adjacent">{t("first_round_adjacent")}</option>
+              <option value="random">{t("first_round_random")}</option>
+            </select>
+          </label>
           {carryToggle}
           {showCourtMode && <CourtModeSelect value={(config.courtMode as string) ?? "sequential"} courtsCount={courtsCount} onChange={(v) => set("courtMode", v)} />}
         </div>

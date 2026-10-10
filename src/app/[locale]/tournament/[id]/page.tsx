@@ -41,7 +41,7 @@ import { LiveTabView } from "@/components/LiveTabView";
 import { getPodiumTeamIds } from "@/lib/podium";
 import { PipelinePlanning } from "@/components/PipelinePlanning";
 import {
-  launchPipelineStageAction, launchPipelineGroupAction, resetPipelineStagesAction,
+  launchPipelineStageAction, launchPipelineGroupAction, resetPipelineStagesAction, setPipelineSeedsAction, swapPipelineTeamsAction,
   simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction,
   updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, resetPipelineToRoundAction, reschedulePipelineStageAction,
 } from "./edit/actions";
@@ -958,6 +958,15 @@ export default async function TournamentPage({
           updateStageAction={async (order, patch) => {
             "use server";
             return await updatePipelineStageAction(t_.id, order, patch);
+          }}
+          seedTeams={tournament.teams as any}
+          setSeedsAction={async (teamIds) => {
+            "use server";
+            return await setPipelineSeedsAction(t_.id, teamIds);
+          }}
+          swapTeamsAction={async (order, a, b) => {
+            "use server";
+            return await swapPipelineTeamsAction(t_.id, order, a, b);
           }}
           launchGroupAction={async (order) => {
             "use server";

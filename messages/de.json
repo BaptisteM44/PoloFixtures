@@ -1005,7 +1005,17 @@
     "pipeline_tie_hint": "Die Etappe wurde nicht automatisch gestartet. Entscheide den Gleichstand (Penalty: gib dem Sieger in einem seiner Spiele ein Tor dazu) oder starte trotzdem: dann entscheidet die Setzreihenfolge.",
     "final_ranking_title": "Endstand",
     "final_ranking_tied": "geteilt",
-    "pipeline_flow_summary": "Ablauf-Vorschau (wer wohin kommt, Anzahl Spiele, Probleme)"
+    "pipeline_flow_summary": "Ablauf-Vorschau (wer wohin kommt, Anzahl Spiele, Probleme)",
+    "seeding_title": "Startreihenfolge (Setzliste)",
+    "seeding_hint": "Das stärkste Team oben. Diese Reihenfolge bildet die Gruppen (Schlangenlinie), setzt die Teams und ergibt die 1. Runde. Bis zum Start änderbar.",
+    "seeding_save": "Reihenfolge speichern",
+    "seeding_shuffle": "Auslosen",
+    "seeding_shuffle_confirm": "Aktuelle Reihenfolge durch eine Auslosung ersetzen?",
+    "swap_title": "Zwei Teams tauschen",
+    "swap_team_a": "Erstes Team",
+    "swap_team_b": "Zweites Team",
+    "swap_do": "Tauschen",
+    "swap_hint": "Solange kein Spiel der Etappe begonnen hat: Gruppe, Spiele und Bracket-Platz werden getauscht."
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -2055,7 +2065,11 @@
     "cross_pool_hint": "Cross-Pool lässt zwei Gruppen gegeneinander antreten (A gegen B). Nimm Teams aus einer Phase mit 2 Gruppen: entweder eine Quelle mit der gesamten Rangliste (die Gruppen werden automatisch erkannt) oder zwei Quellen — eine pro Gruppe.",
     "cfg_carry_points": "Punkte aus vorherigen Phasen übernehmen",
     "cfg_carry_points_hint": "übernimmt die Punkte UND verhindert, dass zwei Teams, die sich bereits in einer vorherigen Phase getroffen haben, erneut gegeneinander spielen",
-    "cfg_preserve_seeding": "Poolrang sperren (1. bleibt vor den 2.)"
+    "cfg_preserve_seeding": "Poolrang sperren (1. bleibt vor den 2.)",
+    "cfg_first_round": "1. Runde",
+    "first_round_fold": "Oben gegen unten (1 gegen 5…)",
+    "first_round_adjacent": "Nachbarn (1 gegen 2…)",
+    "first_round_random": "Auslosung"
   },
   "legal_privacy": {
     "title": "Datenschutzerklärung",

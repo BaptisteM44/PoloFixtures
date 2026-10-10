@@ -4282,6 +4282,29 @@ export async function launchPipelineGroupAction(
   return res;
 }
 
+/** Pré-seeding : ordre de départ des équipes (avant le lancement). */
+export async function setPipelineSeedsAction(id: string, teamIds: string[]): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { setRegistrationSeeds } = await import("@/engine/pipeline-server");
+  const res = await setRegistrationSeeds(id, teamIds);
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
+/** Échange deux équipes d'une étape lancée mais pas commencée (corriger le 1er tour). */
+export async function swapPipelineTeamsAction(id: string, stageOrder: number, teamA: string, teamB: string): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(id);
+  if (denied) return denied;
+  const { swapStageTeams } = await import("@/engine/pipeline-server");
+  const res = await swapStageTeams(id, stageOrder, teamA, teamB);
+  if (res.ok) { const { autoFillReferees } = await import("@/lib/referees"); await autoFillReferees(id); }
+  revalidatePath(`/tournament/${id}`);
+  revalidatePath(`/tournament/${id}/edit`);
+  return res;
+}
+
 /** Modifie une étape non lancée (nom, type, config, sources, horaire). */
 export async function updatePipelineStageAction(
   id: string,

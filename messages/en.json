@@ -1005,7 +1005,17 @@
     "pipeline_tie_hint": "The stage didn't start on its own. Break the tie (shoot-out: add a goal to the winner in one of its matches), or launch anyway: the entry order will decide.",
     "final_ranking_title": "Final standings",
     "final_ranking_tied": "tied",
-    "pipeline_flow_summary": "Format overview (who goes where, number of matches, issues)"
+    "pipeline_flow_summary": "Format overview (who goes where, number of matches, issues)",
+    "seeding_title": "Starting order (pre-seeding)",
+    "seeding_hint": "Strongest on top. This order builds the groups (snake), places the seeds and makes round 1. Editable until launch.",
+    "seeding_save": "Save the order",
+    "seeding_shuffle": "Random draw",
+    "seeding_shuffle_confirm": "Replace the current order with a random draw?",
+    "swap_title": "Swap two teams",
+    "swap_team_a": "First team",
+    "swap_team_b": "Second team",
+    "swap_do": "Swap",
+    "swap_hint": "As long as no match of the stage has started: group, matches and bracket spot are swapped."
   },
   "registration": {
     "section_title": "Register my team",
@@ -2050,7 +2060,11 @@
     "cross_pool_hint": "Cross-pool pits two pools against each other (A vs B). Take teams from a 2-group stage: either a single source covering its whole ranking (original pools are detected automatically), or two sources — one per group.",
     "cfg_carry_points": "Carry points from previous stages",
     "cfg_carry_points_hint": "carries points over AND avoids rematching two teams that already played each other in a previous stage",
-    "cfg_preserve_seeding": "Lock pool rank (1st stays ahead of 2nds)"
+    "cfg_preserve_seeding": "Lock pool rank (1st stays ahead of 2nds)",
+    "cfg_first_round": "Round 1",
+    "first_round_fold": "Top vs bottom (1 vs 5…)",
+    "first_round_adjacent": "Neighbours (1 vs 2…)",
+    "first_round_random": "Random draw"
   },
   "legal_privacy": {
     "title": "Privacy Policy",

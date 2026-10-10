@@ -196,3 +196,15 @@ describe("crossPoolPairings — groupes inégaux", () => {
     expect(ps.filter((p) => p.roundIndex === 1 && p.teamBId).map((p) => [p.teamAId, p.teamBId])).toContainEqual(["a1", "b1"]);
   });
 });
+
+describe("firstRoundOrder (1er round Swiss)", () => {
+  it("fold : le haut contre le bas, impair → la plus faible garde le BYE", async () => {
+    const { firstRoundOrder } = await import("./pipeline-server");
+    const { swissPairings } = await import("./rounds");
+    const pairs = (ids: string[]) => swissPairings(firstRoundOrder(ids, "fold"), new Set(), new Set(), 1).map((p) => [p.teamAId, p.teamBId]);
+    expect(pairs(["1", "2", "3", "4", "5", "6", "7", "8"])).toEqual([["1", "5"], ["2", "6"], ["3", "7"], ["4", "8"]]);
+    expect(pairs(["1", "2", "3", "4", "5"])).toEqual([["1", "3"], ["2", "4"], ["5", null]]);
+    expect(firstRoundOrder(["1", "2", "3", "4"], "adjacent")).toEqual(["1", "2", "3", "4"]);
+    expect(firstRoundOrder(["1", "2", "3", "4"], undefined)).toEqual(["1", "2", "3", "4"]);
+  });
+});

@@ -33,9 +33,35 @@ import { slotMinutes as slotMinutesFor } from "@/lib/match-timing";
  */
 export type CourtMode = "sequential" | "dedicated" | "mixed";
 
+/**
+ * Appariement du 1er round Swiss, d'après l'ordre d'entrée (pré-seeding) :
+ * - "fold"     : le haut contre le bas (1 contre 5, 2 contre 6… sur 8) — les
+ *                favoris ne se croisent pas d'entrée (recommandé) ;
+ * - "adjacent" : voisins (1 contre 2, 3 contre 4…) — comportement historique ;
+ * - "random"   : tirage au sort.
+ */
+export type SwissFirstRound = "fold" | "adjacent" | "random";
+
+/** Ordonne les équipes pour que l'appariement par voisins donne le 1er round voulu. */
+export function firstRoundOrder(ids: string[], mode: SwissFirstRound | undefined): string[] {
+  if (mode === "random") {
+    const a = [...ids];
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+  if (mode !== "fold") return ids;
+  // Impair : la dernière (plus faible seed) garde le BYE, on plie les autres.
+  const odd = ids.length % 2 === 1;
+  const core = odd ? ids.slice(0, -1) : ids;
+  const half = core.length / 2;
+  const out: string[] = [];
+  for (let i = 0; i < half; i++) out.push(core[i], core[i + half]);
+  return odd ? [...out, ids[ids.length - 1]] : out;
+}
+
 export type StageConfigByType = {
   RR: { groups?: number; doubleRound?: boolean; maxRounds?: number; courtMode?: CourtMode; groupStartAt?: Record<string, string>; carryPoints?: boolean };
-  SWISS: { rounds: number; inheritFrom?: number; carryPoints?: boolean; courtMode?: CourtMode; groupStartAt?: Record<string, string> };
+  SWISS: { rounds: number; inheritFrom?: number; carryPoints?: boolean; courtMode?: CourtMode; groupStartAt?: Record<string, string>; firstRound?: SwissFirstRound };
   CROSS_POOL: { opponents: number; carryPoints?: boolean };
   PLACEMENT: { count?: number };
   SE: { thirdPlace?: boolean };
@@ -639,7 +665,7 @@ export async function launchStage(tournamentId: string, stageOrder: number): Pro
           const swissCfg = stage.config as StageConfigByType["SWISS"];
           const prior = swissCfg.carryPoints ? priorMatchups(t, stage.order) : new Set<string>();
           const pairings = launchGroups.flatMap((g) =>
-            swissPairings(byGroup(g), new Set(prior), new Set(), 1, g)
+            swissPairings(firstRoundOrder(byGroup(g), swissCfg.firstRound), new Set(prior), new Set(), 1, g)
           );
           const poolIdByGroup = await ensurePoolsForStage(tx, t.id, stage, teamIdsBySlot);
           await persistPairings(tx, t, stage, pairings, startAt, poolIdByGroup);
@@ -940,7 +966,7 @@ export async function launchNextGroup(tournamentId: string, stageOrder: number):
           doubleRound: (stage.config as StageConfigByType["RR"]).doubleRound,
           maxRounds: (stage.config as StageConfigByType["RR"]).maxRounds,
         })
-      : swissPairings(teamIds, new Set(carryPrior), new Set(), 1, next);
+      : swissPairings(firstRoundOrder(teamIds, (stage.config as StageConfigByType["SWISS"]).firstRound), new Set(carryPrior), new Set(), 1, next);
 
   // Pool créée au lancement de l'étape (ensurePoolsForStage couvre tous les groupes)
   const pool = await prisma.pool.findFirst({
@@ -979,6 +1005,71 @@ export async function pipelineTieWarnings(tournamentId: string): Promise<Record<
     if (ties.length > 0) out[s.order] = ties.map((x) => ({ ...x, teamNames: x.teamIds.map((id) => names.get(id) ?? "?") }));
   }
   return out;
+}
+
+// ─── Pré-seeding et 1er tour ─────────────────────────────────────────────────
+
+/**
+ * Ordre de départ (pré-seeding) : l'orga range les équipes sélectionnées
+ * (la plus forte d'abord). Cet ordre décide la répartition en groupes
+ * (serpentin), les têtes de série et le 1er round. Seulement tant qu'aucune
+ * étape qui part des inscriptions n'est lancée.
+ */
+export async function setRegistrationSeeds(tournamentId: string, teamIds: string[]): Promise<{ ok?: boolean; error?: string }> {
+  const t = await getPipeline(tournamentId);
+  if (!t) return { error: "Tournoi introuvable." };
+  const launchedFromRegistration = t.stages.some((s) =>
+    s.status !== "PENDING" && (s.entryRules as unknown as EntryRules).sources.some((src) => src.kind === "registration"));
+  if (launchedFromRegistration) return { error: "Le tournoi a commencé : l'ordre de départ ne peut plus changer (échange deux équipes à la place)." };
+  const selected = new Set(t.teams.map((x) => x.id));
+  const ordered = teamIds.filter((id) => selected.has(id));
+  for (const x of t.teams) if (!ordered.includes(x.id)) ordered.push(x.id);
+  await prisma.$transaction(ordered.map((id, i) => prisma.team.update({ where: { id }, data: { seed: i + 1 } })));
+  return { ok: true };
+}
+
+/**
+ * Échange deux équipes dans une étape lancée mais PAS encore commencée
+ * (aucun match en cours ni joué) : groupe, place dans le tableau, matchs.
+ * Sert à corriger le 1er tour (ou la composition) juste avant de jouer.
+ */
+export async function swapStageTeams(tournamentId: string, stageOrder: number, teamA: string, teamB: string): Promise<{ ok?: boolean; error?: string }> {
+  if (teamA === teamB) return { error: "Choisis deux équipes différentes." };
+  const t = await getPipeline(tournamentId);
+  if (!t) return { error: "Tournoi introuvable." };
+  const stage = t.stages.find((s) => s.order === stageOrder);
+  if (!stage) return { error: `Étape ${stageOrder} introuvable.` };
+  if (stage.status !== "ACTIVE") return { error: "L'étape doit être lancée et pas encore commencée." };
+  const started = stage.matches.some((m) => m.status === "LIVE" || (m.status === "FINISHED" && m.teamBId));
+  if (started) return { error: "Un match de cette étape a déjà commencé : l'échange n'est plus possible." };
+  const inStage = new Set(stage.entries.map((e) => e.teamId));
+  if (!inStage.has(teamA) || !inStage.has(teamB)) return { error: "Les deux équipes doivent faire partie de l'étape." };
+
+  const other = (id: string | null) => (id === teamA ? teamB : id === teamB ? teamA : id);
+  await prisma.$transaction(async (tx) => {
+    for (const m of stage.matches) {
+      if (m.teamAId !== teamA && m.teamAId !== teamB && m.teamBId !== teamA && m.teamBId !== teamB) continue;
+      const teamAId = other(m.teamAId);
+      const teamBId = other(m.teamBId);
+      await tx.match.update({
+        where: { id: m.id },
+        data: { teamAId, teamBId, ...(m.teamBId === null && m.status === "FINISHED" ? { winnerTeamId: teamAId } : {}) },
+      });
+    }
+    for (const e of stage.entries) {
+      if (e.teamId === teamA || e.teamId === teamB) await tx.stageEntry.update({ where: { id: e.id }, data: { teamId: other(e.teamId) } });
+    }
+    // Vue « poules » (Pool/PoolTeam) régénérée au lancement : on échange aussi.
+    // (Même poule : rien à changer — et l'unicité poule/équipe l'interdirait.)
+    const pools = await tx.pool.findMany({ where: { stageId: stage.id }, select: { id: true, teams: { select: { id: true, teamId: true } } } });
+    const poolOf = (id: string) => pools.find((p) => p.teams.some((pt) => pt.teamId === id))?.id;
+    if (poolOf(teamA) !== poolOf(teamB)) {
+      for (const pool of pools) for (const pt of pool.teams) {
+        if (pt.teamId === teamA || pt.teamId === teamB) await tx.poolTeam.update({ where: { id: pt.id }, data: { teamId: other(pt.teamId)! } });
+      }
+    }
+  });
+  return { ok: true };
 }
 
 // ─── Composition manuelle des groupes (avant lancement) ─────────────────────

@@ -45,6 +45,7 @@ const stageConfigSchema = z.discriminatedUnion("type", [
       carryPoints: z.boolean().optional(),
       courtMode: z.enum(["sequential", "dedicated", "mixed"]).optional(),
       groupStartAt: z.record(z.string().max(1), z.string().datetime()).optional(),
+      firstRound: z.enum(["fold", "adjacent", "random"]).optional(),
     }),
   }),
   z.object({

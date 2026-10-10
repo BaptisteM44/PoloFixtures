@@ -1471,6 +1471,8 @@ type OrgaDashboardProps = {
   setManualGroupsAction?: (order: number, assignments: Record<string, string>) => Promise<{ ok?: boolean; error?: string }>;
   updatePipelineStageAction?: (order: number, patch: { name: string; type: string; config: Record<string, unknown>; entryRules: unknown; startAt: string | null }) => Promise<{ ok?: boolean; error?: string }>;
   launchPipelineGroupAction?: (order: number) => Promise<{ ok?: boolean; error?: string; group?: string }>;
+  setPipelineSeedsAction?: (teamIds: string[]) => Promise<{ ok?: boolean; error?: string }>;
+  swapPipelineTeamsAction?: (order: number, teamA: string, teamB: string) => Promise<{ ok?: boolean; error?: string }>;
   addPipelineStageAction?: (def: { name: string; type: string; config: Record<string, unknown>; entryRules: unknown }) => Promise<{ ok?: boolean; error?: string }>;
   removePipelineStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
   movePipelineStageAction?: (order: number, dir: -1 | 1) => Promise<{ ok?: boolean; error?: string }>;
@@ -1577,6 +1579,8 @@ export function OrgaDashboard({
   setManualGroupsAction,
   updatePipelineStageAction,
   launchPipelineGroupAction,
+  setPipelineSeedsAction,
+  swapPipelineTeamsAction,
   addPipelineStageAction,
   removePipelineStageAction,
   movePipelineStageAction,
@@ -1962,6 +1966,9 @@ export function OrgaDashboard({
                 setManualGroupsAction={setManualGroupsAction}
                 updateStageAction={updatePipelineStageAction}
                 launchGroupAction={launchPipelineGroupAction}
+                seedTeams={teams}
+                setSeedsAction={setPipelineSeedsAction}
+                swapTeamsAction={swapPipelineTeamsAction}
                 addStageAction={addPipelineStageAction}
                 removeStageAction={removePipelineStageAction}
                 moveStageAction={movePipelineStageAction}

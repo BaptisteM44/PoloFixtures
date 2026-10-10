@@ -1005,7 +1005,17 @@
     "pipeline_tie_hint": "A etapa não arrancou sozinha. Desempata (desempate por penáltis: acrescenta um golo ao vencedor num dos seus jogos) ou lança mesmo assim: decide a ordem de entrada.",
     "final_ranking_title": "Classificação final",
     "final_ranking_tied": "empatado",
-    "pipeline_flow_summary": "Pré-visualização do formato (quem vai para onde, número de jogos, problemas)"
+    "pipeline_flow_summary": "Pré-visualização do formato (quem vai para onde, número de jogos, problemas)",
+    "seeding_title": "Ordem de partida (pré-seeding)",
+    "seeding_hint": "A mais forte em cima. Esta ordem forma os grupos (em serpentina), coloca os cabeças de série e define a 1.ª ronda. Alterável até ao lançamento.",
+    "seeding_save": "Guardar a ordem",
+    "seeding_shuffle": "Sorteio",
+    "seeding_shuffle_confirm": "Substituir a ordem atual por um sorteio?",
+    "swap_title": "Trocar duas equipas",
+    "swap_team_a": "Primeira equipa",
+    "swap_team_b": "Segunda equipa",
+    "swap_do": "Trocar",
+    "swap_hint": "Enquanto nenhum jogo da etapa tiver começado: grupo, jogos e lugar no quadro são trocados."
   },
   "registration": {
     "section_title": "Inscrever a minha equipa",
@@ -2050,7 +2060,11 @@
     "cross_pool_hint": "O cross-pool põe dois grupos frente a frente (A vs B). Vai buscar as equipas a uma etapa com 2 grupos: ou uma única origem que cubra toda a classificação (os grupos de origem são detetados automaticamente), ou duas origens — uma por grupo.",
     "cfg_carry_points": "Transportar os pontos das etapas anteriores",
     "cfg_carry_points_hint": "transporta os pontos E evita repetir um jogo entre duas equipas que já se defrontaram numa etapa anterior",
-    "cfg_preserve_seeding": "Manter a posição no grupo (o 1.º fica à frente dos 2.os)"
+    "cfg_preserve_seeding": "Manter a posição no grupo (o 1.º fica à frente dos 2.os)",
+    "cfg_first_round": "1.ª ronda",
+    "first_round_fold": "Cima contra baixo (1 contra 5…)",
+    "first_round_adjacent": "Vizinhos (1 contra 2…)",
+    "first_round_random": "Sorteio"
   },
   "legal_privacy": {
     "title": "Política de privacidade",

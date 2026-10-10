@@ -49,7 +49,7 @@ export const PIPELINE_PRESETS: PipelinePreset[] = [
       {
         name: "Swiss",
         type: "SWISS",
-        config: { rounds: 5 },
+        config: { rounds: 5, firstRound: "fold" },
         entryRules: { sources: [{ kind: "registration" }] },
       },
       {

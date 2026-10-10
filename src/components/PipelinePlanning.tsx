@@ -154,6 +154,9 @@ export function PipelinePlanning({
   resetToRoundAction,
   rescheduleStageAction,
   tieWarnings,
+  seedTeams,
+  setSeedsAction,
+  swapTeamsAction,
 }: {
   tournament: any;
   stages: any[];
@@ -171,6 +174,10 @@ export function PipelinePlanning({
   rescheduleStageAction?: (order: number) => Promise<{ ok?: boolean; error?: string }>;
   /** Égalités parfaites sur une ligne de qualification, par étape (pipelineTieWarnings). */
   tieWarnings?: Record<number, Array<{ fromStage: string; group: string | null; rank: number; teamNames: string[] }>>;
+  /** Équipes (id, nom, seed, sélection) : pré-seeding et échange d'équipes. */
+  seedTeams?: Array<{ id: string; name: string; seed: number; selected?: boolean | null }>;
+  setSeedsAction?: (teamIds: string[]) => Promise<{ ok?: boolean; error?: string }>;
+  swapTeamsAction?: (order: number, teamA: string, teamB: string) => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const t = useTranslations("tournament");
   const ts = useTranslations("sandbox"); // libellés des modes de répartition des terrains
@@ -189,6 +196,28 @@ export function PipelinePlanning({
   const [composeGroups, setComposeGroups] = useState(2);
 
   const sorted = [...stages].sort((a, b) => a.order - b.order);
+
+  // Pré-seeding : tant qu'aucune étape partant des inscriptions n'est lancée.
+  const selectedTeams = (seedTeams ?? []).filter((x) => x.selected !== false).sort((a, b) => a.seed - b.seed);
+  const seedingOpen = !!setSeedsAction && selectedTeams.length > 1 && !sorted.some((s) =>
+    s.status !== "PENDING" && (s.entryRules?.sources ?? []).some((src: any) => src.kind === "registration"));
+  const [seedOrder, setSeedOrder] = useState<string[]>(() => selectedTeams.map((x) => x.id));
+  const [seedDirty, setSeedDirty] = useState(false);
+  const teamNameOf = (id: string) => (seedTeams ?? []).find((x) => x.id === id)?.name ?? "?";
+  const moveSeed = (i: number, d: -1 | 1) => {
+    const j = i + d;
+    if (j < 0 || j >= seedOrder.length) return;
+    const next = [...seedOrder]; [next[i], next[j]] = [next[j], next[i]];
+    setSeedOrder(next); setSeedDirty(true);
+  };
+  const shuffleSeeds = () => {
+    if (!window.confirm(t("seeding_shuffle_confirm"))) return;
+    const a = [...seedOrder];
+    for (let i = a.length - 1; i > 0; i--) { const k = Math.floor(Math.random() * (i + 1)); [a[i], a[k]] = [a[k], a[i]]; }
+    setSeedOrder(a); setSeedDirty(true);
+  };
+  // Échange de deux équipes (étape lancée, pas commencée)
+  const [swap, setSwap] = useState<Record<number, { a: string; b: string }>>({});
 
   // Une étape est lançable si toutes les étapes DONT elle dépend (ses sources
   // stageRanks) sont terminées. Plusieurs étapes indépendantes peuvent donc
@@ -246,6 +275,30 @@ export function PipelinePlanning({
         </div>
       )}
       {error && <p style={{ color: "var(--danger)", fontSize: 12, padding: "8px 0" }}>{error}</p>}
+      {/* Pré-seeding : ordre de départ des équipes */}
+      {seedingOpen && (
+        <details className="panel seeding-panel">
+          <summary>🎯 {t("seeding_title")}</summary>
+          <p className="meta">{t("seeding_hint")}</p>
+          <ol className="seeding-list">
+            {seedOrder.map((id, i) => (
+              <li key={id}>
+                <span className="seeding-list__rank">{i + 1}</span>
+                <span className="seeding-list__name">{teamNameOf(id)}</span>
+                <button type="button" className="ghost" disabled={i === 0 || pending} onClick={() => moveSeed(i, -1)} aria-label={t("pipeline_move_up")}>↑</button>
+                <button type="button" className="ghost" disabled={i === seedOrder.length - 1 || pending} onClick={() => moveSeed(i, 1)} aria-label={t("pipeline_move_down")}>↓</button>
+              </li>
+            ))}
+          </ol>
+          <div className="seeding-actions">
+            <button type="button" className="primary" disabled={!seedDirty || pending}
+              onClick={async () => { await act(() => setSeedsAction!(seedOrder)); setSeedDirty(false); }}>
+              {t("seeding_save")}
+            </button>
+            <button type="button" className="ghost" disabled={pending} onClick={shuffleSeeds}>🎲 {t("seeding_shuffle")}</button>
+          </div>
+        </details>
+      )}
       <details className="panel format-flow-details">
         <summary>🧭 {t("pipeline_flow_summary")}</summary>
         <FormatFlow
@@ -436,6 +489,33 @@ export function PipelinePlanning({
                 </div>
               );
             })()}
+
+            {/* 1er tour modifiable : échanger deux équipes tant que rien n'a commencé */}
+            {stage.status === "ACTIVE" && swapTeamsAction && !(stage.matches ?? []).some((m: any) => m.status === "LIVE")
+              && (stage.matches ?? []).filter((m: any) => m.status === "FINISHED").length <= new Set((stage.entries ?? []).map((e: any) => e.groupKey)).size
+              && (() => {
+                const ids = (stage.entries ?? []).map((e: any) => e.teamId).filter(Boolean) as string[];
+                const cur = swap[stage.order] ?? { a: "", b: "" };
+                const set = (patch: Partial<{ a: string; b: string }>) => setSwap((p) => ({ ...p, [stage.order]: { ...cur, ...patch } }));
+                return (
+                  <div className="stage-swap" onClick={(e) => e.stopPropagation()}>
+                    <span>⇄ {t("swap_title")}</span>
+                    <select value={cur.a} onChange={(e) => set({ a: e.target.value })} aria-label={t("swap_team_a")}>
+                      <option value="">—</option>
+                      {ids.map((id) => <option key={id} value={id}>{teamNameOf(id)}</option>)}
+                    </select>
+                    <select value={cur.b} onChange={(e) => set({ b: e.target.value })} aria-label={t("swap_team_b")}>
+                      <option value="">—</option>
+                      {ids.filter((id) => id !== cur.a).map((id) => <option key={id} value={id}>{teamNameOf(id)}</option>)}
+                    </select>
+                    <button type="button" className="ghost" disabled={pending || !cur.a || !cur.b}
+                      onClick={async () => { await act(() => swapTeamsAction(stage.order, cur.a, cur.b)); set({ a: "", b: "" }); }}>
+                      {t("swap_do")}
+                    </button>
+                    <small className="meta">{t("swap_hint")}</small>
+                  </div>
+                );
+              })()}
 
             {/* Éditeur d'étape (étape non lancée) */}
             {isEditing && updateStageAction && (

@@ -11452,3 +11452,17 @@ a.header-icon-btn { text-decoration: none; }
 .format-flow-details { padding: 12px 16px; }
 .format-flow-details > summary { cursor: pointer; font-weight: 700; font-size: 14px; }
 .format-flow-details[open] > summary { margin-bottom: 10px; }
+
+/* Onglet Étapes : pré-seeding et échange d'équipes */
+.seeding-panel { padding: 12px 16px; }
+.seeding-panel > summary { cursor: pointer; font-weight: 700; font-size: 14px; }
+.seeding-panel .meta { margin: 8px 0; font-size: 12px; }
+.seeding-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 420px; overflow-y: auto; }
+.seeding-list li { display: grid; grid-template-columns: 32px minmax(0, 1fr) 40px 40px; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--border-light); border-radius: 8px; }
+.seeding-list__rank { font-weight: 800; font-variant-numeric: tabular-nums; }
+.seeding-list__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.seeding-list button { min-height: 36px; padding: 0; }
+.seeding-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.stage-swap { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 13px; }
+.stage-swap select { max-width: 180px; }
+.stage-swap small { flex-basis: 100%; }
