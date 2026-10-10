@@ -1375,7 +1375,10 @@
     "registered_teams": "{count} Teams angemeldet",
     "tournaments_count": "{count} Turniere",
     "section_co_organizer": "Als Mitorganisator/in",
-    "empty_co_organizer": "Du bist noch kein Mitorganisator/in eines Turniers."
+    "empty_co_organizer": "Du bist noch kein Mitorganisator/in eines Turniers.",
+    "status_pending_draw": "Wartet auf die Auslosung",
+    "section_not_selected": "Nicht ausgewählt",
+    "solo_registration": "Einzelanmeldung"
   },
   "calendar": {
     "page_title": "Turnierkalender",

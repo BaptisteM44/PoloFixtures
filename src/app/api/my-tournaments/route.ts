@@ -15,14 +15,9 @@ export async function GET() {
 
   // Get all teams the player belongs to, with tournament + teammates
   const teamPlayers = await prisma.teamPlayer.findMany({
-    where: {
-      playerId,
-      // Une équipe refusée au tirage a selected=false ET waitlistPosition=null —
-      // celles-là ne reviendront jamais, on ne les affiche plus. Une équipe en
-      // liste d'attente a aussi selected=false mais waitlistPosition renseigné :
-      // elle doit rester visible (section "En attente" à part, voir plus bas).
-      team: { OR: [{ selected: true }, { waitlistPosition: { not: null } }] },
-    },
+    // Toutes les inscriptions, y compris non retenues : le joueur veut voir à
+    // quels tournois il a tenté sa chance (section « Non retenu » côté page).
+    where: { playerId },
     include: {
       team: {
         include: {
@@ -58,7 +53,10 @@ export async function GET() {
     orderBy: { team: { tournament: { dateStart: "desc" } } },
   });
 
-  const entries = teamPlayers.map((tp) => ({
+  const entries: Array<Record<string, unknown> & { teamId: string }> = teamPlayers.map((tp) => ({
+    selectionStatus: tp.team.waitlistPosition !== null ? "waitlist" : tp.team.selected ? "in" : "not_selected",
+    hasTeam: true,
+    solo: false,
     teamId: tp.team.id,
     teamName: tp.team.name,
     teamColor: tp.team.color,
@@ -76,6 +74,34 @@ export async function GET() {
       }))
       .sort((a, b) => (a.isCaptain === b.isCaptain ? 0 : a.isCaptain ? -1 : 1)),
   }));
+
+  // ABC Chapeau : inscriptions individuelles. Avant le tirage il n'y a pas
+  // d'équipe — elles n'apparaissaient nulle part dans « Mes tournois ».
+  const soloEntries = await prisma.tournamentSoloEntry.findMany({
+    where: { playerId },
+    include: {
+      tournament: {
+        select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, status: true, bannerPath: true },
+      },
+      player: { select: { id: true, name: true, slug: true, photoPath: true, country: true } },
+    },
+  });
+  const knownTeamIds = new Set(entries.map((e) => e.teamId));
+  for (const se of soloEntries) {
+    if (se.teamId && knownTeamIds.has(se.teamId)) continue; // déjà listée via son équipe tirée
+    entries.push({
+      selectionStatus: se.waitlisted ? "waitlist" : se.teamId ? "in" : "pending",
+      hasTeam: false,
+      solo: true,
+      teamId: `solo-${se.id}`,
+      teamName: "",
+      teamColor: null,
+      isCaptain: false,
+      tournament: se.tournament,
+      waitlistPosition: null,
+      teammates: [{ id: se.player.id, name: se.player.name, slug: se.player.slug, photoPath: se.player.photoPath, country: se.player.country, isCaptain: false }],
+    });
+  }
 
   // Tournaments created by this player — hors bacs à sable (testMode), qui
   // ont leur propre écran de gestion dédié (/sandbox).

@@ -36,6 +36,11 @@ type Entry = {
   tournament: Tournament;
   teammates: Teammate[];
   waitlistPosition: number | null;
+  /** in = retenu · waitlist = liste d'attente · pending = en attente du tirage (ABC Chapeau) · not_selected = pas retenu */
+  selectionStatus: "in" | "waitlist" | "pending" | "not_selected";
+  /** false pour une inscription individuelle pas encore tirée dans une équipe (pas de chat d'équipe) */
+  hasTeam: boolean;
+  solo: boolean;
 };
 
 type CreatedTournament = {
@@ -133,8 +138,10 @@ export default function MyTournamentsPage() {
 
   // Équipes en liste d'attente : à part, tant qu'elles ne sont pas confirmées
   // ce n'est pas une inscription définitive — on ne veut pas les mélanger.
-  const confirmedEntries = entries.filter((e) => e.waitlistPosition === null);
-  const waitlistedEntries = entries.filter((e) => e.waitlistPosition !== null).sort(asc);
+  const confirmedEntries = entries.filter((e) => e.selectionStatus === "in");
+  const waitlistedEntries = entries.filter((e) => e.selectionStatus === "waitlist").sort(asc);
+  const pendingEntries = entries.filter((e) => e.selectionStatus === "pending").sort(asc);
+  const notSelectedEntries = entries.filter((e) => e.selectionStatus === "not_selected").sort(desc);
 
   const upcoming = confirmedEntries.filter((e) => e.tournament.status === "UPCOMING").sort(asc);
   const live = confirmedEntries.filter((e) => e.tournament.status === "LIVE").sort(asc);
@@ -143,8 +150,10 @@ export default function MyTournamentsPage() {
   const playerSections = [
     { title: `🔴  ${ts("status_live")}`, entries: live, collapsible: false },
     { title: `📅  ${ts("status_upcoming")}`, entries: upcoming, collapsible: false },
+    { title: `🎲  ${t("status_pending_draw")}`, entries: pendingEntries, collapsible: false },
     { title: `⏳  ${t("status_waitlisted")}`, entries: waitlistedEntries, collapsible: false },
     { title: `✅  ${ts("status_completed")}`, entries: completed, collapsible: true },
+    { title: `🚫  ${t("section_not_selected")}`, entries: notSelectedEntries, collapsible: true },
   ].filter((s) => s.entries.length > 0);
 
   const createdUpcoming = created.filter((t) => t.status === "UPCOMING").sort(ascT);
@@ -202,7 +211,7 @@ export default function MyTournamentsPage() {
                           <div className="my-tournaments__team-header">
                             <span className="my-tournaments__team-name">
                               {entry.teamColor && <span className="my-tournaments__team-dot" />}
-                              {entry.teamName}
+                              {entry.teamName || t("solo_registration")}
                             </span>
                             {entry.isCaptain && <span className="my-tournaments__captain-badge">{t("captain")}</span>}
                           </div>
@@ -227,10 +236,10 @@ export default function MyTournamentsPage() {
                             ))}
                           </div>
                         </div>
-                        <button className="my-tournaments__chat-toggle" onClick={() => setOpenChat(chatOpen ? null : entry.teamId)}>
+                        {entry.hasTeam && <button className="my-tournaments__chat-toggle" onClick={() => setOpenChat(chatOpen ? null : entry.teamId)}>
                           💬 {chatOpen ? t("chat_close") : t("chat_open")}
-                        </button>
-                        {chatOpen && (
+                        </button>}
+                        {chatOpen && entry.hasTeam && (
                           <div className="my-tournaments__chat-container">
                             <TeamChat teamId={entry.teamId} currentPlayerId={playerId} teammates={entry.teammates} charterAccepted={charterAccepted} />
                           </div>
@@ -270,12 +279,15 @@ export default function MyTournamentsPage() {
                           ⏳ {t("waitlist_position", { position: entry.waitlistPosition })}
                         </p>
                       )}
+                      {entry.selectionStatus === "pending" && (
+                        <p className="meta" style={{ margin: "0 0 8px" }}>🎲 {t("status_pending_draw")}</p>
+                      )}
 
                       <div className="my-tournaments__team" style={entry.teamColor ? { "--team-accent": entry.teamColor } as React.CSSProperties : undefined}>
                         <div className="my-tournaments__team-header">
                           <span className="my-tournaments__team-name">
                             {entry.teamColor && <span className="my-tournaments__team-dot" />}
-                            {entry.teamName}
+                            {entry.teamName || t("solo_registration")}
                           </span>
                           {entry.isCaptain && <span className="my-tournaments__captain-badge">{t("captain")}</span>}
                         </div>
@@ -303,14 +315,16 @@ export default function MyTournamentsPage() {
                         </div>
                       </div>
 
-                      <button
-                        className="my-tournaments__chat-toggle"
-                        onClick={() => setOpenChat(chatOpen ? null : entry.teamId)}
-                      >
-                        💬 {chatOpen ? t("chat_close") : t("chat_open")}
-                      </button>
+                      {entry.hasTeam && (
+                        <button
+                          className="my-tournaments__chat-toggle"
+                          onClick={() => setOpenChat(chatOpen ? null : entry.teamId)}
+                        >
+                          💬 {chatOpen ? t("chat_close") : t("chat_open")}
+                        </button>
+                      )}
 
-                      {chatOpen && (
+                      {chatOpen && entry.hasTeam && (
                         <div className="my-tournaments__chat-container">
                           <TeamChat teamId={entry.teamId} currentPlayerId={playerId} teammates={entry.teammates} charterAccepted={charterAccepted} />
                         </div>

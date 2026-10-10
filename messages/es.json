@@ -1374,7 +1374,10 @@
     "registered_teams": "{count} equipos inscritos",
     "tournaments_count": "{count} torneos",
     "section_co_organizer": "Como co-organizador/a",
-    "empty_co_organizer": "Todavía no eres co-organizador/a de ningún torneo."
+    "empty_co_organizer": "Todavía no eres co-organizador/a de ningún torneo.",
+    "status_pending_draw": "Esperando el sorteo",
+    "section_not_selected": "No seleccionado",
+    "solo_registration": "Inscripción individual"
   },
   "calendar": {
     "page_title": "Calendario de torneos",

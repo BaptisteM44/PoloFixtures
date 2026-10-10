@@ -1370,7 +1370,10 @@
     "registered_teams": "{count} équipes inscrites",
     "tournaments_count": "{count} tournois",
     "section_co_organizer": "En tant que co-organisateur.trice",
-    "empty_co_organizer": "Tu n'es co-organisateur.trice d'aucun tournoi pour l'instant."
+    "empty_co_organizer": "Tu n'es co-organisateur.trice d'aucun tournoi pour l'instant.",
+    "status_pending_draw": "En attente du tirage",
+    "section_not_selected": "Non retenu",
+    "solo_registration": "Inscription individuelle"
   },
   "calendar": {
     "page_title": "Calendrier des tournois",
