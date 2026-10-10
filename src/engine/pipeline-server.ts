@@ -1455,7 +1455,7 @@ export async function simulateOnePass(tournamentId: string): Promise<{ ok?: bool
   const playable = active.matches
     .filter((m) => m.status !== "FINISHED" && m.teamAId && m.teamBId)
     .sort((a, b) => a.roundIndex - b.roundIndex || a.positionInRound - b.positionInRound);
-  const isBracket = active.type === "SE" || active.type === "DE";
+  const isBracket = active.type === "SE" || active.type === "DE" || active.type === "PLACEMENT"; // pas de nul possible
 
   let played = 0;
   for (const m of playable) {
