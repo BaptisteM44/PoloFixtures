@@ -1001,7 +1001,9 @@
     "filter_all_teams": "Todos",
     "pipeline_tie_title": "Empate perfecto por resolver",
     "pipeline_tie_text": "{teams}: empate perfecto por el puesto {rank} en «{stage}».",
-    "pipeline_tie_hint": "La etapa no se lanzó sola. Desempata (tanda de penaltis: añade un gol al ganador en uno de sus partidos) o lánzala igualmente: decidirá el orden de entrada."
+    "pipeline_tie_hint": "La etapa no se lanzó sola. Desempata (tanda de penaltis: añade un gol al ganador en uno de sus partidos) o lánzala igualmente: decidirá el orden de entrada.",
+    "final_ranking_title": "Clasificación final",
+    "final_ranking_tied": "empatado"
   },
   "registration": {
     "section_title": "Inscribir mi equipo",

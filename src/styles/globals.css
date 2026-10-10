@@ -11257,6 +11257,22 @@ a.header-icon-btn { text-decoration: none; }
   font-weight: 700; font-size: 14px; text-align: center;
 }
 
+/* Récap : classement final complet */
+.final-ranking h2 { margin: 0 0 12px; }
+.final-ranking__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.final-ranking__row {
+  display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 8px 12px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--surface);
+}
+.final-ranking__row.is-top1 { border: 2px solid var(--border); background: color-mix(in srgb, var(--yellow) 55%, var(--surface)); }
+.final-ranking__row.is-top2, .final-ranking__row.is-top3 { border-color: var(--border); }
+.final-ranking__row.is-mine { outline: 2px solid var(--pink); }
+.final-ranking__rank { display: grid; font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.final-ranking__rank small { font-size: 10px; font-weight: 600; color: var(--text-muted); }
+.final-ranking__team { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.final-ranking__stage { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+@media (max-width: 500px) { .final-ranking__stage { display: none; } }
+
 /* Onglet Étapes : égalité parfaite sur une ligne de qualification */
 .pipeline-tie { margin-top: 8px; padding: 10px 12px; border: 2px solid var(--border); border-radius: var(--radius); background: var(--yellow); color: #111; font-size: 13px; }
 .pipeline-tie p { margin: 4px 0 0; }

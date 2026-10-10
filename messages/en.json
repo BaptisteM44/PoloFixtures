@@ -1002,7 +1002,9 @@
     "filter_all_teams": "All",
     "pipeline_tie_title": "Perfect tie to break",
     "pipeline_tie_text": "{teams}: perfect tie for place {rank} in “{stage}”.",
-    "pipeline_tie_hint": "The stage didn't start on its own. Break the tie (shoot-out: add a goal to the winner in one of its matches), or launch anyway: the entry order will decide."
+    "pipeline_tie_hint": "The stage didn't start on its own. Break the tie (shoot-out: add a goal to the winner in one of its matches), or launch anyway: the entry order will decide.",
+    "final_ranking_title": "Final standings",
+    "final_ranking_tied": "tied"
   },
   "registration": {
     "section_title": "Register my team",

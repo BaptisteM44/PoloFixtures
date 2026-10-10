@@ -1002,7 +1002,9 @@
     "filter_all_teams": "Toutes",
     "pipeline_tie_title": "Égalité parfaite à départager",
     "pipeline_tie_text": "{teams} : égalité parfaite pour la {rank}e place de « {stage} ».",
-    "pipeline_tie_hint": "L'étape ne s'est pas lancée toute seule. Départagez-les (tir au but : ajoutez un but au vainqueur dans un de ses matchs), ou lancez quand même : l'ordre d'entrée tranchera."
+    "pipeline_tie_hint": "L'étape ne s'est pas lancée toute seule. Départagez-les (tir au but : ajoutez un but au vainqueur dans un de ses matchs), ou lancez quand même : l'ordre d'entrée tranchera.",
+    "final_ranking_title": "Classement final",
+    "final_ranking_tied": "ex æquo"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",

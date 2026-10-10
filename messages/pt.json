@@ -1002,7 +1002,9 @@
     "filter_all_teams": "Todas",
     "pipeline_tie_title": "Empate perfeito a desempatar",
     "pipeline_tie_text": "{teams}: empate perfeito pelo {rank}.º lugar em «{stage}».",
-    "pipeline_tie_hint": "A etapa não arrancou sozinha. Desempata (desempate por penáltis: acrescenta um golo ao vencedor num dos seus jogos) ou lança mesmo assim: decide a ordem de entrada."
+    "pipeline_tie_hint": "A etapa não arrancou sozinha. Desempata (desempate por penáltis: acrescenta um golo ao vencedor num dos seus jogos) ou lança mesmo assim: decide a ordem de entrada.",
+    "final_ranking_title": "Classificação final",
+    "final_ranking_tied": "empatado"
   },
   "registration": {
     "section_title": "Inscrever a minha equipa",

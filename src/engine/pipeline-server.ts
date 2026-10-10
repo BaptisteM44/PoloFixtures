@@ -14,7 +14,7 @@
 import { prisma } from "@/lib/db";
 import type { Prisma, Stage, StageEntry, Match, StageType } from "@prisma/client";
 import { resolveEntries, type EntryRules, type ResolvedEntry } from "./transitions";
-import { pointsStandings, perfectTieRanks, placementStandings, bracketStandings, type MatchLite, type ScoringConfig } from "./stage-standings";
+import { pointsStandings, perfectTieRanks, placementStandings, bracketStandings, bracketTieGroups, type MatchLite, type ScoringConfig } from "./stage-standings";
 import { rrRounds, swissPairings, crossPoolPairings, placementPairings, pairKey, type Pairing } from "./rounds";
 import { planSE } from "./se";
 import { planDE } from "./de";
@@ -203,6 +203,75 @@ export function finalStandings(t: PipelineTournament): string[] {
     for (const id of stageStandings(t, stage.order)) push(id);
   }
   for (const team of t.teams) push(team.id);
+  return out;
+}
+
+/**
+ * Classement final complet, avec ex æquo (« 5e ex æquo »).
+ *  - Chaque équipe est classée par la DERNIÈRE étape qu'elle a jouée.
+ *  - Les étapes sont ordonnées par la meilleure place qu'elles peuvent donner
+ *    (tableau principal avant les éliminés de poule, avant le tableau
+ *    « bottom »), puis la plus avancée d'abord.
+ *  - Dans une étape : tableau → par tour d'élimination (mêmes tours = ex
+ *    æquo) ; poules multiples → même rang de poule = ex æquo ; poule unique /
+ *    Swiss → le classement, seules les égalités parfaites restent ex æquo.
+ */
+export function finalRanking(t: PipelineTournament): Array<{ teamId: string; rank: number; tied: boolean; stageName: string }> {
+  const stages = [...t.stages].filter((s) => s.status !== "SKIPPED" && s.entries.length > 0).sort((a, b) => a.order - b.order);
+  const lastStage = new Map<string, number>();
+  for (const s of stages) for (const e of s.entries) if (e.teamId) lastStage.set(e.teamId, s.order);
+
+  // Meilleure place d'origine d'une étape (rangs X-Y remontés jusqu'aux inscriptions).
+  const rootMinMemo = new Map<number, number>();
+  const rootMin = (order: number): number => {
+    if (rootMinMemo.has(order)) return rootMinMemo.get(order)!;
+    const st = t.stages.find((x) => x.order === order);
+    const rules = (st?.entryRules ?? { sources: [] }) as unknown as EntryRules;
+    const v = Math.min(1e9, ...rules.sources.map((src) => src.kind === "registration" ? 1 : rootMin(src.stageOrder) + src.from - 1));
+    rootMinMemo.set(order, v === 1e9 ? 1 : v);
+    return rootMinMemo.get(order)!;
+  };
+  const ordered = [...stages].sort((a, b) => rootMin(a.order) - rootMin(b.order) || b.order - a.order);
+
+  const groups: Array<{ ids: string[]; stageName: string }> = [];
+  for (const s of ordered) {
+    const terminal = (id: string | null | undefined): id is string => !!id && lastStage.get(id) === s.order;
+    let tieGroups: string[][];
+    if (s.type === "SE" || s.type === "DE") {
+      tieGroups = bracketTieGroups(s.matches as unknown as MatchLite[]);
+    } else if (s.type === "PLACEMENT") {
+      tieGroups = placementStandings(s.matches as unknown as MatchLite[]).map((id) => [id]);
+    } else {
+      const groupKeys = [...new Set(s.entries.map((e) => e.groupKey))].sort();
+      if (s.type !== "CROSS_POOL" && groupKeys.length > 1) {
+        // Poules multiples : même rang de poule = ex æquo (5e de A = 5e de B).
+        const perGroup = groupKeys.map((g) => stageStandings(t, s.order, g));
+        const depth = Math.max(...perGroup.map((l) => l.length));
+        tieGroups = Array.from({ length: depth }, (_, i) => perGroup.map((l) => l[i]).filter(Boolean));
+      } else {
+        const ranked = stageStandings(t, s.order);
+        const { entryIds, all } = pointsInputs(t, s);
+        const ties = perfectTieRanks(entryIds, all, scoringOf(t));
+        tieGroups = [];
+        for (let i = 0; i < ranked.length; i++) {
+          const pack = ties.find((r) => r[0] === i + 1);
+          if (pack) { tieGroups.push(pack.map((r) => ranked[r - 1])); i += pack.length - 1; }
+          else tieGroups.push([ranked[i]]);
+        }
+      }
+    }
+    for (const g of tieGroups) {
+      const ids = g.filter(terminal);
+      if (ids.length) groups.push({ ids, stageName: s.name });
+      ids.forEach((id) => lastStage.delete(id)); // une seule place par équipe
+    }
+  }
+  const out: Array<{ teamId: string; rank: number; tied: boolean; stageName: string }> = [];
+  let pos = 1;
+  for (const g of groups) {
+    for (const id of g.ids) out.push({ teamId: id, rank: pos, tied: g.ids.length > 1, stageName: g.stageName });
+    pos += g.ids.length;
+  }
   return out;
 }
 

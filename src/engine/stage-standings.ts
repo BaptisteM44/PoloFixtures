@@ -231,3 +231,58 @@ export function bracketStandings(matches: MatchLite[]): string[] {
   }
   return out;
 }
+
+// ─── Classement final avec ex æquo ───────────────────────────────────────────
+
+/**
+ * Places d'un tableau (SE / DE), par paquets d'ex æquo : [[champion],
+ * [finaliste], [3e], [4e], [perdants des quarts…]…]. Les équipes éliminées au
+ * même stade restent à égalité (« 5e ex æquo »), sauf si un match de
+ * classement les a départagées (petite finale).
+ */
+export function bracketTieGroups(matches: MatchLite[]): string[][] {
+  const groups: string[][] = [];
+  const placed = new Set<string>();
+  const add = (ids: (string | null | undefined)[]) => {
+    const fresh = ids.filter((x): x is string => !!x && !placed.has(x));
+    if (fresh.length === 0) return;
+    fresh.forEach((x) => placed.add(x));
+    groups.push(fresh);
+  };
+  const winnerOf = (m: MatchLite) => m.winnerTeamId ?? (m.scoreA > m.scoreB ? m.teamAId : m.scoreB > m.scoreA ? m.teamBId : null);
+  const loserOf = (m: MatchLite) => {
+    const w = winnerOf(m);
+    return w ? (w === m.teamAId ? m.teamBId : m.teamAId) : null;
+  };
+  const played = (m: MatchLite) => m.status === "FINISHED" && !!m.teamAId && !!m.teamBId;
+
+  const bg = matches.find((m) => m.bracketSide === "BG" && played(m));
+  const g = matches.find((m) => m.bracketSide === "G" && played(m));
+  const decisive = bg ?? g;
+  if (decisive) { add([winnerOf(decisive)]); add([loserOf(decisive)]); }
+
+  const lSide = matches.filter((m) => m.bracketSide === "L");
+  const isDE = lSide.length > 1 || lSide.some((m) => m.roundIndex > 1 && lSide.filter((x) => x.roundIndex === m.roundIndex).length > 1);
+  if (!isDE && lSide.length === 1 && played(lSide[0])) {
+    add([winnerOf(lSide[0])]); add([loserOf(lSide[0])]); // petite finale
+  }
+  // Éliminés par tour, du plus avancé au premier : un tour = un paquet d'ex æquo.
+  const elim = matches.filter((m) => m.bracketSide === (isDE ? "L" : "W") && played(m));
+  const rounds = [...new Set(elim.map((m) => m.roundIndex))].sort((a, b) => b - a);
+  for (const r of rounds) add(elim.filter((m) => m.roundIndex === r).map(loserOf));
+  // Filet : participants restants (tableau inachevé)
+  const rest = matches.flatMap((m) => [m.teamAId, m.teamBId]);
+  add(rest);
+  return groups;
+}
+
+/** Rangs « sportifs » depuis des paquets d'ex æquo : [[a],[b],[c,d],[e]] → a 1, b 2, c 3, d 3, e 5. */
+export function ranksFromGroups(groups: string[][], startRank = 1): Array<{ teamId: string; rank: number; tied: boolean }> {
+  const out: Array<{ teamId: string; rank: number; tied: boolean }> = [];
+  let pos = startRank;
+  for (const g of groups) {
+    for (const id of g) out.push({ teamId: id, rank: pos, tied: g.length > 1 });
+    pos += g.length;
+  }
+  return out;
+}

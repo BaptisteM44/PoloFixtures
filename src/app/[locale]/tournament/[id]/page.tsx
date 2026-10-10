@@ -2,7 +2,8 @@
 import { Link } from "@/i18n/navigation";
 import { TournamentGallery } from "@/components/TournamentGallery";
 import { RefereeTab } from "@/components/RefereeTab";
-import { pipelineTieWarnings } from "@/engine/pipeline-server";
+import { pipelineTieWarnings, getPipeline, finalRanking } from "@/engine/pipeline-server";
+import { FinalRankingTable } from "@/components/FinalRankingTable";
 import { parseRefereeSettings } from "@/lib/referees";
 import { galleryPhase } from "@/lib/tournament-photos";
 import { tournamentTimezone } from "@/lib/timezone";
@@ -382,6 +383,10 @@ export default async function TournamentPage({
   type PodiumTeam = { id: string; name: string; players?: PodiumPlayer[] } | null;
   let podium: { first: PodiumTeam; second: PodiumTeam; third: PodiumTeam } = { first: null, second: null, third: null };
 
+  // Classement final complet (étapes), affiché dans le Récap.
+  const finalPipeline = tab === "recap" && isCompleted && isPipeline ? await getPipeline(tournament.id) : null;
+  const finalRows = finalPipeline ? finalRanking(finalPipeline) : null;
+
   if (isCompleted) {
     const ids = await getPodiumTeamIds(tournament.id);
     const podiumIds = [ids.first, ids.second, ids.third].filter((x): x is string => !!x);
@@ -571,6 +576,14 @@ export default async function TournamentPage({
           />
         );
       })()}
+      {/* Classement final complet (étapes) : éliminés au même stade = ex æquo */}
+      {finalRows && (
+        <FinalRankingTable
+          rows={finalRows}
+          teamNames={Object.fromEntries((tournament.teams as any[]).map((tm: any) => [tm.id, tm.name]))}
+          myTeamId={myTeam?.id ?? null}
+        />
+      )}
 
       {/* ── INFO TAB — 12-column flexible grid ── */}
       {tab === "info" && (
