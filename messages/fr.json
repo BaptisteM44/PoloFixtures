@@ -2066,7 +2066,9 @@
     "cfg_first_round": "1er tour",
     "first_round_fold": "Le haut contre le bas (1 contre 5…)",
     "first_round_adjacent": "Voisins (1 contre 2…)",
-    "first_round_random": "Tirage au sort"
+    "first_round_random": "Tirage au sort",
+    "assign_source": "Une source = un groupe",
+    "assign_source_hint": "les qualifiés de chaque source restent ensemble, dans leur ordre"
   },
   "legal_privacy": {
     "title": "Politique de confidentialité",

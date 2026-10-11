@@ -20,7 +20,7 @@ export type EntryRules = {
   sources: EntrySource[];
   interleaveSources?: boolean;
   groups?: number;
-  groupAssign?: "snake" | "interleave" | "block" | "manual";
+  groupAssign?: "snake" | "interleave" | "block" | "manual" | "source";
 };
 
 export type BuilderStage = {
@@ -398,16 +398,26 @@ export function EntryRulesFields({
 
           {entryRules.sources.length > 1 && (
             <label style={{ fontSize: 12 }}>
-              <input type="checkbox" checked={!!entryRules.interleaveSources} onChange={(e) => onChange({ ...entryRules, interleaveSources: e.target.checked })} />
+              <input type="checkbox" checked={!!entryRules.interleaveSources} disabled={entryRules.groupAssign === "source"} onChange={(e) => onChange({ ...entryRules, interleaveSources: e.target.checked })} />
               {" "}{t("interleave")}
+            </label>
+          )}
+          {entryRules.sources.length > 1 && (
+            <label style={{ fontSize: 12 }} title={t("assign_source_hint")}>
+              <input type="checkbox" checked={entryRules.groupAssign === "source"}
+                onChange={(e) => onChange(e.target.checked
+                  ? { ...entryRules, groupAssign: "source", groups: entryRules.sources.length, interleaveSources: undefined }
+                  : { ...entryRules, groupAssign: undefined, groups: undefined })} />
+              {" "}{t("assign_source")}
+              <span style={{ marginLeft: 4, color: "var(--text-muted)" }}>({t("assign_source_hint")})</span>
             </label>
           )}
         </div>
       )}
 
       <div style={{ display: "flex", gap: 14, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <label>{t("split_into")} <input type="number" min={1} max={8} value={entryRules.groups ?? 1} onChange={(e) => onChange({ ...entryRules, groups: Number(e.target.value) || undefined })} style={{ width: 50 }} /> {t("groups_count")}</label>
-        {(entryRules.groups ?? 1) > 1 && (
+        <label>{t("split_into")} <input type="number" min={1} max={8} value={entryRules.groups ?? 1} disabled={entryRules.groupAssign === "source"} onChange={(e) => onChange({ ...entryRules, groups: Number(e.target.value) || undefined })} style={{ width: 50 }} /> {t("groups_count")}</label>
+        {(entryRules.groups ?? 1) > 1 && entryRules.groupAssign !== "source" && (
           <select value={entryRules.groupAssign ?? "snake"} onChange={(e) => onChange({ ...entryRules, groupAssign: e.target.value as EntryRules["groupAssign"] })}>
             <option value="snake">{t("assign_snake")}</option>
             <option value="interleave">{t("assign_interleave")}</option>

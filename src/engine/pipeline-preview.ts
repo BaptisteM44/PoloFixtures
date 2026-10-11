@@ -96,6 +96,9 @@ export function previewPipeline(stages: PreviewStageInput[], teamCount: number):
         if (prev && prev.groupSizes.length > 1 && src?.kind === "stageRanks" && !src.group) teams = groupSizes.reduce((a, b) => a + b, 0);
       }
       if (groupSizes.length < 2) warnings.push({ kind: "cross_pool_groups" });
+    } else if (st.entryRules.groupAssign === "source" && perSourceCounts.length > 1) {
+      // Une source = un groupe (ex : les 1ers-2es de la poule A restent ensemble).
+      groupSizes = perSourceCounts.filter((n) => n > 0);
     } else {
       groupSizes = split(teams, st.entryRules.groups ?? 1);
     }

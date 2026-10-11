@@ -15,7 +15,7 @@ export type EntrySource =
   | { kind: "registration" } // seeds initiaux du tournoi (équipes sélectionnées triées)
   | { kind: "stageRanks"; stageOrder: number; group?: string; from: number; to: number }; // rangs 1-based inclusifs
 
-export type GroupAssign = "snake" | "interleave" | "block" | "manual";
+export type GroupAssign = "snake" | "interleave" | "block" | "manual" | "source";
 
 export type EntryRules = {
   /** Sources concaténées dans l'ordre = ordre de seed du stage. */
@@ -64,9 +64,13 @@ export function resolveEntries(rules: EntryRules, ctx: TransitionContext, opts?:
     return ranked.slice(src.from - 1, src.to);
   });
 
-  // Cas cross-pool : une source = un groupe (A, B, …), en préservant l'ordre
-  // de classement de chaque poule. Dédoublonnage par groupe.
-  if (opts?.sourcesAsGroups && lists.length > 1) {
+  // Cas cross-pool OU groupAssign="source" : une source = un groupe (A, B, …),
+  // en préservant l'ordre de classement propre à CHAQUE source — pas le
+  // classement général aplati. Chaque source garde son groupe d'origine
+  // (ex: rangs 1-2 de la poule A restent ensemble dans le groupe A de
+  // sortie), là où interleave/snake/block ré-mélangent tout selon un
+  // classement global reconstruit après concaténation. Dédoublonnage global.
+  if ((opts?.sourcesAsGroups || rules.groupAssign === "source") && lists.length > 1) {
     const out: ResolvedEntry[] = [];
     const seen = new Set<string>();
     lists.forEach((list, gi) => {

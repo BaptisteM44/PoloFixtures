@@ -2065,7 +2065,9 @@
     "cfg_first_round": "Round 1",
     "first_round_fold": "Top vs bottom (1 vs 5…)",
     "first_round_adjacent": "Neighbours (1 vs 2…)",
-    "first_round_random": "Random draw"
+    "first_round_random": "Random draw",
+    "assign_source": "One source = one group",
+    "assign_source_hint": "each source's qualifiers stay together, in their order"
   },
   "legal_privacy": {
     "title": "Privacy Policy",

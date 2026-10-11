@@ -2065,7 +2065,9 @@
     "cfg_first_round": "1.ª ronda",
     "first_round_fold": "Cima contra baixo (1 contra 5…)",
     "first_round_adjacent": "Vizinhos (1 contra 2…)",
-    "first_round_random": "Sorteio"
+    "first_round_random": "Sorteio",
+    "assign_source": "Uma fonte = um grupo",
+    "assign_source_hint": "os qualificados de cada fonte ficam juntos, pela sua ordem"
   },
   "legal_privacy": {
     "title": "Política de privacidade",

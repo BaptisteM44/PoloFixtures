@@ -2070,7 +2070,9 @@
     "cfg_first_round": "1. Runde",
     "first_round_fold": "Oben gegen unten (1 gegen 5…)",
     "first_round_adjacent": "Nachbarn (1 gegen 2…)",
-    "first_round_random": "Auslosung"
+    "first_round_random": "Auslosung",
+    "assign_source": "Eine Quelle = eine Gruppe",
+    "assign_source_hint": "die Qualifizierten jeder Quelle bleiben zusammen, in ihrer Reihenfolge"
   },
   "legal_privacy": {
     "title": "Datenschutzerklärung",

@@ -214,3 +214,25 @@ describe("detectConflicts", () => {
     expect(problems).toHaveLength(0);
   });
 });
+
+describe("groupAssign « source » : une source = un groupe", () => {
+  it("chaque source garde son ordre et devient son groupe (A, B), sans tout remélanger", () => {
+    const standings: Record<string, string[]> = { "0|A": ["a1", "a2", "a3"], "0|B": ["b1", "b2", "b3"] };
+    const ctx = { registrationSeeds: [], stageStandings: (o: number, g?: string) => standings[`${o}|${g}`] ?? [] };
+    const rules = {
+      sources: [
+        { kind: "stageRanks" as const, stageOrder: 0, group: "A", from: 1, to: 2 },
+        { kind: "stageRanks" as const, stageOrder: 0, group: "B", from: 1, to: 2 },
+      ],
+      groups: 2,
+      groupAssign: "source" as const,
+    };
+    expect(resolveEntries(rules, ctx)).toEqual([
+      { groupKey: "A", slot: 1, teamId: "a1" }, { groupKey: "A", slot: 2, teamId: "a2" },
+      { groupKey: "B", slot: 1, teamId: "b1" }, { groupKey: "B", slot: 2, teamId: "b2" },
+    ]);
+    // Sans le mode « source », le serpentin mélange : a1/b2 ensemble, b1/a2 ensemble.
+    const snake = resolveEntries({ ...rules, groupAssign: "snake" }, ctx);
+    expect(snake.filter((e) => e.groupKey === "A").map((e) => e.teamId)).toEqual(["a1", "b2"]);
+  });
+});
