@@ -774,6 +774,13 @@ export async function applyScore(
   const winnerId = scoreA > scoreB ? match.teamAId : scoreB > scoreA ? match.teamBId : null;
   const loserId = winnerId === null ? null : winnerId === match.teamAId ? match.teamBId : match.teamAId;
 
+  // Correction après coup : le match suivant est déjà commencé/joué avec une autre équipe → refus.
+  const { downstreamConflict } = await import("@/lib/bracket-guard");
+  if (await downstreamConflict(match, winnerId)) {
+    const { apiMsg } = await import("@/lib/api-messages");
+    return { error: apiMsg("downstream_played") };
+  }
+
   await prisma.$transaction(async (tx) => {
     await tx.match.update({
       where: { id: matchId },

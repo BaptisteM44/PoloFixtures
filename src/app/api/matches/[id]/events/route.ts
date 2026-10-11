@@ -8,6 +8,7 @@ import { autoFillReferees, isRefereeTeamMember, remindNextUp } from "@/lib/refer
 import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
+import { downstreamConflict } from "@/lib/bracket-guard";
 import { isEliminationMatch } from "@/lib/match-kind";
 
 const schema = z.object({
@@ -85,6 +86,21 @@ export async function POST(request: Request, { params }: { params: { id: string 
       { error: apiMsg("match_finished_reopen") },
       { status: 409 }
     );
+  }
+
+  // Fin de match (rouvert pour correction) : si le vainqueur doit prendre une
+  // place déjà occupée par une autre équipe dans un match suivant commencé
+  // ou joué, on refuse AVANT d'écrire quoi que ce soit.
+  if ((parsed.data.type === "END" || parsed.data.type === "GOLDEN_GOAL") && (match.nextMatchWinId || match.nextMatchLoseId)) {
+    let prospective: string | null = null;
+    if (parsed.data.type === "GOLDEN_GOAL") prospective = parsed.data.teamId ?? null;
+    else {
+      const fresh = await prisma.match.findUniqueOrThrow({ where: { id: match.id }, select: { scoreA: true, scoreB: true } });
+      prospective = fresh.scoreA > fresh.scoreB ? match.teamAId : fresh.scoreB > fresh.scoreA ? match.teamBId : null;
+    }
+    if (await downstreamConflict(match, prospective)) {
+      return Response.json({ error: apiMsg("downstream_played") }, { status: 409 });
+    }
   }
 
   const payload: Record<string, unknown> = {
