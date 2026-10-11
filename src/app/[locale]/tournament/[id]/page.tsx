@@ -1275,7 +1275,7 @@ export default async function TournamentPage({
                     <tbody>
                       {rrStandings.map((row: any, i: number) => (
                         <tr key={row.teamId}>
-                          <td style={{ fontWeight: 700, color: "var(--text-muted)", width: 28 }}>{i + 1}</td>
+                          <td style={{ fontWeight: 700, color: "var(--text-muted)", width: 28 }}>{row.rank ?? i + 1}</td>
                           <td style={{ fontWeight: 600 }}>{row.name}</td>
                           <td>{row.played}</td>
                           <td style={{ color: "var(--teal)" }}>{row.wins}</td>
@@ -1509,7 +1509,7 @@ export default async function TournamentPage({
                   <tbody>
                     {standings.map((row: any, i: number) => (
                       <tr key={row.teamId}>
-                        <td className="swiss-standing-rank">{i + 1}</td>
+                        <td className="swiss-standing-rank">{row.rank ?? i + 1}</td>
                         <td style={{ fontWeight: 600 }}>{row.name}</td>
                         <td style={{ fontFamily: "var(--font-display)", fontWeight: 900 }}>{row.points}</td>
                         <td>{row.played}</td>
@@ -1628,7 +1628,7 @@ export default async function TournamentPage({
                     <tbody>
                       {standings.map((row, i) => (
                         <tr key={row.teamId}>
-                          <td className="swiss-standing-rank">{i + 1}</td>
+                          <td className="swiss-standing-rank">{row.rank ?? i + 1}</td>
                           <td style={{ fontWeight: 600 }}>{row.name}</td>
                           <td style={{ fontFamily: "var(--font-display)", fontWeight: 900 }}>{row.points}</td>
                           <td>{row.played}</td>

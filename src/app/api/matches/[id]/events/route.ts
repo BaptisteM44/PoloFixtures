@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const match = await prisma.match.findUnique({ where: { id: params.id }, include: { tournament: { select: { gfReset: true } }, stage: { select: { type: true } } } });
+  const match = await prisma.match.findUnique({ where: { id: params.id }, include: { tournament: { select: { gfReset: true } } } });
   if (!match) return new Response("Not found", { status: 404 });
 
   // Auth: allow REF/ADMIN/ORGA roles OR tournament creator/co-organizer

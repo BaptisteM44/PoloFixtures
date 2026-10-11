@@ -36,6 +36,8 @@ export type StandingRow = {
   buchholz: number;
   /** Somme des points des adversaires battus. */
   sonnebornBerger: number;
+  /** Rang (1-based) — identique pour des équipes à égalité parfaite. */
+  rank: number;
 };
 
 // ─── Étapes à points (RR / Swiss / Cross-pool) ───────────────────────────────
@@ -46,10 +48,12 @@ const isBye = (m: MatchLite) => m.status === "FINISHED" && !!m.teamAId && !m.tea
  * LE classement à points — utilisé à la fois par le moteur (qui se qualifie)
  * et par les tableaux affichés aux joueurs : les deux sont toujours identiques.
  *
- * `teamIds` fixe la population (et l'ordre en cas d'égalité parfaite : l'ordre
- * d'entrée = seed du stage fait foi). Un BYE compte comme une victoire 1-0.
- * Départage : points > différence de buts > Buchholz > Sonneborn-Berger >
- * buts marqués > confrontation directe > ordre d'entrée.
+ * `teamIds` fixe la population. Un BYE compte comme une victoire 1-0.
+ * Départage : points > buts marqués > différence de buts > Buchholz >
+ * Sonneborn-Berger > confrontation directe. L'ordre de départ NE départage
+ * PAS : des équipes à égalité parfaite partagent le même rang (il ne sert
+ * qu'à les afficher dans un ordre stable ; à la limite d'une qualification,
+ * l'orga est alerté et tranche).
  */
 export function standingsTable(
   teamIds: string[],
@@ -58,7 +62,7 @@ export function standingsTable(
 ): StandingRow[] {
   const rows = new Map<string, StandingRow>();
   for (const id of teamIds) {
-    rows.set(id, { teamId: id, played: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDiff: 0, points: 0, buchholz: 0, sonnebornBerger: 0 });
+    rows.set(id, { teamId: id, played: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDiff: 0, points: 0, buchholz: 0, sonnebornBerger: 0, rank: 0 });
   }
   const opponents = new Map<string, string[]>();
   const defeated = new Map<string, string[]>();
@@ -103,17 +107,21 @@ export function standingsTable(
   }
 
   const order = new Map(teamIds.map((id, i) => [id, i]));
-  return [...rows.values()].sort((x, y) =>
+  const sorted = [...rows.values()].sort((x, y) =>
     compareOnResults(x, y, finished) || (order.get(x.teamId) ?? 0) - (order.get(y.teamId) ?? 0));
+  sorted.forEach((r, i) => {
+    r.rank = i > 0 && compareOnResults(sorted[i - 1], r, finished) === 0 ? sorted[i - 1].rank : i + 1;
+  });
+  return sorted;
 }
 
 /** Compare deux lignes sur les résultats seuls (0 = égalité parfaite, que seul l'ordre d'entrée départage). */
 function compareOnResults(x: StandingRow, y: StandingRow, finished: MatchLite[]): number {
   if (y.points !== x.points) return y.points - x.points;
+  if (y.goalsFor !== x.goalsFor) return y.goalsFor - x.goalsFor;
   if (y.goalDiff !== x.goalDiff) return y.goalDiff - x.goalDiff;
   if (y.buchholz !== x.buchholz) return y.buchholz - x.buchholz;
   if (y.sonnebornBerger !== x.sonnebornBerger) return y.sonnebornBerger - x.sonnebornBerger;
-  if (y.goalsFor !== x.goalsFor) return y.goalsFor - x.goalsFor;
   return headToHead(x.teamId, y.teamId, finished);
 }
 
@@ -128,7 +136,7 @@ export function pointsStandings(
 
 /**
  * Égalités parfaites : équipes voisines au classement que RIEN ne départage
- * (points, diff, Buchholz, Sonneborn-Berger, buts, confrontation directe) —
+ * (points, buts marqués, diff, Buchholz, Sonneborn-Berger, confrontation directe) —
  * seul l'ordre d'entrée les sépare. Renvoie les rangs (1-based) concernés,
  * par paquets : [[4, 5]] = la 4e et la 5e sont à égalité parfaite.
  */

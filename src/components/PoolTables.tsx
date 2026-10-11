@@ -195,7 +195,7 @@ export function PoolTables({
             <tbody>
               {combinedStandings.map((row, i) => (
                 <tr key={row.teamId}>
-                  <td style={{ fontWeight: 700, color: "var(--text-muted)", width: 28 }}>{i + 1}</td>
+                  <td style={{ fontWeight: 700, color: "var(--text-muted)", width: 28 }}>{row.rank ?? i + 1}</td>
                   <td><TeamCell teamId={row.teamId} name={row.name} /></td>
                   <td>{row.wins}</td>
                   <td>{row.draws}</td>
@@ -234,7 +234,7 @@ export function PoolTables({
             <tbody>
               {barrageStandings.map((row, i) => (
                 <tr key={row.teamId}>
-                  <td style={{ fontWeight: 700, color: "var(--text-muted)", width: 28 }}>{i + 1}</td>
+                  <td style={{ fontWeight: 700, color: "var(--text-muted)", width: 28 }}>{row.rank ?? i + 1}</td>
                   <td><TeamCell teamId={row.teamId} name={row.name} /></td>
                   <td>{row.wins}</td>
                   <td>{row.draws}</td>

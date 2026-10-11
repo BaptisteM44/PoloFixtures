@@ -40,7 +40,7 @@ export default async function RefereeMatchPage({
         orderBy: { seed: "asc" },
       },
       matches: {
-        include: { teamA: true, teamB: true, events: { orderBy: { createdAt: "asc" } }, stage: { select: { type: true } } },
+        include: { teamA: true, teamB: true, events: { orderBy: { createdAt: "asc" } } },
         orderBy: [{ dayIndex: "asc" }, { startAt: "asc" }],
       },
       coOrganizers: { select: { playerId: true, role: true } },
@@ -103,7 +103,6 @@ export default async function RefereeMatchPage({
           id: m.id,
           phase: m.phase,
           bracketSide: m.bracketSide ?? null,
-          stageType: m.stage?.type ?? null,
           roundIndex: m.roundIndex,
           courtName: m.courtName,
           dayIndex: m.dayIndex,

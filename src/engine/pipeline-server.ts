@@ -194,8 +194,8 @@ export function stageStandings(t: PipelineTournament, stageOrder: number, group?
 /**
  * Égalités parfaites à cheval sur une ligne de qualification : pour chaque
  * source « rangs X à Y » d'une étape, les équipes que RIEN ne départage et
- * dont une partie entre, l'autre non. Seul l'ordre d'entrée les sépare : c'est
- * à l'orga de trancher (tir au but → un but de plus au vainqueur) avant de
+ * dont une partie entre, l'autre non. Rien ne les sépare : c'est
+ * à l'orga de trancher (golden goal → un but de plus au vainqueur) avant de
  * lancer l'étape. Le lancement automatique attend dans ce cas.
  */
 export type QualificationTie = { fromStage: string; group: string | null; rank: number; teamIds: string[] };
@@ -266,7 +266,13 @@ export function finalRanking(t: PipelineTournament): Array<{ teamId: string; ran
     if (s.type === "SE" || s.type === "DE") {
       tieGroups = bracketTieGroups(s.matches as unknown as MatchLite[]);
     } else if (s.type === "PLACEMENT") {
-      tieGroups = placementStandings(s.matches as unknown as MatchLite[]).map((id) => [id]);
+      // Match de classement : vainqueur puis perdant ; un nul = ex æquo.
+      tieGroups = [...s.matches].sort((a, b) => a.positionInRound - b.positionInRound).flatMap((m) => {
+        if (!m.teamAId || !m.teamBId) return [[m.teamAId, m.teamBId].filter(Boolean) as string[]];
+        if (m.status === "FINISHED" && m.scoreA === m.scoreB) return [[m.teamAId, m.teamBId]];
+        const w = m.scoreA >= m.scoreB ? m.teamAId : m.teamBId;
+        return [[w], [w === m.teamAId ? m.teamBId : m.teamAId]];
+      });
     } else {
       const groupKeys = [...new Set(s.entries.map((e) => e.groupKey))].sort();
       if (s.type !== "CROSS_POOL" && groupKeys.length > 1) {
@@ -762,8 +768,7 @@ export async function applyScore(
   if (!match || !match.stageId || !match.stage) return { error: "Match pipeline introuvable." };
   if (!match.teamAId || !match.teamBId) return { error: "Les deux équipes ne sont pas encore connues." };
 
-  // Tableau ou match de placement : il faut un vainqueur (golden goal).
-  const isBracket = match.stage.type === "SE" || match.stage.type === "DE" || match.stage.type === "PLACEMENT";
+  const isBracket = match.stage.type === "SE" || match.stage.type === "DE";
   if (isBracket && scoreA === scoreB) return { error: "Égalité interdite en bracket : un vainqueur est obligatoire." };
 
   const winnerId = scoreA > scoreB ? match.teamAId : scoreB > scoreA ? match.teamBId : null;
@@ -1455,7 +1460,7 @@ export async function simulateOnePass(tournamentId: string): Promise<{ ok?: bool
   const playable = active.matches
     .filter((m) => m.status !== "FINISHED" && m.teamAId && m.teamBId)
     .sort((a, b) => a.roundIndex - b.roundIndex || a.positionInRound - b.positionInRound);
-  const isBracket = active.type === "SE" || active.type === "DE" || active.type === "PLACEMENT"; // pas de nul possible
+  const isBracket = active.type === "SE" || active.type === "DE";
 
   let played = 0;
   for (const m of playable) {

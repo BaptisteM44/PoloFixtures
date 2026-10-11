@@ -1002,7 +1002,7 @@
     "filter_all_teams": "Alle",
     "pipeline_tie_title": "Perfekter Gleichstand",
     "pipeline_tie_text": "{teams}: perfekter Gleichstand um Platz {rank} in „{stage}“.",
-    "pipeline_tie_hint": "Die Etappe wurde nicht automatisch gestartet. Entscheide den Gleichstand (Penalty: gib dem Sieger in einem seiner Spiele ein Tor dazu) oder starte trotzdem: dann entscheidet die Setzreihenfolge.",
+    "pipeline_tie_hint": "Die Etappe wurde nicht automatisch gestartet: entscheide zuerst den Gleichstand (Golden Goal → gib dem Sieger in einem seiner Spiele das Tor dazu) und starte dann die Etappe.",
     "final_ranking_title": "Endstand",
     "final_ranking_tied": "geteilt",
     "pipeline_flow_summary": "Ablauf-Vorschau (wer wohin kommt, Anzahl Spiele, Probleme)",

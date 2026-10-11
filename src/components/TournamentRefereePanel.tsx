@@ -13,7 +13,7 @@ type PlayerInfo = { id: string; name: string };
 type TeamInfo = { id: string; name: string; color: string | null; players: PlayerInfo[] };
 type MatchEvent = { id: string; type: string; matchClockSec: number; payload: Record<string, unknown>; createdAt?: string };
 type MatchInfo = {
-  id: string; phase: string; bracketSide?: string | null; stageType?: string | null; roundIndex: number; courtName: string;
+  id: string; phase: string; bracketSide?: string | null; roundIndex: number; courtName: string;
   dayIndex: string; startAt: string; status: string;
   teamAId: string | null; teamBId: string | null;
   teamAName: string | null; teamBName: string | null;

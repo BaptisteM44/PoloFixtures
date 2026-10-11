@@ -14,6 +14,8 @@ export type StandingRow = {
   points: number;
   buchholz: number;
   sonnebornBerger: number;
+  /** Rang (1-based), partagé en cas d'égalité parfaite (absent des lignes construites à la main). */
+  rank?: number;
 };
 
 export type ScoringConfig = {
