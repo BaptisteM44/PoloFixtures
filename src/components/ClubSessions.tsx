@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import Image from "next/image";
+import { sessionCalendarLinks } from "@/lib/session-calendar";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
@@ -12,7 +13,8 @@ import {
   leaveSessionAction,
   approveSessionAttendeeAction,
   rejectSessionAttendeeAction,
-  generateNextRecurringSessionAction,
+  stopSeriesAction,
+  reviveSeriesAction,
   sendSessionMessageAction,
   deleteSessionMessageAction,
   cancelSessionAction,
@@ -68,6 +70,7 @@ type Session = {
   location: string | null;
   notes: string | null;
   recurring: boolean;
+  seriesId?: string | null;
   recurrenceDay: number | null;
   recurrenceTime: string | null;
   color: string | null;
@@ -136,7 +139,6 @@ export function ClubSessions({
 
   const [sessions, setSessions] = useState(initialSessions);
   const [showAdd, setShowAdd] = useState(false);
-  const [showGenerateDropdown, setShowGenerateDropdown] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // Join modal state
@@ -246,10 +248,28 @@ export function ClubSessions({
     });
   }
 
-  function handleGenerateNext(templateId?: string) {
+  // Inscription en un clic (sans heure d'arrivée ni condition : la fenêtre
+  // de détails reste accessible via « + détails »).
+  function handleQuickJoin(sessionId: string) {
     startTransition(async () => {
-      const res = await generateNextRecurringSessionAction(clubId, templateId);
-      if ("ok" in res) window.location.reload();
+      await joinSessionAction(clubId, sessionId);
+      window.location.reload();
+    });
+  }
+
+  function handleReviveSeries(sessionId: string) {
+    startTransition(async () => {
+      await reviveSeriesAction(clubId, sessionId);
+      window.location.reload();
+    });
+  }
+
+  function handleStopSeries(sessionId: string) {
+    if (!window.confirm(t("sessions_stop_series_confirm"))) return;
+    startTransition(async () => {
+      await stopSeriesAction(clubId, sessionId);
+      setEditingSessionId(null);
+      window.location.reload();
     });
   }
 
@@ -319,6 +339,15 @@ export function ClubSessions({
   }
 
   const now = new Date();
+  // Séries endormies (aucune date depuis 3 semaines) : pas relancées toutes
+  // seules, l'orga choisit de les relancer.
+  const dormantSeries = sessions
+    .filter((tpl) => tpl.recurring && (isAdmin || tpl.createdBy.id === currentPlayerId))
+    .map((tpl) => {
+      const dates = sessions.filter((x) => x.id === tpl.id || x.seriesId === tpl.id).map((x) => new Date(x.date).getTime());
+      return { tpl, latest: new Date(Math.max(...dates)) };
+    })
+    .filter(({ latest }) => latest.getTime() < now.getTime() - 21 * 86_400_000);
   const upcoming = sessions.filter((s) => new Date(s.date) >= now).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const past = sessions.filter((s) => new Date(s.date) < now).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -446,6 +475,9 @@ export function ClubSessions({
                       {DAY_NAMES.map((d, i) => <option key={i} value={i}>{d}</option>)}
                     </select>
                     <input className="form-input" type="time" value={editRecurrenceTime} onChange={(e) => setEditRecurrenceTime(e.target.value)} style={{ width: 100 }} />
+                    <button type="button" className="ghost" style={{ fontSize: 12 }} onClick={() => handleStopSeries(s.id)} disabled={isPending}>
+                      {t("sessions_stop_series")}
+                    </button>
                   </div>
                 ) : null;
               })()}
@@ -465,52 +497,25 @@ export function ClubSessions({
             {t("sessions_add_btn")}
           </button>
         )}
-        {isAdmin && hasRecurring && (() => {
-          const templates = sessions.filter((s) => s.recurring);
-          if (templates.length === 1) {
-            return (
-              <button className="ghost" onClick={() => handleGenerateNext(templates[0].id)} disabled={isPending} style={{ fontSize: 12 }}>
-                {t("sessions_generate_next")}
-              </button>
-            );
-          }
-          return (
-            <div style={{ position: "relative" }}>
-              <button className="ghost" onClick={() => setShowGenerateDropdown((v) => !v)} disabled={isPending} style={{ fontSize: 12 }}>
-                {t("sessions_generate_next")} ▾
-              </button>
-              {showGenerateDropdown && (
-                <div style={{
-                  position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 20,
-                  background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8,
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.15)", minWidth: 220, padding: "4px 0",
-                }}>
-                  {templates.map((tpl) => (
-                    <button
-                      key={tpl.id}
-                      onClick={() => { setShowGenerateDropdown(false); handleGenerateNext(tpl.id); }}
-                      style={{
-                        display: "block", width: "100%", textAlign: "left",
-                        padding: "8px 14px", fontSize: 13, background: "none",
-                        border: "none", cursor: "pointer", color: "var(--text)",
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-2)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-                    >
-                      <span style={{ fontWeight: 600 }}>{tpl.title ?? t("sessions_untitled")}</span>
-                      {tpl.recurrenceDay !== null && (
-                        <span style={{ marginLeft: 6, fontSize: 11, color: "var(--text-muted)" }}>
-                          {DAY_NAMES[tpl.recurrenceDay]}{tpl.recurrenceTime ? ` · ${tpl.recurrenceTime}` : ""}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })()}
       </div>
+
+      {dormantSeries.length > 0 && (
+        <div style={{ display: "grid", gap: 6 }}>
+          {dormantSeries.map(({ tpl, latest }) => (
+            <div key={tpl.id} className="panel" style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", padding: "10px 14px", fontSize: 13 }}>
+              <span>
+                ⏸ {t("sessions_series_paused", {
+                  label: tpl.title || `${tpl.recurrenceDay !== null ? DAY_NAMES[tpl.recurrenceDay] : ""} ${fmtTime(latest, locale)}`.trim(),
+                  date: fmtDate(latest, locale),
+                })}
+              </span>
+              <button type="button" className="primary" style={{ fontSize: 12 }} onClick={() => handleReviveSeries(tpl.id)} disabled={isPending}>
+                {t("sessions_series_revive")}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Add form */}
       {showAdd && (
@@ -614,7 +619,8 @@ export function ClubSessions({
                 isAdmin={isAdmin}
                 currentPlayerId={currentPlayerId}
                 onDelete={handleDelete}
-                onJoin={openJoinModal}
+                onJoin={handleQuickJoin}
+                onJoinDetails={openJoinModal}
                 onLeave={handleLeave}
                 onApprove={handleApprove}
                 onReject={handleReject}
@@ -622,7 +628,6 @@ export function ClubSessions({
                 onDeleteMessage={handleDeleteMessage}
                 onCancel={handleCancel}
                 onEdit={handleOpenEdit}
-                onGenerateNext={handleGenerateNext}
                 isPending={isPending}
               />
             ))}
@@ -647,7 +652,8 @@ export function ClubSessions({
                 isAdmin={isAdmin}
                 currentPlayerId={currentPlayerId}
                 onDelete={handleDelete}
-                onJoin={openJoinModal}
+                onJoin={handleQuickJoin}
+                onJoinDetails={openJoinModal}
                 onLeave={handleLeave}
                 onApprove={handleApprove}
                 onReject={handleReject}
@@ -723,7 +729,7 @@ function SessionCard({
   onDeleteMessage,
   onCancel,
   onEdit,
-  onGenerateNext,
+  onJoinDetails,
   isPending,
   past,
 }: {
@@ -741,7 +747,7 @@ function SessionCard({
   onDeleteMessage: (sessionId: string, messageId: string) => void;
   onCancel: (id: string) => void;
   onEdit: (session: Session) => void;
-  onGenerateNext?: (templateId: string) => void;
+  onJoinDetails: (id: string) => void;
   isPending: boolean;
   past?: boolean;
 }) {
@@ -810,6 +816,16 @@ function SessionCard({
       </div>
 
       {s.notes && <p className="club-session-card__notes">{s.notes}</p>}
+      {!past && s.status !== "CANCELLED" && (() => {
+        const cal = sessionCalendarLinks({ id: s.id, date: s.date, duration: s.duration, title: s.title, place: s.venue?.name ?? s.location ?? null });
+        return (
+          <div style={{ display: "flex", gap: 10, fontSize: 12, padding: "0 0 6px", flexWrap: "wrap" }}>
+            <span className="meta">📅 {t("sessions_add_to_calendar")} :</span>
+            <a href={cal.ics} style={{ color: "var(--teal)" }}>iPhone / Outlook</a>
+            <a href={cal.google} target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>Google</a>
+          </div>
+        );
+      })()}
 
       {/* ── Body: attendees + chat ── */}
       <div className="club-session-card__body">
@@ -892,9 +908,14 @@ function SessionCard({
       {!past && currentPlayerId && s.status !== "CANCELLED" && (
         <div className="club-session-card__footer">
           {!myAttendance ? (
-            <button className="primary club-session-card__join-btn" onClick={() => onJoin(s.id)} disabled={isPending}>
-              {isMember ? t("sessions_join_member") : t("sessions_join_guest")}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <button className="primary club-session-card__join-btn" onClick={() => onJoin(s.id)} disabled={isPending}>
+                {isMember ? t("sessions_join_member") : t("sessions_join_guest")}
+              </button>
+              <button type="button" className="ghost" style={{ fontSize: 12 }} onClick={() => onJoinDetails(s.id)} disabled={isPending}>
+                {t("sessions_join_details")}
+              </button>
+            </div>
           ) : myAttendance.status === "PENDING" ? (
             <span className="club-session-card__status-pending">{t("sessions_pending")}</span>
           ) : (

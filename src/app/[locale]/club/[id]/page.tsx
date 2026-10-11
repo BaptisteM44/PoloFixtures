@@ -6,6 +6,7 @@ import { Tabs } from "@/components/Tabs";
 import { ClubMemberManager } from "@/components/ClubMemberManager";
 import { ClubMembersGrid } from "@/components/ClubMembersGrid";
 import { ClubSessions } from "@/components/ClubSessions";
+import { ensureRecurringSessions } from "@/lib/club-sessions";
 import { ClubVenues } from "@/components/ClubVenues";
 import { ClubChat } from "@/components/ClubChat";
 import { ClubAdminPanel } from "@/components/ClubAdminPanel";
@@ -147,13 +148,16 @@ export default async function ClubPage({
     orderBy: { createdAt: "asc" },
   });
 
+  // Séries récurrentes : les dates des 4 prochaines semaines se créent seules.
+  await ensureRecurringSessions([club.id]);
+
   // Toujours fetch pour la bannière (membres uniquement)
   let nextSession: any = null;
   let bannerAnnouncements: any[] = [];
   if (isMember) {
     const now = new Date();
     const rawNext = await prisma.clubSession.findFirst({
-      where: { clubId: club.id, date: { gte: now } },
+      where: { clubId: club.id, date: { gte: now }, status: "ACTIVE" },
       orderBy: { date: "asc" },
       select: { id: true, date: true, recurrenceTime: true, venue: { select: { name: true } } },
     });
@@ -170,7 +174,7 @@ export default async function ClubPage({
 
   if (tab === "sessions") {
     const rawSessions = await prisma.clubSession.findMany({
-      where: { clubId: club.id },
+      where: { clubId: club.id, status: { not: "DELETED" } },
       orderBy: { date: "asc" },
       include: {
         createdBy: { select: { id: true, name: true } },

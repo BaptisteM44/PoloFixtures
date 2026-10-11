@@ -289,7 +289,17 @@
     "continent_af": "Afrika",
     "continent_as": "Asien",
     "continent_oc": "Ozeanien",
-    "euros_vote_dismiss": "Nicht mehr anzeigen"
+    "euros_vote_dismiss": "Nicht mehr anzeigen",
+    "training_card_title": "Nächstes Training",
+    "training_today": "Heute",
+    "training_tomorrow": "Morgen",
+    "training_going": "Du bist dabei",
+    "training_not_going": "Ich komme doch nicht",
+    "training_join": "Ich bin dabei",
+    "training_count": "{count, plural, one {# Person dabei} other {# Personen dabei}}",
+    "training_nobody": "Noch niemand — sei der/die Erste!",
+    "training_messages": "{count, plural, one {# Nachricht · zum Chat} other {# Nachrichten · zum Chat}}",
+    "training_no_message": "Ein Wort an die Gruppe? (Bälle, Verspätung, Mitfahrt…)"
   },
   "tournaments": {
     "page_title": "Alle Turniere",
@@ -1288,7 +1298,10 @@
     "after_match": "nach {match}",
     "referee_assigned": "🟨 {team} pfeift {count, plural, one {# Spiel} other {# Spiele}}",
     "referee_assigned_none": "🟨 {team}: kein Schiri-Einsatz mehr geplant",
-    "referee_assigned_next": "Als Nächstes: {match} gegen {time}"
+    "referee_assigned_next": "Als Nächstes: {match} gegen {time}",
+    "session_cancelled": "❌ Training abgesagt — {club}",
+    "session_message": "💬 {name} zum Training — {club}",
+    "session_messages_grouped": "💬 {count} neue Nachrichten zum Training — {club}"
   },
   "contact": {
     "btn_open": "Kontakt",
@@ -1567,7 +1580,8 @@
     "roadmap_column_empty": "Keine Einträge",
     "roadmap_confirm_delete": "Diesen Eintrag löschen?",
     "nav_polls": "Umfragen",
-    "nav_photos": "Fotos"
+    "nav_photos": "Fotos",
+    "search_players_placeholder": "Spieler suchen…"
   },
   "club": {
     "page_title": "Club",
@@ -1658,7 +1672,6 @@
     "equip_borrow_btn": "Ausleihen...",
     "equip_return": "Zurückgeben",
     "sessions_add_btn": "+ Session hinzufügen",
-    "sessions_generate_next": "Nächste wiederkehrende Session generieren",
     "sessions_new_title": "Neue Session",
     "sessions_title_placeholder": "Titel (optional)",
     "sessions_venue_free": "Kein Platz / anderer Ort",
@@ -1743,7 +1756,13 @@
     "polls_closed": "Geschlossen · {count} Teilnehmende",
     "polls_voted": "Abgestimmt",
     "polls_vote": "Abstimmen",
-    "polls_open": "Offen"
+    "polls_open": "Offen",
+    "sessions_join_details": "+ Ankunftszeit / Bedingung",
+    "sessions_add_to_calendar": "Zu meinem Kalender hinzufügen",
+    "sessions_stop_series": "Wiederholung beenden",
+    "sessions_stop_series_confirm": "Wiederholung beenden? Bereits geplante Termine bleiben, neue kommen nicht mehr hinzu.",
+    "sessions_series_paused": "Serie „{label}“ pausiert (letzter Termin: {date})",
+    "sessions_series_revive": "▶ Neu starten"
   },
   "continent": {
     "page_title": "Kontinent",
@@ -2288,7 +2307,11 @@
     "double_duty": "5 Spiele leiten UND 5 Spiele spielen am selben Tag",
     "unpin_from_card": "Von Karte entfernen",
     "pin_on_card": "Auf Karte anheften",
-    "max_pinned": "Max. 5 Abzeichen auf der Karte"
+    "max_pinned": "Max. 5 Abzeichen auf der Karte",
+    "first_training": "An deinem 1. Vereinstraining teilnehmen",
+    "training_regular": "An 10 Vereinstrainings teilnehmen",
+    "training_addict": "An 25 Vereinstrainings teilnehmen",
+    "club_pillar": "An 50 Vereinstrainings teilnehmen"
   },
   "settings_notifications": {
     "title": "Turnier-Benachrichtigungen",

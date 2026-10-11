@@ -289,7 +289,17 @@
     "continent_af": "Africa",
     "continent_as": "Asia",
     "continent_oc": "Oceania",
-    "euros_vote_dismiss": "Don't show again"
+    "euros_vote_dismiss": "Don't show again",
+    "training_card_title": "Next training",
+    "training_today": "Today",
+    "training_tomorrow": "Tomorrow",
+    "training_going": "You're going",
+    "training_not_going": "I can't make it",
+    "training_join": "I'm in",
+    "training_count": "{count, plural, one {# player in} other {# players in}}",
+    "training_nobody": "Nobody yet — be the first!",
+    "training_messages": "{count, plural, one {# message · see the chat} other {# messages · see the chat}}",
+    "training_no_message": "A word for the crew? (balls, running late, carpool…)"
   },
   "tournaments": {
     "page_title": "All tournaments",
@@ -1283,7 +1293,10 @@
     "after_match": "after {match}",
     "referee_assigned": "🟨 {team} referees {count, plural, one {# match} other {# matches}}",
     "referee_assigned_none": "🟨 {team}: no more refereeing planned",
-    "referee_assigned_next": "Next: {match} around {time}"
+    "referee_assigned_next": "Next: {match} around {time}",
+    "session_cancelled": "❌ Training cancelled — {club}",
+    "session_message": "💬 {name} on the training — {club}",
+    "session_messages_grouped": "💬 {count} new messages on the training — {club}"
   },
   "contact": {
     "btn_open": "Contact",
@@ -1654,7 +1667,6 @@
     "equip_borrow_btn": "Borrow...",
     "equip_return": "Return",
     "sessions_add_btn": "+ Add a session",
-    "sessions_generate_next": "Generate next recurring session",
     "sessions_new_title": "New session",
     "sessions_title_placeholder": "Title (optional)",
     "sessions_venue_free": "No venue / other location",
@@ -1739,7 +1751,13 @@
     "polls_closed": "Closed · {count} voters",
     "polls_voted": "Voted",
     "polls_vote": "Vote",
-    "polls_open": "Open"
+    "polls_open": "Open",
+    "sessions_join_details": "+ arrival time / condition",
+    "sessions_add_to_calendar": "Add to my calendar",
+    "sessions_stop_series": "Stop repeating",
+    "sessions_stop_series_confirm": "Stop repeating? Dates already planned stay, no new ones will be added.",
+    "sessions_series_paused": "“{label}” series paused (last date: {date})",
+    "sessions_series_revive": "▶ Restart"
   },
   "continent": {
     "page_title": "Continent",
@@ -2283,7 +2301,11 @@
     "double_duty": "Referee 5 matches AND play 5 matches on the same day",
     "unpin_from_card": "Remove from card",
     "pin_on_card": "Pin to card",
-    "max_pinned": "5 badges max on card"
+    "max_pinned": "5 badges max on card",
+    "first_training": "Join your 1st club training",
+    "training_regular": "Join 10 club trainings",
+    "training_addict": "Join 25 club trainings",
+    "club_pillar": "Join 50 club trainings"
   },
   "settings_notifications": {
     "title": "Tournament Notifications",

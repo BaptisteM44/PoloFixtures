@@ -9,6 +9,8 @@ import TournamentMapClient from "@/components/TournamentMapClient";
 import type { MapTournament } from "@/components/TournamentMap";
 import { HomeHeroPersonal, type HeroNextTournament } from "@/components/HomeHeroPersonal";
 import { HomeInstallBanner } from "@/components/HomeInstallBanner";
+import { NextTrainingCard } from "@/components/NextTrainingCard";
+import { ensureRecurringSessions } from "@/lib/club-sessions";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { countryToContinent } from "@/lib/country-utils";
 
@@ -23,6 +25,13 @@ export default async function HomePage() {
 
   const session = await auth();
   const currentPlayerId = (session?.user as any)?.playerId ?? null;
+
+  // Séries d'entraînement de mes clubs : dates des 4 prochaines semaines créées
+  // au passage (plus d'entraînements qui « disparaissent » faute de clic).
+  if (currentPlayerId) {
+    const myClubs = await prisma.clubMember.findMany({ where: { playerId: currentPlayerId, status: "MEMBER" }, select: { clubId: true } });
+    await ensureRecurringSessions(myClubs.map((c) => c.clubId));
+  }
 
   const [
     activeTournaments, allTournaments, countryCounts, mapTournaments, recentPlayers, totalPlayers, totalCountries,
@@ -137,14 +146,19 @@ export default async function HomePage() {
             club: { members: { some: { playerId: currentPlayerId, status: "MEMBER" } } },
           },
           select: {
-            id: true, title: true, date: true, location: true,
+            id: true, title: true, date: true, location: true, duration: true,
             club: { select: { id: true, name: true } },
-            venue: { select: { name: true } },
+            venue: { select: { name: true, mapLink: true } },
             attendees: {
-              where: { status: "CONFIRMED" },
-              select: { player: { select: { id: true, name: true, photoPath: true } } },
-              take: 6,
+              where: { status: { in: ["CONFIRMED", "PENDING"] } },
+              select: { status: true, player: { select: { id: true, name: true, photoPath: true } } },
             },
+            messages: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { content: true, player: { select: { name: true } } },
+            },
+            _count: { select: { messages: true } },
           },
           orderBy: { date: "asc" },
           take: 4,
@@ -243,6 +257,32 @@ export default async function HomePage() {
 
   return (
     <div className="home">
+      {/* Prochain entraînement de mes clubs (14 jours) : « J'y vais » en un clic */}
+      {(() => {
+        const s = (clubSessionsRaw as any[])[0];
+        if (!s || !currentPlayerId) return null;
+        if (s.date.getTime() - Date.now() > 14 * 86_400_000) return null;
+        const confirmed = s.attendees.filter((a: any) => a.status === "CONFIRMED");
+        const mine = s.attendees.find((a: any) => a.player.id === currentPlayerId);
+        return (
+          <NextTrainingCard
+            session={{
+              id: s.id,
+              clubId: s.club.id,
+              clubName: s.club.name,
+              title: s.title,
+              date: s.date.toISOString(),
+              duration: s.duration,
+              place: s.venue?.name ?? s.location ?? null,
+              mapLink: s.venue?.mapLink ?? null,
+              attendees: confirmed.map((a: any) => a.player),
+              myStatus: mine?.status ?? null,
+              lastMessage: s.messages[0] ? { name: s.messages[0].player.name, content: s.messages[0].content } : null,
+              messageCount: s._count.messages,
+            }}
+          />
+        );
+      })()}
       {/* ---- HERO : perso si connecté, marketing sinon ---- */}
       {me ? (
         <HomeHeroPersonal

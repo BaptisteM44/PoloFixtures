@@ -3,6 +3,7 @@ import { getPodiumTeamIdsCached } from "@/lib/podium";
 import { createNotification } from "@/lib/notify";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
 import { guessTimezone } from "@/lib/timezone";
+import { countAttendedTrainings } from "@/lib/club-sessions";
 
 /** Valeur d'un événement de but : une annulation d'arbitre est un GOAL de
  *  delta -1. Compter les événements au lieu de les sommer faisait d'un but
@@ -1036,6 +1037,13 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
       if (hadNightLogin) badges.add("night_owl");
     }
   }
+
+  // ── Entraînements de club (inscrit confirmé à une séance passée et maintenue)
+  const trainings = await countAttendedTrainings(playerId);
+  if (trainings >= 1)  badges.add("first_training");
+  if (trainings >= 10) badges.add("training_regular");
+  if (trainings >= 25) badges.add("training_addict");
+  if (trainings >= 50) badges.add("club_pillar");
 
   // ── Collector / Completionist (calculé en dernier pour tout compter) ────
   const total = badges.size;

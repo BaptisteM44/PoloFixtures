@@ -225,6 +225,8 @@ enum NotificationType {
   TOURNAMENT_PHOTOS_DECIDED // notif auteur : l'orga a accepté / refusé ses photos proposées
   PLAYER_MERGE_REQUESTED // notif orga / admin : un joueur dit être ce profil fictif et demande la fusion
   PLAYER_MERGE_DECIDED // notif demandeur : sa demande de fusion a été acceptée ou refusée
+  CLUB_SESSION_CANCELLED // notif inscrits : un entraînement est annulé
+  CLUB_SESSION_MESSAGE // notif inscrits + créateur : nouveau message sur un entraînement (groupée)
 }
 
 enum TaskPriority {
@@ -999,7 +1001,8 @@ model ClubSession {
   color          String? // hex color chosen by creator, e.g. "#ffa2af"
   createdById    String
   createdAt      DateTime @default(now())
-  status         String   @default("ACTIVE")
+  status         String   @default("ACTIVE") // ACTIVE | CANCELLED | DELETED (date retirée d'une série : gardée pour ne pas être régénérée)
+  seriesId       String? // séance modèle (recurring=true) dont cette date est issue
 
   club      Club                  @relation(fields: [clubId], references: [id], onDelete: Cascade)
   venue     ClubVenue?            @relation(fields: [venueId], references: [id], onDelete: SetNull)
@@ -1009,6 +1012,7 @@ model ClubSession {
 
   @@index([clubId])
   @@index([date])
+  @@index([seriesId])
 }
 
 model ClubSessionAttendee {

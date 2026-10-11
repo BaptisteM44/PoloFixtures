@@ -289,7 +289,17 @@
     "continent_af": "África",
     "continent_as": "Asia",
     "continent_oc": "Oceanía",
-    "euros_vote_dismiss": "No volver a mostrar"
+    "euros_vote_dismiss": "No volver a mostrar",
+    "training_card_title": "Próximo entrenamiento",
+    "training_today": "Hoy",
+    "training_tomorrow": "Mañana",
+    "training_going": "Vas",
+    "training_not_going": "Al final no voy",
+    "training_join": "Voy",
+    "training_count": "{count, plural, one {# jugador apuntado} other {# jugadores apuntados}}",
+    "training_nobody": "Nadie por ahora — ¡sé el primero!",
+    "training_messages": "{count, plural, one {# mensaje · ver la conversación} other {# mensajes · ver la conversación}}",
+    "training_no_message": "¿Un mensaje para el grupo? (bolas, retraso, coche…)"
   },
   "tournaments": {
     "page_title": "Todos los torneos",
@@ -1015,7 +1025,8 @@
     "swap_team_b": "Segundo equipo",
     "swap_do": "Intercambiar",
     "swap_hint": "Mientras ningún partido de la etapa haya empezado: se intercambian grupo, partidos y lugar en el cuadro.",
-    "pipeline_launch_group_hint": "Última ronda en curso: buen momento para lanzar el grupo {group}."
+    "pipeline_launch_group_hint": "Última ronda en curso: buen momento para lanzar el grupo {group}.",
+    "tab_chat": "💬 Chat"
   },
   "registration": {
     "section_title": "Inscribir mi equipo",
@@ -1287,7 +1298,10 @@
     "after_match": "después de {match}",
     "referee_assigned": "🟨 {team} arbitra {count, plural, one {# partido} other {# partidos}}",
     "referee_assigned_none": "🟨 {team}: ya no tiene arbitrajes previstos",
-    "referee_assigned_next": "Siguiente: {match} hacia las {time}"
+    "referee_assigned_next": "Siguiente: {match} hacia las {time}",
+    "session_cancelled": "❌ Entrenamiento cancelado — {club}",
+    "session_message": "💬 {name} en el entrenamiento — {club}",
+    "session_messages_grouped": "💬 {count} mensajes nuevos en el entrenamiento — {club}"
   },
   "contact": {
     "btn_open": "Contacto",
@@ -1566,7 +1580,8 @@
     "roadmap_column_empty": "Sin elementos",
     "roadmap_confirm_delete": "¿Eliminar este elemento?",
     "nav_polls": "Encuestas",
-    "nav_photos": "Fotos"
+    "nav_photos": "Fotos",
+    "search_players_placeholder": "Buscar jugador…"
   },
   "club": {
     "page_title": "Club",
@@ -1657,7 +1672,6 @@
     "equip_borrow_btn": "Tomar prestado...",
     "equip_return": "Devolver",
     "sessions_add_btn": "+ Añadir una sesión",
-    "sessions_generate_next": "Generar la próxima sesión recurrente",
     "sessions_new_title": "Nueva sesión",
     "sessions_title_placeholder": "Título (opcional)",
     "sessions_venue_free": "Sin lugar / otro lugar",
@@ -1742,7 +1756,13 @@
     "polls_closed": "Cerrada · {count} votantes",
     "polls_voted": "Votado",
     "polls_vote": "Votar",
-    "polls_open": "Abierta"
+    "polls_open": "Abierta",
+    "sessions_join_details": "+ hora de llegada / condición",
+    "sessions_add_to_calendar": "Añadir a mi calendario",
+    "sessions_stop_series": "Detener la repetición",
+    "sessions_stop_series_confirm": "¿Detener la repetición? Las fechas ya previstas se mantienen, no habrá nuevas.",
+    "sessions_series_paused": "Serie «{label}» en pausa (última fecha: {date})",
+    "sessions_series_revive": "▶ Reanudar"
   },
   "continent": {
     "page_title": "Continente",
@@ -2287,7 +2307,11 @@
     "double_duty": "Arbitrar 5 partidos Y jugar 5 partidos en el mismo día",
     "unpin_from_card": "Quitar de la tarjeta",
     "pin_on_card": "Fijar en la tarjeta",
-    "max_pinned": "Máx. 5 insignias en la tarjeta"
+    "max_pinned": "Máx. 5 insignias en la tarjeta",
+    "first_training": "Participar en tu 1.er entrenamiento de club",
+    "training_regular": "Participar en 10 entrenamientos de club",
+    "training_addict": "Participar en 25 entrenamientos de club",
+    "club_pillar": "Participar en 50 entrenamientos de club"
   },
   "settings_notifications": {
     "title": "Notificaciones de torneos",

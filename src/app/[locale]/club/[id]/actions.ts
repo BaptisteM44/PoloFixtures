@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { createNotification, notifySessionJoin } from "@/lib/notify";
 import { apiMsg } from "@/lib/api-messages";
+import { ensureRecurringSessions } from "@/lib/club-sessions";
 
 async function getClubRole(clubId: string) {
   const session = await auth();
@@ -99,6 +100,7 @@ export async function createSessionAction(clubId: string, data: {
       createdById: playerId,
     },
   });
+  if (data.recurring) await ensureRecurringSessions([clubId]);
 
   // Notify all club members
   const members = await prisma.clubMember.findMany({
@@ -127,7 +129,14 @@ export async function deleteSessionAction(clubId: string, sessionId: string) {
   // Creator or admin can delete
   if (session.createdById !== playerId && !isAdmin) return { error: apiMsg("not_authorized") };
 
-  await prisma.clubSession.delete({ where: { id: sessionId } });
+  // Une date issue d'une série serait recréée à la prochaine génération : on la
+  // garde, masquée (DELETED). La séance modèle, elle, porte la série : la
+  // supprimer arrête la récurrence.
+  if (session.seriesId) {
+    await prisma.clubSession.update({ where: { id: sessionId }, data: { status: "DELETED" } });
+  } else {
+    await prisma.clubSession.delete({ where: { id: sessionId } });
+  }
   revalidatePath(`/club/${clubId}`);
   return { ok: true };
 }
@@ -162,6 +171,45 @@ export async function updateSessionAction(clubId: string, sessionId: string, dat
   if (data.color !== undefined) updateData.color = data.color || null;
 
   await prisma.clubSession.update({ where: { id: sessionId }, data: updateData });
+
+  // Série dont le jour ou l'heure change : les dates futures encore vides
+  // (aucun inscrit, aucun message) sont refaites au nouveau créneau.
+  const scheduleChanged =
+    (data.recurrenceDay !== undefined && data.recurrenceDay !== session.recurrenceDay) ||
+    (data.recurrenceTime !== undefined && (data.recurrenceTime || null) !== session.recurrenceTime);
+  if (session.recurring && scheduleChanged) {
+    await prisma.clubSession.deleteMany({
+      where: { seriesId: sessionId, status: "ACTIVE", date: { gt: new Date() }, attendees: { none: {} }, messages: { none: {} } },
+    });
+    await ensureRecurringSessions([clubId], { timeOverrides: data.recurrenceTime ? { [sessionId]: data.recurrenceTime } : {} });
+  }
+
+  revalidatePath(`/club/${clubId}`);
+  return { ok: true };
+}
+
+/** Relance une série endormie : ses dates des 4 prochaines semaines se recréent. */
+export async function reviveSeriesAction(clubId: string, sessionId: string) {
+  const { playerId, isAdmin } = await getClubRole(clubId);
+  if (!playerId) return { error: apiMsg("not_logged_in") };
+  const session = await prisma.clubSession.findUnique({ where: { id: sessionId } });
+  if (!session || session.clubId !== clubId || !session.recurring) return { error: apiMsg("act_session_introuvable") };
+  if (session.createdById !== playerId && !isAdmin) return { error: apiMsg("not_authorized") };
+
+  await ensureRecurringSessions([clubId], { revive: [sessionId] });
+  revalidatePath(`/club/${clubId}`);
+  return { ok: true };
+}
+
+/** Arrête une série : plus de nouvelles dates (celles déjà prévues restent). */
+export async function stopSeriesAction(clubId: string, sessionId: string) {
+  const { playerId, isAdmin } = await getClubRole(clubId);
+  if (!playerId) return { error: apiMsg("not_logged_in") };
+  const session = await prisma.clubSession.findUnique({ where: { id: sessionId } });
+  if (!session || session.clubId !== clubId) return { error: apiMsg("act_session_introuvable") };
+  if (session.createdById !== playerId && !isAdmin) return { error: apiMsg("not_authorized") };
+
+  await prisma.clubSession.update({ where: { id: sessionId }, data: { recurring: false } });
   revalidatePath(`/club/${clubId}`);
   return { ok: true };
 }
@@ -288,7 +336,7 @@ export async function cancelSessionAction(clubId: string, sessionId: string) {
   const { playerId, isAdmin } = await getClubRole(clubId);
   if (!playerId || !isAdmin) return { error: apiMsg("act_reserve_admins") };
 
-  const session = await prisma.clubSession.findUnique({ where: { id: sessionId }, select: { clubId: true, date: true, title: true } });
+  const session = await prisma.clubSession.findUnique({ where: { id: sessionId }, select: { clubId: true, date: true, title: true, club: { select: { name: true } } } });
   if (!session || session.clubId !== clubId) return { error: apiMsg("act_session_introuvable") };
 
   await prisma.clubSession.update({
@@ -301,12 +349,13 @@ export async function cancelSessionAction(clubId: string, sessionId: string) {
     where: { sessionId, status: "CONFIRMED", playerId: { not: playerId } },
     select: { playerId: true },
   });
-  const dateStr = session.date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-  const label = session.title ? `"${session.title}" du ${dateStr}` : `du ${dateStr}`;
   for (const a of attendees) {
-    await createNotification(a.playerId, "CLUB_SESSION", {
-      message: `La session ${label} a été annulée.`,
+    await createNotification(a.playerId, "CLUB_SESSION_CANCELLED", {
       clubId,
+      clubName: session.club.name,
+      sessionId,
+      date: session.date.toISOString(),
+      title: session.title ?? "",
     });
   }
 
@@ -342,77 +391,6 @@ export async function deleteClubMessageAction(clubId: string, messageId: string)
   return { ok: true };
 }
 
-// ── Auto-generate recurring sessions ──────────────────────────────────────
-
-export async function generateNextRecurringSessionAction(clubId: string, templateId?: string) {
-  const { isAdmin } = await getClubRole(clubId);
-  if (!isAdmin) return { error: apiMsg("act_reserve_admins") };
-
-  const templates = await prisma.clubSession.findMany({
-    where: {
-      clubId,
-      recurring: true,
-      recurrenceDay: { not: null },
-      ...(templateId ? { id: templateId } : {}),
-    },
-  });
-
-  const now = new Date();
-  let created = 0;
-
-  for (const tpl of templates) {
-    const day = tpl.recurrenceDay!;
-
-    // Trouver la dernière session générée depuis ce template (hors template elle-même)
-    const lastGenerated = await prisma.clubSession.findFirst({
-      where: { clubId, id: { not: tpl.id }, recurrenceDay: day },
-      orderBy: { date: "desc" },
-    });
-
-    // Point de départ : la dernière générée ou la template elle-même
-    const baseDate = new Date(lastGenerated ? lastGenerated.date : tpl.date);
-    const nextDate = new Date(baseDate);
-    nextDate.setDate(nextDate.getDate() + 7);
-
-    // Si pour une raison quelconque on est encore dans le passé, avancer jusqu'au futur
-    while (nextDate <= now) nextDate.setDate(nextDate.getDate() + 7);
-
-    // Vérifier qu'il n'existe pas déjà une session ce jour-là (sécurité anti-doublon)
-    const exists = await prisma.clubSession.findFirst({
-      where: {
-        clubId,
-        id: { not: tpl.id },
-        date: {
-          gte: new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate()),
-          lt: new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate() + 1),
-        },
-      },
-    });
-
-    if (!exists) {
-      await prisma.clubSession.create({
-        data: {
-          clubId,
-          title: tpl.title,
-          date: nextDate,
-          duration: tpl.duration,
-          venueId: tpl.venueId ?? null,
-          location: tpl.location,
-          notes: tpl.notes,
-          recurring: false,
-          recurrenceDay: day,
-          color: tpl.color ?? null,
-          createdById: tpl.createdById,
-        },
-      });
-      created++;
-    }
-  }
-
-  revalidatePath(`/club/${clubId}`);
-  return { ok: true, created };
-}
-
 // ── Session Chat ─────────────────────────────────────────────────────────────
 
 export async function sendSessionMessageAction(clubId: string, sessionId: string, content: string) {
@@ -426,6 +404,7 @@ export async function sendSessionMessageAction(clubId: string, sessionId: string
   await prisma.clubSessionMessage.create({
     data: { sessionId, playerId, content: content.trim() },
   });
+  await notifySessionMessage(sessionId, playerId, content.trim());
 
   revalidatePath(`/club/${clubId}`);
   return { ok: true };
@@ -504,4 +483,47 @@ export async function deleteVenueAction(clubId: string, venueId: string) {
   await prisma.clubVenue.delete({ where: { id: venueId } });
   revalidatePath(`/club/${clubId}`);
   return { ok: true };
+}
+
+/**
+ * Message sur un entraînement → notif aux inscrits confirmés + au créateur.
+ * Une seule notif non lue par séance : les messages suivants mettent à jour
+ * son compteur et l'aperçu au lieu d'en empiler une par message.
+ */
+async function notifySessionMessage(sessionId: string, senderId: string, content: string) {
+  try {
+    const session = await prisma.clubSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        clubId: true, date: true, createdById: true, club: { select: { name: true } },
+        attendees: { where: { status: "CONFIRMED" }, select: { playerId: true } },
+      },
+    });
+    if (!session) return;
+    const sender = await prisma.player.findUnique({ where: { id: senderId }, select: { name: true } });
+    const recipients = new Set([session.createdById, ...session.attendees.map((a) => a.playerId)]);
+    recipients.delete(senderId);
+    const preview = content.length > 120 ? content.slice(0, 117) + "…" : content;
+    for (const playerId of recipients) {
+      const existing = await prisma.notification.findFirst({
+        where: { playerId, type: "CLUB_SESSION_MESSAGE", read: false, payload: { path: ["sessionId"], equals: sessionId } },
+        select: { id: true, payload: true },
+      });
+      const base = {
+        clubId: session.clubId, clubName: session.club.name, sessionId,
+        date: session.date.toISOString(), senderName: sender?.name ?? "", preview,
+      };
+      if (existing) {
+        const prev = existing.payload as Record<string, string | number>;
+        await prisma.notification.update({
+          where: { id: existing.id },
+          data: { payload: { ...base, count: (Number(prev.count) || 1) + 1 }, createdAt: new Date() },
+        });
+      } else {
+        await createNotification(playerId, "CLUB_SESSION_MESSAGE", { ...base, count: 1 });
+      }
+    }
+  } catch (e) {
+    console.error("[club] notif message séance", e);
+  }
 }

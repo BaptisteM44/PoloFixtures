@@ -36,6 +36,16 @@ export function notifLabel(t: NotifTranslator, n: NotifLike): { title: string; s
       return { title: t("team_message", { teamName: p.teamName }), sub: p.preview ?? "", href: "/my-tournaments" };
     case "CLUB_JOIN_REQUEST":
       return { title: t("club_join_request", { name: p.playerName }), sub: t("club_join_request_sub", { clubName: p.clubName }), href: `/player/${p.playerSlug}` };
+    case "CLUB_SESSION_CANCELLED":
+      return { title: t("session_cancelled", { club: p.clubName ?? "" }), sub: p.title ?? "", href: p.clubId ? `/club/${p.clubId}?tab=sessions` : "/clubs" };
+    case "CLUB_SESSION_MESSAGE":
+      return {
+        title: Number(p.count) > 1
+          ? t("session_messages_grouped", { count: Number(p.count), club: p.clubName ?? "" })
+          : t("session_message", { name: p.senderName ?? "", club: p.clubName ?? "" }),
+        sub: p.preview ?? "",
+        href: p.clubId ? `/club/${p.clubId}?tab=sessions` : "/clubs",
+      };
     case "CLUB_SESSION":
       return { title: p.message ?? t("club_session"), sub: "", href: p.clubId ? `/club/${p.clubId}?tab=sessions` : "/clubs" };
     case "CLUB_SESSION_JOIN":
