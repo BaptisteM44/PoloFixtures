@@ -293,6 +293,10 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               dateStart: t_.dateStart.toISOString(),
               dateEnd: t_.dateEnd.toISOString(),
               format: t_.format,
+              // État du verrou de la sélection : sans lui, l'écran croyait la
+              // sélection toujours ouverte (bandeau « Valider la sélection »)
+              // alors qu'elle était verrouillée en base → chaque action refusée.
+              selectionLocked: (t_ as any).selectionLocked ?? false,
               gameDurationMin: t_.gameDurationMin,
               maxTeams: t_.maxTeams,
               courtsCount: t_.courtsCount,
