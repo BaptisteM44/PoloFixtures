@@ -105,6 +105,8 @@ type Props = {
   toggleAction: (teamId: string, tournamentId: string, selected: boolean) => Promise<{ ok?: boolean; error?: string }>;
   drawAction: (tournamentId: string, count: number, preDrawnIds?: string[]) => Promise<{ ok?: boolean; error?: string }>;
   guaranteeAction: (teamId: string, tournamentId: string, guaranteed: boolean) => Promise<{ ok?: boolean; error?: string }>;
+  /** Toutes les équipes IN en une fois (une seule action, erreur remontée). */
+  guaranteeAllAction?: (tournamentId: string) => Promise<{ ok?: boolean; error?: string; count?: number }>;
   drawOneAction: (tournamentId: string, candidateIds: string[]) => Promise<{ ok?: boolean; winnerId?: string; error?: string }>;
   drawOneWaitlistAction: (tournamentId: string, candidateIds: string[]) => Promise<{ ok?: boolean; winnerId?: string; waitlistPosition?: number; error?: string }>;
   removeFromWaitlistAction: (tournamentId: string, teamId: string) => Promise<{ ok?: boolean; error?: string }>;
@@ -120,6 +122,7 @@ export function SelectionManager({
   toggleAction,
   drawAction,
   guaranteeAction,
+  guaranteeAllAction,
   drawOneAction,
   drawOneWaitlistAction,
   removeFromWaitlistAction,
@@ -326,9 +329,20 @@ export function SelectionManager({
   /** Valider toutes (quand total ≤ maxTeams) */
   function handleSelectAll() {
     setError(null);
-    setTeams((prev) => prev.map((t) => ({ ...t, selected: true, guaranteed: true })));
     startTransition(async () => {
-      await Promise.all(pool.map((t) => guaranteeAction(t.id, tournamentId, true)));
+      // On n'affiche « tout IN » qu'une fois le serveur d'accord (avant : l'écran
+      // changeait même si rien n'était enregistré, ex. sélection verrouillée).
+      const res = guaranteeAllAction
+        ? await guaranteeAllAction(tournamentId)
+        : await (async () => {
+            for (const t of teams.filter((x) => !x.guaranteed)) {
+              const r = await guaranteeAction(t.id, tournamentId, true);
+              if (r?.error) return r;
+            }
+            return { ok: true };
+          })();
+      if (res?.error) { setError(res.error); return; }
+      setTeams((prev) => prev.map((t) => ({ ...t, selected: true, guaranteed: true, waitlistPosition: null })));
     });
   }
 
@@ -416,7 +430,7 @@ export function SelectionManager({
             </button>
           )}
           {allFit ? (
-            <button className="primary" onClick={handleSelectAll} disabled={isPending} style={{ fontSize: 13 }}>
+            <button className="primary" onClick={handleSelectAll} disabled={isPending || locked} style={{ fontSize: 13 }}>
               {t("validate_all_btn", { count: teams.length })}
             </button>
           ) : (

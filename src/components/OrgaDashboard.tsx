@@ -1490,6 +1490,7 @@ type OrgaDashboardProps = {
   toggleTeamSelectedAction: (teamId: string, tId: string, selected: boolean) => Promise<any>;
   drawTeamsAction: (tId: string, count: number, preDrawnIds?: string[]) => Promise<any>;
   guaranteeTeamAction: (teamId: string, tId: string, guaranteed: boolean) => Promise<any>;
+  guaranteeAllTeamsAction?: (tId: string) => Promise<{ ok?: boolean; error?: string; count?: number }>;
   drawOneTeamAction: (tId: string, candidateIds: string[]) => Promise<any>;
   drawOneWaitlistAction: (tId: string, candidateIds: string[]) => Promise<any>;
   removeFromWaitlistAction: (tId: string, teamId: string) => Promise<any>;
@@ -1596,6 +1597,7 @@ export function OrgaDashboard({
   toggleTeamSelectedAction,
   drawTeamsAction,
   guaranteeTeamAction,
+  guaranteeAllTeamsAction,
   drawOneTeamAction,
   drawOneWaitlistAction,
   removeFromWaitlistAction,
@@ -1870,6 +1872,7 @@ export function OrgaDashboard({
                 toggleAction={toggleTeamSelectedAction}
                 drawAction={drawTeamsAction}
                 guaranteeAction={guaranteeTeamAction}
+                guaranteeAllAction={guaranteeAllTeamsAction}
                 drawOneAction={drawOneTeamAction}
                 drawOneWaitlistAction={drawOneWaitlistAction}
                 removeFromWaitlistAction={removeFromWaitlistAction}

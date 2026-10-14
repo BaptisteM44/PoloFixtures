@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { tournamentTimezone } from "@/lib/timezone";
 import { canonicalCountryName } from "@/lib/country-utils";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, toggleSelectionLockAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction, updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, launchPipelineGroupAction, setPipelineSeedsAction, swapPipelineTeamsAction, resetPipelineToRoundAction, reschedulePipelineStageAction, setTournamentPipelineAction, applyPipelinePresetAction } from "./actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, guaranteeAllTeamsAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, toggleSelectionLockAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction, updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, launchPipelineGroupAction, setPipelineSeedsAction, swapPipelineTeamsAction, resetPipelineToRoundAction, reschedulePipelineStageAction, setTournamentPipelineAction, applyPipelinePresetAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { ChecklistDetails } from "@/components/ChecklistDetails";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
@@ -149,6 +149,10 @@ export default async function TournamentEditPage({ params }: { params: { id: str
   const guaranteeTeam = async (teamId: string, tId: string, guaranteed: boolean) => {
     "use server";
     return await toggleTeamGuaranteedAction(teamId, tId, guaranteed);
+  };
+  const guaranteeAllTeams = async (tId: string) => {
+    "use server";
+    return await guaranteeAllTeamsAction(tId);
   };
   const drawOneTeam = async (tId: string, candidateIds: string[]) => {
     "use server";
@@ -544,6 +548,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             toggleTeamSelectedAction={toggleTeamSelected}
             drawTeamsAction={drawTeams}
             guaranteeTeamAction={guaranteeTeam}
+            guaranteeAllTeamsAction={guaranteeAllTeams}
             drawOneTeamAction={drawOneTeam}
             drawOneWaitlistAction={drawOneWaitlist}
             removeFromWaitlistAction={removeFromWaitlist}

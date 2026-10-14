@@ -1815,6 +1815,26 @@ export async function toggleTeamGuaranteedAction(
   return { ok: true };
 }
 
+/**
+ * « Valider toutes » : toutes les équipes inscrites passent IN d'un coup (y
+ * compris celles en liste d'attente), en une seule écriture. Avant, le bouton
+ * lançait une action par équipe sans lire les réponses : si la sélection était
+ * verrouillée, rien n'était enregistré mais l'écran affichait tout IN ; et les
+ * équipes déjà en liste d'attente n'étaient jamais envoyées.
+ */
+export async function guaranteeAllTeamsAction(tournamentId: string): Promise<{ ok?: boolean; error?: string; count?: number }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+  const locked = await requireSelectionUnlocked(tournamentId);
+  if (locked) return locked;
+  const res = await prisma.team.updateMany({
+    where: { tournamentId },
+    data: { guaranteed: true, selected: true, waitlistPosition: null },
+  });
+  refreshTournamentPages();
+  return { ok: true, count: res.count };
+}
+
 export async function drawTeamsAction(
   tournamentId: string,
   count: number,
