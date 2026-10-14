@@ -196,6 +196,8 @@ export function SelectionManager({
   }
 
   function handleGuarantee(teamId: string, current: boolean) {
+    if (locked) { setError(t("locked_cannot_edit")); return; }
+    const before = teams; // pour revenir en arrière si le serveur refuse
     const removing = current; // current=true → on retire un garanti
     const promotedRank = !current ? teams.find((t) => t.id === teamId)?.waitlistPosition ?? null : null;
     setTeams((prev) =>
@@ -210,7 +212,8 @@ export function SelectionManager({
     if (current) setDrawPool((prev) => { const n = new Set(prev); n.delete(teamId); return n; });
     startTransition(async () => {
       const res = await guaranteeAction(teamId, tournamentId, !current);
-      if (res.error) setError(res.error);
+      // Refus du serveur (ex : sélection verrouillée) : on remet l'écran comme avant.
+      if (res.error) { setError(res.error); setTeams(before); }
     });
   }
 
@@ -437,7 +440,7 @@ export function SelectionManager({
             <button
               className="ghost"
               onClick={handleDrawAll}
-              disabled={isPending || pool.length === 0 || slotsLeft === 0}
+              disabled={isPending || locked || pool.length === 0 || slotsLeft === 0}
               style={{ fontSize: 12 }}
             >
               {t("draw_all_btn", { count: slotsLeft })}
@@ -474,7 +477,7 @@ export function SelectionManager({
                 )}
                 <button
                   onClick={() => handleGuarantee(team.id, true)}
-                  disabled={isPending}
+                  disabled={isPending || locked}
                   className="ghost"
                   style={{ marginLeft: "auto", fontSize: 11, padding: "2px 8px", color: "var(--text-muted)" }}
                 >
@@ -495,16 +498,16 @@ export function SelectionManager({
               {t("pool_header", { count: pool.length, inDraw: drawPoolTeams.length })}
             </p>
             <div style={{ display: "flex", gap: 6, marginLeft: "auto", flexWrap: "wrap", alignItems: "center" }}>
-              <button className="ghost" onClick={selectAllPool} disabled={isPending || pool.length === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
+              <button className="ghost" onClick={selectAllPool} disabled={isPending || locked || pool.length === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
                 {t("btn_select_all_pool")}
               </button>
-              <button className="ghost" onClick={clearDrawPool} disabled={isPending || drawPool.size === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
+              <button className="ghost" onClick={clearDrawPool} disabled={isPending || locked || drawPool.size === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
                 {t("btn_clear_pool")}
               </button>
               <button
                 className="primary"
                 onClick={handleDrawOne}
-                disabled={isPending || drawPoolTeams.length === 0}
+                disabled={isPending || locked || drawPoolTeams.length === 0}
                 style={{ fontSize: 13, padding: "5px 18px" }}
               >
                 {t("btn_draw_one", { count: drawPoolTeams.length })}
@@ -526,7 +529,7 @@ export function SelectionManager({
                     type="checkbox"
                     checked={inDraw}
                     onChange={() => toggleDrawPool(team.id)}
-                    disabled={isPending}
+                    disabled={isPending || locked}
                     onClick={(e) => e.stopPropagation()}
                     style={{ cursor: "pointer", accentColor: "#f97316" }}
                   />
@@ -544,7 +547,7 @@ export function SelectionManager({
                     )}
                     <button
                       onClick={(e) => { e.stopPropagation(); handleGuarantee(team.id, false); }}
-                      disabled={isPending}
+                      disabled={isPending || locked}
                       className="ghost"
                       style={{ fontSize: 11, padding: "2px 8px", color: "var(--teal)", fontWeight: 700 }}
                     >
@@ -589,7 +592,7 @@ export function SelectionManager({
                   )}
                   <button
                     onClick={() => handleRemoveFromWaitlist(team.id, team.waitlistPosition!)}
-                    disabled={isPending}
+                    disabled={isPending || locked}
                     className="ghost"
                     style={{ marginLeft: "auto", fontSize: 11, padding: "2px 8px", color: "var(--text-muted)" }}
                   >
@@ -608,16 +611,16 @@ export function SelectionManager({
                   {t("wl_draw_header", { count: pool.length, inDraw: wlDrawPoolTeams.length })}
                 </p>
                 <div style={{ display: "flex", gap: 6, marginLeft: "auto", flexWrap: "wrap", alignItems: "center" }}>
-                  <button className="ghost" onClick={selectAllWlPool} disabled={isPending || pool.length === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
+                  <button className="ghost" onClick={selectAllWlPool} disabled={isPending || locked || pool.length === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
                     {t("btn_select_all_wl")}
                   </button>
-                  <button className="ghost" onClick={clearWlDrawPool} disabled={isPending || wlDrawPool.size === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
+                  <button className="ghost" onClick={clearWlDrawPool} disabled={isPending || locked || wlDrawPool.size === 0} style={{ fontSize: 11, padding: "3px 10px" }}>
                     {t("btn_clear_wl")}
                   </button>
                   <button
                     className="primary"
                     onClick={handleDrawOneWaitlist}
-                    disabled={isPending || wlDrawPoolTeams.length === 0}
+                    disabled={isPending || locked || wlDrawPoolTeams.length === 0}
                     style={{ fontSize: 13, padding: "5px 18px", background: "#6366f1" }}
                   >
                     {t("wl_draw_btn", { rank: waitlisted.length + 1 })}
@@ -639,7 +642,7 @@ export function SelectionManager({
                         type="checkbox"
                         checked={inWl}
                         onChange={() => toggleWlDrawPool(team.id)}
-                        disabled={isPending}
+                        disabled={isPending || locked}
                         onClick={(e) => e.stopPropagation()}
                         style={{ cursor: "pointer", accentColor: "#6366f1" }}
                       />

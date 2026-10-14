@@ -1186,7 +1186,7 @@
     "selection_validate_hint_title": "Auswahl bestätigen",
     "selection_validate_hint_desc": "Nach der Bestätigung ist die Warteliste fixiert und nur ausgewählte Teams können als bezahlt markiert werden.",
     "selection_validate_btn": "Auswahl bestätigen",
-    "selection_locked_banner": "Auswahl bestätigt — Teamliste fixiert.",
+    "selection_locked_banner": "Auswahl bestätigt: nur die IN-Teams spielen. Um ein Team hinzuzufügen oder zu entfernen, zuerst entsperren.",
     "selection_unlock_btn": "Entsperren",
     "notify_modal_title": "Teams benachrichtigen",
     "notify_modal_desc": "Sende eine Benachrichtigung an ausgewählte und auf der Warteliste stehende Teams.",
@@ -1198,7 +1198,8 @@
     "notify_modal_close": "Schließen",
     "notify_modal_success": "{notif} Benachrichtigung(en) · {mail} E-Mail(s) gesendet",
     "notify_modal_error": "Ein Fehler ist aufgetreten. Bitte erneut versuchen.",
-    "notify_modal_retry": "Wiederholen"
+    "notify_modal_retry": "Wiederholen",
+    "locked_cannot_edit": "Auswahl gesperrt: zuerst entsperren, um die IN-Teams zu ändern."
   },
   "free_agent": {
     "title": "Free-Agent-Zone",

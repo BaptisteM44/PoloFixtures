@@ -1181,7 +1181,7 @@
     "selection_validate_hint_title": "Validate the selection",
     "selection_validate_hint_desc": "Once validated, the waitlist is frozen and only selected teams can be marked as paid.",
     "selection_validate_btn": "Validate selection",
-    "selection_locked_banner": "Selection validated — team list locked.",
+    "selection_locked_banner": "Selection confirmed: only the IN teams will play. To add or remove a team, unlock it first.",
     "selection_unlock_btn": "Unlock",
     "notify_modal_title": "Notify teams",
     "notify_modal_desc": "Send a notification to selected and waitlisted teams.",
@@ -1193,7 +1193,8 @@
     "notify_modal_close": "Close",
     "notify_modal_success": "{notif} notif(s) · {mail} email(s) sent",
     "notify_modal_error": "An error occurred. Please try again.",
-    "notify_modal_retry": "Retry"
+    "notify_modal_retry": "Retry",
+    "locked_cannot_edit": "Selection locked: unlock it first to change the IN teams."
   },
   "free_agent": {
     "title": "Free agent zone",

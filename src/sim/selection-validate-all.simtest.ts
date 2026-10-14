@@ -11,7 +11,8 @@ vi.mock("next/cache", () => ({ revalidatePath: () => {}, revalidateTag: () => {}
 
 import { prisma } from "@/lib/db";
 import { assertSimDatabase, resetSimDb } from "./sim-db";
-import { guaranteeAllTeamsAction } from "@/app/[locale]/tournament/[id]/edit/actions";
+import { guaranteeAllTeamsAction, toggleSelectionLockAction } from "@/app/[locale]/tournament/[id]/edit/actions";
+import { getPipeline } from "@/engine/pipeline-server";
 
 beforeAll(async () => { await assertSimDatabase(); });
 beforeEach(async () => { await resetSimDb(); });
@@ -55,5 +56,17 @@ describe("Valider toutes les équipes IN", () => {
     const id = await mk();
     session.current = { user: { id: "x", playerId: "intrus", role: null } };
     expect((await guaranteeAllTeamsAction(id)).error).toBeTruthy();
+  });
+
+  it("cas TOP 4 : 12 IN + 7 inscrites en plus → verrouiller fait sortir les 7, la 1re étape partira avec les 12", async () => {
+    const id = await mk();
+    await prisma.team.deleteMany({ where: { tournamentId: id } });
+    await prisma.team.createMany({ data: Array.from({ length: 19 }, (_, i) => ({
+      tournamentId: id, name: `T${i + 1}`, seed: i + 1, selected: true, guaranteed: i < 12,
+    })) as never });
+    expect((await toggleSelectionLockAction(id, true)).ok).toBe(true);
+    const p = await getPipeline(id);
+    expect(p!.teams).toHaveLength(12);
+    expect(p!.teams.every((x) => x.guaranteed)).toBe(true);
   });
 });

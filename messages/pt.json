@@ -1181,7 +1181,7 @@
     "selection_validate_hint_title": "Validar a seleção",
     "selection_validate_hint_desc": "Depois de validada, a lista de espera fica congelada e só as equipas selecionadas podem ser marcadas como pagas.",
     "selection_validate_btn": "Validar a seleção",
-    "selection_locked_banner": "Seleção validada — lista de equipas bloqueada.",
+    "selection_locked_banner": "Seleção validada: só as equipas IN vão jogar. Para adicionar ou retirar uma equipa, desbloqueia-a primeiro.",
     "selection_unlock_btn": "Desbloquear",
     "notify_modal_title": "Avisar as equipas",
     "notify_modal_desc": "Envia uma notificação às equipas selecionadas e às da lista de espera.",
@@ -1193,7 +1193,8 @@
     "notify_modal_close": "Fechar",
     "notify_modal_success": "{notif} notificação(ões) · {mail} email(s) enviado(s)",
     "notify_modal_error": "Ocorreu um erro. Tenta novamente.",
-    "notify_modal_retry": "Tentar de novo"
+    "notify_modal_retry": "Tentar de novo",
+    "locked_cannot_edit": "Seleção bloqueada: desbloqueia-a primeiro para alterar as equipas IN."
   },
   "free_agent": {
     "title": "Zona free agent",

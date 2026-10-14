@@ -1186,7 +1186,7 @@
     "selection_validate_hint_title": "Validar la selección",
     "selection_validate_hint_desc": "Una vez validada, la lista de espera queda fijada y solo los equipos seleccionados pueden marcarse como pagados.",
     "selection_validate_btn": "Validar selección",
-    "selection_locked_banner": "Selección validada — lista de equipos fijada.",
+    "selection_locked_banner": "Selección validada: solo jugarán los equipos IN. Para añadir o quitar un equipo, desbloquéala primero.",
     "selection_unlock_btn": "Desbloquear",
     "notify_modal_title": "Notificar equipos",
     "notify_modal_desc": "Envía una notificación a los equipos seleccionados y en lista de espera.",
@@ -1198,7 +1198,8 @@
     "notify_modal_close": "Cerrar",
     "notify_modal_success": "{notif} notif(s) · {mail} email(s) enviados",
     "notify_modal_error": "Ocurrió un error. Inténtalo de nuevo.",
-    "notify_modal_retry": "Reintentar"
+    "notify_modal_retry": "Reintentar",
+    "locked_cannot_edit": "Selección bloqueada: desbloquéala primero para cambiar los equipos IN."
   },
   "free_agent": {
     "title": "Zona de agentes libres",

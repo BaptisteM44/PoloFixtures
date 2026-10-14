@@ -1889,6 +1889,14 @@ export async function toggleSelectionLockAction(
   if (denied) return denied;
 
   await prisma.tournament.update({ where: { id: tournamentId }, data: { selectionLocked: locked } });
+  // Valider la sélection = les équipes IN sont celles qui jouent : les autres
+  // (pas IN, ou en liste d'attente) sortent de la sélection. Sans ça, une
+  // équipe inscrite mais jamais validée restait « sélectionnée » et entrait
+  // quand même dans la 1re étape (ex : 19 équipes au lieu de 12).
+  if (locked) {
+    const hasIn = await prisma.team.count({ where: { tournamentId, guaranteed: true } });
+    if (hasIn > 0) await prisma.team.updateMany({ where: { tournamentId, guaranteed: false }, data: { selected: false } });
+  }
   revalidatePath(`/tournament/${tournamentId}/edit`);
   revalidatePath(`/tournament/${tournamentId}`);
   return { ok: true };

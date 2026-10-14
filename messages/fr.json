@@ -1181,7 +1181,7 @@
     "selection_validate_hint_title": "Valider la sélection",
     "selection_validate_hint_desc": "Une fois validée, la liste d'attente est figée et seules les équipes retenues peuvent être marquées payées.",
     "selection_validate_btn": "Valider la sélection",
-    "selection_locked_banner": "Sélection validée — liste d'équipes figée.",
+    "selection_locked_banner": "Sélection validée : seules les équipes IN joueront. Pour ajouter ou retirer une équipe, déverrouille d'abord.",
     "selection_unlock_btn": "Déverrouiller",
     "notify_modal_title": "Notifier les équipes",
     "notify_modal_desc": "Envoie une notification aux équipes sélectionnées et en liste d'attente.",
@@ -1193,7 +1193,8 @@
     "notify_modal_close": "Fermer",
     "notify_modal_success": "{notif} notif(s) · {mail} email(s) envoyés",
     "notify_modal_error": "Une erreur est survenue. Réessaie.",
-    "notify_modal_retry": "Réessayer"
+    "notify_modal_retry": "Réessayer",
+    "locked_cannot_edit": "Sélection verrouillée : déverrouille-la d'abord pour modifier les équipes IN."
   },
   "free_agent": {
     "title": "Zone free agent",
