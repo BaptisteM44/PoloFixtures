@@ -299,7 +299,8 @@
     "training_count": "{count, plural, one {# Person dabei} other {# Personen dabei}}",
     "training_nobody": "Noch niemand — sei der/die Erste!",
     "training_messages": "{count, plural, one {# Nachricht · zum Chat} other {# Nachrichten · zum Chat}}",
-    "training_no_message": "Ein Wort an die Gruppe? (Bälle, Verspätung, Mitfahrt…)"
+    "training_no_message": "Ein Wort an die Gruppe? (Bälle, Verspätung, Mitfahrt…)",
+    "training_nobody_short": "Noch niemand"
   },
   "tournaments": {
     "page_title": "Alle Turniere",

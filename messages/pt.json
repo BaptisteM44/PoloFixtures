@@ -299,7 +299,8 @@
     "training_count": "{count, plural, one {# jogador inscrito} other {# jogadores inscritos}}",
     "training_nobody": "Ninguém por agora — sê o primeiro!",
     "training_messages": "{count, plural, one {# mensagem · ver a conversa} other {# mensagens · ver a conversa}}",
-    "training_no_message": "Uma palavra para o grupo? (bolas, atraso, boleia…)"
+    "training_no_message": "Uma palavra para o grupo? (bolas, atraso, boleia…)",
+    "training_nobody_short": "Ninguém ainda"
   },
   "tournaments": {
     "page_title": "Todos os torneios",

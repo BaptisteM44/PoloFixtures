@@ -299,7 +299,8 @@
     "training_count": "{count, plural, one {# joueur·euse inscrit·e} other {# joueur·euses inscrit·es}}",
     "training_nobody": "Personne pour l'instant — lance le mouvement !",
     "training_messages": "{count, plural, one {# message · voir la discussion} other {# messages · voir la discussion}}",
-    "training_no_message": "Un mot pour l'équipe ? (balles, retard, covoit…)"
+    "training_no_message": "Un mot pour l'équipe ? (balles, retard, covoit…)",
+    "training_nobody_short": "Personne encore"
   },
   "tournaments": {
     "page_title": "Tous les tournois",

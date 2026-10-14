@@ -299,7 +299,8 @@
     "training_count": "{count, plural, one {# player in} other {# players in}}",
     "training_nobody": "Nobody yet — be the first!",
     "training_messages": "{count, plural, one {# message · see the chat} other {# messages · see the chat}}",
-    "training_no_message": "A word for the crew? (balls, running late, carpool…)"
+    "training_no_message": "A word for the crew? (balls, running late, carpool…)",
+    "training_nobody_short": "Nobody yet"
   },
   "tournaments": {
     "page_title": "All tournaments",

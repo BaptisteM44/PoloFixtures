@@ -9,7 +9,7 @@ import TournamentMapClient from "@/components/TournamentMapClient";
 import type { MapTournament } from "@/components/TournamentMap";
 import { HomeHeroPersonal, type HeroNextTournament } from "@/components/HomeHeroPersonal";
 import { HomeInstallBanner } from "@/components/HomeInstallBanner";
-import { NextTrainingCard } from "@/components/NextTrainingCard";
+import { TrainingTiles, type TrainingTileData } from "@/components/NextTrainingCard";
 import { ensureRecurringSessions } from "@/lib/club-sessions";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { countryToContinent } from "@/lib/country-utils";
@@ -146,9 +146,9 @@ export default async function HomePage() {
             club: { members: { some: { playerId: currentPlayerId, status: "MEMBER" } } },
           },
           select: {
-            id: true, title: true, date: true, location: true, duration: true,
+            id: true, title: true, date: true, location: true, duration: true, color: true,
             club: { select: { id: true, name: true } },
-            venue: { select: { name: true, mapLink: true } },
+            venue: { select: { name: true, mapLink: true, color: true } },
             attendees: {
               where: { status: { in: ["CONFIRMED", "PENDING"] } },
               select: { status: true, player: { select: { id: true, name: true, photoPath: true } } },
@@ -255,33 +255,31 @@ export default async function HomePage() {
     if (cont) playerCountByContinent[cont] = (playerCountByContinent[cont] ?? 0) + row._count._all;
   }
 
-  // Prochain entraînement de mes clubs (14 jours) : carte compacte sous le prochain tournoi.
-  const trainingCard = (() => {
-        const s = (clubSessionsRaw as any[])[0];
-        if (!s || !currentPlayerId) return null;
-        if (s.date.getTime() - Date.now() > 14 * 86_400_000) return null;
-        const confirmed = s.attendees.filter((a: any) => a.status === "CONFIRMED");
-        const mine = s.attendees.find((a: any) => a.player.id === currentPlayerId);
-        return (
-          <NextTrainingCard
-            session={{
-              id: s.id,
-              clubId: s.club.id,
-              clubName: s.club.name,
-              title: s.title,
-              date: s.date.toISOString(),
-              duration: s.duration,
-              place: s.venue?.name ?? s.location ?? null,
-              mapLink: s.venue?.mapLink ?? null,
-              attendees: confirmed.map((a: any) => a.player),
-              myStatus: mine?.status ?? null,
-              lastMessage: s.messages[0] ? { name: s.messages[0].player.name, content: s.messages[0].content } : null,
-              messageCount: s._count.messages,
-            }}
-          />
-        );
-      })();
-  const trainingCardId: string | null = trainingCard ? (clubSessionsRaw as any[])[0].id : null;
+  // Prochains entraînements de mes clubs (3 max, 14 jours) : tuiles sous le prochain tournoi.
+  const trainingTiles: TrainingTileData[] = currentPlayerId
+    ? (clubSessionsRaw as any[])
+        .filter((s) => s.date.getTime() - Date.now() <= 14 * 86_400_000)
+        .slice(0, 3)
+        .map((s) => {
+          const mine = s.attendees.find((a: any) => a.player.id === currentPlayerId);
+          return {
+            id: s.id,
+            clubId: s.club.id,
+            clubName: s.club.name,
+            title: s.title,
+            date: s.date.toISOString(),
+            duration: s.duration,
+            place: s.venue?.name ?? s.location ?? null,
+            mapLink: s.venue?.mapLink ?? null,
+            color: s.color ?? s.venue?.color ?? null,
+            attendees: s.attendees.filter((a: any) => a.status === "CONFIRMED").map((a: any) => a.player),
+            myStatus: mine?.status ?? null,
+            lastMessage: s.messages[0] ? { name: s.messages[0].player.name, content: s.messages[0].content } : null,
+            messageCount: s._count.messages,
+          };
+        })
+    : [];
+  const tileIds = new Set(trainingTiles.map((x) => x.id));
 
   return (
     <div className="home">
@@ -315,8 +313,8 @@ export default async function HomePage() {
           }}
           next={heroNext}
           others={heroOthers}
-          trainingSlot={trainingCard}
-          sessions={(clubSessionsRaw as any[]).filter((s) => s.id !== trainingCardId).map((s) => ({
+          trainingSlot={<TrainingTiles sessions={trainingTiles} />}
+          sessions={(clubSessionsRaw as any[]).filter((s) => !tileIds.has(s.id)).map((s) => ({
             id: s.id,
             title: s.title,
             date: s.date.toISOString(),
