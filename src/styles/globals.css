@@ -11478,7 +11478,7 @@ a.header-icon-btn { text-decoration: none; }
   .training-tiles {
     grid-template-columns: none;
     grid-auto-flow: column;
-    grid-auto-columns: 72%;
+    grid-auto-columns: minmax(72%, 1fr);
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     padding: 2px 2px 8px;

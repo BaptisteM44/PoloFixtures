@@ -255,11 +255,11 @@ export default async function HomePage() {
     if (cont) playerCountByContinent[cont] = (playerCountByContinent[cont] ?? 0) + row._count._all;
   }
 
-  // Prochains entraînements de mes clubs (3 max, 14 jours) : tuiles sous le prochain tournoi.
+  // Prochain entraînement de mes clubs (14 jours) : tuile sous le prochain tournoi.
   const trainingTiles: TrainingTileData[] = currentPlayerId
     ? (clubSessionsRaw as any[])
         .filter((s) => s.date.getTime() - Date.now() <= 14 * 86_400_000)
-        .slice(0, 3)
+        .slice(0, 1)
         .map((s) => {
           const mine = s.attendees.find((a: any) => a.player.id === currentPlayerId);
           return {
