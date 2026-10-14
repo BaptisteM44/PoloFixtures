@@ -8,6 +8,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { ISO_COUNTRIES } from "@/lib/iso-countries";
 import { CURRENCIES } from "@/lib/currencies";
 import { RegistrationFieldsEditor } from "@/components/RegistrationFieldsEditor";
+import { postUpload } from "@/lib/upload-image";
 
 // Formats legacy proposés dans le menu. Un format hors de cette liste (ex.
 // "pipeline") ne doit jamais être coercé vers "2v2" par un <select> sans option
@@ -306,7 +307,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     fd.append("file", await fixImageOrientation(file));
     fd.append("folder", "banners");
     try {
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const res = await postUpload(fd);
       if (res.ok) {
         const data = await res.json();
         setBannerPath(data.path);

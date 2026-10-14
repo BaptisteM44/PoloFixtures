@@ -5,6 +5,7 @@ import Image from "next/image";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { postUpload } from "@/lib/upload-image";
 
 export function CreateSquadForm() {
   const t = useTranslations("my_teams");
@@ -26,7 +27,7 @@ export function CreateSquadForm() {
     try {
       const fd = new FormData();
       fd.append("file", await fixImageOrientation(file));
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const res = await postUpload(fd);
       if (res.ok) {
         const data = await res.json().catch(() => null);
         if (data?.path) setLogoPath(data.path);
@@ -40,7 +41,7 @@ export function CreateSquadForm() {
             try {
               const fd2 = new FormData();
               fd2.append("base64", reader.result as string);
-              const res2 = await fetch("/api/upload", { method: "POST", body: fd2 });
+              const res2 = await postUpload(fd2);
               if (res2.ok) {
                 const d = await res2.json().catch(() => null);
                 if (d?.path) setLogoPath(d.path);

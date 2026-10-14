@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PlayerCollectibleCard } from "./PlayerCollectibleCard";
+import { postUpload } from "@/lib/upload-image";
 
 type Member = {
   id: string;
@@ -236,7 +237,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
       const form = new FormData();
       form.append("file", await fixImageOrientation(file));
       form.append("folder", "squads");
-      const res = await fetch("/api/upload", { method: "POST", body: form });
+      const res = await postUpload(form);
       if (!res.ok) throw new Error(t("upload_error"));
       const data = await res.json().catch(() => null);
       if (!data || !data.path) throw new Error(t("upload_error"));

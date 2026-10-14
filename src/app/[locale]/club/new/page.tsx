@@ -6,6 +6,7 @@ import { useRouter, Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { COUNTRIES } from "@/lib/countries";
 import { fixImageOrientation } from "@/lib/fix-orientation";
+import { postUpload } from "@/lib/upload-image";
 
 export default function NewClubPage() {
   const t = useTranslations("club");
@@ -48,7 +49,7 @@ export default function NewClubPage() {
     try {
       const fd = new FormData();
       fd.append("file", await fixImageOrientation(file));
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const res = await postUpload(fd);
       if (!res.ok) {
         const txt = await res.text().catch(() => null);
         throw new Error(txt || `Upload échoué (${res.status})`);

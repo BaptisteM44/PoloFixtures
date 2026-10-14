@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { PhotoViewer } from "@/components/PhotoViewer";
 import type { GalleryPhase, GalleryPhoto } from "@/lib/tournament-photos";
+import { postUpload } from "@/lib/upload-image";
 
 type GalleryState = {
   phase: GalleryPhase;
@@ -67,7 +68,7 @@ export function TournamentGallery({
     const form = new FormData();
     form.append("file", file);
     form.append("folder", "tournament-photos");
-    const up = await fetch("/api/upload", { method: "POST", body: form });
+    const up = await postUpload(form);
     if (!up.ok) return up.status === 413 ? t("err_too_big") : up.status === 415 ? t("err_not_image") : t("error");
     const { path } = await up.json();
     const res = await fetch(`/api/tournaments/${tournamentId}/photos`, {

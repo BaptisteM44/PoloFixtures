@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useParams } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
 import { fixImageOrientation } from "@/lib/fix-orientation";
+import { postUpload } from "@/lib/upload-image";
 
 type Venue = {
   id: string;
@@ -119,7 +120,7 @@ export default function EditClubPage() {
     try {
       const fd = new FormData();
       fd.append("file", await fixImageOrientation(file));
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const res = await postUpload(fd);
       if (!res.ok) {
         const txt = await res.text().catch(() => null);
         throw new Error(txt || `Upload échoué (${res.status})`);

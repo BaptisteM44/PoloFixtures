@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { fixImageOrientation } from "@/lib/fix-orientation";
+import { postUpload } from "@/lib/upload-image";
 
 type Sponsor = {
   id: string;
@@ -53,7 +54,7 @@ export function SponsorManager({ tournamentId, sponsors, addAction, deleteAction
       const fd = new FormData();
       fd.append("file", await fixImageOrientation(file));
 
-      const resp = await fetch("/api/upload", { method: "POST", body: fd });
+      const resp = await postUpload(fd);
       if (!resp.ok) {
         const txt = await resp.text().catch(() => null);
         setError(txt || `Upload error (${resp.status})`);

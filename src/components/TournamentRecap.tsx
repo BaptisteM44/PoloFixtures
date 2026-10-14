@@ -6,6 +6,7 @@ import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
 import { PokemonCard } from "@/components/PokemonCard";
+import { postUpload } from "@/lib/upload-image";
 
 type PodiumPlayer = {
   id: string;
@@ -384,7 +385,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                     setUploadError(null);
                     try {
                       const fd = new FormData(); fd.append("file", f); fd.append("folder", "photo-finish");
-                      const res = await fetch("/api/upload", { method: "POST", body: fd });
+                      const res = await postUpload(fd);
                       if (!res.ok) {
                         const txt = await res.text();
                         throw new Error(txt || t("upload_failed", { status: res.status }));
@@ -461,7 +462,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
                   setUploadError(null);
                   try {
                     const fd = new FormData(); fd.append("file", f); fd.append("folder", "photo-finish");
-                    const res = await fetch("/api/upload", { method: "POST", body: fd });
+                    const res = await postUpload(fd);
                     if (!res.ok) {
                       const txt = await res.text();
                       throw new Error(txt || t("upload_failed", { status: res.status }));

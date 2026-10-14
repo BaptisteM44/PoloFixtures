@@ -20,6 +20,7 @@ import { InstallAppButton } from "@/components/InstallAppButton";
 import { MessagesClient } from "@/app/[locale]/messages/MessagesClient";
 import { Tabs } from "@/components/Tabs";
 import type { BadgeInfo } from "@/lib/badge-catalog";
+import { postUpload } from "@/lib/upload-image";
 
 type Squad = {
   id: string;
@@ -221,7 +222,7 @@ export default function AccountPage() {
     try {
       const fd = new FormData();
       fd.append("file", new File([blob], "photo.webp", { type: "image/webp" }));
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const res = await postUpload(fd);
       if (!res.ok) { setSaveMsg(t("photo_error")); return; }
       const { path } = await res.json();
       await fetch("/api/account/profile", {
