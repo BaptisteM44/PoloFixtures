@@ -53,79 +53,77 @@ export function NextTrainingCard({ session: s }: Props) {
       router.refresh();
     });
 
+  const avatars = (
+    <div style={{ display: "flex" }}>
+      {s.attendees.slice(0, 6).map((a, i) => (
+        a.photoPath
+          // eslint-disable-next-line @next/next/no-img-element
+          ? <img key={a.id} src={a.photoPath} alt={a.name} title={a.name} style={{ width: 24, height: 24, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--surface)", marginLeft: i ? -7 : 0 }} />
+          : <span key={a.id} title={a.name} style={{ width: 24, height: 24, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: "var(--surface-2)", border: "2px solid var(--surface)", marginLeft: i ? -7 : 0 }}>{a.name.charAt(0).toUpperCase()}</span>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="panel next-training" style={{ display: "grid", gap: 12, borderLeft: "6px solid var(--teal)" }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
-          🚲 {t("training_card_title")}
-        </span>
-        <Link href={discussionHref} style={{ fontSize: 12, color: "var(--text-muted)" }}>{s.clubName} →</Link>
-      </div>
-
-      <div>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, lineHeight: 1.15, textTransform: "capitalize" }}>
-          {when} · {time}
+    <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "stretch", flexWrap: "wrap" }}>
+        {/* Pastille date / heure (même esprit que le compte à rebours du tournoi) */}
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          padding: "10px 14px", background: "var(--teal)", borderRight: "2px solid var(--border)",
+          minWidth: 84, flexShrink: 0, color: "var(--border)",
+        }}>
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>🚲 {when}</span>
+          <span style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 20, lineHeight: 1.1 }}>{time}</span>
         </div>
-        <div style={{ fontSize: 14, color: "var(--text-muted)", marginTop: 2 }}>
-          {s.title ? <strong style={{ color: "var(--text)" }}>{s.title}</strong> : null}
-          {s.title && s.place ? " · " : ""}
-          {s.place && (s.mapLink
-            ? <a href={s.mapLink} target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>📍 {s.place}</a>
-            : <span>📍 {s.place}</span>)}
-        </div>
-      </div>
 
-      {/* Qui vient */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <div style={{ display: "flex" }}>
-          {s.attendees.slice(0, 8).map((a, i) => (
-            a.photoPath
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img key={a.id} src={a.photoPath} alt={a.name} title={a.name} style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--surface)", marginLeft: i ? -8 : 0 }} />
-              : <span key={a.id} title={a.name} style={{ width: 30, height: 30, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, background: "var(--surface-2)", border: "2px solid var(--surface)", marginLeft: i ? -8 : 0 }}>{a.name.charAt(0).toUpperCase()}</span>
-          ))}
+        {/* Infos + qui vient */}
+        <div style={{ flex: "1 1 220px", minWidth: 0, padding: "8px 12px", display: "grid", gap: 4, alignContent: "center" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <Link href={discussionHref} style={{ color: "inherit", textDecoration: "none" }}>{s.title || t("training_card_title")} · {s.clubName}</Link>
+            {s.place && (
+              <span style={{ fontWeight: 400, color: "var(--text-muted)" }}>
+                {" · "}
+                {s.mapLink ? <a href={s.mapLink} target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>📍 {s.place}</a> : <>📍 {s.place}</>}
+              </span>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-muted)", flexWrap: "wrap" }}>
+            {avatars}
+            <span>{s.attendees.length > 0 ? t("training_count", { count: s.attendees.length }) : t("training_nobody")}</span>
+            <Link href={discussionHref} style={{ color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>
+              💬 {s.lastMessage
+                ? <><strong>{s.lastMessage.name}</strong> : {s.lastMessage.content.length > 60 ? s.lastMessage.content.slice(0, 57) + "…" : s.lastMessage.content}</>
+                : t("training_no_message")}
+            </Link>
+          </div>
         </div>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>
-          {s.attendees.length > 0 ? t("training_count", { count: s.attendees.length }) : t("training_nobody")}
-        </span>
-      </div>
 
-      {/* Réponse en un clic */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        {s.myStatus === "CONFIRMED" ? (
-          <>
-            <span style={{ fontWeight: 700, color: "var(--teal)" }}>✓ {t("training_going")}</span>
-            <button type="button" className="ghost" style={{ fontSize: 13 }} disabled={isPending}
-              onClick={() => act(() => leaveSessionAction(s.clubId, s.id))}>
-              {t("training_not_going")}
+        {/* Réponse en un clic + agenda */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", gap: 4, padding: "8px 12px", flexShrink: 0 }}>
+          {s.myStatus === "CONFIRMED" ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontWeight: 700, fontSize: 13, color: "var(--teal)" }}>✓ {t("training_going")}</span>
+              <button type="button" className="ghost" style={{ fontSize: 12, padding: "4px 10px" }} disabled={isPending}
+                onClick={() => act(() => leaveSessionAction(s.clubId, s.id))}>
+                {t("training_not_going")}
+              </button>
+            </div>
+          ) : s.myStatus === "PENDING" ? (
+            <span className="meta" style={{ fontSize: 12 }}>{tc("sessions_pending")}</span>
+          ) : (
+            <button type="button" className="primary" style={{ fontSize: 13, padding: "6px 14px" }} disabled={isPending}
+              onClick={() => act(() => joinSessionAction(s.clubId, s.id))}>
+              {t("training_join")}
             </button>
-          </>
-        ) : s.myStatus === "PENDING" ? (
-          <span className="meta">{tc("sessions_pending")}</span>
-        ) : (
-          <button type="button" className="primary" disabled={isPending}
-            onClick={() => act(() => joinSessionAction(s.clubId, s.id))}>
-            {t("training_join")}
-          </button>
-        )}
-        <span className="meta" style={{ fontSize: 12 }}>
-          📅 <a href={cal.ics} style={{ color: "var(--teal)" }}>iPhone / Outlook</a>
-          {" · "}
-          <a href={cal.google} target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>Google</a>
-        </span>
+          )}
+          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+            📅 <a href={cal.ics} style={{ color: "var(--teal)" }}>iPhone / Outlook</a>
+            {" · "}
+            <a href={cal.google} target="_blank" rel="noopener noreferrer" style={{ color: "var(--teal)" }}>Google</a>
+          </span>
+        </div>
       </div>
-
-      {/* Discussion de la séance, bien visible */}
-      <Link href={discussionHref} style={{ display: "block", textDecoration: "none", color: "inherit", background: "var(--surface-2)", borderRadius: 8, padding: "8px 12px", fontSize: 13 }}>
-        {s.lastMessage ? (
-          <>
-            💬 <strong>{s.lastMessage.name}</strong> : {s.lastMessage.content.length > 140 ? s.lastMessage.content.slice(0, 137) + "…" : s.lastMessage.content}
-            <span className="meta" style={{ display: "block", fontSize: 11, marginTop: 2 }}>{t("training_messages", { count: s.messageCount })} →</span>
-          </>
-        ) : (
-          <span className="meta">💬 {t("training_no_message")} →</span>
-        )}
-      </Link>
     </div>
   );
 }

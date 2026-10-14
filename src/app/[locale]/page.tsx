@@ -255,10 +255,8 @@ export default async function HomePage() {
     if (cont) playerCountByContinent[cont] = (playerCountByContinent[cont] ?? 0) + row._count._all;
   }
 
-  return (
-    <div className="home">
-      {/* Prochain entraînement de mes clubs (14 jours) : « J'y vais » en un clic */}
-      {(() => {
+  // Prochain entraînement de mes clubs (14 jours) : carte compacte sous le prochain tournoi.
+  const trainingCard = (() => {
         const s = (clubSessionsRaw as any[])[0];
         if (!s || !currentPlayerId) return null;
         if (s.date.getTime() - Date.now() > 14 * 86_400_000) return null;
@@ -282,7 +280,11 @@ export default async function HomePage() {
             }}
           />
         );
-      })()}
+      })();
+  const trainingCardId: string | null = trainingCard ? (clubSessionsRaw as any[])[0].id : null;
+
+  return (
+    <div className="home">
       {/* ---- HERO : perso si connecté, marketing sinon ---- */}
       {me ? (
         <HomeHeroPersonal
@@ -313,7 +315,8 @@ export default async function HomePage() {
           }}
           next={heroNext}
           others={heroOthers}
-          sessions={(clubSessionsRaw as any[]).map((s) => ({
+          trainingSlot={trainingCard}
+          sessions={(clubSessionsRaw as any[]).filter((s) => s.id !== trainingCardId).map((s) => ({
             id: s.id,
             title: s.title,
             date: s.date.toISOString(),

@@ -180,6 +180,7 @@ export function HomeHeroPersonal({
   inviteCount,
   squadCount,
   locale,
+  trainingSlot,
 }: {
   me: HeroPlayer;
   next: HeroNextTournament | null;
@@ -189,6 +190,8 @@ export function HomeHeroPersonal({
   inviteCount: number;
   squadCount: number;
   locale: string;
+  /** Carte « prochain entraînement », placée sous le prochain tournoi. */
+  trainingSlot?: React.ReactNode;
 }) {
   const t = useTranslations("home");
   const firstName = me.name.split(/\s+/)[0];
@@ -309,6 +312,8 @@ export function HomeHeroPersonal({
             </Link>
           </div>
         )}
+
+        {trainingSlot}
 
         {/* Autres tournois à venir */}
         {others.length > 0 && (
