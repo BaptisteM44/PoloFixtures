@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { sessionCalendarLinks } from "@/lib/session-calendar";
 import { useTranslations, useLocale } from "next-intl";
@@ -138,6 +139,11 @@ export function ClubSessions({
   const DAY_NAMES = t("sessions_day_names").split(",");
 
   const [sessions, setSessions] = useState(initialSessions);
+  const router = useRouter();
+  // Après une action, router.refresh() renvoie les séances à jour : on les
+  // reprend. (Avant : rechargement complet de la page, qui coupait le
+  // rafraîchissement en cours et affichait une seconde « Une erreur est survenue ».)
+  useEffect(() => { setSessions(initialSessions); }, [initialSessions]);
   const [showAdd, setShowAdd] = useState(false);
   const [isPending, startTransition] = useTransition();
 
@@ -192,7 +198,7 @@ export function ClubSessions({
         setShowAdd(false);
         setTitle(""); setDate(""); setTime("19:00"); setDurationHours("2");
         setVenueId(""); setLocation(""); setNotes(""); setRecurring(false); setColor("");
-        window.location.reload();
+        router.refresh();
       }
     });
   }
@@ -223,28 +229,28 @@ export function ClubSessions({
         minPlayers: joinCondition === "min" && joinMinPlayers ? Number(joinMinPlayers) : undefined,
       });
       setJoiningSessionId(null);
-      window.location.reload();
+      router.refresh();
     });
   }
 
   function handleLeave(sessionId: string) {
     startTransition(async () => {
       await leaveSessionAction(clubId, sessionId);
-      window.location.reload();
+      router.refresh();
     });
   }
 
   function handleApprove(sessionId: string, playerId: string) {
     startTransition(async () => {
       await approveSessionAttendeeAction(clubId, sessionId, playerId);
-      window.location.reload();
+      router.refresh();
     });
   }
 
   function handleReject(sessionId: string, playerId: string) {
     startTransition(async () => {
       await rejectSessionAttendeeAction(clubId, sessionId, playerId);
-      window.location.reload();
+      router.refresh();
     });
   }
 
@@ -253,14 +259,14 @@ export function ClubSessions({
   function handleQuickJoin(sessionId: string) {
     startTransition(async () => {
       await joinSessionAction(clubId, sessionId);
-      window.location.reload();
+      router.refresh();
     });
   }
 
   function handleReviveSeries(sessionId: string) {
     startTransition(async () => {
       await reviveSeriesAction(clubId, sessionId);
-      window.location.reload();
+      router.refresh();
     });
   }
 
@@ -269,7 +275,7 @@ export function ClubSessions({
     startTransition(async () => {
       await stopSeriesAction(clubId, sessionId);
       setEditingSessionId(null);
-      window.location.reload();
+      router.refresh();
     });
   }
 
@@ -307,7 +313,7 @@ export function ClubSessions({
       });
       if ("ok" in res) {
         setEditingSessionId(null);
-        window.location.reload();
+        router.refresh();
       }
     });
   }
@@ -316,14 +322,14 @@ export function ClubSessions({
     if (!confirm(t("sessions_confirm_cancel"))) return;
     startTransition(async () => {
       await cancelSessionAction(clubId, sessionId);
-      window.location.reload();
+      router.refresh();
     });
   }
 
   function handleSendMessage(sessionId: string, content: string) {
     startTransition(async () => {
       const res = await sendSessionMessageAction(clubId, sessionId, content);
-      if ("ok" in res) window.location.reload();
+      if ("ok" in res) router.refresh();
     });
   }
 
