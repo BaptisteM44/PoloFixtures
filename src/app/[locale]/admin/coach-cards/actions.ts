@@ -3,42 +3,37 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
 import { createNotification } from "@/lib/notify";
+import { COACH_EDITION, nextCollectorNumber } from "@/lib/coach-card";
 
 async function requireAdmin() {
   const session = await auth();
   if ((session?.user as { role?: string } | undefined)?.role !== "ADMIN") throw new Error(apiMsg("not_authorized"));
 }
 
-const assignSchema = z.object({
-  playerId: z.string().min(1),
-  tournament: z.string().trim().min(1).max(40),
-  city: z.string().trim().min(1).max(30),
-  collectorNumber: z.string().trim().min(1).max(10),
-});
-
-/** Donne (ou modifie) la carte Coach d'un joueur. */
-export async function assignCoachCardAction(data: z.infer<typeof assignSchema>) {
+/**
+ * Donne la carte Coach de l'édition à un joueur. Tout est fixe (édition,
+ * ville) ; le n° d'exemplaire est attribué automatiquement dans l'ordre des
+ * dons. Nom et photo viennent du profil du joueur.
+ */
+export async function assignCoachCardAction(playerId: string) {
   await requireAdmin();
-  const parsed = assignSchema.safeParse(data);
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Données invalides." };
-
-  const { playerId, ...cardData } = parsed.data;
   const player = await prisma.player.findUnique({ where: { id: playerId }, select: { id: true } });
   if (!player) return { error: apiMsg("player_not_found") };
 
-  // Posséder la carte = avoir une ligne CoachCard (ownedCards la dérive, comme pour la WHBPC).
-  const previous = await prisma.coachCard.findUnique({ where: { playerId }, select: { tournament: true } });
-  await prisma.coachCard.upsert({ where: { playerId }, create: { playerId, ...cardData }, update: cardData });
-  // Prévenu à la 1re carte et quand elle passe à une nouvelle édition (pas pour une simple correction).
-  if (!previous || previous.tournament !== cardData.tournament) {
-    await createNotification(playerId, "CARD_GRANTED", { cardId: "coach", cardName: "Coach", edition: cardData.tournament });
-  }
+  const existing = await prisma.coachCard.findUnique({ where: { playerId }, select: { collectorNumber: true } });
+  if (existing) return { ok: true, collectorNumber: existing.collectorNumber, already: true };
+
+  const taken = (await prisma.coachCard.findMany({ select: { collectorNumber: true } })).map((c) => c.collectorNumber);
+  const collectorNumber = nextCollectorNumber(taken);
+  await prisma.coachCard.create({
+    data: { playerId, tournament: COACH_EDITION.tournament, city: COACH_EDITION.city, collectorNumber },
+  });
+  await createNotification(playerId, "CARD_GRANTED", { cardId: "coach", cardName: "Coach", edition: COACH_EDITION.tournament });
   revalidatePath("/admin/coach-cards");
   revalidatePath("/account");
-  return { ok: true };
+  return { ok: true, collectorNumber };
 }
 
 /** Retire la carte Coach (et la désactive si c'était la carte affichée). */

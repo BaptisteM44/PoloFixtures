@@ -18,15 +18,13 @@ export default async function AdminCoachCardsPage() {
       <h1>Cartes Coach</h1>
       <AdminNav />
       <p style={{ color: "var(--text-muted)", fontSize: 13, marginBottom: 24 }}>
-        Offre la carte Coach aux coachs d&apos;une édition. Elle arrive dans leur Collection : ils peuvent
-        en faire leur carte affichée partout. Une seule par joueur — l&apos;attribuer à nouveau la met à jour.
-        Pour tester, attribue-la-toi, active-la dans Mon compte → Collection, puis retire-la ici.
+        Offre la carte Coach aux coachs de l&apos;édition. Le joueur est prévenu par une notification et la
+        retrouve dans sa Collection, d&apos;où il peut en faire sa carte affichée partout.
+        Pour tester, donne-la-toi, active-la dans Mon compte → Collection, puis retire-la ici.
       </p>
       <CoachCardAdminPanel
         initialCards={cards.map((c) => ({
           playerId: c.playerId,
-          tournament: c.tournament,
-          city: c.city,
           collectorNumber: c.collectorNumber,
           player: { id: c.player.id, name: c.player.name, slug: c.player.slug, photoPath: c.player.photoPath, badges: (c.player.pinnedBadges?.length ? c.player.pinnedBadges : c.player.badges.slice(0, 5)) },
         }))}
