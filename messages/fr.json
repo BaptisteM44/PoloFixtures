@@ -1760,7 +1760,8 @@
     "sessions_stop_series": "Arrêter la récurrence",
     "sessions_stop_series_confirm": "Arrêter la récurrence ? Les dates déjà prévues restent, il n'y en aura plus de nouvelles.",
     "sessions_series_paused": "Série « {label} » en pause (dernière date : {date})",
-    "sessions_series_revive": "▶ Relancer"
+    "sessions_series_revive": "▶ Relancer",
+    "competitions_solo": "Inscrit·es en individuel (avant le tirage)"
   },
   "continent": {
     "page_title": "Continent",

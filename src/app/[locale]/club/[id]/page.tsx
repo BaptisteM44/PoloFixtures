@@ -262,9 +262,36 @@ export default async function ClubPage({
       if (existing) existing.players.push(playerInfo);
       else entry.teams.push({ name: tp.team.name, players: [playerInfo] });
     }
-    competitions = Array.from(tournamentMap.values()).sort(
-      (a, b) => new Date(b.tournament.dateStart).getTime() - new Date(a.tournament.dateStart).getTime()
-    );
+    // ABC Chapeau : inscrits en individuel pas encore tirés dans une équipe
+    // (souvent tirées au dernier moment) — ils n'apparaissaient pas du tout.
+    const soloEntries = await prisma.tournamentSoloEntry.findMany({
+      where: { playerId: { in: memberIds }, teamId: null, waitlisted: false },
+      select: {
+        playerId: true,
+        tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, status: true, format: true } },
+      },
+    });
+    for (const se of soloEntries) {
+      const t_ = se.tournament;
+      if (!tournamentMap.has(t_.id)) {
+        tournamentMap.set(t_.id, { tournament: { ...t_, dateStart: t_.dateStart.toISOString(), dateEnd: t_.dateEnd.toISOString() }, teams: [] });
+      }
+      const entry = tournamentMap.get(t_.id)!;
+      const soloLabel = t("competitions_solo");
+      const group = entry.teams.find((x) => x.name === soloLabel);
+      const playerInfo = { id: se.playerId, name: memberNameMap.get(se.playerId) ?? se.playerId };
+      if (group) group.players.push(playerInfo);
+      else entry.teams.push({ name: soloLabel, players: [playerInfo] });
+    }
+
+    // À venir / en cours d'abord, du plus proche au plus lointain ; puis les passés, du plus récent au plus ancien.
+    const now = Date.now();
+    const all = Array.from(tournamentMap.values());
+    const isPast = (x: { tournament: { dateEnd: string; status: string } }) => x.tournament.status === "COMPLETED" || new Date(x.tournament.dateEnd).getTime() < now;
+    competitions = [
+      ...all.filter((x) => !isPast(x)).sort((a, b) => new Date(a.tournament.dateStart).getTime() - new Date(b.tournament.dateStart).getTime()),
+      ...all.filter(isPast).sort((a, b) => new Date(b.tournament.dateStart).getTime() - new Date(a.tournament.dateStart).getTime()),
+    ];
   }
 
   if (tab === "equipment" && isMember) {

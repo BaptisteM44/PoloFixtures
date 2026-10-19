@@ -1760,7 +1760,8 @@
     "sessions_stop_series": "Stop repeating",
     "sessions_stop_series_confirm": "Stop repeating? Dates already planned stay, no new ones will be added.",
     "sessions_series_paused": "“{label}” series paused (last date: {date})",
-    "sessions_series_revive": "▶ Restart"
+    "sessions_series_revive": "▶ Restart",
+    "competitions_solo": "Registered individually (before the draw)"
   },
   "continent": {
     "page_title": "Continent",

@@ -1765,7 +1765,8 @@
     "sessions_stop_series": "Detener la repetición",
     "sessions_stop_series_confirm": "¿Detener la repetición? Las fechas ya previstas se mantienen, no habrá nuevas.",
     "sessions_series_paused": "Serie «{label}» en pausa (última fecha: {date})",
-    "sessions_series_revive": "▶ Reanudar"
+    "sessions_series_revive": "▶ Reanudar",
+    "competitions_solo": "Inscritos individualmente (antes del sorteo)"
   },
   "continent": {
     "page_title": "Continente",

@@ -1765,7 +1765,8 @@
     "sessions_stop_series": "Wiederholung beenden",
     "sessions_stop_series_confirm": "Wiederholung beenden? Bereits geplante Termine bleiben, neue kommen nicht mehr hinzu.",
     "sessions_series_paused": "Serie „{label}“ pausiert (letzter Termin: {date})",
-    "sessions_series_revive": "▶ Neu starten"
+    "sessions_series_revive": "▶ Neu starten",
+    "competitions_solo": "Einzeln angemeldet (vor der Auslosung)"
   },
   "continent": {
     "page_title": "Kontinent",
