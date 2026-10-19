@@ -78,7 +78,7 @@ export default async function HomePage() {
           select: {
             id: true, name: true, country: true, city: true, photoPath: true,
             clubLogoPath: true, teamLogoPath: true, badges: true, pinnedBadges: true,
-            startYear: true, activeCard: true, whbpcCard: true,
+            startYear: true, activeCard: true, whbpcCard: true, coachCard: true,
             clubMemberships: { where: { status: "MEMBER" }, take: 1, include: { club: { select: { id: true, name: true, logoPath: true } } } },
           },
         })
@@ -298,6 +298,7 @@ export default async function HomePage() {
             pinnedBadges: me.pinnedBadges,
             startYear: me.startYear,
             activeCard: (me as any).activeCard ?? null,
+            coachData: (me as any).coachCard ?? null,
             whbpcData: (me as any).whbpcCard
               ? {
                   teamName: (me as any).whbpcCard.teamName,

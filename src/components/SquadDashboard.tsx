@@ -30,6 +30,7 @@ type Member = {
   teamLogoPath: string | null;
   emblemPosition: string | null;
   activeCard?: string | null;
+  coachCard?: { tournament: string; city: string; collectorNumber: string } | null;
   whbpcCard?: {
     teamName: string; yearStarted: string; countryCode: string; bestSkill: string;
     pedals: string; hand: string; wheelSize: string; gearRatio: string;
@@ -385,6 +386,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                         gender={m.gender ?? undefined}
                         showGender={m.showGender}
                         activeCard={m.activeCard}
+                        coachData={m.coachCard ?? null}
                         whbpcData={m.whbpcCard ? { ...m.whbpcCard, hand: m.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
                       />
                     </Link>
@@ -404,6 +406,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                       gender={m.gender ?? undefined}
                       showGender={m.showGender}
                       activeCard={m.activeCard}
+                      coachData={m.coachCard ?? null}
                       whbpcData={m.whbpcCard ? { ...m.whbpcCard, hand: m.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
                     />
                   )}

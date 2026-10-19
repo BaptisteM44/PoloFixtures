@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export default async function PlayerPage({ params }: { params: { slug: string } }) {
   const t = await getTranslations("player");
-  const playerInclude = { account: { select: { email: true } }, clubMemberships: { include: { club: { select: { name: true } } }, take: 1 }, whbpcCard: true };
+  const playerInclude = { account: { select: { email: true } }, clubMemberships: { include: { club: { select: { name: true } } }, take: 1 }, whbpcCard: true, coachCard: true };
   const player =
     (await prisma.player.findUnique({ where: { slug: params.slug }, include: playerInclude })) ??
     (await prisma.player.findFirst({ where: { id: params.slug }, include: playerInclude }));
@@ -70,6 +70,7 @@ export default async function PlayerPage({ params }: { params: { slug: string } 
           gender={player.gender ?? undefined}
           showGender={player.showGender}
           activeCard={player.activeCard}
+          coachData={player.coachCard ?? null}
           whbpcData={player.whbpcCard ? {
             teamName: player.whbpcCard.teamName,
             yearStarted: player.whbpcCard.yearStarted,

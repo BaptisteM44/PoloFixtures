@@ -30,6 +30,7 @@ export async function GET() {
         orderBy: { createdAt: "desc" }
       },
       whbpcCard: true,
+      coachCard: true,
     }
   });
 
@@ -39,7 +40,11 @@ export async function GET() {
   const cleanedPinnedBadges = (player.pinnedBadges as string[]).filter((b) => earnedSet.has(b));
   // La carte "whbpc" est possédée si (et seulement si) une ligne WhbpcCard existe —
   // pas besoin de la dupliquer dans ownedCards.
-  const ownedCards = player.whbpcCard ? [...player.ownedCards, "whbpc"] : player.ownedCards;
+  const ownedCards = [
+    ...player.ownedCards,
+    ...(player.whbpcCard ? ["whbpc"] : []),
+    ...(player.coachCard ? ["coach"] : []),
+  ];
   return Response.json({ ...player, ownedCards, pinnedBadges: cleanedPinnedBadges, badgeCatalog: getPublicBadgeCatalog(player.badges) });
 }
 
@@ -77,9 +82,13 @@ export async function PATCH(req: Request) {
   if (parsed.data.activeCard) {
     const current = await prisma.player.findUnique({
       where: { id: session.user.playerId },
-      select: { ownedCards: true, whbpcCard: { select: { id: true } } },
+      select: { ownedCards: true, whbpcCard: { select: { id: true } }, coachCard: { select: { id: true } } },
     });
-    const ownedCards = current?.whbpcCard ? [...(current.ownedCards ?? []), "whbpc"] : current?.ownedCards ?? [];
+    const ownedCards = [
+      ...(current?.ownedCards ?? []),
+      ...(current?.whbpcCard ? ["whbpc"] : []),
+      ...(current?.coachCard ? ["coach"] : []),
+    ];
     const owned = resolveOwnedCards(ownedCards);
     if (!owned.has(parsed.data.activeCard)) {
       return Response.json({ error: apiMsg("card_locked") }, { status: 400 });

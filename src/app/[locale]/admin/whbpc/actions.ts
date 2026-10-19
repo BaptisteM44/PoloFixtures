@@ -30,7 +30,7 @@ export async function searchPlayersAction(query: string) {
   if (query.trim().length < 2) return [];
   return prisma.player.findMany({
     where: { name: { contains: query, mode: "insensitive" }, account: { isNot: null } },
-    select: { id: true, name: true, slug: true, city: true, country: true },
+    select: { id: true, name: true, slug: true, city: true, country: true, photoPath: true },
     take: 15,
     orderBy: { name: "asc" },
   });

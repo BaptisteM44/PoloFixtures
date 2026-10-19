@@ -17,7 +17,7 @@ export default async function SquadPage({ params }: { params: { squadId: string 
     include: {
       members: {
         include: {
-          player: { select: { id: true, name: true, slug: true, photoPath: true, country: true, city: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, clubLogoPath: true, teamLogoPath: true, emblemPosition: true, activeCard: true, whbpcCard: true, clubMemberships: { where: { status: "MEMBER" }, select: { club: { select: { name: true } } }, take: 1 } } },
+          player: { select: { id: true, name: true, slug: true, photoPath: true, country: true, city: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, clubLogoPath: true, teamLogoPath: true, emblemPosition: true, activeCard: true, whbpcCard: true, coachCard: true, clubMemberships: { where: { status: "MEMBER" }, select: { club: { select: { name: true } } }, take: 1 } } },
         },
         orderBy: [{ role: "asc" }, { joinedAt: "asc" }],
       },
@@ -91,6 +91,7 @@ export default async function SquadPage({ params }: { params: { squadId: string 
           emblemPosition: m.player.emblemPosition,
           activeCard: m.player.activeCard,
           whbpcCard: m.player.whbpcCard,
+          coachCard: m.player.coachCard,
         }))}
         pendingInvitations={squad.invitations.map((inv) => ({
           id: inv.id,

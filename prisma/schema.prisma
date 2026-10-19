@@ -491,6 +491,7 @@ model Player {
   ownedCards       String[] // collectible card ids the player has unlocked (see card-catalog)
   activeCard       String? // id of the card currently displayed (defaults to "standard")
   whbpcCard        WhbpcCard?
+  coachCard            CoachCard?
   clubLogoPath     String?
   emblemPosition   String?      @default("top-left") // top-left | top-right | bottom-left | bottom-right
   teamLogoPath     String?
@@ -1610,4 +1611,17 @@ model PlayerMergeRequest {
 
   @@unique([ghostPlayerId, requesterId])
   @@index([status])
+}
+
+// Carte « Coach » offerte par l'admin aux coachs d'une édition (comme la carte
+// WHBPC) : une par joueur, mise à jour s'il coache une autre édition.
+model CoachCard {
+  id              String   @id @default(cuid())
+  playerId        String   @unique
+  tournament      String // « Newbalaya 2026 »
+  city            String
+  collectorNumber String // « 01/12 »
+  createdAt       DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 }

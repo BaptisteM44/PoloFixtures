@@ -23,6 +23,7 @@ type Member = {
     gender: string | null;
     showGender: boolean;
     activeCard?: string | null;
+    coachCard?: { tournament: string; city: string; collectorNumber: string } | null;
     whbpcCard?: {
       teamName: string; yearStarted: string; countryCode: string; bestSkill: string;
       pedals: string; hand: string; wheelSize: string; gearRatio: string;
@@ -156,6 +157,7 @@ export function ClubMembersGrid({
               gender={m.player.gender as "MALE" | "FEMALE" | "NON_BINARY" | "PREFER_NOT_SAY" | null | undefined}
               showGender={m.player.showGender}
               activeCard={m.player.activeCard}
+              coachData={m.player.coachCard ?? null}
               whbpcData={m.player.whbpcCard ? { ...m.player.whbpcCard, hand: m.player.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
             />
           </Link>

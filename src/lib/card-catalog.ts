@@ -26,7 +26,7 @@ export interface CardInfo {
    * a dedicated component, keyed by this id. Their own data comes from a
    * separate table (e.g. WhbpcCard) rather than `style`.
    */
-  custom?: "whbpc";
+  custom?: "whbpc" | "coach";
   /** Visual props merged into the PokemonCard when this card is active. Ignored for custom cards. */
   style?: Pick<PokemonCardProps, "theme" | "variant" | "metalBorder" | "holoVariant" | "holoFull" | "cardFx">;
 }
@@ -49,6 +49,13 @@ export const CARD_CATALOG: Record<string, CardInfo> = {
     hint: "Édition souvenir · participants WHBPC",
     rarity: "special",
     custom: "whbpc",
+  },
+  coach: {
+    id: "coach",
+    name: "Coach",
+    hint: "Édition spéciale · coachs d'une édition",
+    rarity: "special",
+    custom: "coach",
   },
   black: {
     id: "black",

@@ -122,7 +122,7 @@ export default async function TournamentPage({
       sponsors: true,
       coOrganizers: { include: { player: { select: { id: true, name: true } } } },
       teams: needsPlayers
-        ? { include: { players: { include: { player: { include: { account: { select: { id: true } }, whbpcCard: true } } } } } }
+        ? { include: { players: { include: { player: { include: { account: { select: { id: true } }, whbpcCard: true, coachCard: true } } } } } }
         : { select: { id: true, name: true, seed: true, selected: true, guaranteed: true, waitlistPosition: true, city: true, country: true, registrationNote: true, orgaNote: true, tournamentId: true, color: true, playerALevel: true, playerBLevel: true, playerCLevel: true } },
       // Pools : include complet quand un onglet en a besoin pour le CONTENU ;
       // sinon select léger — la barre d'onglets pipeline (Groupe A/B/Général)
@@ -145,7 +145,7 @@ export default async function TournamentPage({
         ? true
         : { select: { id: true } },
       soloEntries: (activeTab === "inscription" || activeTab === "equipes")
-        ? { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true, activeCard: true, whbpcCard: true } } }, orderBy: { createdAt: "asc" as const } }
+        ? { include: { player: { select: { id: true, name: true, country: true, city: true, photoPath: true, badges: true, pinnedBadges: true, startYear: true, hand: true, gender: true, showGender: true, slug: true, activeCard: true, whbpcCard: true, coachCard: true } } }, orderBy: { createdAt: "asc" as const } }
         : false,
       hostClub: { select: { id: true, name: true, logoPath: true } },
       stages: { orderBy: { order: "asc" }, include: { entries: true, matches: { select: { id: true, status: true, groupKey: true, roundIndex: true } } } },
@@ -1802,6 +1802,7 @@ export default async function TournamentPage({
                               gender={tp.player.gender ?? undefined}
                               showGender={tp.player.showGender}
                               activeCard={tp.player.activeCard}
+                              coachData={tp.player.coachCard ?? null}
                               whbpcData={tp.player.whbpcCard ? { ...tp.player.whbpcCard, hand: tp.player.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
                             />
                           );
@@ -1845,6 +1846,7 @@ export default async function TournamentPage({
                                   gender={tp.player.gender ?? undefined}
                                   showGender={tp.player.showGender}
                                   activeCard={tp.player.activeCard}
+                                  coachData={tp.player.coachCard ?? null}
                                   whbpcData={tp.player.whbpcCard ? { ...tp.player.whbpcCard, hand: tp.player.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
                                 />
                               );

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { PokemonCard } from "./PokemonCard";
 import { WhbpcCard, type WhbpcCardData, type WhbpcCardProps } from "./WhbpcCard";
+import { CoachCard } from "./CoachCard";
+import type { CoachCardData } from "./PlayerCollectibleCard";
 import { ALL_CARDS, resolveOwnedCards, DEFAULT_CARD_ID, type CardInfo } from "@/lib/card-catalog";
 
 const RARITY_COLOR: Record<string, string> = {
@@ -31,12 +33,15 @@ export function CardCollection({
   ownedCards,
   activeCard,
   whbpcData,
+  coachData,
   onSelect,
   onWhbpcSave,
 }: {
   player: PlayerCardData;
   ownedCards: string[];
   activeCard: string | null;
+  /** Carte Coach du joueur, s'il l'a reçue. */
+  coachData?: CoachCardData | null;
   /** Player's own WHBPC card data, if they received one. Omit if they don't have it. */
   whbpcData?: Omit<WhbpcCardProps, "playerName"> | null;
   /** Called when the player picks an owned card as active. Omit for read-only. */
@@ -79,6 +84,7 @@ export function CardCollection({
               card={card}
               player={player}
               whbpcData={whbpcData}
+              coachData={coachData}
               owned={isOwned}
               active={isActive}
               onSelect={onSelect && isOwned && !isActive ? () => onSelect(card.id) : undefined}
@@ -95,6 +101,7 @@ function CardSlot({
   card,
   player,
   whbpcData,
+  coachData,
   owned,
   active,
   onSelect,
@@ -103,6 +110,7 @@ function CardSlot({
   card: CardInfo;
   player: PlayerCardData;
   whbpcData?: Omit<WhbpcCardProps, "playerName"> | null;
+  coachData?: CoachCardData | null;
   owned: boolean;
   active: boolean;
   onSelect?: () => void;
@@ -121,6 +129,15 @@ function CardSlot({
           flipped={whbpcFlipped}
           onFlipChange={setWhbpcFlipped}
           onSave={onWhbpcSave}
+        />
+      ) : owned && card.custom === "coach" && coachData ? (
+        <CoachCard
+          coachName={player.name}
+          tournament={coachData.tournament}
+          city={coachData.city}
+          collectorNumber={coachData.collectorNumber}
+          photoUrl={player.photoPath}
+          badges={player.pinnedBadges?.length ? player.pinnedBadges : (player.badges ?? []).slice(0, 5)}
         />
       ) : owned ? (
         <PokemonCard

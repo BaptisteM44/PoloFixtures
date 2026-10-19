@@ -10,16 +10,21 @@
 import { forwardRef } from "react";
 import { PokemonCard, type PokemonCardProps } from "./PokemonCard";
 import { WhbpcCard, type WhbpcCardProps } from "./WhbpcCard";
+import { CoachCard } from "./CoachCard";
 import { CARD_CATALOG, DEFAULT_CARD_ID } from "@/lib/card-catalog";
 
 type Props = PokemonCardProps & {
   activeCard?: string | null;
   /** Data for the player's WHBPC card, if they have one. */
   whbpcData?: Omit<WhbpcCardProps, "playerName" | "photoUrl"> | null;
+  /** Données de la carte Coach du joueur, s'il en a une. */
+  coachData?: CoachCardData | null;
 };
 
+export type CoachCardData = { tournament: string; city: string; collectorNumber: string };
+
 export const PlayerCollectibleCard = forwardRef<HTMLDivElement, Props>(function PlayerCollectibleCard(
-  { activeCard, whbpcData, ...pokemonProps },
+  { activeCard, whbpcData, coachData, ...pokemonProps },
   ref
 ) {
   const card = (activeCard && CARD_CATALOG[activeCard]) || CARD_CATALOG[DEFAULT_CARD_ID];
@@ -27,6 +32,21 @@ export const PlayerCollectibleCard = forwardRef<HTMLDivElement, Props>(function 
   if (card.custom === "whbpc" && whbpcData) {
     // Same base photo as every other card — no separate photo to manage.
     return <WhbpcCard playerName={pokemonProps.name} {...whbpcData} photoUrl={pokemonProps.photoPath} cardRef={ref} />;
+  }
+
+  if (card.custom === "coach" && coachData) {
+    const shown = pokemonProps.pinnedBadges?.length ? pokemonProps.pinnedBadges : (pokemonProps.badges ?? []).slice(0, 5);
+    return (
+      <CoachCard
+        coachName={pokemonProps.name}
+        tournament={coachData.tournament}
+        city={coachData.city}
+        collectorNumber={coachData.collectorNumber}
+        photoUrl={pokemonProps.photoPath}
+        badges={shown}
+        cardRef={ref}
+      />
+    );
   }
 
   return <PokemonCard ref={ref} {...pokemonProps} {...card.style} />;

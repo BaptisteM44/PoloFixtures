@@ -21,6 +21,7 @@ type Player = {
   clubLogoPath?: string | null;
   clubName?: string | null;
   activeCard?: string | null;
+  coachCard?: { tournament: string; city: string; collectorNumber: string } | null;
   whbpcCard?: {
     teamName: string; yearStarted: string; countryCode: string; bestSkill: string;
     pedals: string; hand: string; wheelSize: string; gearRatio: string;
@@ -127,6 +128,7 @@ export function PlayersBrowser({ userContinent }: { userContinent?: string }) {
                   clubLogoPath={p.clubLogoPath}
                   clubName={p.clubName}
                   activeCard={p.activeCard}
+                  coachData={p.coachCard ?? null}
                   whbpcData={p.whbpcCard ? { ...p.whbpcCard, hand: p.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
                 />
               </Link>
@@ -146,6 +148,7 @@ export function PlayersBrowser({ userContinent }: { userContinent?: string }) {
                 clubLogoPath={p.clubLogoPath}
                 clubName={p.clubName}
                 activeCard={p.activeCard}
+                coachData={p.coachCard ?? null}
                 whbpcData={p.whbpcCard ? { ...p.whbpcCard, hand: p.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
               />
             )

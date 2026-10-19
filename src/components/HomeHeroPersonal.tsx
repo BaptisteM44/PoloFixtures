@@ -169,6 +169,7 @@ export type HeroPlayer = {
   startYear: number | null;
   activeCard: string | null;
   whbpcData: (WhbpcCardData & { hand: "RIGHTIE" | "LEFTIE" }) | null;
+  coachData?: { tournament: string; city: string; collectorNumber: string } | null;
 };
 
 export function HomeHeroPersonal({
@@ -445,6 +446,7 @@ export function HomeHeroPersonal({
               startYear={me.startYear}
               activeCard={me.activeCard}
               whbpcData={me.whbpcData}
+              coachData={me.coachData ?? null}
             />
           </div>
         </div>

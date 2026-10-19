@@ -90,7 +90,7 @@ export async function GET(request: Request) {
         id: true, name: true, country: true, city: true, slug: true,
         photoPath: true, badges: true, pinnedBadges: true,
         startYear: true, hand: true, gender: true, showGender: true,
-        clubLogoPath: true, activeCard: true, whbpcCard: true,
+        clubLogoPath: true, activeCard: true, whbpcCard: true, coachCard: true,
         clubMemberships: {
           where: { status: "MEMBER" },
           select: { club: { select: { name: true } } },

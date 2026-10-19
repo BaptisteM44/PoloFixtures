@@ -41,6 +41,7 @@ export type AbcEntry = {
     showGender: boolean;
     slug: string | null;
     activeCard: string | null;
+    coachCard?: { tournament: string; city: string; collectorNumber: string } | null;
     whbpcCard: WhbpcData | null;
   };
 };
@@ -102,6 +103,7 @@ export function AbcRegisteredList({ entries }: { entries: AbcEntry[] }) {
                   gender={e.player.gender ?? undefined}
                   showGender={e.player.showGender}
                   activeCard={e.player.activeCard}
+                  coachData={e.player.coachCard ?? null}
                   whbpcData={e.player.whbpcCard ? { ...e.player.whbpcCard, hand: e.player.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null}
                 />
                 {/* Sous la carte (et non par-dessus) : la carte 3D passait devant l'étiquette. */}

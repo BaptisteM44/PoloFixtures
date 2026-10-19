@@ -64,6 +64,7 @@ type Player = {
     gearRatio: string;
     photoPath: string | null;
   } | null;
+  coachCard: { tournament: string; city: string; collectorNumber: string } | null;
   status: string;
   squads: { squad: Squad }[];
 };
@@ -340,6 +341,7 @@ export default function AccountPage() {
             pinnedBadges={player.pinnedBadges}
             startYear={player.startYear}
             activeCard={player.activeCard}
+            coachData={player.coachCard ?? null}
             whbpcData={player.whbpcCard ? {
               teamName: player.whbpcCard.teamName,
               yearStarted: player.whbpcCard.yearStarted,
@@ -735,6 +737,7 @@ export default function AccountPage() {
                 }}
                 ownedCards={player.ownedCards ?? []}
                 activeCard={player.activeCard}
+                coachData={player.coachCard ?? null}
                 whbpcData={player.whbpcCard ? {
                   teamName: player.whbpcCard.teamName,
                   yearStarted: player.whbpcCard.yearStarted,
