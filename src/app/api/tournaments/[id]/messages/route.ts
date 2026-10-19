@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { notifyMentions } from "@/lib/chat-mentions";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { apiMsg } from "@/lib/api-messages";
@@ -96,6 +97,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     include: { author: { select: { id: true, name: true, photoPath: true } } },
   });
 
+  void notifyMentions("tournament", params.id, session.user.playerId, content);
   return NextResponse.json(message, { status: 201 });
 }
 

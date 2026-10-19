@@ -228,6 +228,7 @@ enum NotificationType {
   CLUB_SESSION_CANCELLED // notif inscrits : un entraînement est annulé
   CLUB_SESSION_MESSAGE // notif inscrits + créateur : nouveau message sur un entraînement (groupée)
   CARD_GRANTED // notif joueur : l'admin lui a offert une carte spéciale (Coach, WHBPC…)
+  CHAT_MENTION // notif joueur : quelqu'un l'a @mentionné dans un chat
 }
 
 enum TaskPriority {

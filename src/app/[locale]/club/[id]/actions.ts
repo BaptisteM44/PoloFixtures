@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { createNotification, notifySessionJoin } from "@/lib/notify";
 import { apiMsg } from "@/lib/api-messages";
 import { ensureRecurringSessions } from "@/lib/club-sessions";
+import { notifyMentions } from "@/lib/chat-mentions";
 
 async function getClubRole(clubId: string) {
   const session = await auth();
@@ -373,6 +374,7 @@ export async function sendClubMessageAction(clubId: string, content: string) {
   await prisma.clubMessage.create({
     data: { clubId, playerId, content: content.trim() },
   });
+  void notifyMentions("club", clubId, playerId, content.trim());
 
   revalidatePath(`/club/${clubId}`);
   return { ok: true };
@@ -405,6 +407,7 @@ export async function sendSessionMessageAction(clubId: string, sessionId: string
     data: { sessionId, playerId, content: content.trim() },
   });
   await notifySessionMessage(sessionId, playerId, content.trim());
+  void notifyMentions("session", sessionId, playerId, content.trim());
 
   revalidatePath(`/club/${clubId}`);
   return { ok: true };

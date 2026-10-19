@@ -1,5 +1,6 @@
 "use client";
 
+import { MentionInput, MentionText } from "./MentionInput";
 import { useState, useRef, useEffect, useTransition } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import {
@@ -126,7 +127,7 @@ export function ClubChat({
                       <strong style={{ color }}>{m.player.name}</strong>
                       <span className="club-chat__msg-time">{fmtTime(d, locale)}</span>
                     </div>
-                    <p>{m.content}</p>
+                    <p><MentionText text={m.content} /></p>
                   </div>
                   {(isMine || isAdmin) && (
                     <button
@@ -145,11 +146,13 @@ export function ClubChat({
 
       {currentPlayerId ? (
         <div className="club-chat__input-bar">
-          <input
+          <MentionInput
+            kind="club"
+            chatId={clubId}
             className="form-input"
             placeholder={t("chat_placeholder")}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onValueChange={setInput}
             onKeyDown={handleKeyDown}
             disabled={isPending}
           />

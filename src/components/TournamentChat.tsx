@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { CharterModal } from "./CharterModal";
+import { MentionInput, MentionText } from "./MentionInput";
 
 type Author = { id: string; name: string; photoPath: string | null };
 type Message = { id: string; content: string; createdAt: string; author: Author; isOrga?: boolean; deletedByModeration?: boolean };
@@ -172,7 +173,7 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
                 </span>
               ) : (
                 <>
-                  {msg.content}
+                  <MentionText text={msg.content} />
                   {isOrga && (
                     <button
                       className="tournament-chat__msg-delete"
@@ -194,9 +195,11 @@ export function TournamentChat({ tournamentId, chatMode, currentPlayerId, curren
 
       {canPost ? (
         <form className="tournament-chat__form" onSubmit={handleSend}>
-          <input
+          <MentionInput
+            kind="tournament"
+            chatId={tournamentId}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onValueChange={setText}
             placeholder={chatMode === "ORG_ONLY" ? t("chat_placeholder_orga") : t("chat_placeholder")}
             maxLength={1000}
             disabled={sending}

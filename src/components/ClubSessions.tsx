@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { sessionCalendarLinks } from "@/lib/session-calendar";
+import { MentionInput, MentionText } from "./MentionInput";
 import { useTranslations, useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
@@ -884,7 +885,7 @@ function SessionCard({
                     <div key={m.id} className={`club-session-card__chat-msg${isMine ? " mine" : ""}`}>
                       <div className="club-session-card__chat-bubble" style={{ "--author-color": color } as React.CSSProperties}>
                         <span className="club-session-card__chat-author" style={{ color }}>{m.player.name}</span>
-                        <span className="club-session-card__chat-text">{m.content}</span>
+                        <span className="club-session-card__chat-text"><MentionText text={m.content} /></span>
                         <span className="club-session-card__chat-time">{fmtTime(new Date(m.createdAt), locale)}</span>
                       </div>
                       {(isMine || isAdmin) && (
@@ -896,11 +897,13 @@ function SessionCard({
               )}
             </div>
             <div className="club-session-card__chat-input">
-              <input
+              <MentionInput
+                kind="session"
+                chatId={s.id}
                 className="form-input"
                 placeholder={t("session_chat_placeholder")}
                 value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
+                onValueChange={setChatInput}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 disabled={isPending}
               />

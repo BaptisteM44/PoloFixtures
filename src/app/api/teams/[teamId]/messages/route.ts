@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { notifyMentions } from "@/lib/chat-mentions";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { createNotification } from "@/lib/notify";
@@ -80,5 +81,6 @@ export async function POST(
     }
   }
 
+  void notifyMentions("team", params.teamId, playerId, content);
   return NextResponse.json(message, { status: 201 });
 }

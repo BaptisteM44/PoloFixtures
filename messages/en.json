@@ -1299,7 +1299,8 @@
     "session_cancelled": "❌ Training cancelled — {club}",
     "session_message": "💬 {name} on the training — {club}",
     "session_messages_grouped": "💬 {count} new messages on the training — {club}",
-    "card_granted": "🎁 You received the {card} card — go activate it!"
+    "card_granted": "🎁 You received the {card} card — go activate it!",
+    "chat_mention": "💬 {name} mentioned you — {context}"
   },
   "contact": {
     "btn_open": "Contact",

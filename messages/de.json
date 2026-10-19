@@ -1304,7 +1304,8 @@
     "session_cancelled": "❌ Training abgesagt — {club}",
     "session_message": "💬 {name} zum Training — {club}",
     "session_messages_grouped": "💬 {count} neue Nachrichten zum Training — {club}",
-    "card_granted": "🎁 Du hast die {card}-Karte erhalten — aktiviere sie!"
+    "card_granted": "🎁 Du hast die {card}-Karte erhalten — aktiviere sie!",
+    "chat_mention": "💬 {name} hat dich erwähnt — {context}"
   },
   "contact": {
     "btn_open": "Kontakt",

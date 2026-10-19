@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PlayerCollectibleCard } from "./PlayerCollectibleCard";
+import { MentionInput, MentionText } from "./MentionInput";
 import { postUpload } from "@/lib/upload-image";
 
 type Member = {
@@ -480,7 +481,7 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
                       fontSize: 13, lineHeight: 1.5,
                       color: isMe ? "var(--border)" : "var(--text)",
                     }}>
-                      {msg.content}
+                      <MentionText text={msg.content} />
                     </div>
                     <p style={{ margin: "2px 0 0", fontSize: 10, color: "var(--text-muted)", textAlign: isMe ? "right" : "left" }}>
                       {new Date(msg.createdAt).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
@@ -492,9 +493,11 @@ export function SquadDashboard({ squad, members: initialMembers, pendingInvitati
             <div ref={messagesEndRef} />
           </div>
           <div style={{ borderTop: "1.5px solid var(--border-light)", paddingTop: 12, display: "flex", gap: 8 }}>
-            <input
+            <MentionInput
+              kind="squad"
+              chatId={squad.id}
               value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
+              onValueChange={setChatInput}
               placeholder={t("chat_placeholder")}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
               style={{ flex: 1 }}

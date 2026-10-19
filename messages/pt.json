@@ -1299,7 +1299,8 @@
     "session_cancelled": "❌ Treino cancelado — {club}",
     "session_message": "💬 {name} no treino — {club}",
     "session_messages_grouped": "💬 {count} novas mensagens no treino — {club}",
-    "card_granted": "🎁 Recebeste a carta {card} — vai ativá-la!"
+    "card_granted": "🎁 Recebeste a carta {card} — vai ativá-la!",
+    "chat_mention": "💬 {name} mencionou-te — {context}"
   },
   "contact": {
     "btn_open": "Contacto",

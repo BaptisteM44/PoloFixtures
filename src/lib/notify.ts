@@ -38,6 +38,8 @@ function toPushPayload(
       return { title: "Payment confirmed", body: `${p.teamName} — ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}`, tag: `fee-${p.teamId}` };
     case "CLUB_ANNOUNCEMENT":
       return { title: p.clubName, body: p.announcementTitle ?? "New announcement", url: p.clubId ? `/club/${p.clubId}?tab=announcements` : "/clubs", tag: `club-${p.clubId}` };
+    case "CHAT_MENTION":
+      return { title: `@ ${p.senderName}`, body: p.preview, url: p.href || "/", tag: `mention-${p.href}` };
     case "CARD_GRANTED":
       return { title: `🎓 ${p.cardName}`, body: p.edition || "New card", url: "/account?tab=collection", tag: `card-${p.cardId}` };
     case "CLUB_SESSION_CANCELLED":
@@ -126,7 +128,7 @@ const TYPE_CATEGORY: Partial<Record<NotificationType, NotifCategory>> = {
   TEAM_REGISTERED: "registrations", TEAM_SELECTED: "registrations", TEAM_WAITLISTED: "registrations",
   TEAM_FEE_CONFIRMED: "registrations", ACCOMMODATION_ASSIGNED: "registrations", ACCOMMODATION_GUEST_ADDED: "registrations",
   SQUAD_INVITE: "squads", SQUAD_INVITE_ACCEPTED: "squads", SQUAD_INVITE_DECLINED: "squads", SQUAD_ROLE_CHANGED: "squads",
-  CLUB_JOIN_REQUEST: "clubs", CLUB_SESSION: "clubs", CLUB_SESSION_JOIN: "clubs", CLUB_SESSION_CANCELLED: "clubs", CLUB_SESSION_MESSAGE: "clubs", CLUB_ANNOUNCEMENT: "clubs",
+  CLUB_JOIN_REQUEST: "clubs", CLUB_SESSION: "clubs", CLUB_SESSION_JOIN: "clubs", CLUB_SESSION_CANCELLED: "clubs", CLUB_SESSION_MESSAGE: "clubs", CHAT_MENTION: "messages", CLUB_ANNOUNCEMENT: "clubs",
   POLL_OPENED: "polls", POLL_CLOSING_SOON: "polls", POLL_RESULTS_AVAILABLE: "polls", POLL_VOTE_MILESTONE: "polls",
   POLL_APPROVAL_REQUESTED: "polls", POLL_APPROVAL_DECIDED: "polls",
   TOURNAMENT_PHOTOS_REVEALED: "photos", TOURNAMENT_PHOTOS_REQUESTED: "photos", TOURNAMENT_PHOTOS_DECIDED: "photos",

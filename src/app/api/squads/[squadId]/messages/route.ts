@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { notifyMentions } from "@/lib/chat-mentions";
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
@@ -45,5 +46,6 @@ export async function POST(req: Request, { params }: { params: { squadId: string
     include: { author: { select: { id: true, name: true, photoPath: true } } },
   });
 
+  void notifyMentions("squad", params.squadId, playerId, parsed.data.content);
   return NextResponse.json(message, { status: 201 });
 }

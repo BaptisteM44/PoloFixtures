@@ -36,6 +36,8 @@ export function notifLabel(t: NotifTranslator, n: NotifLike): { title: string; s
       return { title: t("team_message", { teamName: p.teamName }), sub: p.preview ?? "", href: "/my-tournaments" };
     case "CLUB_JOIN_REQUEST":
       return { title: t("club_join_request", { name: p.playerName }), sub: t("club_join_request_sub", { clubName: p.clubName }), href: `/player/${p.playerSlug}` };
+    case "CHAT_MENTION":
+      return { title: t("chat_mention", { name: p.senderName ?? "", context: p.context ?? "" }), sub: p.preview ?? "", href: p.href || "/" };
     case "CARD_GRANTED":
       return { title: t("card_granted", { card: p.cardName ?? "" }), sub: p.edition ?? "", href: "/account?tab=collection" };
     case "CLUB_SESSION_CANCELLED":

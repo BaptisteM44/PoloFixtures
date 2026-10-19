@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { CharterModal } from "./CharterModal";
+import { MentionInput, MentionText } from "./MentionInput";
 
 type Author = { id: string; name: string; photoPath: string | null };
 type Message = { id: string; content: string; createdAt: string; author: Author };
@@ -113,16 +114,18 @@ export function TeamChat({ teamId, currentPlayerId, teammates, charterAccepted: 
                   {new Date(msg.createdAt).toLocaleString(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>
-              <div className="team-chat__msg-bubble">{msg.content}</div>
+              <div className="team-chat__msg-bubble"><MentionText text={msg.content} /></div>
             </div>
           );
         })}
       </div>
 
       <form className="team-chat__form" onSubmit={handleSend}>
-        <input
+        <MentionInput
+          kind="team"
+          chatId={teamId}
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onValueChange={setText}
           placeholder={t("chat_placeholder")}
           maxLength={1000}
           disabled={sending}
