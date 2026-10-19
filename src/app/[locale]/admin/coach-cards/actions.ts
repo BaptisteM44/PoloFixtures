@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
+import { createNotification } from "@/lib/notify";
 
 async function requireAdmin() {
   const session = await auth();
@@ -29,7 +30,12 @@ export async function assignCoachCardAction(data: z.infer<typeof assignSchema>) 
   if (!player) return { error: apiMsg("player_not_found") };
 
   // Posséder la carte = avoir une ligne CoachCard (ownedCards la dérive, comme pour la WHBPC).
+  const previous = await prisma.coachCard.findUnique({ where: { playerId }, select: { tournament: true } });
   await prisma.coachCard.upsert({ where: { playerId }, create: { playerId, ...cardData }, update: cardData });
+  // Prévenu à la 1re carte et quand elle passe à une nouvelle édition (pas pour une simple correction).
+  if (!previous || previous.tournament !== cardData.tournament) {
+    await createNotification(playerId, "CARD_GRANTED", { cardId: "coach", cardName: "Coach", edition: cardData.tournament });
+  }
   revalidatePath("/admin/coach-cards");
   revalidatePath("/account");
   return { ok: true };

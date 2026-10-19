@@ -38,6 +38,8 @@ function toPushPayload(
       return { title: "Payment confirmed", body: `${p.teamName} — ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}`, tag: `fee-${p.teamId}` };
     case "CLUB_ANNOUNCEMENT":
       return { title: p.clubName, body: p.announcementTitle ?? "New announcement", url: p.clubId ? `/club/${p.clubId}?tab=announcements` : "/clubs", tag: `club-${p.clubId}` };
+    case "CARD_GRANTED":
+      return { title: `🎓 ${p.cardName}`, body: p.edition || "New card", url: "/account?tab=collection", tag: `card-${p.cardId}` };
     case "CLUB_SESSION_CANCELLED":
       return { title: `❌ ${p.clubName}`, body: p.title || "Training cancelled", url: p.clubId ? `/club/${p.clubId}?tab=sessions` : "/clubs", tag: `session-cancel-${p.sessionId}` };
     case "CLUB_SESSION_MESSAGE":

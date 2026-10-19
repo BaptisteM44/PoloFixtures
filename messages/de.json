@@ -1303,7 +1303,8 @@
     "referee_assigned_next": "Als Nächstes: {match} gegen {time}",
     "session_cancelled": "❌ Training abgesagt — {club}",
     "session_message": "💬 {name} zum Training — {club}",
-    "session_messages_grouped": "💬 {count} neue Nachrichten zum Training — {club}"
+    "session_messages_grouped": "💬 {count} neue Nachrichten zum Training — {club}",
+    "card_granted": "🎁 Du hast die {card}-Karte erhalten — aktiviere sie!"
   },
   "contact": {
     "btn_open": "Kontakt",

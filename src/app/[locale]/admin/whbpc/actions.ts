@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
+import { createNotification } from "@/lib/notify";
 
 async function requireAdmin() {
   const session = await auth();
@@ -48,11 +49,15 @@ export async function assignWhbpcCardAction(data: z.infer<typeof assignSchema>) 
 
   // Posséder la carte = avoir une ligne WhbpcCard (voir api/account/profile —
   // ownedCards la dérive dynamiquement, pas besoin de la stocker en double).
+  const existed = await prisma.whbpcCard.findUnique({ where: { playerId }, select: { id: true } });
   await prisma.whbpcCard.upsert({
     where: { playerId },
     create: { playerId, ...cardData },
     update: cardData,
   });
+  if (!existed) {
+    await createNotification(playerId, "CARD_GRANTED", { cardId: "whbpc", cardName: "WHBPC", edition: "" });
+  }
   revalidatePath("/admin/whbpc");
   revalidatePath("/account");
   return { ok: true };
