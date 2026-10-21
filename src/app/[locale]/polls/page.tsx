@@ -12,7 +12,7 @@ import { pageMetadata } from "@/lib/page-metadata";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
-  return pageMetadata("polls", true);
+  return pageMetadata("polls", true, "/polls");
 }
 
 export default async function PollsPage() {

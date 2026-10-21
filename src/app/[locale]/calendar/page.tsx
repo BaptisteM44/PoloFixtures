@@ -6,7 +6,7 @@ import type { CalendarTournament } from "@/components/CalendarGrid";
 import { pageMetadata } from "@/lib/page-metadata";
 
 export async function generateMetadata() {
-  return pageMetadata("calendar", true);
+  return pageMetadata("calendar", true, "/calendar");
 }
 
 export default async function CalendarPage() {

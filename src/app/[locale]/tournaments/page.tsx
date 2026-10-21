@@ -7,7 +7,7 @@ import { countryToContinent } from "@/lib/country-utils";
 import { pageMetadata } from "@/lib/page-metadata";
 
 export async function generateMetadata() {
-  return pageMetadata("tournaments", true);
+  return pageMetadata("tournaments", true, "/tournaments");
 }
 
 export default async function TournamentsPage({ searchParams }: { searchParams: { continent?: string } }) {

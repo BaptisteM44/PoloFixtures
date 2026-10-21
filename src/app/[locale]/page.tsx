@@ -13,6 +13,11 @@ import { TrainingTiles, type TrainingTileData } from "@/components/NextTrainingC
 import { ensureRecurringSessions } from "@/lib/club-sessions";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { countryToContinent } from "@/lib/country-utils";
+import { localeAlternates } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: { locale: string } }) {
+  return { alternates: localeAlternates(params.locale, "/") };
+}
 
 const CONTINENT_CODES = ["NA", "SA", "EU", "AF", "AS", "OC"] as const;
 

@@ -6,7 +6,7 @@ import { ParallaxImage } from "@/components/ParallaxImage";
 import { pageMetadata } from "@/lib/page-metadata";
 
 export async function generateMetadata() {
-  return pageMetadata("about", true);
+  return pageMetadata("about", true, "/about");
 }
 
 export default async function AboutPage() {

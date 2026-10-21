@@ -9,6 +9,8 @@ import { parseRefereeSettings } from "@/lib/referees";
 import { galleryPhase } from "@/lib/tournament-photos";
 import { tournamentTimezone } from "@/lib/timezone";
 import { getTranslations } from "next-intl/server";
+import { localeAlternates, absoluteAsset, jsonLd } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/site-url";
 import { prisma } from "@/lib/db";
 import { Tabs } from "@/components/Tabs";
 import { ScheduleBoard } from "@/components/ScheduleBoard";
@@ -46,35 +48,45 @@ import {
   updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, resetPipelineToRoundAction, reschedulePipelineStageAction,
 } from "./edit/actions";
 
+/** « Tournoi de bike polo à Lille, France · 8 – 9 nov. 2026. … » dans la langue de la page. */
+function tournamentSeoDescription(
+  ts: Awaited<ReturnType<typeof getTranslations>>,
+  locale: string,
+  t: { city: string; country: string; dateStart: Date; dateEnd: Date },
+) {
+  const dateFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
+  const dates =
+    t.dateStart.toDateString() === t.dateEnd.toDateString()
+      ? dateFmt.format(t.dateStart)
+      : `${dateFmt.format(t.dateStart)} – ${dateFmt.format(t.dateEnd)}`;
+  return ts("tournament_desc", { city: t.city, country: t.country, dates });
+}
+
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: { id: string; locale: string };
 }): Promise<import("next").Metadata> {
   const tournament =
     (await prisma.tournament.findUnique({
       where: { slug: params.id },
-      select: { name: true, city: true, country: true, dateStart: true, dateEnd: true, bannerPath: true, hidden: true },
+      select: { name: true, slug: true, city: true, country: true, dateStart: true, dateEnd: true, bannerPath: true, hidden: true },
     })) ??
     (await prisma.tournament.findUnique({
       where: { id: params.id },
-      select: { name: true, city: true, country: true, dateStart: true, dateEnd: true, bannerPath: true, hidden: true },
+      select: { name: true, slug: true, city: true, country: true, dateStart: true, dateEnd: true, bannerPath: true, hidden: true },
     }));
 
   if (!tournament || tournament.hidden) return { title: "Poloperator" };
 
-  const dateFmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
-  const dates =
-    tournament.dateStart.toDateString() === tournament.dateEnd.toDateString()
-      ? dateFmt.format(tournament.dateStart)
-      : `${dateFmt.format(tournament.dateStart)} – ${dateFmt.format(tournament.dateEnd)}`;
-
-  const title = tournament.name;
-  const description = `${tournament.city}, ${tournament.country} · ${dates} — Bike Polo tournament on Poloperator`;
+  const ts = await getTranslations({ locale: params.locale, namespace: "seo" });
+  const title = ts("tournament_title", { name: tournament.name, city: tournament.city });
+  const description = tournamentSeoDescription(ts, params.locale, tournament);
 
   return {
     title,
     description,
+    alternates: localeAlternates(params.locale, `/tournament/${tournament.slug ?? params.id}`),
     openGraph: {
       title,
       description,
@@ -428,8 +440,39 @@ export default async function TournamentPage({
   const hasMeals = meals.some((m) => m.breakfast || m.lunch || m.dinner);
   const faq = (tournament.faq as { question: string; answer: string }[] | null) ?? [];
 
+  // Données structurées « événement sportif » (résultats enrichis Google) — tournois publics uniquement
+  const tSeo = await getTranslations({ locale: params.locale, namespace: "seo" });
+  const isPublicListing = tournament.approved && !tournament.hidden && !tournament.testMode && !(tournament as { createdViaSandbox?: boolean }).createdViaSandbox;
+  const sportsEventLd = isPublicListing ? {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    name: tournament.name,
+    sport: "Bike polo",
+    description: tournamentSeoDescription(tSeo, params.locale, tournament),
+    startDate: tournament.dateStart.toISOString(),
+    endDate: tournament.dateEnd.toISOString(),
+    eventStatus: "https://schema.org/EventScheduled",
+    eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+    url: absoluteUrl(`/${params.locale}/tournament/${tournament.slug ?? tournament.id}`),
+    ...(tournament.bannerPath ? { image: [absoluteAsset(tournament.bannerPath)] } : {}),
+    location: {
+      "@type": "Place",
+      name: tournament.venueName || tournament.city,
+      address: {
+        "@type": "PostalAddress",
+        ...(tournament.venueAddress ? { streetAddress: tournament.venueAddress } : {}),
+        addressLocality: tournament.city,
+        addressCountry: tournament.country,
+      },
+      ...(tournament.lat != null && tournament.lng != null
+        ? { geo: { "@type": "GeoCoordinates", latitude: tournament.lat, longitude: tournament.lng } }
+        : {}),
+    },
+  } : null;
+
   return (
     <div className="tournament-page">
+      {sportsEventLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(sportsEventLd) }} />}
       {tournament.status === "LIVE" && (
         <TournamentCompletionWatcher tournamentId={tournament.id} />
       )}

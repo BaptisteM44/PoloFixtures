@@ -6,23 +6,27 @@ import { ClaimProfileButton } from "@/components/ClaimProfileButton";
 import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
+import { localeAlternates } from "@/lib/seo";
 
 export const revalidate = 60;
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: { slug: string; locale: string } }): Promise<Metadata> {
   const player =
     (await prisma.player.findUnique({ where: { slug: params.slug } })) ??
     (await prisma.player.findFirst({ where: { id: params.slug } }));
   if (!player) return { title: "Player not found" };
 
-  const title = `${player.name} — Poloperator`;
+  // Le layout ajoute déjà « | Poloperator »
+  const title = player.name;
+  const ts = await getTranslations({ locale: params.locale, namespace: "seo" });
   const description = player.city
-    ? `${player.name} from ${player.city}, ${player.country} — Bike Polo player on Poloperator`
-    : `${player.name} — Bike Polo player on Poloperator`;
+    ? ts("player_desc", { name: player.name, city: player.city, country: player.country })
+    : ts("player_desc_nocity", { name: player.name });
 
   return {
     title,
     description,
+    alternates: player.slug ? localeAlternates(params.locale, `/player/${player.slug}`) : undefined,
     openGraph: {
       title,
       description,

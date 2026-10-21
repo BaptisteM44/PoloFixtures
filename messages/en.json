@@ -38,7 +38,12 @@
     "site_name": "Poloperator",
     "site_description": "Bike Polo Tournament Platform. Pools, brackets, live refereeing.",
     "og_title": "Poloperator — Bike Polo Tournaments",
-    "og_description": "Organise and follow your bike polo tournaments in real time."
+    "og_description": "Organise and follow your bike polo tournaments in real time.",
+    "tournament_title": "{name} — bike polo tournament in {city}",
+    "tournament_desc": "Bike polo tournament in {city}, {country} · {dates}. Teams, pools, results and live scores on Poloperator.",
+    "club_desc": "Bike polo club in {city}, {country}: training sessions, members and tournaments on Poloperator.",
+    "player_desc": "{name} — bike polo player · {city}, {country}",
+    "player_desc_nocity": "{name} — bike polo player on Poloperator"
   },
   "nav": {
     "tournaments": "Tournaments",

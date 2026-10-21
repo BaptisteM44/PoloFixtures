@@ -6,7 +6,7 @@ import { pageMetadata } from "@/lib/page-metadata";
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
-  return pageMetadata("labs", true);
+  return pageMetadata("labs", true, "/labs");
 }
 
 export default async function LabsPage() {

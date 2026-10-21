@@ -15,20 +15,24 @@ import { ClubAnnouncements } from "@/components/ClubAnnouncements";
 import { getTranslations, getLocale } from "next-intl/server";
 import { hashPlayerVoter } from "@/lib/poll-hash";
 import type { Metadata } from "next";
+import { localeAlternates, absoluteAsset, jsonLd } from "@/lib/seo";
+import { absoluteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: { id: string; locale: string } }): Promise<Metadata> {
   const club = await prisma.club.findUnique({
     where: { id: params.id },
     select: { name: true, city: true, country: true, logoPath: true, description: true, approved: true },
   });
   if (!club || !club.approved) return { title: "Club" };
-  const description = club.description?.slice(0, 160) || `Bike polo club — ${club.city}, ${club.country}`;
+  const ts = await getTranslations({ locale: params.locale, namespace: "seo" });
+  const description = club.description?.slice(0, 160) || ts("club_desc", { city: club.city, country: club.country });
   const images = club.logoPath ? [{ url: club.logoPath }] : undefined;
   return {
     title: `${club.name} · ${club.city}`,
     description,
+    alternates: localeAlternates(params.locale, `/club/${params.id}`),
     openGraph: { title: club.name, description, images },
     twitter: { card: "summary", title: club.name, description, images: club.logoPath ? [club.logoPath] : undefined },
   };
@@ -333,8 +337,22 @@ export default async function ClubPage({
     }));
   }
 
+  // Données structurées « club de sport » — clubs validés uniquement
+  const clubLd = club.approved ? {
+    "@context": "https://schema.org",
+    "@type": "SportsOrganization",
+    name: club.name,
+    sport: "Bike polo",
+    url: absoluteUrl(`/${locale}/club/${club.id}`),
+    ...(club.description ? { description: club.description.slice(0, 300) } : {}),
+    ...(club.logoPath ? { logo: absoluteAsset(club.logoPath) } : {}),
+    location: { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: club.city, addressCountry: club.country } },
+    ...(club.website ? { sameAs: [club.website] } : {}),
+  } : null;
+
   return (
     <div>
+      {clubLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(clubLd) }} />}
       {/* Bannière pendante */}
       {!club.approved && (
         <div style={{ background: "color-mix(in srgb, var(--yellow) 12%, transparent)", border: "2px solid var(--yellow)", borderRadius: "var(--radius)", padding: "12px 20px", marginBottom: 20 }}>

@@ -9,7 +9,7 @@ import { countryToContinent } from "@/lib/country-utils";
 import { pageMetadata } from "@/lib/page-metadata";
 
 export async function generateMetadata() {
-  return pageMetadata("clubs", true);
+  return pageMetadata("clubs", true, "/clubs");
 }
 
 export default async function ClubsPage() {
