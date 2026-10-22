@@ -4,6 +4,7 @@ import { createNotification } from "@/lib/notify";
 import { BADGE_CATALOG } from "@/lib/badge-catalog";
 import { guessTimezone } from "@/lib/timezone";
 import { countAttendedTrainings } from "@/lib/club-sessions";
+import { visiblePhotoWhere, galleryTournamentSelect, tournamentEndsAt } from "@/lib/tournament-photos";
 
 /** Valeur d'un événement de but : une annulation d'arbitre est un GOAL de
  *  delta -1. Compter les événements au lieu de les sommer faisait d'un but
@@ -1044,6 +1045,22 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   if (trainings >= 10) badges.add("training_regular");
   if (trainings >= 25) badges.add("training_addict");
   if (trainings >= 50) badges.add("club_pillar");
+
+  // ── Photos de galerie (visibles : ni masquées, ni en attente de l'orga) ──
+  const photos = await prisma.tournamentPhoto.findMany({
+    where: { authorId: playerId, ...visiblePhotoWhere, tournament: { testMode: false } },
+    select: { tournamentId: true, createdAt: true, tournament: { select: galleryTournamentSelect } },
+  });
+  if (photos.length > 0) {
+    badges.add("shutterbug");
+    const perTournament = new Map<string, number>();
+    for (const ph of photos) perTournament.set(ph.tournamentId, (perTournament.get(ph.tournamentId) ?? 0) + 1);
+    if ([...perTournament.values()].some((n) => n >= 5)) badges.add("full_roll");
+    if (perTournament.size >= 3) badges.add("photo_reporter");
+    if (perTournament.size >= 10) badges.add("hall_of_frame");
+    if (photos.length >= 50) badges.add("paparazzi");
+    if (photos.some((ph) => ph.createdAt < tournamentEndsAt(ph.tournament))) badges.add("live_shot");
+  }
 
   // ── Collector / Completionist (calculé en dernier pour tout compter) ────
   const total = badges.size;

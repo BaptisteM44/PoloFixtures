@@ -98,6 +98,8 @@ function toPushPayload(
       return { title: "Sondage : dernier jour ⏳", body: p.pollQuestion, url: `/poll/${p.pollId}`, tag: `poll-closing-${p.pollId}` };
     case "TOURNAMENT_PHOTOS_REVEALED": // fin de tournoi : galerie à compléter
       return { title: `📸 ${p.count} photos dans la galerie`, body: `${p.tournamentName} — ajoute les tiennes !`, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos`, tag: `gallery-${p.tournamentId}` };
+    case "TOURNAMENT_PHOTOS_REMINDER":
+      return { title: "📸 Tes photos du tournoi ?", body: `${p.tournamentName} — ajoute-les à la galerie`, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos`, tag: `gallery-reminder-${p.tournamentId}` };
     case "TOURNAMENT_PHOTOS_REQUESTED":
       return { title: "📸 Photos à valider", body: `${p.tournamentName} — ${p.count} en attente`, url: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos`, tag: `gallery-req-${p.tournamentId}` };
     case "TOURNAMENT_PHOTOS_DECIDED":
@@ -131,7 +133,7 @@ const TYPE_CATEGORY: Partial<Record<NotificationType, NotifCategory>> = {
   CLUB_JOIN_REQUEST: "clubs", CLUB_SESSION: "clubs", CLUB_SESSION_JOIN: "clubs", CLUB_SESSION_CANCELLED: "clubs", CLUB_SESSION_MESSAGE: "clubs", CHAT_MENTION: "messages", CLUB_ANNOUNCEMENT: "clubs",
   POLL_OPENED: "polls", POLL_CLOSING_SOON: "polls", POLL_RESULTS_AVAILABLE: "polls", POLL_VOTE_MILESTONE: "polls",
   POLL_APPROVAL_REQUESTED: "polls", POLL_APPROVAL_DECIDED: "polls",
-  TOURNAMENT_PHOTOS_REVEALED: "photos", TOURNAMENT_PHOTOS_REQUESTED: "photos", TOURNAMENT_PHOTOS_DECIDED: "photos",
+  TOURNAMENT_PHOTOS_REVEALED: "photos", TOURNAMENT_PHOTOS_REMINDER: "photos", TOURNAMENT_PHOTOS_REQUESTED: "photos", TOURNAMENT_PHOTOS_DECIDED: "photos",
   BADGE_UNLOCKED: "badges",
   COMMUNITY_STATUS_CHANGED: "labs",
 };

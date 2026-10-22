@@ -93,6 +93,13 @@ export const BADGE_CATALOG: Record<string, BadgeInfo> = {
   chatterbox:   { id: "chatterbox",   name: "Chatterbox",   emoji: "💬", description: "Envoyer 50+ messages",                       category: "social", rarity: "common" },
   captain:      { id: "captain",      name: "Captain",      emoji: "©️", description: "Être capitaine 3+ fois",                    category: "social", rarity: "rare" },
   hype_machine: { id: "hype_machine", name: "Hype Machine", emoji: "📣", description: "Envoyer 300+ messages",                     category: "social", rarity: "rare" },
+  // 📸 Photos de tournoi (galerie)
+  shutterbug:     { id: "shutterbug",     name: "Shutterbug",     emoji: "📸", description: "Ajouter sa 1re photo dans la galerie d'un tournoi",        category: "social", rarity: "common" },
+  live_shot:      { id: "live_shot",      name: "Live Shot",      emoji: "🔴", description: "Poster une photo pendant le tournoi, pas après",            category: "social", rarity: "common" },
+  full_roll:      { id: "full_roll",      name: "Full Roll",      emoji: "🎞️", description: "Utiliser ses 5 photos dans la galerie d'un même tournoi",   category: "social", rarity: "rare" },
+  photo_reporter: { id: "photo_reporter", name: "Photo Reporter", emoji: "📰", description: "Poster des photos dans 3 tournois différents",             category: "social", rarity: "rare" },
+  paparazzi:      { id: "paparazzi",      name: "Paparazzi",      emoji: "📷", description: "50 photos postées dans les galeries",                      category: "social", rarity: "epic" },
+  hall_of_frame:  { id: "hall_of_frame",  name: "Hall of Frame",  emoji: "🖼️", description: "Poster des photos dans 10 tournois différents",            category: "social", rarity: "mythic" },
   club_derby:   { id: "club_derby",   name: "Club Derby",   emoji: "⚔️", description: "Affronter une équipe avec 2+ membres de ton club", category: "social", rarity: "rare" },
 
   // ─────────────────────────────────────────────────────

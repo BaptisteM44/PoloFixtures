@@ -124,6 +124,8 @@ export function notifLabel(t: NotifTranslator, n: NotifLike): { title: string; s
       return { title: t("poll_closing_soon"), sub: p.pollQuestion ?? "", href: `/poll/${p.pollId}` };
     case "TOURNAMENT_PHOTOS_REVEALED": // fin de tournoi : galerie à compléter
       return { title: t("gallery_end", { count: Number(p.count) || 0 }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos` };
+    case "TOURNAMENT_PHOTOS_REMINDER": // lendemain du tournoi
+      return { title: t("gallery_reminder", { tournament: p.tournamentName ?? "" }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos` };
     case "TOURNAMENT_PHOTOS_REQUESTED":
       return { title: t("gallery_requested", { count: Number(p.count) || 0 }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug || p.tournamentId}?tab=photos` };
     case "TOURNAMENT_PHOTOS_DECIDED": {

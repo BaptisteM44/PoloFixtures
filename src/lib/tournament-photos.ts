@@ -277,6 +277,60 @@ export async function sweepGalleryEnds(now = new Date()) {
   }
 }
 
+/** Relance : le lendemain du tournoi, vers 19h (22 h après la fin). */
+const REMINDER_DELAY_MS = 22 * 60 * 60 * 1000;
+
+/**
+ * Lendemain du tournoi : « Des photos de X dans ton téléphone ? Ajoute-les ».
+ * À tous les participants qui n'ont encore rien posté, même si la galerie est
+ * vide (la notif de fin de tournoi, elle, ne part que s'il y a déjà des photos).
+ * Une fois par tournoi ; abandonnée si on a plus de 2 jours de retard.
+ */
+export async function sweepGalleryReminders(now = new Date()) {
+  const tournaments = await prisma.tournament.findMany({
+    where: {
+      photosReminderNotifiedAt: null,
+      testMode: false, hidden: false, approved: true, createdViaSandbox: false,
+      dateEnd: { gte: new Date(now.getTime() - 5 * DAY_MS), lte: now },
+    },
+    select: {
+      id: true, slug: true, name: true, ...galleryTournamentSelect, creatorId: true,
+      coOrganizers: { select: { playerId: true } },
+      teams: { where: { selected: true }, select: { players: { select: { playerId: true } } } },
+      soloEntries: { where: { waitlisted: false }, select: { playerId: true } },
+      photos: { select: { authorId: true } },
+    },
+  });
+
+  for (const t of tournaments) {
+    const remindAt = tournamentEndsAt(t).getTime() + REMINDER_DELAY_MS;
+    if (remindAt > now.getTime()) continue;
+    const claimed = await prisma.tournament.updateMany({
+      where: { id: t.id, photosReminderNotifiedAt: null },
+      data: { photosReminderNotifiedAt: now },
+    });
+    if (claimed.count === 0) continue;
+    // Trop tard (déploiement tardif) ou galerie déjà fermée : on n'envoie rien.
+    if (now.getTime() - remindAt > 2 * DAY_MS || now >= galleryClosesAt(t)) continue;
+
+    const posted = new Set(t.photos.map((p) => p.authorId));
+    const ids = new Set<string>([
+      ...(t.creatorId ? [t.creatorId] : []),
+      ...t.coOrganizers.map((c) => c.playerId),
+      ...t.teams.flatMap((team) => team.players.map((p) => p.playerId)),
+      ...t.soloEntries.map((s) => s.playerId),
+    ].filter((id) => !posted.has(id)));
+    const withAccount = await prisma.player.findMany({
+      where: { id: { in: [...ids] }, account: { isNot: null }, status: "ACTIVE" },
+      select: { id: true },
+    });
+    const payload = { tournamentId: t.id, tournamentSlug: t.slug ?? "", tournamentName: t.name };
+    for (let i = 0; i < withAccount.length; i += 20) {
+      await Promise.all(withAccount.slice(i, i + 20).map((p) => createNotification(p.id, "TOURNAMENT_PHOTOS_REMINDER", payload)));
+    }
+  }
+}
+
 // Balayage opportuniste (sans cron) : au plus toutes les 5 min par instance.
 let lastSweep = 0;
 export function maybeSweepGalleries() {
@@ -284,4 +338,5 @@ export function maybeSweepGalleries() {
   if (now - lastSweep < 5 * 60_000) return;
   lastSweep = now;
   sweepGalleryEnds().catch((e) => console.error("[gallery] end sweep failed:", e));
+  sweepGalleryReminders().catch((e) => console.error("[gallery] reminder sweep failed:", e));
 }

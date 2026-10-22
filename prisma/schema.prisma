@@ -229,6 +229,7 @@ enum NotificationType {
   CLUB_SESSION_MESSAGE // notif inscrits + créateur : nouveau message sur un entraînement (groupée)
   CARD_GRANTED // notif joueur : l'admin lui a offert une carte spéciale (Coach, WHBPC…)
   CHAT_MENTION // notif joueur : quelqu'un l'a @mentionné dans un chat
+  TOURNAMENT_PHOTOS_REMINDER // notif participants le lendemain du tournoi : « ajoute tes photos »
 }
 
 enum TaskPriority {
@@ -350,6 +351,7 @@ model Tournament {
   // de tournoi déjà envoyée (idempotence du balayage ; nom historique).
   photosPinnedAt          DateTime?
   photosRevealNotifiedAt  DateTime?
+  photosReminderNotifiedAt DateTime? // relance « ajoute tes photos » envoyée (le lendemain du tournoi)
   // Arbitrage : { rules: { [stageId | "default"]: "rotation" | "cross_groups" | "manual" }, hidden: boolean }
   refereeSettings         Json?
   usesPipeline            Boolean          @default(false) // true = nouveau système de stages (refonte formats)

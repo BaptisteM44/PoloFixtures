@@ -1310,7 +1310,8 @@
     "session_message": "💬 {name} en el entrenamiento — {club}",
     "session_messages_grouped": "💬 {count} mensajes nuevos en el entrenamiento — {club}",
     "card_granted": "🎁 Has recibido la carta {card} — ¡actívala!",
-    "chat_mention": "💬 {name} te ha mencionado — {context}"
+    "chat_mention": "💬 {name} te ha mencionado — {context}",
+    "gallery_reminder": "📸 ¿Tienes fotos de {tournament} en el móvil? ¡Súbelas a la galería!"
   },
   "contact": {
     "btn_open": "Contacto",
@@ -2321,7 +2322,13 @@
     "first_training": "Participar en tu 1.er entrenamiento de club",
     "training_regular": "Participar en 10 entrenamientos de club",
     "training_addict": "Participar en 25 entrenamientos de club",
-    "club_pillar": "Participar en 50 entrenamientos de club"
+    "club_pillar": "Participar en 50 entrenamientos de club",
+    "shutterbug": "Subir tu primera foto a la galería de un torneo",
+    "live_shot": "Publicar una foto durante el torneo, no después",
+    "full_roll": "Usar tus 5 fotos en la galería de un mismo torneo",
+    "photo_reporter": "Publicar fotos en 3 torneos distintos",
+    "paparazzi": "50 fotos publicadas en las galerías",
+    "hall_of_frame": "Publicar fotos en 10 torneos distintos"
   },
   "settings_notifications": {
     "title": "Notificaciones de torneos",

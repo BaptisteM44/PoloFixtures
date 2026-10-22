@@ -8,6 +8,9 @@ import {
   isGalleryParticipant, notifyPhotoRequest, toGalleryPhoto, tournamentEndsAt, visiblePhotoWhere,
 } from "@/lib/tournament-photos";
 import { apiMsg } from "@/lib/api-messages";
+import { recomputePlayerBadges } from "@/lib/achievements";
+import { createNotification } from "@/lib/notify";
+import { BADGE_CATALOG } from "@/lib/badge-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -95,6 +98,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     select: { id: true },
   });
   if (!direct) await notifyPhotoRequest(t.id);
+  else void refreshPhotoBadges(playerId);
   return Response.json({ id: photo.id, pending: !direct, remaining: PHOTOS_PER_PLAYER - used - 1 });
 }
 
@@ -111,4 +115,22 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     data: { photosPinnedAt: parsed.data.pinned ? new Date() : null },
   });
   return Response.json({ ok: true });
+}
+
+/** Badges photo (Shutterbug, Full Roll…) : recalcul + notif des nouveaux, sans bloquer l'envoi. */
+async function refreshPhotoBadges(playerId: string) {
+  try {
+    const player = await prisma.player.findUnique({ where: { id: playerId }, select: { badges: true } });
+    if (!player) return;
+    const old = new Set<string>(player.badges as string[]);
+    const merged = await recomputePlayerBadges(playerId);
+    await prisma.player.update({ where: { id: playerId }, data: { badges: merged } });
+    for (const badge of merged) {
+      if (old.has(badge)) continue;
+      const info = BADGE_CATALOG[badge];
+      await createNotification(playerId, "BADGE_UNLOCKED", { badge, badgeName: info ? `${info.emoji} ${info.name}` : badge });
+    }
+  } catch (e) {
+    console.error("[photos] badges", e);
+  }
 }
