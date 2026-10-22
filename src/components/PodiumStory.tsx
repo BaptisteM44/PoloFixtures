@@ -105,6 +105,35 @@ export function PodiumStory(props: Props) {
 
   if (!featured) return null;
 
+  // L'équipe mise en avant, en vraies cartes
+  const featuredBlock = (
+    <div className="pds-featured" style={{ ["--team" as string]: featured.color ?? "var(--yellow, #fffc8a)" }}>
+      <div className="pds-featured__rank">
+        <span className="pds-bigrank" style={{ background: (featured.rank && RANK_BG[featured.rank]) || "#fff" }}>
+          {featured.rank ? ordinal(featured.rank) : "★"}
+        </span>
+        <span className="pds-outof">{featured.rank ? `sur ${teamCount} équipes` : `${teamCount} équipes`}</span>
+      </div>
+      <div className="pds-cards" style={{ height: CARD_H * scale + 12 }}>
+        {players.map((p, i) => {
+          const mid = (players.length - 1) / 2;
+          return (
+            <div key={p.id} className="pds-card" style={{
+              width: CARD_W * scale, height: CARD_H * scale,
+              transform: `rotate(${(i - mid) * 6}deg) translateY(${Math.abs(i - mid) * 6}px)`,
+              zIndex: 10 - Math.abs(i - mid),
+            }}>
+              <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${scale})`, transformOrigin: "top left" }}>
+                <PlayerCollectibleCard {...cardProps(p)} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="pds-team pds-team--featured">{featured.name}</div>
+    </div>
+  );
+
   return (
     <div className="pds-wrap">
       <div className="pds-col">
@@ -116,45 +145,21 @@ export function PodiumStory(props: Props) {
             <span className="pds-meta">{place} · {dates}</span>
           </div>
 
-          {/* L'équipe mise en avant, en vraies cartes */}
-          <div className="pds-featured" style={{ ["--team" as string]: featured.color ?? "var(--yellow, #fffc8a)" }}>
-            <div className="pds-featured__rank">
-              <span className="pds-bigrank" style={{ background: (featured.rank && RANK_BG[featured.rank]) || "#fff" }}>
-                {featured.rank ? ordinal(featured.rank) : "★"}
-              </span>
-              <span className="pds-outof">{featured.rank ? `sur ${teamCount} équipes` : `${teamCount} équipes`}</span>
-            </div>
-            <div className="pds-cards" style={{ height: CARD_H * scale + 12 }}>
-              {players.map((p, i) => {
-                const mid = (players.length - 1) / 2;
-                return (
-                  <div key={p.id} className="pds-card" style={{
-                    width: CARD_W * scale, height: CARD_H * scale,
-                    transform: `rotate(${(i - mid) * 6}deg) translateY(${Math.abs(i - mid) * 6}px)`,
-                    zIndex: 10 - Math.abs(i - mid),
-                  }}>
-                    <div style={{ width: CARD_W, height: CARD_H, transform: `scale(${scale})`, transformOrigin: "top left" }}>
-                      <PlayerCollectibleCard {...cardProps(p)} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="pds-team pds-team--featured">{featured.name}</div>
-          </div>
-
-          {/* Le podium */}
-          <div className="pds-others">
-            {podium.map((team, i) => (
-              <div key={team.id} className={`pds-row${team.id === featured.id ? " pds-row--me" : ""}`}>
-                <div className="pds-rank" style={{ background: RANK_BG[i + 1] }}>{i + 1}</div>
-                <span className="pds-team pds-row__name">{team.name}</span>
-                <div className="pds-avatars">
-                  {team.players.map((p) => <Avatar key={p.id} p={p} />)}
-                </div>
+          {/* Le podium dans l'ordre ; l'équipe mise en avant prend SA place (en
+              grand, en cartes) au lieu d'apparaître deux fois. Hors podium :
+              elle passe en tête, le podium en dessous. */}
+          {!podium.some((t) => t.id === featured.id) && featuredBlock}
+          {podium.map((team, i) => team.id === featured.id ? (
+            <div key={team.id}>{featuredBlock}</div>
+          ) : (
+            <div key={team.id} className="pds-row">
+              <div className="pds-rank" style={{ background: RANK_BG[i + 1] }}>{i + 1}</div>
+              <span className="pds-team pds-row__name">{team.name}</span>
+              <div className="pds-avatars">
+                {team.players.map((p) => <Avatar key={p.id} p={p} />)}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
 
           <div className="pds-foot">
             <span className="pds-logo"><span className="pds-logo__dot" />Poloperator</span>
@@ -235,12 +240,10 @@ const PODIUM_CSS = `
 .pds-team { font-family: var(--font-display), sans-serif; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
 .pds-team--featured { font-size: 17px; text-align: center; max-width: 100%; overflow-wrap: anywhere; }
 
-.pds-others { display: flex; flex-direction: column; gap: 6px; }
 .pds-row {
   display: flex; align-items: center; gap: 8px;
   background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 6px 8px;
 }
-.pds-row--me { box-shadow: 3px 3px 0 #1a1a1a; background: #fffde0; }
 .pds-row__name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pds-rank {
   width: 26px; height: 26px; flex-shrink: 0; border: 2px solid #1a1a1a; border-radius: 7px;
