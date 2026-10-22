@@ -8,6 +8,8 @@
 import { prisma } from "@/lib/db";
 import { Link } from "@/i18n/navigation";
 import { getPodiumTeamIds } from "@/lib/podium";
+import { getPipeline, finalRanking } from "@/engine/pipeline-server";
+import { auth } from "@/lib/auth";
 import { PodiumStory, type PodiumTeam } from "@/components/PodiumStory";
 
 export const dynamic = "force-dynamic";
@@ -32,40 +34,50 @@ export default async function DemoPodiumPage({ params, searchParams }: { params:
   const tournament = pick
     ? await prisma.tournament.findUnique({
         where: { id: pick.id },
-        select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, _count: { select: { teams: { where: { selected: true } } } } },
+        select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, usesPipeline: true, _count: { select: { teams: { where: { selected: true } } } } },
       })
     : null;
 
-  let teams: Record<"first" | "second" | "third", PodiumTeam | null> = { first: null, second: null, third: null };
+  // Toutes les équipes du tournoi, avec leur rang (podium ; classement complet
+  // pour les tournois en étapes), pour pouvoir mettre en avant n'importe laquelle.
+  let teams: PodiumTeam[] = [];
+  let podiumIds: string[] = [];
+  let defaultTeamId: string | null = null;
   if (tournament) {
     const podium = await getPodiumTeamIds(tournament.id);
-    const ids = [podium.first, podium.second, podium.third].filter((x): x is string => !!x);
+    podiumIds = [podium.first, podium.second, podium.third].filter((x): x is string => !!x);
+    const rank = new Map<string, number>();
+    if (tournament.usesPipeline) {
+      const pipeline = await getPipeline(tournament.id);
+      if (pipeline) for (const r of finalRanking(pipeline)) rank.set(r.teamId, r.rank);
+    }
+    podiumIds.forEach((id, i) => rank.set(id, i + 1));
+
     const rows = await prisma.team.findMany({
-      where: { id: { in: ids } },
+      where: { tournamentId: tournament.id, selected: true },
       select: { id: true, name: true, color: true, players: { select: { player: { select: playerSelect } } } },
     });
-    const toTeam = (id: string | null): PodiumTeam | null => {
-      const r = rows.find((x) => x.id === id);
-      if (!r) return null;
-      return {
-        name: r.name, color: r.color,
-        players: r.players.map(({ player: p }) => ({
-          id: p.id, name: p.name, country: p.country, city: p.city, photoPath: p.photoPath,
-          badges: p.pinnedBadges?.length ? p.pinnedBadges : p.badges, startYear: p.startYear, hand: p.hand,
-          gender: p.gender ?? undefined, showGender: p.showGender, activeCard: p.activeCard,
-          coachData: p.coachCard ? { tournament: p.coachCard.tournament, city: p.coachCard.city, collectorNumber: p.coachCard.collectorNumber } : null,
-          whbpcData: p.whbpcCard ? { ...p.whbpcCard, hand: p.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null,
-        })),
-      };
-    };
-    teams = { first: toTeam(podium.first), second: toTeam(podium.second), third: toTeam(podium.third) };
+    teams = rows.map((r) => ({
+      id: r.id, name: r.name, color: r.color, rank: rank.get(r.id) ?? null,
+      players: r.players.map(({ player: p }) => ({
+        id: p.id, name: p.name, country: p.country, city: p.city, photoPath: p.photoPath,
+        badges: p.pinnedBadges?.length ? p.pinnedBadges : p.badges, startYear: p.startYear, hand: p.hand,
+        gender: p.gender ?? undefined, showGender: p.showGender, activeCard: p.activeCard,
+        coachData: p.coachCard ? { tournament: p.coachCard.tournament, city: p.coachCard.city, collectorNumber: p.coachCard.collectorNumber } : null,
+        whbpcData: p.whbpcCard ? { ...p.whbpcCard, hand: p.whbpcCard.hand as "RIGHTIE" | "LEFTIE" } : null,
+      })),
+    })).sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999) || a.name.localeCompare(b.name));
+
+    // Par défaut : l'équipe de la personne connectée, sinon les vainqueurs
+    const me = (await auth())?.user?.playerId;
+    defaultTeamId = teams.find((t) => t.players.some((p) => p.id === me))?.id ?? podiumIds[0] ?? teams[0]?.id ?? null;
   }
 
   const fmt = new Intl.DateTimeFormat(params.locale, { day: "numeric", month: "short", year: "numeric" });
   const dates = tournament
     ? tournament.dateStart.toDateString() === tournament.dateEnd.toDateString()
       ? fmt.format(tournament.dateStart)
-      : `${fmt.format(tournament.dateStart)} – ${fmt.format(tournament.dateEnd)}`
+      : fmt.formatRange(tournament.dateStart, tournament.dateEnd) // « 17–18 oct. 2026 »
     : "";
 
   return (
@@ -90,7 +102,7 @@ export default async function DemoPodiumPage({ params, searchParams }: { params:
 
       {!tournament ? (
         <p>Aucun tournoi terminé trouvé.</p>
-      ) : !teams.first ? (
+      ) : podiumIds.length === 0 || !defaultTeamId ? (
         <p>Pas de podium calculable pour « {tournament.name} ».</p>
       ) : (
         <PodiumStory
@@ -99,9 +111,9 @@ export default async function DemoPodiumPage({ params, searchParams }: { params:
           place={`${tournament.city}, ${tournament.country}`}
           dates={dates}
           teamCount={tournament._count.teams}
-          first={teams.first}
-          second={teams.second}
-          third={teams.third}
+          teams={teams}
+          podiumIds={podiumIds}
+          defaultTeamId={defaultTeamId}
           resultsPath={`/${params.locale}/tournament/${tournament.slug ?? tournament.id}?tab=recap`}
         />
       )}
