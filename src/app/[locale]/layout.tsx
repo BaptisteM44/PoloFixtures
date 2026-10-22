@@ -1,5 +1,6 @@
 import "@/styles/globals.css";
 import type { Metadata } from "next";
+import { DEFAULT_OG_IMAGE } from "@/lib/seo";
 import { Space_Grotesk, Chakra_Petch } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
@@ -39,9 +40,11 @@ export async function generateMetadata({ params: { locale } }: Props): Promise<M
       description: t("og_description"),
       siteName: "Poloperator",
       type: "website",
+      images: [DEFAULT_OG_IMAGE],
     },
     twitter: {
-      card: "summary_large_image",
+      card: "summary",
+      images: [DEFAULT_OG_IMAGE.url],
       title: t("og_title"),
       description: t("og_description"),
     },

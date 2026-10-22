@@ -15,7 +15,7 @@ import { ClubAnnouncements } from "@/components/ClubAnnouncements";
 import { getTranslations, getLocale } from "next-intl/server";
 import { hashPlayerVoter } from "@/lib/poll-hash";
 import type { Metadata } from "next";
-import { localeAlternates, absoluteAsset, jsonLd } from "@/lib/seo";
+import { localeAlternates, absoluteAsset, jsonLd, DEFAULT_OG_IMAGE } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site-url";
 
 export const dynamic = "force-dynamic";
@@ -28,13 +28,13 @@ export async function generateMetadata({ params }: { params: { id: string; local
   if (!club || !club.approved) return { title: "Club" };
   const ts = await getTranslations({ locale: params.locale, namespace: "seo" });
   const description = club.description?.slice(0, 160) || ts("club_desc", { city: club.city, country: club.country });
-  const images = club.logoPath ? [{ url: club.logoPath }] : undefined;
+  const images = club.logoPath ? [{ url: club.logoPath }] : [DEFAULT_OG_IMAGE];
   return {
     title: `${club.name} · ${club.city}`,
     description,
     alternates: localeAlternates(params.locale, `/club/${params.id}`),
     openGraph: { title: club.name, description, images },
-    twitter: { card: "summary", title: club.name, description, images: club.logoPath ? [club.logoPath] : undefined },
+    twitter: { card: "summary", title: club.name, description, images: [club.logoPath ?? DEFAULT_OG_IMAGE.url] },
   };
 }
 

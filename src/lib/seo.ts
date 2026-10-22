@@ -14,6 +14,9 @@ export function localeAlternates(locale: string, path: string) {
   return { canonical: `/${locale}${p}`, languages };
 }
 
+/** Image d'aperçu par défaut (liens partagés sans affiche / photo / logo) : le logo Poloperator. */
+export const DEFAULT_OG_IMAGE = { url: "/icons/icon-512.png", width: 512, height: 512, alt: "Poloperator" };
+
 /** Image absolue pour les données structurées (chemins locaux ou URLs déjà absolues). */
 export function absoluteAsset(path: string) {
   return /^https?:\/\//.test(path) ? path : absoluteUrl(path);

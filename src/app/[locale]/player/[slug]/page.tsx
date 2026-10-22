@@ -6,7 +6,7 @@ import { ClaimProfileButton } from "@/components/ClaimProfileButton";
 import { auth } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
-import { localeAlternates } from "@/lib/seo";
+import { localeAlternates, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -31,13 +31,13 @@ export async function generateMetadata({ params }: { params: { slug: string; loc
       title,
       description,
       type: "profile",
-      ...(player.photoPath ? { images: [{ url: player.photoPath, width: 400, height: 400 }] } : {}),
+      images: player.photoPath ? [{ url: player.photoPath, width: 400, height: 400 }] : [DEFAULT_OG_IMAGE],
     },
     twitter: {
       card: player.photoPath ? "summary_large_image" : "summary",
       title,
       description,
-      ...(player.photoPath ? { images: [player.photoPath] } : {}),
+      images: [player.photoPath ?? DEFAULT_OG_IMAGE.url],
     },
   };
 }

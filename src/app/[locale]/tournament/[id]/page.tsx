@@ -9,7 +9,7 @@ import { parseRefereeSettings } from "@/lib/referees";
 import { galleryPhase } from "@/lib/tournament-photos";
 import { tournamentTimezone } from "@/lib/timezone";
 import { getTranslations } from "next-intl/server";
-import { localeAlternates, absoluteAsset, jsonLd } from "@/lib/seo";
+import { localeAlternates, absoluteAsset, jsonLd, DEFAULT_OG_IMAGE } from "@/lib/seo";
 import { absoluteUrl } from "@/lib/site-url";
 import { prisma } from "@/lib/db";
 import { Tabs } from "@/components/Tabs";
@@ -91,13 +91,14 @@ export async function generateMetadata({
       title,
       description,
       type: "website",
-      ...(tournament.bannerPath ? { images: [{ url: tournament.bannerPath, width: 1200, height: 630 }] } : {}),
+      // L'affiche du tournoi (format libre, souvent portrait), sinon le logo Poloperator
+      images: tournament.bannerPath ? [{ url: tournament.bannerPath, alt: tournament.name }] : [DEFAULT_OG_IMAGE],
     },
     twitter: {
       card: tournament.bannerPath ? "summary_large_image" : "summary",
       title,
       description,
-      ...(tournament.bannerPath ? { images: [tournament.bannerPath] } : {}),
+      images: [tournament.bannerPath ?? DEFAULT_OG_IMAGE.url],
     },
   };
 }

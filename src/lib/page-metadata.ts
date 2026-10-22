@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import { localeAlternates } from "@/lib/seo";
+import { localeAlternates, DEFAULT_OG_IMAGE } from "@/lib/seo";
 
 /**
  * Titre (et description pour les pages publiques) d'une page, traduits.
@@ -14,5 +14,9 @@ export async function pageMetadata(key: string, withDescription = false, path?: 
   const alternates = path ? localeAlternates(await getLocale(), path) : undefined;
   if (!withDescription) return { title, alternates };
   const description = t(`${key}_desc` as never);
-  return { title, description, alternates, openGraph: { title, description }, twitter: { title, description } };
+  return {
+    title, description, alternates,
+    openGraph: { title, description, images: [DEFAULT_OG_IMAGE] },
+    twitter: { card: "summary", title, description, images: [DEFAULT_OG_IMAGE.url] },
+  };
 }
