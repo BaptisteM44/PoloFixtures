@@ -9,7 +9,7 @@ import { domToCanvas } from "modern-screenshot";
 // déjà autorisés (remotePatterns).
 const PROXIED_HOSTS = /(\.r2\.dev|\.r2\.cloudflarestorage\.com|\.supabase\.co)$/;
 
-async function fetchViaProxy(url: string): Promise<string | false> {
+export async function fetchViaProxy(url: string): Promise<string | false> {
   let parsed: URL;
   try { parsed = new URL(url, window.location.href); } catch { return false; }
   if (!PROXIED_HOSTS.test(parsed.hostname)) return false;

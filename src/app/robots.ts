@@ -30,6 +30,7 @@ export default function robots(): MetadataRoute.Robots {
         "/*/multiplex",
         "/*/demo-cards",
         "/*/demo-whbpc",
+        "/*/demo-podium",
       ],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
