@@ -65,7 +65,7 @@ export function PodiumStory(props: Props) {
   const podium = podiumIds.map((id) => teams.find((t) => t.id === id)).filter((t): t is PodiumTeam => !!t);
   const players = featured?.players ?? [];
   // Cartes en éventail : taille selon le nombre de joueurs de l'équipe
-  const scale = players.length >= 4 ? 0.27 : players.length === 3 ? 0.32 : 0.38;
+  const scale = players.length >= 4 ? 0.25 : players.length === 3 ? 0.29 : 0.34;
 
   const capture = useCallback(async () => {
     if (!storyRef.current) return null;
@@ -112,12 +112,13 @@ export function PodiumStory(props: Props) {
   // L'équipe mise en avant, en vraies cartes
   const featuredBlock = (
     <div className="pds-featured" style={{ ["--team" as string]: bandColor }}>
-      {/* Rang à cheval sur le coin du bloc */}
-      <span className="pds-bigrank" style={{ background: (featured.rank && RANK_BG[featured.rank]) || "#fff" }}>
-        {featured.rank ? ordinal(featured.rank) : "★"}
-      </span>
-      {/* Les cartes débordent du bloc (en haut et sur les côtés) */}
-      <div className="pds-cards" style={{ height: CARD_H * scale - 26 }}>
+      <div className="pds-featured__rank">
+        <span className="pds-bigrank" style={{ background: (featured.rank && RANK_BG[featured.rank]) || "#fff" }}>
+          {featured.rank ? ordinal(featured.rank) : "★"}
+        </span>
+        <span className="pds-outof">{featured.rank ? `sur ${teamCount} équipes` : `${teamCount} équipes`}</span>
+      </div>
+      <div className="pds-cards" style={{ height: CARD_H * scale + 12 }}>
         {players.map((p, i) => {
           const mid = (players.length - 1) / 2;
           return (
@@ -134,7 +135,6 @@ export function PodiumStory(props: Props) {
         })}
       </div>
       <div className="pds-team pds-team--featured">{featured.name}</div>
-      <span className="pds-outof">{featured.rank ? `${ordinal(featured.rank)} sur ${teamCount} équipes` : `${teamCount} équipes`}</span>
     </div>
   );
 
@@ -229,24 +229,22 @@ const PODIUM_CSS = `
 .pds-meta { max-width: 100%; font-size: 11px; font-weight: 600; color: #666660; text-wrap: balance; }
 
 .pds-featured {
-  position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
   background: #fff; border: 2.5px solid #1a1a1a; border-radius: 14px; box-shadow: 4px 4px 0 #1a1a1a;
-  padding: 0 10px 10px; margin-top: 40px;
+  padding: 10px 10px 10px;
 }
-/* Bande à la couleur du rang, dans l'arrondi du bloc */
-.pds-featured::before {
-  content: ""; position: absolute; inset: 0 0 auto 0; height: 7px; border-radius: 11px 11px 0 0; background: var(--team);
-}
+/* Pas d'overflow: hidden — les cartes passent PAR-DESSUS les bords du bloc
+   au lieu d'être coupées ; la bande suit donc l'arrondi elle-même. */
+.pds-featured::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; border-radius: 11px 11px 0 0; background: var(--team); }
+.pds-featured__rank { align-self: stretch; display: flex; align-items: center; gap: 8px; padding-top: 4px; }
 .pds-bigrank {
-  position: absolute; top: -16px; left: -12px; z-index: 20;
-  display: inline-flex; align-items: center; justify-content: center; min-width: 46px; height: 34px; padding: 0 9px; white-space: nowrap;
-  border: 2.5px solid #1a1a1a; border-radius: 9px; box-shadow: 3px 3px 0 #1a1a1a; transform: rotate(-6deg);
-  font-family: var(--font-display), sans-serif; font-weight: 900; font-size: 19px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; min-width: 44px; height: 32px; padding: 0 8px; white-space: nowrap;
+  border: 2px solid #1a1a1a; border-radius: 8px; box-shadow: 2px 2px 0 #1a1a1a;
+  font-family: var(--font-display), sans-serif; font-weight: 900; font-size: 18px; line-height: 1;
 }
-.pds-outof { font-size: 10.5px; font-weight: 700; color: #666660; white-space: nowrap; }
-/* Cartes remontées au-dessus du bord haut et plus larges que le bloc */
-.pds-cards { display: flex; justify-content: center; align-items: flex-start; margin: -38px -22px 0; }
-.pds-card { position: relative; flex-shrink: 0; margin: 0 -7px; pointer-events: none; }
+.pds-outof { font-size: 11px; font-weight: 700; color: #666660; white-space: nowrap; }
+.pds-cards { position: relative; z-index: 1; display: flex; justify-content: center; align-items: flex-start; }
+.pds-card { position: relative; flex-shrink: 0; margin: 0 -6px; pointer-events: none; }
 .pds-team { font-family: var(--font-display), sans-serif; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
 .pds-team--featured { font-size: 17px; text-align: center; max-width: 100%; overflow-wrap: anywhere; }
 
