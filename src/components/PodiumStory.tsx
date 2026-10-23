@@ -145,11 +145,14 @@ export function PodiumStory(props: Props) {
             <span className="pds-meta">{place} · {dates}</span>
           </div>
 
-          {/* Le podium 1-2-3 en haut (la ligne de l'équipe choisie surlignée),
-              puis l'équipe mise en avant en grand, en cartes. */}
+          {/* Le podium dans l'ordre 1-2-3 ; si l'équipe choisie y est, elle
+              prend SA place en grand (pas de ligne en double). Hors podium,
+              elle s'affiche en dessous. */}
           <div className="pds-others">
-            {podium.map((team, i) => (
-              <div key={team.id} className={`pds-row${team.id === featured.id ? " pds-row--me" : ""}`}>
+            {podium.map((team, i) => team.id === featured.id ? (
+              <div key={team.id}>{featuredBlock}</div>
+            ) : (
+              <div key={team.id} className="pds-row">
                 <div className="pds-rank" style={{ background: RANK_BG[i + 1] }}>{i + 1}</div>
                 <span className="pds-team pds-row__name">{team.name}</span>
                 <div className="pds-avatars">
@@ -157,8 +160,8 @@ export function PodiumStory(props: Props) {
                 </div>
               </div>
             ))}
+            {!podium.some((t) => t.id === featured.id) && featuredBlock}
           </div>
-          {featuredBlock}
 
           <div className="pds-foot">
             <span className="pds-logo"><span className="pds-logo__dot" />Poloperator</span>
@@ -244,7 +247,6 @@ const PODIUM_CSS = `
   display: flex; align-items: center; gap: 8px;
   background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; padding: 6px 8px;
 }
-.pds-row--me { background: #fffde0; box-shadow: 3px 3px 0 #1a1a1a; }
 .pds-row__name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pds-rank {
   width: 26px; height: 26px; flex-shrink: 0; border: 2px solid #1a1a1a; border-radius: 7px;
