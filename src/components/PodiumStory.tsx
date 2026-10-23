@@ -230,12 +230,13 @@ const PODIUM_CSS = `
 
 .pds-featured {
   position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  background: #fff; border: 2.5px solid #1a1a1a; border-radius: 14px; box-shadow: 4px 4px 0 #1a1a1a;
-  padding: 10px 10px 10px;
+  /* Bande du haut peinte dans le fond même du bloc : le navigateur la découpe
+     exactement dans l'arrondi intérieur de la bordure (pas de pseudo-élément
+     à caler). Pas d'overflow: hidden : les cartes passent PAR-DESSUS les bords. */
+  background: linear-gradient(var(--team) 0 7px, #fff 7px);
+  border: 2.5px solid #1a1a1a; border-radius: 14px; box-shadow: 4px 4px 0 #1a1a1a;
+  padding: 14px 10px 10px;
 }
-/* Pas d'overflow: hidden — les cartes passent PAR-DESSUS les bords du bloc
-   au lieu d'être coupées ; la bande suit donc l'arrondi elle-même. */
-.pds-featured::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; border-radius: 11px 11px 0 0; background: var(--team); }
 .pds-featured__rank { align-self: stretch; display: flex; align-items: center; gap: 8px; padding-top: 4px; }
 .pds-bigrank {
   display: inline-flex; align-items: center; justify-content: center; min-width: 44px; height: 32px; padding: 0 8px; white-space: nowrap;
