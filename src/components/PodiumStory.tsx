@@ -245,7 +245,7 @@ const PODIUM_CSS = `
 }
 .pds-outof { font-size: 11px; font-weight: 700; color: #666660; white-space: nowrap; }
 .pds-cards { position: relative; z-index: 1; display: flex; justify-content: center; align-items: flex-start; }
-.pds-card { position: relative; flex-shrink: 0; margin: 0 -6px; pointer-events: none; }
+.pds-card { position: relative; flex-shrink: 0; margin: 0 -4px; pointer-events: none; }
 .pds-team { font-family: var(--font-display), sans-serif; font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; }
 .pds-team--featured { font-size: 17px; text-align: center; max-width: 100%; overflow-wrap: anywhere; }
 
