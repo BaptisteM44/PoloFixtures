@@ -105,9 +105,13 @@ export function PodiumStory(props: Props) {
 
   if (!featured) return null;
 
+  // Bande du haut : couleur du rang sur le podium (comme les pastilles 1-2-3),
+  // sinon couleur de l'équipe, sinon pas de bande.
+  const bandColor = (featured.rank && RANK_BG[featured.rank]) || featured.color || "transparent";
+
   // L'équipe mise en avant, en vraies cartes
   const featuredBlock = (
-    <div className="pds-featured" style={{ ["--team" as string]: featured.color ?? "var(--yellow, #fffc8a)" }}>
+    <div className="pds-featured" style={{ ["--team" as string]: bandColor }}>
       <div className="pds-featured__rank">
         <span className="pds-bigrank" style={{ background: (featured.rank && RANK_BG[featured.rank]) || "#fff" }}>
           {featured.rank ? ordinal(featured.rank) : "★"}
