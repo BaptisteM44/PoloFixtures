@@ -40,9 +40,18 @@ export function FormatFlow({ stages, teamCount, audience }: { stages: PreviewSta
     }
   };
 
+  // Joueurs : replié par défaut, une ligne qui résume le parcours (« Poules → Bracket final »).
+  const Wrapper = audience === "public" ? "details" : "section";
   return (
-    <section className={`format-flow format-flow--${audience}`}>
-      <h3>{audience === "public" ? t("title_public") : t("title_orga")}</h3>
+    <Wrapper className={`format-flow format-flow--${audience}`}>
+      {audience === "public" ? (
+        <summary className="format-flow__summary">
+          <span>🧭 {t("title_public")}</span>
+          <small>{preview.map((s) => s.name).join(" → ")}</small>
+        </summary>
+      ) : (
+        <h3>{t("title_orga")}</h3>
+      )}
       {audience === "orga" ? (
         <p className="meta format-flow__count">
           <label>
@@ -90,6 +99,6 @@ export function FormatFlow({ stages, teamCount, audience }: { stages: PreviewSta
           );
         })}
       </ol>
-    </section>
+    </Wrapper>
   );
 }

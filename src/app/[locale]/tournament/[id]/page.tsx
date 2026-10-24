@@ -633,19 +633,6 @@ export default async function TournamentPage({
       {/* ── INFO TAB — 12-column flexible grid ── */}
       {tab === "info" && (
         <div className="info-layout">
-          {/* Format du tournoi, connu à l'avance : comment ça se joue, qui va où */}
-          {isPipeline && ((tournament as any).stages ?? []).length > 0 && (
-            <div className="info-tile col-span-12">
-              <div className="panel">
-                <FormatFlow
-                  stages={((tournament as any).stages as any[]).map((s) => ({ name: s.name, type: s.type, config: s.config ?? {}, entryRules: s.entryRules }))}
-                  teamCount={(isLaunched || selectionMade) && selectedTeams.length > 0 ? selectedTeams.length : tournament.maxTeams}
-                  audience="public"
-                />
-              </div>
-            </div>
-          )}
-
           {/* ── LEFT COLUMN (span 6) — Lieux, FAQ, Live ── */}
           <div className="info-tile col-span-6">
 
@@ -851,6 +838,14 @@ export default async function TournamentPage({
                   style={{ width: "100%", aspectRatio: "16/9", height: "auto", borderRadius: "var(--radius)", border: "2px solid var(--border)", display: "block" }}
                 />
               </div>
+            )}
+            {/* Format du tournoi, connu à l'avance : replié, une ligne suffit */}
+            {isPipeline && ((tournament as any).stages ?? []).length > 0 && (
+              <FormatFlow
+                stages={((tournament as any).stages as any[]).map((s) => ({ name: s.name, type: s.type, config: s.config ?? {}, entryRules: s.entryRules }))}
+                teamCount={(isLaunched || selectionMade) && selectedTeams.length > 0 ? selectedTeams.length : tournament.maxTeams}
+                audience="public"
+              />
             )}
           </div>
 
