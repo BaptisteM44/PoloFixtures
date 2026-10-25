@@ -3455,7 +3455,7 @@
     "cand_load": "{count, plural, =0 {0 arbitrage} one {# arbitrage} other {# arbitrages}}"
   },
   "format_flow": {
-    "title_public": "Comment se joue le tournoi",
+    "title_public": "Format",
     "title_orga": "Aperçu du parcours",
     "based_on": "Prévu pour {count} équipes.",
     "simulate_for": "Calculé pour",

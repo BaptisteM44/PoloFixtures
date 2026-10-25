@@ -3460,7 +3460,7 @@
     "cand_load": "{count, plural, one {# Einsatz} other {# Einsätze}}"
   },
   "format_flow": {
-    "title_public": "So läuft das Turnier",
+    "title_public": "Format",
     "title_orga": "Ablauf-Vorschau",
     "based_on": "Geplant für {count} Teams.",
     "simulate_for": "Berechnet für",

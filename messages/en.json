@@ -3454,7 +3454,7 @@
     "cand_load": "{count, plural, one {# duty} other {# duties}}"
   },
   "format_flow": {
-    "title_public": "How the tournament works",
+    "title_public": "Format",
     "title_orga": "Format overview",
     "based_on": "Planned for {count} teams.",
     "simulate_for": "Computed for",

@@ -807,23 +807,34 @@ export default async function TournamentPage({
           {/* ── RIGHT COLUMN (span 6) — Affiche, Liens, Telegram, Stream ── */}
           <div className="info-tile col-span-6">
 
-            {/* Affiche + Telegram side by side */}
+            {/* Affiche | Format côte à côte (même largeur), puis Telegram */}
             <div className="info-inner-grid">
               {/* Affiche */}
-              <div>
-                {tournament.bannerPath && (
+              {tournament.bannerPath && (
+                <div>
                   <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
                     <img src={tournament.bannerPath} alt={`Affiche ${tournament.name}`} style={{ width: "100%", display: "block", borderRadius: "var(--radius)" }} />
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* Format du tournoi, connu à l'avance : replié, une ligne suffit */}
+              {isPipeline && ((tournament as any).stages ?? []).length > 0 && (
+                <div>
+                  <FormatFlow
+                    stages={((tournament as any).stages as any[]).map((s) => ({ name: s.name, type: s.type, config: s.config ?? {}, entryRules: s.entryRules }))}
+                    teamCount={(isLaunched || selectionMade) && selectedTeams.length > 0 ? selectedTeams.length : tournament.maxTeams}
+                    audience="public"
+                  />
+                </div>
+              )}
 
               {/* Telegram */}
-              <div>
-                {(tournament as { telegramUrl?: string | null }).telegramUrl && (
+              {(tournament as { telegramUrl?: string | null }).telegramUrl && (
+                <div>
                   <TelegramWidget telegramUrl={(tournament as { telegramUrl?: string | null }).telegramUrl!} />
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Stream — full width of right column */}
@@ -838,14 +849,6 @@ export default async function TournamentPage({
                   style={{ width: "100%", aspectRatio: "16/9", height: "auto", borderRadius: "var(--radius)", border: "2px solid var(--border)", display: "block" }}
                 />
               </div>
-            )}
-            {/* Format du tournoi, connu à l'avance : replié, une ligne suffit */}
-            {isPipeline && ((tournament as any).stages ?? []).length > 0 && (
-              <FormatFlow
-                stages={((tournament as any).stages as any[]).map((s) => ({ name: s.name, type: s.type, config: s.config ?? {}, entryRules: s.entryRules }))}
-                teamCount={(isLaunched || selectionMade) && selectedTeams.length > 0 ? selectedTeams.length : tournament.maxTeams}
-                audience="public"
-              />
             )}
           </div>
 
