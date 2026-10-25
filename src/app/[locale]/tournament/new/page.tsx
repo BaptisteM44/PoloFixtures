@@ -103,6 +103,23 @@ export default function NewTournamentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Tous les hooks AVANT les retours anticipés : sinon, au passage de la
+  // session « en chargement » à « connecté », React voit un hook de plus et la
+  // page plante (lien « créer un tournoi » ouvert directement / rechargé).
+  const searchCoOrgs = useCallback((q: string) => {
+    if (q.length < 2) { setCoOrgResults([]); setShowCoOrgResults(false); return; }
+    if (coOrgDebounce.current) clearTimeout(coOrgDebounce.current);
+    coOrgDebounce.current = setTimeout(async () => {
+      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}&hasAccount=true`);
+      if (res.ok) {
+        const data: PlayerResult[] = await res.json();
+        const currentIds = new Set([session?.user?.playerId ?? "", ...coOrganizers.map((c) => c.id)]);
+        setCoOrgResults(data.filter((p) => !currentIds.has(p.id)));
+        setShowCoOrgResults(true);
+      }
+    }, 250);
+  }, [coOrganizers, session?.user]);
+
   if (authStatus === "loading") return <div className="page"><p>{t("new_loading")}</p></div>;
   if (!session?.user?.playerId) {
     return (
@@ -122,19 +139,6 @@ export default function NewTournamentPage() {
   const setNum = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: Number(e.target.value) }));
 
-  const searchCoOrgs = useCallback((q: string) => {
-    if (q.length < 2) { setCoOrgResults([]); setShowCoOrgResults(false); return; }
-    if (coOrgDebounce.current) clearTimeout(coOrgDebounce.current);
-    coOrgDebounce.current = setTimeout(async () => {
-      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}&hasAccount=true`);
-      if (res.ok) {
-        const data: PlayerResult[] = await res.json();
-        const currentIds = new Set([session.user!.playerId!, ...coOrganizers.map((c) => c.id)]);
-        setCoOrgResults(data.filter((p) => !currentIds.has(p.id)));
-        setShowCoOrgResults(true);
-      }
-    }, 250);
-  }, [coOrganizers, session.user]);
 
   const addCoOrg = (p: PlayerResult) => {
     setCoOrganizers((prev) => [...prev, p]);
