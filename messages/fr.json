@@ -3481,5 +3481,26 @@
     "warn_overlap": "Les rangs {from} à {to} de « {source} » sont déjà pris par « {other} » : des équipes joueraient deux étapes à la fois.",
     "warn_too_small": "Seulement {teams} équipe(s) dans cette étape : il en faut au moins {min}.",
     "warn_cross_pool_groups": "Le cross-pool a besoin de deux groupes en entrée."
+  },
+  "podium_share": {
+    "kicker": "Résultats",
+    "rank": "{rank, selectordinal, one {#er} other {#e}}",
+    "out_of": "sur {count} équipes",
+    "teams": "{count} équipes",
+    "footer": "Résultats complets sur",
+    "panel_title_mine": "📤 Partage ton résultat",
+    "panel_title": "📤 Partager le podium",
+    "panel_text_mine": "Ton équipe finit {rank, selectordinal, one {#re} other {#e}} : une image prête pour ta story, avec les cartes de l'équipe.",
+    "panel_text": "Une image prête pour une story ou WhatsApp, avec les cartes des joueurs.",
+    "btn_open": "Créer l'image",
+    "modal_title": "Partager le résultat",
+    "team_label": "Équipe mise en avant",
+    "btn_share": "Partager",
+    "btn_download": "Télécharger",
+    "btn_copy": "Copier le lien",
+    "copied": "Lien copié !",
+    "preparing": "Préparation de l'image…",
+    "error": "L'image n'a pas pu être créée. Réessaie.",
+    "close": "Fermer"
   }
 }

@@ -3480,5 +3480,26 @@
     "warn_overlap": "Os lugares {from} a {to} de «{source}» já são levados por «{other}»: haveria equipas a jogar duas etapas ao mesmo tempo.",
     "warn_too_small": "Só {teams} equipa(s) nesta etapa: são precisas pelo menos {min}.",
     "warn_cross_pool_groups": "O cross-pool precisa de dois grupos de entrada."
+  },
+  "podium_share": {
+    "kicker": "Resultados",
+    "rank": "{rank}.º",
+    "out_of": "de {count} equipas",
+    "teams": "{count} equipas",
+    "footer": "Resultados completos em",
+    "panel_title_mine": "📤 Partilha o teu resultado",
+    "panel_title": "📤 Partilhar o pódio",
+    "panel_text_mine": "A tua equipa termina em {rank}.º: uma imagem pronta para a tua story, com as cartas da equipa.",
+    "panel_text": "Uma imagem pronta para uma story ou WhatsApp, com as cartas dos jogadores.",
+    "btn_open": "Criar a imagem",
+    "modal_title": "Partilhar o resultado",
+    "team_label": "Equipa em destaque",
+    "btn_share": "Partilhar",
+    "btn_download": "Descarregar",
+    "btn_copy": "Copiar link",
+    "copied": "Link copiado!",
+    "preparing": "A preparar a imagem…",
+    "error": "Não foi possível criar a imagem. Tenta outra vez.",
+    "close": "Fechar"
   }
 }

@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import { useTranslations } from "next-intl";
 import { PokemonCard } from "@/components/PokemonCard";
 import { postUpload } from "@/lib/upload-image";
+import { RecapSharePanel } from "@/components/RecapSharePanel";
 
 type PodiumPlayer = {
   id: string;
@@ -63,9 +64,11 @@ type Props = {
   podium: { first: Team; second: Team; third: Team };
   players: Player[];
   isOrga: boolean;
+  /** Image « résultat » à partager (à droite du podium) — absent sans podium. */
+  share?: React.ComponentProps<typeof RecapSharePanel> | null;
 };
 
-export function TournamentRecap({ tournament, podium, players, isOrga }: Props) {
+export function TournamentRecap({ tournament, podium, players, isOrga, share }: Props) {
   const t = useTranslations("recap");
   const [isPending, startTransition] = useTransition();
 
@@ -198,7 +201,9 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
         )}
       </div>
 
-        {/* Affiche portrait */}
+        {/* Colonne de droite : affiche portrait + partage du résultat */}
+        {(tournament.bannerPath || share) && (
+        <div className="recap-side">
         {tournament.bannerPath && (
           <div className="recap-banner-panel panel">
             <Image
@@ -245,6 +250,10 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
               ) : null}
             </div>
           </div>
+        )}
+
+        {share && <RecapSharePanel {...share} />}
+        </div>
         )}
 
       </div>{/* fin recap-top-row */}
@@ -489,10 +498,11 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
 
       </div>
 
-      {/* ═══ LIGNE 3 : Anecdote + Résumé full width ═══ */}
+      {/* ═══ LIGNE 3 : Anecdote + Résumé côte à côte (pleine largeur si un seul) ═══ */}
       <div className="recap-bottom-row">
 
         {/* Anecdote / Remerciement */}
+        {(recapAnecdote || isOrga) && (
         <div className="panel">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <h3 className="recap-section__title" style={{ margin: 0 }}>{t("anecdote_title")}</h3>
@@ -531,8 +541,11 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
           ) : null}
         </div>
 
+        )}
+
         {/* Résumé du tournoi */}
-        <div className="panel" style={{ marginTop: 16 }}>
+        {(recapText || isOrga) && (
+        <div className="panel">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <h3 className="recap-section__title" style={{ margin: 0 }}>{t("summary_title")}</h3>
             {isOrga && !editingText && (
@@ -569,6 +582,7 @@ export function TournamentRecap({ tournament, podium, players, isOrga }: Props) 
             >{t("add_summary")}</button>
           ) : null}
         </div>
+        )}
 
       </div>
     </div>

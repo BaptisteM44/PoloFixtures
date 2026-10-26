@@ -1,14 +1,15 @@
 "use client";
 
 /**
- * Image « podium » à partager en story (1080×1920) à la fin d'un tournoi.
+ * Image « résultat » à partager en story (1080×1920) à la fin d'un tournoi.
  * Rendue en DOM à 360×640 puis capturée ×3 (modern-screenshot), comme les
- * cartes. On met en avant UNE équipe au choix (la sienne, même 7e) en vraies
- * cartes joueur, avec son rang, puis le podium en dessous — et l'adresse du
- * site bien visible pour ramener du monde.
+ * cartes. Une équipe au choix (la sienne, même 7e) est mise en avant en vraies
+ * cartes joueur à sa place sur le podium (ou en dessous si elle n'y est pas),
+ * et l'adresse du site est bien visible pour ramener du monde.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { domToBlob } from "modern-screenshot";
 import { PlayerCollectibleCard } from "./PlayerCollectibleCard";
 import { fetchViaProxy } from "./ShareCardButton";
@@ -16,18 +17,14 @@ import { fetchViaProxy } from "./ShareCardButton";
 export type PodiumPlayer = React.ComponentProps<typeof PlayerCollectibleCard> & { id: string };
 export type PodiumTeam = { id: string; name: string; color: string | null; rank: number | null; players: PodiumPlayer[] };
 
-type Props = {
+export type PodiumStoryData = {
   tournamentName: string;
   place: string;      // « Lille, France »
-  dates: string;      // « 8 – 9 nov. 2026 »
+  dates: string;      // « 17–18 oct. 2026 »
   teamCount: number;
   teams: PodiumTeam[];
   /** Équipes 1re, 2e, 3e (ids) */
   podiumIds: string[];
-  /** Équipe mise en avant au départ (celle du joueur connecté, sinon la gagnante) */
-  defaultTeamId: string;
-  /** Chemin public des résultats, ex. « /fr/tournament/lille-2026?tab=recap » */
-  resultsPath: string;
 };
 
 const CARD_W = 340, CARD_H = 520;
@@ -41,8 +38,6 @@ function initials(name: string) {
   return name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 }
 
-const ordinal = (n: number) => (n === 1 ? "1er" : `${n}e`);
-
 function Avatar({ p }: { p: PodiumPlayer }) {
   return p.photoPath
     // eslint-disable-next-line @next/next/no-img-element
@@ -50,61 +45,43 @@ function Avatar({ p }: { p: PodiumPlayer }) {
     : <span className="pds-avatar pds-avatar--empty">{initials(p.name)}</span>;
 }
 
-export function PodiumStory(props: Props) {
-  const { tournamentName, place, dates, teamCount, teams, podiumIds, defaultTeamId, resultsPath } = props;
-  const storyRef = useRef<HTMLDivElement>(null);
-  const [host, setHost] = useState("poloperator.app");
-  const [teamId, setTeamId] = useState(defaultTeamId);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+/** PNG 1080×1920 de l'image (photos relues via le proxy, comme les cartes). */
+export function capturePodiumStory(el: HTMLElement) {
+  return domToBlob(el, { scale: 3, fetchFn: fetchViaProxy, timeout: 20000, backgroundColor: "#fcfbf5" });
+}
 
+/** Partage natif (mobile : story, WhatsApp…) ou téléchargement (ordinateur). */
+export async function shareOrDownload(blob: Blob, fileName: string, title: string, forceDownload = false) {
+  const file = new File([blob], fileName, { type: "image/png" });
+  if (!forceDownload && navigator.share && navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file], title });
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = fileName;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export const podiumFileName = (tournamentName: string, teamName: string) =>
+  `${tournamentName}-${teamName}`.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") + ".png";
+
+/** L'image elle-même (360×640), équipe `featuredId` mise en avant. */
+export const PodiumStoryCanvas = forwardRef<HTMLDivElement, PodiumStoryData & { featuredId: string }>(function PodiumStoryCanvas(
+  { tournamentName, place, dates, teamCount, teams, podiumIds, featuredId },
+  ref,
+) {
+  const t = useTranslations("podium_share");
+  const [host, setHost] = useState("poloperator.app");
   useEffect(() => { setHost(window.location.host.replace(/^www\./, "")); }, []);
 
-  const featured = teams.find((t) => t.id === teamId) ?? teams[0];
-  const podium = podiumIds.map((id) => teams.find((t) => t.id === id)).filter((t): t is PodiumTeam => !!t);
-  const players = featured?.players ?? [];
+  const featured = teams.find((tm) => tm.id === featuredId) ?? teams[0];
+  if (!featured) return null;
+  const podium = podiumIds.map((id) => teams.find((tm) => tm.id === id)).filter((tm): tm is PodiumTeam => !!tm);
+  const players = featured.players;
   // Cartes en éventail : taille selon le nombre de joueurs de l'équipe
   const scale = players.length >= 4 ? 0.25 : players.length === 3 ? 0.29 : 0.34;
-
-  const capture = useCallback(async () => {
-    if (!storyRef.current) return null;
-    return domToBlob(storyRef.current, { scale: 3, fetchFn: fetchViaProxy, timeout: 20000, backgroundColor: "#fcfbf5" });
-  }, []);
-
-  async function handlePreview() {
-    setBusy(true); setError(null);
-    try {
-      const blob = await capture();
-      if (!blob) throw new Error("capture vide");
-      setPreview((old) => { if (old) URL.revokeObjectURL(old); return URL.createObjectURL(blob); });
-    } catch (e) {
-      console.error(e); setError("La capture a échoué (voir console).");
-    } finally { setBusy(false); }
-  }
-
-  async function handleShare() {
-    setBusy(true); setError(null);
-    try {
-      const blob = await capture();
-      if (!blob) throw new Error("capture vide");
-      const file = new File([blob], `${tournamentName.replace(/\s+/g, "-")}-${featured.name.replace(/\s+/g, "-")}.png`, { type: "image/png" });
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: tournamentName });
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url; a.download = file.name;
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      }
-    } catch (e) {
-      if ((e as Error).name !== "AbortError") { console.error(e); setError("Le partage a échoué (voir console)."); }
-    } finally { setBusy(false); }
-  }
-
-  if (!featured) return null;
-
   // Bande du haut : couleur du rang sur le podium (comme les pastilles 1-2-3),
   // sinon couleur de l'équipe, sinon pas de bande.
   const bandColor = (featured.rank && RANK_BG[featured.rank]) || featured.color || "transparent";
@@ -114,9 +91,11 @@ export function PodiumStory(props: Props) {
     <div className="pds-featured" style={{ ["--team" as string]: bandColor }}>
       <div className="pds-featured__rank">
         <span className="pds-bigrank" style={{ background: (featured.rank && RANK_BG[featured.rank]) || "#fff" }}>
-          {featured.rank ? ordinal(featured.rank) : "★"}
+          {featured.rank ? t("rank", { rank: featured.rank }) : "★"}
         </span>
-        <span className="pds-outof">{featured.rank ? `sur ${teamCount} équipes` : `${teamCount} équipes`}</span>
+        <span className="pds-outof">
+          {featured.rank ? t("out_of", { count: teamCount }) : t("teams", { count: teamCount })}
+        </span>
       </div>
       <div className="pds-cards" style={{ height: CARD_H * scale + 12 }}>
         {players.map((p, i) => {
@@ -139,48 +118,75 @@ export function PodiumStory(props: Props) {
   );
 
   return (
+    <div ref={ref} className="pds">
+      <div className="pds-head">
+        <span className="pds-kicker"><span>🏆</span><span>{t("kicker")}</span></span>
+        <h2 className="pds-title">{tournamentName}</h2>
+        <span className="pds-meta">{place} · {dates}</span>
+      </div>
+
+      {/* Le podium dans l'ordre 1-2-3 ; si l'équipe choisie y est, elle
+          prend SA place en grand (pas de ligne en double). Hors podium,
+          elle s'affiche en dessous. */}
+      <div className="pds-others">
+        {podium.map((team, i) => team.id === featured.id ? (
+          <div key={team.id}>{featuredBlock}</div>
+        ) : (
+          <div key={team.id} className="pds-row">
+            <div className="pds-rank" style={{ background: RANK_BG[i + 1] }}>{i + 1}</div>
+            <span className="pds-team pds-row__name">{team.name}</span>
+            <div className="pds-avatars">
+              {team.players.map((p) => <Avatar key={p.id} p={p} />)}
+            </div>
+          </div>
+        ))}
+        {!podium.some((tm) => tm.id === featured.id) && featuredBlock}
+      </div>
+
+      <div className="pds-foot">
+        <span className="pds-logo"><span className="pds-logo__dot" />Poloperator</span>
+        <span className="pds-url">{t("footer")} <strong>{host}</strong></span>
+      </div>
+      <style>{PODIUM_CSS}</style>
+    </div>
+  );
+});
+
+/** Page de démo : rendu DOM + PNG exporté côte à côte, équipe au choix. */
+export function PodiumStory(props: PodiumStoryData & { defaultTeamId: string; resultsPath: string }) {
+  const { teams, defaultTeamId, resultsPath, tournamentName } = props;
+  const t = useTranslations("podium_share");
+  const storyRef = useRef<HTMLDivElement>(null);
+  const [teamId, setTeamId] = useState(defaultTeamId);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const featured = teams.find((tm) => tm.id === teamId) ?? teams[0];
+
+  async function run(fn: (blob: Blob) => Promise<void> | void) {
+    if (!storyRef.current) return;
+    setBusy(true); setError(null);
+    try {
+      await fn(await capturePodiumStory(storyRef.current));
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") { console.error(e); setError(t("error")); }
+    } finally { setBusy(false); }
+  }
+
+  return (
     <div className="pds-wrap">
       <div className="pds-col">
         <span className="pds-caption">Rendu en direct (DOM)</span>
-        <div ref={storyRef} className="pds">
-          <div className="pds-head">
-            <span className="pds-kicker"><span>🏆</span><span>Résultats</span></span>
-            <h2 className="pds-title">{tournamentName}</h2>
-            <span className="pds-meta">{place} · {dates}</span>
-          </div>
-
-          {/* Le podium dans l'ordre 1-2-3 ; si l'équipe choisie y est, elle
-              prend SA place en grand (pas de ligne en double). Hors podium,
-              elle s'affiche en dessous. */}
-          <div className="pds-others">
-            {podium.map((team, i) => team.id === featured.id ? (
-              <div key={team.id}>{featuredBlock}</div>
-            ) : (
-              <div key={team.id} className="pds-row">
-                <div className="pds-rank" style={{ background: RANK_BG[i + 1] }}>{i + 1}</div>
-                <span className="pds-team pds-row__name">{team.name}</span>
-                <div className="pds-avatars">
-                  {team.players.map((p) => <Avatar key={p.id} p={p} />)}
-                </div>
-              </div>
-            ))}
-            {!podium.some((t) => t.id === featured.id) && featuredBlock}
-          </div>
-
-          <div className="pds-foot">
-            <span className="pds-logo"><span className="pds-logo__dot" />Poloperator</span>
-            <span className="pds-url">Résultats complets sur <strong>{host}</strong></span>
-          </div>
-        </div>
+        <PodiumStoryCanvas ref={storyRef} {...props} featuredId={featured.id} />
       </div>
 
       <div className="pds-col">
         <label className="pds-caption" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          Équipe mise en avant
+          {t("team_label")}
           <select className="form-input" value={featured.id} onChange={(e) => { setTeamId(e.target.value); setPreview(null); }}
             style={{ textTransform: "none", letterSpacing: "normal", fontWeight: 500, minWidth: 260 }}>
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>{t.rank ? `${ordinal(t.rank)} — ` : ""}{t.name}</option>
+            {teams.map((tm) => (
+              <option key={tm.id} value={tm.id}>{tm.rank ? `${t("rank", { rank: tm.rank })} — ` : ""}{tm.name}</option>
             ))}
           </select>
         </label>
@@ -190,14 +196,18 @@ export function PodiumStory(props: Props) {
           ? <img src={preview} alt="Aperçu exporté" className="pds-preview" />
           : <div className="pds-preview pds-preview--empty">Clique « Générer l&apos;image » pour voir le PNG réel (photos comprises).</div>}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" onClick={handlePreview} disabled={busy}>{busy ? "…" : "Générer l'image"}</button>
-          <button type="button" className="primary" onClick={handleShare} disabled={busy}>Partager / télécharger</button>
+          <button type="button" disabled={busy}
+            onClick={() => run((blob) => setPreview((old) => { if (old) URL.revokeObjectURL(old); return URL.createObjectURL(blob); }))}>
+            {busy ? "…" : "Générer l'image"}
+          </button>
+          <button type="button" className="primary" disabled={busy}
+            onClick={() => run((blob) => shareOrDownload(blob, podiumFileName(tournamentName, featured.name), tournamentName))}>
+            {t("btn_share")}
+          </button>
         </div>
         {error && <p style={{ color: "var(--danger)", fontSize: 13, margin: 0 }}>{error}</p>}
         <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}>Lien des résultats : {resultsPath}</p>
       </div>
-
-      <style>{PODIUM_CSS}</style>
     </div>
   );
 }

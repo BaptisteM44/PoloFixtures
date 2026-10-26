@@ -3480,5 +3480,26 @@
     "warn_overlap": "Places {from} to {to} of “{source}” are already taken by “{other}”: teams would play two stages at once.",
     "warn_too_small": "Only {teams} team(s) in this stage: at least {min} are needed.",
     "warn_cross_pool_groups": "A cross-pool needs two groups as input."
+  },
+  "podium_share": {
+    "kicker": "Results",
+    "rank": "{rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}",
+    "out_of": "of {count} teams",
+    "teams": "{count} teams",
+    "footer": "Full results on",
+    "panel_title_mine": "📤 Share your result",
+    "panel_title": "📤 Share the podium",
+    "panel_text_mine": "Your team finished {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}: an image ready for your story, with your team's cards.",
+    "panel_text": "An image ready for a story or WhatsApp, with the players' cards.",
+    "btn_open": "Create the image",
+    "modal_title": "Share the result",
+    "team_label": "Featured team",
+    "btn_share": "Share",
+    "btn_download": "Download",
+    "btn_copy": "Copy link",
+    "copied": "Link copied!",
+    "preparing": "Preparing the image…",
+    "error": "The image couldn't be created. Try again.",
+    "close": "Close"
   }
 }

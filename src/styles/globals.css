@@ -2634,10 +2634,25 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 
 /* ── Ligne 3 : Anecdote + Résumé full width ── */
+/* Anecdote + Résumé côte à côte ; un seul bloc → pleine largeur */
 .recap-bottom-row {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  align-items: start;
 }
+
+/* Colonne de droite du Récap : affiche + partage du résultat */
+.recap-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.recap-share-panel { padding: 16px; }
+.recap-share-panel .recap-section__title { font-size: 14px; margin-bottom: 10px; }
+.recap-share-panel__text { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+.recap-share-modal { width: auto; max-width: 94vw; max-height: 94vh; overflow: auto; }
+.recap-share-modal__body { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px 20px; }
+.recap-share-modal__label { align-self: stretch; display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 700; color: var(--text-muted); }
+.recap-share-modal__frame { flex-shrink: 0; }
+.recap-share-modal__error { margin: 0; font-size: 13px; color: var(--danger); }
+.recap-share-modal__footer { flex-wrap: wrap; justify-content: center; }
 
 /* Section title */
 .recap-section__title {

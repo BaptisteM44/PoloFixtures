@@ -10,6 +10,7 @@ import { galleryPhase } from "@/lib/tournament-photos";
 import { tournamentTimezone } from "@/lib/timezone";
 import { getTranslations } from "next-intl/server";
 import { localeAlternates, absoluteAsset, jsonLd, DEFAULT_OG_IMAGE } from "@/lib/seo";
+import { getPodiumShareData, formatTournamentDates } from "@/lib/podium-share";
 import { absoluteUrl } from "@/lib/site-url";
 import { prisma } from "@/lib/db";
 import { Tabs } from "@/components/Tabs";
@@ -397,6 +398,9 @@ export default async function TournamentPage({
   type PodiumTeam = { id: string; name: string; players?: PodiumPlayer[] } | null;
   let podium: { first: PodiumTeam; second: PodiumTeam; third: PodiumTeam } = { first: null, second: null, third: null };
 
+  // Image « résultat » à partager, à droite du podium dans le Récap.
+  const shareData = tab === "recap" && isCompleted ? await getPodiumShareData(tournament.id, currentPlayerId) : null;
+
   // Classement final complet (étapes), affiché dans le Récap.
   const finalPipeline = tab === "recap" && isCompleted && isPipeline ? await getPipeline(tournament.id) : null;
   const finalRows = finalPipeline ? finalRanking(finalPipeline) : null;
@@ -618,6 +622,13 @@ export default async function TournamentPage({
             podium={podium}
             players={allPlayers}
             isOrga={isOrga}
+            share={shareData && {
+              ...shareData,
+              tournamentName: tournament.name,
+              place: `${tournament.city}, ${tournament.country}`,
+              dates: formatTournamentDates(params.locale, tournament.dateStart, tournament.dateEnd),
+              teamCount: shareData.teams.length,
+            }}
           />
         );
       })()}

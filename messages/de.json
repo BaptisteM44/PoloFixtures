@@ -3486,5 +3486,26 @@
     "warn_overlap": "Die Plätze {from} bis {to} aus „{source}“ sind schon von „{other}“ belegt: Teams würden zwei Etappen gleichzeitig spielen.",
     "warn_too_small": "Nur {teams} Team(s) in dieser Etappe: mindestens {min} nötig.",
     "warn_cross_pool_groups": "Ein Cross-Pool braucht zwei Gruppen als Eingang."
+  },
+  "podium_share": {
+    "kicker": "Ergebnisse",
+    "rank": "{rank}.",
+    "out_of": "von {count} Teams",
+    "teams": "{count} Teams",
+    "footer": "Alle Ergebnisse auf",
+    "panel_title_mine": "📤 Teile dein Ergebnis",
+    "panel_title": "📤 Podium teilen",
+    "panel_text_mine": "Dein Team wird {rank}.: ein Bild für deine Story, mit den Karten deines Teams.",
+    "panel_text": "Ein Bild für eine Story oder WhatsApp, mit den Karten der Spieler·innen.",
+    "btn_open": "Bild erstellen",
+    "modal_title": "Ergebnis teilen",
+    "team_label": "Hervorgehobenes Team",
+    "btn_share": "Teilen",
+    "btn_download": "Herunterladen",
+    "btn_copy": "Link kopieren",
+    "copied": "Link kopiert!",
+    "preparing": "Bild wird vorbereitet…",
+    "error": "Das Bild konnte nicht erstellt werden. Versuch es noch einmal.",
+    "close": "Schließen"
   }
 }
