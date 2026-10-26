@@ -6,7 +6,7 @@
 export const SITE_URL = (
   process.env.NEXT_PUBLIC_BASE_URL ??
   process.env.NEXTAUTH_URL ??
-  "https://poloperator.app"
+  "https://poloperator.com"
 ).replace(/\/$/, "");
 
 /** Construit une URL absolue à partir d'un chemin (`/tournament/x` → `https://…/tournament/x`). */

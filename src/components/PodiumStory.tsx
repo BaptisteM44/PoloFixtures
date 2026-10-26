@@ -73,7 +73,7 @@ export const PodiumStoryCanvas = forwardRef<HTMLDivElement, PodiumStoryData & { 
   ref,
 ) {
   const t = useTranslations("podium_share");
-  const [host, setHost] = useState("poloperator.app");
+  const [host, setHost] = useState("poloperator.com");
   useEffect(() => { setHost(window.location.host.replace(/^www\./, "")); }, []);
 
   const featured = teams.find((tm) => tm.id === featuredId) ?? teams[0];

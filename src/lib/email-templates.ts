@@ -15,7 +15,7 @@ export function getLangFromCountry(country: string | null | undefined): "fr" | "
   return "en";
 }
 
-const appUrl = process.env.NEXTAUTH_URL ?? "https://poloperator.app";
+const appUrl = process.env.NEXTAUTH_URL ?? "https://poloperator.com";
 
 function emailWrapper(content: string) {
   return `
