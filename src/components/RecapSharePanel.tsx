@@ -59,7 +59,7 @@ export function RecapSharePanel(props: Props) {
   useEffect(() => {
     const el = thumbRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setThumbW(Math.min(240, el.clientWidth)));
+    const ro = new ResizeObserver(() => setThumbW(Math.min(300, el.clientWidth)));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -118,7 +118,7 @@ export function RecapSharePanel(props: Props) {
           </div>
         </button>
         {mine?.rank && <p className="recap-share-panel__text">{t("panel_text_mine", { rank: mine.rank })}</p>}
-        <button type="button" className="primary" style={{ width: "100%" }} onClick={() => { setTeamId(defaultTeamId); setOpen(true); }}>
+        <button type="button" className="primary" onClick={() => { setTeamId(defaultTeamId); setOpen(true); }}>
           {t("btn_open")}
         </button>
       </div>
