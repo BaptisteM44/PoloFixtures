@@ -4415,3 +4415,18 @@ export async function simulatePipelineStageAction(id: string): Promise<{ ok?: bo
   revalidatePath(`/tournament/${id}/edit`);
   return res;
 }
+
+/**
+ * Clôture immédiate des inscriptions (fin d'inscription = maintenant), sans
+ * passer par le formulaire complet. `reopen` retire la date de fin.
+ */
+export async function setRegistrationClosedAction(tournamentId: string, closed: boolean): Promise<{ ok?: boolean; error?: string }> {
+  const denied = await requireTournamentOrgaAccess(tournamentId);
+  if (denied) return denied;
+  await prisma.tournament.update({
+    where: { id: tournamentId },
+    data: { registrationEnd: closed ? new Date() : null },
+  });
+  refreshTournamentPages();
+  return { ok: true };
+}

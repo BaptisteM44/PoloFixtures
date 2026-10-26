@@ -57,3 +57,4 @@ scripts/backup.sh
 # Dumps de base de données : ne jamais committer (données personnelles)
 db-backup-*
 *.dump
+.next-sim/

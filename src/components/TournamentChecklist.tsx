@@ -25,13 +25,21 @@ type ChecklistTournament = {
   rejectionReason: string | null | undefined;
   coOrganizersCount: number;
   sponsorsCount: number;
+  stagesCount: number;
+  usesPipeline: boolean;
 };
 
 type CheckItem = {
   label: string;
   done: boolean;
   hint?: string;
+  /** Où compléter ce point : onglet du dashboard + section (cf. OrgaDashboard « orga:goto »). */
+  go?: { tab: string; anchor?: string };
 };
+
+function goTo(go: CheckItem["go"]) {
+  if (go) window.dispatchEvent(new CustomEvent("orga:goto", { detail: go }));
+}
 
 function Section({ title, items }: { title: string; items: CheckItem[] }) {
   const doneCount = items.filter((i) => i.done).length;
@@ -44,7 +52,15 @@ function Section({ title, items }: { title: string; items: CheckItem[] }) {
       </div>
       <div style={{ display: "grid", gap: 4 }}>
         {items.map((item) => (
-          <div key={item.label} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13 }}>
+          <div
+            key={item.label}
+            className={item.go ? "checklist-item checklist-item--link" : "checklist-item"}
+            role={item.go ? "button" : undefined}
+            tabIndex={item.go ? 0 : undefined}
+            onClick={() => goTo(item.go)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goTo(item.go); } }}
+            style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13 }}
+          >
             <span style={{ flexShrink: 0, fontSize: 14, marginTop: 1, color: item.done ? "var(--teal)" : "var(--border)" }}>
               {item.done ? "✓" : "○"}
             </span>
@@ -63,35 +79,41 @@ function Section({ title, items }: { title: string; items: CheckItem[] }) {
 
 export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
   const tl = useTranslations("checklist");
-  const totalItems = 14;
-  const doneItems = [
-    !!t.name,
-    !!t.country,
-    !!t.city,
-    !!t.dateStart && !!t.dateEnd,
-    !!t.contactEmail,
-    !!t.registrationStart && !!t.registrationEnd,
-    t.maxTeams > 0,
-    t.courtsCount > 0,
-    !!t.saturdayEventName && !!t.saturdayEventAddress,
-    !!t.fridayWelcomeName,
-    !!t.bannerPath,
-    t.sponsorsCount > 0,
-    t.coOrganizersCount > 0,
-    t.submissionStatus === "APPROVED",
-  ].filter(Boolean).length;
+  const fiche = "config";
+  const sections: Array<{ title: string; items: CheckItem[] }> = [
+    { title: tl("section_basics"), items: [
+      { label: tl("item_name"), done: !!t.name, go: { tab: fiche, anchor: "edit-general" } },
+      { label: tl("item_location"), done: !!t.country && !!t.city, go: { tab: fiche, anchor: "edit-general" } },
+      { label: tl("item_dates"), done: !!t.dateStart && !!t.dateEnd, go: { tab: fiche, anchor: "edit-general" } },
+      { label: tl("item_email"), done: !!t.contactEmail, go: { tab: fiche, anchor: "edit-registration" } },
+    ] },
+    { title: tl("section_format"), items: [
+      { label: tl("item_format"), done: t.stagesCount > 0, hint: tl("hint_format"), go: { tab: t.usesPipeline ? "stages" : "planning" } },
+      { label: tl("item_max_teams"), done: t.maxTeams > 0, go: { tab: fiche, anchor: "edit-registration" } },
+      { label: tl("item_courts"), done: t.courtsCount > 0, go: { tab: fiche, anchor: "edit-general" } },
+    ] },
+    { title: tl("section_registration"), items: [
+      { label: tl("item_reg_dates"), done: !!t.registrationStart && !!t.registrationEnd, hint: tl("hint_reg_dates"), go: { tab: fiche, anchor: "edit-registration" } },
+    ] },
+    { title: tl("section_logistics"), items: [
+      { label: tl("item_saturday_venue"), done: !!t.venueName && !!t.venueAddress, hint: tl("hint_saturday_venue"), go: { tab: fiche, anchor: "edit-venues" } },
+      { label: tl("item_friday_welcome"), done: !!t.fridayWelcomeName, hint: tl("hint_friday_welcome"), go: { tab: fiche, anchor: "edit-venues" } },
+    ] },
+    { title: tl("section_visual"), items: [
+      { label: tl("item_banner"), done: !!t.bannerPath, hint: tl("hint_banner"), go: { tab: fiche, anchor: "edit-banner" } },
+      { label: tl("item_sponsors"), done: t.sponsorsCount > 0, hint: tl("hint_optional"), go: { tab: fiche, anchor: "edit-sponsors" } },
+      { label: tl("item_co_orga"), done: t.coOrganizersCount > 0, hint: tl("hint_optional"), go: { tab: "orga" } },
+    ] },
+  ];
+  // La validation admin n'est pas dans le % : l'orga n'a pas la main dessus.
+  const all = sections.flatMap((x) => x.items);
+  const totalItems = all.length;
+  const doneItems = all.filter((i) => i.done).length;
 
   const pct = Math.round((doneItems / totalItems) * 100);
 
-  const statusColor =
-    t.submissionStatus === "APPROVED" ? "var(--teal)" :
-    t.submissionStatus === "REJECTED" ? "var(--pink)" :
-    "var(--yellow)";
-
-  const statusLabel =
-    t.submissionStatus === "APPROVED" ? tl("status_approved") :
-    t.submissionStatus === "REJECTED" ? tl("status_rejected") :
-    tl("status_pending");
+  const statusColor = t.submissionStatus === "APPROVED" ? "var(--teal)" : "var(--pink)";
+  const statusLabel = t.submissionStatus === "APPROVED" ? tl("status_approved") : tl("status_rejected");
 
   return (
     <div className="panel" style={{ padding: "20px 24px" }}>
@@ -108,16 +130,13 @@ export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
         </div>
       </div>
 
-      {/* Submission status */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, padding: "10px 14px", borderRadius: 8, border: `2px solid ${statusColor}`, background: `color-mix(in srgb, ${statusColor} 10%, var(--surface))` }}>
-        <span style={{ fontWeight: 700, fontSize: 13, color: statusColor }}>{statusLabel}</span>
-        {t.submissionStatus === "PENDING" && (
-          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{tl("pending_desc")}</span>
-        )}
+      {/* Submission status — « en attente » est expliqué en haut du dashboard (frise) */}
+      {t.submissionStatus !== "PENDING" && <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, padding: "10px 14px", borderRadius: 8, border: `2px solid ${statusColor}`, background: `color-mix(in srgb, ${statusColor} 10%, var(--surface))` }}>
+        <span style={{ fontWeight: 700, fontSize: 13, color: statusColor, whiteSpace: "nowrap" }}>{statusLabel}</span>
         {t.submissionStatus === "APPROVED" && (
           <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{tl("approved_desc")}</span>
         )}
-      </div>
+      </div>}
 
       {/* Rejection reason */}
       {t.submissionStatus === "REJECTED" && t.rejectionReason && (
@@ -127,37 +146,8 @@ export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
         </div>
       )}
 
-      {/* Checklist sections */}
-      <Section title={tl("section_basics")} items={[
-        { label: tl("item_name"), done: !!t.name },
-        { label: tl("item_location"), done: !!t.country && !!t.city },
-        { label: tl("item_dates"), done: !!t.dateStart && !!t.dateEnd },
-        { label: tl("item_email"), done: !!t.contactEmail },
-      ]} />
-
-      <Section title={tl("section_format")} items={[
-        { label: tl("item_max_teams"), done: t.maxTeams > 0 },
-        { label: tl("item_courts"), done: t.courtsCount > 0 },
-      ]} />
-
-      <Section title={tl("section_registration")} items={[
-        { label: tl("item_reg_dates"), done: !!t.registrationStart && !!t.registrationEnd, hint: tl("hint_reg_dates") },
-      ]} />
-
-      <Section title={tl("section_logistics")} items={[
-        { label: tl("item_saturday_venue"), done: !!t.venueName && !!t.venueAddress, hint: tl("hint_saturday_venue") },
-        { label: tl("item_friday_welcome"), done: !!t.fridayWelcomeName, hint: tl("hint_friday_welcome") },
-      ]} />
-
-      <Section title={tl("section_visual")} items={[
-        { label: tl("item_banner"), done: !!t.bannerPath, hint: tl("hint_banner") },
-        { label: tl("item_sponsors"), done: t.sponsorsCount > 0, hint: tl("hint_optional") },
-        { label: tl("item_co_orga"), done: t.coOrganizersCount > 0, hint: tl("hint_optional") },
-      ]} />
-
-      <Section title={tl("section_publication")} items={[
-        { label: tl("item_approved"), done: t.submissionStatus === "APPROVED", hint: tl("hint_approved") },
-      ]} />
+      {/* Checklist sections — chaque ligne mène au champ à compléter */}
+      {sections.map((sec) => <Section key={sec.title} title={sec.title} items={sec.items} />)}
     </div>
   );
 }

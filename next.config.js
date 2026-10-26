@@ -31,6 +31,9 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Un 2e serveur de dev (tests, simulation) doit avoir son propre cache :
+  // deux `next dev` sur le même .next s'écrasent leurs fichiers compilés.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",

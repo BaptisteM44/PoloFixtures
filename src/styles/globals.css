@@ -11703,3 +11703,116 @@ details.format-flow--public .format-flow__type,
 details.format-flow--public .format-flow__facts,
 details.format-flow--public .format-flow__out { font-size: 12px; }
 details.format-flow--public .format-flow__num { width: 18px; height: 18px; font-size: 10px; }
+
+/* ── Dashboard orga : frise du parcours (OrgaJourney) ── */
+.edit-header__eyebrow {
+  margin: 0 0 2px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.orga-journey { margin-bottom: 16px; display: grid; gap: 10px; }
+.orga-journey__approval {
+  margin: 0;
+  padding: 10px 14px;
+  border: 2px dashed var(--border-light);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--yellow) 35%, var(--surface));
+}
+.orga-journey__approval--rejected { background: color-mix(in srgb, var(--pink) 25%, var(--surface)); }
+.orga-journey__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
+}
+.orga-journey__step {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+  box-shadow: none;
+  min-height: 0;
+}
+.orga-journey__step:hover { border-color: var(--border); }
+.orga-journey__dot {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  font-size: 11px;
+}
+.orga-journey__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.orga-journey__step.is-done { color: var(--text); }
+.orga-journey__step.is-done .orga-journey__dot { background: var(--teal); border-color: var(--teal); color: #1a1a1a; }
+.orga-journey__step.is-current { color: var(--text); border-color: var(--border); background: color-mix(in srgb, var(--yellow) 45%, var(--surface)); }
+.orga-journey__step.is-shown { border-color: var(--border); box-shadow: 2px 2px 0 var(--border); }
+.orga-journey__card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  background: var(--surface);
+}
+.orga-journey__card.tone-todo { background: color-mix(in srgb, var(--teal) 8%, var(--surface)); }
+.orga-journey__card.tone-live { background: color-mix(in srgb, var(--pink) 10%, var(--surface)); }
+.orga-journey__card.tone-done { background: color-mix(in srgb, var(--teal) 4%, var(--surface)); }
+.orga-journey__icon { font-size: 24px; line-height: 1; }
+.orga-journey__body { flex: 1 1 280px; min-width: 0; }
+.orga-journey__body strong { display: block; font-size: 15px; }
+.orga-journey__body p { margin: 3px 0 0; font-size: 13px; color: var(--text-muted); }
+.orga-journey__body .orga-journey__error { color: var(--danger); }
+.orga-journey__body .orga-journey__ok { color: var(--teal); font-weight: 700; }
+.orga-journey__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.orga-journey__actions button { font-size: 13px; padding: 8px 14px; white-space: nowrap; }
+@media (max-width: 900px) {
+  .orga-journey__steps { display: flex; overflow-x: auto; scrollbar-width: none; }
+  .orga-journey__steps li { flex: 0 0 auto; }
+  .orga-journey__step { width: auto; }
+}
+/* Sections ciblées par la frise / la checklist : visibles sous le header collant */
+.orga-anchor { scroll-margin-top: 90px; }
+.orga-anchor--flash { animation: orga-anchor-flash 1.6s ease; border-radius: var(--radius-sm); }
+@keyframes orga-anchor-flash {
+  0%, 40% { box-shadow: 0 0 0 4px var(--yellow); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.checklist-item--link { cursor: pointer; border-radius: var(--radius-sm); margin: 0 -6px; padding: 2px 6px; }
+.checklist-item--link:hover { background: var(--surface-2); }
+.checklist-item--link:focus-visible { outline: 2px solid var(--teal); }
+.orga-preview-banner {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 2px dashed var(--border-light);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  background: color-mix(in srgb, var(--yellow) 30%, var(--surface));
+}
+.orga-preview-banner a { color: var(--text); font-weight: 700; text-decoration: underline; }
+.orga-journey__step.is-warn { color: var(--text); }
+.orga-journey__step.is-warn .orga-journey__dot { background: var(--orange); border-color: var(--orange); color: #1a1a1a; }

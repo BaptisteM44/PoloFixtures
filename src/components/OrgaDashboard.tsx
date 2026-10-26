@@ -26,7 +26,7 @@ import { DrawPanel } from "@/components/DrawPanel";
 import { AccommodationManager } from "@/components/AccommodationManager";
 import { QRCodeSVG } from "qrcode.react";
 import { PipelinePlanning } from "@/components/PipelinePlanning";
-import { NextActionCard } from "@/components/orga/NextActionCard";
+import { OrgaJourney, type JourneyTab } from "@/components/orga/OrgaJourney";
 import { TournamentFormatTab } from "@/components/orga/TournamentFormatTab";
 
 
@@ -1495,6 +1495,7 @@ type OrgaDashboardProps = {
   drawOneWaitlistAction: (tId: string, candidateIds: string[]) => Promise<any>;
   removeFromWaitlistAction: (tId: string, teamId: string) => Promise<any>;
   toggleSelectionLockAction: (tId: string, locked: boolean) => Promise<{ ok?: boolean; error?: string }>;
+  setRegistrationClosedAction?: (closed: boolean) => Promise<{ ok?: boolean; error?: string }>;
   createTeamAction: (...args: any[]) => Promise<any>;
   updatePoolRoundsAction?: (tId: string, poolRounds: number | null) => Promise<{ ok?: boolean; error?: string }>;
   generateRefTokenAction?: () => Promise<{ ok?: boolean; token?: string; error?: string }>;
@@ -1506,7 +1507,7 @@ type OrgaDashboardProps = {
   }>;
 };
 
-type Tab = "teams" | "config" | "planning" | "stages" | "orga" | "hebergement";
+type Tab = "teams" | "config" | "planning" | "stages" | "dday" | "orga" | "hebergement";
 
 // ─── Tab label helper ─────────────────────────────────────────────────────────
 
@@ -1514,6 +1515,7 @@ const TAB_KEYS: Record<Tab, string> = {
   stages:       "orga_tab_format_stages",
   planning:     "orga_tab_planning",
   teams:        "orga_tab_teams",
+  dday:         "orga_tab_dday",
   orga:         "orga_tab_orga",
   config:       "orga_tab_config",
   hebergement:  "orga_tab_hebergement",
@@ -1602,6 +1604,7 @@ export function OrgaDashboard({
   drawOneWaitlistAction,
   removeFromWaitlistAction,
   toggleSelectionLockAction,
+  setRegistrationClosedAction,
   createTeamAction,
   updatePoolRoundsAction,
   generateRefTokenAction,
@@ -1611,30 +1614,63 @@ export function OrgaDashboard({
   const t = useTranslations("tournament");
 
   const tabStorageKey = `orga_tab_${tournament.id}`;
-  const [activeTab, setActiveTab] = useState<Tab>(() => {
-    const pipeline = !!(tournament as any)?.usesPipeline;
-    // Un legacy sans match joué est CONVERTIBLE vers pipeline : sa barre d'onglets
-    // remplace "planning" par "stages" (là où se trouve la bascule). Sans ce cas,
-    // l'onglet actif par défaut ("planning") n'existait pas dans la barre → l'orga
-    // ne voyait pas comment switcher de système de format.
-    const convertible = !pipeline && !matches.some((m: any) => m.status === "FINISHED");
-    const showsStages = pipeline || convertible;
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(tabStorageKey);
-      // "planning" n'existe pas quand la barre montre "stages"
-      if (showsStages && saved === "planning") return "stages";
-      // "orgateam" a fusionné dans "orga"
-      if (saved === "orgateam") return "orga";
-      if (saved === "teams" || saved === "config" || saved === "planning" || saved === "stages" || saved === "orga" || saved === "hebergement") return saved;
-    }
-    // Pipeline (ou legacy convertible) : le pilotage / la bascule se fait dans
-    // l'onglet Étapes — c'est l'écran utile.
-    return showsStages ? "stages" : "planning";
-  });
+  // Onglet par défaut. Pipeline (ou legacy convertible) : le pilotage / la
+  // bascule se fait dans l'onglet Format — c'est l'écran utile. Un legacy sans
+  // match joué est CONVERTIBLE vers pipeline : sa barre d'onglets remplace
+  // "planning" par "stages" (là où se trouve la bascule).
+  const pipelineTabs = !!(tournament as any)?.usesPipeline || !matches.some((m: any) => m.status === "FINISHED");
+  const [activeTab, setActiveTab] = useState<Tab>(pipelineTabs ? "stages" : "planning");
+  // Onglet mémorisé : lu APRÈS l'hydratation (le lire dès le 1er rendu faisait
+  // différer le HTML serveur et client → erreurs d'hydratation).
+  const [tabRestored, setTabRestored] = useState(false);
+  useEffect(() => {
+    const saved = localStorage.getItem(tabStorageKey);
+    // "planning" n'existe pas quand la barre montre "stages" ; "orgateam" a fusionné dans "orga"
+    if (pipelineTabs && saved === "planning") setActiveTab("stages");
+    else if (saved === "orgateam") setActiveTab("orga");
+    else if (saved && saved in TAB_KEYS) setActiveTab(saved as Tab);
+    setTabRestored(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem(tabStorageKey, activeTab);
-  }, [activeTab, tabStorageKey]);
+    if (tabRestored) localStorage.setItem(tabStorageKey, activeTab);
+  }, [activeTab, tabStorageKey, tabRestored]);
+
+  // Navigation guidée (frise, checklist) : onglet + section à afficher.
+  const [pendingAnchor, setPendingAnchor] = useState<string | null>(null);
+  const goTo = (tab: JourneyTab, anchor?: string) => {
+    setActiveTab(tab as Tab);
+    if (anchor) setPendingAnchor(anchor);
+    else document.querySelector(".tabs-bar")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  useEffect(() => {
+    if (!pendingAnchor) return;
+    const el = document.getElementById(pendingAnchor);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      el.classList.add("orga-anchor--flash");
+      setTimeout(() => el.classList.remove("orga-anchor--flash"), 1600);
+    }
+    setPendingAnchor(null);
+  }, [pendingAnchor, activeTab]);
+  // Lien direct vers une section (ex. depuis la page publique : ?tab=config&goto=edit-venues).
+  useEffect(() => {
+    if (!tabRestored) return;
+    const q = new URLSearchParams(window.location.search);
+    const tab = q.get("tab") as Tab | null;
+    if (tab && tab in TAB_KEYS) goTo(tab as JourneyTab, q.get("goto") ?? undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabRestored]);
+  // La checklist (colonne de gauche, hors de ce composant) navigue par événement.
+  useEffect(() => {
+    const onGoto = (e: Event) => {
+      const d = (e as CustomEvent<{ tab: JourneyTab; anchor?: string }>).detail;
+      if (d?.tab) goTo(d.tab, d.anchor);
+    };
+    window.addEventListener("orga:goto", onGoto);
+    return () => window.removeEventListener("orga:goto", onGoto);
+  });
 
   const [pendingPoolB, setPendingPoolB] = useState(false);
   const [poolBError, setPoolBError] = useState<string | null>(null);
@@ -1698,6 +1734,16 @@ export function OrgaDashboard({
     }
   };
 
+  // QR : l'origine n'est connue que côté navigateur (sinon écart serveur/client
+  // à l'hydratation). Pas de préfixe de langue : chaque personne qui scanne
+  // arrive dans sa langue (redirection selon le navigateur).
+  const [origin, setOrigin] = useState("");
+  useEffect(() => { setOrigin(window.location.origin); }, []);
+  const qrSlug = tournament.slug || tournament.id;
+  const qrPublicUrl = `${origin}/tournament/${qrSlug}`;
+  const qrRefereeUrl = (i: number) =>
+    `${origin}/tournament/${qrSlug}/referee?${tournament.refToken ? `token=${tournament.refToken}&` : ""}court=${encodeURIComponent(`Court ${i + 1}`)}`;
+
   // KPIs
   // Dès qu'un tri a été fait (une équipe écartée/waitlist), le KPI compte les
   // équipes IN — sans attendre le lancement (26 inscrites, 16 retenues → 16/16).
@@ -1709,21 +1755,23 @@ export function OrgaDashboard({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
 
-      {/* ── Prochaine action (cockpit contextuel) ── */}
-      <NextActionCard
+      {/* ── Frise : où en est le tournoi, quoi faire maintenant ── */}
+      <OrgaJourney
         tournament={tournament as any}
+        teams={teams}
         matches={matches as any}
         isPipeline={isPipeline}
-        onGoToFlow={() => setActiveTab(isPipeline ? "stages" : "planning")}
-        onComplete={handleMarkCompleted}
+        activeTab={activeTab}
+        onGo={goTo}
+        onComplete={isLive ? handleMarkCompleted : undefined}
         completePending={completePending}
         completeDone={completeDone}
-        canComplete={isLive}
+        setRegistrationClosedAction={setRegistrationClosedAction}
       />
 
       {/* ── KPI bar (compacte, sur une ligne) ── */}
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16, fontSize: 13, color: "var(--text-muted)", alignItems: "center" }}>
-        <span className={`status ${tournament.status.toLowerCase()}`}>{tournament.status}</span>
+        <span className={`status ${tournament.status.toLowerCase()}`}>{t(`status_${tournament.status.toLowerCase()}` as any)}</span>
         <span><strong style={{ color: "var(--text)" }}>{selectedTeams}</strong>/{tournament.maxTeams} {t("edit_kpi_teams")}</span>
         <span>·</span>
         <span><strong style={{ color: "var(--text)" }}>{teams.reduce((acc, t) => acc + t.players.length, 0)}</strong> {t("edit_kpi_players")}</span>
@@ -1731,81 +1779,6 @@ export function OrgaDashboard({
         <span>·</span>
         <span><strong style={{ color: "var(--text)" }}>{tournament.courtsCount ?? 1}</strong> {t("edit_kpi_courts")}</span>
       </div>
-
-      {/* ── Overlay + QR (repliés pour désencombrer) ── */}
-      {(isLive || tournament.status === "UPCOMING") && (
-        <details className="panel" style={{ padding: "12px 16px", marginBottom: 16 }}>
-          <summary style={{ fontWeight: 700, fontSize: 14, cursor: "pointer" }}>📱 {t("qr_title")} · 🎬 {t("overlay_title")}</summary>
-          <p className="meta" style={{ margin: "8px 0 12px" }}>{t("qr_desc")}</p>
-
-          {/* Liens overlay par terrain (avec réglage feed + feedback copié) */}
-          <OverlayLinks
-            tournamentIdOrSlug={tournament.slug || tournament.id}
-            courtsCount={tournament.courtsCount ?? 1}
-          />
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
-            {/* Public tournament QR */}
-            <div style={{ textAlign: "center" }}>
-              <QRCodeSVG
-                value={`${typeof window !== "undefined" ? window.location.origin : ""}/fr/tournament/${tournament.slug || tournament.id}`}
-                size={140}
-                level="M"
-              />
-              <p style={{ fontSize: 12, fontWeight: 600, marginTop: 6 }}>{t("qr_public")}</p>
-            </div>
-            {/* Per-court referee QRs */}
-            {Array.from({ length: tournament.courtsCount ?? 1 }, (_, i) => (
-              <div key={i} style={{ textAlign: "center" }}>
-                <QRCodeSVG
-                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/fr/tournament/${tournament.slug || tournament.id}/referee${tournament.refToken ? `?token=${tournament.refToken}` : ""}${tournament.refToken ? `&court=Court ${i + 1}` : `?court=Court ${i + 1}`}`}
-                  size={140}
-                  level="M"
-                />
-                <p style={{ fontSize: 12, fontWeight: 600, marginTop: 6 }}>{t("qr_referee_court", { court: i + 1 })}</p>
-                {!tournament.refToken && <p style={{ fontSize: 10, color: "var(--danger)", marginTop: 2 }}>Sans token — connexion requise</p>}
-              </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            className="ghost"
-            style={{ marginTop: 12, fontSize: 12 }}
-            onClick={() => {
-              const el = document.createElement("div");
-              el.innerHTML = document.querySelector(".panel details[open] .qr-print-area")?.innerHTML ?? "";
-              const w = window.open("", "_blank");
-              if (w) {
-                w.document.write(`<html><head><title>QR Codes - ${tournament.name}</title><style>body{font-family:sans-serif;display:flex;flex-wrap:wrap;gap:32px;padding:24px;justify-content:center}div{text-align:center}svg{display:block;margin:0 auto}p{margin:6px 0 0;font-weight:600;font-size:14px}</style></head><body>`);
-                // Re-render QR codes for print
-                const origin = window.location.origin;
-                const slug = tournament.slug || tournament.id;
-                // Public QR
-                w.document.write(`<div><p>${t("qr_public")}</p><p style="font-size:11px;color:#666">${origin}/fr/tournament/${slug}</p></div>`);
-                for (let c = 0; c < (tournament.courtsCount ?? 1); c++) {
-                  w.document.write(`<div><p>${t("qr_referee_court", { court: c + 1 })}</p><p style="font-size:11px;color:#666">${origin}/fr/tournament/${slug}/referee?court=Court ${c + 1}</p></div>`);
-                }
-                w.document.write("</body></html>");
-                w.document.close();
-                // Copy SVGs into print window
-                const svgs = document.querySelectorAll("details[open] svg");
-                const printDivs = w.document.querySelectorAll("div");
-                svgs.forEach((svg, idx) => {
-                  if (printDivs[idx]) {
-                    const clone = svg.cloneNode(true) as SVGElement;
-                    clone.setAttribute("width", "200");
-                    clone.setAttribute("height", "200");
-                    printDivs[idx].insertBefore(clone, printDivs[idx].firstChild);
-                  }
-                });
-                setTimeout(() => w.print(), 300);
-              }
-            }}
-          >
-            🖨 {t("qr_print")}
-          </button>
-        </details>
-      )}
 
       {/* ── Tab bar ── */}
       <div className="tabs-bar" style={{ marginTop: 0 }}>
@@ -1815,8 +1788,9 @@ export function OrgaDashboard({
             const acc = tournament.accommodationAvailable ? ["hebergement"] : [];
             // Pipeline (ou legacy vide convertible) : onglet unifié "Format & étapes".
             const canPipeline = !!setTournamentPipelineAction && (isPipeline || !played);
-            if (isPipeline || canPipeline) return ["stages", "teams", "orga", "config", ...acc] as Tab[];
-            return ["planning", "teams", "orga", "config", ...acc] as Tab[];
+            // Ordre du parcours : fiche → format → équipes → jour J → équipe orga.
+            if (isPipeline || canPipeline) return ["config", "stages", "teams", "dday", "orga", ...acc] as Tab[];
+            return ["config", "planning", "teams", "dday", "orga", ...acc] as Tab[];
           })()).map((tab) => (
             <button
               key={tab}
@@ -1838,6 +1812,14 @@ export function OrgaDashboard({
             action={updateAction}
             toggleLockAction={toggleLockAction}
           />
+          <div id="edit-sponsors" className="orga-anchor" style={{ marginTop: 20 }}>
+            <SponsorManager
+              tournamentId={tournament.id}
+              sponsors={sponsors}
+              addAction={addSponsorAction}
+              deleteAction={deleteSponsorAction}
+            />
+          </div>
         </>
       )}
 
@@ -1956,8 +1938,9 @@ export function OrgaDashboard({
               )
             )}
 
-            {/* Pilotage des étapes (si le tournoi est déjà pipeline) */}
-            {isPipeline && (
+            {/* Pilotage des étapes (si le tournoi est déjà pipeline). Sans étape,
+                le composer ci-dessus suffit : pas de 2e aperçu ni de pré-seeding vide. */}
+            {isPipeline && (hasFormat || !canEditFormat) && (
               <PipelinePlanning
                 tieWarnings={tieWarnings}
                 tournament={tournament}
@@ -2086,7 +2069,7 @@ export function OrgaDashboard({
             )}
             {!tournament.locked && (
               <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8, marginBottom: 0 }}
-                dangerouslySetInnerHTML={{ __html: t("orga_planning_format_locked_warning") }}
+                dangerouslySetInnerHTML={{ __html: t.raw("orga_planning_format_locked_warning") }}
               />
             )}
 
@@ -2460,7 +2443,7 @@ export function OrgaDashboard({
           {/* État si pas encore lancé */}
           {!hasAnyMatches && !canLaunch && (
             <div className="panel" style={{ textAlign: "center", padding: 32, color: "var(--text-muted)" }}>
-              <p style={{ fontSize: 13 }} dangerouslySetInnerHTML={{ __html: t("orga_no_teams_hint") }} />
+              <p style={{ fontSize: 13 }} dangerouslySetInnerHTML={{ __html: t.raw("orga_no_teams_hint") }} />
             </div>
           )}
 
@@ -2504,18 +2487,89 @@ export function OrgaDashboard({
             <p style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>
               {t("orga_tab_orgateam")}
             </p>
-            <SponsorManager
-              tournamentId={tournament.id}
-              sponsors={sponsors}
-              addAction={addSponsorAction}
-              deleteAction={deleteSponsorAction}
-            />
             <CoOrganizerManager
               tournamentId={tournament.id}
               coOrganizers={coOrganizers.filter((co) => co.role !== "REF").map((co) => co.player)}
               canManage={isCreator || isAdmin}
             />
-            <RefereeManager
+          </div>
+
+        </div>
+      )}
+
+      {/* ── Tab: Jour J ── QR codes, overlay, arbitres */}
+      {activeTab === "dday" && (
+        <div style={{ display: "grid", gap: 20 }}>
+          <div className="panel" style={{ padding: "16px 18px" }}>
+          <h3 style={{ margin: 0 }}>📱 {t("qr_title")} · 🎬 {t("overlay_title")}</h3>
+          <p className="meta" style={{ margin: "8px 0 12px" }}>{t("qr_desc")}</p>
+
+          {/* Liens overlay par terrain (avec réglage feed + feedback copié) */}
+          <OverlayLinks
+            tournamentIdOrSlug={tournament.slug || tournament.id}
+            courtsCount={tournament.courtsCount ?? 1}
+          />
+
+          {origin && <div className="orga-qr-grid" style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
+            {/* Public tournament QR */}
+            <div style={{ textAlign: "center" }}>
+              <QRCodeSVG
+                value={qrPublicUrl}
+                size={140}
+                level="M"
+              />
+              <p style={{ fontSize: 12, fontWeight: 600, marginTop: 6 }}>{t("qr_public")}</p>
+            </div>
+            {/* Per-court referee QRs */}
+            {Array.from({ length: tournament.courtsCount ?? 1 }, (_, i) => (
+              <div key={i} style={{ textAlign: "center" }}>
+                <QRCodeSVG
+                  value={qrRefereeUrl(i)}
+                  size={140}
+                  level="M"
+                />
+                <p style={{ fontSize: 12, fontWeight: 600, marginTop: 6 }}>{t("qr_referee_court", { court: i + 1 })}</p>
+                {!tournament.refToken && <p style={{ fontSize: 10, color: "var(--danger)", marginTop: 2 }}>{t("qr_no_token")}</p>}
+              </div>
+            ))}
+          </div>}
+          <button
+            type="button"
+            className="ghost"
+            style={{ marginTop: 12, fontSize: 12 }}
+            onClick={() => {
+              const el = document.createElement("div");
+              el.innerHTML = document.querySelector(".panel details[open] .qr-print-area")?.innerHTML ?? "";
+              const w = window.open("", "_blank");
+              if (w) {
+                w.document.write(`<html><head><title>QR Codes - ${tournament.name}</title><style>body{font-family:sans-serif;display:flex;flex-wrap:wrap;gap:32px;padding:24px;justify-content:center}div{text-align:center}svg{display:block;margin:0 auto}p{margin:6px 0 0;font-weight:600;font-size:14px}</style></head><body>`);
+                // Re-render QR codes for print
+                // Public QR
+                w.document.write(`<div><p>${t("qr_public")}</p><p style="font-size:11px;color:#666">${qrPublicUrl}</p></div>`);
+                for (let c = 0; c < (tournament.courtsCount ?? 1); c++) {
+                  w.document.write(`<div><p>${t("qr_referee_court", { court: c + 1 })}</p><p style="font-size:11px;color:#666">${qrRefereeUrl(c)}</p></div>`);
+                }
+                w.document.write("</body></html>");
+                w.document.close();
+                // Copy SVGs into print window
+                const svgs = document.querySelectorAll(".orga-qr-grid svg");
+                const printDivs = w.document.querySelectorAll("div");
+                svgs.forEach((svg, idx) => {
+                  if (printDivs[idx]) {
+                    const clone = svg.cloneNode(true) as SVGElement;
+                    clone.setAttribute("width", "200");
+                    clone.setAttribute("height", "200");
+                    printDivs[idx].insertBefore(clone, printDivs[idx].firstChild);
+                  }
+                });
+                setTimeout(() => w.print(), 300);
+              }
+            }}
+          >
+            🖨 {t("qr_print")}
+          </button>
+        </div>
+          <RefereeManager
               tournamentId={tournament.id}
               referees={coOrganizers.filter((co) => co.role === "REF").map((co) => co.player)}
               canManage={isCreator || isAdmin || isOrgaForThis}
@@ -2523,8 +2577,6 @@ export function OrgaDashboard({
               generateRefTokenAction={generateRefTokenAction}
               revokeRefTokenAction={revokeRefTokenAction}
             />
-          </div>
-
         </div>
       )}
 

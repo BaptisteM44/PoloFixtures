@@ -7,6 +7,8 @@ import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import cityCoords from "@/data/polo-city-coords.json";
 import { CURRENCIES, COUNTRY_TO_CURRENCY } from "@/lib/currencies";
+import { ISO_COUNTRIES } from "@/lib/iso-countries";
+import { countryToContinentOrDefault } from "@/lib/country-utils";
 
 type CityEntry = { lat: number; lng: number; country: string; continent: string };
 
@@ -14,18 +16,8 @@ type PlayerResult = { id: string; name: string; city: string | null; country: st
 
 export default function NewTournamentPage() {
   const t = useTranslations("tournament");
-  const tt = useTranslations("tournaments");
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
-
-  const CONTINENTS = [
-    { code: "EU", label: tt("continent_eu") },
-    { code: "NA", label: tt("continent_na") },
-    { code: "SA", label: tt("continent_sa") },
-    { code: "AS", label: tt("continent_as") },
-    { code: "AF", label: tt("continent_af") },
-    { code: "OC", label: tt("continent_oc") },
-  ];
 
   const [form, setForm] = useState({
     name: "",
@@ -71,10 +63,23 @@ export default function NewTournamentPage() {
     }
   };
 
+  // Pays choisi : le continent (classement des tournois) et la devise en découlent.
+  const withCountry = <F extends { continentCode: string; registrationFeeCurrency: string }>(f: F, country: string) => {
+    const currency = COUNTRY_TO_CURRENCY[country];
+    return {
+      ...f,
+      country,
+      continentCode: countryToContinentOrDefault(country, f.continentCode),
+      ...(currency ? { registrationFeeCurrency: currency } : {}),
+    };
+  };
+
   const selectCity = (cityName: string) => {
     const entry = (cityCoords as Record<string, CityEntry>)[cityName];
+    // Ville connue : le pays se remplit tout seul.
+    const countryName = entry ? ISO_COUNTRIES.find((c) => c.code === entry.country)?.name : undefined;
     setForm((f) => ({
-      ...f,
+      ...(countryName ? withCountry(f, countryName) : f),
       city: cityName,
       lat: entry?.lat ?? "",
       lng: entry?.lng ?? "",
@@ -83,14 +88,9 @@ export default function NewTournamentPage() {
     setShowCitySuggestions(false);
   };
 
-  const handleCountryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const country = e.target.value;
-    const currency = COUNTRY_TO_CURRENCY[country];
-    setForm((f) => ({
-      ...f,
-      country,
-      ...(currency ? { registrationFeeCurrency: currency } : {}),
-    }));
+    setForm((f) => withCountry(f, country));
   };
 
   const [coOrganizers, setCoOrganizers] = useState<PlayerResult[]>([]);
@@ -212,28 +212,6 @@ export default function NewTournamentPage() {
             <input value={form.name} onChange={set("name")} required placeholder="Paris Open 2026" />
           </label>
           <div className="tnew-grid-2">
-            <label className="field-row">
-              {t("field_continent")}
-              <select value={form.continentCode} onChange={set("continentCode")}>
-                {CONTINENTS.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
-              </select>
-            </label>
-            <label className="field-row">
-              {t("field_format")}
-              <select value={form.format} onChange={set("format")}>
-                <option value="1v1">1v1</option>
-                <option value="2v2">2v2</option>
-                <option value="3v3">3v3</option>
-                <option value="4v4">4v4</option>
-                <option value="5v5">5v5</option>
-                <option value="ABC">ABC</option>
-                <option value="ABC Chapeau">ABC Chapeau</option>
-              </select>
-            </label>
-            <label className="field-row">
-              {t("field_country")}
-              <input value={form.country} onChange={handleCountryChange} required placeholder="France" />
-            </label>
             <div className="field-row" ref={cityRef} style={{ position: "relative" }}>
               <span>{t("field_city")}</span>
               <input
@@ -265,6 +243,13 @@ export default function NewTournamentPage() {
               <input type="hidden" name="lat" value={form.lat} />
               <input type="hidden" name="lng" value={form.lng} />
             </div>
+            <label className="field-row">
+              {t("field_country")}
+              <select value={form.country} onChange={handleCountryChange} required>
+                <option value="" disabled>—</option>
+                {ISO_COUNTRIES.map((c) => <option key={c.code} value={c.name}>{c.name}</option>)}
+              </select>
+            </label>
           </div>
           <div className="tnew-grid-2">
             <label className="field-row">
@@ -284,11 +269,25 @@ export default function NewTournamentPage() {
           <h3 style={{ margin: "0 0 4px", fontFamily: "var(--font-display)", fontSize: 13, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)" }}>
             {t("section_format")}
           </h3>
-          <div className="tnew-grid-3">
+          <div className="tnew-grid-2">
+            <label className="field-row">
+              {t("field_format")}
+              <select value={form.format} onChange={set("format")}>
+                <option value="1v1">1v1</option>
+                <option value="2v2">2v2</option>
+                <option value="3v3">3v3</option>
+                <option value="4v4">4v4</option>
+                <option value="5v5">5v5</option>
+                <option value="ABC">ABC</option>
+                <option value="ABC Chapeau">ABC Chapeau</option>
+              </select>
+            </label>
             <label className="field-row">
               {t("field_max_teams")}
               <input type="number" min={2} max={64} value={form.maxTeams} onChange={setNum("maxTeams")} required />
             </label>
+          </div>
+          <div className="tnew-grid-2">
             <label className="field-row">
               {t("field_courts")}
               <input type="number" min={1} max={20} value={form.courtsCount} onChange={setNum("courtsCount")} required />

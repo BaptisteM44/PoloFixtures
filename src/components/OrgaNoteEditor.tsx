@@ -14,6 +14,9 @@ export function OrgaNoteEditor({
   placeholder: string;
 }) {
   const [note, setNote] = useState(initialNote);
+  // Replié tant qu'il n'y a pas de note : sinon un champ ouvert par équipe
+  // rallonge la liste de plusieurs écrans.
+  const [open, setOpen] = useState(!!initialNote);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -38,6 +41,14 @@ export function OrgaNoteEditor({
     debounce.current = setTimeout(() => save(value), 800);
   };
 
+  if (!open) {
+    return (
+      <button type="button" className="ghost" onClick={() => setOpen(true)} style={{ marginTop: 6, fontSize: 11, padding: "3px 8px", minHeight: 0, boxShadow: "none" }}>
+        + {label}
+      </button>
+    );
+  }
+
   return (
     <div style={{ marginTop: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -51,6 +62,7 @@ export function OrgaNoteEditor({
         placeholder={placeholder}
         maxLength={1000}
         rows={2}
+        autoFocus={!initialNote}
         style={{ width: "100%", fontSize: 12, resize: "vertical", padding: "6px 10px", borderRadius: 6, border: "1.5px solid var(--border)", background: "var(--surface)", color: "var(--text)", boxSizing: "border-box" }}
       />
     </div>

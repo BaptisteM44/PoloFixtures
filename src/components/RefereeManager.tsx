@@ -100,7 +100,7 @@ export function RefereeManager({
         <div>
           <h3 style={{ marginBottom: 2 }}>{t("title")}</h3>
           <p style={{ fontSize: 12, color: "var(--text-muted)", margin: 0 }}
-            dangerouslySetInnerHTML={{ __html: t("access_hint") }}
+            dangerouslySetInnerHTML={{ __html: t.raw("access_hint") }}
           />
         </div>
       </div>

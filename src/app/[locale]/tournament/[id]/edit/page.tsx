@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/db";
 import { tournamentTimezone } from "@/lib/timezone";
+import { formatTournamentDates } from "@/lib/podium-share";
 import { canonicalCountryName } from "@/lib/country-utils";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, guaranteeAllTeamsAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, toggleSelectionLockAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction, updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, launchPipelineGroupAction, setPipelineSeedsAction, swapPipelineTeamsAction, resetPipelineToRoundAction, reschedulePipelineStageAction, setTournamentPipelineAction, applyPipelinePresetAction } from "./actions";
+import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, guaranteeAllTeamsAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, toggleSelectionLockAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction, updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, launchPipelineGroupAction, setPipelineSeedsAction, swapPipelineTeamsAction, resetPipelineToRoundAction, reschedulePipelineStageAction, setTournamentPipelineAction, applyPipelinePresetAction, setRegistrationClosedAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { ChecklistDetails } from "@/components/ChecklistDetails";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
@@ -12,7 +13,7 @@ import { Link } from "@/i18n/navigation";
 import { getTranslations } from "next-intl/server";
 import { CreatedToast } from "@/components/CreatedToast";
 
-export default async function TournamentEditPage({ params }: { params: { id: string } }) {
+export default async function TournamentEditPage({ params }: { params: { id: string; locale: string } }) {
   const session = await auth();
   const tournament = await prisma.tournament.findFirst({
     where: { OR: [{ id: params.id }, { slug: params.id }] },
@@ -180,6 +181,11 @@ export default async function TournamentEditPage({ params }: { params: { id: str
     return await updatePoolRoundsAction(tId, poolRounds);
   };
 
+  const setRegistrationClosed = async (closed: boolean) => {
+    "use server";
+    return await setRegistrationClosedAction(t_.id, closed);
+  };
+
   const generateRefToken = async () => {
     "use server";
     return await generateRefTokenAction(t_.id);
@@ -231,8 +237,9 @@ export default async function TournamentEditPage({ params }: { params: { id: str
       <CreatedToast />
       <div className="edit-header">
         <div>
-          <h1 style={{ marginBottom: 4 }}>{t("edit_dashboard_title")}</h1>
-          <p className="meta">{t_.name} · {t_.city}, {t_.country}</p>
+          <p className="edit-header__eyebrow">{t("edit_dashboard_title")}</p>
+          <h1 style={{ marginBottom: 4 }}>{t_.name}</h1>
+          <p className="meta">{t_.city}, {t_.country} · {formatTournamentDates(params.locale, t_.dateStart, t_.dateEnd)}</p>
         </div>
         <Link href={`/tournament/${t_.slug ?? t_.id}`} className="ghost">{t("edit_view_public")}</Link>
       </div>
@@ -264,6 +271,9 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               rejectionReason: t_.rejectionReason,
               coOrganizersCount: t_.coOrganizers.length,
               sponsorsCount: t_.sponsors.length,
+              usesPipeline: (t_ as any).usesPipeline ?? false,
+              // Legacy : le format est « prêt » une fois verrouillé.
+              stagesCount: (t_ as any).usesPipeline ? (t_.stages ?? []).length : t_.locked ? 1 : 0,
             }} />
             {submissionStatus === "REJECTED" && (
               <form action={async () => {
@@ -305,6 +315,10 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               contactEmail: t_.contactEmail,
               registrationStart: t_.registrationStart?.toISOString() ?? null,
               registrationEnd: t_.registrationEnd?.toISOString() ?? null,
+              // Sans lui, le champ du formulaire restait vide et chaque
+              // enregistrement effaçait le lien d'inscription externe.
+              externalRegistrationUrl: (t_ as any).externalRegistrationUrl ?? null,
+              submissionStatus,
               venueName: t_.venueName,
               venueAddress: t_.venueAddress,
               venueMapsUrl: t_.venueMapsUrl,
@@ -553,6 +567,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             drawTeamsAction={drawTeams}
             guaranteeTeamAction={guaranteeTeam}
             guaranteeAllTeamsAction={guaranteeAllTeams}
+            setRegistrationClosedAction={setRegistrationClosed}
             drawOneTeamAction={drawOneTeam}
             drawOneWaitlistAction={drawOneWaitlist}
             removeFromWaitlistAction={removeFromWaitlist}

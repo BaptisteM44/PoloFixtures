@@ -556,7 +556,7 @@ export default async function TournamentPage({
           ) : canEdit ? (
             <div className="sponsors-empty">
               <span>🤝</span>
-              <Link href={`/tournament/${params.id}/edit`} style={{ color: "var(--teal)" }}>
+              <Link href={`/tournament/${params.id}/edit?tab=config&goto=edit-sponsors`} style={{ color: "var(--teal)" }}>
                 {t("sponsors_add")}
               </Link>
             </div>
@@ -582,6 +582,26 @@ export default async function TournamentPage({
           </div>
         ) : undefined}
       />
+
+      {/* Orga : la page vue côté joueurs, avec ce qui manque encore à la fiche */}
+      {canEdit && tournament.status === "UPCOMING" && (() => {
+        const missing: Array<{ label: string; tab: string; goto?: string }> = [
+          !tournament.bannerPath ? { label: t("orga_preview_missing_banner"), tab: "config", goto: "edit-banner" } : null,
+          !tournament.venueName ? { label: t("orga_preview_missing_venue"), tab: "config", goto: "edit-venues" } : null,
+          !(tournament as any).externalRegistrationUrl && !(tournament.registrationStart && tournament.registrationEnd) ? { label: t("orga_preview_missing_reg"), tab: "config", goto: "edit-registration" } : null,
+          isPipeline && ((tournament as any).stages ?? []).length === 0 ? { label: t("orga_preview_missing_format"), tab: "stages" } : null,
+        ].filter(Boolean) as Array<{ label: string; tab: string; goto?: string }>;
+        if (missing.length === 0) return null;
+        const editHref = (m: { tab: string; goto?: string }) => `/tournament/${params.id}/edit?tab=${m.tab}${m.goto ? `&goto=${m.goto}` : ""}`;
+        return (
+          <p className="orga-preview-banner">
+            👀 {t("orga_preview_banner")}{" "}
+            {missing.map((m, i) => (
+              <span key={m.label}>{i > 0 ? " · " : ""}<Link href={editHref(m)}>{m.label}</Link></span>
+            ))}
+          </p>
+        );
+      })()}
 
       {/* ── RECAP TAB ── */}
       {tab === "recap" && isCompleted && (() => {

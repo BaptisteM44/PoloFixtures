@@ -464,7 +464,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
 
         {/* ── Infos générales ── */}
         <div className="form-grid">
-          <p style={{ ...sectionTitleStyle, gridColumn: "1 / -1", marginBottom: 0 }}>{t("section_general")}</p>
+          <p id="edit-general" className="orga-anchor" style={{ ...sectionTitleStyle, gridColumn: "1 / -1", marginBottom: 0 }}>{t("section_general")}</p>
           <label className="field-row">
             {t("field_name")}
             <input name="name" defaultValue={tournament.name} required />
@@ -581,7 +581,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             </label>
           )}
           {/* ── Bloc inscription ── */}
-          <div className="edit-grid-2" style={{ gridColumn: "1 / -1", border: "2px solid var(--teal)", borderRadius: 10, padding: "16px 18px", gap: "16px 24px", background: "color-mix(in srgb, var(--teal) 4%, var(--surface))" }}>
+          <div id="edit-registration" className="edit-grid-2 orga-anchor" style={{ gridColumn: "1 / -1", border: "2px solid var(--teal)", borderRadius: 10, padding: "16px 18px", gap: "16px 24px", background: "color-mix(in srgb, var(--teal) 4%, var(--surface))" }}>
             <p style={{ gridColumn: "1 / -1", margin: 0, fontWeight: 700, fontFamily: "var(--font-display)", fontSize: 13, color: "var(--teal)", letterSpacing: "0.03em" }}>
               {t("section_registration")}
             </p>
@@ -1126,7 +1126,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         </div>
 
         {/* ── Affiche / Bannière ── */}
-        <div>
+        <div id="edit-banner" className="orga-anchor">
           <p style={sectionTitleStyle}>{t("section_banner")}</p>
           <input type="hidden" name="bannerPath" value={bannerPath} />
           {/* Note: the hidden field above must stay inside <form> */}
@@ -1161,7 +1161,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         </div>
 
         {/* ── Lieux ── */}
-        <div>
+        <div id="edit-venues" className="orga-anchor">
           <p style={sectionTitleStyle}>{t("section_venues")}</p>
           <div style={{ display: "grid", gap: 16 }}>
             {/* Adresse du terrain */}

@@ -1,17 +1,12 @@
-"use client";
-
 /**
- * Carte « Prochaine action » du dashboard orga : bande contextuelle en haut
- * qui résume l'état live et pointe vers ce que l'orga doit faire maintenant
- * (lancer une étape/un groupe, saisir des scores, terminer le tournoi…).
- * Purement informative + navigation par onglet — aucune action serveur ici,
- * elle renvoie vers l'onglet Déroulé où tout le pilotage vit déjà.
+ * « Prochaine action » pendant le tournoi (LIVE) : ce que l'orga doit faire
+ * maintenant (lancer une étape/un groupe, saisir des scores, clôturer…).
+ * Utilisé par la frise du dashboard (OrgaJourney) pour les étapes Jour J / Après.
  */
-import { useTranslations } from "next-intl";
 
-type T = (k: string, v?: Record<string, string | number>) => string;
+export type T = (k: string, v?: Record<string, string | number>) => string;
 
-type MatchLite = {
+export type MatchLite = {
   status: string;
   phase: string;
   groupKey?: string | null;
@@ -19,7 +14,7 @@ type MatchLite = {
   courtName?: string | null;
 };
 
-type StageLite = {
+export type StageLite = {
   order: number;
   name: string;
   status: string;
@@ -28,90 +23,9 @@ type StageLite = {
   matches?: Array<{ status: string; groupKey?: string | null }>;
 };
 
-type Tone = "live" | "todo" | "waiting" | "done";
+export type Tone = "live" | "todo" | "waiting" | "done";
 
-export function NextActionCard({
-  tournament,
-  matches,
-  isPipeline,
-  onGoToFlow,
-  onComplete,
-  completePending,
-  completeDone,
-  canComplete,
-}: {
-  tournament: { status: string; testMode?: boolean; stages?: StageLite[] };
-  matches: MatchLite[];
-  isPipeline: boolean;
-  onGoToFlow: () => void;
-  onComplete?: () => void;
-  completePending?: boolean;
-  completeDone?: boolean;
-  canComplete?: boolean;
-}) {
-  const t = useTranslations("tournament") as unknown as T;
-
-  const info = computeNextAction(tournament, matches, isPipeline, t);
-
-  const toneStyle: Record<Tone, { bg: string; border: string; dot: string }> = {
-    live:    { bg: "color-mix(in srgb, var(--pink) 8%, var(--surface))",   border: "var(--pink)",   dot: "var(--pink)" },
-    todo:    { bg: "color-mix(in srgb, var(--teal) 8%, var(--surface))",   border: "var(--teal)",   dot: "var(--teal)" },
-    waiting: { bg: "var(--surface)",                                        border: "var(--border)", dot: "var(--text-muted)" },
-    done:    { bg: "color-mix(in srgb, var(--teal) 10%, var(--surface))",  border: "var(--teal)",   dot: "var(--teal)" },
-  };
-  const s = toneStyle[info.tone];
-
-  return (
-    <div
-      className="panel"
-      style={{
-        marginBottom: 16, padding: "14px 18px", background: s.bg,
-        border: `2px solid ${s.border}`, borderRadius: 12,
-        display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "1 1 260px", minWidth: 0 }}>
-        <span style={{ fontSize: 22, lineHeight: 1 }}>{info.icon}</span>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            {info.badge && (
-              <span style={{
-                fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em",
-                padding: "2px 8px", borderRadius: 6, color: "#fff", background: s.dot,
-              }}>
-                {info.badge}
-              </span>
-            )}
-            <span style={{ fontWeight: 700, fontSize: 15 }}>{info.title}</span>
-          </div>
-          {info.subtitle && (
-            <p style={{ margin: "3px 0 0", fontSize: 13, color: "var(--text-muted)" }}>{info.subtitle}</p>
-          )}
-        </div>
-      </div>
-
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-        {info.showComplete && canComplete && !completeDone && onComplete && (
-          <button type="button" className="btn btn--success" style={{ fontSize: 13, padding: "8px 16px" }}
-            onClick={onComplete} disabled={completePending}>
-            {completePending ? "…" : `🏁 ${t("orga_mark_completed")}`}
-          </button>
-        )}
-        {completeDone && (
-          <span style={{ fontSize: 13, color: "var(--teal)", fontWeight: 700 }}>✓ {t("orga_marked_completed")}</span>
-        )}
-        {info.showFlowButton && (
-          <button type="button" className="primary" style={{ fontSize: 13, padding: "8px 16px", whiteSpace: "nowrap" }}
-            onClick={onGoToFlow}>
-            {info.flowLabel}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-type ActionInfo = {
+export type ActionInfo = {
   tone: Tone;
   icon: string;
   badge?: string;
@@ -122,7 +36,7 @@ type ActionInfo = {
   showComplete: boolean;
 };
 
-function computeNextAction(
+export function computeNextAction(
   tournament: { status: string; stages?: StageLite[] },
   matches: MatchLite[],
   isPipeline: boolean,
