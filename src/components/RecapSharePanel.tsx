@@ -3,7 +3,10 @@
 /**
  * Récap d'un tournoi terminé, à droite du podium : « Partage ton résultat »
  * (participant·e : son équipe) ou « Partager le podium » (les autres).
- * Ouvre l'image story prête à partager — rien d'envoyé tant qu'on ne clique pas.
+ * L'image est affichée tout de suite en vignette ; un clic l'ouvre en grand,
+ * le PNG est préparé dès l'ouverture pour que « Partager » soit immédiat
+ * (sur iPhone, le partage doit suivre le clic de près, sinon il est refusé).
+ * Rien n'est envoyé tant qu'on ne clique pas.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -30,7 +33,10 @@ export function RecapSharePanel(props: Props) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [canShareFiles, setCanShareFiles] = useState(false);
+  const [blob, setBlob] = useState<Blob | null>(null);
+  const [thumbW, setThumbW] = useState(168);
   const storyRef = useRef<HTMLDivElement>(null);
+  const thumbRef = useRef<HTMLButtonElement>(null);
 
   const mine = myTeamId ? teams.find((tm) => tm.id === myTeamId) : null;
   const featured = teams.find((tm) => tm.id === teamId) ?? teams[0];
@@ -49,12 +55,39 @@ export function RecapSharePanel(props: Props) {
     return () => { window.removeEventListener("resize", resize); window.removeEventListener("keydown", onKey); };
   }, [open]);
 
+  // Vignette : largeur de la colonne (200 px sur ordinateur, plafonnée sur mobile)
+  useEffect(() => {
+    const el = thumbRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setThumbW(Math.min(240, el.clientWidth)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // PNG préparé à l'ouverture et à chaque changement d'équipe
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setBlob(null); setError(null);
+    const timer = window.setTimeout(async () => {
+      if (!storyRef.current) return;
+      try {
+        const b = await capturePodiumStory(storyRef.current);
+        if (!cancelled) setBlob(b);
+      } catch (e) {
+        console.error("[podium share]", e);
+        if (!cancelled) setError(t("error"));
+      }
+    }, 400); // laisse les photos des cartes se charger
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [open, teamId, t]);
+
   async function run(forceDownload: boolean) {
     if (!storyRef.current) return;
     setBusy(true); setError(null);
     try {
-      const blob = await capturePodiumStory(storyRef.current);
-      await shareOrDownload(blob, podiumFileName(tournamentName, featured.name), tournamentName, forceDownload);
+      const png = blob ?? await capturePodiumStory(storyRef.current);
+      await shareOrDownload(png, podiumFileName(tournamentName, featured.name), tournamentName, forceDownload);
     } catch (e) {
       if ((e as Error).name !== "AbortError") { console.error("[podium share]", e); setError(t("error")); }
     } finally { setBusy(false); }
@@ -75,6 +108,15 @@ export function RecapSharePanel(props: Props) {
     <>
       <div className="panel recap-share-panel">
         <h3 className="recap-section__title">{mine ? t("panel_title_mine") : t("panel_title")}</h3>
+        {/* L'image, tout de suite : un clic l'ouvre en grand */}
+        <button ref={thumbRef} type="button" className="recap-share-thumb" aria-label={t("btn_open")}
+          onClick={() => { setTeamId(defaultTeamId); setOpen(true); }}>
+          <div style={{ width: thumbW, height: (thumbW * STORY_H) / STORY_W, overflow: "hidden", borderRadius: 10 }}>
+            <div style={{ width: STORY_W, height: STORY_H, transform: `scale(${thumbW / STORY_W})`, transformOrigin: "top left", pointerEvents: "none" }}>
+              <PodiumStoryCanvas {...props} featuredId={defaultTeamId} />
+            </div>
+          </div>
+        </button>
         <p className="recap-share-panel__text">
           {mine?.rank ? t("panel_text_mine", { rank: mine.rank }) : t("panel_text")}
         </p>
@@ -113,10 +155,10 @@ export function RecapSharePanel(props: Props) {
                 {copied ? `✓ ${t("copied")}` : `🔗 ${t("btn_copy")}`}
               </button>
               <button type="button" className={canShareFiles ? "" : "primary"} onClick={() => run(true)} disabled={busy}>
-                {busy ? t("preparing") : `⬇ ${t("btn_download")}`}
+                {busy || (!blob && !error) ? t("preparing") : `⬇ ${t("btn_download")}`}
               </button>
               {canShareFiles && (
-                <button type="button" className="primary" onClick={() => run(false)} disabled={busy}>
+                <button type="button" className="primary" onClick={() => run(false)} disabled={busy || !blob}>
                   📤 {t("btn_share")}
                 </button>
               )}

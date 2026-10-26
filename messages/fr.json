@@ -3492,7 +3492,7 @@
     "panel_title": "📤 Partager le podium",
     "panel_text_mine": "Ton équipe finit {rank, selectordinal, one {#re} other {#e}} : une image prête pour ta story, avec les cartes de l'équipe.",
     "panel_text": "Une image prête pour une story ou WhatsApp, avec les cartes des joueurs.",
-    "btn_open": "Créer l'image",
+    "btn_open": "📤 Partager l'image",
     "modal_title": "Partager le résultat",
     "team_label": "Équipe mise en avant",
     "btn_share": "Partager",

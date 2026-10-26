@@ -3491,7 +3491,7 @@
     "panel_title": "📤 Share the podium",
     "panel_text_mine": "Your team finished {rank, selectordinal, one {#st} two {#nd} few {#rd} other {#th}}: an image ready for your story, with your team's cards.",
     "panel_text": "An image ready for a story or WhatsApp, with the players' cards.",
-    "btn_open": "Create the image",
+    "btn_open": "📤 Share the image",
     "modal_title": "Share the result",
     "team_label": "Featured team",
     "btn_share": "Share",
