@@ -141,12 +141,20 @@ export function RecapSharePanel(props: Props) {
                   </select>
                 </label>
               )}
+              {/* Aperçu réduit pour tenir dans l'écran (pas capturé) */}
               <div className="recap-share-modal__frame" style={{ width: STORY_W * fit, height: STORY_H * fit }}>
                 <div style={{ width: STORY_W, height: STORY_H, transform: `scale(${fit})`, transformOrigin: "top left" }}>
-                  <PodiumStoryCanvas ref={storyRef} {...props} featuredId={featured.id} />
+                  <PodiumStoryCanvas {...props} featuredId={featured.id} />
                 </div>
               </div>
               {error && <p className="recap-share-modal__error">{error}</p>}
+            </div>
+            {/* Copie en taille réelle, sans aucun parent mis à l'échelle : c'est elle
+                qu'on capture (capturer l'aperçu réduit décalait l'image exportée).
+                Invisible (opacité sur le parent seulement) mais dans l'écran pour
+                que les photos se chargent. */}
+            <div aria-hidden style={{ position: "fixed", left: 0, top: 0, opacity: 0, pointerEvents: "none", zIndex: -1 }}>
+              <PodiumStoryCanvas ref={storyRef} {...props} featuredId={featured.id} />
             </div>
             <div className="modal-footer recap-share-modal__footer">
               <button type="button" className="ghost" onClick={copyLink} disabled={busy}>
