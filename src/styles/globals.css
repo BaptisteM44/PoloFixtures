@@ -2585,6 +2585,8 @@ details.agenda-month--past > summary::-webkit-details-marker {
   gap: 20px;
   align-items: start;
 }
+/* Colonne de droite = image à partager : un peu plus large que l'affiche */
+.recap-top-row--share { grid-template-columns: 1fr 260px; }
 
 /* Affiche : ratio portrait 792×1120, largeur fixe, hauteur auto */
 .recap-banner-panel {
@@ -2642,7 +2644,9 @@ details.agenda-month--past > summary::-webkit-details-marker {
   align-items: start;
 }
 
-/* Colonne de droite du Récap : affiche + partage du résultat */
+.recap-bottom-row--banner { grid-template-columns: 200px repeat(auto-fit, minmax(280px, 1fr)); }
+
+/* Colonne de droite du Récap : l'image à partager (ou l'affiche) */
 .recap-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .recap-share-panel { padding: 16px; }
 .recap-share-panel .recap-section__title { font-size: 14px; margin-bottom: 10px; }
@@ -2983,7 +2987,9 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 
 @media (max-width: 900px) {
-  .recap-top-row {
+  .recap-top-row,
+  .recap-top-row--share,
+  .recap-bottom-row--banner {
     grid-template-columns: 1fr;
   }
   .recap-banner-panel {

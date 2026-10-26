@@ -117,9 +117,7 @@ export function RecapSharePanel(props: Props) {
             </div>
           </div>
         </button>
-        <p className="recap-share-panel__text">
-          {mine?.rank ? t("panel_text_mine", { rank: mine.rank }) : t("panel_text")}
-        </p>
+        {mine?.rank && <p className="recap-share-panel__text">{t("panel_text_mine", { rank: mine.rank })}</p>}
         <button type="button" className="primary" style={{ width: "100%" }} onClick={() => { setTeamId(defaultTeamId); setOpen(true); }}>
           {t("btn_open")}
         </button>

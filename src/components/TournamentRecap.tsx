@@ -116,11 +116,60 @@ export function TournamentRecap({ tournament, podium, players, isOrga, share }: 
     { place: "third"  as const, medal: "🥉", rank: "#3", team: podium.third  },
   ];
 
+  // Affiche portrait (+ crédit) : à droite du podium, ou en bas à côté de l'anecdote quand l'image à partager prend sa place
+  const bannerPanel = tournament.bannerPath ? (
+    <div className="recap-banner-panel panel">
+      <Image
+        src={tournament.bannerPath}
+        alt={tournament.name}
+        width={792}
+        height={1120}
+        className="recap-banner-img"
+        style={{ width: "100%", height: "auto" }}
+      />
+      <div className="recap-banner-credit">
+        {editingCredit ? (
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <input
+              type="text"
+              value={bannerCredit}
+              onChange={(e) => setBannerCredit(e.target.value)}
+              placeholder={t("credit_placeholder")}
+              style={{ fontSize: 11, flex: 1 }}
+              autoFocus
+            />
+            <button className="primary" style={{ fontSize: 10, padding: "2px 7px" }}
+              onClick={() => { setEditingCredit(false); save({ bannerCredit }); }}
+              disabled={isPending}
+            >OK</button>
+            <button className="ghost" style={{ fontSize: 10, padding: "2px 7px" }}
+              onClick={() => setEditingCredit(false)}
+            >✕</button>
+          </div>
+        ) : bannerCredit ? (
+          <span>
+            📷{" "}
+            {bannerCredit.startsWith("http") ? (
+              <a href={bannerCredit} target="_blank" rel="noopener noreferrer">{bannerCredit}</a>
+            ) : bannerCredit.startsWith("@") ? (
+              <a href={`https://instagram.com/${bannerCredit.slice(1)}`} target="_blank" rel="noopener noreferrer">{bannerCredit}</a>
+            ) : bannerCredit}
+            {isOrga && (
+              <button className="ghost recap-edit-btn" style={{ marginLeft: 4 }} onClick={() => setEditingCredit(true)}>✎</button>
+            )}
+          </span>
+        ) : isOrga ? (
+          <button className="ghost recap-edit-btn" onClick={() => setEditingCredit(true)}>{t("add_credit")}</button>
+        ) : null}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div className="recap-layout">
 
       {/* ═══ LIGNE 1 : Podium (compact) + Affiche portrait ═══ */}
-      <div className="recap-top-row">
+      <div className={`recap-top-row${share ? " recap-top-row--share" : ""}`}>
       <div className="panel recap-podium-panel">
         <h3 className="recap-section__title">Podium</h3>
 
@@ -201,60 +250,14 @@ export function TournamentRecap({ tournament, podium, players, isOrga, share }: 
         )}
       </div>
 
-        {/* Colonne de droite : affiche portrait + partage du résultat */}
-        {(tournament.bannerPath || share) && (
-        <div className="recap-side">
-        {tournament.bannerPath && (
-          <div className="recap-banner-panel panel">
-            <Image
-              src={tournament.bannerPath}
-              alt={tournament.name}
-              width={792}
-              height={1120}
-              className="recap-banner-img"
-              style={{ width: "100%", height: "auto" }}
-            />
-            <div className="recap-banner-credit">
-              {editingCredit ? (
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  <input
-                    type="text"
-                    value={bannerCredit}
-                    onChange={(e) => setBannerCredit(e.target.value)}
-                    placeholder={t("credit_placeholder")}
-                    style={{ fontSize: 11, flex: 1 }}
-                    autoFocus
-                  />
-                  <button className="primary" style={{ fontSize: 10, padding: "2px 7px" }}
-                    onClick={() => { setEditingCredit(false); save({ bannerCredit }); }}
-                    disabled={isPending}
-                  >OK</button>
-                  <button className="ghost" style={{ fontSize: 10, padding: "2px 7px" }}
-                    onClick={() => setEditingCredit(false)}
-                  >✕</button>
-                </div>
-              ) : bannerCredit ? (
-                <span>
-                  📷{" "}
-                  {bannerCredit.startsWith("http") ? (
-                    <a href={bannerCredit} target="_blank" rel="noopener noreferrer">{bannerCredit}</a>
-                  ) : bannerCredit.startsWith("@") ? (
-                    <a href={`https://instagram.com/${bannerCredit.slice(1)}`} target="_blank" rel="noopener noreferrer">{bannerCredit}</a>
-                  ) : bannerCredit}
-                  {isOrga && (
-                    <button className="ghost recap-edit-btn" style={{ marginLeft: 4 }} onClick={() => setEditingCredit(true)}>✎</button>
-                  )}
-                </span>
-              ) : isOrga ? (
-                <button className="ghost recap-edit-btn" onClick={() => setEditingCredit(true)}>{t("add_credit")}</button>
-              ) : null}
-            </div>
+        {/* Colonne de droite : l'image à partager (ou l'affiche s'il n'y a pas de podium) */}
+        {share ? (
+          <div className="recap-side recap-side--share">
+            <RecapSharePanel {...share} />
           </div>
-        )}
-
-        {share && <RecapSharePanel {...share} />}
-        </div>
-        )}
+        ) : tournament.bannerPath ? (
+          <div className="recap-side">{bannerPanel}</div>
+        ) : null}
 
       </div>{/* fin recap-top-row */}
 
@@ -498,8 +501,9 @@ export function TournamentRecap({ tournament, podium, players, isOrga, share }: 
 
       </div>
 
-      {/* ═══ LIGNE 3 : Anecdote + Résumé côte à côte (pleine largeur si un seul) ═══ */}
-      <div className="recap-bottom-row">
+      {/* ═══ LIGNE 3 : (Affiche) + Anecdote + Résumé côte à côte ═══ */}
+      <div className={`recap-bottom-row${share && bannerPanel ? " recap-bottom-row--banner" : ""}`}>
+        {share && bannerPanel}
 
         {/* Anecdote / Remerciement */}
         {(recapAnecdote || isOrga) && (
