@@ -11816,3 +11816,94 @@ details.format-flow--public .format-flow__num { width: 18px; height: 18px; font-
 .orga-preview-banner a { color: var(--text); font-weight: 700; text-decoration: underline; }
 .orga-journey__step.is-warn { color: var(--text); }
 .orga-journey__step.is-warn .orga-journey__dot { background: var(--orange); border-color: var(--orange); color: #1a1a1a; }
+
+/* ── Onglet Fiche & réglages : formulaire en cartes ── */
+.edit-form { margin-bottom: 24px; }
+.edit-form__body { display: grid; gap: 16px; }
+.edit-form__error {
+  background: var(--orange); border: 2px solid var(--border); border-radius: 8px;
+  padding: 10px 16px; margin-bottom: 16px; font-family: var(--font-display); font-weight: 700; font-size: 14px;
+}
+.edit-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.edit-card__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+}
+.edit-card__subtitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.edit-card__subtitle span { font-weight: 400; text-transform: none; letter-spacing: 0; }
+.edit-card__hint { margin: 0; font-size: 12px; color: var(--text-muted); }
+.edit-card__sub {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  min-width: 0;
+}
+.edit-card .field-row { margin: 0; }
+.edit-check { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; cursor: pointer; }
+.edit-check input { margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--teal); }
+.edit-check small { display: block; margin-top: 2px; font-size: 12px; color: var(--text-muted); }
+/* Mode test : tout en haut, jaune quand il est actif */
+.edit-card--test { gap: 10px; border-style: dashed; box-shadow: none; }
+.edit-card--test.is-on { border-style: solid; background: color-mix(in srgb, var(--yellow) 45%, var(--surface)); box-shadow: var(--shadow); }
+.edit-test__toggle { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; font-size: 14px; }
+.edit-test__toggle input { width: 20px; height: 20px; margin-top: 1px; flex-shrink: 0; accent-color: var(--border); }
+.edit-test__toggle small { display: block; margin-top: 3px; font-size: 12px; color: var(--text-muted); }
+.edit-test__sub { padding-left: 32px; font-size: 13px; }
+.edit-test__badge {
+  margin-left: 8px; padding: 1px 8px; border-radius: 999px; border: 2px solid var(--border);
+  font-family: var(--font-display); font-size: 11px; font-weight: 700; text-transform: uppercase; background: var(--surface);
+}
+.edit-card--advanced { box-shadow: none; border-color: var(--border-light); }
+.edit-card--advanced > summary { cursor: pointer; color: var(--text-muted); }
+.edit-card--advanced[open] > summary { margin-bottom: 4px; }
+.edit-danger {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 12px 14px; border: 2px solid var(--danger); border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--danger) 6%, var(--surface));
+}
+.edit-danger small { display: block; font-size: 12px; color: var(--text-muted); }
+.edit-danger__btn { color: var(--danger); border-color: var(--danger); font-size: 12px; }
+.edit-form__savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  margin: 0 -4px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 -4px 0 color-mix(in srgb, var(--border) 8%, transparent);
+}
+.edit-form__saved { font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--teal); }
+.edit-form__saved--error { color: var(--danger); }
+@media (max-width: 640px) {
+  .edit-card { padding: 14px; }
+  .edit-card .edit-grid-2 { grid-template-columns: 1fr; }
+}
+.edit-card .edit-grid-2, .edit-card .edit-grid-3 { align-items: start; }
