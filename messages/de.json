@@ -3680,6 +3680,14 @@
     "default_overview": "Übersicht",
     "slide_overview": "Übersicht (alles in Kacheln)",
     "standings_none": "Tabelle",
-    "public_overview_desc": "Courts, nächste Spiele, Tabelle und Ergebnisse auf einen Blick."
+    "public_overview_desc": "Courts, nächste Spiele, Tabelle und Ergebnisse auf einen Blick.",
+    "public_config_btn": "Bildschirme einrichten",
+    "round_final": "Finale",
+    "round_semi": "Halbfinale",
+    "round_quarter": "Viertelfinale",
+    "round_third": "Spiel um Platz 3",
+    "round_grand_final": "Grand Final",
+    "round_wb": "Winner · Runde {n}",
+    "round_lb": "Loser · Runde {n}"
   }
 }

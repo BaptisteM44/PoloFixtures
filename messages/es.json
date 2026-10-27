@@ -3680,6 +3680,14 @@
     "default_overview": "Vista general",
     "slide_overview": "Vista general (todo en mosaico)",
     "standings_none": "Clasificación",
-    "public_overview_desc": "Pistas, próximos partidos, clasificación y resultados, todo a la vez."
+    "public_overview_desc": "Pistas, próximos partidos, clasificación y resultados, todo a la vez.",
+    "public_config_btn": "Configurar las pantallas",
+    "round_final": "Final",
+    "round_semi": "Semifinal",
+    "round_quarter": "Cuartos de final",
+    "round_third": "Tercer puesto",
+    "round_grand_final": "Gran final",
+    "round_wb": "Ganadores · Ronda {n}",
+    "round_lb": "Perdedores · Ronda {n}"
   }
 }

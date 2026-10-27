@@ -88,12 +88,13 @@ export function ScreenManager({ tournamentId, tournamentSlug }: { tournamentId: 
     load();
   };
 
-  if (!data) return <div className="panel"><p className="meta">…</p></div>;
+  // Même id pendant le chargement : un lien « …&goto=edit-screens » y défile tout de suite.
+  if (!data) return <div id="edit-screens" className="panel orga-anchor"><p className="meta">…</p></div>;
   const ctx = data.context;
   const urlOf = (slug: string) => `${origin}/${locale}/tournament/${tournamentSlug}/screen/${slug}`;
 
   return (
-    <div className="panel screen-mgr">
+    <div id="edit-screens" className="panel screen-mgr orga-anchor">
       <h3 style={{ margin: 0 }}>📺 {t("mgr_title")}</h3>
       <p className="meta" style={{ margin: "4px 0 14px" }}>{t("mgr_desc")}</p>
       {error && <p style={{ color: "var(--danger)", fontSize: 13 }}>{error}</p>}

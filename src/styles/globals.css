@@ -12158,3 +12158,5 @@ details.format-flow--public .format-flow__num { width: 18px; height: 18px; font-
 @media (orientation: portrait) {
   .tscreen__ov-grid { grid-template-columns: 1fr; overflow: auto; }
 }
+.public-screens__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.public-screens__config { font-size: 13px; white-space: nowrap; }

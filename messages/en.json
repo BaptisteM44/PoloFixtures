@@ -3674,6 +3674,14 @@
     "default_overview": "Overview",
     "slide_overview": "Overview (everything in tiles)",
     "standings_none": "Standings",
-    "public_overview_desc": "Courts, next matches, standings and results, all at once."
+    "public_overview_desc": "Courts, next matches, standings and results, all at once.",
+    "public_config_btn": "Set up screens",
+    "round_final": "Final",
+    "round_semi": "Semi-final",
+    "round_quarter": "Quarter-final",
+    "round_third": "Third place",
+    "round_grand_final": "Grand final",
+    "round_wb": "Winners · Round {n}",
+    "round_lb": "Losers · Round {n}"
   }
 }

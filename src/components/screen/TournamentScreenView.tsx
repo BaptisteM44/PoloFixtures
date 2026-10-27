@@ -13,7 +13,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { QRCodeSVG } from "qrcode.react";
 import { BracketView } from "@/components/BracketView";
-import { autoSlides, parseSlideKey, type ScreenConfig, type SlideKey } from "@/lib/screen-slides";
+import { autoSlides, focusStages, parseSlideKey, type ScreenConfig, type SlideKey } from "@/lib/screen-slides";
 import type { ScreenData, ScreenMatch, ScreenStage } from "@/lib/screen-data";
 
 type T = ReturnType<typeof useTranslations>;
@@ -272,9 +272,13 @@ function Slide({ slideKey, data, now, t, clockPosition }: { slideKey: SlideKey; 
   }
 }
 
-function stageLabel(m: ScreenMatch, stages: ScreenStage[], t: T): string {
-  const s = stages.find((x) => x.id === m.stageId);
-  const parts = [s?.name, m.groupKey ? t("group", { group: m.groupKey }) : null, s && ["RR", "SWISS", "CROSS_POOL"].includes(s.type) ? t("round", { n: m.roundIndex }) : null];
+function stageLabel(m: ScreenMatch, data: ScreenData, t: T): string {
+  const s = data.stages.find((x) => x.id === m.stageId);
+  const round = !s ? null
+    : ["RR", "SWISS", "CROSS_POOL"].includes(s.type) ? t("round", { n: m.roundIndex })
+    : ["SE", "DE"].includes(s.type) ? bracketRoundName(m, data.matches.filter((x) => x.stageId === s.id), s.type, t)
+    : null;
+  const parts = [s?.name, m.groupKey ? t("group", { group: m.groupKey }) : null, round];
   return parts.filter(Boolean).join(" · ");
 }
 
@@ -321,7 +325,7 @@ function CourtSlide({ court, data, now, t, clockPosition }: { court: number; dat
 
   return (
     <div className={`tscreen__court tscreen__court--clock-${clockPosition}`}>
-      <div className="tscreen__court-label">{label}{stageLabel(match, data.stages, t) ? ` · ${stageLabel(match, data.stages, t)}` : ""}</div>
+      <div className="tscreen__court-label">{label}{stageLabel(match, data, t) ? ` · ${stageLabel(match, data, t)}` : ""}</div>
       {match.referee && <div className="tscreen__court-ref">🟨 {t("referee", { name: match.referee })}</div>}
       {clockPosition === "top" && clock}
       <div className="tscreen__sides">
@@ -390,10 +394,13 @@ function OverviewSlide({ data, now, t }: { data: ScreenData; now: number; t: T }
   const results = data.matches.filter((m) => m.status === "FINISHED" && m.teamBId).slice(-4).reverse();
   const names = teamNames(data);
 
-  // Étape à classement à montrer : celle en cours, sinon la dernière jouée.
-  const played = data.stages.filter((s) => s.groups.length > 0 && data.matches.some((m) => m.stageId === s.id));
-  const stage = played.find((s) => s.status === "ACTIVE") ?? played[played.length - 1];
-  const groups = (stage?.groups ?? []).filter((g) => g.rows.length > 0 && data.matches.some((m) => m.stageId === stage!.id && (g.key === null || m.groupKey === g.key)));
+  // Étape d'actualité (en cours, sinon la dernière jouée) : son classement si
+  // c'est une étape à points, le tour en cours du tableau si c'est un bracket.
+  const focus = focusStages(data.context.stages);
+  const focusOrder = focus.find((s) => s.status === "ACTIVE" || s.hasPending)?.order ?? focus[focus.length - 1]?.order;
+  const stage = data.stages.find((s) => s.order === focusOrder);
+  const isBracket = !!stage && ["SE", "DE", "PLACEMENT"].includes(stage.type);
+  const groups = (isBracket ? [] : stage?.groups ?? []).filter((g) => g.rows.length > 0 && data.matches.some((m) => m.stageId === stage!.id && (g.key === null || m.groupKey === g.key)));
   const [gi, setGi] = useState(0);
   useEffect(() => {
     if (groups.length < 2) return;
@@ -401,7 +408,7 @@ function OverviewSlide({ data, now, t }: { data: ScreenData; now: number; t: T }
     return () => clearInterval(timer);
   }, [groups.length]);
   const group = groups.length ? groups[gi % groups.length] : null;
-  const activeStage = data.stages.find((s) => s.status === "ACTIVE");
+  const activeStage = stage;
 
   return (
     <div className="tscreen__page tscreen__overview">
@@ -435,6 +442,7 @@ function OverviewSlide({ data, now, t }: { data: ScreenData; now: number; t: T }
         <section className="tscreen__ov-side">
           <div className="tscreen__ov-box">
             <h4>{stage ? `${stage.name}${group?.key ? ` · ${t("group", { group: group.key })}` : ""}` : t("standings_none")}</h4>
+            {isBracket && stage && <BracketTile stage={stage} data={data} t={t} />}
             {group && (
               <table className="tscreen__ov-table">
                 <tbody>
@@ -468,6 +476,50 @@ function OverviewSlide({ data, now, t }: { data: ScreenData; now: number; t: T }
         </section>
       </div>
     </div>
+  );
+}
+
+/**
+ * Nom du tour d'un match de tableau. Le moteur code la finale « G » et la
+ * petite finale « L » aussi en élimination simple : c'est le TYPE d'étape qui
+ * décide (SE : Finale / Demi / Quart ; DE : Winner / Loser / Grande finale).
+ */
+function bracketRoundName(m: ScreenMatch, stageMatches: ScreenMatch[], stageType: string, t: T): string {
+  const side = m.bracketSide;
+  if (stageType === "DE") {
+    if (side === "G" || side === "BG") return t("round_grand_final");
+    return t(side === "L" ? "round_lb" : "round_wb", { n: m.roundIndex });
+  }
+  if (side === "G") return t("round_final");
+  if (side === "L" || side === "BL") return t("round_third");
+  const hasFinal = stageMatches.some((x) => x.bracketSide === "G");
+  const wMax = Math.max(...stageMatches.filter((x) => x.bracketSide === side).map((x) => x.roundIndex));
+  // Sans match « G », le dernier tour du tableau EST la finale.
+  const fromEnd = wMax - m.roundIndex + (hasFinal ? 1 : 0);
+  if (fromEnd === 0) return t("round_final");
+  if (fromEnd === 1) return t("round_semi");
+  if (fromEnd === 2) return t("round_quarter");
+  return t("round", { n: m.roundIndex });
+}
+
+/** Tableau en version tuile : les matchs à jouer (dans l'ordre), sinon les derniers joués. */
+function BracketTile({ stage, data, t }: { stage: ScreenStage; data: ScreenData; t: T }) {
+  const all = data.matches.filter((m) => m.stageId === stage.id);
+  const pending = all.filter((m) => m.status !== "FINISHED").sort((a, b) => a.startAt.localeCompare(b.startAt));
+  const list = (pending.length > 0 ? pending : all.filter((m) => m.status === "FINISHED").slice(-5).reverse()).slice(0, 5);
+  return (
+    <ul className="tscreen__ov-list">
+      {list.map((m) => (
+        <li key={m.id}>
+          <span className="tscreen__ov-time">{stage.type === "PLACEMENT" ? "" : bracketRoundName(m, all, stage.type, t)}{m.status === "LIVE" ? ` · ${t("live")}` : ""}</span>
+          <span className="tscreen__ov-match">
+            {m.teamA?.name ?? t("tbd")}{" "}
+            <em>{m.status === "SCHEDULED" ? t("vs") : `${m.scoreA}–${m.scoreB}`}</em>{" "}
+            {m.teamB?.name ?? t("tbd")}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -528,7 +580,7 @@ function UpcomingSlide({ data, now, t }: { data: ScreenData; now: number; t: T }
             <span className="tscreen__list-court">{m.courtName.replace(/^Court /, t("court_short"))}</span>
             <span className="tscreen__list-match">{m.teamA?.name ?? t("tbd")} <em>{t("vs")}</em> {m.teamB?.name ?? t("tbd")}</span>
             <span className="tscreen__list-meta">
-              {stageLabel(m, data.stages, t)}
+              {stageLabel(m, data, t)}
               {m.referee && <span className="tscreen__list-ref"> · 🟨 {t("referee", { name: m.referee })}</span>}
             </span>
           </li>
@@ -551,7 +603,7 @@ function RefereesSlide({ data, t }: { data: ScreenData; t: T }) {
             <span className="tscreen__list-time">{m.status === "LIVE" ? t("live") : hhmm(m.startAt, data)}</span>
             <span className="tscreen__list-court">{m.courtName.replace(/^Court /, t("court_short"))}</span>
             <span className="tscreen__list-match">🟨 {m.referee}</span>
-            <span className="tscreen__list-meta">{m.teamA?.name ?? t("tbd")} {t("vs")} {m.teamB?.name ?? t("tbd")} · {stageLabel(m, data.stages, t)}</span>
+            <span className="tscreen__list-meta">{m.teamA?.name ?? t("tbd")} {t("vs")} {m.teamB?.name ?? t("tbd")} · {stageLabel(m, data, t)}</span>
           </li>
         ))}
       </ul>
@@ -570,7 +622,7 @@ function ResultsSlide({ data, t }: { data: ScreenData; t: T }) {
             <span className={`tscreen__list-team${m.winnerTeamId === m.teamAId ? " is-win" : ""}`}>{m.teamA?.name ?? "?"}</span>
             <span className="tscreen__list-score">{m.scoreA} – {m.scoreB}</span>
             <span className={`tscreen__list-team is-right${m.winnerTeamId === m.teamBId ? " is-win" : ""}`}>{m.teamB?.name ?? "?"}</span>
-            <span className="tscreen__list-meta">{stageLabel(m, data.stages, t)}</span>
+            <span className="tscreen__list-meta">{stageLabel(m, data, t)}</span>
           </li>
         ))}
       </ul>

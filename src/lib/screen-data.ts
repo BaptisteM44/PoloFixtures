@@ -153,6 +153,7 @@ export async function getScreenData(idOrSlug: string): Promise<ScreenData | null
       order: s.order, name: s.name, type: s.type, status: s.status,
       groups: s.groups.length > 1 ? s.groups.map((g) => g.key!) : [],
       hasMatches: matches.some((m) => m.stageId === s.id),
+      hasPending: matches.some((m) => m.stageId === s.id && (m.status === "LIVE" || m.status === "SCHEDULED") && !!m.teamAId && !!m.teamBId),
     })),
     hasScheduled: matches.some((m) => m.status === "SCHEDULED" || m.status === "LIVE"),
     hasReferees: matches.some((m) => (m.status === "SCHEDULED" || m.status === "LIVE") && !!m.referee),

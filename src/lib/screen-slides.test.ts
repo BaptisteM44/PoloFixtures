@@ -48,6 +48,16 @@ describe("écran de salle — diapos", () => {
     expect(autoSlides(c)).toEqual(["courts", "standings:0:-", "results", "qr"]);
   });
 
+  it("étape d'actualité : le bracket en cours, pas le Swiss terminé (même si son statut traîne)", () => {
+    const c = ctx({
+      stages: [
+        { order: 0, name: "Swiss", type: "SWISS", status: "DONE", groups: [], hasMatches: true, hasPending: false },
+        { order: 1, name: "Bracket", type: "SE", status: "PENDING", groups: [], hasMatches: true, hasPending: true },
+      ],
+    });
+    expect(autoSlides(c)).toEqual(["courts", "upcoming", "bracket:1", "results", "qr"]);
+  });
+
   it("catalogue : tout ce qu'on peut composer", () => {
     expect(slideCatalog(ctx())).toEqual(["overview", "courts", "court:1", "court:2", "upcoming", "referees", "results", "standings:0:A", "standings:0:B", "bracket:1", "sponsors", "qr"]);
   });

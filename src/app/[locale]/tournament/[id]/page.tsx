@@ -607,7 +607,7 @@ export default async function TournamentPage({
       })()}
 
       {tab === "screens" && (isLaunched || isOrga) && (
-        <PublicScreensList tournamentId={tournament.id} tournamentSlug={tournament.slug ?? tournament.id} courtsCount={tournament.courtsCount ?? 1} />
+        <PublicScreensList tournamentId={tournament.id} tournamentSlug={tournament.slug ?? tournament.id} courtsCount={tournament.courtsCount ?? 1} canEdit={canEdit} />
       )}
 
       {/* ── RECAP TAB ── */}

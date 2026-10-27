@@ -42,6 +42,7 @@ export type SlideContext = {
     status: string; // PENDING | ACTIVE | DONE
     groups: string[]; // clés de groupes ([] si un seul groupe)
     hasMatches: boolean;
+    hasPending?: boolean; // des matchs encore à jouer (en cours / à venir)
   }>;
   hasScheduled: boolean;
   hasReferees: boolean;
@@ -100,10 +101,7 @@ export function autoSlides(ctx: SlideContext): SlideKey[] {
   if (ctx.hasScheduled) keys.push("upcoming");
   if (ctx.hasReferees) keys.push("referees");
 
-  const played = ctx.stages.filter((s) => s.hasMatches);
-  const active = played.filter((s) => s.status === "ACTIVE");
-  // Étapes à montrer : celles en cours, sinon la dernière jouée.
-  const focus = active.length > 0 ? active : played.slice(-1);
+  const focus = focusStages(ctx.stages);
   for (const s of focus) {
     if (POINTS_TYPES.has(s.type)) {
       if (s.groups.length > 1) s.groups.forEach((g) => keys.push(`standings:${s.order}:${g}`));
@@ -116,6 +114,17 @@ export function autoSlides(ctx: SlideContext): SlideKey[] {
   if (ctx.hasSponsors) keys.push("sponsors");
   keys.push("qr");
   return keys;
+}
+
+/**
+ * L'étape « d'actualité » : celle(s) en cours (statut ACTIVE ou matchs encore à
+ * jouer), sinon la dernière jouée. Jamais une étape passée quand une autre
+ * est en cours (ex. pas le classement du Swiss pendant l'élimination directe).
+ */
+export function focusStages<S extends { status: string; hasMatches: boolean; hasPending?: boolean }>(stages: S[]): S[] {
+  const played = stages.filter((s) => s.hasMatches);
+  const current = played.filter((s) => s.status === "ACTIVE" || s.hasPending);
+  return current.length > 0 ? current : played.slice(-1);
 }
 
 /** Slug d'URL à partir d'un nom (« Écran bar » → « ecran-bar »). */

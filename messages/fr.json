@@ -3675,6 +3675,14 @@
     "default_overview": "Vue d'ensemble",
     "slide_overview": "Vue d'ensemble (tout en tuiles)",
     "standings_none": "Classement",
-    "public_overview_desc": "Terrains, prochains matchs, classement et résultats, tout d'un coup."
+    "public_overview_desc": "Terrains, prochains matchs, classement et résultats, tout d'un coup.",
+    "public_config_btn": "Configurer les écrans",
+    "round_final": "Finale",
+    "round_semi": "Demi-finale",
+    "round_quarter": "Quart de finale",
+    "round_third": "Petite finale",
+    "round_grand_final": "Grande finale",
+    "round_wb": "Winner · Tour {n}",
+    "round_lb": "Loser · Tour {n}"
   }
 }

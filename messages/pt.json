@@ -3674,6 +3674,14 @@
     "default_overview": "Visão geral",
     "slide_overview": "Visão geral (tudo em mosaico)",
     "standings_none": "Classificação",
-    "public_overview_desc": "Campos, próximos jogos, classificação e resultados, tudo de uma vez."
+    "public_overview_desc": "Campos, próximos jogos, classificação e resultados, tudo de uma vez.",
+    "public_config_btn": "Configurar os ecrãs",
+    "round_final": "Final",
+    "round_semi": "Meia-final",
+    "round_quarter": "Quartos de final",
+    "round_third": "3.º lugar",
+    "round_grand_final": "Grande final",
+    "round_wb": "Vencedores · Ronda {n}",
+    "round_lb": "Vencidos · Ronda {n}"
   }
 }
