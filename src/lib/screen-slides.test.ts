@@ -8,6 +8,7 @@ const ctx = (over: Partial<SlideContext> = {}): SlideContext => ({
     { order: 1, name: "Bracket", type: "SE", status: "PENDING", groups: [], hasMatches: false },
   ],
   hasScheduled: true,
+  hasReferees: false,
   hasFinished: true,
   hasSponsors: false,
   ...over,
@@ -38,13 +39,17 @@ describe("écran de salle — diapos", () => {
     expect(autoSlides(c)).toEqual(["court:1", "upcoming", "bracket:1", "results", "sponsors", "qr"]);
   });
 
+  it("diaporama auto : prochains arbitres juste après les prochains matchs", () => {
+    expect(autoSlides(ctx({ hasReferees: true })).slice(0, 3)).toEqual(["courts", "upcoming", "referees"]);
+  });
+
   it("diaporama auto : rien en cours → la dernière étape jouée", () => {
     const c = ctx({ stages: [{ order: 0, name: "Swiss", type: "SWISS", status: "DONE", groups: [], hasMatches: true }], hasScheduled: false });
     expect(autoSlides(c)).toEqual(["courts", "standings:0:-", "results", "qr"]);
   });
 
   it("catalogue : tout ce qu'on peut composer", () => {
-    expect(slideCatalog(ctx())).toEqual(["courts", "court:1", "court:2", "upcoming", "results", "standings:0:A", "standings:0:B", "bracket:1", "sponsors", "qr"]);
+    expect(slideCatalog(ctx())).toEqual(["courts", "court:1", "court:2", "upcoming", "referees", "results", "standings:0:A", "standings:0:B", "bracket:1", "sponsors", "qr"]);
   });
 
   it("slug d'URL lisible et écrans par défaut", () => {

@@ -5,6 +5,7 @@
  */
 import { prisma } from "@/lib/db";
 import { tournamentTimezone } from "@/lib/timezone";
+import { parseRefereeSettings } from "@/lib/referees";
 import { getPipeline, stageStandingRows } from "@/engine/pipeline-server";
 import { defaultScreens, type ScreenConfig, type SlideContext, type SlideEntry } from "@/lib/screen-slides";
 
@@ -31,6 +32,8 @@ export type ScreenMatch = {
   teamB: { id: string; name: string } | null;
   stageId: string | null;
   groupKey: string | null;
+  /** Qui arbitre (équipe ou joueur·euses) ; null si non désigné ou masqué au public. */
+  referee: string | null;
   events: Array<{ id: string; type: string; matchClockSec: number; createdAt: string; payload: unknown }>;
 };
 
@@ -79,7 +82,7 @@ export async function getScreenData(idOrSlug: string): Promise<ScreenData | null
   const t = await prisma.tournament.findFirst({
     where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
     select: {
-      id: true, slug: true, name: true, gameDurationMin: true, courtsCount: true, status: true, timezone: true, country: true, lng: true, usesPipeline: true,
+      id: true, slug: true, name: true, gameDurationMin: true, courtsCount: true, status: true, timezone: true, country: true, lng: true, usesPipeline: true, refereeSettings: true,
       sponsors: { select: { id: true, name: true, logoPath: true } },
       teams: { select: { id: true, name: true } },
       screens: { orderBy: { createdAt: "asc" } },
@@ -88,6 +91,9 @@ export async function getScreenData(idOrSlug: string): Promise<ScreenData | null
         include: {
           teamA: { select: { id: true, name: true } },
           teamB: { select: { id: true, name: true } },
+          refereeTeam: { select: { name: true } },
+          referee: { select: { name: true } },
+          coReferee: { select: { name: true } },
           events: { orderBy: { createdAt: "asc" }, select: { id: true, type: true, matchClockSec: true, createdAt: true, payload: true, matchId: true } },
         },
       },
@@ -117,6 +123,15 @@ export async function getScreenData(idOrSlug: string): Promise<ScreenData | null
     }
   }
 
+  // Arbitres : affichés seulement si l'orga ne les a pas masqués au public.
+  const refereesHidden = parseRefereeSettings(t.refereeSettings).hidden;
+  const refereeOf = (m: (typeof t.matches)[number]) => {
+    if (refereesHidden) return null;
+    if (m.refereeTeam) return m.refereeTeam.name;
+    const names = [m.referee?.name, m.coReferee?.name].filter(Boolean);
+    return names.length ? names.join(" / ") : null;
+  };
+
   // Les événements ne servent qu'au chrono des matchs en cours ou à venir.
   const matches: ScreenMatch[] = t.matches.map((m) => ({
     id: m.id, status: m.status, phase: m.phase, courtName: m.courtName, startAt: m.startAt.toISOString(),
@@ -124,6 +139,7 @@ export async function getScreenData(idOrSlug: string): Promise<ScreenData | null
     scoreA: m.scoreA, scoreB: m.scoreB, goldenGoal: m.goldenGoal, winnerTeamId: m.winnerTeamId,
     nextMatchWinId: m.nextMatchWinId, nextSlotWin: m.nextSlotWin, nextMatchLoseId: m.nextMatchLoseId, nextSlotLose: m.nextSlotLose,
     teamAId: m.teamAId, teamBId: m.teamBId, teamA: m.teamA, teamB: m.teamB, stageId: m.stageId, groupKey: m.groupKey,
+    referee: refereeOf(m),
     events: m.status === "FINISHED" ? [] : m.events.map((e) => ({ id: e.id, type: e.type, matchClockSec: e.matchClockSec, createdAt: e.createdAt.toISOString(), payload: e.payload })),
   }));
 
@@ -139,6 +155,7 @@ export async function getScreenData(idOrSlug: string): Promise<ScreenData | null
       hasMatches: matches.some((m) => m.stageId === s.id),
     })),
     hasScheduled: matches.some((m) => m.status === "SCHEDULED" || m.status === "LIVE"),
+    hasReferees: matches.some((m) => (m.status === "SCHEDULED" || m.status === "LIVE") && !!m.referee),
     hasFinished: matches.some((m) => m.status === "FINISHED" && !!m.teamBId),
     hasSponsors: t.sponsors.length > 0,
   };

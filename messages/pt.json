@@ -3661,6 +3661,15 @@
     "public_title": "Ecrãs",
     "public_desc": "Para abrir num computador ou telemóvel ligado a uma TV, ou só para seguir em grande.",
     "public_court_desc": "Resultado e cronómetro de um campo, bem grandes.",
-    "public_slideshow_desc": "Campos, classificações, próximos jogos… em ciclo."
+    "public_slideshow_desc": "Campos, classificações, próximos jogos… em ciclo.",
+    "paused_badge": "Em pausa",
+    "prev": "Diapositivo anterior",
+    "next": "Diapositivo seguinte",
+    "play": "Reproduzir",
+    "paused_by_orga": "Em pausa pela organização (painel)",
+    "referee": "Árbitro: {name}",
+    "referees_title": "Próximos árbitros",
+    "slide_referees": "Próximos árbitros",
+    "at_time": "Às {time}"
   }
 }

@@ -8,6 +8,7 @@
  *   standings:0:A      classement de l'étape d'ordre 0, groupe A ("-" = sans groupe)
  *   bracket:2          tableau de l'étape d'ordre 2
  *   upcoming           prochains matchs
+ *   referees           prochains arbitrages (qui arbitre quel match)
  *   results            derniers résultats
  *   sponsors           sponsors
  *   qr                 « suis le tournoi » (QR vers la page publique)
@@ -42,6 +43,7 @@ export type SlideContext = {
     hasMatches: boolean;
   }>;
   hasScheduled: boolean;
+  hasReferees: boolean;
   hasFinished: boolean;
   hasSponsors: boolean;
 };
@@ -54,14 +56,14 @@ export function parseSlideKey(key: SlideKey):
   | { kind: "courts" }
   | { kind: "standings"; stageOrder: number; group: string | null }
   | { kind: "bracket"; stageOrder: number }
-  | { kind: "upcoming" | "results" | "sponsors" | "qr" }
+  | { kind: "upcoming" | "referees" | "results" | "sponsors" | "qr" }
   | null {
   const [kind, a, b] = key.split(":");
   switch (kind) {
     case "court": return { kind, court: Math.max(1, Number(a) || 1) };
     case "standings": return { kind, stageOrder: Number(a) || 0, group: b && b !== "-" ? b : null };
     case "bracket": return { kind, stageOrder: Number(a) || 0 };
-    case "courts": case "upcoming": case "results": case "sponsors": case "qr": return { kind };
+    case "courts": case "upcoming": case "referees": case "results": case "sponsors": case "qr": return { kind };
     default: return null;
   }
 }
@@ -71,7 +73,7 @@ export function slideCatalog(ctx: SlideContext): SlideKey[] {
   const keys: SlideKey[] = [];
   if (ctx.courtsCount > 1) keys.push("courts");
   for (let c = 1; c <= ctx.courtsCount; c++) keys.push(`court:${c}`);
-  keys.push("upcoming", "results");
+  keys.push("upcoming", "referees", "results");
   for (const s of ctx.stages) {
     if (POINTS_TYPES.has(s.type)) {
       if (s.groups.length > 1) s.groups.forEach((g) => keys.push(`standings:${s.order}:${g}`));
@@ -86,13 +88,14 @@ export function slideCatalog(ctx: SlideContext): SlideKey[] {
 
 /**
  * Diaporama automatique : suit l'état du tournoi, sans réglage.
- * Terrains → prochains matchs → classements de l'étape en cours (ou de la
+ * Terrains → prochains matchs → prochains arbitres → classements de l'étape en cours (ou de la
  * dernière jouée) → tableau en cours → résultats → sponsors → QR.
  */
 export function autoSlides(ctx: SlideContext): SlideKey[] {
   const keys: SlideKey[] = [];
   keys.push(ctx.courtsCount > 1 ? "courts" : "court:1");
   if (ctx.hasScheduled) keys.push("upcoming");
+  if (ctx.hasReferees) keys.push("referees");
 
   const played = ctx.stages.filter((s) => s.hasMatches);
   const active = played.filter((s) => s.status === "ACTIVE");

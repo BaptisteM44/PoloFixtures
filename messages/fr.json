@@ -3662,6 +3662,15 @@
     "public_title": "Écrans",
     "public_desc": "À ouvrir sur un ordi ou un téléphone branché à une TV, ou juste pour suivre en grand.",
     "public_court_desc": "Score et chrono d'un terrain, en très grand.",
-    "public_slideshow_desc": "Terrains, classements, prochains matchs… en boucle."
+    "public_slideshow_desc": "Terrains, classements, prochains matchs… en boucle.",
+    "paused_badge": "En pause",
+    "prev": "Diapo précédente",
+    "next": "Diapo suivante",
+    "play": "Lecture",
+    "paused_by_orga": "Mis en pause par l'orga (dashboard)",
+    "referee": "Arbitre : {name}",
+    "referees_title": "Prochains arbitres",
+    "slide_referees": "Prochains arbitres",
+    "at_time": "À {time}"
   }
 }

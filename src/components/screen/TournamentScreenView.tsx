@@ -158,9 +158,26 @@ export function TournamentScreenView({ initial, screenSlug }: { initial: ScreenD
   const secondsOf = (k: SlideKey) => config.slides?.find((s) => s.key === k)?.seconds ?? config.slideSeconds;
 
   const [index, setIndex] = useState(0);
+  // Pause locale : sur la TV elle-même (espace, clic sur ⏸), sans toucher aux autres écrans.
+  const [localPause, setLocalPause] = useState(false);
   const pinned = config.pinnedSlide && hasContent(config.pinnedSlide, data) ? config.pinnedSlide : null;
   const current = pinned ?? keys[index % Math.max(1, keys.length)] ?? (config.mode === "court" ? `court:${config.court}` : "qr");
-  const rotating = !pinned && !config.paused && keys.length > 1;
+  const canRotate = !pinned && keys.length > 1;
+  const paused = config.paused || localPause;
+  const rotating = canRotate && !paused;
+  const step = useCallback((dir: 1 | -1) => setIndex((i) => (i + dir + keys.length) % Math.max(1, keys.length)), [keys.length]);
+
+  // Clavier (télécommande / clavier de l'ordi branché) : espace = pause, ← → = diapo.
+  useEffect(() => {
+    if (!canRotate) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === " " || e.key === "k" || e.key === "MediaPlayPause") { e.preventDefault(); setLocalPause((p) => !p); }
+      else if (e.key === "ArrowRight" || e.key === "MediaTrackNext") step(1);
+      else if (e.key === "ArrowLeft" || e.key === "MediaTrackPrevious") step(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [canRotate, step]);
   const currentSeconds = secondsOf(current);
   useEffect(() => {
     if (!rotating) return;
@@ -180,13 +197,25 @@ export function TournamentScreenView({ initial, screenSlug }: { initial: ScreenD
         <div className="tscreen__progress" key={`${current}-${index}`} style={{ animationDuration: `${currentSeconds}s` }} />
       )}
 
-      <button
-        type="button"
-        className="tscreen__fs"
-        onClick={() => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {})}
-      >
-        ⛶ {t("fullscreen")}
-      </button>
+      {canRotate && paused && <div className="tscreen__paused">⏸ {t("paused_badge")}</div>}
+
+      <div className="tscreen__controls">
+        {canRotate && (
+          <>
+            <button type="button" onClick={() => step(-1)} aria-label={t("prev")}>⏮</button>
+            <button type="button" onClick={() => setLocalPause((p) => !p)} disabled={config.paused} title={config.paused ? t("paused_by_orga") : undefined}>
+              {paused ? `▶ ${t("play")}` : `⏸ ${t("pause")}`}
+            </button>
+            <button type="button" onClick={() => step(1)} aria-label={t("next")}>⏭</button>
+          </>
+        )}
+        <button
+          type="button"
+          onClick={() => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => {})}
+        >
+          ⛶ {t("fullscreen")}
+        </button>
+      </div>
     </div>
   );
 }
@@ -206,6 +235,7 @@ function hasContent(key: SlideKey, d: ScreenData): boolean {
     case "court": return p.court <= Math.max(1, d.tournament.courtsCount);
     case "courts": return d.tournament.courtsCount > 1;
     case "upcoming": return d.matches.some((m) => m.status === "SCHEDULED" || m.status === "LIVE");
+    case "referees": return d.matches.some((m) => (m.status === "SCHEDULED" || m.status === "LIVE") && !!m.referee);
     case "results": return d.matches.some((m) => m.status === "FINISHED" && !!m.teamBId);
     case "sponsors": return d.sponsors.length > 0;
     case "qr": return true;
@@ -233,6 +263,7 @@ function Slide({ slideKey, data, now, t, clockPosition }: { slideKey: SlideKey; 
     case "standings": return <StandingsSlide stageOrder={p.stageOrder} group={p.group} data={data} t={t} />;
     case "bracket": return <BracketSlide stageOrder={p.stageOrder} data={data} t={t} />;
     case "upcoming": return <UpcomingSlide data={data} now={now} t={t} />;
+    case "referees": return <RefereesSlide data={data} t={t} />;
     case "results": return <ResultsSlide data={data} t={t} />;
     case "sponsors": return <SponsorsSlide data={data} t={t} />;
     case "qr": return <QrSlide data={data} t={t} />;
@@ -289,6 +320,7 @@ function CourtSlide({ court, data, now, t, clockPosition }: { court: number; dat
   return (
     <div className={`tscreen__court tscreen__court--clock-${clockPosition}`}>
       <div className="tscreen__court-label">{label}{stageLabel(match, data.stages, t) ? ` · ${stageLabel(match, data.stages, t)}` : ""}</div>
+      {match.referee && <div className="tscreen__court-ref">🟨 {t("referee", { name: match.referee })}</div>}
       {clockPosition === "top" && clock}
       <div className="tscreen__sides">
         <div className="tscreen__side">
@@ -310,7 +342,8 @@ function startsIn(m: ScreenMatch, now: number, data: ScreenData, t: T): string {
   const mins = Math.round((new Date(m.startAt).getTime() - now) / 60000);
   if (mins <= 0) return t("soon");
   if (mins < 60) return t("in_minutes", { n: mins });
-  return hhmm(m.startAt, data);
+  // « À 14:30 » : sans le « À », l'heure se confond avec un chrono.
+  return t("at_time", { time: hhmm(m.startAt, data) });
 }
 
 const hhmm = (iso: string, data: ScreenData) =>
@@ -341,6 +374,7 @@ function CourtsSlide({ data, now, t }: { data: ScreenData; now: number; t: T }) 
                   <div className="tscreen__tile-row"><span>{(sw ? match.teamB : match.teamA)?.name ?? t("tbd")}</span><strong>{live ? (sw ? match.scoreB : match.scoreA) : ""}</strong></div>
                   <div className="tscreen__tile-row"><span>{(sw ? match.teamA : match.teamB)?.name ?? t("tbd")}</span><strong>{live ? (sw ? match.scoreA : match.scoreB) : ""}</strong></div>
                   {!live && <div className="tscreen__tile-next">{t("next_match")}</div>}
+                  {match.referee && <div className="tscreen__tile-next">🟨 {match.referee}</div>}
                 </div>
               ) : (
                 <div className="tscreen__tile-body tscreen__tile-free">{t("court_free")}</div>
@@ -396,11 +430,34 @@ function UpcomingSlide({ data, now, t }: { data: ScreenData; now: number; t: T }
             <span className="tscreen__list-time">{m.status === "LIVE" ? t("live") : hhmm(m.startAt, data)}</span>
             <span className="tscreen__list-court">{m.courtName.replace(/^Court /, t("court_short"))}</span>
             <span className="tscreen__list-match">{m.teamA?.name ?? t("tbd")} <em>{t("vs")}</em> {m.teamB?.name ?? t("tbd")}</span>
-            <span className="tscreen__list-meta">{stageLabel(m, data.stages, t)}</span>
+            <span className="tscreen__list-meta">
+              {stageLabel(m, data.stages, t)}
+              {m.referee && <span className="tscreen__list-ref"> · 🟨 {t("referee", { name: m.referee })}</span>}
+            </span>
           </li>
         ))}
       </ul>
       {list.length > 0 && list[0].status !== "LIVE" && <p className="tscreen__foot">{startsIn(list[0], now, data, t)}</p>}
+    </div>
+  );
+}
+
+/** Prochains arbitrages : l'équipe arbitre en grand, pour que chacun sache quand y aller. */
+function RefereesSlide({ data, t }: { data: ScreenData; t: T }) {
+  const list = data.matches.filter((m) => (m.status === "SCHEDULED" || m.status === "LIVE") && m.referee).slice(0, 6);
+  return (
+    <div className="tscreen__page">
+      <SlideHeader title={t("referees_title")} data={data} />
+      <ul className="tscreen__list">
+        {list.map((m) => (
+          <li key={m.id} className={m.status === "LIVE" ? "is-live" : ""}>
+            <span className="tscreen__list-time">{m.status === "LIVE" ? t("live") : hhmm(m.startAt, data)}</span>
+            <span className="tscreen__list-court">{m.courtName.replace(/^Court /, t("court_short"))}</span>
+            <span className="tscreen__list-match">🟨 {m.referee}</span>
+            <span className="tscreen__list-meta">{m.teamA?.name ?? t("tbd")} {t("vs")} {m.teamB?.name ?? t("tbd")} · {stageLabel(m, data.stages, t)}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -11939,12 +11939,6 @@ details.format-flow--public .format-flow__num { width: 18px; height: 18px; font-
   --sc-gold: #a87800;
 }
 .tscreen.is-idle, .tscreen.is-idle * { cursor: none; }
-.tscreen__fs {
-  position: absolute; right: 1.5vw; bottom: 1.5vh; z-index: 3;
-  background: var(--sc-panel); color: var(--sc-fg); border: 2px solid var(--sc-line);
-  box-shadow: none; font-size: 14px; padding: 6px 12px; opacity: 0.85; transition: opacity 0.3s;
-}
-.tscreen.is-idle .tscreen__fs { opacity: 0; pointer-events: none; }
 .tscreen__progress {
   position: absolute; left: 0; bottom: 0; height: 0.6vh; width: 100%;
   background: var(--sc-accent); transform-origin: left; animation: tscreen-progress linear forwards; opacity: 0.7;
@@ -12103,3 +12097,21 @@ details.format-flow--public .format-flow__num { width: 18px; height: 18px; font-
 .public-screens__card:hover { transform: translate(-1px, -1px); box-shadow: var(--shadow-lg); }
 .public-screens__icon { font-size: 26px; }
 .public-screens__card small { color: var(--text-muted); font-size: 12px; }
+/* Écran : arbitre, commandes sur la TV, pause */
+.tscreen__court-ref { text-align: center; font-size: clamp(14px, 2vw, 56px); color: var(--sc-muted); margin-top: 0.6vh; }
+.tscreen__list-ref { color: var(--sc-fg); }
+.tscreen__controls {
+  position: absolute; right: 1.5vw; bottom: 1.5vh; z-index: 3; display: flex; gap: 6px;
+  opacity: 0.9; transition: opacity 0.3s;
+}
+.tscreen__controls button {
+  background: var(--sc-panel); color: var(--sc-fg); border: 2px solid var(--sc-line);
+  box-shadow: none; font-size: 14px; padding: 6px 12px; min-height: 0;
+}
+.tscreen__controls button:disabled { opacity: 0.5; }
+.tscreen.is-idle .tscreen__controls { opacity: 0; pointer-events: none; }
+.tscreen__paused {
+  position: absolute; top: 1.5vh; right: 1.5vw; z-index: 3;
+  padding: 0.4em 0.9em; border-radius: 999px; background: var(--sc-panel); border: 2px solid var(--sc-line);
+  color: var(--sc-muted); font-size: clamp(12px, 1.2vw, 32px); font-weight: 700;
+}

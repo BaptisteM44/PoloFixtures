@@ -3661,6 +3661,15 @@
     "public_title": "Screens",
     "public_desc": "Open on a computer or phone plugged into a TV, or just to follow along in big.",
     "public_court_desc": "One court's score and clock, very big.",
-    "public_slideshow_desc": "Courts, standings, next matches… on a loop."
+    "public_slideshow_desc": "Courts, standings, next matches… on a loop.",
+    "paused_badge": "Paused",
+    "prev": "Previous slide",
+    "next": "Next slide",
+    "play": "Play",
+    "paused_by_orga": "Paused by the organisers (dashboard)",
+    "referee": "Referee: {name}",
+    "referees_title": "Next referees",
+    "slide_referees": "Next referees",
+    "at_time": "At {time}"
   }
 }

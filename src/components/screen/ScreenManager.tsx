@@ -20,6 +20,7 @@ export function slideLabel(key: SlideKey, ctx: SlideContext, t: T): string {
     case "court": return t("slide_court", { n: p.court });
     case "courts": return t("slide_courts");
     case "upcoming": return t("slide_upcoming");
+    case "referees": return t("slide_referees");
     case "results": return t("slide_results");
     case "sponsors": return t("slide_sponsors");
     case "qr": return t("slide_qr");

@@ -3667,6 +3667,15 @@
     "public_title": "Bildschirme",
     "public_desc": "Auf einem Rechner oder Handy am Fernseher öffnen – oder einfach groß mitverfolgen.",
     "public_court_desc": "Spielstand und Uhr eines Courts, ganz groß.",
-    "public_slideshow_desc": "Courts, Tabellen, nächste Spiele… in Schleife."
+    "public_slideshow_desc": "Courts, Tabellen, nächste Spiele… in Schleife.",
+    "paused_badge": "Pausiert",
+    "prev": "Vorherige Folie",
+    "next": "Nächste Folie",
+    "play": "Abspielen",
+    "paused_by_orga": "Von der Orga pausiert (Dashboard)",
+    "referee": "Schiri: {name}",
+    "referees_title": "Nächste Schiris",
+    "slide_referees": "Nächste Schiris",
+    "at_time": "Um {time}"
   }
 }

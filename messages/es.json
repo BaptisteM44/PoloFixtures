@@ -3667,6 +3667,15 @@
     "public_title": "Pantallas",
     "public_desc": "Para abrir en un ordenador o móvil conectado a una tele, o simplemente para seguirlo en grande.",
     "public_court_desc": "Marcador y crono de una pista, muy grandes.",
-    "public_slideshow_desc": "Pistas, clasificaciones, próximos partidos… en bucle."
+    "public_slideshow_desc": "Pistas, clasificaciones, próximos partidos… en bucle.",
+    "paused_badge": "En pausa",
+    "prev": "Diapositiva anterior",
+    "next": "Diapositiva siguiente",
+    "play": "Reproducir",
+    "paused_by_orga": "Pausado por la organización (panel)",
+    "referee": "Árbitro: {name}",
+    "referees_title": "Próximos árbitros",
+    "slide_referees": "Próximos árbitros",
+    "at_time": "A las {time}"
   }
 }
