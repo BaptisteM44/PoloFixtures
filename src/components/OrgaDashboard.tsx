@@ -27,6 +27,7 @@ import { AccommodationManager } from "@/components/AccommodationManager";
 import { QRCodeSVG } from "qrcode.react";
 import { PipelinePlanning } from "@/components/PipelinePlanning";
 import { OrgaJourney, type JourneyTab } from "@/components/orga/OrgaJourney";
+import { ScreenManager } from "@/components/screen/ScreenManager";
 import { TournamentFormatTab } from "@/components/orga/TournamentFormatTab";
 
 
@@ -2500,6 +2501,7 @@ export function OrgaDashboard({
       {/* ── Tab: Jour J ── QR codes, overlay, arbitres */}
       {activeTab === "dday" && (
         <div style={{ display: "grid", gap: 20 }}>
+          <ScreenManager tournamentId={tournament.id} tournamentSlug={tournament.slug || tournament.id} />
           <div className="panel" style={{ padding: "16px 18px" }}>
           <h3 style={{ margin: 0 }}>📱 {t("qr_title")} · 🎬 {t("overlay_title")}</h3>
           <p className="meta" style={{ margin: "8px 0 12px" }}>{t("qr_desc")}</p>

@@ -27,6 +27,7 @@ import { FreeAgentForm } from "@/components/FreeAgentForm";
 import { FreeAgentList } from "@/components/FreeAgentList";
 import { RegisterTeamForm } from "@/components/RegisterTeamForm";
 import { computeStandings } from "@/lib/standings";
+import { PublicScreensList } from "@/components/screen/PublicScreensList";
 import { deleteFreeAgentAction } from "./edit/actions";
 import { TournamentChat } from "@/components/TournamentChat";
 import { TelegramWidget } from "@/components/TelegramWidget";
@@ -383,6 +384,8 @@ export default async function TournamentPage({
     // pas besoin de stream ni de chat pour le justifier. Le contenu s'adapte au
     // statut du tournoi (à venir / en cours / terminé).
     { label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` },
+    // Écrans de salle (scoreboard géant, diaporama) : publics, dès le lancement (l'orga les voit avant).
+    ...(isLaunched || isOrga ? [{ label: `📺 ${t("tab_screens")}`, value: "screens", href: `/tournament/${params.id}?tab=screens` }] : []),
     // Arbitres (bêta) : l'orga le voit toujours (pour l'activer) ; les joueurs
     // seulement quand des désignations sont publiées.
     ...(isOrga || showRefereeTab ? [{ label: `🟨 ${t("tab_referees")}`, value: "referees", href: `/tournament/${params.id}?tab=referees` }] : []),
@@ -602,6 +605,10 @@ export default async function TournamentPage({
           </p>
         );
       })()}
+
+      {tab === "screens" && (isLaunched || isOrga) && (
+        <PublicScreensList tournamentId={tournament.id} tournamentSlug={tournament.slug ?? tournament.id} courtsCount={tournament.courtsCount ?? 1} />
+      )}
 
       {/* ── RECAP TAB ── */}
       {tab === "recap" && isCompleted && (() => {

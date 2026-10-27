@@ -413,6 +413,7 @@ model Tournament {
   accommodationHosts AccommodationHost[]
   soloEntries        TournamentSoloEntry[]
   overlayChannels    OverlayChannel[]
+  screens            TournamentScreen[]
   registrationFields RegistrationField[]
 
   @@index([continentCode])
@@ -1628,4 +1629,28 @@ model CoachCard {
   createdAt       DateTime @default(now())
 
   player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+}
+
+/// Écran de salle (TV) : scoreboard d'un terrain ou diaporama du tournoi.
+/// Ouvert sur /tournament/<slug>/screen/<slug de l'écran>, piloté par l'orga.
+model TournamentScreen {
+  id            String   @id @default(cuid())
+  tournamentId  String
+  slug          String // dans l'URL : « bar », « terrain-1 »…
+  name          String
+  mode          String   @default("slideshow") // "court" | "slideshow"
+  court         Int      @default(1) // mode "court"
+  theme         String   @default("dark") // "dark" | "light"
+  clockPosition String   @default("top") // "top" | "bottom"
+  slides        Json? // null = diaporama automatique ; sinon [{ key, seconds? }]
+  slideSeconds  Int      @default(12)
+  paused        Boolean  @default(false)
+  pinnedSlide   String? // clé de la diapo figée à l'écran
+  announcement  String? // message affiché en grand par-dessus
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, slug])
 }

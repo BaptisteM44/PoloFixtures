@@ -14,7 +14,7 @@
 import { prisma } from "@/lib/db";
 import type { Prisma, Stage, StageEntry, Match, StageType } from "@prisma/client";
 import { resolveEntries, type EntryRules, type ResolvedEntry } from "./transitions";
-import { pointsStandings, perfectTieRanks, placementStandings, bracketStandings, bracketTieGroups, type MatchLite, type ScoringConfig } from "./stage-standings";
+import { pointsStandings, standingsTable, perfectTieRanks, placementStandings, bracketStandings, bracketTieGroups, type MatchLite, type ScoringConfig, type StandingRow } from "./stage-standings";
 import { rrRounds, swissPairings, crossPoolPairings, placementPairings, pairKey, type Pairing } from "./rounds";
 import { planSE } from "./se";
 import { planDE } from "./de";
@@ -189,6 +189,25 @@ export function stageStandings(t: PipelineTournament, stageOrder: number, group?
     default:
       return entryIdsOf(stage, group);
   }
+}
+
+/**
+ * Lignes complètes (points, buts…) d'un classement à points, dans l'ordre de
+ * stageStandings — pour l'affichage (écran de salle). [] pour les autres types.
+ */
+export function stageStandingRows(t: PipelineTournament, stageOrder: number, group?: string): StandingRow[] {
+  const stage = t.stages.find((s) => s.order === stageOrder);
+  if (!stage || !["RR", "SWISS", "CROSS_POOL"].includes(stage.type)) return [];
+  const { entryIds, all } = pointsInputs(t, stage, group);
+  const rows = new Map(standingsTable(entryIds, all, scoringOf(t)).map((r) => [r.teamId, r]));
+  const order = stageStandings(t, stageOrder, group);
+  const preserve = stage.type === "CROSS_POOL" && (stage.config as { preserveSeeding?: boolean }).preserveSeeding;
+  return order
+    .map((id, i) => {
+      const r = rows.get(id);
+      return r ? { ...r, rank: preserve ? i + 1 : r.rank } : null;
+    })
+    .filter((r): r is StandingRow => !!r);
 }
 
 /**

@@ -25,6 +25,14 @@ export type ChannelUpdatePayload = {
   showChat: boolean;
 };
 
+/** Écran de salle : config modifiée par l'orga (diapos, pause, annonce…). */
+export type ScreenUpdatePayload = {
+  tournamentId: string;
+  type: "screen_update" | "screen_deleted";
+  slug: string;
+  screen?: Record<string, unknown>;
+};
+
 /** Messagerie directe : diffusé aux deux participant·es d'une conversation. */
 export type DirectMessagePayload =
   | { type: "new"; conversationId: string; recipientId: string; message: Record<string, unknown> }
@@ -58,4 +66,8 @@ export function publishChannelUpdate(payload: ChannelUpdatePayload) {
 
 export function publishDirectMessage(payload: DirectMessagePayload) {
   sseEmitter.emit("direct_message", payload);
+}
+
+export function publishScreenUpdate(payload: ScreenUpdatePayload) {
+  sseEmitter.emit("screen", payload);
 }

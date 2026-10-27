@@ -31,6 +31,11 @@ export async function GET(request: Request) {
         sendEvent("tournament", payload);
       };
 
+      const screenHandler = (payload: { tournamentId: string }) => {
+        if (tournamentId && payload.tournamentId !== tournamentId) return;
+        sendEvent("screen", payload);
+      };
+
       const channelHandler = (payload: unknown) => {
         sendEvent("channel", payload);
       };
@@ -56,6 +61,7 @@ export async function GET(request: Request) {
         sseEmitter.off("match", matchHandler);
         sseEmitter.off("tournament", tournamentHandler);
         sseEmitter.off("channel", channelHandler);
+        sseEmitter.off("screen", screenHandler);
         sseEmitter.off("direct_message", directMessageHandler);
         try { controller.close(); } catch { /* already closed */ }
       };
@@ -63,6 +69,7 @@ export async function GET(request: Request) {
       sseEmitter.on("match", matchHandler);
       sseEmitter.on("tournament", tournamentHandler);
       sseEmitter.on("channel", channelHandler);
+      sseEmitter.on("screen", screenHandler);
       sseEmitter.on("direct_message", directMessageHandler);
       controller.enqueue(encoder.encode(`: connected\n\n`));
 
