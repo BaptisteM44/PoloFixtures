@@ -12115,3 +12115,46 @@ details.format-flow--public .format-flow__num { width: 18px; height: 18px; font-
   padding: 0.4em 0.9em; border-radius: 999px; background: var(--sc-panel); border: 2px solid var(--sc-line);
   color: var(--sc-muted); font-size: clamp(12px, 1.2vw, 32px); font-weight: 700;
 }
+/* Écran : vue d'ensemble en tuiles */
+.tscreen__overview { padding: 2.5vh 2.5vw 3vh; gap: 2vh; }
+.tscreen__ov-head { display: flex; justify-content: space-between; align-items: baseline; gap: 2vw; }
+.tscreen__ov-head .tscreen__title { font-size: clamp(22px, 2.8vw, 84px); }
+.tscreen__ov-meta { display: flex; gap: 1.5vw; align-items: baseline; font-size: clamp(14px, 1.6vw, 48px); color: var(--sc-muted); }
+.tscreen__ov-meta strong { color: var(--sc-fg); font-size: 1.4em; font-variant-numeric: tabular-nums; }
+.tscreen__ov-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.1fr 1fr 1fr; gap: 1.6vh 1.4vw; }
+.tscreen__ov-courts { display: grid; gap: 1.6vh; min-height: 0; grid-auto-rows: 1fr; }
+.tscreen__ov-courts--4 { grid-template-columns: 1fr 1fr; }
+.tscreen__ov-courts .tscreen__tile { padding: 1.6vh 1.2vw; gap: 0.8vh; }
+.tscreen__ov-courts .tscreen__tile-head { font-size: clamp(12px, 1.3vw, 40px); }
+.tscreen__ov-courts .tscreen__tile-row { font-size: clamp(16px, 2vw, 60px); }
+.tscreen__ov-courts .tscreen__tile-next { font-size: clamp(12px, 1.2vw, 36px); }
+.tscreen__ov-side { display: grid; grid-template-rows: 1.4fr 1fr; gap: 1.6vh; min-height: 0; }
+.tscreen__ov-box {
+  display: flex; flex-direction: column; gap: 1vh; min-height: 0; overflow: hidden;
+  padding: 1.6vh 1.2vw; background: var(--sc-panel); border: 0.25vw solid var(--sc-line); border-radius: 1.5vh;
+}
+.tscreen__ov-box h4 { margin: 0; font-size: clamp(12px, 1.3vw, 40px); color: var(--sc-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.tscreen__ov-empty { margin: 0; color: var(--sc-muted); font-size: clamp(14px, 1.6vw, 48px); }
+.tscreen__ov-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.1vh; font-size: clamp(14px, 1.55vw, 46px); }
+.tscreen__ov-list li { display: grid; gap: 0.2vh; padding-bottom: 1vh; border-bottom: 2px solid var(--sc-line); }
+.tscreen__ov-list li:last-child { border-bottom: none; padding-bottom: 0; }
+.tscreen__ov-time { font-size: 0.75em; color: var(--sc-muted); font-variant-numeric: tabular-nums; }
+.tscreen__ov-match { font-weight: 700; }
+.tscreen__ov-match em { font-style: normal; color: var(--sc-muted); font-weight: 400; }
+.tscreen__ov-ref { font-size: 0.75em; }
+.tscreen__ov-result { grid-template-columns: 1fr auto 1fr !important; align-items: baseline; column-gap: 0.8vw; }
+.tscreen__ov-result span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tscreen__ov-result .is-right { text-align: right; }
+.tscreen__ov-result .is-win { font-weight: 700; }
+.tscreen__ov-result strong { font-variant-numeric: tabular-nums; padding: 0 0.6vw; }
+.tscreen__ov-table { width: 100%; border-collapse: collapse; font-size: clamp(14px, 1.55vw, 46px); font-variant-numeric: tabular-nums; }
+.tscreen__ov-table td { padding: 0.35vh 0.4vw; border-top: 2px solid var(--sc-line); text-align: center; }
+.tscreen__ov-table tr:first-child td { border-top: none; }
+.tscreen__ov-table .is-team { text-align: left; font-weight: 700; width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 0; }
+.tscreen__ov-table .is-points { font-weight: 700; color: var(--sc-accent); }
+.tscreen__ov-dots { display: flex; gap: 0.5vw; justify-content: center; margin-top: auto; }
+.tscreen__ov-dots span { width: 0.7vw; height: 0.7vw; min-width: 6px; min-height: 6px; border-radius: 50%; background: var(--sc-line); }
+.tscreen__ov-dots span.is-on { background: var(--sc-accent); }
+@media (orientation: portrait) {
+  .tscreen__ov-grid { grid-template-columns: 1fr; overflow: auto; }
+}

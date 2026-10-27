@@ -3670,6 +3670,10 @@
     "referee": "Árbitro: {name}",
     "referees_title": "Próximos árbitros",
     "slide_referees": "Próximos árbitros",
-    "at_time": "Às {time}"
+    "at_time": "Às {time}",
+    "default_overview": "Visão geral",
+    "slide_overview": "Visão geral (tudo em mosaico)",
+    "standings_none": "Classificação",
+    "public_overview_desc": "Campos, próximos jogos, classificação e resultados, tudo de uma vez."
   }
 }

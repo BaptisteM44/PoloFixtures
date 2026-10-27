@@ -234,6 +234,7 @@ function hasContent(key: SlideKey, d: ScreenData): boolean {
   switch (p.kind) {
     case "court": return p.court <= Math.max(1, d.tournament.courtsCount);
     case "courts": return d.tournament.courtsCount > 1;
+    case "overview": return true;
     case "upcoming": return d.matches.some((m) => m.status === "SCHEDULED" || m.status === "LIVE");
     case "referees": return d.matches.some((m) => (m.status === "SCHEDULED" || m.status === "LIVE") && !!m.referee);
     case "results": return d.matches.some((m) => m.status === "FINISHED" && !!m.teamBId);
@@ -260,6 +261,7 @@ function Slide({ slideKey, data, now, t, clockPosition }: { slideKey: SlideKey; 
   switch (p.kind) {
     case "court": return <CourtSlide court={p.court} data={data} now={now} t={t} clockPosition={clockPosition} />;
     case "courts": return <CourtsSlide data={data} now={now} t={t} />;
+    case "overview": return <OverviewSlide data={data} now={now} t={t} />;
     case "standings": return <StandingsSlide stageOrder={p.stageOrder} group={p.group} data={data} t={t} />;
     case "bracket": return <BracketSlide stageOrder={p.stageOrder} data={data} t={t} />;
     case "upcoming": return <UpcomingSlide data={data} now={now} t={t} />;
@@ -349,6 +351,126 @@ function startsIn(m: ScreenMatch, now: number, data: ScreenData, t: T): string {
 const hhmm = (iso: string, data: ScreenData) =>
   new Intl.DateTimeFormat("fr", { hour: "2-digit", minute: "2-digit", timeZone: data.tournament.timezone ?? undefined }).format(new Date(iso));
 
+/** Ce que montre un terrain, en version compacte (mosaïque, vue d'ensemble). */
+function CourtTile({ court, data, now, t }: { court: number; data: ScreenData; now: number; t: T }) {
+  const { match, live } = courtMatch(data.matches, court);
+  const total = data.tournament.gameDurationMin * 60;
+  const clk = match && live ? matchClock(match, now) : null;
+  const sw = match ? swapped(match) : false;
+  return (
+    <div className={`tscreen__tile${live ? " is-live" : ""}`}>
+      <div className="tscreen__tile-head">
+        <span>{t("court_n", { n: court })}</span>
+        <span className="tscreen__tile-clock">
+          {!match ? "" : live ? (clk!.sec >= total || match.goldenGoal ? t("golden_goal") : fmt(total - clk!.sec)) : startsIn(match, now, data, t)}
+        </span>
+      </div>
+      {match ? (
+        <div className="tscreen__tile-body">
+          <div className="tscreen__tile-row"><span>{(sw ? match.teamB : match.teamA)?.name ?? t("tbd")}</span><strong>{live ? (sw ? match.scoreB : match.scoreA) : ""}</strong></div>
+          <div className="tscreen__tile-row"><span>{(sw ? match.teamA : match.teamB)?.name ?? t("tbd")}</span><strong>{live ? (sw ? match.scoreA : match.scoreB) : ""}</strong></div>
+          {!live && <div className="tscreen__tile-next">{t("next_match")}</div>}
+          {match.referee && <div className="tscreen__tile-next">🟨 {match.referee}</div>}
+        </div>
+      ) : (
+        <div className="tscreen__tile-body tscreen__tile-free">{t("court_free")}</div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Vue d'ensemble : tout d'un coup, en tuiles — terrains (gauche), prochains
+ * matchs + arbitres (centre), classement de l'étape en cours + derniers
+ * résultats (droite). Plusieurs poules : elles défilent dans leur tuile.
+ */
+function OverviewSlide({ data, now, t }: { data: ScreenData; now: number; t: T }) {
+  const n = Math.max(1, data.tournament.courtsCount);
+  const upcoming = data.matches.filter((m) => m.status === "SCHEDULED").slice(0, 6);
+  const results = data.matches.filter((m) => m.status === "FINISHED" && m.teamBId).slice(-4).reverse();
+  const names = teamNames(data);
+
+  // Étape à classement à montrer : celle en cours, sinon la dernière jouée.
+  const played = data.stages.filter((s) => s.groups.length > 0 && data.matches.some((m) => m.stageId === s.id));
+  const stage = played.find((s) => s.status === "ACTIVE") ?? played[played.length - 1];
+  const groups = (stage?.groups ?? []).filter((g) => g.rows.length > 0 && data.matches.some((m) => m.stageId === stage!.id && (g.key === null || m.groupKey === g.key)));
+  const [gi, setGi] = useState(0);
+  useEffect(() => {
+    if (groups.length < 2) return;
+    const timer = setInterval(() => setGi((i) => i + 1), 10_000);
+    return () => clearInterval(timer);
+  }, [groups.length]);
+  const group = groups.length ? groups[gi % groups.length] : null;
+  const activeStage = data.stages.find((s) => s.status === "ACTIVE");
+
+  return (
+    <div className="tscreen__page tscreen__overview">
+      <header className="tscreen__ov-head">
+        <span className="tscreen__title">{data.tournament.name}</span>
+        <span className="tscreen__ov-meta">
+          {activeStage ? activeStage.name : ""}
+          <strong>{new Intl.DateTimeFormat("fr", { hour: "2-digit", minute: "2-digit", timeZone: data.tournament.timezone ?? undefined }).format(new Date(now))}</strong>
+        </span>
+      </header>
+      <div className="tscreen__ov-grid">
+        <section className={`tscreen__ov-courts tscreen__ov-courts--${Math.min(n, 4)}`}>
+          {Array.from({ length: Math.min(n, 4) }, (_, i) => <CourtTile key={i} court={i + 1} data={data} now={now} t={t} />)}
+        </section>
+
+        <section className="tscreen__ov-box">
+          <h4>{t("upcoming_title")}</h4>
+          {upcoming.length === 0 ? <p className="tscreen__ov-empty">—</p> : (
+            <ul className="tscreen__ov-list">
+              {upcoming.map((m) => (
+                <li key={m.id}>
+                  <span className="tscreen__ov-time">{hhmm(m.startAt, data)} · {m.courtName.replace(/^Court /, t("court_short"))}</span>
+                  <span className="tscreen__ov-match">{m.teamA?.name ?? t("tbd")} <em>{t("vs")}</em> {m.teamB?.name ?? t("tbd")}</span>
+                  {m.referee && <span className="tscreen__ov-ref">🟨 {m.referee}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="tscreen__ov-side">
+          <div className="tscreen__ov-box">
+            <h4>{stage ? `${stage.name}${group?.key ? ` · ${t("group", { group: group.key })}` : ""}` : t("standings_none")}</h4>
+            {group && (
+              <table className="tscreen__ov-table">
+                <tbody>
+                  {group.rows.slice(0, 8).map((r) => (
+                    <tr key={r.teamId}>
+                      <td>{r.rank}</td>
+                      <td className="is-team">{names.get(r.teamId) ?? "?"}</td>
+                      <td>{r.goalDiff > 0 ? `+${r.goalDiff}` : r.goalDiff}</td>
+                      <td className="is-points">{r.points}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {groups.length > 1 && <div className="tscreen__ov-dots">{groups.map((g, i) => <span key={g.key} className={i === gi % groups.length ? "is-on" : ""} />)}</div>}
+          </div>
+          <div className="tscreen__ov-box">
+            <h4>{t("results_title")}</h4>
+            {results.length === 0 ? <p className="tscreen__ov-empty">—</p> : (
+              <ul className="tscreen__ov-list">
+                {results.map((m) => (
+                  <li key={m.id} className="tscreen__ov-result">
+                    <span className={m.winnerTeamId === m.teamAId ? "is-win" : ""}>{m.teamA?.name}</span>
+                    <strong>{m.scoreA}–{m.scoreB}</strong>
+                    <span className={`is-right${m.winnerTeamId === m.teamBId ? " is-win" : ""}`}>{m.teamB?.name}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
 /** Tous les terrains d'un coup d'œil. */
 function CourtsSlide({ data, now, t }: { data: ScreenData; now: number; t: T }) {
   const n = data.tournament.courtsCount;
@@ -356,32 +478,7 @@ function CourtsSlide({ data, now, t }: { data: ScreenData; now: number; t: T }) 
     <div className="tscreen__page">
       <SlideHeader title={t("courts_title")} data={data} />
       <div className={`tscreen__mosaic tscreen__mosaic--${Math.min(n, 4)}`}>
-        {Array.from({ length: n }, (_, i) => {
-          const { match, live } = courtMatch(data.matches, i + 1);
-          const total = data.tournament.gameDurationMin * 60;
-          const clk = match && live ? matchClock(match, now) : null;
-          const sw = match ? swapped(match) : false;
-          return (
-            <div key={i} className={`tscreen__tile${live ? " is-live" : ""}`}>
-              <div className="tscreen__tile-head">
-                <span>{t("court_n", { n: i + 1 })}</span>
-                <span className="tscreen__tile-clock">
-                  {!match ? "" : live ? (clk!.sec >= total || match.goldenGoal ? t("golden_goal") : fmt(total - clk!.sec)) : startsIn(match, now, data, t)}
-                </span>
-              </div>
-              {match ? (
-                <div className="tscreen__tile-body">
-                  <div className="tscreen__tile-row"><span>{(sw ? match.teamB : match.teamA)?.name ?? t("tbd")}</span><strong>{live ? (sw ? match.scoreB : match.scoreA) : ""}</strong></div>
-                  <div className="tscreen__tile-row"><span>{(sw ? match.teamA : match.teamB)?.name ?? t("tbd")}</span><strong>{live ? (sw ? match.scoreA : match.scoreB) : ""}</strong></div>
-                  {!live && <div className="tscreen__tile-next">{t("next_match")}</div>}
-                  {match.referee && <div className="tscreen__tile-next">🟨 {match.referee}</div>}
-                </div>
-              ) : (
-                <div className="tscreen__tile-body tscreen__tile-free">{t("court_free")}</div>
-              )}
-            </div>
-          );
-        })}
+        {Array.from({ length: n }, (_, i) => <CourtTile key={i} court={i + 1} data={data} now={now} t={t} />)}
       </div>
     </div>
   );

@@ -3670,6 +3670,10 @@
     "referee": "Referee: {name}",
     "referees_title": "Next referees",
     "slide_referees": "Next referees",
-    "at_time": "At {time}"
+    "at_time": "At {time}",
+    "default_overview": "Overview",
+    "slide_overview": "Overview (everything in tiles)",
+    "standings_none": "Standings",
+    "public_overview_desc": "Courts, next matches, standings and results, all at once."
   }
 }

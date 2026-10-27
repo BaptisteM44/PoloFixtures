@@ -4,6 +4,7 @@
  *
  * Une diapo est identifiée par une clé texte, stable et lisible :
  *   court:1            match en cours / à venir sur le terrain 1
+ *   overview           vue d'ensemble : terrains + prochains matchs + classement + résultats, en tuiles
  *   courts             tous les terrains en mosaïque
  *   standings:0:A      classement de l'étape d'ordre 0, groupe A ("-" = sans groupe)
  *   bracket:2          tableau de l'étape d'ordre 2
@@ -54,6 +55,7 @@ const BRACKET_TYPES = new Set(["SE", "DE", "PLACEMENT"]);
 export function parseSlideKey(key: SlideKey):
   | { kind: "court"; court: number }
   | { kind: "courts" }
+  | { kind: "overview" }
   | { kind: "standings"; stageOrder: number; group: string | null }
   | { kind: "bracket"; stageOrder: number }
   | { kind: "upcoming" | "referees" | "results" | "sponsors" | "qr" }
@@ -63,7 +65,7 @@ export function parseSlideKey(key: SlideKey):
     case "court": return { kind, court: Math.max(1, Number(a) || 1) };
     case "standings": return { kind, stageOrder: Number(a) || 0, group: b && b !== "-" ? b : null };
     case "bracket": return { kind, stageOrder: Number(a) || 0 };
-    case "courts": case "upcoming": case "referees": case "results": case "sponsors": case "qr": return { kind };
+    case "courts": case "overview": case "upcoming": case "referees": case "results": case "sponsors": case "qr": return { kind };
     default: return null;
   }
 }
@@ -71,6 +73,7 @@ export function parseSlideKey(key: SlideKey):
 /** Toutes les diapos proposables pour ce tournoi (pour composer un diaporama). */
 export function slideCatalog(ctx: SlideContext): SlideKey[] {
   const keys: SlideKey[] = [];
+  keys.push("overview");
   if (ctx.courtsCount > 1) keys.push("courts");
   for (let c = 1; c <= ctx.courtsCount; c++) keys.push(`court:${c}`);
   keys.push("upcoming", "referees", "results");
@@ -128,6 +131,8 @@ export function defaultScreens(courtsCount: number): ScreenConfig[] {
   const base = { theme: "dark" as const, clockPosition: "top" as const, slides: null, slideSeconds: 12, paused: false, pinnedSlide: null, announcement: null };
   return [
     { ...base, slug: "diaporama", name: "", mode: "slideshow", court: 1 },
+    // Tout d'un coup, sans rotation : une seule diapo « vue d'ensemble ».
+    { ...base, slug: "vue-d-ensemble", name: "", mode: "slideshow", court: 1, slides: [{ key: "overview" }] },
     ...Array.from({ length: courtsCount }, (_, i) => ({ ...base, slug: `terrain-${i + 1}`, name: "", mode: "court" as const, court: i + 1 })),
   ];
 }

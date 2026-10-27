@@ -49,11 +49,12 @@ describe("écran de salle — diapos", () => {
   });
 
   it("catalogue : tout ce qu'on peut composer", () => {
-    expect(slideCatalog(ctx())).toEqual(["courts", "court:1", "court:2", "upcoming", "referees", "results", "standings:0:A", "standings:0:B", "bracket:1", "sponsors", "qr"]);
+    expect(slideCatalog(ctx())).toEqual(["overview", "courts", "court:1", "court:2", "upcoming", "referees", "results", "standings:0:A", "standings:0:B", "bracket:1", "sponsors", "qr"]);
   });
 
   it("slug d'URL lisible et écrans par défaut", () => {
     expect(screenSlug("Écran du Bar !")).toBe("ecran-du-bar");
-    expect(defaultScreens(2).map((s) => s.slug)).toEqual(["diaporama", "terrain-1", "terrain-2"]);
+    expect(defaultScreens(2).map((s) => s.slug)).toEqual(["diaporama", "vue-d-ensemble", "terrain-1", "terrain-2"]);
+    expect(defaultScreens(1)[1].slides).toEqual([{ key: "overview" }]);
   });
 });

@@ -3676,6 +3676,10 @@
     "referee": "Schiri: {name}",
     "referees_title": "Nächste Schiris",
     "slide_referees": "Nächste Schiris",
-    "at_time": "Um {time}"
+    "at_time": "Um {time}",
+    "default_overview": "Übersicht",
+    "slide_overview": "Übersicht (alles in Kacheln)",
+    "standings_none": "Tabelle",
+    "public_overview_desc": "Courts, nächste Spiele, Tabelle und Ergebnisse auf einen Blick."
   }
 }

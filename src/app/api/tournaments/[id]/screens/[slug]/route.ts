@@ -51,7 +51,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string; sl
     const def = defaultScreens(r.t.courtsCount).find((d) => d.slug === params.slug);
     if (!def) return Response.json({ error: apiMsg("not_found") }, { status: 404 });
     screen = await prisma.tournamentScreen.create({
-      data: { tournamentId: r.t.id, slug: def.slug, name: "", mode: def.mode, court: def.court, ...(data as object) } as never,
+      data: { tournamentId: r.t.id, slug: def.slug, name: "", mode: def.mode, court: def.court, ...(def.slides ? { slides: def.slides } : {}), ...(data as object) } as never,
     });
   }
   const config = toScreenConfig(screen);

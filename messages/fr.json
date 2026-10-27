@@ -3671,6 +3671,10 @@
     "referee": "Arbitre : {name}",
     "referees_title": "Prochains arbitres",
     "slide_referees": "Prochains arbitres",
-    "at_time": "À {time}"
+    "at_time": "À {time}",
+    "default_overview": "Vue d'ensemble",
+    "slide_overview": "Vue d'ensemble (tout en tuiles)",
+    "standings_none": "Classement",
+    "public_overview_desc": "Terrains, prochains matchs, classement et résultats, tout d'un coup."
   }
 }

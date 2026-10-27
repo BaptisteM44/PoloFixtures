@@ -19,6 +19,7 @@ export function slideLabel(key: SlideKey, ctx: SlideContext, t: T): string {
   switch (p.kind) {
     case "court": return t("slide_court", { n: p.court });
     case "courts": return t("slide_courts");
+    case "overview": return t("slide_overview");
     case "upcoming": return t("slide_upcoming");
     case "referees": return t("slide_referees");
     case "results": return t("slide_results");
@@ -38,6 +39,7 @@ export function slideLabel(key: SlideKey, ctx: SlideContext, t: T): string {
 export function screenTitle(s: ScreenConfig, t: T): string {
   if (s.name) return s.name;
   if (s.slug === "diaporama") return t("default_slideshow");
+  if (s.slug === "vue-d-ensemble") return t("default_overview");
   return t("court_n", { n: s.court });
 }
 
