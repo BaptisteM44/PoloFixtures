@@ -1046,7 +1046,10 @@
     "kpi_free_agents": "{count, plural, one {# agente livre} other {# agentes livres}}",
     "kpi_courts": "{count, plural, one {# campo} other {# campos}}",
     "new_next_title": "E depois? O teu painel guia-te passo a passo:",
-    "new_next_sub": "Nada é definitivo: tudo se altera depois no painel."
+    "new_next_sub": "Nada é definitivo: tudo se altera depois no painel.",
+    "bracket_not_played": "Não houve quadro neste torneio.",
+    "legacy_format_title": "Antigo sistema de formatos",
+    "legacy_format_desc": "Este torneio foi jogado com o antigo sistema de formatos. O seu desenrolar (grupos, suíço, quadro, classificação) continua disponível na página pública."
   },
   "registration": {
     "section_title": "Inscrever a minha equipa",

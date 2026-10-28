@@ -5,14 +5,6 @@ import { hasAtLeastRole } from "@/lib/rbac";
 import { publishMatchUpdate, publishNewMatches, publishTournamentUpdate } from "@/lib/sse";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { autoFillReferees, isRefereeTeamMember, remindNextUp } from "@/lib/referees";
-import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
-import {
-  generateFridaySwissRoundAction,
-  generateSaturdaySwissRoundAction,
-  generateSundaySwissRoundAction,
-  computeSaturdayGroupsAction,
-} from "@/app/[locale]/tournament/[id]/edit/berlin-mixed-actions";
-import { generateSplitSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/split-swiss-actions";
 import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
 
@@ -263,121 +255,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         // Non-blocking: reschedule failure doesn't affect the save response
       }
     })();
-  }
-
-  // Auto-generate next Swiss round when all matches of current round are finished
-  if (isNowFinished && match.phase === "SWISS") {
-    const roundMatches = await prisma.match.findMany({
-      where: { tournamentId: match.tournamentId, phase: "SWISS", roundIndex: match.roundIndex }
-    });
-    const allDone = roundMatches.every((m) => m.status === "FINISHED");
-    if (allDone) {
-      const result = await generateSwissRoundAction(match.tournamentId).catch(() => null);
-      if (result && "round" in result && result.round) {
-        // Fetch newly created matches and broadcast them via SSE
-        const newMatches = await prisma.match.findMany({
-          where: { tournamentId: match.tournamentId, phase: "SWISS", roundIndex: result.round },
-          include: { teamA: true, teamB: true },
-        });
-        if (newMatches.length > 0) {
-          publishNewMatches({
-            tournamentId: match.tournamentId,
-            type: "new_matches",
-            matches: newMatches as unknown as Record<string, unknown>[],
-          });
-        }
-      }
-    }
-  }
-
-  // Auto-generate next Berlin Mixed round when all matches of current round are finished
-  const berlinPhases = ["FRIDAY_A", "FRIDAY_B", "SATURDAY_A", "SATURDAY_B", "SUNDAY_SWISS"] as const;
-  type BerlinPhase = typeof berlinPhases[number];
-
-  // Auto-generate next Split Swiss round
-  if (isNowFinished && (match.phase === "SWISS_A" || match.phase === "SWISS_B")) {
-    const tid = match.tournamentId;
-    const group = match.phase === "SWISS_A" ? "A" : "B";
-    const roundMatches = await prisma.match.findMany({
-      where: { tournamentId: tid, phase: match.phase, roundIndex: match.roundIndex },
-    });
-    const allDone = roundMatches.every((m) => m.status === "FINISHED");
-    if (allDone) {
-      (() => {
-        (async () => {
-          try {
-            const tournament = await prisma.tournament.findUnique({
-              where: { id: tid },
-              select: { saturdayRounds: true, swissRounds: true },
-            });
-            const maxRounds = (tournament as any)?.saturdayRounds ?? (tournament as any)?.swissRounds ?? 5;
-            if (match.roundIndex < maxRounds) {
-              const result = await generateSplitSwissRoundAction(tid, group);
-              if (result && !("error" in result)) {
-                const newMatches = await prisma.match.findMany({
-                  where: { tournamentId: tid, phase: match.phase, roundIndex: match.roundIndex + 1 },
-                  include: { teamA: true, teamB: true },
-                });
-                if (newMatches.length > 0) {
-                  publishNewMatches({ tournamentId: tid, type: "new_matches", matches: newMatches as unknown as Record<string, unknown>[] });
-                }
-              }
-            }
-          } catch { /* non-blocking */ }
-        })();
-      })();
-    }
-  }
-
-  if (isNowFinished && berlinPhases.includes(match.phase as BerlinPhase)) {
-    const tid = match.tournamentId;
-    const phase = match.phase as BerlinPhase;
-    const roundMatches = await prisma.match.findMany({
-      where: { tournamentId: tid, phase, roundIndex: match.roundIndex },
-    });
-    const allDone = roundMatches.every((m) => m.status === "FINISHED");
-    if (allDone) {
-      (() => {
-        // Run in background — non-blocking
-        (async () => {
-          try {
-            const tournament = await prisma.tournament.findUnique({
-              where: { id: tid },
-              select: { fridayRounds: true, saturdayRounds: true, sundayRounds: true },
-            });
-            const fridayRounds = (tournament as any)?.fridayRounds ?? 5;
-            const saturdayRounds = (tournament as any)?.saturdayRounds ?? 5;
-            const sundayRounds = (tournament as any)?.sundayRounds ?? 2;
-
-            let result: any = null;
-            if (phase === "FRIDAY_A" || phase === "FRIDAY_B") {
-              if (match.roundIndex < fridayRounds) {
-                result = await generateFridaySwissRoundAction(tid, phase === "FRIDAY_A" ? "A" : "B");
-              }
-              // Saturday groups are computed manually by the organizer via the button
-            } else if (phase === "SATURDAY_A" && match.roundIndex < saturdayRounds) {
-              result = await generateSaturdaySwissRoundAction(tid, "A");
-            } else if (phase === "SATURDAY_B" && match.roundIndex < saturdayRounds) {
-              result = await generateSaturdaySwissRoundAction(tid, "B");
-            } else if (phase === "SUNDAY_SWISS" && match.roundIndex < sundayRounds) {
-              result = await generateSundaySwissRoundAction(tid);
-            }
-
-            if (result && !("error" in result)) {
-              const newPhase = phase;
-              const newRound = match.roundIndex + 1;
-              const newMatches = await prisma.match.findMany({
-                where: { tournamentId: tid, phase: newPhase, roundIndex: newRound },
-                include: { teamA: true, teamB: true },
-              });
-              if (newMatches.length > 0) {
-                publishNewMatches({ tournamentId: tid, type: "new_matches", matches: newMatches as unknown as Record<string, unknown>[] });
-              }
-            }
-          } catch { /* non-blocking */ }
-        })();
-      })();
-    }
   }
 
   publishMatchUpdate({

@@ -5,7 +5,6 @@ import { hasAtLeastRole } from "@/lib/rbac";
 import { publishMatchUpdate, publishNewMatches } from "@/lib/sse";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { autoFillReferees, isRefereeTeamMember, remindNextUp } from "@/lib/referees";
-import { generateSwissRoundAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
 import { downstreamConflict } from "@/lib/bracket-guard";
@@ -321,29 +320,6 @@ export async function POST(request: Request, { params }: { params: { id: string 
     }
   }
 
-  // Auto-generate next Swiss round when all matches of current round are finished
-  if (isNowFinished && match.phase === "SWISS") {
-    const roundMatches = await prisma.match.findMany({
-      where: { tournamentId: match.tournamentId, phase: "SWISS", roundIndex: match.roundIndex },
-    });
-    const allDone = roundMatches.every((m) => m.status === "FINISHED");
-    if (allDone) {
-      const result = await generateSwissRoundAction(match.tournamentId).catch(() => null);
-      if (result && "round" in result && result.round) {
-        const newMatches = await prisma.match.findMany({
-          where: { tournamentId: match.tournamentId, phase: "SWISS", roundIndex: result.round },
-          include: { teamA: true, teamB: true },
-        });
-        if (newMatches.length > 0) {
-          publishNewMatches({
-            tournamentId: match.tournamentId,
-            type: "new_matches",
-            matches: newMatches as unknown as Record<string, unknown>[],
-          });
-        }
-      }
-    }
-  }
 
   // Broadcaster le match terminé
   publishMatchUpdate({

@@ -3,7 +3,7 @@ import { tournamentTimezone } from "@/lib/timezone";
 import { formatTournamentDates } from "@/lib/podium-share";
 import { canonicalCountryName } from "@/lib/country-utils";
 import { auth } from "@/lib/auth";
-import { updateTournamentAction, importTeamsAction, toggleLockAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, launchTournamentAction, resetTournamentAction, resetMatchesAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, guaranteeAllTeamsAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, toggleSelectionLockAction, createTeamAction, launchPoolAction, launchGrazPoolAction, launchGrazSundayRRAction, launchGrazRegroupAction, launchGrazSEAction, resetGrazPhaseAction, updatePoolRoundsAction, launchMtpPoolAction, launchMtpNextRoundAction, launchMtpCrossPoolAction, launchMtpBarrageAction, launchMtpDEAction, resetMtpPhaseAction, updateMtpTimesAction, updateBerlinTimesAction, generateRefTokenAction, revokeRefTokenAction, launchKiosquePoolRoundAction, launchKiosqueRegroupAction, launchKiosqueNextRoundAction, launchKiosqueSEAction, resetKiosquePhaseAction, resetKiosqueJ1Action, launchBigAppleSwissRoundAction, launchBigApplePlacementAction, launchBigAppleSEAction, resetBigApplePhaseAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction, updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, launchPipelineGroupAction, setPipelineSeedsAction, swapPipelineTeamsAction, resetPipelineToRoundAction, reschedulePipelineStageAction, setTournamentPipelineAction, applyPipelinePresetAction, setRegistrationClosedAction } from "./actions";
+import { updateTournamentAction, addSponsorAction, deleteSponsorAction, deleteFreeAgentAction, renameTeamAction, deleteTeamAction, removePlayerFromTeamAction, addPlayerToTeamAction, resubmitTournamentAction, toggleTeamSelectedAction, drawTeamsAction, toggleTeamGuaranteedAction, guaranteeAllTeamsAction, drawOneTeamAction, drawOneWaitlistAction, removeFromWaitlistAction, toggleSelectionLockAction, createTeamAction, generateRefTokenAction, revokeRefTokenAction, launchPipelineStageAction, resetPipelineStagesAction, simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction, updatePipelineStageAction, addPipelineStageAction, removePipelineStageAction, movePipelineStageAction, launchPipelineGroupAction, setPipelineSeedsAction, swapPipelineTeamsAction, resetPipelineToRoundAction, reschedulePipelineStageAction, setTournamentPipelineAction, applyPipelinePresetAction, setRegistrationClosedAction } from "./actions";
 import { TournamentChecklist } from "@/components/TournamentChecklist";
 import { ChecklistDetails } from "@/components/ChecklistDetails";
 import { OrgaDashboard } from "@/components/OrgaDashboard";
@@ -59,15 +59,6 @@ export default async function TournamentEditPage({ params }: { params: { id: str
   const updateAction = async (formData: FormData) => {
     "use server";
     return await updateTournamentAction(formData);
-  };
-  const importAction = async (formData: FormData) => {
-    "use server";
-    const raw = formData.get("teams")?.toString() ?? "";
-    await importTeamsAction(tournament.id, raw);
-  };
-  const toggleLock = async (id: string, confirmReset?: boolean) => {
-    "use server";
-    return await toggleLockAction(id, confirmReset);
   };
   const addSponsor = async (
     tId: string, name: string, url: string | null, logoPath: string | null
@@ -176,10 +167,6 @@ export default async function TournamentEditPage({ params }: { params: { id: str
     return await createTeamAction(...args);
   };
 
-  const updatePoolRounds = async (tId: string, poolRounds: number | null) => {
-    "use server";
-    return await updatePoolRoundsAction(tId, poolRounds);
-  };
 
   const setRegistrationClosed = async (closed: boolean) => {
     "use server";
@@ -196,38 +183,6 @@ export default async function TournamentEditPage({ params }: { params: { id: str
     return await revokeRefTokenAction(t_.id);
   };
 
-  const launchMtpPool = async (pool: "A" | "B") => {
-    "use server";
-    return await launchMtpPoolAction(t_.id, pool);
-  };
-  const launchMtpNextRound = async (pool: "A" | "B") => {
-    "use server";
-    return await launchMtpNextRoundAction(t_.id, pool);
-  };
-  const launchMtpCrossPool = async () => {
-    "use server";
-    return await launchMtpCrossPoolAction(t_.id);
-  };
-  const launchMtpBarrage = async () => {
-    "use server";
-    return await launchMtpBarrageAction(t_.id);
-  };
-  const launchMtpDE = async () => {
-    "use server";
-    return await launchMtpDEAction(t_.id);
-  };
-  const resetMtpPhase = async (phase: "POOL_A" | "POOL_B" | "CROSS_POOL" | "BARRAGE" | "DE") => {
-    "use server";
-    return await resetMtpPhaseAction(t_.id, phase);
-  };
-  const updateMtpTimes = async (a: string | null, b: string | null, s: string | null) => {
-    "use server";
-    return await updateMtpTimesAction(t_.id, a, b, s);
-  };
-  const updateBerlinTimes = async (a: string | null, b: string | null) => {
-    "use server";
-    return await updateBerlinTimesAction(t_.id, a, b);
-  };
 
   const submissionStatus = (t_.submissionStatus ?? (t_.approved ? "APPROVED" : "PENDING")) as "PENDING" | "APPROVED" | "REJECTED";
   const t = await getTranslations("tournament");
@@ -394,7 +349,6 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             }}
             teams={t_.teams}
             freeAgents={t_.freeAgents}
-            pools={t_.pools}
             matches={t_.matches}
             sponsors={t_.sponsors}
             coOrganizers={t_.coOrganizers}
@@ -402,8 +356,6 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             isAdmin={isAdmin}
             isOrgaForThis={isOrgaForThis}
             updateAction={updateAction}
-            toggleLockAction={toggleLock}
-            importAction={importAction}
             addSponsorAction={addSponsor}
             deleteSponsorAction={deleteSponsor}
             deleteFreeAgentAction={deleteFreeAgent}
@@ -411,90 +363,6 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             deleteTeamAction={deleteTeam}
             removePlayerAction={removePlayer}
             addPlayerAction={addPlayer}
-            launchAction={async () => {
-              "use server";
-              await launchTournamentAction(t_.id);
-            }}
-            resetAction={async () => {
-              "use server";
-              await resetTournamentAction(t_.id);
-            }}
-            resetMatchesAction={async () => {
-              "use server";
-              await resetMatchesAction(t_.id);
-            }}
-            launchPoolBAction={async () => {
-              "use server";
-              return await launchPoolAction(t_.id, "B");
-            }}
-            launchGrazPoolBAction={async () => {
-              "use server";
-              return await launchGrazPoolAction(t_.id, "Pool B");
-            }}
-            launchGrazSundayRRAction={async () => {
-              "use server";
-              return await launchGrazSundayRRAction(t_.id);
-            }}
-            launchGrazRegroupAction={async () => {
-              "use server";
-              return await launchGrazRegroupAction(t_.id);
-            }}
-            launchGrazSEAction={async () => {
-              "use server";
-              return await launchGrazSEAction(t_.id);
-            }}
-            resetGrazPhaseAction={async (phase) => {
-              "use server";
-              return await resetGrazPhaseAction(t_.id, phase);
-            }}
-            launchMtpPoolAction={launchMtpPool}
-            launchMtpNextRoundAction={launchMtpNextRound}
-            launchMtpCrossPoolAction={launchMtpCrossPool}
-            launchMtpBarrageAction={launchMtpBarrage}
-            launchMtpDEAction={launchMtpDE}
-            resetMtpPhaseAction={resetMtpPhase}
-            updateMtpTimesAction={updateMtpTimes}
-            updateBerlinTimesAction={updateBerlinTimes}
-            launchKiosquePoolRoundAction={async (poolName) => {
-              "use server";
-              return await launchKiosquePoolRoundAction(t_.id, poolName);
-            }}
-            launchKiosqueRegroupAction={async () => {
-              "use server";
-              return await launchKiosqueRegroupAction(t_.id);
-            }}
-            launchKiosqueNextRoundAction={async (group) => {
-              "use server";
-              return await launchKiosqueNextRoundAction(t_.id, group);
-            }}
-            launchKiosqueSEAction={async () => {
-              "use server";
-              return await launchKiosqueSEAction(t_.id);
-            }}
-            resetKiosquePhaseAction={async (phase) => {
-              "use server";
-              return await resetKiosquePhaseAction(t_.id, phase);
-            }}
-            resetKiosqueJ1Action={async () => {
-              "use server";
-              return await resetKiosqueJ1Action(t_.id);
-            }}
-            launchBigAppleSwissRoundAction={async () => {
-              "use server";
-              return await launchBigAppleSwissRoundAction(t_.id);
-            }}
-            launchBigApplePlacementAction={async () => {
-              "use server";
-              return await launchBigApplePlacementAction(t_.id);
-            }}
-            launchBigAppleSEAction={async () => {
-              "use server";
-              return await launchBigAppleSEAction(t_.id);
-            }}
-            resetBigApplePhaseAction={async (phase) => {
-              "use server";
-              return await resetBigApplePhaseAction(t_.id, phase);
-            }}
             launchStageAction={async (order) => {
               "use server";
               return await launchPipelineStageAction(t_.id, order);
@@ -573,7 +441,6 @@ export default async function TournamentEditPage({ params }: { params: { id: str
             removeFromWaitlistAction={removeFromWaitlist}
             toggleSelectionLockAction={toggleSelectionLock}
             createTeamAction={createTeam}
-            updatePoolRoundsAction={updatePoolRounds}
             generateRefTokenAction={generateRefToken}
             revokeRefTokenAction={revokeRefToken}
             accommodationHosts={accommodationHosts as any}

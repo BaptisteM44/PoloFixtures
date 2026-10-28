@@ -1046,7 +1046,10 @@
     "kpi_free_agents": "{count, plural, one {# Free Agent} other {# Free Agents}}",
     "kpi_courts": "{count, plural, one {# Court} other {# Courts}}",
     "new_next_title": "Und dann? Dein Dashboard führt dich Schritt für Schritt:",
-    "new_next_sub": "Nichts ist endgültig: Alles lässt sich später im Dashboard ändern."
+    "new_next_sub": "Nichts ist endgültig: Alles lässt sich später im Dashboard ändern.",
+    "bracket_not_played": "In diesem Turnier wurde kein Turnierbaum gespielt.",
+    "legacy_format_title": "Altes Formatsystem",
+    "legacy_format_desc": "Dieses Turnier wurde mit dem alten Formatsystem gespielt. Sein Ablauf (Gruppen, Swiss, Turnierbaum, Tabelle) bleibt auf der öffentlichen Seite einsehbar."
   },
   "registration": {
     "section_title": "Mein Team anmelden",

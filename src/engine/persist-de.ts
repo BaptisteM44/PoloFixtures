@@ -3,7 +3,7 @@
  * matchs Prisma (phase BRACKET) avec planning terrains/horaires et liens
  * nextMatchWin/Lose câblés.
  *
- * Utilisé par generateBracketAction (et à terme par tous les formats à DE).
+ * Utilisé par le moteur d’étapes pour les tableaux à double élimination.
  */
 import type { Prisma } from "@prisma/client";
 import { planDE, type DEOptions } from "./de";

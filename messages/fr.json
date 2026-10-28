@@ -1046,7 +1046,10 @@
     "kpi_free_agents": "{count, plural, one {# free agent} other {# free agents}}",
     "kpi_courts": "{count, plural, one {# terrain} other {# terrains}}",
     "new_next_title": "Et après ? Ton dashboard te guide étape par étape :",
-    "new_next_sub": "Rien n'est figé : tout se modifie ensuite depuis le dashboard."
+    "new_next_sub": "Rien n'est figé : tout se modifie ensuite depuis le dashboard.",
+    "bracket_not_played": "Pas de tableau joué pour ce tournoi.",
+    "legacy_format_title": "Ancien système de formats",
+    "legacy_format_desc": "Ce tournoi a été joué avec l'ancien système de formats. Son déroulé (poules, Swiss, tableau, classement) reste consultable sur la page publique."
   },
   "registration": {
     "section_title": "Inscrire mon équipe",

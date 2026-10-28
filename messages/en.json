@@ -1046,7 +1046,10 @@
     "kpi_free_agents": "{count, plural, one {# free agent} other {# free agents}}",
     "kpi_courts": "{count, plural, one {# court} other {# courts}}",
     "new_next_title": "What's next? Your dashboard guides you step by step:",
-    "new_next_sub": "Nothing is set in stone: you can change everything later from the dashboard."
+    "new_next_sub": "Nothing is set in stone: you can change everything later from the dashboard.",
+    "bracket_not_played": "No bracket was played in this tournament.",
+    "legacy_format_title": "Previous format system",
+    "legacy_format_desc": "This tournament was played with the previous format system. Its flow (pools, Swiss, bracket, standings) is still available on the public page."
   },
   "registration": {
     "section_title": "Register my team",

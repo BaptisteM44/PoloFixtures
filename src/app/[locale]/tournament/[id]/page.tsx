@@ -39,7 +39,6 @@ import { SoloRegisterForm } from "@/components/SoloRegisterForm";
 import { WithdrawTeamPanel } from "@/components/WithdrawTeamPanel";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
 import { TournamentCompletionWatcher } from "@/components/TournamentCompletionWatcher";
-import { BracketActions } from "@/components/BracketActions";
 import { AccommodationPublicView } from "@/components/AccommodationPublicView";
 import { LiveTabView } from "@/components/LiveTabView";
 import { getPodiumTeamIds } from "@/lib/podium";
@@ -1319,9 +1318,6 @@ export default async function TournamentPage({
 
         const isRR = tournament.sundayFormat === "RR";
         const formatLabel = tournament.sundayFormat === "DE" ? "Double élimination" : tournament.sundayFormat === "RR" ? "Round Robin" : "Simple élimination";
-        const hasQualifyingMatches = [...tournament.matches.filter((m: any) => m.phase === "POOL" || m.phase === "SWISS")].length > 0;
-
-        const bracketReturnPath = `/tournament/${tournament.slug ?? tournament.id}?tab=bracket`;
 
         if (bracketMatches.length > 0) {
           // RR: show standings table instead of bracket tree
@@ -1333,15 +1329,6 @@ export default async function TournamentPage({
             );
             return (
               <div>
-                {isOrga && (
-                  <BracketActions
-                    tournamentId={tournament.id}
-                    returnPath={bracketReturnPath}
-                    hasQualifyingMatches={hasQualifyingMatches}
-                    isRR
-                    mode="buttons"
-                  />
-                )}
                 <div className="panel" style={{ overflowX: "auto" }}>
                   <table className="standings-table" style={{ width: "100%" }}>
                     <thead>
@@ -1378,53 +1365,14 @@ export default async function TournamentPage({
 
           return (
             <>
-              {isOrga && !tournament.crossPool && (
-                <BracketActions
-                  tournamentId={tournament.id}
-                  returnPath={bracketReturnPath}
-                  hasQualifyingMatches={hasQualifyingMatches}
-                  mode="buttons"
-                />
-              )}
-              {isOrga && tournament.crossPool && (
-                <p className="meta" style={{ marginBottom: 12, fontSize: 12 }}>
-                  {t("bracket_cross_pool_managed_hint")}
-                </p>
-              )}
               <BracketView matches={bracketMatches} tournamentId={tournament.id} teams={bracketTeams} isOrganizer={isOrga} isLive={tournament.status === "LIVE"} crossPool={tournament.crossPool} />
             </>
           );
         }
-        const maxSwissRound = swissAll.length > 0 ? Math.max(...swissAll.map((m: any) => m.roundIndex)) : 0;
-        const swissDone = maxSwissRound >= (t_.swissRounds ?? 5) && swissAll.every((m: any) => m.status === "FINISHED");
-        const poolDone = poolRoundsLimit === null
-          ? tournament.matches.filter((m: any) => m.phase === "POOL").every((m: any) => m.status === "FINISHED")
-          : poolAll.every((m: any) => m.status === "FINISHED");
-        const isPool = tournament.saturdayFormat === "ALL_DAY" || tournament.saturdayFormat === "SPLIT_POOLS";
-        const canLaunch = isOrga && isLaunched && !tournament.crossPool && (swissDone || poolDone || (!isPool && tournament.saturdayFormat !== "SWISS"));
+        // Ancien système, aucun tableau joué : plus rien à lancer (archive).
         return (
           <div className="panel" style={{ textAlign: "center", padding: 48, marginTop: 16 }}>
-            {canLaunch ? (
-              <>
-                <p style={{ fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 8, fontSize: 18 }}>
-                  {isRR ? "Round Robin" : `Top ${Math.min(t_.bracketSize ?? 16, tournament.teams.length)} qualifiés`}
-                </p>
-                <p className="meta" style={{ marginBottom: 20 }}>{formatLabel}</p>
-                <BracketActions
-                  tournamentId={tournament.id}
-                  returnPath={bracketReturnPath}
-                  hasQualifyingMatches={false}
-                  isRR={isRR}
-                  mode="launch"
-                />
-              </>
-            ) : (
-              <p className="meta">
-                {tournament.crossPool
-                  ? t("bracket_cross_pool_managed_hint")
-                  : swissDone ? "Le bracket sera lancé par l\u2019organisateur." : "Le bracket sera disponible une fois les rounds Swiss terminés."}
-              </p>
-            )}
+            <p className="meta">{tournament.crossPool ? t("bracket_cross_pool_managed_hint") : t("bracket_not_played")}</p>
           </div>
         );
       })()}

@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
-import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
@@ -41,93 +40,6 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   return Response.json({ ...tournament, teams });
 }
 
-const updateSchema = z.object({
-  name: z.string().min(2),
-  continentCode: z.string().min(2),
-  region: z.string().optional().nullable(),
-  country: z.string().min(2),
-  city: z.string().min(1),
-  dateStart: z.string(),
-  dateEnd: z.string(),
-  format: z.string(),
-  gameDurationMin: z.number(),
-  maxTeams: z.number(),
-  courtsCount: z.number(),
-  registrationFeePerTeam: z.number(),
-  registrationFeeCurrency: z.string(),
-  contactEmail: z.string().email(),
-  registrationStart: z.string().optional().nullable(),
-  registrationEnd: z.string().optional().nullable(),
-  fridayWelcomeName: z.string().optional().nullable(),
-  fridayWelcomeAddress: z.string().optional().nullable(),
-  fridayWelcomeMapsUrl: z.string().optional().nullable(),
-  saturdayEventName: z.string().optional().nullable(),
-  saturdayEventAddress: z.string().optional().nullable(),
-  saturdayEventMapsUrl: z.string().optional().nullable(),
-  otherNotes: z.string().optional().nullable(),
-  links: z.array(z.string()).default([]),
-  bannerPath: z.string().optional().nullable(),
-  streamYoutubeUrl: z.string().optional().nullable(),
-  saturdayFormat: z.enum(["ALL_DAY", "SPLIT_POOLS", "SWISS", "BERLIN_MIXED", "GRAZ"]),
-  sundayFormat: z.enum(["SE", "DE", "RR"]),
-  thirdPlaceMatch: z.boolean().optional(),
-  gfReset: z.boolean().optional(),
-  status: z.enum(["UPCOMING", "LIVE", "COMPLETED"]),
-  locked: z.boolean(),
-  maxSoloPlayers: z.number().int().min(1).optional().nullable(),
-  rushRegistration: z.boolean().optional(),
-});
-
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  const session = await auth();
-  const playerId = session?.user?.playerId;
-  const role = session?.user?.role;
-  if (!playerId && !(role && hasAtLeastRole(role, "ADMIN"))) {
-    return new Response("Forbidden", { status: 403 });
-  }
-
-  const tournament = await prisma.tournament.findUnique({ where: { id: params.id } });
-  if (!tournament) return new Response("Not found", { status: 404 });
-
-  const isAdmin = role ? hasAtLeastRole(role, "ADMIN") : false;
-  const isCreator = !!playerId && tournament.creatorId === playerId;
-  const isCoOrga = !!playerId && (await prisma.tournamentOrganizer.findUnique({
-    where: { tournamentId_playerId: { tournamentId: params.id, playerId } },
-    select: { tournamentId: true },
-  }));
-  if (!isAdmin && !isCreator && !isCoOrga) {
-    return new Response("Forbidden", { status: 403 });
-  }
-
-  const json = await request.json();
-  const parsed = updateSchema.safeParse(json);
-  if (!parsed.success) {
-    return Response.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
-
-  const data = parsed.data;
-  const structuralFields = ["format", "maxTeams", "courtsCount", "saturdayFormat", "sundayFormat"] as const;
-  if (tournament.locked) {
-    for (const field of structuralFields) {
-      if ((data as Record<string, unknown>)[field] !== (tournament as Record<string, unknown>)[field]) {
-        return Response.json({ error: `${field} cannot be changed when locked` }, { status: 400 });
-      }
-    }
-  }
-
-  const updated = await prisma.tournament.update({
-    where: { id: params.id },
-    data: {
-      ...data,
-      dateStart: new Date(data.dateStart),
-      dateEnd: new Date(data.dateEnd),
-      registrationStart: data.registrationStart ? new Date(data.registrationStart) : null,
-      registrationEnd: data.registrationEnd ? new Date(data.registrationEnd) : null
-    }
-  });
-
-  return Response.json(updated);
-}
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
   const session = await auth();
