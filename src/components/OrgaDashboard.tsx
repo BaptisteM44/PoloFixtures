@@ -28,6 +28,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { PipelinePlanning } from "@/components/PipelinePlanning";
 import { OrgaJourney, type JourneyTab } from "@/components/orga/OrgaJourney";
 import { ScreenManager } from "@/components/screen/ScreenManager";
+import { centerInScroller } from "@/lib/ui/center-in-scroller";
 import { TournamentFormatTab } from "@/components/orga/TournamentFormatTab";
 
 
@@ -1637,6 +1638,8 @@ export function OrgaDashboard({
   useEffect(() => {
     if (tabRestored) localStorage.setItem(tabStorageKey, activeTab);
   }, [activeTab, tabStorageKey, tabRestored]);
+  // Mobile : l'onglet actif reste visible dans la barre qui défile.
+  useEffect(() => { centerInScroller(document.querySelector(".tabs-bar .tab.active")); }, [activeTab]);
 
   // Navigation guidée (frise, checklist) : onglet + section à afficher.
   const [pendingAnchor, setPendingAnchor] = useState<string | null>(null);
@@ -1770,15 +1773,13 @@ export function OrgaDashboard({
         setRegistrationClosedAction={setRegistrationClosedAction}
       />
 
-      {/* ── KPI bar (compacte, sur une ligne) ── */}
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16, fontSize: 13, color: "var(--text-muted)", alignItems: "center" }}>
+      {/* ── Chiffres clés : pastilles qui passent à la ligne proprement ── */}
+      <div className="orga-kpis">
         <span className={`status ${tournament.status.toLowerCase()}`}>{t(`status_${tournament.status.toLowerCase()}` as any)}</span>
-        <span><strong style={{ color: "var(--text)" }}>{selectedTeams}</strong>/{tournament.maxTeams} {t("edit_kpi_teams")}</span>
-        <span>·</span>
-        <span><strong style={{ color: "var(--text)" }}>{teams.reduce((acc, t) => acc + t.players.length, 0)}</strong> {t("edit_kpi_players")}</span>
-        {freeAgents.length > 0 && (<><span>·</span><span><strong style={{ color: "var(--text)" }}>{freeAgents.length}</strong> {t("edit_kpi_free_agents")}</span></>)}
-        <span>·</span>
-        <span><strong style={{ color: "var(--text)" }}>{tournament.courtsCount ?? 1}</strong> {t("edit_kpi_courts")}</span>
+        <span className="orga-kpi">{t("kpi_teams", { count: selectedTeams, max: tournament.maxTeams })}</span>
+        <span className="orga-kpi">{t("kpi_players", { count: teams.reduce((acc, t) => acc + t.players.length, 0) })}</span>
+        {freeAgents.length > 0 && <span className="orga-kpi">{t("kpi_free_agents", { count: freeAgents.length })}</span>}
+        <span className="orga-kpi">{t("kpi_courts", { count: tournament.courtsCount ?? 1 })}</span>
       </div>
 
       {/* ── Tab bar ── */}
@@ -2512,6 +2513,7 @@ export function OrgaDashboard({
             courtsCount={tournament.courtsCount ?? 1}
           />
 
+          {!tournament.refToken && <p className="orga-qr-warn">⚠️ {t("qr_no_token")}</p>}
           {origin && <div className="orga-qr-grid" style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
             {/* Public tournament QR */}
             <div style={{ textAlign: "center" }}>
@@ -2531,7 +2533,6 @@ export function OrgaDashboard({
                   level="M"
                 />
                 <p style={{ fontSize: 12, fontWeight: 600, marginTop: 6 }}>{t("qr_referee_court", { court: i + 1 })}</p>
-                {!tournament.refToken && <p style={{ fontSize: 10, color: "var(--danger)", marginTop: 2 }}>{t("qr_no_token")}</p>}
               </div>
             ))}
           </div>}

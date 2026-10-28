@@ -6,10 +6,11 @@
  * le diaporama, et le piloter en direct : pause, diapo figée, annonce.
  * Chaque changement est envoyé tout de suite aux écrans ouverts.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { autoSlides, parseSlideKey, slideCatalog, type ScreenConfig, type SlideContext, type SlideEntry, type SlideKey } from "@/lib/screen-slides";
 import type { ScreenData } from "@/lib/screen-data";
+import { copyText } from "@/lib/ui/copy-text";
 
 type T = ReturnType<typeof useTranslations>;
 
@@ -52,6 +53,13 @@ export function ScreenManager({ tournamentId, tournamentSlug }: { tournamentId: 
   const [newName, setNewName] = useState("");
   const [origin, setOrigin] = useState("");
   useEffect(() => setOrigin(window.location.origin), []);
+  const urlOf = (slug: string) => `${origin}/${locale}/tournament/${tournamentSlug}/screen/${slug}`;
+  const [copied, setCopied] = useState<string | null>(null);
+  const copy = async (slug: string) => {
+    if (!(await copyText(urlOf(slug)))) return;
+    setCopied(slug);
+    setTimeout(() => setCopied((c) => (c === slug ? null : c)), 1800);
+  };
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/tournaments/${tournamentId}/screen`, { cache: "no-store" });
@@ -91,7 +99,6 @@ export function ScreenManager({ tournamentId, tournamentSlug }: { tournamentId: 
   // Même id pendant le chargement : un lien « …&goto=edit-screens » y défile tout de suite.
   if (!data) return <div id="edit-screens" className="panel orga-anchor"><p className="meta">…</p></div>;
   const ctx = data.context;
-  const urlOf = (slug: string) => `${origin}/${locale}/tournament/${tournamentSlug}/screen/${slug}`;
 
   return (
     <div id="edit-screens" className="panel screen-mgr orga-anchor">
@@ -110,7 +117,10 @@ export function ScreenManager({ tournamentId, tournamentSlug }: { tournamentId: 
                   <span>{isOpen ? "▾" : "▸"}</span>
                   <strong>{screenTitle(s, t)}</strong>
                   <small>
-                    {s.mode === "court" ? t("mode_court_short", { n: s.court }) : s.slides ? t("mode_custom_short", { count: s.slides.length }) : t("mode_auto_short")}
+                    {s.mode === "court" ? t("mode_court_short", { n: s.court })
+                      : !s.slides ? t("mode_auto_short")
+                      : s.slides.length === 1 ? slideLabel(s.slides[0].key, ctx, t)
+                      : t("mode_custom_short", { count: s.slides.length })}
                     {s.paused ? ` · ⏸ ${t("paused")}` : ""}
                     {s.pinnedSlide ? ` · 📌 ${slideLabel(s.pinnedSlide, ctx, t)}` : ""}
                     {s.announcement ? " · 📣" : ""}
@@ -118,13 +128,15 @@ export function ScreenManager({ tournamentId, tournamentSlug }: { tournamentId: 
                 </button>
                 <div className="screen-mgr__links">
                   <a className="ghost" href={urlOf(s.slug)} target="_blank" rel="noreferrer">{t("open")}</a>
-                  <button type="button" className="ghost" onClick={() => navigator.clipboard?.writeText(urlOf(s.slug))}>{t("copy_link")}</button>
+                  <button type="button" className={copied === s.slug ? "primary" : "ghost"} onClick={() => copy(s.slug)}>{copied === s.slug ? `✓ ${t("copied")}` : t("copy_link")}</button>
                 </div>
               </div>
-              <code className="screen-mgr__url">{urlOf(s.slug).replace(/^https?:\/\//, "")}</code>
+              {/* Adresse courte (la complète est dans « Copier le lien ») */}
+              <code className="screen-mgr__url" title={urlOf(s.slug)}>…/screen/{s.slug}</code>
 
               {isOpen && (
                 <ScreenEditor
+                  previewUrl={urlOf(s.slug)}
                   screen={s}
                   ctx={ctx}
                   courtsCount={data.tournament.courtsCount}
@@ -148,7 +160,32 @@ export function ScreenManager({ tournamentId, tournamentSlug }: { tournamentId: 
   );
 }
 
-function ScreenEditor({ screen: s, ctx, courtsCount, t, onPatch, onDelete, isDefault }: {
+/**
+ * Aperçu en direct de l'écran (la vraie page, réduite) : l'orga voit ce que
+ * montre la TV et l'effet de chaque réglage, sans quitter le dashboard.
+ */
+function LivePreview({ url, t }: { url: string; t: T }) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.4);
+  useEffect(() => {
+    const fit = () => { if (boxRef.current) setScale(boxRef.current.clientWidth / 1280); };
+    fit();
+    const ro = new ResizeObserver(fit);
+    if (boxRef.current) ro.observe(boxRef.current);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div className="screen-mgr__preview">
+      <div className="screen-mgr__preview-box" ref={boxRef}>
+        <iframe src={url} title={t("preview")} tabIndex={-1} style={{ transform: `scale(${scale})` }} />
+      </div>
+      <small>👁 {t("preview_live")}</small>
+    </div>
+  );
+}
+
+function ScreenEditor({ previewUrl, screen: s, ctx, courtsCount, t, onPatch, onDelete, isDefault }: {
+  previewUrl: string;
   screen: ScreenConfig; ctx: SlideContext; courtsCount: number; t: T;
   onPatch: (body: Record<string, unknown>) => void; onDelete: () => void; isDefault: boolean;
 }) {
@@ -169,6 +206,8 @@ function ScreenEditor({ screen: s, ctx, courtsCount, t, onPatch, onDelete, isDef
 
   return (
     <div className="screen-mgr__editor">
+      <LivePreview url={previewUrl} t={t} />
+
       {/* Pilotage en direct */}
       <div className="screen-mgr__live">
         {s.mode === "slideshow" && (

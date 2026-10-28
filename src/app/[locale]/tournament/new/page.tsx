@@ -16,6 +16,7 @@ type PlayerResult = { id: string; name: string; city: string | null; country: st
 
 export default function NewTournamentPage() {
   const t = useTranslations("tournament");
+  const tj = useTranslations("orga_journey");
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
 
@@ -394,6 +395,7 @@ export default function NewTournamentPage() {
               onChange={(e) => { setCoOrgQuery(e.target.value); searchCoOrgs(e.target.value); }}
               onFocus={() => coOrgResults.length > 0 && setShowCoOrgResults(true)}
               placeholder={t("co_organizer_search")}
+              style={{ width: "100%" }}
             />
             {showCoOrgResults && coOrgResults.length > 0 && (
               <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, zIndex: 200, maxHeight: 200, overflowY: "auto", boxShadow: "var(--shadow-lg)" }}>
@@ -408,6 +410,17 @@ export default function NewTournamentPage() {
               </div>
             )}
           </div>
+        </section>
+
+        {/* Et après ? — le même parcours que la frise du dashboard */}
+        <section className="tnew-next" style={{ gridColumn: "1 / -1" }}>
+          <p className="tnew-next__title">{t("new_next_title")}</p>
+          <ol className="tnew-next__steps">
+            {(["info", "format", "registration", "selection", "dday", "after"] as const).map((k, i) => (
+              <li key={k}><span>{i + 1}</span>{tj(`step_${k}`)}</li>
+            ))}
+          </ol>
+          <p className="tnew-next__sub">{t("new_next_sub")}</p>
         </section>
 
         {error && <p className="error" style={{ gridColumn: "1 / -1" }}>{error}</p>}

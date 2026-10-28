@@ -626,7 +626,7 @@
     "logistic_lunch_desc": "Lunch meals are included or organised",
     "logistic_dinner": "🌙 Dinners organised",
     "logistic_dinner_desc": "Dinner meals are included or organised",
-    "section_co_organizers": "5 — Co-organisers",
+    "section_co_organizers": "4 — Co-organisers",
     "co_organizer_optional": "(optional)",
     "co_organizer_desc": "Co-organisers can manage the tournament with you (editing, teams, scores).",
     "co_organizer_search": "Search a player…",
@@ -1040,7 +1040,13 @@
     "orga_preview_missing_venue": "the venue",
     "orga_preview_missing_reg": "the registration dates",
     "orga_preview_missing_format": "the format",
-    "tab_screens": "Screens"
+    "tab_screens": "Screens",
+    "kpi_teams": "{count}/{max} teams",
+    "kpi_players": "{count, plural, one {# player} other {# players}}",
+    "kpi_free_agents": "{count, plural, one {# free agent} other {# free agents}}",
+    "kpi_courts": "{count, plural, one {# court} other {# courts}}",
+    "new_next_title": "What's next? Your dashboard guides you step by step:",
+    "new_next_sub": "Nothing is set in stone: you can change everything later from the dashboard."
   },
   "registration": {
     "section_title": "Register my team",
@@ -2633,7 +2639,8 @@
     "section_advanced": "Advanced",
     "field_status_hint": "The status changes on its own (launch, closing). Only force it if needed.",
     "danger_delete_title": "Delete the tournament",
-    "danger_delete_desc": "Permanent: teams, matches and results are erased."
+    "danger_delete_desc": "Permanent: teams, matches and results are erased.",
+    "unsaved_changes": "Unsaved changes"
   },
   "team_manager": {
     "registered_teams": "Registered teams ({count})",
@@ -3628,7 +3635,7 @@
     "mgr_title": "Venue screens",
     "mgr_desc": "Open a screen on the computer or phone plugged into the TV, then go full screen. Everything you change here shows up right away.",
     "mode_court_short": "Court {n} scoreboard",
-    "mode_custom_short": "Custom slideshow · {count} slides",
+    "mode_custom_short": "Custom slideshow · {count, plural, one {# slide} other {# slides}}",
     "mode_auto_short": "Auto slideshow",
     "paused": "paused",
     "open": "Open",
@@ -3682,6 +3689,9 @@
     "round_third": "Third place",
     "round_grand_final": "Grand final",
     "round_wb": "Winners · Round {n}",
-    "round_lb": "Losers · Round {n}"
+    "round_lb": "Losers · Round {n}",
+    "preview": "Screen preview",
+    "preview_live": "Live preview: this is what the TV shows.",
+    "copied": "Copied!"
   }
 }

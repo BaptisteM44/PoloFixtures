@@ -148,7 +148,9 @@ function LiveCard({
       {/* Header */}
       <div className="match-card__header">
         <span className="pill">{match.courtName}</span>
-        <span className="match-card__clock" style={{ color: clockColor, fontVariantNumeric: "tabular-nums" }}>
+        {/* Chrono qui tourne : serveur et navigateur le calculent à une seconde
+            d'écart — attendu pour une horloge, pas une vraie divergence. */}
+        <span className="match-card__clock" style={{ color: clockColor, fontVariantNumeric: "tabular-nums" }} suppressHydrationWarning>
           {isOvertime ? `+${fmtClock(clockSec - gameDurSec)}` : fmtClock(displaySec)}
         </span>
         <span className="match-card__status--live">🔴 Live</span>

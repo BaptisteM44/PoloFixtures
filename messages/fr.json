@@ -626,7 +626,7 @@
     "logistic_lunch_desc": "Les repas du midi sont inclus ou organisés",
     "logistic_dinner": "🌙 Dîners organisés",
     "logistic_dinner_desc": "Les repas du soir sont inclus ou organisés",
-    "section_co_organizers": "5 — Co-organisateur.trices",
+    "section_co_organizers": "4 — Co-organisateur.trices",
     "co_organizer_optional": "(optionnel)",
     "co_organizer_desc": "Les co-organisateur.trices peuvent gérer le tournoi avec toi (édition, équipes, scores).",
     "co_organizer_search": "Rechercher un·e joueur·euse…",
@@ -1040,7 +1040,13 @@
     "orga_preview_missing_venue": "le lieu",
     "orga_preview_missing_reg": "les dates d'inscription",
     "orga_preview_missing_format": "le format",
-    "tab_screens": "Écrans"
+    "tab_screens": "Écrans",
+    "kpi_teams": "{count}/{max} équipes",
+    "kpi_players": "{count, plural, one {# joueur·euse} other {# joueur·euses}}",
+    "kpi_free_agents": "{count, plural, one {# free agent} other {# free agents}}",
+    "kpi_courts": "{count, plural, one {# terrain} other {# terrains}}",
+    "new_next_title": "Et après ? Ton dashboard te guide étape par étape :",
+    "new_next_sub": "Rien n'est figé : tout se modifie ensuite depuis le dashboard."
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -2634,7 +2640,8 @@
     "section_advanced": "Avancé",
     "field_status_hint": "Le statut change tout seul (lancement, clôture). À ne forcer qu'en cas de besoin.",
     "danger_delete_title": "Supprimer le tournoi",
-    "danger_delete_desc": "Définitif : équipes, matchs et résultats sont effacés."
+    "danger_delete_desc": "Définitif : équipes, matchs et résultats sont effacés.",
+    "unsaved_changes": "Modifications non enregistrées"
   },
   "team_manager": {
     "registered_teams": "Équipes inscrites ({count})",
@@ -3629,7 +3636,7 @@
     "mgr_title": "Écrans de salle",
     "mgr_desc": "Ouvre un écran sur l'ordi ou le téléphone branché à la TV, puis passe en plein écran. Tout ce que tu changes ici s'affiche tout de suite.",
     "mode_court_short": "Scoreboard terrain {n}",
-    "mode_custom_short": "Diaporama perso · {count} diapos",
+    "mode_custom_short": "Diaporama perso · {count, plural, one {# diapo} other {# diapos}}",
     "mode_auto_short": "Diaporama auto",
     "paused": "en pause",
     "open": "Ouvrir",
@@ -3683,6 +3690,9 @@
     "round_third": "Petite finale",
     "round_grand_final": "Grande finale",
     "round_wb": "Winner · Tour {n}",
-    "round_lb": "Loser · Tour {n}"
+    "round_lb": "Loser · Tour {n}",
+    "preview": "Aperçu de l'écran",
+    "preview_live": "Aperçu en direct : c'est ce qu'affiche la TV.",
+    "copied": "Copié !"
   }
 }

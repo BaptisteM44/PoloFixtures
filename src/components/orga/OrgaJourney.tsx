@@ -7,8 +7,9 @@
  * emmène au bon endroit (onglet + section). Remplace l'ancienne carte
  * « Prochaine action » qui ne connaissait que le jour J.
  */
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { centerInScroller } from "@/lib/ui/center-in-scroller";
 import { computeNextAction, type MatchLite, type StageLite, type T } from "./next-action";
 
 export type JourneyTab = "config" | "stages" | "planning" | "teams" | "dday" | "orga";
@@ -252,6 +253,9 @@ export function OrgaJourney({
       }
     }
   }
+
+  // Mobile : l'étape affichée reste visible dans la frise qui défile.
+  useEffect(() => { centerInScroller(document.querySelector(".orga-journey__step.is-shown")); }, [shown]);
 
   const c = card(shown);
 

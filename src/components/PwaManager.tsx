@@ -198,6 +198,21 @@ export function PwaManager() {
     setVisible(false);
   }, []);
 
+  // Hauteur de la bannière publiée en variable CSS : les barres collées en bas
+  // (ex. « Enregistrer » du dashboard) remontent au-dessus au lieu d'être masquées.
+  const bannerRef = useRef<HTMLDivElement>(null);
+  const shown = visible && (!!installPrompt || !!iosHint);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!shown || !bannerRef.current) { root.style.setProperty("--pwa-banner-h", "0px"); return; }
+    const el = bannerRef.current;
+    const publish = () => root.style.setProperty("--pwa-banner-h", `${el.offsetHeight}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => { ro.disconnect(); root.style.setProperty("--pwa-banner-h", "0px"); };
+  }, [shown]);
+
   // Visible si : offre d'install (Chrome/Android) OU instructions iOS
   if (!visible || (!installPrompt && !iosHint)) return <PullToRefreshIndicator />;
 
@@ -205,6 +220,7 @@ export function PwaManager() {
     <>
     <PullToRefreshIndicator />
     <div
+      ref={bannerRef}
       role="dialog"
       aria-label={t("banner_title")}
       style={{

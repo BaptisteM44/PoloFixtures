@@ -631,7 +631,7 @@
     "logistic_lunch_desc": "Mittagessen sind inbegriffen oder organisiert",
     "logistic_dinner": "🌙 Abendessen organisiert",
     "logistic_dinner_desc": "Abendessen sind inbegriffen oder organisiert",
-    "section_co_organizers": "5 — Co-Organisatoren",
+    "section_co_organizers": "4 — Co-Organisatoren",
     "co_organizer_optional": "(optional)",
     "co_organizer_desc": "Co-Organisatoren können das Turnier mit dir verwalten (Bearbeitung, Teams, Scores).",
     "co_organizer_search": "Spieler suchen…",
@@ -1040,7 +1040,13 @@
     "orga_preview_missing_venue": "der Ort",
     "orga_preview_missing_reg": "die Anmeldedaten",
     "orga_preview_missing_format": "das Format",
-    "tab_screens": "Bildschirme"
+    "tab_screens": "Bildschirme",
+    "kpi_teams": "{count}/{max} Teams",
+    "kpi_players": "{count, plural, one {# Spieler:in} other {# Spieler:innen}}",
+    "kpi_free_agents": "{count, plural, one {# Free Agent} other {# Free Agents}}",
+    "kpi_courts": "{count, plural, one {# Court} other {# Courts}}",
+    "new_next_title": "Und dann? Dein Dashboard führt dich Schritt für Schritt:",
+    "new_next_sub": "Nichts ist endgültig: Alles lässt sich später im Dashboard ändern."
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -2639,7 +2645,8 @@
     "section_advanced": "Erweitert",
     "field_status_hint": "Der Status ändert sich von selbst (Start, Abschluss). Nur bei Bedarf erzwingen.",
     "danger_delete_title": "Turnier löschen",
-    "danger_delete_desc": "Endgültig: Teams, Spiele und Ergebnisse werden gelöscht."
+    "danger_delete_desc": "Endgültig: Teams, Spiele und Ergebnisse werden gelöscht.",
+    "unsaved_changes": "Nicht gespeicherte Änderungen"
   },
   "team_manager": {
     "registered_teams": "Angemeldete Teams ({count})",
@@ -3634,7 +3641,7 @@
     "mgr_title": "Bildschirme vor Ort",
     "mgr_desc": "Öffne einen Bildschirm auf dem Rechner oder Handy am Fernseher und wechsle in den Vollbildmodus. Alles, was du hier änderst, erscheint sofort.",
     "mode_court_short": "Scoreboard Court {n}",
-    "mode_custom_short": "Eigene Diashow · {count} Folien",
+    "mode_custom_short": "Eigene Diashow · {count, plural, one {# Folie} other {# Folien}}",
     "mode_auto_short": "Automatische Diashow",
     "paused": "pausiert",
     "open": "Öffnen",
@@ -3688,6 +3695,9 @@
     "round_third": "Spiel um Platz 3",
     "round_grand_final": "Grand Final",
     "round_wb": "Winner · Runde {n}",
-    "round_lb": "Loser · Runde {n}"
+    "round_lb": "Loser · Runde {n}",
+    "preview": "Bildschirmvorschau",
+    "preview_live": "Live-Vorschau: Das zeigt der Fernseher.",
+    "copied": "Kopiert!"
   }
 }

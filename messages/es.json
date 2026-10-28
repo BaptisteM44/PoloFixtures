@@ -630,7 +630,7 @@
     "logistic_lunch_desc": "Los almuerzos están incluidos u organizados",
     "logistic_dinner": "🌙 Cenas organizadas",
     "logistic_dinner_desc": "Las cenas están incluidas u organizadas",
-    "section_co_organizers": "5 — Co-organizadores",
+    "section_co_organizers": "4 — Co-organizadores",
     "co_organizer_optional": "(opcional)",
     "co_organizer_desc": "Los co-organizadores pueden gestionar el torneo contigo (edición, equipos, puntuaciones).",
     "co_organizer_search": "Buscar jugador…",
@@ -1040,7 +1040,13 @@
     "orga_preview_missing_venue": "el lugar",
     "orga_preview_missing_reg": "las fechas de inscripción",
     "orga_preview_missing_format": "el formato",
-    "tab_screens": "Pantallas"
+    "tab_screens": "Pantallas",
+    "kpi_teams": "{count}/{max} equipos",
+    "kpi_players": "{count, plural, one {# jugador/a} other {# jugadores/as}}",
+    "kpi_free_agents": "{count, plural, one {# agente libre} other {# agentes libres}}",
+    "kpi_courts": "{count, plural, one {# pista} other {# pistas}}",
+    "new_next_title": "¿Y después? Tu panel te guía paso a paso:",
+    "new_next_sub": "Nada es definitivo: todo se puede cambiar después desde el panel."
   },
   "registration": {
     "section_title": "Inscribir mi equipo",
@@ -2639,7 +2645,8 @@
     "section_advanced": "Avanzado",
     "field_status_hint": "El estado cambia solo (lanzamiento, cierre). Fuérzalo solo si hace falta.",
     "danger_delete_title": "Eliminar el torneo",
-    "danger_delete_desc": "Definitivo: se borran equipos, partidos y resultados."
+    "danger_delete_desc": "Definitivo: se borran equipos, partidos y resultados.",
+    "unsaved_changes": "Cambios sin guardar"
   },
   "team_manager": {
     "registered_teams": "Equipos inscritos ({count})",
@@ -3634,7 +3641,7 @@
     "mgr_title": "Pantallas del recinto",
     "mgr_desc": "Abre una pantalla en el ordenador o móvil conectado a la tele y ponla a pantalla completa. Todo lo que cambies aquí se ve al instante.",
     "mode_court_short": "Marcador pista {n}",
-    "mode_custom_short": "Pase personalizado · {count} diapositivas",
+    "mode_custom_short": "Pase personalizado · {count, plural, one {# diapositiva} other {# diapositivas}}",
     "mode_auto_short": "Pase automático",
     "paused": "en pausa",
     "open": "Abrir",
@@ -3688,6 +3695,9 @@
     "round_third": "Tercer puesto",
     "round_grand_final": "Gran final",
     "round_wb": "Ganadores · Ronda {n}",
-    "round_lb": "Perdedores · Ronda {n}"
+    "round_lb": "Perdedores · Ronda {n}",
+    "preview": "Vista previa de la pantalla",
+    "preview_live": "Vista previa en directo: es lo que muestra la tele.",
+    "copied": "¡Copiado!"
   }
 }

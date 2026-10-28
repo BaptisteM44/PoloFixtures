@@ -61,8 +61,14 @@ const nextConfig = {
         headers: securityHeaders.filter((h) => h.key !== "X-Frame-Options"),
       },
       {
+        // Écrans de salle : affichables dans un iframe du site lui-même
+        // (aperçu en direct dans le dashboard), jamais ailleurs.
+        source: "/:locale/tournament/:id/screen/:screen",
+        headers: [...securityHeaders.filter((h) => h.key !== "X-Frame-Options"), { key: "X-Frame-Options", value: "SAMEORIGIN" }],
+      },
+      {
         // All other pages: full security headers including X-Frame-Options: DENY
-        source: "/((?!.*/tournament/.*/overlay).*)",
+        source: "/((?!.*/tournament/.*/(?:overlay|screen/)).*)",
         headers: securityHeaders,
       },
     ];

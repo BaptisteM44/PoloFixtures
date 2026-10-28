@@ -626,7 +626,7 @@
     "logistic_lunch_desc": "Os almoços estão incluídos ou organizados",
     "logistic_dinner": "🌙 Jantares organizados",
     "logistic_dinner_desc": "Os jantares estão incluídos ou organizados",
-    "section_co_organizers": "5 — Coorganizadores",
+    "section_co_organizers": "4 — Coorganizadores",
     "co_organizer_optional": "(opcional)",
     "co_organizer_desc": "Os coorganizadores podem gerir o torneio contigo (edição, equipas, resultados).",
     "co_organizer_search": "Pesquisar um jogador…",
@@ -1040,7 +1040,13 @@
     "orga_preview_missing_venue": "o local",
     "orga_preview_missing_reg": "as datas de inscrição",
     "orga_preview_missing_format": "o formato",
-    "tab_screens": "Ecrãs"
+    "tab_screens": "Ecrãs",
+    "kpi_teams": "{count}/{max} equipas",
+    "kpi_players": "{count, plural, one {# jogador/a} other {# jogadores/as}}",
+    "kpi_free_agents": "{count, plural, one {# agente livre} other {# agentes livres}}",
+    "kpi_courts": "{count, plural, one {# campo} other {# campos}}",
+    "new_next_title": "E depois? O teu painel guia-te passo a passo:",
+    "new_next_sub": "Nada é definitivo: tudo se altera depois no painel."
   },
   "registration": {
     "section_title": "Inscrever a minha equipa",
@@ -2633,7 +2639,8 @@
     "section_advanced": "Avançado",
     "field_status_hint": "O estado muda sozinho (arranque, encerramento). Só o forces se for preciso.",
     "danger_delete_title": "Eliminar o torneio",
-    "danger_delete_desc": "Definitivo: equipas, jogos e resultados são apagados."
+    "danger_delete_desc": "Definitivo: equipas, jogos e resultados são apagados.",
+    "unsaved_changes": "Alterações por guardar"
   },
   "team_manager": {
     "registered_teams": "Equipas inscritas ({count})",
@@ -3628,7 +3635,7 @@
     "mgr_title": "Ecrãs do recinto",
     "mgr_desc": "Abre um ecrã no computador ou telemóvel ligado à TV e põe em ecrã inteiro. Tudo o que mudares aqui aparece logo.",
     "mode_court_short": "Marcador campo {n}",
-    "mode_custom_short": "Apresentação personalizada · {count} diapositivos",
+    "mode_custom_short": "Apresentação personalizada · {count, plural, one {# diapositivo} other {# diapositivos}}",
     "mode_auto_short": "Apresentação automática",
     "paused": "em pausa",
     "open": "Abrir",
@@ -3682,6 +3689,9 @@
     "round_third": "3.º lugar",
     "round_grand_final": "Grande final",
     "round_wb": "Vencedores · Ronda {n}",
-    "round_lb": "Vencidos · Ronda {n}"
+    "round_lb": "Vencidos · Ronda {n}",
+    "preview": "Pré-visualização do ecrã",
+    "preview_live": "Pré-visualização em direto: é o que a TV mostra.",
+    "copied": "Copiado!"
   }
 }

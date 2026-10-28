@@ -139,6 +139,15 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
   const locale = useLocale();
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  // Modifications pas encore enregistrées : la barre le signale, et le
+  // navigateur prévient avant de quitter la page.
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const [error, setError] = useState<string | null>(null);
   const [isLocked, setIsLocked] = useState(tournament.locked);
   const [lockPending, setLockPending] = useState(false);
@@ -297,8 +306,8 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     setMeals((prev) => prev.map((m, i) => i === dayIndex ? { ...m, [meal]: !m[meal] } : m));
   };
 
-  const addFaq = () => setFaq((prev) => [...prev, { question: "", answer: "" }]);
-  const removeFaq = (i: number) => setFaq((prev) => prev.filter((_, idx) => idx !== i));
+  const addFaq = () => { setFaq((prev) => [...prev, { question: "", answer: "" }]); setDirty(true); };
+  const removeFaq = (i: number) => { setFaq((prev) => prev.filter((_, idx) => idx !== i)); setDirty(true); };
   const updateFaq = (i: number, field: "question" | "answer", val: string) => {
     setFaq((prev) => prev.map((item, idx) => idx === i ? { ...item, [field]: val } : item));
   };
@@ -316,6 +325,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
       if (res.ok) {
         const data = await res.json();
         setBannerPath(data.path);
+        setDirty(true);
       } else {
         const text = await res.text();
         setBannerError(`${t("error_upload")} : ${text || res.status}`);
@@ -347,6 +357,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
       const result = await action(formData);
       if (result?.ok) {
         setSaved(true);
+        setDirty(false);
         setTimeout(() => setSaved(false), 4000);
       } else {
         setError(
@@ -405,7 +416,11 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
     <div className="edit-form">
       {error && <div className="edit-form__error">{error}</div>}
 
-      <form onSubmit={handleSubmit} className="edit-form__body">
+      <form onSubmit={handleSubmit} className="edit-form__body" onChange={(e) => {
+        // Les champs d'inscription personnalisés s'enregistrent seuls : pas « modifié ».
+        if ((e.target as HTMLElement).closest("[data-autosave]")) return;
+        setDirty(true); setSaved(false);
+      }}>
         <input type="hidden" name="id" value={tournament.id} />
         <input type="hidden" name="locked" value={isLocked ? "true" : "false"} />
         {isLocked && <>
@@ -618,7 +633,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
             <input name="externalRegistrationUrl" type="url" defaultValue={tournament.externalRegistrationUrl ?? ""} placeholder={t("field_external_registration_url_placeholder")} />
             <small className="meta">{t("field_external_registration_url_hint")}</small>
           </label>
-          <div className="edit-card__sub">
+          <div className="edit-card__sub" data-autosave>
             <RegistrationFieldsEditor tournamentId={tournament.id} />
           </div>
         </section>
@@ -1017,7 +1032,7 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
                   height={100}
                   style={{ height: 100, width: "auto", borderRadius: 8, border: "2px solid var(--border)", objectFit: "cover" }}
                 />
-                <button type="button" onClick={() => setBannerPath("")} style={{ position: "absolute", top: -8, right: -8, background: "var(--danger)", color: "#fff", border: "none", borderRadius: "50%", width: 22, height: 22, minWidth: 22, minHeight: 22, padding: 0, cursor: "pointer", fontSize: 12, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+                <button type="button" onClick={() => { setBannerPath(""); setDirty(true); }} style={{ position: "absolute", top: -8, right: -8, background: "var(--danger)", color: "#fff", border: "none", borderRadius: "50%", width: 22, height: 22, minWidth: 22, minHeight: 22, padding: 0, cursor: "pointer", fontSize: 12, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
               </div>
             )}
             <div style={{ display: "grid", gap: 8 }}>
@@ -1232,11 +1247,12 @@ export function TournamentEditForm({ tournament, action, toggleLockAction }: Pro
         </details>
 
         {/* Enregistrer : barre collante, toujours à portée de main */}
-        <div className="edit-form__savebar">
+        <div className={`edit-form__savebar${dirty ? " is-dirty" : ""}`}>
           <button className="primary" type="submit" disabled={isPending}>
             {isPending ? t("saving") : t("save")}
           </button>
           {saved && <span className="edit-form__saved">✓ {t("saved_success")}</span>}
+          {dirty && !isPending && <span className="edit-form__dirty">● {t("unsaved_changes")}</span>}
           {error && <span className="edit-form__saved edit-form__saved--error">{error}</span>}
         </div>
       </form>

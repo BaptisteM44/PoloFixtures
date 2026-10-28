@@ -43,7 +43,7 @@ export function OrgaNoteEditor({
 
   if (!open) {
     return (
-      <button type="button" className="ghost" onClick={() => setOpen(true)} style={{ marginTop: 6, fontSize: 11, padding: "3px 8px", minHeight: 0, boxShadow: "none" }}>
+      <button type="button" className="orga-note-add" onClick={() => setOpen(true)}>
         + {label}
       </button>
     );

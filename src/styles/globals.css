@@ -5186,7 +5186,9 @@ textarea {
   display: none; /* hidden on desktop — always open */
 }
 
-@media (max-width: 768px) {
+/* Tablette et mobile : la checklist passe au-dessus, repliable (en dessous de
+   1100px, la colonne de 260px écrasait le contenu : frise coupée, champs serrés). */
+@media (max-width: 1100px) {
   .edit-layout {
     grid-template-columns: 1fr;
     gap: 0;
@@ -11887,7 +11889,7 @@ details.format-flow--public .format-flow__num { width: 18px; height: 18px; font-
 .edit-danger__btn { color: var(--danger); border-color: var(--danger); font-size: 12px; }
 .edit-form__savebar {
   position: sticky;
-  bottom: 0;
+  bottom: var(--pwa-banner-h, 0px);
   z-index: 5;
   display: flex;
   align-items: center;
@@ -11904,7 +11906,6 @@ details.format-flow--public .format-flow__num { width: 18px; height: 18px; font-
 .edit-form__saved--error { color: var(--danger); }
 @media (max-width: 640px) {
   .edit-card { padding: 14px; }
-  .edit-card .edit-grid-2 { grid-template-columns: 1fr; }
 }
 .edit-card .edit-grid-2, .edit-card .edit-grid-3 { align-items: start; }
 
@@ -12160,3 +12161,94 @@ details.format-flow--public .format-flow__num { width: 18px; height: 18px; font-
 }
 .public-screens__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .public-screens__config { font-size: 13px; white-space: nowrap; }
+
+/* Formulaires du dashboard : les grilles s'adaptent à la largeur réelle de la carte */
+.edit-card .edit-grid-2 { grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); }
+.edit-card .edit-grid-3 { grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
+/* Dashboard : chiffres clés */
+.orga-kpis { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 16px; }
+.orga-kpi {
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px;
+  border: 1.5px solid var(--border-light); background: var(--surface); font-size: 12px; color: var(--text-muted); white-space: nowrap;
+}
+/* Frise : sur petit écran, l'icône reste à côté du texte et les boutons passent dessous */
+.orga-journey__body { flex: 1 1 200px; }
+@media (max-width: 640px) {
+  .orga-journey__card { padding: 12px 14px; gap: 10px 12px; align-items: flex-start; }
+  .orga-journey__icon { font-size: 20px; margin-top: 1px; }
+  .orga-journey__actions { width: 100%; }
+  .orga-journey__actions button { flex: 1 1 auto; }
+}
+/* Équipes : « + Note orga » discret, pas une barre pleine largeur */
+button.orga-note-add {
+  display: inline-flex; width: auto; margin-top: 6px; padding: 2px 4px; min-height: 0;
+  background: none; border: none; box-shadow: none; color: var(--text-muted);
+  font-family: var(--font-body); font-size: 12px; font-weight: 500; text-transform: none; letter-spacing: 0; cursor: pointer;
+}
+button.orga-note-add:hover { color: var(--text); text-decoration: underline; transform: none; }
+/* Création : « Et après ? » */
+.tnew-next { padding: 16px 20px; border: 2px dashed var(--border-light); border-radius: var(--radius); background: color-mix(in srgb, var(--teal) 6%, var(--surface)); }
+.tnew-next__title { margin: 0 0 10px; font-family: var(--font-display); font-weight: 700; font-size: 14px; }
+.tnew-next__steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tnew-next__steps li {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px;
+  border: 1.5px solid var(--border-light); background: var(--surface); font-family: var(--font-display); font-size: 12px; font-weight: 700;
+}
+.tnew-next__steps li span {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  border: 1.5px solid var(--border); font-size: 11px;
+}
+.tnew-next__steps li:first-child { background: color-mix(in srgb, var(--yellow) 45%, var(--surface)); border-color: var(--border); }
+.tnew-next__sub { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
+/* Écrans : aperçu en direct dans le dashboard (la vraie page, réduite) */
+.screen-mgr__preview { display: grid; gap: 4px; max-width: 560px; }
+.screen-mgr__preview small { font-size: 11px; color: var(--text-muted); }
+.screen-mgr__preview-box {
+  position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden;
+  border: 2px solid var(--border); border-radius: var(--radius-sm); background: #0b0b10;
+}
+.screen-mgr__preview-box iframe {
+  position: absolute; top: 0; left: 0; width: 1280px; height: 720px; border: 0;
+  transform-origin: top left; pointer-events: none;
+}
+/* Écran sur téléphone en portrait : on peut faire défiler les pages longues */
+@media (orientation: portrait) {
+  .tscreen { overflow-y: auto; }
+  .tscreen__page { flex: none; min-height: 100%; }
+  .tscreen__ov-grid { overflow: visible; }
+}
+.orga-qr-warn { margin: 0 0 12px; padding: 8px 12px; font-size: 12px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--orange) 18%, var(--surface)); border: 1.5px solid var(--orange); }
+/* Écrans : rien ne doit élargir le panneau sur mobile (menus aux options longues) */
+.screen-mgr { min-width: 0; }
+.screen-mgr__inline { flex-wrap: wrap; }
+.screen-mgr__inline select { flex: 1 1 180px; min-width: 0; max-width: 100%; }
+.screen-mgr__slide-name { min-width: 0; }
+@media (max-width: 640px) {
+  .screen-mgr__slide-name { display: block; margin: 0 0 4px; }
+  .screen-mgr__live button { flex: 1 1 auto; }
+}
+/* Sélection des équipes : sur mobile, nom + lieu sur une ligne lisible, bouton jamais coupé */
+.selection-team-row { flex-wrap: wrap; row-gap: 4px; }
+.selection-team-row .meta { white-space: nowrap; }
+.selection-team-row button { white-space: nowrap; flex-shrink: 0; }
+@media (max-width: 640px) {
+  .selection-team-row { padding: 8px 10px; gap: 6px 8px; }
+  .selection-team-row .meta { margin-left: 0 !important; font-size: 11px !important; }
+}
+/* Barre d'enregistrement : jaune tant qu'il reste des modifications */
+.edit-form__savebar { transition: background 0.2s, border-color 0.2s; }
+.edit-form__savebar.is-dirty { background: color-mix(in srgb, var(--yellow) 55%, var(--surface)); }
+.edit-form__dirty { font-size: 13px; font-weight: 600; color: var(--text); }
+/* Frise : survol et transitions, dans le style du site */
+.orga-journey__step { transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background 0.2s; }
+.orga-journey__step:hover { transform: translate(-1px, -1px); box-shadow: 2px 2px 0 var(--border); }
+.orga-journey__step.is-current .orga-journey__dot { animation: orga-journey-pulse 2.4s ease-in-out infinite; }
+@keyframes orga-journey-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--border) 35%, transparent); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--border) 0%, transparent); }
+}
+.orga-journey__card { animation: orga-journey-in 0.25s ease; }
+@keyframes orga-journey-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .orga-journey__step.is-current .orga-journey__dot, .orga-journey__card { animation: none; }
+}
