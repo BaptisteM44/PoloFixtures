@@ -11,6 +11,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { autoSlides, parseSlideKey, slideCatalog, type ScreenConfig, type SlideContext, type SlideEntry, type SlideKey } from "@/lib/screen-slides";
 import type { ScreenData } from "@/lib/screen-data";
 import { copyText } from "@/lib/ui/copy-text";
+import { PixelIcon } from "@/components/screen/PixelIcon";
 
 type T = ReturnType<typeof useTranslations>;
 
@@ -115,6 +116,7 @@ export function ScreenManager({ tournamentId, tournamentSlug }: { tournamentId: 
               <div className="screen-mgr__row">
                 <button type="button" className="screen-mgr__name" onClick={() => setOpen(isOpen ? null : s.slug)}>
                   <span>{isOpen ? "▾" : "▸"}</span>
+                  <span className="screen-mgr__icon"><PixelIcon kind={s.mode === "court" ? "court" : "tv"} size={s.mode === "court" ? 26 : 20} /></span>
                   <strong>{screenTitle(s, t)}</strong>
                   <small>
                     {s.mode === "court" ? t("mode_court_short", { n: s.court })

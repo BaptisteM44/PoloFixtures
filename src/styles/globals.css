@@ -12096,7 +12096,7 @@ details.format-flow--public .format-flow__num { width: 18px; height: 18px; font-
   box-shadow: var(--shadow); background: var(--surface); color: var(--text); text-decoration: none;
 }
 .public-screens__card:hover { transform: translate(-1px, -1px); box-shadow: var(--shadow-lg); }
-.public-screens__icon { font-size: 26px; }
+.public-screens__icon { display: flex; align-items: flex-end; height: 30px; }
 .public-screens__card small { color: var(--text-muted); font-size: 12px; }
 /* Écran : arbitre, commandes sur la TV, pause */
 .tscreen__court-ref { text-align: center; font-size: clamp(14px, 2vw, 56px); color: var(--sc-muted); margin-top: 0.6vh; }
@@ -12252,3 +12252,5 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
 @media (prefers-reduced-motion: reduce) {
   .orga-journey__step.is-current .orga-journey__dot, .orga-journey__card { animation: none; }
 }
+.screen-mgr__icon { display: inline-flex; align-items: center; align-self: center; }
+.public-screens__card { align-content: start; }
