@@ -147,7 +147,9 @@ export const PodiumStoryCanvas = forwardRef<HTMLDivElement, PodiumStoryData & { 
         <span className="pds-logo"><span className="pds-logo__dot" />Poloperator</span>
         <span className="pds-url">{t("footer")} <strong>{host}</strong></span>
       </div>
-      <style>{PODIUM_CSS}</style>
+      {/* CSS injecté tel quel : en texte, le serveur échappe certains caractères
+          (guillemets, ">") et le navigateur non → erreur d'hydratation. */}
+      <style dangerouslySetInnerHTML={{ __html: PODIUM_CSS }} />
     </div>
   );
 });
