@@ -1778,9 +1778,16 @@ button:disabled,
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  gap: 12px;
   margin-bottom: 20px;
   padding-bottom: 12px;
   border-bottom: 2px solid var(--border);
+}
+
+/* Le lien « Voir tout → » ne se coupe jamais (sinon la flèche passe à la ligne sur mobile) */
+.section-header > a {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .section-header h2 {

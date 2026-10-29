@@ -381,7 +381,7 @@ export default function MyTournamentsPage() {
                     </span>
                   </div>
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <Link href={`/tournament/${tour.slug}`} className="ghost" style={{ fontSize: 12 }}>{tc("see_all").replace(" →", "")} →</Link>
+                    <Link href={`/tournament/${tour.slug}`} className="ghost" style={{ fontSize: 12, whiteSpace: "nowrap" }}>{tc("see_all").replace(" →", "")} →</Link>
                     <Link href={`/tournament/${tour.slug}/edit`} className="ghost" style={{ fontSize: 12 }}>✏️ {tc("edit")}</Link>
                   </div>
                 </div>
@@ -447,7 +447,7 @@ export default function MyTournamentsPage() {
                       </span>
                     </div>
                     <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                      <Link href={`/tournament/${tour.slug}`} className="ghost" style={{ fontSize: 12 }}>{tc("see_all").replace(" →", "")} →</Link>
+                      <Link href={`/tournament/${tour.slug}`} className="ghost" style={{ fontSize: 12, whiteSpace: "nowrap" }}>{tc("see_all").replace(" →", "")} →</Link>
                       <Link href={`/tournament/${tour.slug}/edit`} className="ghost" style={{ fontSize: 12 }}>✏️ {tc("edit")}</Link>
                     </div>
                   </div>
