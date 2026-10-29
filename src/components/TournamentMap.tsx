@@ -184,8 +184,7 @@ function MarkersLayer({
               mouseout: () => { if (isGroup) setHoveredGroup(null); },
             }}
           >
-            {/* Avec onSelect, le parent affiche sa propre fiche : pas de bulle en double */}
-            {!onSelect && <Popup>
+            <Popup>
               <strong>{t.name}</strong><br />
               <span style={{ color: "#666", fontSize: "0.85em" }}>{t.city}, {t.country}</span><br />
               <a
@@ -194,7 +193,7 @@ function MarkersLayer({
               >
                 {tr("edit_view_tournament")} →
               </a>
-            </Popup>}
+            </Popup>
           </Marker>
         );
       })}
