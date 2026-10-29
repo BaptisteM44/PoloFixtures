@@ -25,6 +25,8 @@ export type ScreenConfig = {
   court: number;
   theme: "dark" | "light";
   clockPosition: "top" | "bottom";
+  /** Mode terrain : équipes gauche/droite inversées par rapport à l'arbitre (la TV voit le terrain de l'autre côté). */
+  swapSides: boolean;
   slides: SlideEntry[] | null; // null = automatique
   slideSeconds: number;
   paused: boolean;
@@ -137,7 +139,7 @@ export function screenSlug(name: string): string {
 
 /** Écrans virtuels, disponibles sans rien configurer : diaporama auto + un par terrain. */
 export function defaultScreens(courtsCount: number): ScreenConfig[] {
-  const base = { theme: "dark" as const, clockPosition: "top" as const, slides: null, slideSeconds: 12, paused: false, pinnedSlide: null, announcement: null };
+  const base = { theme: "dark" as const, clockPosition: "top" as const, swapSides: false, slides: null, slideSeconds: 12, paused: false, pinnedSlide: null, announcement: null };
   return [
     { ...base, slug: "diaporama", name: "", mode: "slideshow", court: 1 },
     // Tout d'un coup, sans rotation : une seule diapo « vue d'ensemble ».

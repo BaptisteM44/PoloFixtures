@@ -3723,6 +3723,9 @@
     "round_lb": "Perdedores · Ronda {n}",
     "preview": "Vista previa de la pantalla",
     "preview_live": "Vista previa en directo: es lo que muestra la tele.",
-    "copied": "¡Copiado!"
+    "copied": "¡Copiado!",
+    "swap_sides": "Cambiar de lado",
+    "sides_swapped": "Lados invertidos",
+    "swap_sides_hint": "La pantalla ya sigue los cambios de lado del árbitro. Invierte aquí si la tele ve la cancha desde el otro lado."
   }
 }

@@ -60,7 +60,7 @@ export type ScreenData = {
 };
 
 export function toScreenConfig(s: {
-  slug: string; name: string; mode: string; court: number; theme: string; clockPosition: string;
+  slug: string; name: string; mode: string; court: number; theme: string; clockPosition: string; swapSides: boolean;
   slides: unknown; slideSeconds: number; paused: boolean; pinnedSlide: string | null; announcement: string | null;
 }): ScreenConfig {
   return {
@@ -70,6 +70,7 @@ export function toScreenConfig(s: {
     court: s.court,
     theme: s.theme === "light" ? "light" : "dark",
     clockPosition: s.clockPosition === "bottom" ? "bottom" : "top",
+    swapSides: s.swapSides === true,
     slides: Array.isArray(s.slides) ? (s.slides as SlideEntry[]) : null,
     slideSeconds: s.slideSeconds,
     paused: s.paused,

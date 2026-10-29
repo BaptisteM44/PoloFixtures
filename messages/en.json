@@ -3717,6 +3717,9 @@
     "round_lb": "Losers · Round {n}",
     "preview": "Screen preview",
     "preview_live": "Live preview: this is what the TV shows.",
-    "copied": "Copied!"
+    "copied": "Copied!",
+    "swap_sides": "Swap sides",
+    "sides_swapped": "Sides swapped",
+    "swap_sides_hint": "The screen already follows the referee's side changes. Swap here if the TV faces the court from the other side."
   }
 }

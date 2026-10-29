@@ -123,6 +123,7 @@ export function ScreenManager({ tournamentId, tournamentSlug }: { tournamentId: 
                       : !s.slides ? t("mode_auto_short")
                       : s.slides.length === 1 ? slideLabel(s.slides[0].key, ctx, t)
                       : t("mode_custom_short", { count: s.slides.length })}
+                    {s.mode === "court" && s.swapSides ? ` · ⇄ ${t("sides_swapped")}` : ""}
                     {s.paused ? ` · ⏸ ${t("paused")}` : ""}
                     {s.pinnedSlide ? ` · 📌 ${slideLabel(s.pinnedSlide, ctx, t)}` : ""}
                     {s.announcement ? " · 📣" : ""}
@@ -212,6 +213,14 @@ function ScreenEditor({ previewUrl, screen: s, ctx, courtsCount, t, onPatch, onD
 
       {/* Pilotage en direct */}
       <div className="screen-mgr__live">
+        {s.mode === "court" && (
+          <div className="screen-mgr__swap">
+            <button type="button" className={s.swapSides ? "primary" : "ghost"} aria-pressed={s.swapSides} onClick={() => onPatch({ swapSides: !s.swapSides })}>
+              ⇄ {s.swapSides ? t("sides_swapped") : t("swap_sides")}
+            </button>
+            <small>{t("swap_sides_hint")}</small>
+          </div>
+        )}
         {s.mode === "slideshow" && (
           <>
             <button type="button" className={s.paused ? "primary" : "ghost"} onClick={() => onPatch({ paused: !s.paused })}>

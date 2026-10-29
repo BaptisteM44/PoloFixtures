@@ -34,7 +34,7 @@ function matchClock(m: ScreenMatch, nowServer: number): { sec: number; running: 
 
 const fmt = (s: number) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(2, "0")}:${String(Math.floor(Math.max(0, s)) % 60).padStart(2, "0")}`;
 
-/** Côtés inversés (événements SWAP_SIDES en nombre impair) : l'écran suit le terrain. */
+/** Côtés inversés par l'arbitre (événements SWAP_SIDES en nombre impair) : l'écran suit le terrain. */
 const swapped = (m: ScreenMatch) => m.events.filter((e) => e.type === "SWAP_SIDES").length % 2 === 1;
 
 /** Match à afficher sur un terrain : celui en cours, sinon le prochain. */
@@ -187,7 +187,7 @@ export function TournamentScreenView({ initial, screenSlug }: { initial: ScreenD
 
   return (
     <div className={`tscreen tscreen--${config.theme}${idle ? " is-idle" : ""}`}>
-      <Slide slideKey={current} data={data} now={now} t={t} clockPosition={config.clockPosition} />
+      <Slide slideKey={current} data={data} now={now} t={t} clockPosition={config.clockPosition} swapSides={config.swapSides} />
 
       {config.announcement && (
         <div className="tscreen__announce" role="status">📣 {config.announcement}</div>
@@ -255,11 +255,11 @@ function hasContent(key: SlideKey, d: ScreenData): boolean {
 
 // ─── Diapos ──────────────────────────────────────────────────────────────────
 
-function Slide({ slideKey, data, now, t, clockPosition }: { slideKey: SlideKey; data: ScreenData; now: number; t: T; clockPosition: "top" | "bottom" }) {
+function Slide({ slideKey, data, now, t, clockPosition, swapSides }: { slideKey: SlideKey; data: ScreenData; now: number; t: T; clockPosition: "top" | "bottom"; swapSides: boolean }) {
   const p = parseSlideKey(slideKey);
   if (!p) return null;
   switch (p.kind) {
-    case "court": return <CourtSlide court={p.court} data={data} now={now} t={t} clockPosition={clockPosition} />;
+    case "court": return <CourtSlide court={p.court} data={data} now={now} t={t} clockPosition={clockPosition} swapSides={swapSides} />;
     case "courts": return <CourtsSlide data={data} now={now} t={t} />;
     case "overview": return <OverviewSlide data={data} now={now} t={t} />;
     case "standings": return <StandingsSlide stageOrder={p.stageOrder} group={p.group} data={data} t={t} />;
@@ -292,7 +292,7 @@ function SlideHeader({ title, data }: { title: string; data: ScreenData }) {
 }
 
 /** Scoreboard géant d'un terrain : équipe à gauche / à droite, score dessous, chrono au centre. */
-function CourtSlide({ court, data, now, t, clockPosition }: { court: number; data: ScreenData; now: number; t: T; clockPosition: "top" | "bottom" }) {
+function CourtSlide({ court, data, now, t, clockPosition, swapSides }: { court: number; data: ScreenData; now: number; t: T; clockPosition: "top" | "bottom"; swapSides: boolean }) {
   const { match, live } = courtMatch(data.matches, court);
   const label = t("court_n", { n: court });
 
@@ -306,7 +306,8 @@ function CourtSlide({ court, data, now, t, clockPosition }: { court: number; dat
     );
   }
 
-  const sw = swapped(match);
+  // Côtés de l'arbitre, puis ceux de l'écran par-dessus (TV placée de l'autre côté du terrain).
+  const sw = swapped(match) !== swapSides;
   const left = sw ? match.teamB : match.teamA;
   const right = sw ? match.teamA : match.teamB;
   const scoreL = sw ? match.scoreB : match.scoreA;

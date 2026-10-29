@@ -3723,6 +3723,9 @@
     "round_lb": "Loser · Runde {n}",
     "preview": "Bildschirmvorschau",
     "preview_live": "Live-Vorschau: Das zeigt der Fernseher.",
-    "copied": "Kopiert!"
+    "copied": "Kopiert!",
+    "swap_sides": "Seiten tauschen",
+    "sides_swapped": "Seiten getauscht",
+    "swap_sides_hint": "Der Bildschirm folgt schon den Seitenwechseln des Schiris. Tausche hier, wenn der Fernseher das Spielfeld von der anderen Seite zeigt."
   }
 }

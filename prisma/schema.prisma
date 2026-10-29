@@ -1642,6 +1642,7 @@ model TournamentScreen {
   court         Int      @default(1) // mode "court"
   theme         String   @default("dark") // "dark" | "light"
   clockPosition String   @default("top") // "top" | "bottom"
+  swapSides     Boolean  @default(false) // mode "court" : gauche/droite inversées par rapport à l'arbitre (TV vue de l'autre côté)
   slides        Json? // null = diaporama automatique ; sinon [{ key, seconds? }]
   slideSeconds  Int      @default(12)
   paused        Boolean  @default(false)

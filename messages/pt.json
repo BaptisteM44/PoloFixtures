@@ -3717,6 +3717,9 @@
     "round_lb": "Vencidos · Ronda {n}",
     "preview": "Pré-visualização do ecrã",
     "preview_live": "Pré-visualização em direto: é o que a TV mostra.",
-    "copied": "Copiado!"
+    "copied": "Copiado!",
+    "swap_sides": "Trocar de lado",
+    "sides_swapped": "Lados trocados",
+    "swap_sides_hint": "O ecrã já segue as trocas de lado do árbitro. Inverte aqui se a TV vê o campo do outro lado."
   }
 }

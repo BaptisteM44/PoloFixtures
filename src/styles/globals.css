@@ -12094,6 +12094,8 @@ button.checklist-item:hover .checklist-item__go { color: var(--text); transform:
 .screen-mgr__editor { display: grid; gap: 14px; margin-top: 8px; padding-top: 12px; border-top: 1.5px dashed var(--border-light); }
 .screen-mgr__live { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px 12px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--yellow) 25%, var(--surface)); }
 .screen-mgr__live button { font-size: 12px; padding: 6px 12px; }
+.screen-mgr__swap { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; flex-basis: 100%; }
+.screen-mgr__swap small { font-size: 12px; color: var(--text-muted); flex: 1 1 220px; }
 .screen-mgr__inline { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .screen-mgr__inline select { max-width: 280px; }
 .screen-mgr__announce { display: flex; gap: 6px; flex: 1 1 320px; flex-wrap: wrap; }

@@ -12,6 +12,7 @@ const patchSchema = z.object({
   court: z.number().int().min(1).max(20).optional(),
   theme: z.enum(["dark", "light"]).optional(),
   clockPosition: z.enum(["top", "bottom"]).optional(),
+  swapSides: z.boolean().optional(),
   slides: z.array(z.object({ key: z.string().max(40), seconds: z.number().int().min(3).max(600).optional() })).max(60).nullable().optional(),
   slideSeconds: z.number().int().min(3).max(600).optional(),
   paused: z.boolean().optional(),

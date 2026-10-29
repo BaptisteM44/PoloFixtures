@@ -3718,6 +3718,9 @@
     "round_lb": "Loser · Tour {n}",
     "preview": "Aperçu de l'écran",
     "preview_live": "Aperçu en direct : c'est ce qu'affiche la TV.",
-    "copied": "Copié !"
+    "copied": "Copié !",
+    "swap_sides": "Inverser les côtés",
+    "sides_swapped": "Côtés inversés",
+    "swap_sides_hint": "L'écran suit déjà les changements de côté de l'arbitre. Inverse ici si la TV voit le terrain depuis l'autre côté."
   }
 }
