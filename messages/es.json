@@ -305,7 +305,8 @@
     "training_nobody": "Nadie por ahora — ¡sé el primero!",
     "training_messages": "{count, plural, one {# mensaje · ver la conversación} other {# mensajes · ver la conversación}}",
     "training_no_message": "¿Un mensaje para el grupo? (bolas, retraso, coche…)",
-    "training_nobody_short": "Nadie aún"
+    "training_nobody_short": "Nadie aún",
+    "agenda_title": "Lo próximo para ti"
   },
   "tournaments": {
     "page_title": "Todos los torneos",
@@ -1059,7 +1060,12 @@
     "overlay_feed_label": "Mostrar goles y penalizaciones a los lados",
     "field_host_club": "Club anfitrión",
     "field_host_club_none": "— Sin club —",
-    "field_host_club_hint": "El logo y el enlace del club aparecen en la página del torneo."
+    "field_host_club_hint": "El logo y el enlace del club aparecen en la página del torneo.",
+    "map_title": "Mapa de torneos",
+    "map_all_formats": "Todos los formatos",
+    "map_all_status": "Todos los estados",
+    "map_status": "Estado",
+    "map_view_tournament": "Ver el torneo"
   },
   "registration": {
     "section_title": "Inscribir mi equipo",

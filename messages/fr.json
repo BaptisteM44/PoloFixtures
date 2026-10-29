@@ -305,7 +305,8 @@
     "training_nobody": "Personne pour l'instant — lance le mouvement !",
     "training_messages": "{count, plural, one {# message · voir la discussion} other {# messages · voir la discussion}}",
     "training_no_message": "Un mot pour l'équipe ? (balles, retard, covoit…)",
-    "training_nobody_short": "Personne encore"
+    "training_nobody_short": "Personne encore",
+    "agenda_title": "À venir pour toi"
   },
   "tournaments": {
     "page_title": "Tous les tournois",
@@ -1059,7 +1060,12 @@
     "overlay_feed_label": "Afficher les buts et pénalités sur les côtés",
     "field_host_club": "Club hôte",
     "field_host_club_none": "— Aucun club —",
-    "field_host_club_hint": "Le logo et le lien du club s'affichent sur la page du tournoi."
+    "field_host_club_hint": "Le logo et le lien du club s'affichent sur la page du tournoi.",
+    "map_title": "Carte des tournois",
+    "map_all_formats": "Tous les formats",
+    "map_all_status": "Tous les statuts",
+    "map_status": "Statut",
+    "map_view_tournament": "Voir le tournoi"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",

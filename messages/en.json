@@ -305,7 +305,8 @@
     "training_nobody": "Nobody yet — be the first!",
     "training_messages": "{count, plural, one {# message · see the chat} other {# messages · see the chat}}",
     "training_no_message": "A word for the crew? (balls, running late, carpool…)",
-    "training_nobody_short": "Nobody yet"
+    "training_nobody_short": "Nobody yet",
+    "agenda_title": "Coming up for you"
   },
   "tournaments": {
     "page_title": "All tournaments",
@@ -1059,7 +1060,12 @@
     "overlay_feed_label": "Show goals and penalties on the sides",
     "field_host_club": "Host club",
     "field_host_club_none": "— No club —",
-    "field_host_club_hint": "The club's logo and link show on the tournament page."
+    "field_host_club_hint": "The club's logo and link show on the tournament page.",
+    "map_title": "Tournament map",
+    "map_all_formats": "All formats",
+    "map_all_status": "All statuses",
+    "map_status": "Status",
+    "map_view_tournament": "View tournament"
   },
   "registration": {
     "section_title": "Register my team",

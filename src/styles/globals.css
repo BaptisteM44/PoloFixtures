@@ -12286,36 +12286,151 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
 .overlay-links__actions button, .overlay-links__actions a { font-size: 12px; padding: 5px 10px; white-space: nowrap; }
 .overlay-links__feed { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
 
-/* ── Accueil : proportions ── */
-/* Prochain tournoi + prochain entraînement côte à côte (empilés sur mobile) */
-.hero-now { display: grid; gap: 16px; align-items: stretch; }
-.hero-now--two { grid-template-columns: minmax(0, 1.7fr) minmax(220px, 1fr); }
-.hero-now > .panel { height: 100%; }
-.hero-now .training-tiles { display: block; height: 100%; }
-/* Tuile d'entraînement compacte, même forme que la carte du tournoi :
-   jour + heure dans un bloc coloré à gauche, infos et bouton à droite. */
-.hero-now .training-tile { height: 100%; display: grid; grid-template-columns: 112px minmax(0, 1fr); grid-template-rows: auto auto 1fr; }
-.hero-now .training-tile__band {
-  grid-row: 1 / -1; justify-content: center; align-items: center; text-align: center; gap: 2px;
-  padding: 14px 8px; border-bottom: none; border-right: 2px solid var(--border);
-  border-radius: calc(var(--radius) - 2px) 0 0 calc(var(--radius) - 2px);
-}
-.hero-now .training-tile__band-actions { position: static; margin-top: 8px; justify-content: center; }
-.hero-now .training-tile__cal { top: 100%; right: auto; left: 0; }
-.hero-now .training-tile__body { padding: 12px 14px 0; }
-.hero-now .training-tile__who { padding: 4px 14px 0; margin-top: 0; }
-.hero-now .training-tile__cta { margin: 8px 14px 12px; align-self: end; }
-@media (max-width: 760px) {
-  .hero-now--two { grid-template-columns: 1fr; }
-  .hero-now .training-tiles { display: block; overflow: visible; }
-}
 /* Continents sur mobile : grille compacte 2 colonnes au lieu de 6 grosses cartes empilées */
 @media (max-width: 640px) {
   .continent-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
   .continent-card { padding: 10px 12px !important; min-height: 0 !important; }
   .continent-card h3 { font-size: 14px !important; margin: 0 !important; }
 }
-.hero-now > a.panel > div { height: 100%; }
 /* Fiche → Lieux : position du tournoi sur la carte */
 .venue-map { display: grid; gap: 4px; }
 .venue-map__box { height: 180px; border: 2px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+
+/* ══ Accueil connecté : salutation + « À venir pour toi » + carte joueur ══ */
+.home-me { padding: 28px 0 8px; display: grid; gap: 18px; }
+.home-me__head h1 { margin: 0; display: flex; align-items: center; gap: 10px; font-size: clamp(30px, 4vw, 44px); line-height: 1.05; }
+.home-me__grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 28px; align-items: start; }
+.home-me__main { display: grid; gap: 14px; min-width: 0; }
+.home-me .hero-perso-card { margin: 0; }
+
+.home-agenda {
+  background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: visible;
+}
+.home-agenda__title {
+  margin: 0; padding: 12px 18px 10px; border-bottom: 2px solid var(--border);
+  font-family: var(--font-display); font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.home-agenda__list { list-style: none; margin: 0; padding: 0; }
+.home-agenda__empty { padding: 18px; display: grid; gap: 12px; justify-items: start; }
+.home-agenda__empty p { margin: 0; color: var(--text-muted); }
+
+.agenda-row {
+  position: relative; display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 14px;
+  padding: 12px 18px; border-top: 1.5px solid var(--border-light);
+}
+.agenda-row:first-child { border-top: none; }
+.agenda-row > a { color: inherit; text-decoration: none; padding: 0; }
+.agenda-row:hover { background: color-mix(in srgb, var(--yellow) 12%, var(--surface)); }
+.agenda-row__date {
+  display: grid; place-items: center; align-content: center; justify-items: center; text-align: center; width: 58px; height: 58px; border-radius: 12px;
+  border: 2px solid var(--border); background: var(--surface-2); line-height: 1;
+}
+.agenda-row__date--tournament { background: var(--yellow); }
+.agenda-row__date--training { background: var(--teal); }
+.agenda-row__day { font-family: var(--font-display); font-weight: 900; font-size: 22px; }
+.agenda-row__month { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 3px; }
+.agenda-row__main { display: grid; gap: 2px; min-width: 0; }
+.agenda-row__kicker { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.agenda-row__kicker strong { color: var(--text); }
+.agenda-row__title { font-family: var(--font-display); font-weight: 800; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-row__title em { font-style: normal; font-weight: 600; color: var(--text-muted); }
+.agenda-row__title--big { font-size: 20px; }
+.agenda-row__meta { font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-row__meta strong { color: var(--text); }
+.agenda-row__side { position: relative; display: flex; align-items: center; gap: 8px; }
+.agenda-row__countdown {
+  font-family: var(--font-display); font-weight: 900; font-size: 20px; padding: 6px 12px; border-radius: 10px;
+  border: 2px solid var(--border); background: var(--yellow); white-space: nowrap;
+}
+.agenda-row__countdown.is-now { background: var(--pink); font-size: 15px; }
+.agenda-row__chev { font-size: 22px; color: var(--text-muted); line-height: 1; transition: transform 0.12s; }
+.agenda-row:hover .agenda-row__chev { transform: translateX(2px); color: var(--text); }
+.agenda-row__btn {
+  padding: 8px 16px; font-size: 13px; font-weight: 800; border-radius: 10px; border: 2px solid var(--border);
+  background: var(--pink); color: var(--text); box-shadow: 2px 2px 0 var(--border); white-space: nowrap; min-height: 0;
+}
+.agenda-row__btn:hover:not(:disabled) { background: var(--yellow); transform: none; }
+.agenda-row__pill {
+  font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1.5px solid var(--border-light);
+  background: var(--surface-2); white-space: nowrap;
+}
+.agenda-row__pill.is-going { background: color-mix(in srgb, var(--teal) 30%, var(--surface)); border-color: var(--teal); }
+.agenda-row__icon {
+  display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; min-height: 0; border-radius: 50%;
+  border: 1.5px solid var(--border-light); background: var(--surface); box-shadow: none; font-size: 13px; cursor: pointer;
+}
+.agenda-row__icon:hover { border-color: var(--border); transform: none; }
+.agenda-row__cal {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; display: grid; min-width: 150px;
+  background: var(--surface); border: 2px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); overflow: hidden;
+}
+.agenda-row__cal a { padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--text); text-decoration: none; }
+.agenda-row__cal a + a { border-top: 1px solid var(--border-light); }
+.agenda-row--small { padding-top: 9px; padding-bottom: 9px; grid-template-columns: 46px minmax(0, 1fr) auto; }
+.agenda-row--small .agenda-row__date { width: 46px; height: 46px; border-radius: 10px; border-width: 1.5px; }
+.agenda-row--small .agenda-row__day { font-size: 17px; }
+
+.home-me__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.home-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px;
+  border: 1.5px solid var(--border); background: var(--surface); color: var(--text); text-decoration: none;
+  font-size: 13px; font-weight: 700;
+}
+.home-chip:hover { background: var(--yellow); }
+.home-chip--alert { background: var(--pink); }
+
+@media (max-width: 960px) {
+  .home-me__grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .home-me { padding-top: 18px; }
+  .agenda-row { grid-template-columns: 50px minmax(0, 1fr); padding: 12px 14px; gap: 12px; }
+  .agenda-row__date { width: 50px; height: 50px; }
+  .agenda-row__side { grid-column: 2; justify-self: start; }
+  .agenda-row--small .agenda-row__side { display: none; }
+  .agenda-row__title--big { font-size: 18px; }
+  .agenda-row__meta { white-space: normal; }
+  .agenda-row__countdown { font-size: 15px; padding: 4px 10px; }
+}
+
+/* ══ Accueil : carte des tournois ══ */
+.map-block { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 8px 0; min-width: 0; }
+.map-block__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.map-block__head h2 { margin: 0; font-size: clamp(22px, 2.6vw, 30px); }
+.map-block__stats { margin: 0; font-size: 13px; color: var(--text-muted); }
+.map-block__stats strong { color: var(--text); }
+.map-block__filters { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.map-block__continents { min-width: 0; flex: 0 1 auto; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; max-width: 100%; padding: 2px; }
+.map-chip {
+  flex-shrink: 0; padding: 6px 12px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--surface);
+  color: var(--text); font-family: var(--font-body); font-size: 13px; font-weight: 600; text-transform: none; letter-spacing: 0;
+  box-shadow: none; min-height: 0; cursor: pointer; white-space: nowrap;
+}
+.map-chip:hover { background: var(--surface-2); transform: none; }
+.map-chip.is-on { background: var(--border); color: var(--bg); }
+.map-block__selects { display: flex; gap: 8px; }
+.map-block__selects select { width: auto; font-size: 13px; padding: 6px 10px; border-radius: 999px; }
+.map-block__map { position: relative; height: 460px; }
+.map-block__legend {
+  position: absolute; left: 12px; bottom: 12px; z-index: 3; display: flex; flex-wrap: wrap; gap: 4px 12px;
+  padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1.5px solid var(--border-light); font-size: 11px; max-width: calc(100% - 24px);
+}
+.map-block__legend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.map-block__legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.map-block__card {
+  position: absolute; right: 12px; top: 12px; z-index: 4; width: min(300px, calc(100% - 24px)); display: grid; gap: 6px;
+  padding: 14px 16px; background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.map-block__card h3 { margin: 0; font-size: 16px; padding-right: 22px; }
+.map-block__card p { margin: 0; font-size: 13px; color: var(--text-muted); }
+.map-block__card .primary { justify-self: start; font-size: 13px; margin-top: 4px; }
+.map-block__status { justify-self: start; padding: 2px 9px; border-radius: 999px; color: #fff; font-size: 11px; font-weight: 700; }
+.map-block__close { position: absolute; top: 8px; right: 10px; background: none; border: none; box-shadow: none; padding: 2px; min-height: 0; font-size: 15px; color: var(--text-muted); cursor: pointer; }
+@media (max-width: 640px) {
+  .map-block__map { height: 340px; }
+  .map-block__selects { width: 100%; }
+  .map-block__selects select { flex: 1; min-width: 0; }
+  .map-block__card { top: auto; bottom: 12px; right: 12px; }
+}

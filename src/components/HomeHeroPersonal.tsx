@@ -21,6 +21,32 @@ import type { WhbpcCardData } from "@/components/WhbpcCard";
  * manche) pivote depuis son point de levier en bas à gauche, frappe la balle
  * rouge et l'envoie dans un but de hockey. Purement décoratif.
  */
+// CSS injecté tel quel : en texte, serveur et navigateur ne l'écrivent pas pareil (erreur d'hydratation).
+const MALLET_CSS = `
+          .mallet-egg--go .egg-mallet { animation: egg-swing 0.42s cubic-bezier(.6,-0.4,.3,1.4) forwards; }
+          .mallet-egg--go .egg-ball { animation: egg-roll 0.72s 0.22s cubic-bezier(.35,.5,.3,1) forwards; }
+          .mallet-egg--go .egg-goal { animation: egg-net 0.34s 0.7s ease-out; }
+          /* Pivot du maillet = main en haut-gauche (coords SVG). */
+          @keyframes egg-swing {
+            0%   { transform: rotate(0deg); }
+            45%  { transform: rotate(-26deg); }   /* armé : la tête recule à gauche */
+            75%  { transform: rotate(18deg); }    /* frappe : tête part vers la droite */
+            100% { transform: rotate(4deg); }
+          }
+          @keyframes egg-roll {
+            0%   { transform: translateX(0) scale(1); }
+            88%  { transform: translateX(36px) scale(1); }
+            100% { transform: translateX(36px) scale(0.9); opacity: 0.85; }
+          }
+          @keyframes egg-net {
+            0%   { transform: scale(1); }
+            45%  { transform: scale(1.08); }
+            100% { transform: scale(1); }
+          }
+        `;
+
+const CARD_SCALE = 0.6;
+
 function MalletShoot({ size = 40 }: { size?: number }) {
   const [shooting, setShooting] = useState(false);
 
@@ -90,28 +116,7 @@ function MalletShoot({ size = 40 }: { size?: number }) {
           />
         </g>
 
-        <style>{`
-          .mallet-egg--go .egg-mallet { animation: egg-swing 0.42s cubic-bezier(.6,-0.4,.3,1.4) forwards; }
-          .mallet-egg--go .egg-ball { animation: egg-roll 0.72s 0.22s cubic-bezier(.35,.5,.3,1) forwards; }
-          .mallet-egg--go .egg-goal { animation: egg-net 0.34s 0.7s ease-out; }
-          /* Pivot du maillet = main en haut-gauche (coords SVG). */
-          @keyframes egg-swing {
-            0%   { transform: rotate(0deg); }
-            45%  { transform: rotate(-26deg); }   /* armé : la tête recule à gauche */
-            75%  { transform: rotate(18deg); }    /* frappe : tête part vers la droite */
-            100% { transform: rotate(4deg); }
-          }
-          @keyframes egg-roll {
-            0%   { transform: translateX(0) scale(1); }
-            88%  { transform: translateX(36px) scale(1); }
-            100% { transform: translateX(36px) scale(0.9); opacity: 0.85; }
-          }
-          @keyframes egg-net {
-            0%   { transform: scale(1); }
-            45%  { transform: scale(1.08); }
-            100% { transform: scale(1); }
-          }
-        `}</style>
+        <style dangerouslySetInnerHTML={{ __html: MALLET_CSS }} />
       </svg>
     </button>
   );
@@ -205,10 +210,12 @@ export function HomeHeroPersonal({
     ? (() => {
         const ds = new Date(next.dateStart);
         const de = new Date(next.dateEnd);
-        const sameMonth = ds.getMonth() === de.getMonth() && ds.getFullYear() === de.getFullYear();
-        const dayFmt: Intl.DateTimeFormatOptions = { day: "numeric" };
-        const fullFmt: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" };
-        if (ds.toDateString() === de.toDateString()) return ds.toLocaleDateString(locale, fullFmt);
+        const sameMonth = ds.getUTCMonth() === de.getUTCMonth() && ds.getUTCFullYear() === de.getUTCFullYear();
+        // Dates de tournoi = jours (minuit UTC) : formatées en UTC, sinon la veille
+        // s'affiche à l'ouest de Greenwich (et le serveur ≠ le navigateur).
+        const dayFmt: Intl.DateTimeFormatOptions = { day: "numeric", timeZone: "UTC" };
+        const fullFmt: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", timeZone: "UTC" };
+        if (ds.toISOString().slice(0, 10) === de.toISOString().slice(0, 10)) return ds.toLocaleDateString(locale, fullFmt);
         return sameMonth
           ? `${ds.toLocaleDateString(locale, dayFmt)}–${de.toLocaleDateString(locale, fullFmt)}`
           : `${ds.toLocaleDateString(locale, fullFmt)} – ${de.toLocaleDateString(locale, fullFmt)}`;
@@ -216,181 +223,115 @@ export function HomeHeroPersonal({
     : "";
 
   const teammateNames = next?.teammates.map((p) => p.name.split(/\s+/)[0]).slice(0, 4) ?? [];
+  const shortDate = (iso: string) => {
+    const d = new Date(iso);
+    return { day: String(d.getUTCDate()), month: d.toLocaleDateString(locale, { month: "short", timeZone: "UTC" }).replace(".", "") };
+  };
+  const nextDate = next ? shortDate(next.dateStart) : null;
+  const hasAgenda = !!next || !!trainingSlot || others.length > 0 || awaitingDraw.length > 0;
 
   return (
-    <section className="hero">
-      {/* ── Colonne gauche : mon actu ── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
-        <h1 style={{ marginBottom: 0, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <span>{t("hero_hello", { name: firstName })}</span>
-          <MalletShoot size={40} />
+    <section className="home-me">
+      {/* Salutation : sobre, sur toute la largeur */}
+      <header className="home-me__head">
+        <h1>
+          {t("hero_hello", { name: firstName })}
+          <MalletShoot size={30} />
         </h1>
+      </header>
 
-        {/* Mon prochain tournoi + mon prochain entraînement, côte à côte */}
-        <div className={`hero-now${trainingSlot ? " hero-now--two" : ""}`}>
-        {next ? (
-          <Link
-            href={`/tournament/${next.slug ?? next.id}`}
-            className="panel"
-            style={{ padding: 0, overflow: "hidden", boxShadow: "var(--shadow-lg)", display: "block", textDecoration: "none", color: "inherit" }}
-          >
-            <div style={{ display: "flex", alignItems: "stretch" }}>
-              {/* Countdown */}
-              <div
-                style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                  padding: "18px 22px", background: "var(--yellow)", borderRight: "2px solid var(--border)",
-                  flexShrink: 0, minWidth: 96,
-                }}
-              >
-                <span style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: daysUntil > 99 ? 26 : 34, lineHeight: 1, color: "var(--border)" }}>
-                  {isOngoing || daysUntil === 0 ? "🔥" : t("hero_days_until", { count: daysUntil })}
-                </span>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 6, color: "var(--border)", opacity: 0.75, textAlign: "center" }}>
-                  {isOngoing ? t("hero_ongoing") : daysUntil === 0 ? t("hero_today") : t("hero_next_tournament")}
-                </span>
-              </div>
-
-              {/* Infos tournoi */}
-              <div style={{ padding: "16px 20px", minWidth: 0, flex: 1 }}>
-                <div
-                  style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 20, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                >
-                  {next.name}
-                </div>
-                <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 2 }}>
-                  {next.city}, {next.country} · {dateRange}
-                </div>
-
-                {/* Mon équipe pour ce tournoi */}
-                {next.teamName && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
-                    <div style={{ display: "flex" }}>
-                      {next.teammates.slice(0, 4).map((p, i) => (
-                        <div
-                          key={p.id}
-                          title={p.name}
-                          style={{
-                            position: "relative",
-                            width: 30, height: 30, borderRadius: "50%", overflow: "hidden",
-                            border: "2px solid var(--bg)", marginLeft: i === 0 ? 0 : -9,
-                            background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {p.photoPath ? (
-                            <Image src={p.photoPath} alt={p.name} fill sizes="30px" style={{ objectFit: "cover" }} />
-                          ) : (
-                            <span style={{ fontSize: 12, fontWeight: 800, color: "#fff" }}>{p.name[0]?.toUpperCase()}</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ fontSize: 13, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      <strong>{next.teamName}</strong>
-                      {teammateNames.length > 0 && (
-                        <span style={{ color: "var(--text-muted)" }}> · {t("hero_with_teammates", { names: teammateNames.join(", ") })}</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Link>
-        ) : (
-          <div className="panel" style={{ padding: "18px 20px" }}>
-            <p style={{ margin: 0, fontSize: 14, color: "var(--text-muted)" }}>{t("hero_no_upcoming")}</p>
-            <Link className="primary" href="/tournaments" style={{ marginTop: 12, display: "inline-flex", fontSize: 13 }}>
-              {t("hero_browse")}
-            </Link>
-          </div>
-        )}
-
-        {trainingSlot}
-        </div>
-
-        {/* Autres tournois à venir */}
-        {others.length > 0 && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {others.slice(0, 3).map((tour) => (
-              <Link
-                key={tour.id}
-                href={`/tournament/${tour.slug ?? tour.id}`}
-                style={{
-                  textDecoration: "none", fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6,
-                  padding: "5px 12px", borderRadius: 20, border: "2px solid var(--border)",
-                  background: "var(--surface)", color: "inherit", fontWeight: 600,
-                }}
-              >
-                <span style={{ color: "var(--teal)", fontWeight: 700 }}>
-                  {new Date(tour.dateStart).toLocaleDateString(locale, { day: "numeric", month: "short" })}
-                </span>
-                {tour.name}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* En attente de tirage (hors tournoi déjà affiché en grand) */}
-        {awaitingDraw.length > 0 && (
-          <div>
-            {/* En attente de tirage */}
-            {awaitingDraw.length > 0 && (
-              <div className="panel" style={{ padding: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 10 }}>
-                  🎲 {t("hero_awaiting_draw")}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {awaitingDraw.slice(0, 3).map((tour) => (
-                    <Link key={tour.id} href={`/tournament/${tour.slug ?? tour.id}`} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "inherit" }}>
-                      <div style={{ minWidth: 40, textAlign: "center", flexShrink: 0 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--teal)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
-                          {new Date(tour.dateStart).toLocaleDateString(locale, { day: "numeric", month: "short" })}
-                        </div>
-                      </div>
-                      <div style={{ minWidth: 0, fontSize: 12 }}>
-                        <div style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tour.name}</div>
-                        <div style={{ color: "var(--text-muted)" }}>{tour.city}</div>
-                      </div>
+      <div className="home-me__grid">
+        <div className="home-me__main">
+          {/* ── À venir pour toi : une seule liste, une seule forme ── */}
+          <div className="home-agenda">
+            <p className="home-agenda__title">{t("agenda_title")}</p>
+            {hasAgenda ? (
+              <ul className="home-agenda__list">
+                {next && nextDate && (
+                  <li className="agenda-row agenda-row--next">
+                    <Link href={`/tournament/${next.slug ?? next.id}`} className="agenda-row__date agenda-row__date--tournament">
+                      <span className="agenda-row__day">{nextDate.day}</span>
+                      <span className="agenda-row__month">{nextDate.month}</span>
                     </Link>
-                  ))}
-                </div>
+                    <Link href={`/tournament/${next.slug ?? next.id}`} className="agenda-row__main">
+                      <span className="agenda-row__kicker">🏆 {t("hero_next_tournament")}</span>
+                      <span className="agenda-row__title agenda-row__title--big">{next.name}</span>
+                      <span className="agenda-row__meta">
+                        📍 {next.city}, {next.country} · {dateRange}
+                        {next.teamName && <> · <strong>{next.teamName}</strong>{teammateNames.length > 0 && <> {t("hero_with_teammates", { names: teammateNames.join(", ") })}</>}</>}
+                      </span>
+                    </Link>
+                    <Link href={`/tournament/${next.slug ?? next.id}`} className="agenda-row__side">
+                      <span className={`agenda-row__countdown${isOngoing || daysUntil === 0 ? " is-now" : ""}`}>
+                        {isOngoing ? `🔥 ${t("hero_ongoing")}` : daysUntil === 0 ? t("hero_today") : t("hero_days_until", { count: daysUntil })}
+                      </span>
+                      <span className="agenda-row__chev" aria-hidden>›</span>
+                    </Link>
+                  </li>
+                )}
+
+                {trainingSlot}
+
+                {others.slice(0, 2).map((tour) => {
+                  const d = shortDate(tour.dateStart);
+                  return (
+                    <li key={tour.id} className="agenda-row agenda-row--small">
+                      <Link href={`/tournament/${tour.slug ?? tour.id}`} className="agenda-row__date">
+                        <span className="agenda-row__day">{d.day}</span>
+                        <span className="agenda-row__month">{d.month}</span>
+                      </Link>
+                      <Link href={`/tournament/${tour.slug ?? tour.id}`} className="agenda-row__main">
+                        <span className="agenda-row__title">{tour.name}</span>
+                        <span className="agenda-row__meta">📍 {tour.city}</span>
+                      </Link>
+                      <Link href={`/tournament/${tour.slug ?? tour.id}`} className="agenda-row__side"><span className="agenda-row__chev" aria-hidden>›</span></Link>
+                    </li>
+                  );
+                })}
+
+                {awaitingDraw.slice(0, 2).map((tour) => {
+                  const d = shortDate(tour.dateStart);
+                  return (
+                    <li key={tour.id} className="agenda-row agenda-row--small">
+                      <Link href={`/tournament/${tour.slug ?? tour.id}`} className="agenda-row__date">
+                        <span className="agenda-row__day">{d.day}</span>
+                        <span className="agenda-row__month">{d.month}</span>
+                      </Link>
+                      <Link href={`/tournament/${tour.slug ?? tour.id}`} className="agenda-row__main">
+                        <span className="agenda-row__title">{tour.name}</span>
+                        <span className="agenda-row__meta">📍 {tour.city}</span>
+                      </Link>
+                      <span className="agenda-row__side"><span className="agenda-row__pill">🎲 {t("hero_awaiting_draw")}</span></span>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <div className="home-agenda__empty">
+                <p>{t("hero_no_upcoming")}</p>
+                <Link className="primary" href="/tournaments">{t("hero_browse")}</Link>
               </div>
             )}
           </div>
-        )}
 
-        {/* Raccourcis perso */}
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          {inviteCount > 0 && (
-            <Link
-              href="/my-teams"
-              className="primary"
-              style={{ fontSize: 13, display: "inline-flex", alignItems: "center", gap: 6 }}
-            >
-              ⏳ {t("hero_chip_invites", { count: inviteCount })}
-            </Link>
-          )}
-          {squadCount > 0 && (
-            <Link href="/my-teams" className="ghost" style={{ fontSize: 13 }}>
-              👥 {t("hero_chip_squads", { count: squadCount })}
-            </Link>
-          )}
-          <Link href="/my-tournaments" className="ghost" style={{ fontSize: 13 }}>
-            🏆 {t("hero_upcoming_see_all")}
-          </Link>
-          <Link href="/tournament/new" className="ghost" style={{ fontSize: 13 }}>
-            + {t("hero_create")}
-          </Link>
+          {/* Raccourcis */}
+          <nav className="home-me__actions">
+            {inviteCount > 0 && (
+              <Link href="/my-teams" className="home-chip home-chip--alert">⏳ {t("hero_chip_invites", { count: inviteCount })}</Link>
+            )}
+            {squadCount > 0 && <Link href="/my-teams" className="home-chip">👥 {t("hero_chip_squads", { count: squadCount })}</Link>}
+            <Link href="/my-tournaments" className="home-chip">🏆 {t("hero_upcoming_see_all")}</Link>
+            <Link href="/tournament/new" className="home-chip">＋ {t("hero_create")}</Link>
+          </nav>
         </div>
-      </div>
 
       {/* ── Colonne droite : ma carte de collection (masquée en mobile) ──
           Pas de display inline : le masquage responsive est porté par le CSS
           (.hero-perso-card { display:none }) qu'un style inline écraserait. */}
       <div className="hero-perso-card">
-        <div style={{ width: 340 * 0.92, height: 520 * 0.92 }}>
-          <div style={{ transform: "scale(0.92)", transformOrigin: "top left" }}>
+        {/* Réduite pour rester à la hauteur de l'agenda (sinon grand vide dessous) */}
+        <div style={{ width: 340 * CARD_SCALE, height: 520 * CARD_SCALE }}>
+          <div style={{ transform: `scale(${CARD_SCALE})`, transformOrigin: "top left" }}>
             <PlayerCollectibleCard
               name={me.name}
               country={me.country}
@@ -408,6 +349,7 @@ export function HomeHeroPersonal({
             />
           </div>
         </div>
+      </div>
       </div>
     </section>
   );

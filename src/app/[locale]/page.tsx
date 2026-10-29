@@ -9,7 +9,7 @@ import TournamentMapClient from "@/components/TournamentMapClient";
 import type { MapTournament } from "@/components/TournamentMap";
 import { HomeHeroPersonal, type HeroNextTournament } from "@/components/HomeHeroPersonal";
 import { HomeInstallBanner } from "@/components/HomeInstallBanner";
-import { TrainingTiles, type TrainingTileData } from "@/components/NextTrainingCard";
+import { TrainingAgendaRow, type TrainingTileData } from "@/components/NextTrainingCard";
 import { ensureRecurringSessions } from "@/lib/club-sessions";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { countryToContinent } from "@/lib/country-utils";
@@ -318,7 +318,7 @@ export default async function HomePage() {
           }}
           next={heroNext}
           others={heroOthers}
-          trainingSlot={trainingTiles.length > 0 ? <TrainingTiles sessions={trainingTiles} /> : undefined}
+          trainingSlot={trainingTiles[0] ? <TrainingAgendaRow s={trainingTiles[0]} /> : undefined}
           awaitingDraw={(() => {
             const seen = new Set<string>();
             const out: { id: string; slug: string | null; name: string; city: string; dateStart: string }[] = [];

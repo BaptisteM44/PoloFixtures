@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -125,5 +125,85 @@ function TrainingTile({ s }: { s: TrainingTileData }) {
         </button>
       )}
     </div>
+  );
+}
+
+/** Heure / jour au format local du NAVIGATEUR, calculés après montage : le
+ *  serveur ne connaît pas le fuseau du joueur (écart → erreur d'hydratation). */
+function useLocalDate(iso: string, locale: string) {
+  const [v, setV] = useState<{ day: string; month: string; weekday: string; time: string; rel: number } | null>(null);
+  useEffect(() => {
+    const d = new Date(iso);
+    const today = new Date();
+    const rel = Math.round(
+      (new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() -
+        new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()) / 86_400_000,
+    );
+    setV({
+      day: String(d.getDate()),
+      month: d.toLocaleDateString(locale, { month: "short" }).replace(".", ""),
+      weekday: d.toLocaleDateString(locale, { weekday: "short" }).replace(".", ""),
+      time: d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }),
+      rel,
+    });
+  }, [iso, locale]);
+  return v;
+}
+
+/**
+ * Prochain entraînement en LIGNE d'agenda (accueil) : pastille de date à
+ * gauche, club / lieu / qui vient au centre, « J'y vais » à droite.
+ */
+export function TrainingAgendaRow({ s }: { s: TrainingTileData }) {
+  const t = useTranslations("home");
+  const tc = useTranslations("club");
+  const locale = useLocale();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [calOpen, setCalOpen] = useState(false);
+  const d = useLocalDate(s.date, locale);
+  const cal = sessionCalendarLinks({ id: s.id, date: s.date, duration: s.duration, title: s.title, place: s.place, clubName: s.clubName });
+  const href = `/club/${s.clubId}?tab=sessions`;
+  const going = s.myStatus === "CONFIRMED";
+  const act = (fn: () => Promise<unknown>) => startTransition(async () => { await fn(); router.refresh(); });
+  const when = !d ? "" : d.rel === 0 ? t("training_today") : d.rel === 1 ? t("training_tomorrow") : d.weekday;
+
+  return (
+    <li className={`agenda-row agenda-row--training${going ? " is-going" : ""}`}>
+      <Link href={href} className="agenda-row__date agenda-row__date--training" style={s.color ? { background: s.color } : undefined}>
+        <span className="agenda-row__day">{d?.day ?? "·"}</span>
+        <span className="agenda-row__month">{d?.month ?? ""}</span>
+      </Link>
+      <Link href={href} className="agenda-row__main">
+        <span className="agenda-row__kicker">🚲 {t("hero_training_default")} · <strong>{when} {d?.time ?? ""}</strong></span>
+        <span className="agenda-row__title">{s.clubName}{s.title ? <em> · {s.title}</em> : null}</span>
+        <span className="agenda-row__meta">
+          {s.place ? `📍 ${s.place} · ` : ""}
+          {s.attendees.length > 0 ? t("training_count", { count: s.attendees.length }) : t("training_nobody_short")}
+          {s.messageCount > 0 ? ` · 💬 ${s.messageCount}` : ""}
+        </span>
+      </Link>
+      <div className="agenda-row__side">
+        {going ? (
+          <>
+            <span className="agenda-row__pill is-going">✓ {t("training_going")}</span>
+            <button type="button" className="agenda-row__icon" disabled={isPending} onClick={() => act(() => leaveSessionAction(s.clubId, s.id))} title={t("training_not_going")} aria-label={t("training_not_going")}>✕</button>
+          </>
+        ) : s.myStatus === "PENDING" ? (
+          <span className="agenda-row__pill">{tc("sessions_pending")}</span>
+        ) : (
+          <button type="button" className="agenda-row__btn" disabled={isPending} onClick={() => act(() => joinSessionAction(s.clubId, s.id))}>
+            {t("training_join")}
+          </button>
+        )}
+        <button type="button" className="agenda-row__icon" onClick={() => setCalOpen((o) => !o)} aria-expanded={calOpen} title={tc("sessions_add_to_calendar")}>📅</button>
+        {calOpen && (
+          <div className="agenda-row__cal">
+            <a href={cal.ics}>iPhone / Outlook</a>
+            <a href={cal.google} target="_blank" rel="noopener noreferrer">Google</a>
+          </div>
+        )}
+      </div>
+    </li>
   );
 }

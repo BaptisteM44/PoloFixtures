@@ -2,20 +2,12 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { MapTournament } from "./TournamentMap";
 
 const TournamentMap = dynamic(() => import("./TournamentMap"), { ssr: false });
 
-const CONTINENTS = [
-  { code: "", label: "All" },
-  { code: "EU", label: "Europe" },
-  { code: "NA", label: "N. America" },
-  { code: "SA", label: "S. America" },
-  { code: "AS", label: "Asia" },
-  { code: "OC", label: "Oceania" },
-  { code: "AF", label: "Africa" },
-];
+const CONTINENT_CODES = ["", "EU", "NA", "SA", "AS", "OC", "AF"];
 
 const FORMATS = ["1v1", "2v2", "3v3", "4v4", "5v5", "ABC", "ABC Chapeau"];
 
@@ -34,8 +26,9 @@ const CONTINENT_VIEW: Record<string, { center: [number, number]; zoom: number }>
   AF: { center: [5, 20], zoom: 2 },
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+// Dates de tournoi = jours (minuit UTC) : formatées en UTC, dans la langue de la page.
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 }
 
 // "live" | "reg_open" | "reg_closed" | "announced"
@@ -50,33 +43,11 @@ function getStatusCode(t: MapTournament): StatusFilter {
   return "announced";
 }
 
-function FilterBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        padding: "5px 12px",
-        borderRadius: 20,
-        border: "2px solid var(--border)",
-        background: active ? "var(--teal)" : "var(--surface)",
-        color: active ? "var(--bg)" : "var(--text)",
-        cursor: "pointer",
-        fontFamily: "var(--font-display)",
-        fontSize: 11,
-        fontWeight: 700,
-        letterSpacing: "0.04em",
-        transition: "var(--transition)",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
 export default function TournamentMapClient({ tournaments, stats, userContinent }: Props) {
   const t = useTranslations("tournament");
+  const th = useTranslations("home");
+  const locale = useLocale();
+  const continentLabel = (code: string) => (code ? th(`continent_${code.toLowerCase()}` as never) : t("filter_all"));
   const [selectedTournament, setSelectedTournament] = useState<MapTournament | null>(null);
   const [continent, setContinent] = useState(userContinent ?? "");
   const [format, setFormat] = useState("");
@@ -112,116 +83,71 @@ export default function TournamentMapClient({ tournaments, stats, userContinent 
       (!statusFilter || getStatusCode(tournament) === statusFilter);
   });
 
+  const reset = () => setSelectedTournament(null);
+
   return (
-    <section>
-      <div className="map-section-layout">
-        {/* Map */}
-        <div className="map-container-wrap">
-          <TournamentMap
-            tournaments={filtered}
-            onSelect={setSelectedTournament}
-            center={continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].center : [20, 10]}
-            zoom={continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].zoom : 1}
-          />
+    <section className="map-block">
+      <div className="map-block__head">
+        <h2>{t("map_title")}</h2>
+        {stats && (
+          <p className="map-block__stats">
+            <strong>{stats.tournaments}</strong> {stats.labels.tournaments} · <strong>{stats.countries}</strong> {stats.labels.countries} · <strong>{stats.players}</strong> {stats.labels.players}
+          </p>
+        )}
+      </div>
+
+      {/* Filtres : une seule barre — continents en pastilles, format et statut en menus */}
+      <div className="map-block__filters">
+        <div className="map-block__continents" role="tablist">
+          {CONTINENT_CODES.map((code) => (
+            <button key={code || "all"} type="button" role="tab" aria-selected={continent === code}
+              className={`map-chip${continent === code ? " is-on" : ""}`}
+              onClick={() => { setContinent(code); reset(); }}>
+              {continentLabel(code)}
+            </button>
+          ))}
+        </div>
+        <div className="map-block__selects">
+          <select value={format} onChange={(e) => { setFormat(e.target.value); reset(); }} aria-label="Format">
+            <option value="">{t("map_all_formats")}</option>
+            {FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+          </select>
+          <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as StatusFilter); reset(); }} aria-label={t("map_status")}>
+            <option value="">{t("map_all_status")}</option>
+            {STATUS_FILTERS.filter((x) => x.code).map((x) => <option key={x.code} value={x.code}>{x.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="map-block__map map-container-wrap">
+        <TournamentMap
+          tournaments={filtered}
+          onSelect={setSelectedTournament}
+          center={continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].center : [20, 10]}
+          zoom={continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].zoom : 1}
+        />
+
+        {/* Légende, posée sur la carte */}
+        <div className="map-block__legend">
+          {STATUS_FILTERS.filter((x) => x.code).map((x) => (
+            <span key={x.code}><i style={{ background: x.color }} />{x.label}</span>
+          ))}
         </div>
 
-        {/* Side panel */}
-        <div className="map-side-panel">
-
-          {/* Filters */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {/* Continent */}
-            <div>
-              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Continent</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {CONTINENTS.map((c) => (
-                  <FilterBtn key={c.code} active={continent === c.code} onClick={() => { setContinent(c.code); setSelectedTournament(null); }}>
-                    {c.label}
-                  </FilterBtn>
-                ))}
-              </div>
+        {/* Tournoi cliqué : fiche flottante */}
+        {selectedTournament && (() => {
+          const { label, color } = getStatusLabel(selectedTournament);
+          return (
+            <div className="map-block__card">
+              <button type="button" className="map-block__close" onClick={reset} aria-label="✕">✕</button>
+              <span className="map-block__status" style={{ background: color }}>{label}</span>
+              <h3>{selectedTournament.name}</h3>
+              <p>📍 {selectedTournament.city}, {selectedTournament.country}</p>
+              <p>📅 {formatDate(selectedTournament.dateStart, locale)} → {formatDate(selectedTournament.dateEnd, locale)} · {selectedTournament.format}</p>
+              <a href={`/${locale}/tournament/${selectedTournament.slug ?? selectedTournament.id}`} className="primary">{t("map_view_tournament")} →</a>
             </div>
-
-            {/* Format */}
-            <div>
-              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Format</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                <FilterBtn active={format === ""} onClick={() => { setFormat(""); setSelectedTournament(null); }}>{t("filter_all")}</FilterBtn>
-                {FORMATS.map((f) => (
-                  <FilterBtn key={f} active={format === f} onClick={() => { setFormat(f); setSelectedTournament(null); }}>
-                    {f}
-                  </FilterBtn>
-                ))}
-              </div>
-            </div>
-
-            {/* Statut */}
-            <div>
-              <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-display)", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Statut</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {STATUS_FILTERS.map((s) => (
-                  <FilterBtn key={s.code} active={statusFilter === s.code} onClick={() => { setStatusFilter(s.code); setSelectedTournament(null); }}>
-                    {s.code !== "" && <span style={{ color: s.color, marginRight: 4 }}>●</span>}
-                    {s.label}
-                  </FilterBtn>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Tournament card */}
-          {selectedTournament ? (
-            <div className="panel" style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <h3 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 16 }}>{selectedTournament.name}</h3>
-                <button type="button" onClick={() => setSelectedTournament(null)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 18, lineHeight: 1, padding: 0 }}>✕</button>
-              </div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                📍 {selectedTournament.city}, {selectedTournament.country}
-              </div>
-              <div style={{ fontSize: 13 }}>
-                📅 {formatDate(selectedTournament.dateStart)} → {formatDate(selectedTournament.dateEnd)}
-              </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                {(() => {
-                  const { label, color } = getStatusLabel(selectedTournament);
-                  return (
-                    <span style={{ padding: "3px 10px", borderRadius: 12, background: color, color: "#fff", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-display)", letterSpacing: "0.05em" }}>
-                      {label}
-                    </span>
-                  );
-                })()}
-                <span style={{ padding: "3px 10px", borderRadius: 12, background: "var(--surface-2)", border: "1.5px solid var(--border)", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-display)" }}>
-                  {selectedTournament.format}
-                </span>
-              </div>
-              <a href={`/tournament/${selectedTournament.slug ?? selectedTournament.id}`} className="primary" style={{ fontSize: 13 }}>
-                View tournament →
-              </a>
-            </div>
-          ) : (
-            <div className="panel" style={{ padding: "20px", color: "var(--text-muted)", fontSize: 13, textAlign: "center" }}>
-              <p style={{ margin: 0 }}>{t("click_marker")}</p>
-              <p style={{ margin: "8px 0 0", fontSize: 12, lineHeight: 1.8 }}>
-                <span style={{ color: "#ef4444" }}>●</span> {t("status_live")} &nbsp;
-                <span style={{ color: "#22c55e" }}>●</span> {t("status_reg_open")} &nbsp;
-                <span style={{ color: "#f97316" }}>●</span> {t("status_reg_closed")} &nbsp;
-                <span style={{ color: "#3b82f6" }}>●</span> {t("status_announced")}
-              </p>
-            </div>
-          )}
-
-          {stats && (
-            <div className="home-stats" style={{ justifyContent: "center" }}>
-              <span><strong>{stats.players}</strong> {stats.labels.players}</span>
-              <span className="home-stats__dot">·</span>
-              <span><strong>{stats.tournaments}</strong> {stats.labels.tournaments}</span>
-              <span className="home-stats__dot">·</span>
-              <span><strong>{stats.countries}</strong> {stats.labels.countries}</span>
-            </div>
-          )}
-        </div>
+          );
+        })()}
       </div>
     </section>
   );
