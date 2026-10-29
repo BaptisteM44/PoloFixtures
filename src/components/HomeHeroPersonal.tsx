@@ -45,7 +45,7 @@ const MALLET_CSS = `
           }
         `;
 
-const CARD_SCALE = 0.6;
+const CARD_SCALE = 1;
 
 function MalletShoot({ size = 40 }: { size?: number }) {
   const [shooting, setShooting] = useState(false);
@@ -232,16 +232,15 @@ export function HomeHeroPersonal({
 
   return (
     <section className="home-me">
-      {/* Salutation : sobre, sur toute la largeur */}
-      <header className="home-me__head">
-        <h1>
-          {t("hero_hello", { name: firstName })}
-          <MalletShoot size={30} />
-        </h1>
-      </header>
-
       <div className="home-me__grid">
+        {/* Colonne gauche : salutation, agenda, raccourcis — étalés sur la hauteur de la carte */}
         <div className="home-me__main">
+          <header className="home-me__head">
+            <h1>
+              {t("hero_hello", { name: firstName })}
+              <MalletShoot size={30} />
+            </h1>
+          </header>
           {/* ── À venir pour toi : une seule liste, une seule forme ── */}
           <div className="home-agenda">
             <p className="home-agenda__title">{t("agenda_title")}</p>
@@ -329,7 +328,7 @@ export function HomeHeroPersonal({
           Pas de display inline : le masquage responsive est porté par le CSS
           (.hero-perso-card { display:none }) qu'un style inline écraserait. */}
       <div className="hero-perso-card">
-        {/* Réduite pour rester à la hauteur de l'agenda (sinon grand vide dessous) */}
+        {/* Taille normale (340×520) : c'est elle qui donne la hauteur du bloc */}
         <div style={{ width: 340 * CARD_SCALE, height: 520 * CARD_SCALE }}>
           <div style={{ transform: `scale(${CARD_SCALE})`, transformOrigin: "top left" }}>
             <PlayerCollectibleCard

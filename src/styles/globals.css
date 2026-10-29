@@ -12297,12 +12297,14 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
 .venue-map__box { height: 180px; border: 2px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
 
 /* ══ Accueil connecté : salutation + « À venir pour toi » + carte joueur ══ */
-.home-me { padding: 28px 0 8px; display: grid; gap: 18px; }
+.home-me { padding: 28px 0 40px; }
 .home-me__head h1 { margin: 0; display: flex; align-items: center; gap: 10px; font-size: clamp(30px, 4vw, 44px); line-height: 1.05; }
-/* Mêmes colonnes que la carte dessous (.map-section-layout : 3fr 2fr, gap 20px) : l'agenda s'aligne sur la carte, la carte joueur sur les filtres. */
-.home-me__grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; align-items: start; }
-.home-me__grid > .hero-perso-card { justify-self: start; }
-.home-me__main { display: grid; gap: 14px; min-width: 0; }
+/* Mêmes colonnes que la carte dessous (.map-section-layout : 3fr 2fr, gap 20px) : l'agenda
+   s'aligne sur la carte, la carte joueur (taille normale) est centrée au-dessus des filtres.
+   La colonne gauche (salutation, agenda, raccourcis) est centrée sur la hauteur de la carte. */
+.home-me__grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; align-items: stretch; }
+.home-me__grid > .hero-perso-card { justify-self: center; align-self: start; }
+.home-me__main { display: flex; flex-direction: column; justify-content: center; gap: 18px; min-width: 0; }
 .home-me .hero-perso-card { margin: 0; }
 
 .home-agenda {
@@ -12382,8 +12384,10 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
 .home-chip:hover { background: var(--yellow); }
 .home-chip--alert { background: var(--pink); }
 
-@media (max-width: 960px) {
+/* La carte joueur est masquée sous 1024px (.hero-perso-card) : une seule colonne dès là. */
+@media (max-width: 1024px) {
   .home-me__grid { grid-template-columns: 1fr; }
+  .home-me__main { justify-content: flex-start; }
 }
 @media (max-width: 560px) {
   .home-me { padding-top: 18px; }
