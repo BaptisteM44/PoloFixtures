@@ -2654,7 +2654,9 @@
     "danger_delete_title": "Eliminar o torneio",
     "danger_delete_desc": "Definitivo: equipas, jogos e resultados são apagados.",
     "unsaved_changes": "Alterações por guardar",
-    "field_host_club_hint": "O logótipo e o link do clube aparecem na página do torneio."
+    "field_host_club_hint": "O logótipo e o link do clube aparecem na página do torneio.",
+    "map_preview_hint": "Posição no mapa de torneios: pela morada do campo se estiver preenchida, senão pela cidade. Atualizada ao guardar.",
+    "map_preview_none": "Ainda sem posição no mapa: indica a cidade ou a morada do campo e guarda."
   },
   "team_manager": {
     "registered_teams": "Equipas inscritas ({count})",

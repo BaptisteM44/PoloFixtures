@@ -10,6 +10,7 @@ import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { apiMsg } from "@/lib/api-messages";
 import { canSetHostClub } from "@/lib/club-host";
+import { geocodeTournament } from "@/lib/geocode";
 import { auth } from "@/lib/auth";
 
 async function requireTournamentOrgaAccess(tournamentId: string): Promise<{ error: string } | null> {
@@ -161,21 +162,19 @@ export async function updateTournamentAction(formData: FormData) {
     ? await generateTournamentSlug(data.name, data.city, dateStart.getFullYear(), data.id)
     : existing.slug;
 
-  // Auto-geocode if city or country changed, or tournament has no coords yet
+  // Position sur la carte : recalculée si la ville, le pays ou l'adresse du
+  // terrain change (ou s'il n'y en a pas encore). L'adresse du terrain donne
+  // le point exact ; sinon, le centre de la ville.
   let geoLat = tournament.lat;
   let geoLng = tournament.lng;
-  if (tournament.city !== data.city || tournament.country !== data.country || (geoLat == null && geoLng == null)) {
-    try {
-      const geoRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(data.city + ", " + data.country)}`,
-        { headers: { "User-Agent": "bikepolo-app" } }
-      );
-      const geoData = await geoRes.json();
-      if (geoData[0]) {
-        geoLat = parseFloat(geoData[0].lat);
-        geoLng = parseFloat(geoData[0].lon);
-      }
-    } catch { /* geocoding is best-effort */ }
+  const venueAddress = data.venueAddress?.trim() || null;
+  if (
+    tournament.city !== data.city || tournament.country !== data.country ||
+    (tournament.venueAddress?.trim() || null) !== venueAddress ||
+    (geoLat == null && geoLng == null)
+  ) {
+    const pos = await geocodeTournament({ venueAddress, city: data.city, country: data.country });
+    if (pos) { geoLat = pos.lat; geoLng = pos.lng; }
   }
 
   try {

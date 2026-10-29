@@ -2654,7 +2654,9 @@
     "danger_delete_title": "Delete the tournament",
     "danger_delete_desc": "Permanent: teams, matches and results are erased.",
     "unsaved_changes": "Unsaved changes",
-    "field_host_club_hint": "The club's logo and link show on the tournament page."
+    "field_host_club_hint": "The club's logo and link show on the tournament page.",
+    "map_preview_hint": "Position on the tournament map: from the venue address if filled in, otherwise the city. Updated when you save.",
+    "map_preview_none": "No position on the map yet: fill in the city or the venue address, then save."
   },
   "team_manager": {
     "registered_teams": "Registered teams ({count})",

@@ -12292,7 +12292,19 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
 .hero-now--two { grid-template-columns: minmax(0, 1.7fr) minmax(220px, 1fr); }
 .hero-now > .panel { height: 100%; }
 .hero-now .training-tiles { display: block; height: 100%; }
-.hero-now .training-tile { height: 100%; }
+/* Tuile d'entraînement compacte, même forme que la carte du tournoi :
+   jour + heure dans un bloc coloré à gauche, infos et bouton à droite. */
+.hero-now .training-tile { height: 100%; display: grid; grid-template-columns: 112px minmax(0, 1fr); grid-template-rows: auto auto 1fr; }
+.hero-now .training-tile__band {
+  grid-row: 1 / -1; justify-content: center; align-items: center; text-align: center; gap: 2px;
+  padding: 14px 8px; border-bottom: none; border-right: 2px solid var(--border);
+  border-radius: calc(var(--radius) - 2px) 0 0 calc(var(--radius) - 2px);
+}
+.hero-now .training-tile__band-actions { position: static; margin-top: 8px; justify-content: center; }
+.hero-now .training-tile__cal { top: 100%; right: auto; left: 0; }
+.hero-now .training-tile__body { padding: 12px 14px 0; }
+.hero-now .training-tile__who { padding: 4px 14px 0; margin-top: 0; }
+.hero-now .training-tile__cta { margin: 8px 14px 12px; align-self: end; }
 @media (max-width: 760px) {
   .hero-now--two { grid-template-columns: 1fr; }
   .hero-now .training-tiles { display: block; overflow: visible; }
@@ -12304,3 +12316,6 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
   .continent-card h3 { font-size: 14px !important; margin: 0 !important; }
 }
 .hero-now > a.panel > div { height: 100%; }
+/* Fiche → Lieux : position du tournoi sur la carte */
+.venue-map { display: grid; gap: 4px; }
+.venue-map__box { height: 180px; border: 2px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }

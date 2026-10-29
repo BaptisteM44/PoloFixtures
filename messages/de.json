@@ -2660,7 +2660,9 @@
     "danger_delete_title": "Turnier löschen",
     "danger_delete_desc": "Endgültig: Teams, Spiele und Ergebnisse werden gelöscht.",
     "unsaved_changes": "Nicht gespeicherte Änderungen",
-    "field_host_club_hint": "Logo und Link des Clubs erscheinen auf der Turnierseite."
+    "field_host_club_hint": "Logo und Link des Clubs erscheinen auf der Turnierseite.",
+    "map_preview_hint": "Position auf der Turnierkarte: nach der Platzadresse, falls angegeben, sonst nach der Stadt. Wird beim Speichern aktualisiert.",
+    "map_preview_none": "Noch keine Position auf der Karte: Stadt oder Platzadresse angeben und speichern."
   },
   "team_manager": {
     "registered_teams": "Angemeldete Teams ({count})",

@@ -278,6 +278,8 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               venueName: t_.venueName,
               venueAddress: t_.venueAddress,
               venueMapsUrl: t_.venueMapsUrl,
+              lat: t_.lat,
+              lng: t_.lng,
               fridayWelcomeName: t_.fridayWelcomeName,
               fridayWelcomeAddress: t_.fridayWelcomeAddress,
               fridayWelcomeMapsUrl: t_.fridayWelcomeMapsUrl,

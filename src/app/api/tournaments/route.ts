@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { canSetHostClub } from "@/lib/club-host";
+import { geocodeTournament } from "@/lib/geocode";
 import { generateTournamentSlug } from "@/lib/slug";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { notifyAllAdmins } from "@/lib/notify";
@@ -103,19 +104,11 @@ export async function POST(request: Request) {
 
   const slug = await generateTournamentSlug(data.name, data.city, start.getFullYear());
 
-  // Auto-geocode city+country via Nominatim if no coords provided
+  // Position sur la carte : ville choisie dans la liste → ses coordonnées ;
+  // sinon recherche « ville, pays » (n'importe quelle ville ou village).
   if (data.lat == null || data.lng == null) {
-    try {
-      const geoRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(data.city + ", " + data.country)}`,
-        { headers: { "User-Agent": "bikepolo-app" } }
-      );
-      const geoData = await geoRes.json();
-      if (geoData[0]) {
-        data.lat = parseFloat(geoData[0].lat);
-        data.lng = parseFloat(geoData[0].lon);
-      }
-    } catch { /* geocoding is best-effort */ }
+    const pos = await geocodeTournament({ city: data.city, country: data.country });
+    if (pos) { data.lat = pos.lat; data.lng = pos.lng; }
   }
 
   const created = await prisma.tournament.create({

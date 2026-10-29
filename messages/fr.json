@@ -2655,7 +2655,9 @@
     "danger_delete_title": "Supprimer le tournoi",
     "danger_delete_desc": "Définitif : équipes, matchs et résultats sont effacés.",
     "unsaved_changes": "Modifications non enregistrées",
-    "field_host_club_hint": "Le logo et le lien du club s'affichent sur la page du tournoi."
+    "field_host_club_hint": "Le logo et le lien du club s'affichent sur la page du tournoi.",
+    "map_preview_hint": "Position sur la carte des tournois : d'après l'adresse du terrain si elle est renseignée, sinon la ville. Mise à jour à l'enregistrement.",
+    "map_preview_none": "Pas encore de position sur la carte : renseigne la ville ou l'adresse du terrain, puis enregistre."
   },
   "team_manager": {
     "registered_teams": "Équipes inscrites ({count})",

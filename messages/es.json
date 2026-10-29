@@ -2660,7 +2660,9 @@
     "danger_delete_title": "Eliminar el torneo",
     "danger_delete_desc": "Definitivo: se borran equipos, partidos y resultados.",
     "unsaved_changes": "Cambios sin guardar",
-    "field_host_club_hint": "El logo y el enlace del club aparecen en la página del torneo."
+    "field_host_club_hint": "El logo y el enlace del club aparecen en la página del torneo.",
+    "map_preview_hint": "Posición en el mapa de torneos: según la dirección de la pista si está indicada, si no la ciudad. Se actualiza al guardar.",
+    "map_preview_none": "Aún sin posición en el mapa: indica la ciudad o la dirección de la pista y guarda."
   },
   "team_manager": {
     "registered_teams": "Equipos inscritos ({count})",

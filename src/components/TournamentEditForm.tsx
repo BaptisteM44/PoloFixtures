@@ -9,6 +9,7 @@ import { ISO_COUNTRIES } from "@/lib/iso-countries";
 import { CURRENCIES } from "@/lib/currencies";
 import { RegistrationFieldsEditor } from "@/components/RegistrationFieldsEditor";
 import { postUpload } from "@/lib/upload-image";
+import { VenueMapPreview } from "@/components/VenueMapPreview";
 import { countryToContinentOrDefault } from "@/lib/country-utils";
 
 // Formats legacy proposés dans le menu. Un format hors de cette liste (ex.
@@ -44,6 +45,8 @@ type Tournament = {
   venueName: string | null;
   venueAddress: string | null;
   venueMapsUrl: string | null;
+  lat?: number | null;
+  lng?: number | null;
   fridayWelcomeName: string | null;
   fridayWelcomeAddress: string | null;
   fridayWelcomeMapsUrl: string | null;
@@ -554,6 +557,7 @@ export function TournamentEditForm({ tournament, action }: Props) {
               <input name="venueMapsUrl" defaultValue={tournament.venueMapsUrl ?? ""} placeholder="https://maps.google.com/..." />
             </label>
           </div>
+          <VenueMapPreview lat={tournament.lat ?? null} lng={tournament.lng ?? null} name={tournament.name} />
           <div className="edit-grid-2">
             <div className="edit-card__sub">
               <p className="edit-card__subtitle">{t("venue_friday_welcome")} <span>({t("optional")})</span></p>
