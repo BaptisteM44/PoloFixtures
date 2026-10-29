@@ -446,7 +446,7 @@
     "overlay_title": "Overlay de stream",
     "overlay_hint": "Copia o link para o OBS",
     "qr_title": "Códigos QR",
-    "qr_desc": "Imprime estes códigos QR: um para o público (página do torneio) e um por campo para os árbitros.",
+    "qr_desc": "Para imprimir e afixar no local: um QR para o público (página do torneio) e um por campo para os árbitros.",
     "qr_public": "Página do torneio",
     "qr_referee_court": "Árbitro Campo {court}",
     "qr_print": "Imprimir os códigos QR",
@@ -1049,7 +1049,14 @@
     "new_next_sub": "Nada é definitivo: tudo se altera depois no painel.",
     "bracket_not_played": "Não houve quadro neste torneio.",
     "legacy_format_title": "Antigo sistema de formatos",
-    "legacy_format_desc": "Este torneio foi jogado com o antigo sistema de formatos. O seu desenrolar (grupos, suíço, quadro, classificação) continua disponível na página pública."
+    "legacy_format_desc": "Este torneio foi jogado com o antigo sistema de formatos. O seu desenrolar (grupos, suíço, quadro, classificação) continua disponível na página pública.",
+    "overlay_section_title": "Overlay para o stream (OBS)",
+    "overlay_desc": "Um link por campo, a adicionar no OBS como «Fonte de navegador»: o resultado e o cronómetro aparecem por cima do teu vídeo, em direto.",
+    "overlay_court": "Campo {n}",
+    "overlay_copy": "Copiar link",
+    "overlay_copied": "Copiado!",
+    "overlay_preview": "Pré-visualizar",
+    "overlay_feed_label": "Mostrar golos e penalidades nos lados"
   },
   "registration": {
     "section_title": "Inscrever a minha equipa",
@@ -2844,7 +2851,8 @@
     "item_approved": "Aprovado pelo admin",
     "hint_approved": "À espera de validação",
     "item_format": "Formato (etapas)",
-    "hint_format": "Grupos, suíço, eliminação…"
+    "hint_format": "Grupos, suíço, eliminação…",
+    "click_hint": "Clica num ponto para o completar."
   },
   "referee_panel": {
     "action_refused": "Ação de arbitragem recusada",

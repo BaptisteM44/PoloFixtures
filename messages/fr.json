@@ -446,7 +446,7 @@
     "overlay_title": "Overlay Stream",
     "overlay_hint": "Copiez le lien pour OBS",
     "qr_title": "QR Codes",
-    "qr_desc": "Imprimez ces QR codes : un pour les spectateurs (page du tournoi) et un par terrain pour les arbitres.",
+    "qr_desc": "À imprimer et afficher sur place : un QR pour les spectateurs (page du tournoi) et un par terrain pour les arbitres.",
     "qr_public": "Page du tournoi",
     "qr_referee_court": "Arbitrage Court {court}",
     "qr_print": "Imprimer les QR",
@@ -1049,7 +1049,14 @@
     "new_next_sub": "Rien n'est figé : tout se modifie ensuite depuis le dashboard.",
     "bracket_not_played": "Pas de tableau joué pour ce tournoi.",
     "legacy_format_title": "Ancien système de formats",
-    "legacy_format_desc": "Ce tournoi a été joué avec l'ancien système de formats. Son déroulé (poules, Swiss, tableau, classement) reste consultable sur la page publique."
+    "legacy_format_desc": "Ce tournoi a été joué avec l'ancien système de formats. Son déroulé (poules, Swiss, tableau, classement) reste consultable sur la page publique.",
+    "overlay_section_title": "Overlay pour le stream (OBS)",
+    "overlay_desc": "Un lien par terrain, à ajouter dans OBS comme « Source navigateur » : le score et le chrono s'affichent par-dessus ta vidéo, en direct.",
+    "overlay_court": "Terrain {n}",
+    "overlay_copy": "Copier le lien",
+    "overlay_copied": "Copié !",
+    "overlay_preview": "Aperçu",
+    "overlay_feed_label": "Afficher les buts et pénalités sur les côtés"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -2845,7 +2852,8 @@
     "item_approved": "Approuvé par un admin",
     "hint_approved": "En attente de validation",
     "item_format": "Format (étapes)",
-    "hint_format": "Poules, Swiss, élimination…"
+    "hint_format": "Poules, Swiss, élimination…",
+    "click_hint": "Clique sur un point pour aller le compléter."
   },
   "referee_panel": {
     "action_refused": "Action arbitrage refusée",

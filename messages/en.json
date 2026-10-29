@@ -446,7 +446,7 @@
     "overlay_title": "Stream Overlay",
     "overlay_hint": "Copy the link for OBS",
     "qr_title": "QR Codes",
-    "qr_desc": "Print these QR codes: one for spectators (tournament page) and one per court for referees.",
+    "qr_desc": "Print and display on site: one QR for spectators (tournament page) and one per court for referees.",
     "qr_public": "Tournament page",
     "qr_referee_court": "Referee Court {court}",
     "qr_print": "Print QR codes",
@@ -1049,7 +1049,14 @@
     "new_next_sub": "Nothing is set in stone: you can change everything later from the dashboard.",
     "bracket_not_played": "No bracket was played in this tournament.",
     "legacy_format_title": "Previous format system",
-    "legacy_format_desc": "This tournament was played with the previous format system. Its flow (pools, Swiss, bracket, standings) is still available on the public page."
+    "legacy_format_desc": "This tournament was played with the previous format system. Its flow (pools, Swiss, bracket, standings) is still available on the public page.",
+    "overlay_section_title": "Stream overlay (OBS)",
+    "overlay_desc": "One link per court, to add in OBS as a “Browser source”: score and clock show on top of your video, live.",
+    "overlay_court": "Court {n}",
+    "overlay_copy": "Copy link",
+    "overlay_copied": "Copied!",
+    "overlay_preview": "Preview",
+    "overlay_feed_label": "Show goals and penalties on the sides"
   },
   "registration": {
     "section_title": "Register my team",
@@ -2844,7 +2851,8 @@
     "item_approved": "Approved by admin",
     "hint_approved": "Awaiting validation",
     "item_format": "Format (stages)",
-    "hint_format": "Pools, Swiss, elimination…"
+    "hint_format": "Pools, Swiss, elimination…",
+    "click_hint": "Click an item to go and fill it in."
   },
   "referee_panel": {
     "action_refused": "Referee action refused",

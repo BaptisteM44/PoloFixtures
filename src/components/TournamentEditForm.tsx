@@ -425,7 +425,7 @@ export function TournamentEditForm({ tournament, action }: Props) {
         </section>
 
         {/* ── Jeu : type d'équipe, terrains, durée ── */}
-        <section className="edit-card">
+        <section id="edit-game" className="edit-card orga-anchor">
           <h3 className="edit-card__title">🏑 {t("section_game")}</h3>
           <div className="edit-grid-3">
             <label className="field-row">

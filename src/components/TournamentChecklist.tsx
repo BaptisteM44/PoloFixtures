@@ -50,28 +50,27 @@ function Section({ title, items }: { title: string; items: CheckItem[] }) {
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--text-muted)", fontFamily: "var(--font-display)" }}>{title}</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: allDone ? "var(--teal)" : "var(--text-muted)" }}>{doneCount}/{items.length}</span>
       </div>
-      <div style={{ display: "grid", gap: 4 }}>
-        {items.map((item) => (
-          <div
-            key={item.label}
-            className={item.go ? "checklist-item checklist-item--link" : "checklist-item"}
-            role={item.go ? "button" : undefined}
-            tabIndex={item.go ? 0 : undefined}
-            onClick={() => goTo(item.go)}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goTo(item.go); } }}
-            style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13 }}
-          >
-            <span style={{ flexShrink: 0, fontSize: 14, marginTop: 1, color: item.done ? "var(--teal)" : "var(--border)" }}>
-              {item.done ? "✓" : "○"}
-            </span>
-            <div>
-              <span style={{ color: item.done ? "var(--text)" : "var(--text-muted)", fontWeight: item.done ? 600 : 400 }}>{item.label}</span>
-              {!item.done && item.hint && (
-                <span style={{ display: "block", fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>{item.hint}</span>
-              )}
-            </div>
-          </div>
-        ))}
+      <div style={{ display: "grid", gap: 2 }}>
+        {items.map((item) => {
+          const body = (
+            <>
+              <span className={`checklist-item__state${item.done ? " is-done" : ""}`} aria-hidden>{item.done ? "✓" : ""}</span>
+              <span className="checklist-item__text">
+                <span className="checklist-item__label">{item.label}</span>
+                {!item.done && item.hint && <span className="checklist-item__hint">{item.hint}</span>}
+              </span>
+              {item.go && <span className="checklist-item__go" aria-hidden>›</span>}
+            </>
+          );
+          // Chaque point mène au champ à compléter : un vrai bouton, qui en a l'air.
+          return item.go ? (
+            <button key={item.label} type="button" className={`checklist-item${item.done ? " is-done" : ""}`} onClick={() => goTo(item.go)}>
+              {body}
+            </button>
+          ) : (
+            <div key={item.label} className={`checklist-item checklist-item--static${item.done ? " is-done" : ""}`}>{body}</div>
+          );
+        })}
       </div>
     </div>
   );
@@ -85,12 +84,12 @@ export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
       { label: tl("item_name"), done: !!t.name, go: { tab: fiche, anchor: "edit-general" } },
       { label: tl("item_location"), done: !!t.country && !!t.city, go: { tab: fiche, anchor: "edit-general" } },
       { label: tl("item_dates"), done: !!t.dateStart && !!t.dateEnd, go: { tab: fiche, anchor: "edit-general" } },
-      { label: tl("item_email"), done: !!t.contactEmail, go: { tab: fiche, anchor: "edit-registration" } },
+      { label: tl("item_email"), done: !!t.contactEmail, go: { tab: fiche, anchor: "edit-general" } },
     ] },
     { title: tl("section_format"), items: [
-      { label: tl("item_format"), done: t.stagesCount > 0, hint: tl("hint_format"), go: { tab: t.usesPipeline ? "stages" : "planning" } },
+      { label: tl("item_format"), done: t.stagesCount > 0, hint: tl("hint_format"), go: { tab: "stages", anchor: "edit-format" } },
       { label: tl("item_max_teams"), done: t.maxTeams > 0, go: { tab: fiche, anchor: "edit-registration" } },
-      { label: tl("item_courts"), done: t.courtsCount > 0, go: { tab: fiche, anchor: "edit-general" } },
+      { label: tl("item_courts"), done: t.courtsCount > 0, go: { tab: fiche, anchor: "edit-game" } },
     ] },
     { title: tl("section_registration"), items: [
       { label: tl("item_reg_dates"), done: !!t.registrationStart && !!t.registrationEnd, hint: tl("hint_reg_dates"), go: { tab: fiche, anchor: "edit-registration" } },
@@ -102,7 +101,7 @@ export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
     { title: tl("section_visual"), items: [
       { label: tl("item_banner"), done: !!t.bannerPath, hint: tl("hint_banner"), go: { tab: fiche, anchor: "edit-banner" } },
       { label: tl("item_sponsors"), done: t.sponsorsCount > 0, hint: tl("hint_optional"), go: { tab: fiche, anchor: "edit-sponsors" } },
-      { label: tl("item_co_orga"), done: t.coOrganizersCount > 0, hint: tl("hint_optional"), go: { tab: "orga" } },
+      { label: tl("item_co_orga"), done: t.coOrganizersCount > 0, hint: tl("hint_optional"), go: { tab: "orga", anchor: "edit-coorgs" } },
     ] },
   ];
   // La validation admin n'est pas dans le % : l'orga n'a pas la main dessus.
@@ -117,7 +116,8 @@ export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
 
   return (
     <div className="panel" style={{ padding: "20px 24px" }}>
-      <h3 style={{ margin: "0 0 16px", fontFamily: "var(--font-display)", fontSize: 14 }}>{tl("title")}</h3>
+      <h3 style={{ margin: "0 0 2px", fontFamily: "var(--font-display)", fontSize: 14 }}>{tl("title")}</h3>
+      <p style={{ margin: "0 0 14px", fontSize: 12, color: "var(--text-muted)" }}>{tl("click_hint")}</p>
 
       {/* Progress bar */}
       <div style={{ marginBottom: 20 }}>

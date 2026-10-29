@@ -11804,9 +11804,28 @@ details.format-flow--public .format-flow__num { width: 18px; height: 18px; font-
   0%, 40% { box-shadow: 0 0 0 4px var(--yellow); }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
-.checklist-item--link { cursor: pointer; border-radius: var(--radius-sm); margin: 0 -6px; padding: 2px 6px; }
-.checklist-item--link:hover { background: var(--surface-2); }
-.checklist-item--link:focus-visible { outline: 2px solid var(--teal); }
+/* Checklist « État du tournoi » : chaque point est un bouton qui mène au champ */
+.checklist-item {
+  display: flex; align-items: flex-start; gap: 8px; width: calc(100% + 12px); margin: 0 -6px;
+  padding: 5px 6px; border: 1.5px solid transparent; border-radius: var(--radius-sm);
+  background: none; box-shadow: none; min-height: 0; text-align: left; cursor: pointer;
+  font-family: var(--font-body); font-size: 13px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text);
+  transition: background 0.12s, border-color 0.12s;
+}
+.checklist-item--static { cursor: default; }
+button.checklist-item:hover { background: color-mix(in srgb, var(--yellow) 35%, var(--surface)); border-color: var(--border); transform: none; }
+button.checklist-item:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+.checklist-item__state {
+  flex-shrink: 0; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-top: 1px;
+  border-radius: 50%; border: 2px solid var(--orange); font-size: 10px; font-weight: 800; color: #1a1a1a;
+}
+.checklist-item__state.is-done { border-color: var(--teal); background: var(--teal); }
+.checklist-item__text { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.checklist-item__label { font-weight: 600; }
+.checklist-item.is-done .checklist-item__label { font-weight: 400; color: var(--text-muted); }
+.checklist-item__hint { font-size: 11px; font-weight: 400; color: var(--text-muted); }
+.checklist-item__go { flex-shrink: 0; font-size: 18px; line-height: 1; color: var(--text-muted); transition: transform 0.12s, color 0.12s; }
+button.checklist-item:hover .checklist-item__go { color: var(--text); transform: translateX(2px); }
 .orga-preview-banner {
   margin: 0 0 16px;
   padding: 10px 14px;
@@ -12254,3 +12273,15 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
 }
 .screen-mgr__icon { display: inline-flex; align-items: center; align-self: center; }
 .public-screens__card { align-content: start; }
+/* Jour J : liens d'overlay (OBS), une ligne par terrain */
+.overlay-links { display: grid; gap: 10px; }
+.overlay-links__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.overlay-links__row {
+  display: flex; align-items: center; gap: 10px 12px; flex-wrap: wrap;
+  padding: 8px 12px; border: 1.5px solid var(--border-light); border-radius: var(--radius-sm); background: var(--bg);
+}
+.overlay-links__row strong { font-family: var(--font-display); font-size: 13px; min-width: 72px; }
+.overlay-links__row code { flex: 1 1 160px; min-width: 0; font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.overlay-links__actions { display: flex; gap: 6px; }
+.overlay-links__actions button, .overlay-links__actions a { font-size: 12px; padding: 5px 10px; white-space: nowrap; }
+.overlay-links__feed { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }

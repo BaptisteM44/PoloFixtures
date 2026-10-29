@@ -447,7 +447,7 @@
     "overlay_title": "Stream-Overlay",
     "overlay_hint": "Link fur OBS kopieren",
     "qr_title": "QR-Codes",
-    "qr_desc": "Drucke diese QR-Codes: einen für Zuschauer (Turnierseite) und einen pro Feld für Schiedsrichter.",
+    "qr_desc": "Zum Ausdrucken und Aushängen vor Ort: ein QR für Zuschauer (Turnierseite) und einer pro Court für die Schiris.",
     "qr_public": "Turnierseite",
     "qr_referee_court": "Schiedsrichter Feld {court}",
     "qr_print": "QR-Codes drucken",
@@ -1049,7 +1049,14 @@
     "new_next_sub": "Nichts ist endgültig: Alles lässt sich später im Dashboard ändern.",
     "bracket_not_played": "In diesem Turnier wurde kein Turnierbaum gespielt.",
     "legacy_format_title": "Altes Formatsystem",
-    "legacy_format_desc": "Dieses Turnier wurde mit dem alten Formatsystem gespielt. Sein Ablauf (Gruppen, Swiss, Turnierbaum, Tabelle) bleibt auf der öffentlichen Seite einsehbar."
+    "legacy_format_desc": "Dieses Turnier wurde mit dem alten Formatsystem gespielt. Sein Ablauf (Gruppen, Swiss, Turnierbaum, Tabelle) bleibt auf der öffentlichen Seite einsehbar.",
+    "overlay_section_title": "Stream-Overlay (OBS)",
+    "overlay_desc": "Ein Link pro Court, in OBS als „Browserquelle“ hinzufügen: Spielstand und Uhr erscheinen live über deinem Video.",
+    "overlay_court": "Court {n}",
+    "overlay_copy": "Link kopieren",
+    "overlay_copied": "Kopiert!",
+    "overlay_preview": "Vorschau",
+    "overlay_feed_label": "Tore und Strafen an den Seiten anzeigen"
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -2850,7 +2857,8 @@
     "item_approved": "Von Admin genehmigt",
     "hint_approved": "Warte auf Validierung",
     "item_format": "Format (Phasen)",
-    "hint_format": "Gruppen, Swiss, K.-o.…"
+    "hint_format": "Gruppen, Swiss, K.-o.…",
+    "click_hint": "Klicke auf einen Punkt, um ihn auszufüllen."
   },
   "referee_panel": {
     "action_refused": "Schiedsrichteraktion abgelehnt",

@@ -193,6 +193,8 @@ export function OrgaDashboard({
     const el = document.getElementById(pendingAnchor);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
+      // Les blocs chargés après coup (tâches, notes…) peuvent décaler la section : on recale.
+      setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 500);
       el.classList.add("orga-anchor--flash");
       setTimeout(() => el.classList.remove("orga-anchor--flash"), 1600);
     }
@@ -413,7 +415,7 @@ export function OrgaDashboard({
           );
         }
         return (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div id="edit-format" className="orga-anchor" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {/* Composer de format : déplié pour la 1re config, replié ensuite */}
             {canEditFormat && (
               hasFormat ? (
@@ -475,6 +477,15 @@ export function OrgaDashboard({
       {/* ── Tab: Orga ── */}
       {activeTab === "orga" && (
         <div style={{ display: "grid", gap: 24 }}>
+          {/* Co-orgas en premier : c'est l'équipe avant les outils */}
+          <div id="edit-coorgs" className="orga-anchor">
+            <CoOrganizerManager
+              tournamentId={tournament.id}
+              coOrganizers={coOrganizers.filter((co) => co.role !== "REF").map((co) => co.player)}
+              canManage={isCreator || isAdmin}
+            />
+          </div>
+
           {/* Task board */}
           <OrgaTaskBoard
             tasks={orgaTasks}
@@ -504,18 +515,6 @@ export function OrgaDashboard({
           {/* Message groupé aux capitaines (ou aux inscrit·es solo en ABC Chapeau) */}
           <AnnouncePanel tournamentId={tournament.id} format={tournament.format} />
 
-          {/* ── Équipe organisatrice : sponsors, co-orgas, arbitres ── */}
-          <div style={{ borderTop: "2px solid var(--border)", paddingTop: 20, marginTop: 4, display: "flex", flexDirection: "column", gap: 20 }}>
-            <p style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", margin: 0 }}>
-              {t("orga_tab_orgateam")}
-            </p>
-            <CoOrganizerManager
-              tournamentId={tournament.id}
-              coOrganizers={coOrganizers.filter((co) => co.role !== "REF").map((co) => co.player)}
-              canManage={isCreator || isAdmin}
-            />
-          </div>
-
         </div>
       )}
 
@@ -523,15 +522,19 @@ export function OrgaDashboard({
       {activeTab === "dday" && (
         <div style={{ display: "grid", gap: 20 }}>
           <ScreenManager tournamentId={tournament.id} tournamentSlug={tournament.slug || tournament.id} />
+          {/* Overlay stream (OBS) : une section à part, expliquée */}
           <div className="panel" style={{ padding: "16px 18px" }}>
-          <h3 style={{ margin: 0 }}>📱 {t("qr_title")} · 🎬 {t("overlay_title")}</h3>
-          <p className="meta" style={{ margin: "8px 0 12px" }}>{t("qr_desc")}</p>
+            <h3 style={{ margin: 0 }}>🎬 {t("overlay_section_title")}</h3>
+            <p className="meta" style={{ margin: "6px 0 12px" }}>{t("overlay_desc")}</p>
+            <OverlayLinks
+              tournamentIdOrSlug={tournament.slug || tournament.id}
+              courtsCount={tournament.courtsCount ?? 1}
+            />
+          </div>
 
-          {/* Liens overlay par terrain (avec réglage feed + feedback copié) */}
-          <OverlayLinks
-            tournamentIdOrSlug={tournament.slug || tournament.id}
-            courtsCount={tournament.courtsCount ?? 1}
-          />
+          <div className="panel" style={{ padding: "16px 18px" }}>
+          <h3 style={{ margin: 0 }}>📱 {t("qr_title")}</h3>
+          <p className="meta" style={{ margin: "6px 0 12px" }}>{t("qr_desc")}</p>
 
           {!tournament.refToken && <p className="orga-qr-warn">⚠️ {t("qr_no_token")}</p>}
           {origin && <div className="orga-qr-grid" style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
