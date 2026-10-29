@@ -12285,3 +12285,22 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
 .overlay-links__actions { display: flex; gap: 6px; }
 .overlay-links__actions button, .overlay-links__actions a { font-size: 12px; padding: 5px 10px; white-space: nowrap; }
 .overlay-links__feed { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
+
+/* ── Accueil : proportions ── */
+/* Prochain tournoi + prochain entraînement côte à côte (empilés sur mobile) */
+.hero-now { display: grid; gap: 16px; align-items: stretch; }
+.hero-now--two { grid-template-columns: minmax(0, 1.7fr) minmax(220px, 1fr); }
+.hero-now > .panel { height: 100%; }
+.hero-now .training-tiles { display: block; height: 100%; }
+.hero-now .training-tile { height: 100%; }
+@media (max-width: 760px) {
+  .hero-now--two { grid-template-columns: 1fr; }
+  .hero-now .training-tiles { display: block; overflow: visible; }
+}
+/* Continents sur mobile : grille compacte 2 colonnes au lieu de 6 grosses cartes empilées */
+@media (max-width: 640px) {
+  .continent-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+  .continent-card { padding: 10px 12px !important; min-height: 0 !important; }
+  .continent-card h3 { font-size: 14px !important; margin: 0 !important; }
+}
+.hero-now > a.panel > div { height: 100%; }

@@ -166,7 +166,7 @@ export default async function HomePage() {
             _count: { select: { messages: true } },
           },
           orderBy: { date: "asc" },
-          take: 4,
+          take: 1, // seul le prochain entraînement est affiché
         })
       : Promise.resolve([]),
     // Tournois où je suis inscrit mais le tirage n'a pas encore été fait
@@ -260,10 +260,10 @@ export default async function HomePage() {
     if (cont) playerCountByContinent[cont] = (playerCountByContinent[cont] ?? 0) + row._count._all;
   }
 
-  // Prochain entraînement de mes clubs (14 jours) : tuile sous le prochain tournoi.
+  // Prochain entraînement de mes clubs (30 jours) : UNE tuile, à côté du prochain tournoi.
   const trainingTiles: TrainingTileData[] = currentPlayerId
     ? (clubSessionsRaw as any[])
-        .filter((s) => s.date.getTime() - Date.now() <= 14 * 86_400_000)
+        .filter((s) => s.date.getTime() - Date.now() <= 30 * 86_400_000)
         .slice(0, 1)
         .map((s) => {
           const mine = s.attendees.find((a: any) => a.player.id === currentPlayerId);
@@ -284,7 +284,6 @@ export default async function HomePage() {
           };
         })
     : [];
-  const tileIds = new Set(trainingTiles.map((x) => x.id));
 
   return (
     <div className="home">
@@ -319,21 +318,14 @@ export default async function HomePage() {
           }}
           next={heroNext}
           others={heroOthers}
-          trainingSlot={<TrainingTiles sessions={trainingTiles} />}
-          sessions={(clubSessionsRaw as any[]).filter((s) => !tileIds.has(s.id)).map((s) => ({
-            id: s.id,
-            title: s.title,
-            date: s.date.toISOString(),
-            clubId: s.club.id,
-            clubName: s.club.name,
-            place: s.venue?.name ?? s.location ?? null,
-          }))}
+          trainingSlot={trainingTiles.length > 0 ? <TrainingTiles sessions={trainingTiles} /> : undefined}
           awaitingDraw={(() => {
             const seen = new Set<string>();
             const out: { id: string; slug: string | null; name: string; city: string; dateStart: string }[] = [];
             for (const e of awaitingDrawRaw as any[]) {
               const tr = e.team.tournament;
-              if (seen.has(tr.id)) continue;
+              // Déjà affiché en grand comme « prochain tournoi » : pas de doublon.
+              if (seen.has(tr.id) || tr.id === heroNext?.id) continue;
               seen.add(tr.id);
               out.push({ id: tr.id, slug: tr.slug, name: tr.name, city: tr.city, dateStart: tr.dateStart.toISOString() });
             }

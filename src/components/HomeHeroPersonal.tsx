@@ -139,14 +139,6 @@ export type HeroOtherTournament = {
   dateStart: string; // ISO
 };
 
-export type HeroClubSession = {
-  id: string;
-  title: string | null;
-  date: string; // ISO
-  clubId: string;
-  clubName: string;
-  place: string | null;
-};
 
 export type HeroAwaitingDraw = {
   id: string;
@@ -176,7 +168,6 @@ export function HomeHeroPersonal({
   me,
   next,
   others,
-  sessions,
   awaitingDraw,
   inviteCount,
   squadCount,
@@ -186,7 +177,6 @@ export function HomeHeroPersonal({
   me: HeroPlayer;
   next: HeroNextTournament | null;
   others: HeroOtherTournament[];
-  sessions: HeroClubSession[];
   awaitingDraw: HeroAwaitingDraw[];
   inviteCount: number;
   squadCount: number;
@@ -236,6 +226,8 @@ export function HomeHeroPersonal({
           <MalletShoot size={40} />
         </h1>
 
+        {/* Mon prochain tournoi + mon prochain entraînement, côte à côte */}
+        <div className={`hero-now${trainingSlot ? " hero-now--two" : ""}`}>
         {next ? (
           <Link
             href={`/tournament/${next.slug ?? next.id}`}
@@ -315,6 +307,7 @@ export function HomeHeroPersonal({
         )}
 
         {trainingSlot}
+        </div>
 
         {/* Autres tournois à venir */}
         {others.length > 0 && (
@@ -338,44 +331,9 @@ export function HomeHeroPersonal({
           </div>
         )}
 
-        {/* Deux mini-listes : entraînements club + en attente de tirage */}
-        {(sessions.length > 0 || awaitingDraw.length > 0) && (
-          <div
-            className={sessions.length > 0 && awaitingDraw.length > 0 ? "hero-two-col" : undefined}
-            style={{ display: "grid", gap: 16, gridTemplateColumns: sessions.length > 0 && awaitingDraw.length > 0 ? "1fr 1fr" : "1fr" }}
-          >
-            {/* Prochains entraînements */}
-            {sessions.length > 0 && (
-              <div className="panel" style={{ padding: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 10 }}>
-                  🚲 {t("hero_trainings")}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {sessions.slice(0, 3).map((s) => {
-                    const d = new Date(s.date);
-                    return (
-                      <Link key={s.id} href={`/club/${s.clubId}`} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none", color: "inherit" }}>
-                        <div style={{ minWidth: 40, textAlign: "center", flexShrink: 0 }}>
-                          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--teal)", fontFamily: "var(--font-display)", lineHeight: 1 }}>
-                            {d.toLocaleDateString(locale, { weekday: "short" })}
-                          </div>
-                          <div style={{ fontSize: 15, fontWeight: 800, fontFamily: "var(--font-display)", lineHeight: 1.1 }}>{d.getDate()}</div>
-                        </div>
-                        <div style={{ minWidth: 0, fontSize: 12 }}>
-                          <div style={{ fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })} · {s.clubName}
-                          </div>
-                          <div style={{ color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                            {s.title || s.place || t("hero_training_default")}
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
+        {/* En attente de tirage (hors tournoi déjà affiché en grand) */}
+        {awaitingDraw.length > 0 && (
+          <div>
             {/* En attente de tirage */}
             {awaitingDraw.length > 0 && (
               <div className="panel" style={{ padding: 14 }}>
