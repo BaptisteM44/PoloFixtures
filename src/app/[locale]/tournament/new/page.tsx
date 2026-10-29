@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
@@ -42,6 +42,7 @@ export default function NewTournamentPage() {
     saturdayFormat: "ALL_DAY",
     sundayFormat: "SE",
     rushRegistration: false,
+    hostClubId: "",
   });
 
   const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
@@ -93,6 +94,23 @@ export default function NewTournamentPage() {
     const country = e.target.value;
     setForm((f) => withCountry(f, country));
   };
+
+  // Club hôte : proposé si l'orga gère au moins un club ; présélectionné s'il
+  // n'en gère qu'un, ou si l'un de ses clubs est dans la ville choisie.
+  const [myClubs, setMyClubs] = useState<{ id: string; name: string; city: string }[]>([]);
+  useEffect(() => {
+    if (authStatus !== "authenticated") return;
+    fetch("/api/clubs?mine=true").then((r) => r.json()).then((clubs) => {
+      if (!Array.isArray(clubs) || clubs.length === 0 || clubs.length > 30) return; // admin : tous les clubs → pas de proposition
+      setMyClubs(clubs);
+      if (clubs.length === 1) setForm((f) => (f.hostClubId ? f : { ...f, hostClubId: clubs[0].id }));
+    }).catch(() => {});
+  }, [authStatus]);
+  useEffect(() => {
+    if (myClubs.length < 2 || !form.city) return;
+    const local = myClubs.find((c) => c.city.toLowerCase() === form.city.toLowerCase());
+    if (local) setForm((f) => (f.hostClubId ? f : { ...f, hostClubId: local.id }));
+  }, [form.city, myClubs]);
 
   const [coOrganizers, setCoOrganizers] = useState<PlayerResult[]>([]);
   const [coOrgQuery, setCoOrgQuery] = useState("");
@@ -181,6 +199,7 @@ export default function NewTournamentPage() {
         maxSoloPlayers: form.maxSoloPlayers !== "" ? Number(form.maxSoloPlayers) : undefined,
         contactEmail: form.contactEmail || session.user!.email || "contact@bikepolo.app",
         coOrganizerIds: coOrganizers.map((c) => c.id),
+        hostClubId: form.hostClubId || null,
       })
     });
 
@@ -251,6 +270,16 @@ export default function NewTournamentPage() {
                 {ISO_COUNTRIES.map((c) => <option key={c.code} value={c.name}>{c.name}</option>)}
               </select>
             </label>
+            {myClubs.length > 0 && (
+              <label className="field-row" style={{ gridColumn: "1 / -1" }}>
+                {t("field_host_club")}
+                <select value={form.hostClubId} onChange={set("hostClubId")}>
+                  <option value="">{t("field_host_club_none")}</option>
+                  {myClubs.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.city}</option>)}
+                </select>
+                <small className="meta">{t("field_host_club_hint")}</small>
+              </label>
+            )}
           </div>
           <div className="tnew-grid-2">
             <label className="field-row">

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { canSetHostClub } from "@/lib/club-host";
 import { generateTournamentSlug } from "@/lib/slug";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { notifyAllAdmins } from "@/lib/notify";
@@ -53,6 +54,7 @@ const createSchema = z.object({
   maxSoloPlayers: z.number().int().min(1).optional().nullable(),
   rushRegistration: z.boolean().default(false),
   coOrganizerIds: z.array(z.string()).optional(),
+  hostClubId: z.string().optional().nullable(),
 });
 
 export async function POST(request: Request) {
@@ -92,6 +94,12 @@ export async function POST(request: Request) {
       return Response.json({ error: apiMsg("registration_end_before_start") }, { status: 400 });
     }
   }
+
+  // Club hôte : seulement un club que l'orga gère.
+  if (data.hostClubId && !(await canSetHostClub(session.user.playerId, session.user.role, data.hostClubId))) {
+    return Response.json({ error: apiMsg("not_authorized") }, { status: 403 });
+  }
+  if (!data.hostClubId) data.hostClubId = null;
 
   const slug = await generateTournamentSlug(data.name, data.city, start.getFullYear());
 

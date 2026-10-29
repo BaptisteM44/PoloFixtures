@@ -9,6 +9,8 @@ import { notifyTeamPlayers } from "@/lib/notify";
 import { INFO_TILE_KEYS } from "@/lib/infoTilesDefaults";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { apiMsg } from "@/lib/api-messages";
+import { canSetHostClub } from "@/lib/club-host";
+import { auth } from "@/lib/auth";
 
 async function requireTournamentOrgaAccess(tournamentId: string): Promise<{ error: string } | null> {
   const playerId = await getOrgaPlayerId(tournamentId);
@@ -114,6 +116,14 @@ export async function updateTournamentAction(formData: FormData) {
 
   const tournament = await prisma.tournament.findUnique({ where: { id: data.id } });
   if (!tournament) return { error: apiMsg("not_found") };
+
+  // Club hôte : seulement un club que l'orga gère (inchangé = toujours accepté).
+  if (data.hostClubId && data.hostClubId !== tournament.hostClubId) {
+    const session = await auth();
+    if (!(await canSetHostClub(session?.user?.playerId, session?.user?.role, data.hostClubId))) {
+      return { error: apiMsg("not_authorized") };
+    }
+  }
 
   const links = (data.links ?? "")
     .split("\n")

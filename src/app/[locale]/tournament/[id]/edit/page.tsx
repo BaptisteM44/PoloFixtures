@@ -226,6 +226,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               rejectionReason: t_.rejectionReason,
               coOrganizersCount: t_.coOrganizers.length,
               sponsorsCount: t_.sponsors.length,
+              hasHostClub: !!(t_ as any).hostClubId,
               usesPipeline: (t_ as any).usesPipeline ?? false,
               // Legacy : le format est « prêt » une fois verrouillé.
               stagesCount: (t_ as any).usesPipeline ? (t_.stages ?? []).length : t_.locked ? 1 : 0,

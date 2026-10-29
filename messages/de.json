@@ -1056,7 +1056,10 @@
     "overlay_copy": "Link kopieren",
     "overlay_copied": "Kopiert!",
     "overlay_preview": "Vorschau",
-    "overlay_feed_label": "Tore und Strafen an den Seiten anzeigen"
+    "overlay_feed_label": "Tore und Strafen an den Seiten anzeigen",
+    "field_host_club": "Gastgeberclub",
+    "field_host_club_none": "— Kein Club —",
+    "field_host_club_hint": "Logo und Link des Clubs erscheinen auf der Turnierseite."
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -2656,7 +2659,8 @@
     "field_status_hint": "Der Status ändert sich von selbst (Start, Abschluss). Nur bei Bedarf erzwingen.",
     "danger_delete_title": "Turnier löschen",
     "danger_delete_desc": "Endgültig: Teams, Spiele und Ergebnisse werden gelöscht.",
-    "unsaved_changes": "Nicht gespeicherte Änderungen"
+    "unsaved_changes": "Nicht gespeicherte Änderungen",
+    "field_host_club_hint": "Logo und Link des Clubs erscheinen auf der Turnierseite."
   },
   "team_manager": {
     "registered_teams": "Angemeldete Teams ({count})",
@@ -2858,7 +2862,9 @@
     "hint_approved": "Warte auf Validierung",
     "item_format": "Format (Phasen)",
     "hint_format": "Gruppen, Swiss, K.-o.…",
-    "click_hint": "Klicke auf einen Punkt, um ihn auszufüllen."
+    "click_hint": "Klicke auf einen Punkt, um ihn auszufüllen.",
+    "item_host_club": "Gastgeberclub",
+    "hint_host_club": "Optional – falls einer deiner Clubs ausrichtet"
   },
   "referee_panel": {
     "action_refused": "Schiedsrichteraktion abgelehnt",

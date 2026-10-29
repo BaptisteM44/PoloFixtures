@@ -1056,7 +1056,10 @@
     "overlay_copy": "Copier le lien",
     "overlay_copied": "Copié !",
     "overlay_preview": "Aperçu",
-    "overlay_feed_label": "Afficher les buts et pénalités sur les côtés"
+    "overlay_feed_label": "Afficher les buts et pénalités sur les côtés",
+    "field_host_club": "Club hôte",
+    "field_host_club_none": "— Aucun club —",
+    "field_host_club_hint": "Le logo et le lien du club s'affichent sur la page du tournoi."
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -2651,7 +2654,8 @@
     "field_status_hint": "Le statut change tout seul (lancement, clôture). À ne forcer qu'en cas de besoin.",
     "danger_delete_title": "Supprimer le tournoi",
     "danger_delete_desc": "Définitif : équipes, matchs et résultats sont effacés.",
-    "unsaved_changes": "Modifications non enregistrées"
+    "unsaved_changes": "Modifications non enregistrées",
+    "field_host_club_hint": "Le logo et le lien du club s'affichent sur la page du tournoi."
   },
   "team_manager": {
     "registered_teams": "Équipes inscrites ({count})",
@@ -2853,7 +2857,9 @@
     "hint_approved": "En attente de validation",
     "item_format": "Format (étapes)",
     "hint_format": "Poules, Swiss, élimination…",
-    "click_hint": "Clique sur un point pour aller le compléter."
+    "click_hint": "Clique sur un point pour aller le compléter.",
+    "item_host_club": "Club hôte",
+    "hint_host_club": "Optionnel — si un de tes clubs organise"
   },
   "referee_panel": {
     "action_refused": "Action arbitrage refusée",

@@ -1056,7 +1056,10 @@
     "overlay_copy": "Copiar enlace",
     "overlay_copied": "¡Copiado!",
     "overlay_preview": "Vista previa",
-    "overlay_feed_label": "Mostrar goles y penalizaciones a los lados"
+    "overlay_feed_label": "Mostrar goles y penalizaciones a los lados",
+    "field_host_club": "Club anfitrión",
+    "field_host_club_none": "— Sin club —",
+    "field_host_club_hint": "El logo y el enlace del club aparecen en la página del torneo."
   },
   "registration": {
     "section_title": "Inscribir mi equipo",
@@ -2656,7 +2659,8 @@
     "field_status_hint": "El estado cambia solo (lanzamiento, cierre). Fuérzalo solo si hace falta.",
     "danger_delete_title": "Eliminar el torneo",
     "danger_delete_desc": "Definitivo: se borran equipos, partidos y resultados.",
-    "unsaved_changes": "Cambios sin guardar"
+    "unsaved_changes": "Cambios sin guardar",
+    "field_host_club_hint": "El logo y el enlace del club aparecen en la página del torneo."
   },
   "team_manager": {
     "registered_teams": "Equipos inscritos ({count})",
@@ -2858,7 +2862,9 @@
     "hint_approved": "En espera de validación",
     "item_format": "Formato (etapas)",
     "hint_format": "Grupos, suizo, eliminación…",
-    "click_hint": "Haz clic en un punto para completarlo."
+    "click_hint": "Haz clic en un punto para completarlo.",
+    "item_host_club": "Club anfitrión",
+    "hint_host_club": "Opcional — si uno de tus clubes organiza"
   },
   "referee_panel": {
     "action_refused": "Acción de árbitro rechazada",

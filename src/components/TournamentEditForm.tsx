@@ -419,6 +419,7 @@ export function TournamentEditForm({ tournament, action }: Props) {
                       <option key={c.id} value={c.id}>{c.name} — {c.city}</option>
                     ))}
                 </select>
+                <small className="meta">{t("field_host_club_hint")}</small>
               </div>
             )}
           </div>

@@ -25,6 +25,7 @@ type ChecklistTournament = {
   rejectionReason: string | null | undefined;
   coOrganizersCount: number;
   sponsorsCount: number;
+  hasHostClub: boolean;
   stagesCount: number;
   usesPipeline: boolean;
 };
@@ -101,6 +102,7 @@ export function TournamentChecklist({ t }: { t: ChecklistTournament }) {
     { title: tl("section_visual"), items: [
       { label: tl("item_banner"), done: !!t.bannerPath, hint: tl("hint_banner"), go: { tab: fiche, anchor: "edit-banner" } },
       { label: tl("item_sponsors"), done: t.sponsorsCount > 0, hint: tl("hint_optional"), go: { tab: fiche, anchor: "edit-sponsors" } },
+      { label: tl("item_host_club"), done: t.hasHostClub, hint: tl("hint_host_club"), go: { tab: fiche, anchor: "edit-general" } },
       { label: tl("item_co_orga"), done: t.coOrganizersCount > 0, hint: tl("hint_optional"), go: { tab: "orga", anchor: "edit-coorgs" } },
     ] },
   ];
