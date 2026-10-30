@@ -12420,3 +12420,152 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
   .agenda-row__countdown { font-size: 15px; padding: 4px 10px; }
 }
 
+
+/* ══ Récap de l'année (façon story) — tailles en cqw : tout suit la largeur du cadre ══ */
+.recap-story { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; background: #111; }
+.rc-frame {
+  position: relative; container-type: inline-size; display: flex; flex-direction: column;
+  width: min(100vw, calc(100dvh * 9 / 16), 460px); height: min(100dvh, 818px);
+  border-radius: 18px; overflow: hidden; user-select: none; touch-action: manipulation;
+  color: var(--text); font-family: var(--font-body); transition: background-color 0.35s ease;
+}
+@media (max-width: 520px) { .rc-frame { width: 100vw; height: 100dvh; border-radius: 0; } }
+.rc-bg--yellow { background: var(--yellow); }
+.rc-bg--teal { background: var(--teal); }
+.rc-bg--pink { background: var(--pink); }
+.rc-bg--purple { background: var(--purple); }
+.rc-bg--orange { background: var(--orange); }
+.rc-bg--cream { background: var(--bg); }
+.rc-bg--dark { background: #161616; color: #fcfbf5; }
+
+.rc-bars { display: flex; gap: 4px; padding: 10px 12px 0; }
+.rc-bar { flex: 1; height: 3px; border-radius: 2px; overflow: hidden; background: color-mix(in srgb, currentColor 22%, transparent); }
+.rc-bar > span { display: block; height: 100%; width: 0; background: currentColor; }
+.rc-bar > span.is-done { width: 100%; }
+.rc-bar > span.is-run { animation: rc-fill linear forwards; }
+@keyframes rc-fill { from { width: 0; } to { width: 100%; } }
+
+.rc-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px 0; font-family: var(--font-display); font-weight: 700; font-size: max(12px, 3.4cqw); }
+.rc-brand { display: inline-flex; align-items: center; gap: 0.5em; white-space: nowrap; }
+.rc-brand i, .rc-shot__brand i { width: 0.6em; height: 0.6em; flex-shrink: 0; border-radius: 50%; background: var(--pink); border: 0.13em solid currentColor; }
+.rc-demo { padding: 2px 8px; border-radius: 999px; background: rgba(26, 26, 26, 0.78); color: #fff; font-size: max(9px, 2.5cqw); letter-spacing: 0.04em; white-space: nowrap; }
+.rc-close { color: inherit; text-decoration: none; font-size: max(16px, 5cqw); line-height: 1; padding: 2px 4px; }
+
+/* Contenu centré dans la hauteur ; la mention « tournois gérés sur Poloperator » reste en bas du cadre */
+.rc-slide { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; justify-content: safe center; gap: 2.6cqw; padding: 4cqw 6cqw 13cqw; }
+.rc-slide p { margin: 0; }
+.rc-kicker { font-family: var(--font-display); font-size: 3.6cqw; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; }
+.rc-year { font-family: var(--font-display); font-weight: 700; font-size: 30cqw; line-height: 0.85; letter-spacing: -0.03em; }
+.rc-big { font-family: var(--font-display); font-weight: 700; font-size: 17cqw; line-height: 0.95; letter-spacing: -0.02em; }
+.rc-big span { font-size: 0.42em; letter-spacing: 0; }
+.rc-big--xl { font-size: 19cqw; }
+.rc-title { font-family: var(--font-display); font-weight: 700; font-size: 8.5cqw; line-height: 1.05; }
+.rc-sub { font-size: 4.4cqw; line-height: 1.35; }
+.rc-lead { font-size: 4.6cqw; font-weight: 600; line-height: 1.3; }
+.rc-tap { font-family: var(--font-display); font-weight: 700; font-size: 3.8cqw; animation: rc-blink 1.8s ease-in-out infinite; }
+@keyframes rc-blink { 50% { opacity: 0.45; } }
+.rc-slide .rc-note { position: absolute; left: 6cqw; right: 6cqw; bottom: 5cqw; font-size: 3cqw; opacity: 0.7; }
+.rc-center { display: flex; flex-direction: column; gap: 3cqw; }
+.rc-yellow { color: var(--yellow); }
+
+.rc-rise { opacity: 0; transform: translateY(14px); animation: rc-rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: var(--d, 0ms); }
+@keyframes rc-rise { to { opacity: 1; transform: none; } }
+
+/* Ouverture */
+.rc-intro__card { display: flex; justify-content: center; margin: 1cqw 0 2cqw; }
+
+/* Tournois : carte de la saison + liste */
+.rc-route { display: block; width: 100%; height: auto; overflow: visible; }
+.rc-route__bg { fill: rgba(255, 255, 255, 0.5); stroke: var(--border); stroke-width: 2; }
+.rc-route pattern circle { fill: rgba(26, 26, 26, 0.16); }
+.rc-route__line { fill: none; stroke: var(--border); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: rc-draw 1.6s 0.4s ease-in-out forwards; }
+@keyframes rc-draw { to { stroke-dashoffset: 0; } }
+.rc-route__home { font-size: 13px; }
+.rc-route__stop { opacity: 0; transform-box: fill-box; transform-origin: center; animation: rc-pop 0.45s var(--d) cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
+@keyframes rc-pop { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+.rc-route__stop circle { fill: var(--yellow); stroke: var(--border); stroke-width: 2; }
+.rc-route__stop text { font-family: var(--font-display); font-weight: 700; font-size: 10px; fill: var(--border); }
+.rc-route__stop .rc-route__city { font-family: var(--font-body); font-weight: 700; font-size: 9px; paint-order: stroke; stroke: rgba(255, 255, 255, 0.85); stroke-width: 3px; }
+.rc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.6cqw; font-size: 3.7cqw; }
+.rc-list li { display: grid; grid-template-columns: 6cqw 10cqw minmax(0, 1fr) auto; align-items: center; gap: 2cqw; }
+.rc-list b { width: 6cqw; height: 6cqw; border-radius: 50%; display: grid; place-items: center; background: var(--yellow); border: 2px solid var(--border); font-family: var(--font-display); font-size: 3cqw; }
+.rc-list__date { font-size: 3cqw; font-weight: 700; text-transform: uppercase; }
+.rc-list__name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc-list__city { opacity: 0.75; white-space: nowrap; }
+.rc-list li.rc-list__more { display: block; padding-left: 8cqw; font-weight: 700; }
+
+/* Kilomètres */
+.rc-earth { display: grid; gap: 2.4cqw; margin-top: 3cqw; }
+.rc-earth__bar { height: 4cqw; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.55); }
+.rc-earth__bar span { display: block; height: 100%; background: var(--yellow); transform-origin: left; animation: rc-grow 1.4s 0.7s ease-out both; }
+@keyframes rc-grow { from { transform: scaleX(0); } }
+.rc-earth p { font-size: 4.4cqw; font-weight: 600; }
+
+/* Coéquipier·es */
+.rc-faces { display: flex; padding-left: 2.6cqw; }
+.rc-face { width: 13cqw; height: 13cqw; margin-left: -2.6cqw; border-radius: 50%; display: grid; place-items: center; background: var(--c); border: 2px solid var(--border); font-family: var(--font-display); font-weight: 700; font-size: 4.4cqw; }
+.rc-face--more { background: var(--surface); font-size: 3.8cqw; }
+.rc-buddy { margin-top: 3cqw; padding: 5cqw; display: grid; gap: 1.4cqw; background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.rc-buddy__label { font-size: 3.2cqw; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); }
+.rc-buddy__name { font-family: var(--font-display); font-weight: 700; font-size: 11cqw; line-height: 1; }
+.rc-buddy__meta { font-size: 4.2cqw; }
+
+/* Sur le terrain */
+.rc-stats { display: grid; gap: 3cqw; }
+.rc-stat { display: flex; align-items: baseline; flex-wrap: wrap; gap: 1cqw 3cqw; padding: 3.6cqw 4.6cqw; background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.rc-stat strong { font-family: var(--font-display); font-size: 12cqw; line-height: 1; }
+.rc-stat span { font-size: 4.2cqw; font-weight: 600; }
+.rc-stat--teal { background: var(--teal); }
+.rc-stat--pink { background: var(--pink); }
+
+/* Tu as fait vivre la scène */
+.rc-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 2.6cqw; }
+.rc-rows li { display: grid; grid-template-columns: 8cqw auto minmax(0, 1fr); align-items: center; gap: 3cqw; padding: 3cqw 4cqw; background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.rc-rows__icon { font-size: 6.2cqw; line-height: 1; }
+.rc-rows strong { font-family: var(--font-display); font-size: 8cqw; line-height: 1; }
+.rc-rows li > span:last-child { font-size: 3.9cqw; font-weight: 600; line-height: 1.2; }
+
+/* Badges */
+.rc-badges { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.4cqw; }
+.rc-badge { display: grid; justify-items: center; align-content: start; gap: 1cqw; padding: 2.4cqw 1cqw; text-align: center; background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); }
+.rc-badge.is-pinned { background: var(--yellow); box-shadow: 3px 3px 0 var(--border); }
+.rc-badge img { width: 10cqw; height: 10cqw; image-rendering: pixelated; }
+.rc-badge__emoji { font-size: 8.4cqw; line-height: 1.2; }
+.rc-badge small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 2.6cqw; font-weight: 700; line-height: 1.15; }
+
+/* Ensemble, en 2026 */
+.rc-community { list-style: none; margin: 2cqw 0 0; padding: 0; display: grid; gap: 1.8cqw; }
+.rc-community li { display: flex; align-items: baseline; gap: 3cqw; }
+.rc-community strong { font-family: var(--font-display); font-size: 14cqw; line-height: 0.95; }
+.rc-community span { font-size: 5cqw; font-weight: 600; }
+.rc-c--yellow strong, .rc-shot--yellow strong { color: var(--yellow); }
+.rc-c--teal strong, .rc-shot--teal strong { color: var(--teal); }
+.rc-c--pink strong, .rc-shot--pink strong { color: var(--pink); }
+.rc-c--purple strong, .rc-shot--purple strong { color: var(--purple); }
+.rc-c--orange strong, .rc-shot--orange strong { color: var(--orange); }
+
+/* Partage : aperçu de l'image story */
+.rc-share { display: flex; justify-content: center; padding: 1cqw 0 2cqw; }
+.rc-shot {
+  container-type: inline-size; width: 54cqw; aspect-ratio: 9 / 16; display: flex; flex-direction: column; gap: 2cqw;
+  padding: 4cqw; background: #161616; color: #fcfbf5; border: 2px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg); transform: rotate(-2deg);
+}
+.rc-shot p { margin: 0; }
+.rc-shot__brand { display: flex; align-items: center; gap: 0.5em; font-family: var(--font-display); font-weight: 700; font-size: 6.5cqw; }
+.rc-shot__year { font-family: var(--font-display); font-weight: 700; font-size: 31cqw; line-height: 0.85; color: var(--yellow); margin-top: 4cqw !important; }
+.rc-shot__name { font-weight: 700; font-size: 7cqw; }
+.rc-shot__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7cqw 4cqw; margin-top: 8cqw; }
+.rc-shot__grid div { display: grid; }
+.rc-shot__grid strong { font-family: var(--font-display); font-size: 15cqw; line-height: 1; }
+.rc-shot__grid span { font-size: 5cqw; opacity: 0.8; }
+.rc-shot__foot { margin-top: auto !important; font-size: 4.2cqw; opacity: 0.7; }
+.rc-share__actions { display: flex; justify-content: center; gap: 3cqw; }
+.rc-share__actions button { font-size: max(12px, 3.6cqw); }
+.rc-replay { align-self: center; padding: 4px 8px; min-height: 0; background: none; border: none; box-shadow: none; color: inherit; cursor: pointer; font-family: var(--font-display); font-weight: 700; font-size: max(12px, 3.6cqw); text-transform: none; }
+.rc-toast { position: absolute; left: 6cqw; right: 6cqw; bottom: 8cqw; padding: 3cqw 4cqw; border-radius: 10px; background: #161616; color: #fff; text-align: center; font-size: max(12px, 3.6cqw); font-weight: 600; animation: rc-rise 0.3s ease forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-rise, .rc-route__stop { animation: none; opacity: 1; transform: none; }
+  .rc-route__line { animation: none; stroke-dashoffset: 0; }
+  .rc-tap, .rc-earth__bar span { animation: none; }
+}
