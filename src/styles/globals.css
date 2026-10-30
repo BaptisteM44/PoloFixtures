@@ -12449,7 +12449,10 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
 .rc-brand { display: inline-flex; align-items: center; gap: 0.5em; white-space: nowrap; }
 .rc-brand i, .rc-shot__brand i { width: 0.6em; height: 0.6em; flex-shrink: 0; border-radius: 50%; background: var(--pink); border: 0.13em solid currentColor; }
 .rc-demo { padding: 2px 8px; border-radius: 999px; background: rgba(26, 26, 26, 0.78); color: #fff; font-size: max(9px, 2.5cqw); letter-spacing: 0.04em; white-space: nowrap; }
-.rc-close { color: inherit; text-decoration: none; font-size: max(16px, 5cqw); line-height: 1; padding: 2px 4px; }
+.rc-top__actions { display: inline-flex; align-items: center; gap: 2px; }
+.rc-top__url { font-size: max(10px, 2.8cqw); opacity: 0.75; }
+.rc-icon { padding: 2px 6px; min-height: 0; background: none; border: none; box-shadow: none; color: inherit; text-decoration: none; font-size: max(15px, 4.6cqw); line-height: 1; cursor: pointer; }
+.rc-icon:hover { background: none; transform: none; }
 
 /* Contenu centré dans la hauteur ; la mention « tournois gérés sur Poloperator » reste en bas du cadre */
 .rc-slide { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: center; justify-content: safe center; gap: 2.6cqw; padding: 4cqw 6cqw 13cqw; }
@@ -12465,6 +12468,15 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
 .rc-tap { font-family: var(--font-display); font-weight: 700; font-size: 3.8cqw; animation: rc-blink 1.8s ease-in-out infinite; }
 @keyframes rc-blink { 50% { opacity: 0.45; } }
 .rc-slide .rc-note { position: absolute; left: 6cqw; right: 6cqw; bottom: 5cqw; font-size: 3cqw; opacity: 0.7; }
+/* À l'écran, la mention laisse la place aux petits boutons de partage (pas sur l'image exportée) */
+.rc-frame:not(.rc-frame--export) .rc-slide .rc-note { right: 38cqw; }
+.rc-mini { position: absolute; right: 5cqw; bottom: 3.6cqw; z-index: 2; display: flex; gap: 2cqw; }
+.rc-mini button {
+  min-height: 0; padding: 1.4cqw 3cqw; border-radius: 999px; background: var(--surface); color: var(--text);
+  border: 2px solid var(--border); box-shadow: 2px 2px 0 var(--border);
+  font-family: var(--font-display); font-weight: 700; font-size: max(11px, 3cqw); letter-spacing: 0; text-transform: none; line-height: 1.2;
+}
+.rc-mini button:disabled { opacity: 0.6; }
 .rc-center { display: flex; flex-direction: column; gap: 3cqw; }
 .rc-yellow { color: var(--yellow); }
 
@@ -12564,8 +12576,146 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
 .rc-replay { align-self: center; padding: 4px 8px; min-height: 0; background: none; border: none; box-shadow: none; color: inherit; cursor: pointer; font-family: var(--font-display); font-weight: 700; font-size: max(12px, 3.6cqw); text-transform: none; }
 .rc-toast { position: absolute; left: 6cqw; right: 6cqw; bottom: 8cqw; padding: 3cqw 4cqw; border-radius: 10px; background: #161616; color: #fff; text-align: center; font-size: max(12px, 3.6cqw); font-weight: 600; animation: rc-rise 0.3s ease forwards; }
 
+/* Carte Saison offerte */
+.rc-gift { display: flex; justify-content: center; }
+.rc-gift__flip { transform-origin: center; animation: rc-flip 1s 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes rc-flip {
+  from { transform: perspective(900px) rotateY(-110deg) scale(0.9); opacity: 0; }
+  55% { opacity: 1; }
+  to { transform: perspective(900px) rotateY(0) scale(1); opacity: 1; }
+}
+.rc-gift__text { text-align: center; }
+
+/* Image à partager : rendu figé hors champ, au format story (capturé ×3 → 1080×1920) */
+.rc-export { position: fixed; left: -10000px; top: 0; pointer-events: none; }
+.rc-frame.rc-frame--export { width: 360px; height: 640px; border-radius: 0; transition: none; }
+.rc-frame--shot { background: #161616; }
+.rc-frame--shot .rc-shot { width: 100cqw; height: 100%; aspect-ratio: auto; padding: 7cqw; transform: none; border: none; border-radius: 0; box-shadow: none; }
+.rc-static .rc-rise { animation: none; opacity: 1; transform: none; }
+.rc-static .rc-route__line { animation: none; stroke-dashoffset: 0; }
+.rc-static .rc-route__stop { animation: none; opacity: 1; }
+.rc-static .rc-earth__bar span, .rc-static .rc-gift__flip { animation: none; }
+.rc-static .rc-tap { display: none; }
+
 @media (prefers-reduced-motion: reduce) {
   .rc-rise, .rc-route__stop { animation: none; opacity: 1; transform: none; }
+  .rc-gift__flip { animation: none; }
   .rc-route__line { animation: none; stroke-dashoffset: 0; }
   .rc-tap, .rc-earth__bar span { animation: none; }
 }
+
+/* ══ Carte Saison (cadeau du récap) — dessinée sur /demo-cards ══ */
+.ssn {
+  position: relative; width: 340px; height: 520px; flex-shrink: 0;
+  border-radius: 18px; overflow: hidden;
+  border: 2.5px solid #1a1a1a;
+  box-shadow: 6px 6px 0 #1a1a1a;
+  background: var(--bg, #fcfbf5);
+  font-family: var(--font-display), sans-serif;
+  color: #1a1a1a;
+  user-select: none;
+}
+
+/* Étiquette + n° de série */
+.ssn-tag {
+  position: absolute; top: 12px; left: 14px; z-index: 6;
+  background: #1a1a1a; color: var(--yellow, #fffc8a);
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+}
+.ssn-serial {
+  position: absolute; top: 14px; right: 14px; z-index: 6;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: #666660;
+}
+
+/* Case photo */
+.ssn-panel {
+  position: absolute; top: 40px; left: 12px; right: 12px; height: 222px;
+  border: 2.5px solid #1a1a1a; border-radius: 12px; overflow: hidden;
+  background: var(--teal, #60c9cf);
+}
+.ssn-court { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.35; }
+.ssn-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 25%; display: block; }
+.ssn-photo--empty { display: flex; align-items: center; justify-content: center; }
+.ssn-photo--empty span {
+  font-size: 76px; font-weight: 900; color: #fff;
+  -webkit-text-stroke: 2.5px #1a1a1a; text-shadow: 5px 5px 0 #1a1a1a;
+}
+.ssn-emblems {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.ssn-emblem {
+  width: 28px; height: 28px; border-radius: 50%; object-fit: cover;
+  background: #fff; border: 2px solid #1a1a1a;
+}
+
+/* Bandeau nom : légèrement incliné, pas de lettrage BD */
+.ssn-name {
+  position: absolute; top: 236px; left: 20px; right: 20px; height: 48px; z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--yellow, #fffc8a);
+  border: 2.5px solid #1a1a1a; border-radius: 10px;
+  box-shadow: 4px 4px 0 #1a1a1a;
+  transform: rotate(-2deg);
+}
+.ssn-name span {
+  font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em;
+  line-height: 1; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Encart texte, façon panel du site avec son en-tête */
+.ssn-info {
+  position: absolute; top: 298px; left: 12px; width: 124px; bottom: 70px;
+  background: #fff; border: 2px solid #1a1a1a; border-radius: 10px; overflow: hidden;
+  font-family: var(--font-body), sans-serif;
+}
+.ssn-info__head {
+  background: var(--purple, #c9a8f5); border-bottom: 2px solid #1a1a1a;
+  padding: 4px 8px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.ssn-info p { margin: 0; padding: 6px 8px 0; font-size: 10.5px; line-height: 1.4; }
+.ssn-info__loc { font-weight: 700; color: #666660; font-size: 10px !important; }
+
+/* Badges épinglés */
+.ssn-badges {
+  position: absolute; top: 298px; left: 144px; right: 12px; height: 32px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.ssn-badge {
+  width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; border: 2px solid #1a1a1a; box-shadow: 2px 2px 0 #1a1a1a;
+}
+
+/* Stats de la saison : lignes de tableau du site */
+.ssn-stats {
+  position: absolute; top: 338px; left: 144px; right: 12px; bottom: 12px;
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.ssn-stat {
+  display: flex; align-items: stretch; height: 25px;
+  border: 2px solid #1a1a1a; border-radius: 7px; overflow: hidden; background: #fff;
+}
+.ssn-stat__label {
+  flex: 1; min-width: 0; display: flex; align-items: center; padding: 0 8px;
+  font-family: var(--font-body), sans-serif; font-size: 11px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ssn-stat__value {
+  width: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  border-left: 2px solid #1a1a1a;
+  font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums;
+}
+
+/* Logo Poloperator + rareté */
+.ssn-logo {
+  position: absolute; left: 12px; bottom: 12px; width: 124px; height: 48px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border: 2px solid #1a1a1a; border-radius: 10px; background: #fff;
+}
+.ssn-logo__mark { display: flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 800; }
+.ssn-logo__dot { width: 9px; height: 9px; border-radius: 50%; border: 2.5px solid #1a1a1a; }
+.ssn-logo__stars { font-size: 10px; letter-spacing: 2px; color: #1a1a1a; }

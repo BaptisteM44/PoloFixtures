@@ -3,7 +3,9 @@
  * calculs (distances). Les vrais calculs en base viendront ici ; pour l'instant
  * la maquette /demo-recap fournit des chiffres inventés.
  *
- * Règle : uniquement les tournois gérés sur Poloperator, jamais de classement.
+ * Règle : uniquement les tournois qui se sont vraiment JOUÉS avec Poloperator
+ * (des matchs terminés sur la plateforme), pas ceux seulement annoncés ou
+ * listés. Jamais de classement.
  */
 
 export type RecapTournament = { name: string; city: string; country: string; date: string; lat: number; lng: number };
@@ -26,6 +28,8 @@ export type YearRecapData = {
   /** Collection de badges à ce jour (leur date d'obtention n'est pas connue). */
   badges: string[];
   community: { tournaments: number; countries: number; players: number; matches: number; goals: number };
+  /** Carte Saison offerte en fin de récap (n° dans la série de l'année). */
+  gift: { serial: string } | null;
 };
 
 export const EARTH_KM = 40_075;

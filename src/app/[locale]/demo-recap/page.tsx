@@ -33,7 +33,8 @@ const DEMO: YearRecapData = {
   pitch: { matches: 38, minutes: 456, goals: 14, opponents: 124, opponentCountries: 12 },
   scene: { refereed: 12, organized: 1, hosted: 3, photos: 18, trainings: 23 },
   badges: ["champion", "on_fire", "road_warrior", "first_blood", "hat_trick", "unbeaten", "team_player", "globe_trotter", "host", "welcome", "first_training", "loyal_rider"],
-  community: { tournaments: 87, countries: 24, players: 1412, matches: 2630, goals: 9840 },
+  community: { tournaments: 31, countries: 11, players: 640, matches: 1180, goals: 4320 },
+  gift: { serial: "0042" },
 };
 
 export default function DemoRecapPage() {

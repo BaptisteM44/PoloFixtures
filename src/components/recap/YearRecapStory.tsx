@@ -4,26 +4,41 @@
  * Récap « Ton année en bike polo », façon story : un écran par idée. On touche
  * l'écran pour avancer (tiers gauche = revenir), on garde le doigt appuyé pour
  * mettre en pause. Les écrans sans chiffre ne s'affichent pas. Jamais de
- * classement ; toujours rappeler que seuls les tournois gérés sur Poloperator
+ * classement ; toujours rappeler que seuls les tournois joués avec Poloperator
  * sont comptés.
+ *
+ * Chaque écran se partage en image story (1080×1920) : il est rendu hors champ
+ * à 360×640, sans animation, puis capturé ×3. Musique 8-bit au premier toucher.
  */
-import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type CSSProperties, type ElementType, type ReactNode } from "react";
+import { domToBlob } from "modern-screenshot";
 import { Link } from "@/i18n/navigation";
 import { PlayerCollectibleCard } from "@/components/PlayerCollectibleCard";
+import { SeasonCard, seasonStars } from "@/components/SeasonCard";
+import { fetchViaProxy } from "@/components/ShareCardButton";
+import { shareOrDownload } from "@/components/PodiumStory";
 import { getBadgeInfo } from "@/lib/badge-catalog";
+import { createRecapMusic, type RecapMusic } from "@/lib/recap-music";
 import { EARTH_KM, travelKm, type RecapTournament, type YearRecapData } from "@/lib/year-recap";
 
 const SLIDE_MS = 8000;
+const EXPORT_W = 360, EXPORT_H = 640;
+const MUTE_KEY = "recap_music_muted";
 // Espace insécable normal (l'espace fine du français disparaît dans la police d'affichage : « 1412 »).
-const nf = (n: number) => n.toLocaleString("fr-FR").replace(/\u202f/g, "\u00a0");
+const nf = (n: number) => n.toLocaleString("fr-FR").replace(/ /g, " ");
 const hm = (min: number) => `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}`;
 const plural = (n: number, one: string, many: string) => (n > 1 ? many : one);
 const month = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { month: "short", timeZone: "UTC" }).replace(".", "");
 const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 const FACE_COLORS = ["var(--yellow)", "var(--teal)", "var(--purple)", "var(--orange)", "var(--surface)"];
+const NOTE = "Tournois joués avec Poloperator";
 
 type Bg = "yellow" | "teal" | "pink" | "dark" | "cream" | "purple" | "orange";
 type Slide = { key: string; bg: Bg; body: ReactNode };
+type Dims = { w: number; h: number };
+
+/** Rendu figé (image à partager) : chiffres finaux, aucune animation. */
+const StaticCtx = createContext(false);
 
 /** Compteur qui monte jusqu'à la valeur (à l'affichage de l'écran). */
 function useCountUp(target: number, ms = 1100) {
@@ -42,7 +57,9 @@ function useCountUp(target: number, ms = 1100) {
   return v;
 }
 function Count({ n, format = nf }: { n: number; format?: (n: number) => string }) {
-  return <>{format(useCountUp(n))}</>;
+  const isStatic = useContext(StaticCtx);
+  const v = useCountUp(n);
+  return <>{format(isStatic ? n : v)}</>;
 }
 
 /** Apparition en cascade (délai en ms). */
@@ -51,7 +68,7 @@ function Rise({ d = 0, as, className = "", children }: { d?: number; as?: Elemen
   return <Tag className={`rc-rise ${className}`} style={{ "--d": `${d}ms` } as CSSProperties}>{children}</Tag>;
 }
 
-const Note = ({ children = "Tournois gérés sur Poloperator" }: { children?: ReactNode }) => <p className="rc-note">{children}</p>;
+const Note = ({ children = NOTE }: { children?: ReactNode }) => <p className="rc-note">{children}</p>;
 
 /** La saison sur une carte : un point par tournoi, reliés dans l'ordre des dates. */
 function RouteMap({ tournaments, home }: { tournaments: RecapTournament[]; home: YearRecapData["home"] }) {
@@ -86,37 +103,57 @@ function RouteMap({ tournaments, home }: { tournaments: RecapTournament[]; home:
   );
 }
 
-export function YearRecapStory({ data, closeHref = "/", demo = false }: { data: YearRecapData; closeHref?: string; demo?: boolean }) {
-  const frameRef = useRef<HTMLDivElement>(null);
-  const [fw, setFw] = useState(390);
-  const [i, setI] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-
-  // Largeur du cadre : sert à dimensionner la carte de joueur·euse.
-  useEffect(() => {
-    const el = frameRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setFw(el.clientWidth));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  // Plein écran : la page derrière ne défile pas.
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, []);
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 2200);
-    return () => clearTimeout(t);
-  }, [toast]);
-
-  const { year, tournaments, teammates, pitch, scene, community } = data;
+/** Chiffres communs à plusieurs écrans. */
+function figures(data: YearRecapData) {
+  const { tournaments, teammates, pitch, scene } = data;
   const km = travelKm(data.home, tournaments);
   const countries = new Set(tournaments.map((t) => t.country)).size;
   const cities = new Set(tournaments.map((t) => t.city)).size;
+  const kmShort = km >= 10_000 ? `${(km / 1000).toFixed(1).replace(".", ",")}k` : String(km);
+  const cardStats = [
+    { label: "Tournois", n: tournaments.length, value: String(tournaments.length) },
+    { label: "Pays", n: countries, value: String(countries) },
+    { label: "Km", n: km, value: kmShort },
+    { label: "Matchs", n: pitch.matches, value: String(pitch.matches) },
+    { label: "Buts", n: pitch.goals, value: String(pitch.goals) },
+    { label: "Coéquipier·es", n: teammates.count, value: String(teammates.count) },
+    { label: "Entraînements", n: scene.trainings, value: String(scene.trainings) },
+    { label: "Arbitrage", n: scene.refereed, value: String(scene.refereed) },
+  ].filter((x) => x.n > 0).slice(0, 6).map(({ label, value }) => ({ label, value }));
+  return { km, countries, cities, cardStats };
+}
+
+/** L'image « ma saison » (dernier écran). */
+function SummaryShot({ data }: { data: YearRecapData }) {
+  const { km, countries } = figures(data);
+  const items = [
+    { n: data.tournaments.length, label: plural(data.tournaments.length, "tournoi", "tournois") },
+    { n: countries, label: "pays" },
+    { n: km, label: "km" },
+    { n: data.pitch.matches, label: plural(data.pitch.matches, "match", "matchs") },
+    { n: data.pitch.goals, label: plural(data.pitch.goals, "but", "buts") },
+    { n: data.teammates.count, label: plural(data.teammates.count, "coéquipier·e", "coéquipier·es") },
+  ].filter((x) => x.n > 0).slice(0, 6);
+  const colors = ["yellow", "teal", "pink", "purple", "orange", "yellow"];
+  return (
+    <div className="rc-shot">
+      <p className="rc-shot__brand"><i />Poloperator</p>
+      <p className="rc-shot__year">{data.year}</p>
+      <p className="rc-shot__name">{data.card.name}</p>
+      <div className="rc-shot__grid">
+        {items.map((x, j) => <div key={x.label} className={`rc-shot--${colors[j]}`}><strong>{nf(x.n)}</strong><span>{x.label}</span></div>)}
+      </div>
+      <p className="rc-shot__foot">{NOTE} · poloperator.com</p>
+    </div>
+  );
+}
+
+type Actions = { share: (download: boolean) => void; replay: () => void; busy: boolean };
+
+/** Les écrans du récap, dans l'ordre (ceux à zéro sont absents). */
+function buildSlides(data: YearRecapData, dims: Dims, act: Actions): Slide[] {
+  const { year, tournaments, teammates, pitch, scene, community } = data;
+  const { km, countries, cities, cardStats } = figures(data);
   const sceneRows = [
     { key: "ref", icon: "🟨", n: scene.refereed, label: plural(scene.refereed, "match arbitré", "matchs arbitrés") },
     { key: "host", icon: "🏠", n: scene.hosted, label: plural(scene.hosted, "personne hébergée chez toi", "personnes hébergées chez toi") },
@@ -126,7 +163,9 @@ export function YearRecapStory({ data, closeHref = "/", demo = false }: { data: 
   ].filter((r) => r.n > 0);
   const pinned = data.card.pinnedBadges.filter((b) => data.badges.includes(b));
   const badges = [...pinned, ...data.badges.filter((b) => !pinned.includes(b))];
-  const cardScale = Math.min(0.75, (fw * 0.6) / 340);
+  // Cartes à l'échelle du cadre (largeur ET hauteur : l'image à partager est plus basse qu'un téléphone).
+  const cardScale = Math.max(0.3, Math.min(0.75, (dims.w * 0.6) / 340, (dims.h - 360) / 520));
+  const giftScale = Math.max(0.3, Math.min(0.9, (dims.w * 0.78) / 340, (dims.h - 330) / 520));
   const earth = km >= EARTH_KM
     ? `${(km / EARTH_KM).toFixed(1).replace(".", ",")} fois le tour de la Terre 🌍`
     : `${Math.max(1, Math.round((km / EARTH_KM) * 100))} % du tour de la Terre 🌍`;
@@ -152,7 +191,7 @@ export function YearRecapStory({ data, closeHref = "/", demo = false }: { data: 
           <p className="rc-lead">{data.firstSeason ? `Ta toute première saison, ${data.firstName} 🎉` : `Salut ${data.firstName} ! Voici ta saison, tournoi après tournoi.`}</p>
         </Rise>
         <Rise d={560}><p className="rc-tap">Touche l&apos;écran pour commencer →</p></Rise>
-        <Note>Chiffres des tournois gérés sur Poloperator</Note>
+        <Note>Chiffres des tournois joués avec Poloperator</Note>
       </>
     ),
   });
@@ -277,7 +316,7 @@ export function YearRecapStory({ data, closeHref = "/", demo = false }: { data: 
             })}
           </div>
           {badges.length > 12 && <p className="rc-sub">et {badges.length - 12} autres</p>}
-          <Note>Ta collection à ce jour · tournois gérés sur Poloperator</Note>
+          <Note>Ta collection à ce jour · {NOTE.toLowerCase()}</Note>
         </>
       ),
     });
@@ -288,13 +327,13 @@ export function YearRecapStory({ data, closeHref = "/", demo = false }: { data: 
         <Rise><p className="rc-kicker">Ensemble, en {year}</p></Rise>
         <ul className="rc-community">
           {[
-            { n: community.tournaments, label: "tournois", c: "yellow" },
+            { n: community.tournaments, label: plural(community.tournaments, "tournoi joué avec Poloperator", "tournois joués avec Poloperator"), c: "yellow" },
             { n: community.countries, label: "pays", c: "teal" },
             { n: community.players, label: "joueur·euses", c: "pink" },
             { n: community.matches, label: "matchs", c: "purple" },
             { n: community.goals, label: "buts", c: "orange" },
-          ].map((l, j) => (
-            <Rise as="li" key={l.label} d={120 + j * 120} className={`rc-c--${l.c}`}><strong><Count n={l.n} /></strong><span>{l.label}</span></Rise>
+          ].filter((l) => l.n > 0).map((l, j) => (
+            <Rise as="li" key={l.c} d={120 + j * 120} className={`rc-c--${l.c}`}><strong><Count n={l.n} /></strong><span>{l.label}</span></Rise>
           ))}
         </ul>
         <Rise d={820}><p className="rc-sub">Merci aux orgas, aux arbitres, aux hôtes et à toutes celles et ceux qui font vivre le polo 🚲</p></Rise>
@@ -302,51 +341,162 @@ export function YearRecapStory({ data, closeHref = "/", demo = false }: { data: 
       </>
     ),
   });
-  const shot = [
-    { n: tournaments.length, label: plural(tournaments.length, "tournoi", "tournois") },
-    { n: countries, label: "pays" },
-    { n: km, label: "km" },
-    { n: pitch.matches, label: plural(pitch.matches, "match", "matchs") },
-    { n: pitch.goals, label: plural(pitch.goals, "but", "buts") },
-    { n: teammates.count, label: plural(teammates.count, "coéquipier·e", "coéquipier·es") },
-  ].filter((x) => x.n > 0).slice(0, 6);
+  if (data.gift) {
+    slides.push({
+      key: "gift", bg: "pink", body: (
+        <>
+          <Rise><p className="rc-kicker">Pour finir, un cadeau 🎁</p></Rise>
+          <Rise d={120}><p className="rc-title">Ta carte Saison {year}</p></Rise>
+          <Rise d={260} className="rc-gift">
+            <div style={{ width: 340 * giftScale, height: 520 * giftScale }}>
+              {/* échelle (coin haut gauche) puis retournement (axe central) : deux éléments */}
+              <div style={{ width: 340, transform: `scale(${giftScale})`, transformOrigin: "top left" }}>
+                <div className="rc-gift__flip">
+                  <SeasonCard
+                    season={year} serial={data.gift.serial} name={data.card.name} country={data.card.country}
+                    city={data.card.city ?? data.home?.city ?? ""} clubName={data.card.clubName} photoUrl={data.card.photoPath}
+                    pinnedBadges={pinned} stars={seasonStars(tournaments.length)} stats={cardStats}
+                  />
+                </div>
+              </div>
+            </div>
+          </Rise>
+          <Rise d={620}><p className="rc-sub rc-gift__text">Elle rejoint ta collection : tu peux l&apos;afficher sur ton profil.</p></Rise>
+          <Note />
+        </>
+      ),
+    });
+  }
   slides.push({
     key: "share", bg: "yellow", body: (
       <>
         <Rise><p className="rc-kicker">À partager</p></Rise>
         <Rise d={100}><p className="rc-title">Ta saison en une image</p></Rise>
-        <Rise d={220} className="rc-share">
-          <div className="rc-shot">
-            <p className="rc-shot__brand"><i />Poloperator</p>
-            <p className="rc-shot__year">{year}</p>
-            <p className="rc-shot__name">{data.card.name}</p>
-            <div className="rc-shot__grid">
-              {shot.map((x, j) => <div key={x.label} className={`rc-shot--${["yellow", "teal", "pink", "purple", "orange", "yellow"][j]}`}><strong>{nf(x.n)}</strong><span>{x.label}</span></div>)}
-            </div>
-            <p className="rc-shot__foot">Tournois gérés sur Poloperator · poloperator.com</p>
-          </div>
-        </Rise>
+        <Rise d={220} className="rc-share"><SummaryShot data={data} /></Rise>
         <Rise d={360} className="rc-share__actions">
-          <button type="button" className="primary" onClick={() => setToast("Le partage arrive à l'étape 3 🙂")}>Partager</button>
-          <button type="button" className="ghost" onClick={() => setToast("Le téléchargement arrive à l'étape 3 🙂")}>Télécharger</button>
+          <button type="button" className="primary" disabled={act.busy} onClick={() => act.share(false)}>{act.busy ? "…" : "Partager"}</button>
+          <button type="button" className="ghost" disabled={act.busy} onClick={() => act.share(true)}>Télécharger</button>
         </Rise>
-        <button type="button" className="rc-replay" onClick={() => setI(0)}>↺ Revoir depuis le début</button>
+        <button type="button" className="rc-replay" onClick={act.replay}>↺ Revoir depuis le début</button>
       </>
     ),
   });
+  return slides;
+}
 
+export function YearRecapStory({ data, closeHref = "/", demo = false }: { data: YearRecapData; closeHref?: string; demo?: boolean }) {
+  const frameRef = useRef<HTMLDivElement>(null);
+  const exportRef = useRef<HTMLDivElement>(null);
+  const [dims, setDims] = useState<Dims>({ w: 390, h: 844 });
+  const [i, setI] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [exporting, setExporting] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
+  const mutedRef = useRef(false);
+  const music = useRef<RecapMusic | null>(null);
+  const blobs = useRef(new Map<string, Blob>());
+  const pendingCapture = useRef<((el: HTMLElement) => void) | null>(null);
+
+  // Taille du cadre : sert à dimensionner les cartes.
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setDims({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  // Plein écran : la page derrière ne défile pas.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2600);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  // ── Musique : démarre au premier toucher (règle des navigateurs), se coupe d'un bouton ──
+  useEffect(() => {
+    try { const m = localStorage.getItem(MUTE_KEY) === "1"; setMuted(m); mutedRef.current = m; } catch { /* stockage indisponible */ }
+    const onVis = () => music.current?.setMuted(document.hidden || mutedRef.current);
+    document.addEventListener("visibilitychange", onVis);
+    return () => { document.removeEventListener("visibilitychange", onVis); music.current?.stop(); };
+  }, []);
+  const startMusic = useCallback(() => {
+    if (music.current || mutedRef.current) return;
+    music.current = createRecapMusic();
+    music.current?.start();
+  }, []);
+  const toggleMute = () => {
+    const m = !muted;
+    setMuted(m);
+    mutedRef.current = m;
+    try { localStorage.setItem(MUTE_KEY, m ? "1" : "0"); } catch { /* stockage indisponible */ }
+    if (m) music.current?.setMuted(true);
+    else if (music.current) music.current.setMuted(false);
+    else startMusic();
+  };
+
+  // ── Image à partager : rendu figé hors champ, capturé ×3 (1080×1920), gardé en cache ──
+  const capture = (key: string) => new Promise<Blob>((resolve, reject) => {
+    const cached = blobs.current.get(key);
+    if (cached) { resolve(cached); return; }
+    pendingCapture.current = async (el) => {
+      try {
+        const b = await domToBlob(el, { scale: 3, fetchFn: fetchViaProxy, timeout: 20000, backgroundColor: getComputedStyle(el).backgroundColor });
+        if (!b) throw new Error("capture vide");
+        blobs.current.set(key, b);
+        resolve(b);
+      } catch (e) { reject(e); } finally { setExporting(null); }
+    };
+    setExporting(key);
+  });
+  useEffect(() => {
+    const run = pendingCapture.current;
+    if (!exporting || !run || !exportRef.current) return;
+    pendingCapture.current = null;
+    const el = exportRef.current;
+    (async () => {
+      await document.fonts?.ready;
+      await new Promise((r) => setTimeout(r, 150)); // images (photo, drapeau) le temps de s'afficher
+      run(el);
+    })();
+  }, [exporting]);
+  const shareSlide = async (key: string, download: boolean) => {
+    if (busy) return;
+    setBusy(true);
+    setPaused(true);
+    try {
+      const blob = await capture(key);
+      await shareOrDownload(blob, `poloperator-${data.year}-${key}.png`, `Mon année ${data.year} en bike polo`, download);
+    } catch (e) {
+      const name = (e as Error).name;
+      // Safari perd le « geste » pendant la création de l'image : elle est prête au 2e toucher.
+      if (name === "NotAllowedError") setToast("Image prête : touche encore « Partager »");
+      else if (name !== "AbortError") { console.error("[récap] partage", e); setToast("Impossible de créer l'image, réessaie"); }
+    } finally {
+      setBusy(false);
+      setPaused(false);
+    }
+  };
+
+  const slides = buildSlides(data, dims, { share: (dl) => shareSlide("share", dl), replay: () => setI(0), busy });
   const n = slides.length;
   const next = useCallback(() => setI((x) => Math.min(n - 1, x + 1)), [n]);
   const prev = useCallback(() => setI((x) => Math.max(0, x - 1)), []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowRight") { startMusic(); next(); }
       else if (e.key === "ArrowLeft") prev();
       else if (e.key === " ") { e.preventDefault(); setPaused((p) => !p); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [next, prev]);
+  }, [next, prev, startMusic]);
 
   // Toucher : tiers gauche = revenir, ailleurs = avancer ; appui long = pause.
   const holdRef = useRef(false);
@@ -357,6 +507,7 @@ export function YearRecapStory({ data, closeHref = "/", demo = false }: { data: 
     const up = (ev: PointerEvent) => {
       clearTimeout(timer);
       window.removeEventListener("pointerup", up);
+      startMusic();
       if (holdRef.current) { setPaused(false); return; }
       const rect = frameRef.current?.getBoundingClientRect();
       if (rect && ev.clientX < rect.left + rect.width / 3) prev(); else next();
@@ -366,6 +517,8 @@ export function YearRecapStory({ data, closeHref = "/", demo = false }: { data: 
 
   const slide = slides[Math.min(i, n - 1)];
   const last = i >= n - 1;
+  const exportSlides = exporting && exporting !== "share" ? buildSlides(data, { w: EXPORT_W, h: EXPORT_H }, { share: () => {}, replay: () => {}, busy: false }) : [];
+  const exportSlide = exportSlides.find((s) => s.key === exporting);
   return (
     <div className="recap-story">
       <div ref={frameRef} className={`rc-frame rc-bg--${slide.bg}`} onPointerDown={onPointerDown}>
@@ -384,11 +537,38 @@ export function YearRecapStory({ data, closeHref = "/", demo = false }: { data: 
         <div className="rc-top">
           <span className="rc-brand"><i />Poloperator</span>
           {demo && <span className="rc-demo">Maquette · chiffres inventés</span>}
-          <Link href={closeHref} className="rc-close" aria-label="Fermer">✕</Link>
+          <span className="rc-top__actions">
+            <button type="button" className="rc-icon" onClick={toggleMute} aria-label={muted ? "Remettre la musique" : "Couper la musique"} title={muted ? "Remettre la musique" : "Couper la musique"}>
+              {muted ? "🔇" : "🔊"}
+            </button>
+            <Link href={closeHref} className="rc-icon" aria-label="Fermer">✕</Link>
+          </span>
         </div>
         <div key={slide.key} className="rc-slide">{slide.body}</div>
+        {!last && (
+          <div className="rc-mini">
+            <button type="button" disabled={busy} onClick={() => shareSlide(slide.key, false)}>{busy ? "…" : "↗ Partager"}</button>
+            <button type="button" disabled={busy} onClick={() => shareSlide(slide.key, true)} aria-label="Télécharger l'image" title="Télécharger l'image">⬇</button>
+          </div>
+        )}
         {toast && <div className="rc-toast" role="status">{toast}</div>}
       </div>
+
+      {/* Hors champ : l'écran à partager, figé, au format story */}
+      {exporting && (
+        <div className="rc-export" aria-hidden>
+          <StaticCtx.Provider value={true}>
+            {exporting === "share" ? (
+              <div ref={exportRef} className="rc-frame rc-frame--export rc-frame--shot rc-static"><SummaryShot data={data} /></div>
+            ) : exportSlide ? (
+              <div ref={exportRef} className={`rc-frame rc-frame--export rc-static rc-bg--${exportSlide.bg}`}>
+                <div className="rc-top"><span className="rc-brand"><i />Poloperator</span><span className="rc-top__url">poloperator.com</span></div>
+                <div className="rc-slide">{exportSlide.body}</div>
+              </div>
+            ) : null}
+          </StaticCtx.Provider>
+        </div>
+      )}
     </div>
   );
 }
