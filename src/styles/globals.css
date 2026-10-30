@@ -12139,14 +12139,25 @@ button.checklist-item:hover .checklist-item__go { color: var(--text); transform:
 }
 .tscreen__controls button:disabled { opacity: 0.5; }
 .tscreen.is-idle .tscreen__controls { opacity: 0; pointer-events: none; }
+/* Coin haut droit : logo Poloperator (même dessin que le header du site), puis le badge « en pause » */
+.tscreen__corner {
+  --logo-size: clamp(13px, 1.25vw, 36px);
+  position: absolute; top: 1.6vh; right: 1.6vw; z-index: 3; pointer-events: none;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 1vh;
+}
+.tscreen__logo {
+  display: inline-flex; align-items: center; gap: 0.5em; white-space: nowrap;
+  font-size: var(--logo-size); font-weight: 700; letter-spacing: 0.02em; line-height: 1; color: var(--sc-fg);
+}
+.tscreen__logo-dot { width: 0.55em; height: 0.55em; flex-shrink: 0; border-radius: 50%; background: var(--pink); border: 0.12em solid var(--sc-fg); }
 .tscreen__paused {
-  position: absolute; top: 1.5vh; right: 1.5vw; z-index: 3;
   padding: 0.4em 0.9em; border-radius: 999px; background: var(--sc-panel); border: 2px solid var(--sc-line);
   color: var(--sc-muted); font-size: clamp(12px, 1.2vw, 32px); font-weight: 700;
 }
 /* Écran : vue d'ensemble en tuiles */
 .tscreen__overview { padding: 2.5vh 2.5vw 3vh; gap: 2vh; }
-.tscreen__ov-head { display: flex; justify-content: space-between; align-items: baseline; gap: 2vw; }
+/* Laisse la place au logo du coin haut droit (≈ 8 fois sa taille de police) */
+.tscreen__ov-head { display: flex; justify-content: space-between; align-items: baseline; gap: 2vw; padding-right: calc(clamp(13px, 1.25vw, 36px) * 8.5); }
 .tscreen__ov-head .tscreen__title { font-size: clamp(22px, 2.8vw, 84px); }
 .tscreen__ov-meta { display: flex; gap: 1.5vw; align-items: baseline; font-size: clamp(14px, 1.6vw, 48px); color: var(--sc-muted); }
 .tscreen__ov-meta strong { color: var(--sc-fg); font-size: 1.4em; font-variant-numeric: tabular-nums; }

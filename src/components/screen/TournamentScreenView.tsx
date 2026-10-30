@@ -50,6 +50,7 @@ function courtMatch(matches: ScreenMatch[], court: number): { match: ScreenMatch
 
 export function TournamentScreenView({ initial, screenSlug }: { initial: ScreenData; screenSlug: string }) {
   const t = useTranslations("screen");
+  const th = useTranslations("header");
   const [data, setData] = useState<ScreenData>(initial);
   const [offset, setOffset] = useState(() => initial.serverTime - Date.now());
   const [now, setNow] = useState(() => Date.now() + offset);
@@ -197,7 +198,11 @@ export function TournamentScreenView({ initial, screenSlug }: { initial: ScreenD
         <div className="tscreen__progress" key={`${current}-${index}`} style={{ animationDuration: `${currentSeconds}s` }} />
       )}
 
-      {canRotate && paused && <div className="tscreen__paused">⏸ {t("paused_badge")}</div>}
+      {/* Coin haut droit : le logo, comme dans le header du site (+ « en pause » dessous) */}
+      <div className="tscreen__corner">
+        <span className="tscreen__logo"><span className="tscreen__logo-dot" aria-hidden />{th("brand_name")}</span>
+        {canRotate && paused && <div className="tscreen__paused">⏸ {t("paused_badge")}</div>}
+      </div>
 
       <div className="tscreen__controls">
         {canRotate && (
