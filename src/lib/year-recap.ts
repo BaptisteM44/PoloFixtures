@@ -8,7 +8,8 @@
  * listés. Jamais de classement.
  */
 
-export type RecapTournament = { name: string; city: string; country: string; date: string; lat: number; lng: number };
+/** lat/lng : null si le tournoi n'a pas pu être placé sur la carte. */
+export type RecapTournament = { name: string; city: string; country: string; date: string; lat: number | null; lng: number | null };
 
 export type YearRecapData = {
   year: number;
@@ -45,5 +46,5 @@ export function haversineKm(a: { lat: number; lng: number }, b: { lat: number; l
 /** Kilomètres à vol d'oiseau : un aller-retour depuis chez soi pour chaque tournoi. */
 export function travelKm(home: { lat: number; lng: number } | null, tournaments: RecapTournament[]): number {
   if (!home) return 0;
-  return Math.round(tournaments.reduce((sum, t) => sum + 2 * haversineKm(home, t), 0));
+  return Math.round(tournaments.reduce((sum, t) => (t.lat == null || t.lng == null ? sum : sum + 2 * haversineKm(home, { lat: t.lat, lng: t.lng })), 0));
 }

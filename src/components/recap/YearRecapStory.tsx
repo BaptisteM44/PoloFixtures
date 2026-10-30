@@ -19,6 +19,7 @@ import { fetchViaProxy } from "@/components/ShareCardButton";
 import { shareOrDownload } from "@/components/PodiumStory";
 import { getBadgeInfo } from "@/lib/badge-catalog";
 import { createRecapMusic, type RecapMusic } from "@/lib/recap-music";
+import { countryToIso } from "@/lib/country-utils";
 import { EARTH_KM, travelKm, type RecapTournament, type YearRecapData } from "@/lib/year-recap";
 
 const SLIDE_MS = 8000;
@@ -26,7 +27,7 @@ const EXPORT_W = 360, EXPORT_H = 640;
 const MUTE_KEY = "recap_music_muted";
 // Espace insécable normal (l'espace fine du français disparaît dans la police d'affichage : « 1412 »).
 const nf = (n: number) => n.toLocaleString("fr-FR").replace(/ /g, " ");
-const hm = (min: number) => `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}`;
+const hm = (min: number) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}`);
 const plural = (n: number, one: string, many: string) => (n > 1 ? many : one);
 const month = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { month: "short", timeZone: "UTC" }).replace(".", "");
 const initials = (name: string) => name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
@@ -71,8 +72,11 @@ function Rise({ d = 0, as, className = "", children }: { d?: number; as?: Elemen
 const Note = ({ children = NOTE }: { children?: ReactNode }) => <p className="rc-note">{children}</p>;
 
 /** La saison sur une carte : un point par tournoi, reliés dans l'ordre des dates. */
-function RouteMap({ tournaments, home }: { tournaments: RecapTournament[]; home: YearRecapData["home"] }) {
+function RouteMap({ tournaments: all0, home }: { tournaments: RecapTournament[]; home: YearRecapData["home"] }) {
   const id = useId().replace(/:/g, "");
+  // Seuls les tournois placés sur la carte ; le n° reste celui de la liste.
+  const placed = all0.map((t, n) => ({ ...t, n })).filter((t): t is typeof t & { lat: number; lng: number } => t.lat != null && t.lng != null);
+  const tournaments = placed;
   const W = 320, H = 200, P = 30;
   const all = home ? [...tournaments, home] : tournaments;
   const k = Math.cos(((all.reduce((s, p) => s + p.lat, 0) / all.length) * Math.PI) / 180);
@@ -80,9 +84,44 @@ function RouteMap({ tournaments, home }: { tournaments: RecapTournament[]; home:
   const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
   const s = Math.min((W - 2 * P) / Math.max(Math.max(...xs) - Math.min(...xs), 3), (H - 2 * P) / Math.max(Math.max(...ys) - Math.min(...ys), 2));
   const pt = (p: { lat: number; lng: number }) => [W / 2 + (p.lng * k - cx) * s, H / 2 + (-p.lat - cy) * s] as const;
-  const pts = tournaments.map(pt);
+  // Pastilles trop proches (villes voisines) : on les écarte un peu pour que chaque n° reste lisible.
+  const pts = tournaments.map((t) => [...pt(t)] as [number, number]);
+  const MIN = 21;
+  for (let iter = 0; iter < 40; iter++) {
+    for (let a = 0; a < pts.length; a++) {
+      for (let b = a + 1; b < pts.length; b++) {
+        const dx = pts[b][0] - pts[a][0], dy = pts[b][1] - pts[a][1];
+        const dist = Math.hypot(dx, dy);
+        if (dist >= MIN) continue;
+        const ang = dist > 0.01 ? Math.atan2(dy, dx) : (b * 2.4); // même ville : écart en éventail
+        const push = (MIN - dist) / 2;
+        pts[a][0] -= Math.cos(ang) * push; pts[a][1] -= Math.sin(ang) * push;
+        pts[b][0] += Math.cos(ang) * push; pts[b][1] += Math.sin(ang) * push;
+      }
+    }
+    for (const q of pts) { q[0] = Math.min(W - 14, Math.max(14, q[0])); q[1] = Math.min(H - 14, Math.max(14, q[1])); }
+  }
   const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
-  const homePt = home ? pt(home) : null;
+  // Maison : seulement si aucun tournoi n'est déjà dans sa ville.
+  const homeRaw = home ? pt(home) : null;
+  const homePt = homeRaw && pts.every(([x, y]) => Math.hypot(x - homeRaw[0], y - homeRaw[1]) > 16) ? homeRaw : null;
+  // Noms de villes : au-dessus, sinon en dessous, sinon masqués (la liste les donne tous).
+  type Box = { x0: number; x1: number; y0: number; y1: number };
+  const hit = (p: Box, q: Box) => p.x0 < q.x1 && q.x0 < p.x1 && p.y0 < q.y1 && q.y0 < p.y1;
+  const discs: Box[] = pts.map(([x, y]) => ({ x0: x - 10, x1: x + 10, y0: y - 10, y1: y + 10 }));
+  const placedLabels: Box[] = [];
+  const labels = pts.map(([x, y], i) => {
+    const w = tournaments[i].city.length * 5.3 + 4;
+    const lx = Math.min(W - w / 2 - 4, Math.max(w / 2 + 4, x));
+    for (const ly of [y - 14, y + 22]) {
+      const box = { x0: lx - w / 2, x1: lx + w / 2, y0: ly - 9, y1: ly + 2 };
+      if (box.y0 < 2 || box.y1 > H - 2) continue;
+      if (placedLabels.some((b) => hit(b, box)) || discs.some((b, j) => j !== i && hit(b, box))) continue;
+      placedLabels.push(box);
+      return { x: lx, y: ly };
+    }
+    return null;
+  });
   return (
     <svg className="rc-route" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={tournaments.map((t) => t.city).join(", ")}>
       <defs>
@@ -95,8 +134,8 @@ function RouteMap({ tournaments, home }: { tournaments: RecapTournament[]; home:
       {pts.map(([x, y], i) => (
         <g key={i} className="rc-route__stop" style={{ "--d": `${450 + i * 200}ms` } as CSSProperties}>
           <circle cx={x} cy={y} r="9" />
-          <text x={x} y={y + 3.5} textAnchor="middle">{i + 1}</text>
-          <text className="rc-route__city" x={Math.min(W - 26, Math.max(26, x))} y={y > 34 ? y - 14 : y + 22} textAnchor="middle">{tournaments[i].city}</text>
+          <text x={x} y={y + 3.5} textAnchor="middle">{tournaments[i].n + 1}</text>
+          {labels[i] && <text className="rc-route__city" x={labels[i]!.x} y={labels[i]!.y} textAnchor="middle">{tournaments[i].city}</text>}
         </g>
       ))}
     </svg>
@@ -107,7 +146,7 @@ function RouteMap({ tournaments, home }: { tournaments: RecapTournament[]; home:
 function figures(data: YearRecapData) {
   const { tournaments, teammates, pitch, scene } = data;
   const km = travelKm(data.home, tournaments);
-  const countries = new Set(tournaments.map((t) => t.country)).size;
+  const countries = new Set(tournaments.map((t) => countryToIso(t.country) ?? t.country.trim().toLowerCase())).size;
   const cities = new Set(tournaments.map((t) => t.city)).size;
   const kmShort = km >= 10_000 ? `${(km / 1000).toFixed(1).replace(".", ",")}k` : String(km);
   const cardStats = [
@@ -202,7 +241,7 @@ function buildSlides(data: YearRecapData, dims: Dims, act: Actions): Slide[] {
           <Rise><p className="rc-kicker">Tes tournois</p></Rise>
           <Rise d={100}><p className="rc-big"><Count n={tournaments.length} /> <span>{plural(tournaments.length, "tournoi", "tournois")}</span></p></Rise>
           <Rise d={200}><p className="rc-sub">dans <b>{countries} pays</b> · <b>{cities} {plural(cities, "ville", "villes")}</b></p></Rise>
-          <Rise d={300}><RouteMap tournaments={tournaments} home={data.home} /></Rise>
+          {tournaments.some((t) => t.lat != null) && <Rise d={300}><RouteMap tournaments={tournaments} home={data.home} /></Rise>}
           <ol className="rc-list">
             {shown.map((t, j) => (
               <Rise as="li" key={j} d={500 + j * 90}>
@@ -316,7 +355,7 @@ function buildSlides(data: YearRecapData, dims: Dims, act: Actions): Slide[] {
             })}
           </div>
           {badges.length > 12 && <p className="rc-sub">et {badges.length - 12} autres</p>}
-          <Note>Ta collection à ce jour · {NOTE.toLowerCase()}</Note>
+          <Note>Ta collection à ce jour</Note>
         </>
       ),
     });
