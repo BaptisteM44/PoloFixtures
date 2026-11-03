@@ -7,9 +7,9 @@ import type { CalendarTournament } from "@/components/CalendarGrid";
 import { auth } from "@/lib/auth";
 import TournamentMapClient from "@/components/TournamentMapClient";
 import type { MapTournament } from "@/components/TournamentMap";
-import { HomeHeroPersonal, type HeroNextTournament } from "@/components/HomeHeroPersonal";
+import { HomeBento, type BentoMyTournament, type BentoOpenTournament } from "@/components/HomeBento";
 import { HomeInstallBanner } from "@/components/HomeInstallBanner";
-import { TrainingAgendaRow, type TrainingTileData } from "@/components/NextTrainingCard";
+import type { TrainingTileData } from "@/components/NextTrainingCard";
 import { ensureRecurringSessions } from "@/lib/club-sessions";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { countryToContinent } from "@/lib/country-utils";
@@ -38,9 +38,18 @@ export default async function HomePage() {
     await ensureRecurringSessions(myClubs.map((c) => c.clubId));
   }
 
+  const now = new Date();
+  const in14Days = new Date(now.getTime() + 14 * 86_400_000);
+  // Ce qu'il faut de chaque tournoi où je suis inscrit pour les tuiles de la home.
+  const myTournamentSelect = {
+    id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true,
+    maxTeams: true, bannerPath: true, selectionLocked: true,
+    _count: { select: { teams: { where: { selected: true } } } },
+  } as const;
+
   const [
     activeTournaments, allTournaments, countryCounts, mapTournaments, recentPlayers, totalPlayers, totalCountries,
-    me, teamEntries, soloEntries, followsRaw, squadInvites, mySquadsRaw, clubSessionsRaw, awaitingDrawRaw,
+    me, teamEntries, soloEntries, followsRaw, clubSessionsRaw, trainingsIn14Days, openRegistrationsRaw,
   ] = await Promise.all([
     prisma.tournament.findMany({
       where: { status: { in: ["LIVE", "UPCOMING"] }, approved: true, hidden: false },
@@ -95,8 +104,7 @@ export default async function HomePage() {
           include: {
             team: {
               include: {
-                tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true } },
-                players: { include: { player: { select: { id: true, name: true, photoPath: true } } } },
+                tournament: { select: myTournamentSelect },
               },
             },
           },
@@ -106,7 +114,7 @@ export default async function HomePage() {
     currentPlayerId
       ? prisma.tournamentSoloEntry.findMany({
           where: { playerId: currentPlayerId, tournament: { status: { in: ["UPCOMING", "LIVE"] }, approved: true }, waitlisted: false },
-          include: { tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true } } },
+          include: { tournament: { select: myTournamentSelect } },
         })
       : Promise.resolve([]),
     // Followed tournament IDs
@@ -114,32 +122,6 @@ export default async function HomePage() {
       ? (prisma as any).tournamentFollow.findMany({
           where: { playerId: currentPlayerId },
           select: { tournamentId: true },
-        })
-      : Promise.resolve([]),
-    // Pending squad invitations (requests waiting for my action)
-    currentPlayerId
-      ? prisma.squadInvitation.findMany({
-          where: { invitedPlayerId: currentPlayerId, status: "PENDING" },
-          include: {
-            squad: { select: { id: true, name: true, logoPath: true, color: true } },
-            invitedBy: { select: { id: true, name: true } },
-          },
-          orderBy: { createdAt: "desc" },
-        })
-      : Promise.resolve([]),
-    // My squads (long-term teams)
-    currentPlayerId
-      ? prisma.squadMember.findMany({
-          where: { playerId: currentPlayerId },
-          include: {
-            squad: {
-              select: {
-                id: true, name: true, logoPath: true, color: true,
-                _count: { select: { members: true } },
-              },
-            },
-          },
-          orderBy: { joinedAt: "desc" },
         })
       : Promise.resolve([]),
     // Prochaines sessions d'entraînement de mes clubs
@@ -169,66 +151,75 @@ export default async function HomePage() {
           take: 1, // seul le prochain entraînement est affiché
         })
       : Promise.resolve([]),
-    // Tournois où je suis inscrit mais le tirage n'a pas encore été fait
+    // Nombre d'entraînements de mes clubs dans les 14 prochains jours (résumé sous « Salut »)
     currentPlayerId
-      ? prisma.teamPlayer.findMany({
+      ? prisma.clubSession.count({
           where: {
-            playerId: currentPlayerId,
-            team: { tournament: { status: "UPCOMING", approved: true, selectionLocked: false } },
+            date: { gte: now, lte: in14Days },
+            status: "ACTIVE",
+            club: { members: { some: { playerId: currentPlayerId, status: "MEMBER" } } },
+          },
+        })
+      : Promise.resolve(0),
+    // Tuile « Inscriptions ouvertes » : même règle que getTournamentStatusBadge (début ET fin
+    // d'inscription renseignés, maintenant entre les deux), hors tournois où je suis déjà inscrit.
+    // On en prend plus que 3 pour pouvoir remonter ceux de mon continent.
+    currentPlayerId
+      ? prisma.tournament.findMany({
+          where: {
+            approved: true, hidden: false, status: "UPCOMING",
+            registrationStart: { lte: now }, registrationEnd: { gte: now },
+            NOT: [
+              { teams: { some: { players: { some: { playerId: currentPlayerId } } } } },
+              { soloEntries: { some: { playerId: currentPlayerId } } },
+            ],
           },
           select: {
-            team: {
-              select: {
-                tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true } },
-              },
-            },
+            id: true, slug: true, name: true, city: true, country: true, continentCode: true, dateStart: true, maxTeams: true,
+            _count: { select: { teams: { where: { selected: true } } } },
           },
+          orderBy: { dateStart: "asc" },
+          take: 20,
         })
       : Promise.resolve([]),
   ]);
 
   const playerContinent = me ? countryToContinent(me.country) : null;
 
-  const myUpcomingTournaments: { id: string; slug: string | null; name: string; city: string; country: string; dateStart: Date; dateEnd: Date; format: string }[] = [];
+  // Mes tournois à venir / en cours : UNE entrée par tournoi (équipe ou solo), avec son
+  // statut — plus de liste « tirage en attente » à part qui doublonnait l'agenda.
+  const myUpcomingTournaments: BentoMyTournament[] = [];
   {
     const seen = new Set<string>();
-    for (const e of teamEntries) {
-      if (!seen.has(e.team.tournament.id)) { seen.add(e.team.tournament.id); myUpcomingTournaments.push(e.team.tournament); }
-    }
-    for (const e of soloEntries) {
-      if (!seen.has(e.tournament.id)) { seen.add(e.tournament.id); myUpcomingTournaments.push(e.tournament); }
-    }
+    const push = (tr: (typeof teamEntries)[number]["team"]["tournament"], teamName: string | null) => {
+      if (seen.has(tr.id)) return;
+      seen.add(tr.id);
+      myUpcomingTournaments.push({
+        id: tr.id, slug: tr.slug, name: tr.name, city: tr.city, country: tr.country,
+        dateStart: tr.dateStart, dateEnd: tr.dateEnd, format: tr.format,
+        maxTeams: tr.maxTeams, teamCount: tr._count.teams, bannerPath: tr.bannerPath,
+        awaitingDraw: !tr.selectionLocked, teamName,
+      });
+    };
+    for (const e of teamEntries) push(e.team.tournament, e.team.name);
+    for (const e of soloEntries) push(e.tournament, null);
     myUpcomingTournaments.sort((a, b) => a.dateStart.getTime() - b.dateStart.getTime());
   }
 
-  // Hero perso : le prochain tournoi avec mon équipe (et coéquipiers) si j'en ai une
-  let heroNext: HeroNextTournament | null = null;
-  if (myUpcomingTournaments.length > 0) {
-    const nextTour = myUpcomingTournaments[0];
-    const myEntry = (teamEntries as any[]).find((e) => e.team.tournament.id === nextTour.id);
-    heroNext = {
-      id: nextTour.id,
-      slug: nextTour.slug,
-      name: nextTour.name,
-      city: nextTour.city,
-      country: nextTour.country,
-      dateStart: nextTour.dateStart.toISOString(),
-      dateEnd: nextTour.dateEnd.toISOString(),
-      teamName: myEntry?.team.name ?? null,
-      teammates: myEntry
-        ? myEntry.team.players
-            .filter((p: any) => p.player.id !== currentPlayerId)
-            .map((p: any) => ({ id: p.player.id, name: p.player.name, photoPath: p.player.photoPath }))
-        : [],
-    };
-  }
-  const heroOthers = myUpcomingTournaments.slice(1, 4).map((tour) => ({
-    id: tour.id,
-    slug: tour.slug,
-    name: tour.name,
-    city: tour.city,
-    dateStart: tour.dateStart.toISOString(),
-  }));
+  // Mon continent d'abord (AP couvre l'Asie et l'Océanie), puis par date.
+  const inMyContinent = (code: string) =>
+    !!playerContinent && (code === playerContinent || (code === "AP" && (playerContinent === "AS" || playerContinent === "OC")));
+  const openRegistrations: BentoOpenTournament[] = [...openRegistrationsRaw]
+    .sort((a, b) => Number(inMyContinent(b.continentCode)) - Number(inMyContinent(a.continentCode)) || a.dateStart.getTime() - b.dateStart.getTime())
+    .slice(0, 3)
+    .map((o) => ({
+      id: o.id, slug: o.slug, name: o.name, city: o.city, country: o.country,
+      dateStart: o.dateStart, maxTeams: o.maxTeams, teamCount: o._count.teams,
+    }));
+
+  const tournamentsIn14Days = myUpcomingTournaments.filter(
+    (tour) => tour.dateStart <= in14Days && tour.dateEnd.getTime() + 86_400_000 > now.getTime(),
+  ).length;
 
   const followedTournamentIds = new Set<string>((followsRaw as any[]).map((f: any) => f.tournamentId));
 
@@ -263,7 +254,7 @@ export default async function HomePage() {
   // Prochain entraînement de mes clubs (30 jours) : UNE tuile, à côté du prochain tournoi.
   const trainingTiles: TrainingTileData[] = currentPlayerId
     ? (clubSessionsRaw as any[])
-        .filter((s) => s.date.getTime() - Date.now() <= 30 * 86_400_000)
+        .filter((s) => s.date.getTime() - now.getTime() <= 30 * 86_400_000)
         .slice(0, 1)
         .map((s) => {
           const mine = s.attendees.find((a: any) => a.player.id === currentPlayerId);
@@ -285,11 +276,29 @@ export default async function HomePage() {
         })
     : [];
 
+  const mapData: MapTournament[] = mapTournaments.map((t) => ({
+    id: t.id,
+    slug: t.slug,
+    name: t.name,
+    city: t.city,
+    country: t.country,
+    continentCode: t.continentCode,
+    format: t.format,
+    dateStart: t.dateStart.toISOString(),
+    dateEnd: t.dateEnd.toISOString(),
+    status: t.status,
+    registrationStart: t.registrationStart?.toISOString() ?? null,
+    registrationEnd: t.registrationEnd?.toISOString() ?? null,
+    lat: t.lat as number,
+    lng: t.lng as number,
+  }));
+  const showMap = process.env.NEXT_PUBLIC_MAP_ENABLED === "true" && mapData.length > 0;
+
   return (
     <div className="home">
-      {/* ---- HERO : perso si connecté, marketing sinon ---- */}
+      {/* ---- Connecté : home en tuiles · visiteur : hero marketing ---- */}
       {me ? (
-        <HomeHeroPersonal
+        <HomeBento
           me={{
             name: me.name,
             country: me.country,
@@ -316,23 +325,20 @@ export default async function HomePage() {
                 }
               : null,
           }}
-          next={heroNext}
-          others={heroOthers}
-          trainingSlot={trainingTiles[0] ? <TrainingAgendaRow s={trainingTiles[0]} /> : undefined}
-          awaitingDraw={(() => {
-            const seen = new Set<string>();
-            const out: { id: string; slug: string | null; name: string; city: string; dateStart: string }[] = [];
-            for (const e of awaitingDrawRaw as any[]) {
-              const tr = e.team.tournament;
-              // Déjà affiché en grand comme « prochain tournoi » : pas de doublon.
-              if (seen.has(tr.id) || tr.id === heroNext?.id) continue;
-              seen.add(tr.id);
-              out.push({ id: tr.id, slug: tr.slug, name: tr.name, city: tr.city, dateStart: tr.dateStart.toISOString() });
-            }
-            return out;
-          })()}
-          inviteCount={(squadInvites as any[]).length}
-          squadCount={(mySquadsRaw as any[]).length}
+          upcoming={myUpcomingTournaments}
+          training={trainingTiles[0] ?? null}
+          open={openRegistrations}
+          community={{
+            players: totalPlayers,
+            countries: countryCount,
+            tournaments: totalTournamentsSeason,
+            byContinent: CONTINENT_CODES
+              .map((code) => ({ code, count: playerCountByContinent[code] ?? 0 }))
+              .sort((a, b) => b.count - a.count),
+          }}
+          recentPlayers={recentPlayers}
+          summary={{ tournaments: tournamentsIn14Days, trainings: trainingsIn14Days }}
+          mapSlot={showMap ? <TournamentMapClient variant="bento" tournaments={mapData} userContinent={playerContinent ?? undefined} /> : null}
           locale={locale}
         />
       ) : (
@@ -365,47 +371,33 @@ export default async function HomePage() {
         <HomeInstallBanner />
       </div>
 
-      {/* ---- MAP SECTION (WIP) ---- */}
-      {process.env.NEXT_PUBLIC_MAP_ENABLED === "true" && mapTournaments.length > 0 && (
+      {/* ---- MAP SECTION (visiteur ; en tuile dans la home connectée) ---- */}
+      {!me && showMap && (
         <TournamentMapClient
-          tournaments={mapTournaments.map((t): MapTournament => ({
-            id: t.id,
-            slug: t.slug,
-            name: t.name,
-            city: t.city,
-            country: t.country,
-            continentCode: t.continentCode,
-            format: t.format,
-            dateStart: t.dateStart.toISOString(),
-            dateEnd: t.dateEnd.toISOString(),
-            status: t.status,
-            registrationStart: t.registrationStart?.toISOString() ?? null,
-            registrationEnd: t.registrationEnd?.toISOString() ?? null,
-            lat: t.lat as number,
-            lng: t.lng as number,
-          }))}
+          tournaments={mapData}
           stats={{ players: totalPlayers, tournaments: totalTournamentsSeason, countries: countryCount, labels: { players: t("stats_players"), tournaments: t("stats_tournaments"), countries: t("stats_countries") } }}
-          userContinent={playerContinent ?? undefined}
         />
       )}
 
       <div className="home-reorder">
 
-      {/* ---- CONTINENTS ---- */}
-      <section className="section home-reorder__continents" style={{ paddingBottom: 0 }}>
-        <div className="continent-grid">
-          {CONTINENT_CODES.map((code) => (
-            <Link key={code} className="continent-card" href={`/tournaments?continent=${code}`}>
-              <h3>{t(`continent_${code.toLowerCase()}`)}</h3>
-              {playerCountByContinent[code] ? (
-                <span className="continent-stat">
-                  {playerCountByContinent[code]} {tc("players")}
-                </span>
-              ) : null}
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* ---- CONTINENTS (visiteur ; tuile « La communauté » si connecté) ---- */}
+      {!me && (
+        <section className="section home-reorder__continents" style={{ paddingBottom: 0 }}>
+          <div className="continent-grid">
+            {CONTINENT_CODES.map((code) => (
+              <Link key={code} className="continent-card" href={`/tournaments?continent=${code}`}>
+                <h3>{t(`continent_${code.toLowerCase()}`)}</h3>
+                {playerCountByContinent[code] ? (
+                  <span className="continent-stat">
+                    {playerCountByContinent[code]} {tc("players")}
+                  </span>
+                ) : null}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ---- LIVE + UPCOMING TOURNAMENTS ---- */}
       <section className="section home-reorder__active">
@@ -463,8 +455,8 @@ export default async function HomePage() {
         />
       </section>
 
-      {/* ---- RECENT PLAYERS ---- */}
-      {recentPlayers.length > 0 && (
+      {/* ---- RECENT PLAYERS (visiteur ; tuile dans la home connectée) ---- */}
+      {!me && recentPlayers.length > 0 && (
         <section className="section">
           <div className="section-header">
             <h2>{t("section_recent_players")}</h2>

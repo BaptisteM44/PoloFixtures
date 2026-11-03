@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Poloperator — Home joueur</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#fcfbf5}
+a{color:#1a1a1a;text-decoration:none}a:hover{color:#1a1a1a;text-decoration:underline}
+.pp-root{font-family:"Space Grotesk",sans-serif;color:#1a1a1a;background:#fcfbf5;min-height:100vh}
+.pp-root h1,.pp-root h2,.pp-root h3,.pp-display{font-family:"Chakra Petch",sans-serif}
+.wrap{padding:0 6vw;box-sizing:border-box}
+.bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));grid-auto-rows:minmax(200px,auto);gap:20px}
+.tile{background:#ffffff;border:2px solid #1a1a1a;border-radius:18px;box-shadow:4px 4px 0 #1a1a1a;padding:24px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px;min-width:0}
+.t-next{grid-column:span 8;grid-row:span 2}
+.t-card{grid-column:span 4;grid-row:span 2;align-self:start;justify-self:center;width:100%;max-width:420px}
+.t-train,.t-agenda,.t-open{grid-column:span 4}
+.t-stats,.t-mine{grid-column:span 4}
+.t-map{grid-column:span 8;grid-row:span 2}
+.t-new{grid-column:span 12}
+.tlabel{font-family:"Chakra Petch",sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:8px;margin:0}
+.tlabel svg{width:16px;height:16px;flex:none}
+.btn{font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:14px;letter-spacing:.04em;text-transform:uppercase;border:2px solid #1a1a1a;border-radius:10px;padding:0 18px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:3px 3px 0 #1a1a1a;cursor:pointer;color:#1a1a1a;background:#ffffff;box-sizing:border-box;white-space:nowrap}
+.btn:hover{text-decoration:none;transform:translate(-1px,-1px);box-shadow:4px 4px 0 #1a1a1a}
+.pill{font-family:"Chakra Petch",sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:1.5px solid #1a1a1a;border-radius:6px;padding:4px 9px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.chip{font-family:"Chakra Petch",sans-serif;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:2px solid #1a1a1a;border-radius:999px;padding:0 14px;min-height:36px;display:inline-flex;align-items:center;gap:6px;background:#fff;cursor:pointer;color:#1a1a1a}
+.iconbtn{width:44px;height:44px;border:2px solid #1a1a1a;border-radius:999px;background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;position:relative;color:#1a1a1a;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:14px;padding:0;flex:none}
+.iconbtn svg{width:20px;height:20px}
+.row{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1.5px solid #e7e7e7}
+.row:first-child{border-top:0}
+.datebox{width:56px;min-width:56px;height:60px;border:2px solid #1a1a1a;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Chakra Petch",sans-serif;line-height:1;box-sizing:border-box}
+.bar{height:8px;border:1.5px solid #1a1a1a;border-radius:999px;background:#fff;overflow:hidden;display:block}
+.bar>span{display:block;height:100%;background:#1a1a1a}
+.av{width:56px;height:56px;border-radius:999px;border:2px solid #1a1a1a;display:flex;align-items:center;justify-content:center;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:20px;box-sizing:border-box;flex:none}
+.navlinks{display:flex;gap:40px;font-weight:600;font-size:15px;letter-spacing:.08em;text-transform:uppercase}
+.next-inner{display:flex;gap:24px;flex:1;min-height:0}
+.mapimg{display:block;width:100%;height:100%;object-fit:cover;object-position:42% 55%}
+/* Carte de collection — proportions 340×520 comme sur le site */
+.pcard{aspect-ratio:340/520;width:100%;container-type:inline-size;background:#ffffff;border:3px solid #1a1a1a;border-radius:18px;box-shadow:6px 6px 0 #1a1a1a;box-sizing:border-box;padding:6cqw 6cqw 5cqw;display:flex;flex-direction:column;gap:3cqw;overflow:hidden}
+.pcard-head{display:flex;align-items:baseline;gap:3cqw}
+.pcard-name{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:7.4cqw;line-height:1.1;flex:1;min-width:0;margin:0}
+.pcard-stars{color:#8a3fd1;font-size:5.4cqw;letter-spacing:.3cqw}
+.pcard-year{font-family:"Space Grotesk",sans-serif;font-weight:600;font-size:7.4cqw;color:#e84040}
+.pcard-photo{position:relative;aspect-ratio:3/2;border:2px solid #1a1a1a;border-radius:3.5cqw;background:#e7e7e7;background-image:repeating-linear-gradient(135deg,rgba(26,26,26,.06) 0 10px,transparent 10px 20px);display:flex;align-items:flex-end;justify-content:flex-end;padding:3cqw;box-sizing:border-box}
+.pcard-side{position:absolute;left:-4.5cqw;top:-3cqw;display:flex;flex-direction:column;gap:2cqw;align-items:center}
+.pcard-flag{display:flex;width:9cqw;height:7cqw;border:1.5px solid #1a1a1a;border-radius:1.5cqw;overflow:hidden;box-shadow:1.5px 1.5px 0 #1a1a1a}
+.pcard-logo{width:9cqw;height:9cqw;border-radius:999px;border:2px solid #1a1a1a;background:#ffffff;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:"Chakra Petch",sans-serif;font-weight:700;font-size:3.4cqw}
+.pcard-meta{display:flex;justify-content:space-between;gap:3cqw;font-size:3.6cqw}
+.pcard-badges{display:flex;flex-direction:column;margin-top:auto}
+.pcard-badge{display:flex;align-items:center;gap:3cqw;padding:2.3cqw 2cqw;font-size:4.4cqw;font-weight:600}
+.pcard-badge span:first-child{flex:1}
+.pcard-badge .st{font-size:3.6cqw;letter-spacing:.4cqw}
+/* Nouveaux joueurs : une seule rangée */
+.newrow{display:flex;gap:16px;overflow-x:auto;padding-bottom:4px}
+.newrow>a{flex:1 0 84px;min-width:84px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.newrow .nm{font-size:13px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.newrow .ct{font-size:11px;color:#4a4a44;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Tournois actifs — cartes du site */
+.tgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+.tcard{position:relative;display:flex;min-height:164px;background:#fff;border:2px solid #1a1a1a;border-radius:14px;box-shadow:4px 4px 0 #1a1a1a;overflow:hidden}
+.tdate{width:72px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Chakra Petch",sans-serif;line-height:1;gap:3px}
+.tdate b{font-size:30px}
+.tdate small{font-size:12px;letter-spacing:.06em;color:#4a4a44}
+.tdate i{font-style:normal;font-size:13px;color:#4a4a44;margin:2px 0}
+.tbody{flex:1;min-width:0;padding:16px 12px 14px 4px;display:flex;flex-direction:column;gap:6px}
+.thead{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.tname{font-weight:700;font-size:17px;line-height:1.2}
+.tmeta{font-size:13px;font-weight:600;display:flex;align-items:center;gap:4px}
+.tfmt{font-size:14px;color:#4a4a44}
+.tact{margin-top:auto;display:flex;justify-content:flex-end;gap:8px}
+.tact .iconbtn{width:40px;height:40px;box-shadow:2px 2px 0 #1a1a1a}
+.tact .iconbtn svg{width:17px;height:17px}
+.tposter{width:110px;flex:none;object-fit:cover;border-left:2px solid #1a1a1a;display:block}
+/* But + maillet : animation au clic */
+.goalbtn{background:none;border:0;padding:4px;margin:0;cursor:pointer;border-radius:12px;line-height:0}
+.goalbtn:hover .mallet{transform:rotate(12deg)}
+.goalbtn:focus-visible{outline:2px solid #60c9cf;outline-offset:2px}
+.goalfx{width:132px;height:64px;overflow:visible;display:block}
+.goalfx .mallet{transform-origin:30px 4px;transition:transform .25s ease}
+.goalfx .net{transform-origin:100px 40px}
+.goalfx .shadow{transform-origin:44px 59px}
+.goalfx.play .mallet{animation:swing 2.3s cubic-bezier(.5,0,.3,1) 1 both}
+.goalfx.play .ball{animation:shot 2.3s 1 both}
+.goalfx.play .net{animation:bulge 2.3s 1 both}
+.goalfx.play .shadow{animation:shotshadow 2.3s 1 both}
+@keyframes swing{0%{transform:rotate(0deg)}24%{transform:rotate(40deg)}30%{transform:rotate(40deg)}37%{transform:rotate(-28deg)}46%{transform:rotate(-18deg)}75%,100%{transform:rotate(0deg)}}
+@keyframes shot{0%,35%{transform:translate(0,0);opacity:1;animation-timing-function:cubic-bezier(.15,.6,.35,1)}54%{transform:translate(70px,-2px);opacity:1}58%{transform:translate(67px,0)}68%{transform:translate(68px,0);opacity:1}80%{transform:translate(68px,0);opacity:0}86%{transform:translate(0,0);opacity:0}100%{transform:translate(0,0);opacity:1}}
+@keyframes shotshadow{0%,35%{transform:translateX(0);opacity:.25;animation-timing-function:cubic-bezier(.15,.6,.35,1)}54%,68%{transform:translateX(68px);opacity:.25}80%,86%{transform:translateX(0);opacity:0}100%{opacity:.25}}
+@keyframes bulge{0%,53%{transform:scaleX(1)}57%{transform:scaleX(1.15)}62%{transform:scaleX(.97)}67%,100%{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.goalfx.play .mallet,.goalfx.play .ball,.goalfx.play .net,.goalfx.play .shadow{animation:none}}
+@media (max-width:1100px){
+.bento{grid-template-columns:repeat(6,minmax(0,1fr))}
+.t-next,.t-map,.t-new,.t-open{grid-column:span 6}
+.t-card{grid-column:span 6;grid-row:auto;max-width:360px}
+.t-train,.t-agenda,.t-stats,.t-mine{grid-column:span 3}
+.tgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.navlinks{display:none}
+}
+@media (max-width:768px){
+.wrap{padding:0 16px}
+.bento{grid-template-columns:minmax(0,1fr);grid-auto-rows:auto;gap:16px}
+.bento>*{grid-column:1/-1 !important;grid-row:auto !important}
+.tgrid{grid-template-columns:minmax(0,1fr)}
+.next-inner{flex-direction:column}
+.next-poster{width:100% !important;height:200px}
+.hide-sm{display:none !important}
+.greet h1{font-size:34px !important}
+.mapwrap{min-height:260px !important}
+}
+</style>
+</helmet>
+<div class="pp-root">
+
+<header style="border-bottom: 2px solid #1a1a1a; background: #ffffff">
+<div class="wrap" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 82px">
+<a href="#" style="display: flex; align-items: baseline; gap: 10px">
+<span style="width: 11px; height: 11px; border: 2.5px solid #1a1a1a; border-radius: 999px; background: #ffa2af; box-sizing: border-box; align-self: center"></span>
+<span style="font-size: 22px; font-weight: 700">Poloperator</span>
+<span style="font-size: 12px; letter-spacing: .14em; color: #666660">BETA</span>
+</a>
+<nav class="navlinks" aria-label="Navigation principale">
+<a href="#">Tournois</a><a href="#">Calendrier</a><a href="#">Clubs</a><a href="#">Outils ▾</a><a href="#">À propos</a><a href="#">Admin</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 10px">
+<button class="iconbtn hide-sm" aria-label="Mode sombre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
+<button class="iconbtn hide-sm" aria-label="Langue">FR</button>
+<button class="iconbtn" aria-label="Messages, 3 non lus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z"/></svg><span style="position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; border-radius: 999px; background: #ffa2af; color: #ffffff; border: 1.5px solid #ffffff; font-size: 11px; display: flex; align-items: center; justify-content: center">3</span></button>
+<button class="iconbtn" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="#ffd23f" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4l2-2z"/><path d="M10 21h4" fill="none"/></svg></button>
+<button class="iconbtn" aria-label="Mon compte" style="background: #60c9cf">BM</button>
+</div>
+</div>
+</header>
+
+<main class="wrap" style="padding-top: 40px; padding-bottom: 64px; display: flex; flex-direction: column; gap: 28px">
+
+<div class="greet" style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap">
+<div>
+<p class="pp-display" style="margin: 0 0 6px; font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #666660">Mardi 3 novembre</p>
+<div style="display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap">
+<h1 style="margin: 0; font-size: 48px; font-weight: 700; line-height: 1.05">Salut Baptiste</h1>
+<button class="goalbtn" onClick="{{ shoot }}" aria-label="Tirer au but" title="Tirer au but">
+<svg class="goalfx {{ shotCls }}" viewBox="0 0 132 64" aria-hidden="true">
+<line x1="2" y1="61" x2="130" y2="61" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+<g class="net">
+<path d="M100 20 L126 22 L130 60 L100 60 Z" fill="#ffffff" stroke="#1a1a1a" stroke-width="1"/>
+<path d="M106 20.5 L109 60 M112 21 L116 60 M118 21.5 L123 60 M100 30 L127 30 M100 40 L128 40 M100 50 L129 50" stroke="#9a9a92" stroke-width="1" fill="none"/>
+</g>
+<path d="M100 61 V18 H104" stroke="#1a1a1a" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M104 18 L126 20.5 L130 61" stroke="#1a1a1a" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<ellipse class="shadow" cx="44" cy="60" rx="5" ry="1.4" fill="#1a1a1a" opacity=".25"/>
+<g class="ball"><circle cx="44" cy="55" r="5" fill="#ffb347" stroke="#1a1a1a" stroke-width="2"/><path d="M41 53.5 Q44 55.5 47 53.5" stroke="#1a1a1a" stroke-width="1" fill="none"/></g>
+<g class="mallet">
+<line x1="30" y1="4" x2="30" y2="48" stroke="#1a1a1a" stroke-width="2.6" stroke-linecap="round"/>
+<line x1="30" y1="4" x2="30" y2="15" stroke="#1a1a1a" stroke-width="5.5" stroke-linecap="round"/>
+<rect x="20" y="47" width="20" height="10" rx="2.5" fill="#60c9cf" stroke="#1a1a1a" stroke-width="2"/>
+<line x1="24" y1="47.5" x2="24" y2="56.5" stroke="#1a1a1a" stroke-width="1"/>
+<line x1="36" y1="47.5" x2="36" y2="56.5" stroke="#1a1a1a" stroke-width="1"/>
+</g>
+</svg>
+</button>
+</div>
+<p style="margin: 10px 0 0; font-size: 16px; color: #4a4a44">1 tournoi et 1 entraînement dans les deux prochaines semaines.</p>
+</div>
+<div style="display: flex; gap: 12px; flex-wrap: wrap">
+<a class="btn" href="#">Mes tournois</a>
+<a class="btn" href="#" style="background: #ffa2af"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Créer un tournoi</a>
+</div>
+</div>
+
+<div class="bento">
+
+<section class="tile t-next" aria-labelledby="next-title" style="padding: 28px">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap">
+<p class="tlabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>Ton prochain tournoi</p>
+<span class="pill" style="background: #60c9cf">Inscrit</span>
+</div>
+<div class="next-inner">
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: baseline; gap: 12px">
+<span class="pp-display" style="font-size: 112px; font-weight: 700; line-height: .85; letter-spacing: -.02em">11</span>
+<span class="pp-display" style="font-size: 22px; font-weight: 700; line-height: 1.1">jours<br>avant le coup d’envoi</span>
+</div>
+<div>
+<h2 id="next-title" style="margin: 0; font-size: 34px; font-weight: 700">Petit Royal 2026</h2>
+<p style="margin: 8px 0 0; font-size: 16px; color: #4a4a44; display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>Bruxelles, Belgium · sam. 14 – dim. 15 nov.
+</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<div style="border: 2px solid #1a1a1a; border-radius: 12px; padding: 12px; background: #fffc8a">
+<p class="pp-display" style="margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase">Format</p>
+<p style="margin: 4px 0 0; font-size: 16px; font-weight: 700">ABC Chapeau</p>
+</div>
+<div style="border: 2px solid #1a1a1a; border-radius: 12px; padding: 12px; background: #ffffff">
+<p class="pp-display" style="margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase">Équipes</p>
+<p style="margin: 4px 0 0; font-size: 16px; font-weight: 700">1 / 12</p>
+</div>
+<div style="border: 2px solid #1a1a1a; border-radius: 12px; padding: 12px; background: #ffffff">
+<p class="pp-display" style="margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase">Ton équipe</p>
+<p style="margin: 4px 0 0; font-size: 16px; font-weight: 700">Tirage à venir</p>
+</div>
+</div>
+<div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: auto">
+<a class="btn" href="#" style="background: #1a1a1a; color: #ffffff; box-shadow: 3px 3px 0 #60c9cf">Voir le tournoi<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+<a class="btn" href="#"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Calendrier</a>
+</div>
+</div>
+<img class="next-poster" src="/_blob/9c1b7f41b702f721309a62510bb774a8" alt="Affiche du Petit Royal 2026" style="width: 220px; flex: none; border: 2px solid #1a1a1a; border-radius: 12px; object-fit: cover; display: block; box-sizing: border-box">
+</div>
+</section>
+
+<section class="t-card" aria-label="Ma carte joueur">
+<a href="#" class="pcard" style="text-decoration: none">
+<div class="pcard-head">
+<h2 class="pcard-name">Baptiste Morvan</h2>
+<span class="pcard-stars" role="img" aria-label="Niveau 3 étoiles">★★★</span>
+<span class="pcard-year">2011</span>
+</div>
+<div class="pcard-photo">
+<div class="pcard-side">
+<span class="pcard-flag" role="img" aria-label="Belgique"><span style="flex: 1; background: #1a1a1a"></span><span style="flex: 1; background: #fdda24"></span><span style="flex: 1; background: #ef3340"></span></span>
+<span class="pcard-logo" style="background: #ef3340; color: #ffffff">BBP</span>
+<span class="pcard-logo">T</span>
+</div>
+<span class="pill" style="background: #ffffff">Photo joueur</span>
+</div>
+<div class="pcard-meta">
+<span style="font-weight: 700">Brussels, Belgium</span>
+<span style="font-style: italic; color: #4a4a44">Brussels Bike Polo</span>
+</div>
+<div class="pcard-badges">
+<div class="pcard-badge"><span>Eruption</span><span class="st" style="color: #d4a514">★★★★★</span></div>
+<div class="pcard-badge"><span>On Fire</span><span class="st" style="color: #8a3fd1">★★★</span></div>
+<div class="pcard-badge"><span>OG</span><span class="st" style="color: #8a3fd1">★★★</span></div>
+<div class="pcard-badge"><span>Seven Nations</span><span class="st" style="color: #8a3fd1">★★★</span></div>
+<div class="pcard-badge"><span>Double Duty</span><span class="st" style="color: #8a3fd1">★★★</span></div>
+</div>
+</a>
+</section>
+
+<section class="tile t-train" aria-labelledby="train-title" style="background: #ffe1e6">
+<p class="tlabel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="6" cy="16" r="4"/><circle cx="18" cy="16" r="4"/><path d="M6 16l4-8h5l3 8M10 8l3 8h-7M14 5h3"/></svg>Entraînement</p>
+<div>
+<h2 id="train-title" class="pp-display" style="margin: 0; font-size: 30px; font-weight: 700; line-height: 1.05">Dim. 8 nov. · 12:00</h2>
+<p style="margin: 6px 0 0; font-size: 15px; font-weight: 600">Sunday Polo · Brussels Bike Polo</p>
+<p style="margin: 4px 0 0; font-size: 14px; color: #4a4a44">Îlot 111 · personne encore inscrit</p>
+</div>
+<div style="display: flex; gap: 10px; margin-top: auto">
+<button class="btn" style="background: #ffa2af; flex: 1">J’y vais</button>
+<a class="btn" href="#" aria-label="Itinéraire" style="padding: 0 14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg></a>
+</div>
+</section>
+
+<section class="tile t-agenda" aria-labelledby="agenda-title">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<p class="tlabel" id="agenda-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Ensuite</p>
+<a href="#" style="font-size: 13px; font-weight: 700">Tout voir</a>
+</div>
+<a class="row" href="#">
+<span class="datebox"><span style="font-size: 22px; font-weight: 700">28</span><span style="font-size: 11px; font-weight: 700; letter-spacing: .08em">NOV</span></span>
+<span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 700; font-size: 16px">LDC Tours</span><span style="display: block; font-size: 13px; color: #4a4a44">Tours, France · pipeline</span></span>
+</a>
+<span class="pill" style="background: #f0efea; align-self: flex-start">En attente de tirage</span>
+</section>
+
+<section class="tile t-open" aria-labelledby="open-title">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+<p class="tlabel" id="open-title"><span style="width: 10px; height: 10px; border-radius: 999px; background: #2db37a; border: 1.5px solid #1a1a1a"></span>Inscriptions ouvertes</p>
+<a href="#" style="font-size: 13px; font-weight: 700">Tout voir</a>
+</div>
+<div style="display: flex; flex-direction: column">
+<div class="row">
+<span class="datebox"><span style="font-size: 22px; font-weight: 700">4</span><span style="font-size: 11px; font-weight: 700; letter-spacing: .08em">NOV</span></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px"><span style="font-weight: 700; font-size: 15px">Test</span><span style="font-size: 12px; color: #4a4a44">Valencia, Spain · 0/12</span><span class="bar" role="img" aria-label="0 équipe sur 12"><span style="width: 0%"></span></span></span>
+<a class="btn" href="#" style="min-height: 40px; padding: 0 12px; font-size: 12px">S’inscrire</a>
+</div>
+<div class="row">
+<span class="datebox"><span style="font-size: 22px; font-weight: 700">27</span><span style="font-size: 11px; font-weight: 700; letter-spacing: .08em">NOV</span></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px"><span style="font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Pharaohs International Bike Polo Cup</span><span style="font-size: 12px; color: #4a4a44">Cairo, Egypt · 4/12</span><span class="bar" role="img" aria-label="4 équipes sur 12"><span style="width: 33%"></span></span></span>
+<a class="btn" href="#" style="min-height: 40px; padding: 0 12px; font-size: 12px">S’inscrire</a>
+</div>
+<div class="row">
+<span class="datebox"><span style="font-size: 22px; font-weight: 700">24</span><span style="font-size: 11px; font-weight: 700; letter-spacing: .08em">DÉC</span></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px"><span style="font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">There is no court in heaven vol.#3</span><span style="font-size: 12px; color: #4a4a44">Bern, Switzerland · 0/12</span><span class="bar" role="img" aria-label="0 équipe sur 12"><span style="width: 0%"></span></span></span>
+<a class="btn" href="#" style="min-height: 40px; padding: 0 12px; font-size: 12px">S’inscrire</a>
+</div>
+</div>
+</section>
+
+<section class="tile t-stats" aria-labelledby="stats-title" style="background: #fffc8a; padding: 20px; gap: 10px">
+<p class="tlabel" id="stats-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6M16 4.5a3.5 3.5 0 0 1 0 7M22 20c0-3-2-5.2-5-5.8"/></svg>La communauté</p>
+<div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap">
+<span class="pp-display" style="font-size: 44px; font-weight: 700; line-height: 1">943</span>
+<span style="font-size: 14px; font-weight: 600">joueur·euses · 49 pays · 110 tournois</span>
+</div>
+<div style="display: grid; grid-template-columns: 118px minmax(0, 1fr) 32px; gap: 6px 10px; align-items: center; font-size: 12px; font-weight: 600">
+<a href="#">Europe</a><span class="bar"><span style="width: 100%"></span></span><span style="text-align: right">639</span>
+<a href="#">Amérique du Sud</a><span class="bar"><span style="width: 22%"></span></span><span style="text-align: right">143</span>
+<a href="#">Amérique du Nord</a><span class="bar"><span style="width: 19%"></span></span><span style="text-align: right">124</span>
+<a href="#">Océanie</a><span class="bar"><span style="width: 3.3%"></span></span><span style="text-align: right">21</span>
+<a href="#">Asie</a><span class="bar"><span style="width: 1.6%"></span></span><span style="text-align: right">10</span>
+<a href="#">Afrique</a><span class="bar"><span style="width: 1%"></span></span><span style="text-align: right">6</span>
+</div>
+</section>
+
+<section class="tile t-map" aria-labelledby="map-title">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap">
+<p class="tlabel" id="map-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></svg>Autour de toi</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button class="chip" style="background: #60c9cf">Europe <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+<button class="chip">Format <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+<button class="chip">Statut <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+</div>
+</div>
+<div class="mapwrap" style="flex: 1; min-height: 320px; border: 2px solid #1a1a1a; border-radius: 12px; overflow: hidden; background: #dcdcdc">
+<img class="mapimg" src="/_blob/99531b6f1bb0b4ba96d962039ee740cb" alt="Carte Leaflet des tournois en Europe">
+</div>
+<div style="display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: #4a4a44">
+<span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 999px; background: #e84040"></span>En cours</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 999px; background: #5cc265"></span>Inscriptions ouvertes</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 999px; background: #f07f3a"></span>Inscriptions fermées</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 999px; background: #4f86f7"></span>Annoncé</span>
+</div>
+</section>
+
+<section class="tile t-mine" aria-labelledby="mine-title">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+<p class="tlabel" id="mine-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>Mes prochains tournois</p>
+<a href="#" style="font-size: 13px; font-weight: 700">Tout voir</a>
+</div>
+<div style="display: flex; flex-direction: column">
+<div class="row">
+<span class="datebox" style="background: #fffc8a"><span style="font-size: 22px; font-weight: 700">14</span><span style="font-size: 11px; font-weight: 700; letter-spacing: .08em">NOV</span></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 700; font-size: 15px">Petit Royal 2026</span><span style="font-size: 12px; color: #4a4a44">Bruxelles · J-11</span></span>
+<span class="pill" style="background: #60c9cf">Inscrit</span>
+</div>
+<div class="row">
+<span class="datebox"><span style="font-size: 22px; font-weight: 700">28</span><span style="font-size: 11px; font-weight: 700; letter-spacing: .08em">NOV</span></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px"><span style="font-weight: 700; font-size: 15px">LDC Tours</span><span style="font-size: 12px; color: #4a4a44">Tours · J-25</span></span>
+<span class="pill" style="background: #f0efea">Tirage</span>
+</div>
+</div>
+<a class="btn" href="#" style="margin-top: auto; align-self: flex-start">Voir mes tournois</a>
+</section>
+
+<section class="tile t-new" aria-labelledby="new-title">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<p class="tlabel" id="new-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M3 20c0-3.5 3-6 7-6s7 2.5 7 6M19 8v6M16 11h6"/></svg>Nouveaux·elles joueur·euses</p>
+<a href="#" style="font-size: 13px; font-weight: 700">Tout voir</a>
+</div>
+<div class="newrow">
+<sc-for list="{{ players }}" as="p" hint-placeholder-count="12">
+<a href="#">
+<span class="av" style="background: {{ p.color }}">{{ p.initial }}</span>
+<span class="nm">{{ p.name }}</span>
+<span class="ct">{{ p.city }}</span>
+</a>
+</sc-for>
+</div>
+</section>
+
+</div>
+
+<section aria-labelledby="active-title" style="display: flex; flex-direction: column; gap: 22px; margin-top: 24px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-bottom: 2px solid #1a1a1a; padding-bottom: 16px">
+<div>
+<h2 id="active-title" style="margin: 0; font-size: 32px; font-weight: 700">Tournois actifs</h2>
+<p style="margin: 4px 0 0; font-size: 15px; color: #4a4a44">Événements en cours et à venir dans le monde</p>
+</div>
+<a class="btn" href="#">Voir tout →</a>
+</div>
+<div class="tgrid">
+<sc-for list="{{ tournaments }}" as="c" hint-placeholder-count="12">
+<article class="tcard">
+<span class="tdate"><b>{{ c.d1 }}</b><small>{{ c.m1 }}</small><i>↓</i><b>{{ c.d2 }}</b><small>{{ c.m2 }}</small></span>
+<span class="tbody">
+<span class="thead"><a class="tname" href="#">{{ c.name }}</a><span class="pill" style="background: {{ c.color }}">{{ c.status }}</span></span>
+<span class="tmeta"><svg width="13" height="13" viewBox="0 0 24 24" fill="#e84040" stroke="#e84040" stroke-width="1" aria-hidden="true"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/></svg>{{ c.loc }}</span>
+<span class="tfmt">{{ c.fmt }}</span>
+<span class="tact">
+<button class="iconbtn" aria-label="Suivre le tournoi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3z"/></svg></button>
+<button class="iconbtn" aria-label="Partager"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.3 10.8l7.4-4.3M8.3 13.2l7.4 4.3"/></svg></button>
+</span>
+</span>
+<sc-if value="{{ c.hasPoster }}" hint-placeholder-val="{{ true }}"><img class="tposter" src="{{ c.poster }}" alt=""></sc-if>
+</article>
+</sc-for>
+</div>
+</section>
+
+</main>
+
+<footer style="border-top: 1.5px solid #d0cfc9; background: #fcfbf5">
+<div class="wrap" style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; padding-top: 24px; padding-bottom: 24px; font-size: 14px; color: #4a4a44">
+<span>Poloperator © 2026</span><span aria-hidden="true">·</span><a href="#">Mentions légales</a><span aria-hidden="true">·</span><a href="#">Confidentialité</a><span aria-hidden="true">·</span><a href="#">CGU</a><span aria-hidden="true">·</span><a href="#">Charte</a><span aria-hidden="true">·</span><a href="#" style="text-decoration: underline dotted">CONTACT</a><span aria-hidden="true">·</span><a href="#">Buy me a coffee</a>
+</div>
+</footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3100}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { playing: false };
+}
+componentWillUnmount() {
+clearTimeout(this._t);
+}
+renderVals() {
+const shoot = () => {
+if (this.state.playing) return;
+this.setState({ playing: true });
+this._t = setTimeout(() => this.setState({ playing: false }), 2350);
+};
+const OPEN = '#60c9cf', ANN = '#fffc8a', CLOSED = '#ffb347';
+const T = (d1, m1, d2, m2, name, loc, fmt, status, color, poster) => ({ d1, m1, d2, m2, name, loc, fmt, status, color, poster: poster || '', hasPoster: !!poster });
+const tournaments = [
+T('4', 'NOV.', '8', 'NOV.', 'Test', 'Valencia, Spain', 'ABC Chapeau · 0/12 équipes', 'Inscriptions ouvertes', OPEN),
+T('7', 'NOV.', '8', 'NOV.', 'Shuffle Wuffle 4v4', 'Birmingham, United States of America', 'ABC Chapeau · 0/12 équipes', 'Annoncé', ANN),
+T('7', 'NOV.', '8', 'NOV.', 'Open de lille #2', 'Lille, France', 'ABC Chapeau · 0/12 équipes', 'Inscriptions fermées', CLOSED, '/_blob/a1adeb985025b1bdfa0fe2674623c35a'),
+T('14', 'NOV.', '15', 'NOV.', 'Tally Nationals 3', 'Tallahassee, United States of America', 'pipeline · 0/16 équipes', 'Annoncé', ANN, '/_blob/4c167ffffd6e86744480a337b1c00dc4'),
+T('14', 'NOV.', '15', 'NOV.', 'HOCKEY X FONDUE X LIGUE ALPINE', 'Geneva, Switzerland', 'ABC Chapeau · 0/12 équipes', 'Inscriptions fermées', CLOSED),
+T('14', 'NOV.', '15', 'NOV.', 'Petit Royal 2026', 'Bruxelles, Belgium', 'ABC Chapeau · 1/12 équipes', 'Inscriptions fermées', CLOSED, '/_blob/9c1b7f41b702f721309a62510bb774a8'),
+T('21', 'NOV.', '22', 'NOV.', 'Herducken I', 'Richmond, United States of America', '3v3 · 0/18 équipes', 'Inscriptions fermées', CLOSED, '/_blob/cf0b94988355cd00e003782c93fd639b'),
+T('27', 'NOV.', '29', 'NOV.', 'Pharaohs International Bike Polo Cup', 'Cairo, Egypt', '3v3 · 4/12 équipes', 'Inscriptions ouvertes', OPEN, '/_blob/5f1a9027fa94bd1627a0cec86e66f4ee'),
+T('28', 'NOV.', '29', 'NOV.', 'LDC Tours', 'Tours, France', 'pipeline · 16/16 équipes', 'Inscriptions fermées', CLOSED, '/_blob/c8faa2d5ca030b39e6d9d2874a8d2ecd'),
+T('5', 'DÉC.', '6', 'DÉC.', 'Polo Caganer 2', 'Barcelona, Spain', 'ABC Chapeau · 0/12 équipes', 'Inscriptions fermées', CLOSED, '/_blob/2b3007cfdc01db53204f9f9aa2b098ad'),
+T('5', 'DÉC.', '6', 'DÉC.', 'ABC Christmas Tournament 2 - Padova Bike Polo', 'Padova, Italy', 'ABC · 0/16 équipes', 'Inscriptions fermées', CLOSED, '/_blob/62398a3d1fe2f18374a637f76d5ef4bb'),
+T('24', 'DÉC.', '26', 'DÉC.', 'There is no court in heaven vol.#3', 'Bern, Switzerland', 'ABC Chapeau · 0/12 équipes', 'Inscriptions ouvertes', OPEN, '/_blob/c6e9de5488500b14551fd25e211a224e'),
+];
+const colors = ['#60c9cf', '#ffa2af', '#fffc8a', '#c9a8f5', '#ffb347'];
+const players = [
+['Lucarne', 'Marseille'], ['Pierre P-Deux', 'Perpignan'], ['Elena', 'Geneva'], ['Lisa Vilaceque', 'Perpignan'],
+['Fabrizio', 'Padova'], ['Rémi DLB', 'Caen'], ['Pedro', 'München'], ['Valentina Mo.', 'Colombia'],
+['Carlito', 'Wien'], ['Anthone', 'Tours'], ['Samy Boff', 'Graz'], ['Valentin Riga.', 'Tours'],
+].map(([name, city], i) => ({ name, city, initial: name[0], color: colors[i % colors.length] }));
+return { tournaments, players, shoot, shotCls: this.state.playing ? 'play' : '' };
+}
+}
+</script>
+</body>
+</html>

@@ -23,7 +23,27 @@ type Props = {
   tournaments: MapTournament[];
   stats?: { players: number; tournaments: number; countries: number; labels: { players: string; tournaments: string; countries: string } };
   userContinent?: string;
+  /** "bento" : tuile de la home connectée (filtres en menus déroulants, légende sous la carte, pas de panneau). */
+  variant?: "panel" | "bento";
 };
+
+/** Menu déroulant natif habillé en pastille ; teal quand un filtre est actif. */
+function FilterSelect({ label, value, onChange, options }: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <span className={`bento-select${value ? " is-active" : ""}`}>
+      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{label}</option>
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+    </span>
+  );
+}
 
 const CONTINENT_VIEW: Record<string, { center: [number, number]; zoom: number }> = {
   EU: { center: [52, 15], zoom: 3 },
@@ -76,7 +96,7 @@ function FilterBtn({ active, onClick, children }: { active: boolean; onClick: ()
   );
 }
 
-export default function TournamentMapClient({ tournaments, stats, userContinent }: Props) {
+export default function TournamentMapClient({ tournaments, stats, userContinent, variant = "panel" }: Props) {
   const t = useTranslations("tournament");
   const th = useTranslations("home");
   const locale = useLocale();
@@ -115,6 +135,46 @@ export default function TournamentMapClient({ tournaments, stats, userContinent 
       (!statusFilter || getStatusCode(tournament) === statusFilter);
   });
 
+  const mapCenter: [number, number] = continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].center : [20, 10];
+  const mapZoom = continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].zoom : 1;
+
+  if (variant === "bento") {
+    // Le clic sur un marqueur ouvre déjà sa popup (nom, lieu, lien) : pas de panneau latéral ici.
+    return (
+      <section className="bento-tile bento-map" aria-labelledby="bento-map-title">
+        <div className="bento-tile__head">
+          <p className="bento-label" id="bento-map-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" /></svg>
+            {th("bento_around")}
+          </p>
+          <div className="bento-map__filters">
+            <FilterSelect
+              label={t("map_filter_continent")}
+              value={continent}
+              onChange={setContinent}
+              options={CONTINENTS.filter((c) => c.code).map((c) => ({ value: c.code, label: th(`continent_${c.code.toLowerCase()}` as never) }))}
+            />
+            <FilterSelect label={t("map_filter_format")} value={format} onChange={setFormat} options={FORMATS.map((f) => ({ value: f, label: f }))} />
+            <FilterSelect
+              label={t("map_filter_status")}
+              value={statusFilter}
+              onChange={(v) => setStatusFilter(v as StatusFilter)}
+              options={STATUS_FILTERS.filter((s) => s.code).map((s) => ({ value: s.code, label: s.label }))}
+            />
+          </div>
+        </div>
+        <div className="map-container-wrap bento-map__frame">
+          <TournamentMap tournaments={filtered} center={mapCenter} zoom={mapZoom} />
+        </div>
+        <div className="bento-map__legend">
+          {STATUS_FILTERS.filter((s) => s.code).map((s) => (
+            <span key={s.code}><i style={{ background: s.color }} aria-hidden />{s.label}</span>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section>
       <div className="map-section-layout">
@@ -123,8 +183,8 @@ export default function TournamentMapClient({ tournaments, stats, userContinent 
           <TournamentMap
             tournaments={filtered}
             onSelect={setSelectedTournament}
-            center={continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].center : [20, 10]}
-            zoom={continent && CONTINENT_VIEW[continent] ? CONTINENT_VIEW[continent].zoom : 1}
+            center={mapCenter}
+            zoom={mapZoom}
           />
         </div>
 

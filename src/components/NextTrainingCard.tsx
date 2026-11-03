@@ -151,6 +151,68 @@ function useLocalDate(iso: string, locale: string) {
 }
 
 /**
+ * Prochain entraînement en TUILE (home en tuiles) : jour + heure en grand,
+ * séance / club, lieu, qui vient, puis « J'y vais » + itinéraire. Même logique
+ * d'inscription que TrainingAgendaRow.
+ */
+export function TrainingBentoTile({ s }: { s: TrainingTileData }) {
+  const t = useTranslations("home");
+  const tc = useTranslations("club");
+  const locale = useLocale();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [calOpen, setCalOpen] = useState(false);
+  const d = useLocalDate(s.date, locale);
+  const cal = sessionCalendarLinks({ id: s.id, date: s.date, duration: s.duration, title: s.title, place: s.place, clubName: s.clubName });
+  const href = `/club/${s.clubId}?tab=sessions`;
+  const going = s.myStatus === "CONFIRMED";
+  const act = (fn: () => Promise<unknown>) => startTransition(async () => { await fn(); router.refresh(); });
+  const when = !d ? " " : d.rel === 0 ? t("training_today") : d.rel === 1 ? t("training_tomorrow") : `${d.weekday} ${d.day} ${d.month}`;
+
+  return (
+    <>
+      <Link href={href} className="bento-train__body">
+        <span className="bento-train__when">{when}{d ? ` · ${d.time}` : ""}</span>
+        <span className="bento-train__what">{s.title ? `${s.title} · ${s.clubName}` : s.clubName}</span>
+        <span className="bento-tile__muted">
+          {s.place ? `${s.place} · ` : ""}
+          {s.attendees.length > 0 ? t("training_count", { count: s.attendees.length }) : t("training_nobody_short")}
+        </span>
+      </Link>
+      <div className="bento-train__actions">
+        {going ? (
+          <button type="button" className="ghost bento-train__go" disabled={isPending} onClick={() => act(() => leaveSessionAction(s.clubId, s.id))} title={t("training_not_going")}>
+            ✓ {t("training_going")}
+          </button>
+        ) : s.myStatus === "PENDING" ? (
+          <span className="bento-pill bento-train__go">{tc("sessions_pending")}</span>
+        ) : (
+          <button type="button" className="primary bento-train__go" disabled={isPending} onClick={() => act(() => joinSessionAction(s.clubId, s.id))}>
+            {t("training_join")}
+          </button>
+        )}
+        {s.mapLink && (
+          <a className="ghost bento-icon-btn" href={s.mapLink} target="_blank" rel="noopener noreferrer" aria-label={t("bento_route")} title={t("bento_route")}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z" /><circle cx="12" cy="9" r="2.5" /></svg>
+          </a>
+        )}
+        <div className="bento-train__cal-wrap">
+          <button type="button" className="ghost bento-icon-btn" onClick={() => setCalOpen((o) => !o)} aria-expanded={calOpen} aria-label={tc("sessions_add_to_calendar")} title={tc("sessions_add_to_calendar")}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></svg>
+          </button>
+          {calOpen && (
+            <div className="agenda-row__cal">
+              <a href={cal.ics}>iPhone / Outlook</a>
+              <a href={cal.google} target="_blank" rel="noopener noreferrer">Google</a>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
  * Prochain entraînement en LIGNE d'agenda (accueil) : pastille de date à
  * gauche, club / lieu / qui vient au centre, « J'y vais » à droite.
  */

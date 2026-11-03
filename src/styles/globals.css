@@ -1342,77 +1342,6 @@ button:disabled,
   .grid-2col, .grid-3col { grid-template-columns: 1fr; }
 }
 
-/* Home hero bento grid — colonne de tuiles + carte à droite en desktop,
-   empilé (tuiles puis carte centrée) en mobile. Largeur des tuiles bornée
-   pour éviter l'étirement disproportionné sur grand écran ; la carte garde
-   sa taille native (pas de scale()) avec overflow visible pour que le
-   tilt au survol ne soit jamais rogné ni ne passe sous un autre bloc. */
-.home-bento {
-  display: flex;
-  align-items: stretch;
-  gap: 24px;
-}
-.home-bento__main {
-  flex: 1 1 480px;
-  max-width: 640px;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-/* La bande d'actions/raccourcis (dernier bloc) est poussée en bas de la
-   colonne, alignée avec le pied de la carte à droite — comble le vide quand
-   le contenu au-dessus (club, sessions) est court. */
-.home-bento__main > :last-child {
-  margin-top: auto;
-}
-.home-bento__card {
-  flex-shrink: 0;
-  display: flex;
-  align-items: stretch;
-}
-/* Même pattern que .recap-mini-card-wrap : wrapper dimensionné à la taille
-   RÉELLE affichée (scale appliqué), overflow visible + z-index au survol
-   pour que le tilt 3D de la carte ne soit jamais rogné ni ne passe sous
-   un autre bloc de la page. */
-.home-bento__card-inner {
-  --card-scale: 0.72;
-  width: calc(340px * var(--card-scale));
-  height: calc(520px * var(--card-scale));
-  overflow: visible;
-  position: relative;
-  z-index: 0;
-}
-.home-bento__card-inner:hover {
-  z-index: 10;
-}
-/* Wrapper de scale séparé de la carte elle-même : PokemonCard écrit son
-   propre style.transform inline pour le tilt au survol, ce qui écraserait
-   un scale() posé directement sur son élément racine (bug constaté :
-   la carte "saute" à sa taille native 340×520 dès le premier hover). */
-.home-bento__card-scale {
-  display: block;
-  transform: scale(var(--card-scale));
-  transform-origin: top left;
-  width: 340px;
-  height: 520px;
-}
-@media (max-width: 900px) {
-  .home-bento {
-    flex-direction: column;
-    align-items: center;
-  }
-  .home-bento__main {
-    max-width: none;
-    width: 100%;
-  }
-  /* Carte retirée du hero mobile — prend trop de place pour une info que le
-     joueur connaît déjà ; elle reste consultable sur /account. */
-  .home-bento__card {
-    display: none;
-  }
-}
-
 /* ========================
    HOME PAGE
    ======================== */
@@ -12719,3 +12648,231 @@ button.orga-note-add:hover { color: var(--text); text-decoration: underline; tra
 .ssn-logo__mark { display: flex; align-items: center; gap: 5px; font-size: 14px; font-weight: 800; }
 .ssn-logo__dot { width: 9px; height: 9px; border-radius: 50%; border: 2.5px solid #1a1a1a; }
 .ssn-logo__stars { font-size: 10px; letter-spacing: 2px; color: #1a1a1a; }
+
+/* ══ Home connectée en tuiles (bento) — docs/home-bento/BRIEF.md ══
+   Rangée du haut : prochain tournoi · entraînement + ensuite empilés · carte
+   joueur à sa taille réelle (340×520), qui fixe la hauteur de la rangée.
+   Dessous, grille 12 colonnes : communauté + nouveaux joueurs empilés (4)
+   à gauche de la carte du monde (8), qui s'étire à leur hauteur. */
+.home-bento { padding: 8px 0 0; display: flex; flex-direction: column; gap: 28px; }
+.home-bento__greet { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.home-bento__date {
+  margin: 0 0 6px; font-family: var(--font-display); font-size: 13px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted);
+}
+.home-bento__hello { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+.home-bento__hello h1 { margin: 0; font-size: 48px; font-weight: 700; line-height: 1.05; }
+.home-bento__summary { margin: 10px 0 0; font-size: 16px; color: var(--text-muted); }
+.home-bento__actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+.home-bento-top {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px) 340px; gap: 20px;
+}
+.bento-side { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.bento-side > .bento-tile { flex: 1; padding: 20px; }
+.bento-side .bento-tile__head { flex-wrap: nowrap; }
+.home-bento-grid {
+  display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px;
+}
+.bento-tile {
+  background: var(--surface); border: 2px solid var(--border); border-radius: 18px; box-shadow: var(--shadow);
+  padding: 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0;
+}
+.bento-next  { padding: 24px; }
+.bento-left { grid-column: span 4; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.bento-map   { grid-column: span 8; }
+
+.bento-tile__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.bento-label {
+  margin: 0; display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-display); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+}
+.bento-label svg { width: 16px; height: 16px; flex: none; }
+.bento-more { font-size: 13px; font-weight: 700; }
+.bento-more:hover { text-decoration: underline; }
+.bento-tile__muted { margin: 0; font-size: 14px; color: var(--text-muted); }
+.bento-empty { display: grid; gap: 12px; justify-items: start; margin: auto 0; }
+.bento-empty p { margin: 0; color: var(--text-muted); }
+.bento-dot { width: 10px; height: 10px; border-radius: 999px; background: var(--success); border: 1.5px solid var(--border); flex: none; }
+
+.bento-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 9px; white-space: nowrap;
+  font-family: var(--font-display); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  border: 1.5px solid var(--border); border-radius: 6px; background: var(--surface-2); color: var(--text);
+}
+.bento-pill--ok   { background: var(--teal); color: #1a1a1a; }
+.bento-pill--live { background: var(--pink); color: #1a1a1a; }
+.bento-pill--muted { background: var(--surface-2); }
+
+.bento-icon-btn { padding: 0; width: 44px; min-width: 44px; height: 44px; justify-content: center; }
+
+/* Lignes de liste (Ensuite, Inscriptions ouvertes, Mes prochains tournois) */
+.bento-rows { display: flex; flex-direction: column; }
+.bento-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-top: 1.5px solid var(--border-light); color: inherit; }
+.bento-rows > .bento-row:first-child, .bento-tile__head + .bento-row { border-top: 0; }
+a.bento-row:hover .bento-row__title { text-decoration: underline; }
+.bento-row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; color: inherit; }
+.bento-row__title { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bento-row__meta { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bento-row__btn { min-height: 40px; padding: 0 12px; font-size: 12px; white-space: nowrap; }
+.bento-row--sm { gap: 12px; padding: 6px 0; }
+.bento-row--sm .bento-row__title { font-size: 14px; }
+.bento-row--sm .bento-row__main { gap: 3px; }
+.bento-date {
+  width: 56px; min-width: 56px; height: 60px; border: 2px solid var(--border); border-radius: 10px; background: var(--surface);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: var(--font-display); line-height: 1;
+}
+.bento-date--hl { background: var(--yellow); color: #1a1a1a; }
+.bento-date__day { font-size: 22px; font-weight: 700; }
+.bento-date__month { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-top: 2px; }
+.bento-date--sm { width: 44px; min-width: 44px; height: 46px; border-radius: 8px; }
+.bento-date--sm .bento-date__day { font-size: 18px; }
+.bento-date--sm .bento-date__month { font-size: 10px; }
+.bento-bar { display: block; height: 8px; border: 1.5px solid var(--border); border-radius: 999px; background: var(--surface); overflow: hidden; }
+.bento-bar > span { display: block; height: 100%; background: var(--text); }
+
+/* 1 · Prochain tournoi : compte à rebours et nom côte à côte pour libérer
+   le bas de la tuile, où « Ensuite » liste les tournois suivants */
+.bento-next__inner { display: flex; gap: 20px; }
+.bento-next__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.bento-next__top { display: flex; flex-direction: column; gap: 8px; }
+.bento-next__count { display: flex; align-items: baseline; gap: 10px; color: inherit; font-family: var(--font-display); font-weight: 700; }
+.bento-next__num { font-size: 68px; line-height: .85; letter-spacing: -.02em; }
+.bento-next__unit { font-size: 17px; line-height: 1.15; }
+.bento-next__now { font-size: 40px; line-height: 1; }
+.bento-next__name { margin: 0; font-size: 26px; font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; }
+.bento-next__name a:hover { text-decoration: underline; }
+.bento-next__meta { margin: 6px 0 0; font-size: 14px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bento-next__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.bento-fact { border: 2px solid var(--border); border-radius: 10px; padding: 8px 10px; background: var(--surface); min-width: 0; }
+.bento-fact--hl { background: var(--yellow); color: #1a1a1a; }
+.bento-fact__k { margin: 0; font-family: var(--font-display); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.bento-fact__v { margin: 3px 0 0; font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bento-next__head-actions { display: flex; align-items: center; gap: 8px; }
+.bento-icon-link {
+  display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+  border: 1.5px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text);
+}
+.bento-icon-link svg { width: 16px; height: 16px; }
+.bento-icon-link:hover { background: var(--surface-2); }
+/* Affiche au format portrait (A4) : sa hauteur suit le bloc compte à rebours + nom,
+   la largeur en découle — jamais étirée. Les cases d'infos passent dessous, pleine largeur. */
+.bento-next__poster {
+  position: relative; align-self: stretch; height: auto; width: auto; aspect-ratio: 1 / 1.414; flex: none;
+  border: 2px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface-2);
+}
+.bento-next__later { margin-top: auto; padding-top: 8px; border-top: 2px dashed var(--border-light); display: flex; flex-direction: column; gap: 2px; }
+.bento-label--sub { font-size: 11px; color: var(--text-muted); }
+
+/* 4 · Carte joueur : taille réelle, comme ailleurs sur le site */
+.bento-card__frame { position: relative; width: 340px; height: 520px; }
+
+/* 3 · Entraînement */
+.bento-train { background: color-mix(in srgb, var(--pink) 30%, var(--surface)); }
+.bento-train__body { display: flex; flex-direction: column; gap: 4px; color: inherit; }
+.bento-train__when { font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.05; margin-bottom: 2px; }
+.bento-train__when::first-letter { text-transform: uppercase; }
+.bento-train__what { font-size: 15px; font-weight: 600; }
+.bento-train__actions { display: flex; gap: 10px; margin-top: auto; }
+.bento-train__go { flex: 1; justify-content: center; min-height: 44px; }
+.bento-train__cal-wrap { position: relative; }
+
+/* 6 · La communauté */
+.bento-stats { background: var(--yellow); color: #1a1a1a; padding: 24px; gap: 14px; }
+.bento-stats .bento-bar { border-color: #1a1a1a; background: #fff; }
+.bento-stats .bento-bar > span { background: #1a1a1a; }
+.bento-stats__big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-size: 14px; font-weight: 600; }
+.bento-stats__num { font-family: var(--font-display); font-size: 56px; font-weight: 700; line-height: 1; }
+.bento-stats__bars { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto; gap: 10px 12px; align-items: center; font-size: 13px; font-weight: 600; }
+.bento-stats .bento-bar { height: 10px; }
+.bento-stats__row { display: contents; color: inherit; }
+.bento-stats__row:hover > span:first-child { text-decoration: underline; }
+.bento-stats__count { text-align: right; min-width: 32px; }
+
+/* 7 · Carte du monde : Leaflet remplit le cadre (absolu), qui prend la hauteur restante */
+.bento-map__filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.bento-select { position: relative; display: inline-flex; align-items: center; }
+.bento-select select {
+  appearance: none; -webkit-appearance: none; cursor: pointer; min-height: 36px; padding: 0 32px 0 14px;
+  border: 2px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); box-shadow: none;
+  font-family: var(--font-display); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+}
+.bento-select.is-active select { background: var(--teal); color: #1a1a1a; }
+.bento-select svg { position: absolute; right: 12px; pointer-events: none; }
+.bento-select.is-active svg { color: #1a1a1a; }
+.bento-map__frame { flex: 1; min-height: 480px; height: auto; }
+.bento-map .bento-map__frame .leaflet-container { position: absolute !important; inset: 0; height: 100% !important; }
+.bento-map__legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--text-muted); }
+.bento-map__legend span { display: inline-flex; align-items: center; gap: 6px; }
+.bento-map__legend i { width: 10px; height: 10px; border-radius: 999px; }
+
+/* 6 · Nouveaux joueurs : grille de 4, prend la hauteur restante de la colonne */
+.bento-new { flex: 1; }
+.bento-new__grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 10px; align-content: start; }
+.bento-new__item { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; color: inherit; }
+.bento-new__item:hover .bento-new__name { text-decoration: underline; }
+.bento-new__av {
+  width: 56px; height: 56px; border-radius: 999px; border: 2px solid var(--border); overflow: hidden; flex: none;
+  display: flex; align-items: center; justify-content: center; color: #1a1a1a;
+  font-family: var(--font-display); font-weight: 700; font-size: 20px;
+}
+.bento-new__av img { width: 100%; height: 100%; object-fit: cover; }
+.bento-new__name, .bento-new__city { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bento-new__name { font-size: 13px; font-weight: 700; }
+.bento-new__city { font-size: 11px; color: var(--text-muted); }
+
+/* But + maillet à côté de « Salut » : animation au clic uniquement */
+.goalbtn { background: none; border: 0; padding: 4px; margin: 0; cursor: pointer; border-radius: 12px; line-height: 0; box-shadow: none; }
+.goalbtn:hover { transform: none; box-shadow: none; }
+.goalbtn:hover .mallet { transform: rotate(12deg); }
+.goalbtn:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.goalfx { width: 132px; height: 64px; overflow: visible; display: block; }
+.goalfx .mallet { transform-origin: 30px 4px; transition: transform .25s ease; }
+.goalfx .net { transform-origin: 100px 40px; }
+.goalfx .shadow { transform-origin: 44px 59px; }
+.goalfx.play .mallet { animation: swing 2.3s cubic-bezier(.5,0,.3,1) 1 both; }
+.goalfx.play .ball { animation: shot 2.3s 1 both; }
+.goalfx.play .net { animation: bulge 2.3s 1 both; }
+.goalfx.play .shadow { animation: shotshadow 2.3s 1 both; }
+@keyframes swing{0%{transform:rotate(0deg)}24%{transform:rotate(40deg)}30%{transform:rotate(40deg)}37%{transform:rotate(-28deg)}46%{transform:rotate(-18deg)}75%,100%{transform:rotate(0deg)}}
+@keyframes shot{0%,35%{transform:translate(0,0);opacity:1;animation-timing-function:cubic-bezier(.15,.6,.35,1)}54%{transform:translate(70px,-2px);opacity:1}58%{transform:translate(67px,0)}68%{transform:translate(68px,0);opacity:1}80%{transform:translate(68px,0);opacity:0}86%{transform:translate(0,0);opacity:0}100%{transform:translate(0,0);opacity:1}}
+@keyframes shotshadow{0%,35%{transform:translateX(0);opacity:.25;animation-timing-function:cubic-bezier(.15,.6,.35,1)}54%,68%{transform:translateX(68px);opacity:.25}80%,86%{transform:translateX(0);opacity:0}100%{opacity:.25}}
+@keyframes bulge{0%,53%{transform:scaleX(1)}57%{transform:scaleX(1.15)}62%{transform:scaleX(.97)}67%,100%{transform:scaleX(1)}}
+@media (prefers-reduced-motion: reduce) {
+  .goalfx.play .mallet, .goalfx.play .ball, .goalfx.play .net, .goalfx.play .shadow { animation: none; }
+  .goalfx .mallet { transition: none; }
+}
+
+/* Mode sombre : les tuiles colorées gardent la teinte sans éblouir */
+[data-theme="dark"] .bento-train { background: color-mix(in srgb, var(--pink) 18%, var(--surface)); }
+[data-theme="dark"] .bento-stats { background: color-mix(in srgb, var(--yellow) 16%, var(--surface)); color: var(--text); }
+[data-theme="dark"] .bento-stats .bento-bar { border-color: var(--border); background: var(--surface-2); }
+[data-theme="dark"] .bento-stats .bento-bar > span { background: var(--yellow); }
+[data-theme="dark"] .bento-bar > span { background: var(--teal); }
+
+@media (max-width: 1240px) {
+  /* La carte joueur passe sous le prochain tournoi, à côté de la pile */
+  .home-bento-top { grid-template-columns: minmax(0, 1fr) 340px; }
+  .bento-next { grid-column: 1 / -1; }
+}
+@media (max-width: 1100px) {
+  .home-bento-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .bento-left, .bento-map { grid-column: span 6; }
+  .bento-new__grid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+}
+@media (max-width: 768px) {
+  .home-bento { gap: 20px; }
+  .home-bento__hello h1 { font-size: 34px; }
+  .home-bento-top, .home-bento-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .bento-side, .bento-left { gap: 16px; }
+  .home-bento-grid > * { grid-column: 1 / -1 !important; }
+  .bento-card { display: none; }
+  .bento-next { padding: 22px; }
+  .bento-next__poster { display: none; }
+  .bento-next__name { font-size: 24px; }
+  .bento-map__frame { min-height: 260px; }
+}
+@media (max-width: 480px) {
+  .bento-next__facts { grid-template-columns: 1fr 1fr; }
+  .bento-next__facts .bento-fact:last-child { grid-column: 1 / -1; }
+}
