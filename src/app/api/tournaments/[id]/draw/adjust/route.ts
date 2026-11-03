@@ -33,6 +33,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     tournament.coOrganizers.some((co) => co.playerId === playerId);
 
   if (!isOrga) return Response.json({ error: apiMsg("access_denied") }, { status: 403 });
+  if (tournament.selectionLocked) return Response.json({ error: apiMsg("draw_locked") }, { status: 409 });
 
   const json = await request.json();
   const parsed = adjustSchema.safeParse(json);

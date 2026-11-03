@@ -484,7 +484,10 @@ export async function toggleSelectionLockAction(
   // (pas IN, ou en liste d'attente) sortent de la sélection. Sans ça, une
   // équipe inscrite mais jamais validée restait « sélectionnée » et entrait
   // quand même dans la 1re étape (ex : 19 équipes au lieu de 12).
-  if (locked) {
+  // ABC Chapeau : pas de sélection IN/OUT, verrouiller fige juste le tirage —
+  // aucune équipe tirée ne doit sortir.
+  const fmt = await prisma.tournament.findUnique({ where: { id: tournamentId }, select: { format: true } });
+  if (locked && fmt?.format !== "ABC Chapeau") {
     const hasIn = await prisma.team.count({ where: { tournamentId, guaranteed: true } });
     if (hasIn > 0) await prisma.team.updateMany({ where: { tournamentId, guaranteed: false }, data: { selected: false } });
   }

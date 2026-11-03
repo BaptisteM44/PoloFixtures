@@ -37,6 +37,10 @@ export async function POST(_request: Request, { params }: { params: { id: string
   if (tournament.format !== "ABC Chapeau") {
     return Response.json({ error: "Ce tournoi ne supporte pas le tirage ABC Chapeau." }, { status: 400 });
   }
+  // Équipes validées : plus de relance possible (il faut déverrouiller d'abord)
+  if (tournament.selectionLocked) {
+    return Response.json({ error: apiMsg("draw_locked") }, { status: 409 });
+  }
 
   // Récupérer tous les inscrits non-waitlisted
   const entries = await prisma.tournamentSoloEntry.findMany({

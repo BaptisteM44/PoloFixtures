@@ -30,6 +30,7 @@ type JourneyTournament = {
   selectionLocked?: boolean;
   locked?: boolean;
   stages?: StageLite[];
+  format?: string;
 };
 
 type Btn = { label: string; onClick: () => void; primary?: boolean; disabled?: boolean };
@@ -91,6 +92,7 @@ export function OrgaJourney({
   const regDone = external || regClosed || tournament.status !== "UPCOMING";
 
   const selectionDone = !!tournament.selectionLocked || tournament.status !== "UPCOMING";
+  const isAbc = tournament.format === "ABC Chapeau";
   const started = tournament.status !== "UPCOMING";
   const completed = tournament.status === "COMPLETED";
   const allStagesDone = isPipeline && stages.length > 0 && stages.every((s) => s.status === "DONE");
@@ -200,15 +202,18 @@ export function OrgaJourney({
         if (selectionDone) {
           const inCount = teams.filter((x) => x.selected !== false).length;
           return {
-            icon: "🔒", tone: "done", title: t("sel_done_title", { count: inCount }), lines: [t("sel_done_desc")],
+            icon: "🔒", tone: "done", title: t("sel_done_title", { count: inCount }), lines: [t(isAbc ? "sel_done_desc_abc" : "sel_done_desc")],
             buttons: [goBtn(t("sel_btn_view"), "teams", undefined, false)].filter(Boolean) as Btn[],
           };
         }
-        const lines = [teamCount > max ? t("sel_desc_over", { count: teamCount, max }) : t("sel_desc_fit", { count: teamCount, max })];
+        // ABC Chapeau : pas de sélection IN/OUT d'équipes, on tire au sort puis on valide le tirage
+        const lines = [isAbc
+          ? (teamCount > 0 ? t("sel_desc_abc_drawn", { count: teamCount }) : t("sel_desc_abc_todraw"))
+          : teamCount > max ? t("sel_desc_over", { count: teamCount, max }) : t("sel_desc_fit", { count: teamCount, max })];
         if (!regDone) lines.push(t("sel_waiting"));
         return {
-          icon: "🎯", tone: regDone ? "todo" : "waiting", title: t("sel_todo_title"), lines,
-          buttons: [goBtn(t("sel_btn"), "teams", undefined, regDone)].filter(Boolean) as Btn[],
+          icon: "🎯", tone: regDone ? "todo" : "waiting", title: t(isAbc ? "sel_todo_title_abc" : "sel_todo_title"), lines,
+          buttons: [goBtn(t(isAbc ? "sel_btn_abc" : "sel_btn"), "teams", undefined, regDone)].filter(Boolean) as Btn[],
         };
       }
       case "dday": {

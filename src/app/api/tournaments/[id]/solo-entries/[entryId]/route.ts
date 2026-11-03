@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { z } from "zod";
+import { apiMsg } from "@/lib/api-messages";
 
 const patchSchema = z.object({
   // Paiement (au moins l'un des deux blocs doit être présent).
@@ -40,6 +41,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string; en
         : entry.paymentMethod;
   }
   if (parsed.data.waitlisted !== undefined) {
+    const t = await prisma.tournament.findUnique({ where: { id: params.id }, select: { selectionLocked: true } });
+    if (t?.selectionLocked) return Response.json({ error: apiMsg("draw_locked") }, { status: 409 });
     data.waitlisted = parsed.data.waitlisted;
   }
 

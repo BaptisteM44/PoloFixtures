@@ -2830,7 +2830,13 @@
     "col_status": "Auswahl",
     "mark_out": "Entfernen",
     "mark_out_hint": "Auf die Warteliste setzen (vom Auslosen ausgeschlossen)",
-    "mark_in": "Zurückholen"
+    "mark_in": "Zurückholen",
+    "btn_validate": "Teams bestätigen",
+    "btn_unlock": "Entsperren",
+    "validate_save_first": "Speichere zuerst deine Änderungen",
+    "locked_banner": "Teams bestätigt: die Auslosung ist gesperrt. Keine neue Auslosung und keine Teamwechsel, bis du sie entsperrst.",
+    "redraw_confirm": "Neu auslosen?\n\nDie {count} aktuellen Teams werden gelöscht und zufällig neu gebildet. Manuelle Änderungen gehen verloren.",
+    "unlock_confirm": "Teams entsperren? Die Auslosung kann dann wieder neu gestartet oder geändert werden."
   },
   "co_orga": {
     "title": "Co-Organisatoren",
@@ -3654,7 +3660,12 @@
     "after_todo_title": "Turnier abschließen",
     "after_todo_desc": "Wenn alle Spiele gespielt sind, schließe das Turnier ab: Endstand, Badges und Fotos.",
     "after_done_title": "Turnier beendet 🏆",
-    "after_done_desc": "Endstand und Fotos sind auf der öffentlichen Seite."
+    "after_done_desc": "Endstand und Fotos sind auf der öffentlichen Seite.",
+    "sel_todo_title_abc": "Auslosen und Teams bestätigen",
+    "sel_desc_abc_todraw": "Lose die Teams aus, prüfe sie und klicke dann auf „Teams bestätigen“.",
+    "sel_desc_abc_drawn": "Auslosung erledigt: {count, plural, one {# Team} other {# Teams}}. Prüfe sie und klicke dann auf „Teams bestätigen“, um die Auslosung zu sperren.",
+    "sel_done_desc_abc": "Die Auslosung ist gesperrt: sie kann nicht versehentlich neu gestartet werden.",
+    "sel_btn_abc": "Zur Auslosung"
   },
   "screen": {
     "fullscreen": "Vollbild",

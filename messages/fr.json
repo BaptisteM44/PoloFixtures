@@ -2825,7 +2825,13 @@
     "col_status": "Sélection",
     "mark_out": "Retirer",
     "mark_out_hint": "Basculer en liste d'attente (exclu du tirage)",
-    "mark_in": "Repêcher"
+    "mark_in": "Repêcher",
+    "btn_validate": "Valider les équipes",
+    "btn_unlock": "Déverrouiller",
+    "validate_save_first": "Sauvegarde d'abord tes changements",
+    "locked_banner": "Équipes validées : le tirage est figé. Plus de relance ni de changement d'équipe tant que tu ne déverrouilles pas.",
+    "redraw_confirm": "Relancer le tirage ?\n\nLes {count} équipes actuelles seront supprimées et refaites au hasard. Les changements faits à la main seront perdus.",
+    "unlock_confirm": "Déverrouiller les équipes ? Le tirage pourra de nouveau être relancé ou modifié."
   },
   "co_orga": {
     "title": "Co-organisateur.trices",
@@ -3649,7 +3655,12 @@
     "after_todo_title": "Clôturer le tournoi",
     "after_todo_desc": "Une fois tous les matchs joués, clôture le tournoi : classement final, badges et photos.",
     "after_done_title": "Tournoi terminé 🏆",
-    "after_done_desc": "Le classement final et les photos sont sur la page publique."
+    "after_done_desc": "Le classement final et les photos sont sur la page publique.",
+    "sel_todo_title_abc": "Fais le tirage et valide les équipes",
+    "sel_desc_abc_todraw": "Lance le tirage au sort des équipes, vérifie-les, puis clique « Valider les équipes ».",
+    "sel_desc_abc_drawn": "Tirage fait : {count, plural, one {# équipe} other {# équipes}}. Vérifie-les puis clique « Valider les équipes » pour figer le tirage.",
+    "sel_done_desc_abc": "Le tirage est figé : il ne peut plus être relancé par erreur.",
+    "sel_btn_abc": "Aller au tirage"
   },
   "screen": {
     "fullscreen": "Plein écran",

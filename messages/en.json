@@ -2824,7 +2824,13 @@
     "col_status": "Selection",
     "mark_out": "Remove",
     "mark_out_hint": "Move to waitlist (excluded from the draw)",
-    "mark_in": "Bring back"
+    "mark_in": "Bring back",
+    "btn_validate": "Confirm the teams",
+    "btn_unlock": "Unlock",
+    "validate_save_first": "Save your changes first",
+    "locked_banner": "Teams confirmed: the draw is locked. No redraw or team changes until you unlock it.",
+    "redraw_confirm": "Redo the draw?\n\nThe {count} current teams will be deleted and drawn again at random. Any manual changes will be lost.",
+    "unlock_confirm": "Unlock the teams? The draw can then be redone or changed again."
   },
   "co_orga": {
     "title": "Co-organizers",
@@ -3648,7 +3654,12 @@
     "after_todo_title": "Close the tournament",
     "after_todo_desc": "Once all matches are played, close the tournament: final ranking, badges and photos.",
     "after_done_title": "Tournament finished 🏆",
-    "after_done_desc": "The final ranking and photos are on the public page."
+    "after_done_desc": "The final ranking and photos are on the public page.",
+    "sel_todo_title_abc": "Do the draw and confirm the teams",
+    "sel_desc_abc_todraw": "Run the team draw, check the teams, then click “Confirm the teams”.",
+    "sel_desc_abc_drawn": "Draw done: {count, plural, one {# team} other {# teams}}. Check them, then click “Confirm the teams” to lock the draw.",
+    "sel_done_desc_abc": "The draw is locked: it can't be redone by mistake.",
+    "sel_btn_abc": "Go to the draw"
   },
   "screen": {
     "fullscreen": "Full screen",

@@ -347,7 +347,9 @@ export default async function TournamentPage({
     // Tournoi terminé : la galerie juste à côté du récap.
     ...(isCompleted && galleryVisible ? [galleryTab] : []),
     { label: t("tab_info"), value: "info", href: `/tournament/${params.id}?tab=info` },
-    ...((!registrationClosed || tournament.format === "ABC Chapeau") ? [{ label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` }] : []),
+    // ABC Chapeau : après la clôture, l'onglet reste le temps de voir la liste des
+    // inscrit·es — jusqu'au tirage (ensuite c'est l'onglet Équipes qui fait foi).
+    ...((!registrationClosed || (tournament.format === "ABC Chapeau" && tournament.teams.length === 0)) ? [{ label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` }] : []),
     ...(isLaunched ? [{ label: t("tab_schedule"), value: "schedule", href: `/tournament/${params.id}?tab=schedule` }] : []),
     // Pipeline : pilotage des étapes directement depuis la page publique (orga/co-orga uniquement)
     ...(isPipeline && isOrga ? [{ label: t("orga_tab_stages"), value: "stages", href: `/tournament/${params.id}?tab=stages` }] : []),

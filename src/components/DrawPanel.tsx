@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-methods";
 
@@ -39,14 +40,22 @@ export function DrawPanel({
   teams: initialTeams,
   feePerPlayer = 0,
   feeCurrency = "EUR",
+  selectionLocked = false,
+  toggleLockAction,
 }: {
   tournamentId: string;
   soloEntries: SoloEntry[];
   teams: DrawnTeam[];
   feePerPlayer?: number;
   feeCurrency?: string;
+  /** Équipes validées (même verrou que la sélection des tournois classiques) */
+  selectionLocked?: boolean;
+  toggleLockAction?: (tId: string, locked: boolean) => Promise<{ ok?: boolean; error?: string }>;
 }) {
   const t = useTranslations("draw");
+  const router = useRouter();
+  const [locked, setLocked] = useState(selectionLocked);
+  const [lockPending, startLock] = useTransition();
   const [entries, setEntries] = useState<SoloEntry[]>(initialEntries);
   const [teams, setTeams] = useState<DrawnTeam[]>(initialTeams);
   const [loading, setLoading] = useState(false);
@@ -88,7 +97,22 @@ export function DrawPanel({
     return teams.find((t) => t.id === teamId)?.name ?? teamId;
   };
 
+  // Valider les équipes = figer le tirage (plus de relance ni de changement d'équipe)
+  const setLock = (next: boolean) => {
+    if (!toggleLockAction) return;
+    if (!next && !window.confirm(t("unlock_confirm"))) return;
+    setError(null);
+    startLock(async () => {
+      const res = await toggleLockAction(tournamentId, next);
+      if (res?.error) { setError(res.error); return; }
+      setLocked(next);
+      router.refresh();
+    });
+  };
+
   const handleDraw = async () => {
+    // Relancer efface les équipes actuelles (et les changements faits à la main)
+    if (hasDraw && !window.confirm(t("redraw_confirm", { count: teams.length }))) return;
     setLoading(true);
     setError(null);
     const res = await fetch(`/api/tournaments/${tournamentId}/draw`, { method: "POST" });
@@ -207,7 +231,7 @@ export function DrawPanel({
                 {t("saved")}
               </span>
             )}
-            {Object.keys(pendingChanges).length > 0 && (
+            {!locked && Object.keys(pendingChanges).length > 0 && (
               <button
                 className="primary"
                 style={{ fontSize: 12, padding: "6px 14px" }}
@@ -217,17 +241,43 @@ export function DrawPanel({
                 {saveLoading ? "…" : t("btn_save_changes")}
               </button>
             )}
-            <button
-              className={hasDraw ? "ghost" : "primary"}
-              style={{ fontSize: 13, padding: "6px 16px" }}
-              onClick={handleDraw}
-              disabled={loading || activeEntries.length < 3}
-            >
-              {loading ? t("btn_drawing") : hasDraw ? t("btn_redraw") : t("btn_draw")}
-            </button>
+            {locked ? (
+              toggleLockAction && (
+                <button className="ghost" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setLock(false)} disabled={lockPending}>
+                  🔓 {t("btn_unlock")}
+                </button>
+              )
+            ) : (
+              <>
+                <button
+                  className={hasDraw ? "ghost" : "primary"}
+                  style={{ fontSize: 13, padding: "6px 16px" }}
+                  onClick={handleDraw}
+                  disabled={loading || activeEntries.length < 3}
+                >
+                  {loading ? t("btn_drawing") : hasDraw ? t("btn_redraw") : t("btn_draw")}
+                </button>
+                {hasDraw && toggleLockAction && (
+                  <button
+                    className="primary"
+                    style={{ fontSize: 13, padding: "6px 16px" }}
+                    onClick={() => setLock(true)}
+                    disabled={lockPending || loading || Object.keys(pendingChanges).length > 0}
+                    title={Object.keys(pendingChanges).length > 0 ? t("validate_save_first") : undefined}
+                  >
+                    ✅ {t("btn_validate")}
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
 
+        {locked && (
+          <p className="draw-locked-banner" style={{ margin: "0 0 12px", padding: "8px 12px", border: "2px solid var(--border)", borderRadius: 8, background: "var(--surface-2)", fontSize: 13 }}>
+            🔒 {t("locked_banner")}
+          </p>
+        )}
         {error && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}
 
         {feePerPlayer > 0 && (byMethod.length > 0 || unspecifiedPaid > 0) && (
@@ -283,7 +333,7 @@ export function DrawPanel({
                     <span className="level-badge" data-level={getLevelTier(entry.level)}>{entry.level}</span>
                   </td>
                   <td style={{ padding: "8px 10px" }}>
-                    {hasDraw && teams.length > 0 ? (
+                    {hasDraw && teams.length > 0 && !locked ? (
                       <select
                         value={entry.teamId ?? ""}
                         onChange={(e) => handleTeamChange(entry.id, e.target.value)}
@@ -339,7 +389,7 @@ export function DrawPanel({
                       type="button"
                       className="ghost"
                       onClick={() => toggleWaitlisted(entry)}
-                      disabled={paymentPending === entry.id}
+                      disabled={locked || paymentPending === entry.id}
                       title={t("mark_out_hint")}
                       style={{ fontSize: 11, padding: "3px 10px", color: "var(--danger)", borderColor: "var(--danger)" }}
                     >
@@ -388,7 +438,7 @@ export function DrawPanel({
                     type="button"
                     className="ghost"
                     onClick={() => toggleWaitlisted(entry)}
-                    disabled={paymentPending === entry.id}
+                    disabled={locked || paymentPending === entry.id}
                     style={{ fontSize: 11, padding: "2px 10px", marginLeft: "auto", color: "var(--teal)", borderColor: "var(--teal)" }}
                   >
                     {t("mark_in")}

@@ -334,6 +334,8 @@ export function OrgaDashboard({
                 teams={abcTeams}
                 feePerPlayer={tournament.registrationFeePerTeam ?? 0}
                 feeCurrency={tournament.registrationFeeCurrency ?? "EUR"}
+                selectionLocked={(tournament as any).selectionLocked ?? false}
+                toggleLockAction={toggleSelectionLockAction}
               />
             );
           })() : (teams.length > 0 && (

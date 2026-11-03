@@ -2824,7 +2824,13 @@
     "col_status": "Seleção",
     "mark_out": "Retirar",
     "mark_out_hint": "Passar para a lista de espera (fora do sorteio)",
-    "mark_in": "Voltar a incluir"
+    "mark_in": "Voltar a incluir",
+    "btn_validate": "Validar as equipas",
+    "btn_unlock": "Desbloquear",
+    "validate_save_first": "Guarda primeiro as tuas alterações",
+    "locked_banner": "Equipas validadas: o sorteio está bloqueado. Não há novo sorteio nem mudanças de equipa enquanto não desbloqueares.",
+    "redraw_confirm": "Repetir o sorteio?\n\nAs {count} equipas atuais serão apagadas e sorteadas de novo ao acaso. As alterações feitas à mão perdem-se.",
+    "unlock_confirm": "Desbloquear as equipas? O sorteio poderá voltar a ser repetido ou alterado."
   },
   "co_orga": {
     "title": "Coorganizadores",
@@ -3648,7 +3654,12 @@
     "after_todo_title": "Encerrar o torneio",
     "after_todo_desc": "Quando todos os jogos estiverem feitos, encerra o torneio: classificação final, badges e fotos.",
     "after_done_title": "Torneio terminado 🏆",
-    "after_done_desc": "A classificação final e as fotos estão na página pública."
+    "after_done_desc": "A classificação final e as fotos estão na página pública.",
+    "sel_todo_title_abc": "Faz o sorteio e valida as equipas",
+    "sel_desc_abc_todraw": "Lança o sorteio das equipas, verifica-as e clica em «Validar as equipas».",
+    "sel_desc_abc_drawn": "Sorteio feito: {count, plural, one {# equipa} other {# equipas}}. Verifica-as e clica em «Validar as equipas» para bloquear o sorteio.",
+    "sel_done_desc_abc": "O sorteio está bloqueado: não pode ser repetido por engano.",
+    "sel_btn_abc": "Ir para o sorteio"
   },
   "screen": {
     "fullscreen": "Ecrã inteiro",

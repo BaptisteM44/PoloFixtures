@@ -2830,7 +2830,13 @@
     "col_status": "Selección",
     "mark_out": "Retirar",
     "mark_out_hint": "Pasar a lista de espera (excluido del sorteo)",
-    "mark_in": "Recuperar"
+    "mark_in": "Recuperar",
+    "btn_validate": "Validar los equipos",
+    "btn_unlock": "Desbloquear",
+    "validate_save_first": "Guarda primero tus cambios",
+    "locked_banner": "Equipos validados: el sorteo está bloqueado. No se puede repetir ni cambiar equipos hasta que lo desbloquees.",
+    "redraw_confirm": "¿Repetir el sorteo?\n\nLos {count} equipos actuales se borrarán y se volverán a sortear al azar. Los cambios hechos a mano se perderán.",
+    "unlock_confirm": "¿Desbloquear los equipos? El sorteo podrá volver a repetirse o modificarse."
   },
   "co_orga": {
     "title": "Co-organizadores",
@@ -3654,7 +3660,12 @@
     "after_todo_title": "Cerrar el torneo",
     "after_todo_desc": "Cuando se hayan jugado todos los partidos, cierra el torneo: clasificación final, insignias y fotos.",
     "after_done_title": "Torneo terminado 🏆",
-    "after_done_desc": "La clasificación final y las fotos están en la página pública."
+    "after_done_desc": "La clasificación final y las fotos están en la página pública.",
+    "sel_todo_title_abc": "Haz el sorteo y valida los equipos",
+    "sel_desc_abc_todraw": "Lanza el sorteo de equipos, revísalos y haz clic en «Validar los equipos».",
+    "sel_desc_abc_drawn": "Sorteo hecho: {count, plural, one {# equipo} other {# equipos}}. Revísalos y haz clic en «Validar los equipos» para bloquear el sorteo.",
+    "sel_done_desc_abc": "El sorteo está bloqueado: no se puede repetir por error.",
+    "sel_btn_abc": "Ir al sorteo"
   },
   "screen": {
     "fullscreen": "Pantalla completa",
