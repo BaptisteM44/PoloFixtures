@@ -2844,7 +2844,7 @@
     "remove_hint": "Cancelar inscrição",
     "no_answers": "Sem respostas ao questionário.",
     "btn_new_team": "Nova equipa",
-    "compose_hint": "Lança o sorteio, ou cria equipas e coloca tu os jogadores.",
+    "compose_hint": "Lança o sorteio, ou clica em «Compor à mão» para criar as equipas e colocar tu os jogadores.",
     "unplaced_title": "Sem equipa ({count})",
     "mix_hint": "Número de jogadores de nível A, B e C",
     "rename_team": "Mudar o nome",
@@ -2860,7 +2860,9 @@
     "guest_country": "País *",
     "guest_hint": "É criado um perfil sem conta. Se a pessoa se registar mais tarde, poderá ser fundido com a conta dela.",
     "btn_add": "Adicionar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "btn_compose": "Compor à mão",
+    "btn_compose_hint": "Cria equipas vazias (uma por cada 3 inscritos) para colocares tu os jogadores."
   },
   "co_orga": {
     "title": "Coorganizadores",

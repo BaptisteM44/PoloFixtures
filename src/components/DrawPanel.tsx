@@ -182,14 +182,23 @@ export function DrawPanel({
     }
   };
 
-  const createTeam = async () => {
+  const createTeams = async (count = 1) => {
     setPending("new-team");
     setError(null);
-    const res = await abcCreateTeamAction(tournamentId);
+    const res = await abcCreateTeamAction(tournamentId, count);
     setPending(null);
-    if ("error" in res && res.error) { setError(res.error); return; }
-    if (res.ok) setTeams((prev) => [...prev, res.team]);
+    if ("error" in res && res.error) { setError(res.error); return false; }
+    if (res.ok) setTeams((prev) => [...prev, ...res.teams]);
     router.refresh();
+    return true;
+  };
+
+  // Composer à la main : prépare les équipes vides (inscrits ÷ 3) si aucune
+  // n'existe encore, puis amène l'orga au tableau de composition.
+  const boardRef = useRef<HTMLDivElement>(null);
+  const startManual = async () => {
+    if (!hasTeams && !(await createTeams(Math.max(1, Math.floor(activeEntries.length / 3))))) return;
+    requestAnimationFrame(() => boardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   const deleteTeam = async (team: DrawnTeam) => {
@@ -309,6 +318,15 @@ export function DrawPanel({
                   title={t("btn_draw_hint")}
                 >
                   {loading ? t("btn_drawing") : hasPlacedPlayers ? t("btn_redraw") : t("btn_draw")}
+                </button>
+                <button
+                  className="ghost"
+                  style={{ fontSize: 13, padding: "6px 16px" }}
+                  onClick={startManual}
+                  disabled={loading || pending === "new-team"}
+                  title={t("btn_compose_hint")}
+                >
+                  ✋ {t("btn_compose")}
                 </button>
                 {hasPlacedPlayers && toggleLockAction && (
                   <button
@@ -541,13 +559,13 @@ export function DrawPanel({
         )}
 
         {/* Composition des équipes : tirage auto puis retouches, ou tout à la main */}
-        <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border-light)" }}>
+        <div ref={boardRef} style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border-light)", scrollMarginTop: 80 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
             <p style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", margin: 0, textTransform: "uppercase" }}>
               {t("formed_teams_title", { count: teams.length })}
             </p>
             {!locked && (
-              <button className="ghost" style={small} onClick={createTeam} disabled={pending === "new-team"}>
+              <button className="ghost" style={small} onClick={() => createTeams(1)} disabled={pending === "new-team"}>
                 + {t("btn_new_team")}
               </button>
             )}

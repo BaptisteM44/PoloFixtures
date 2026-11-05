@@ -135,16 +135,22 @@ export async function abcSetLevelAction(tournamentId: string, entryId: string, l
   return { ok: true };
 }
 
-/** Crée une équipe vide « Équipe N » à remplir à la main. */
-export async function abcCreateTeamAction(tournamentId: string): Promise<Result<{ team: { id: string; name: string } }>> {
+/** Crée `count` équipes vides « Équipe N » à remplir à la main (1 par défaut). */
+export async function abcCreateTeamAction(tournamentId: string, count = 1): Promise<Result<{ teams: { id: string; name: string }[] }>> {
   const denied = await guard(tournamentId);
   if (denied) return denied;
+  const n = Math.min(Math.max(1, Math.floor(count)), 64);
   const existing = await prisma.team.findMany({ where: { tournamentId }, select: { name: true, seed: true } });
-  const name = nextTeamName(existing.map((t) => t.name));
-  const seed = Math.max(0, ...existing.map((t) => t.seed ?? 0)) + 1;
-  const team = await prisma.team.create({ data: { tournamentId, name, seed }, select: { id: true, name: true } });
+  const names = existing.map((t) => t.name);
+  let seed = Math.max(0, ...existing.map((t) => t.seed ?? 0));
+  const teams: { id: string; name: string }[] = [];
+  for (let i = 0; i < n; i++) {
+    const name = nextTeamName(names);
+    names.push(name);
+    teams.push(await prisma.team.create({ data: { tournamentId, name, seed: ++seed }, select: { id: true, name: true } }));
+  }
   refresh();
-  return { ok: true, team };
+  return { ok: true, teams };
 }
 
 /** Supprime une équipe : ses joueurs repassent dans « Non placés ». */

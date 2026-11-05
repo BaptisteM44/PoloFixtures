@@ -2844,7 +2844,7 @@
     "remove_hint": "Unregister",
     "no_answers": "No answers to the form.",
     "btn_new_team": "New team",
-    "compose_hint": "Run the draw, or create teams and place the players yourself.",
+    "compose_hint": "Run the draw, or click “Compose by hand” to create the teams and place the players yourself.",
     "unplaced_title": "Not placed ({count})",
     "mix_hint": "Number of A, B and C level players",
     "rename_team": "Rename",
@@ -2860,7 +2860,9 @@
     "guest_country": "Country *",
     "guest_hint": "A profile without an account is created. If the person signs up later, it can be merged with their account.",
     "btn_add": "Add",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "btn_compose": "Compose by hand",
+    "btn_compose_hint": "Creates empty teams (one per 3 players) so you can place the players yourself."
   },
   "co_orga": {
     "title": "Co-organizers",

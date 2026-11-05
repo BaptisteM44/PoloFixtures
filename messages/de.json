@@ -2850,7 +2850,7 @@
     "remove_hint": "Abmelden",
     "no_answers": "Keine Antworten auf den Fragebogen.",
     "btn_new_team": "Neues Team",
-    "compose_hint": "Starte die Auslosung oder erstelle Teams und teile die Spieler·innen selbst zu.",
+    "compose_hint": "Starte die Auslosung oder klicke auf „Selbst zusammenstellen“, um Teams anzulegen und die Spieler·innen selbst zuzuteilen.",
     "unplaced_title": "Nicht zugeteilt ({count})",
     "mix_hint": "Anzahl Spieler·innen mit Level A, B und C",
     "rename_team": "Umbenennen",
@@ -2866,7 +2866,9 @@
     "guest_country": "Land *",
     "guest_hint": "Es wird ein Profil ohne Konto angelegt. Meldet sich die Person später an, kann es mit ihrem Konto zusammengeführt werden.",
     "btn_add": "Hinzufügen",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "btn_compose": "Selbst zusammenstellen",
+    "btn_compose_hint": "Legt leere Teams an (eins pro 3 Angemeldete), damit du die Spieler·innen selbst zuteilst."
   },
   "co_orga": {
     "title": "Co-Organisatoren",

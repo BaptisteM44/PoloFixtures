@@ -2845,7 +2845,7 @@
     "remove_hint": "Désinscrire",
     "no_answers": "Aucune réponse au questionnaire.",
     "btn_new_team": "Nouvelle équipe",
-    "compose_hint": "Lance le tirage, ou crée des équipes et place les joueur·euse·s toi-même.",
+    "compose_hint": "Lance le tirage, ou clique sur « Composer à la main » pour créer les équipes et placer les joueur·euse·s toi-même.",
     "unplaced_title": "Non placé·e·s ({count})",
     "mix_hint": "Nombre de joueur·euse·s de niveau A, B et C",
     "rename_team": "Renommer",
@@ -2861,7 +2861,9 @@
     "guest_country": "Pays *",
     "guest_hint": "Un profil sans compte est créé. Si la personne s'inscrit plus tard sur le site, il pourra être fusionné avec son compte.",
     "btn_add": "Ajouter",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "btn_compose": "Composer à la main",
+    "btn_compose_hint": "Crée des équipes vides (une pour 3 inscrit·e·s) et place toi-même les joueur·euse·s."
   },
   "co_orga": {
     "title": "Co-organisateur.trices",
