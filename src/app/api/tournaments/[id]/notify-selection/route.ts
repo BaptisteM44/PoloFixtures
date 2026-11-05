@@ -23,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     select: {
       id: true, name: true, slug: true,
       creatorId: true,
-      coOrganizers: { select: { playerId: true } },
+      coOrganizers: { select: { playerId: true, role: true } },
     },
   });
   if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const isOrga =
     (role && hasAtLeastRole(role, "ADMIN")) ||
     tournament.creatorId === playerId ||
-    tournament.coOrganizers.some((co) => co.playerId === playerId);
+    tournament.coOrganizers.some((co) => co.playerId === playerId && co.role === "ORGA");
   if (!isOrga) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();

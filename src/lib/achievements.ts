@@ -508,7 +508,7 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
   const organizedTournaments = await prisma.tournament.findMany({
     where: {
       status: "COMPLETED",
-      OR: [{ creatorId: playerId }, { coOrganizers: { some: { playerId } } }],
+      OR: [{ creatorId: playerId }, { coOrganizers: { some: { playerId, role: "ORGA" } } }],
     },
     include: { teams: { select: { id: true } } },
   });

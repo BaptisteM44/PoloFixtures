@@ -60,7 +60,7 @@ export default async function MultiplexPage({ searchParams }: Props) {
       isOrga =
         !!currentPlayerId &&
         (currentPlayerId === tournament.creatorId ||
-          tournament.coOrganizers.some((co: any) => co.player?.id === currentPlayerId || co.playerId === currentPlayerId));
+          tournament.coOrganizers.some((co: any) => (co.player?.id === currentPlayerId || co.playerId === currentPlayerId) && co.role === "ORGA"));
     }
   }
 

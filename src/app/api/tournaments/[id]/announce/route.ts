@@ -37,14 +37,14 @@ async function orgaTournament(tournamentId: string) {
 
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
-    select: { id: true, name: true, slug: true, format: true, creatorId: true, coOrganizers: { select: { playerId: true } } },
+    select: { id: true, name: true, slug: true, format: true, creatorId: true, coOrganizers: { select: { playerId: true, role: true } } },
   });
   if (!tournament) return { error: NextResponse.json({ error: "Not found" }, { status: 404 }) };
 
   const isOrga =
     (role && hasAtLeastRole(role, "ADMIN")) ||
     tournament.creatorId === playerId ||
-    tournament.coOrganizers.some((co) => co.playerId === playerId);
+    tournament.coOrganizers.some((co) => co.playerId === playerId && co.role === "ORGA");
   if (!isOrga) return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   return { tournament };
 }

@@ -18,7 +18,7 @@ export async function PATCH(request: Request, { params }: { params: { teamId: st
           name: true,
           slug: true,
           creatorId: true,
-          coOrganizers: { select: { playerId: true } },
+          coOrganizers: { select: { playerId: true, role: true } },
         },
       },
     },
@@ -34,7 +34,7 @@ export async function PATCH(request: Request, { params }: { params: { teamId: st
   const playerId = (session.user as { playerId?: string }).playerId;
   const isOrga =
     team.tournament.creatorId === playerId ||
-    team.tournament.coOrganizers.some((co) => co.playerId === playerId);
+    team.tournament.coOrganizers.some((co) => co.playerId === playerId && co.role === "ORGA");
 
   if (!isAdmin && !isOrga) return new Response("Forbidden", { status: 403 });
 

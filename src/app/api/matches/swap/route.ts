@@ -35,11 +35,11 @@ export async function POST(req: Request) {
   if (!hasRole && playerId) {
     const tournament = await prisma.tournament.findUnique({
       where: { id: matchA.tournamentId },
-      select: { creatorId: true, coOrganizers: { select: { playerId: true } } },
+      select: { creatorId: true, coOrganizers: { select: { playerId: true, role: true } } },
     });
     isOrganizer =
       tournament?.creatorId === playerId ||
-      tournament?.coOrganizers.some((co) => co.playerId === playerId) ||
+      tournament?.coOrganizers.some((co) => co.playerId === playerId && co.role === "ORGA") ||
       false;
   }
   if (!hasRole && !isOrganizer) return new Response("Unauthorized", { status: 401 });

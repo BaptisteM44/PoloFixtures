@@ -485,7 +485,9 @@ export function OrgaDashboard({
             <CoOrganizerManager
               tournamentId={tournament.id}
               coOrganizers={coOrganizers.filter((co) => co.role !== "REF").map((co) => co.player)}
-              canManage={isCreator || isAdmin}
+              // Toute personne qui accède au tableau de bord est orga du tournoi
+              // (les arbitres n'y ont plus accès) : elle gère aussi l'équipe orga.
+              canManage
             />
           </div>
 
@@ -601,7 +603,7 @@ export function OrgaDashboard({
           <RefereeManager
               tournamentId={tournament.id}
               referees={coOrganizers.filter((co) => co.role === "REF").map((co) => co.player)}
-              canManage={isCreator || isAdmin || isOrgaForThis}
+              canManage
               refToken={tournament.refToken ?? null}
               generateRefTokenAction={generateRefTokenAction}
               revokeRefTokenAction={revokeRefTokenAction}

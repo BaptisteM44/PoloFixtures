@@ -34,7 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const tournamentInfo = await prisma.tournament.findUnique({
     where: { id: params.id },
-    select: { creatorId: true, coOrganizers: { select: { playerId: true } } },
+    select: { creatorId: true, coOrganizers: { select: { playerId: true, role: true } } },
   });
 
   const orgaIds = new Set([
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const tournament = await prisma.tournament.findUnique({
     where: { id: params.id },
-    select: { chatMode: true, creatorId: true, coOrganizers: { select: { playerId: true } } },
+    select: { chatMode: true, creatorId: true, coOrganizers: { select: { playerId: true, role: true } } },
   });
   if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       session.user.role === "ADMIN" ||
       (session.user.role === "ORGA" && session.user.tournamentId === params.id) ||
       tournament.creatorId === session.user.playerId ||
-      tournament.coOrganizers.some((co) => co.playerId === session.user.playerId);
+      tournament.coOrganizers.some((co) => co.playerId === session.user.playerId && co.role === "ORGA");
     if (tournament.chatMode === "ORG_ONLY" && !isOrga) {
       return NextResponse.json({ error: apiMsg("organizer_only") }, { status: 403 });
     }
@@ -109,7 +109,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   const tournament = await prisma.tournament.findUnique({
     where: { id: params.id },
-    select: { creatorId: true, coOrganizers: { select: { playerId: true } } },
+    select: { creatorId: true, coOrganizers: { select: { playerId: true, role: true } } },
   });
   if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -117,7 +117,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     session.user.role === "ADMIN" ||
     (session.user.role === "ORGA" && session.user.tournamentId === params.id) ||
     tournament.creatorId === session.user.playerId ||
-    tournament.coOrganizers.some((co) => co.playerId === session.user.playerId);
+    tournament.coOrganizers.some((co) => co.playerId === session.user.playerId && co.role === "ORGA");
 
   if (!isOrga) {
     return NextResponse.json({ error: apiMsg("not_authorized") }, { status: 403 });

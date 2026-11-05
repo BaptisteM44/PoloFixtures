@@ -18,7 +18,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const orgaTournament = {
       OR: [
         { creatorId: currentPlayerId ?? "" },
-        { coOrganizers: { some: { playerId: currentPlayerId ?? "" } } },
+        { coOrganizers: { some: { playerId: currentPlayerId ?? "", role: "ORGA" } } },
       ],
     };
     // Dans une équipe d'un de ses tournois, ou inscrit en solo (ABC Chapeau,

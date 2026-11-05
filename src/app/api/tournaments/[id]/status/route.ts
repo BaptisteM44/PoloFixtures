@@ -21,14 +21,14 @@ export async function PATCH(
 
   const tournament = await prisma.tournament.findUnique({
     where: { id },
-    select: { id: true, creatorId: true, coOrganizers: { select: { playerId: true } } },
+    select: { id: true, creatorId: true, coOrganizers: { select: { playerId: true, role: true } } },
   });
   if (!tournament) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isAdmin = role === "ADMIN";
   const isOrgaForThis = role === "ORGA" && session.user.tournamentId === id;
   const isCreator = !!playerId && tournament.creatorId === playerId;
-  const isCoOrga = !!playerId && tournament.coOrganizers.some((co) => co.playerId === playerId);
+  const isCoOrga = !!playerId && tournament.coOrganizers.some((co) => co.playerId === playerId && co.role === "ORGA");
 
   if (!isAdmin && !isOrgaForThis && !isCreator && !isCoOrga) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

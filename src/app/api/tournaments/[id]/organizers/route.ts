@@ -1,14 +1,13 @@
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { hasAtLeastRole } from "@/lib/rbac";
+import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
 
-async function isCreatorOrAdmin(tournamentId: string, role: string | null | undefined, playerId: string | undefined | null) {
-  if (role && hasAtLeastRole(role as never, "ADMIN")) return true;
-  if (!playerId) return false;
-  const t = await prisma.tournament.findUnique({ where: { id: tournamentId }, select: { creatorId: true } });
-  return t?.creatorId === playerId;
+/** Admin, créateur, co-organisateur (rôle ORGA) ou code ORGA du tournoi :
+ *  tous peuvent gérer co-orgas et arbitres (seule la suppression du tournoi
+ *  reste réservée au créateur). */
+async function canManageOrganizers(tournamentId: string) {
+  return !!(await getOrgaPlayerId(tournamentId));
 }
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
@@ -26,8 +25,7 @@ const addSchema = z.object({
 });
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!await isCreatorOrAdmin(params.id, session?.user?.role, session?.user?.playerId)) {
+  if (!await canManageOrganizers(params.id)) {
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -49,8 +47,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 }
 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!await isCreatorOrAdmin(params.id, session?.user?.role, session?.user?.playerId)) {
+  if (!await canManageOrganizers(params.id)) {
     return new Response("Forbidden", { status: 403 });
   }
 

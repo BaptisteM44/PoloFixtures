@@ -9,13 +9,13 @@ async function requireOrga(tournamentId: string, session: any) {
   const role = session?.user?.role;
   const tournament = await prisma.tournament.findUnique({
     where: { id: tournamentId },
-    select: { creatorId: true, coOrganizers: { select: { playerId: true } } },
+    select: { creatorId: true, coOrganizers: { select: { playerId: true, role: true } } },
   });
   if (!tournament) return false;
   return (
     (role && hasAtLeastRole(role, "ADMIN")) ||
     tournament.creatorId === playerId ||
-    tournament.coOrganizers.some((co) => co.playerId === playerId)
+    tournament.coOrganizers.some((co) => co.playerId === playerId && co.role === "ORGA")
   );
 }
 

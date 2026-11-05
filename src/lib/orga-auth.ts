@@ -26,7 +26,9 @@ export async function getOrgaPlayerId(tournamentId: string): Promise<string | nu
   const coOrg = await prisma.tournamentOrganizer.findUnique({
     where: { tournamentId_playerId: { tournamentId, playerId } },
   });
-  if (coOrg) return playerId;
+  // Co-organisateur seulement : la même table stocke les arbitres (rôle REF),
+  // qui n'ont accès qu'à l'arbitrage, pas à la gestion du tournoi.
+  if (coOrg?.role === "ORGA") return playerId;
 
   if (role === "ORGA" && session.user.tournamentId === tournamentId) return playerId;
 

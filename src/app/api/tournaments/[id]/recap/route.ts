@@ -27,7 +27,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   const playerId = (session.user as { playerId?: string }).playerId;
   const isAdmin = session.user.role === "ADMIN";
   const isCreator = tournament.creatorId === playerId;
-  const isCoOrga = tournament.coOrganizers.some((o) => o.playerId === playerId);
+  const isCoOrga = tournament.coOrganizers.some((o) => o.playerId === playerId && o.role === "ORGA");
   if (!isAdmin && !isCreator && !isCoOrga) {
     return new Response("Forbidden", { status: 403 });
   }

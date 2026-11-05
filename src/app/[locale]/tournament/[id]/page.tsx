@@ -196,7 +196,8 @@ export default async function TournamentPage({
     role === "ADMIN" ||
     (role === "ORGA" && session?.user?.tournamentId === tournament.id) ||
     (!!currentPlayerId && currentPlayerId === tournament.creatorId) ||
-    tournament.coOrganizers.some((co) => co.playerId === currentPlayerId);
+    // Co-orgas seulement : les arbitres (rôle REF, même table) ne gèrent pas le tournoi
+    tournament.coOrganizers.some((co) => co.playerId === currentPlayerId && co.role === "ORGA");
   const isOrga = canEdit;
   // Désignations d'arbitrage cachées par l'orga : invisibles des joueurs.
   if (!isOrga && parseRefereeSettings((tournament as any).refereeSettings).hidden) {

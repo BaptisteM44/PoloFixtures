@@ -41,7 +41,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
   const isAdmin = !!(session?.user?.role && hasAtLeastRole(session.user.role, "ADMIN"));
   const isOrgaForThis = session?.user?.role === "ORGA" && session?.user?.tournamentId === t_.id;
   const isCreator = !!(session?.user?.playerId && session?.user?.playerId === t_.creatorId);
-  const isCoOrga = !!(session?.user?.playerId && t_.coOrganizers.some((co: any) => co.playerId === session.user.playerId));
+  const isCoOrga = !!(session?.user?.playerId && t_.coOrganizers.some((co: any) => co.playerId === session.user.playerId && co.role === "ORGA"));
 
   if (!isAdmin && !isOrgaForThis && !isCreator && !isCoOrga) {
     const t = await getTranslations("tournament");

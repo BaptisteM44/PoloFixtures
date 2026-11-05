@@ -26,7 +26,7 @@ export async function PATCH(
       select: {
         id: true, creatorId: true, testMode: true, hidden: true,
         slug: true, name: true, city: true, country: true, submissionStatus: true, createdViaSandbox: true,
-        coOrganizers: { select: { playerId: true } },
+        coOrganizers: { select: { playerId: true, role: true } },
       },
     });
 
@@ -37,7 +37,7 @@ export async function PATCH(
     const isAdmin = role === "ADMIN";
     const isOrgaForThis = role === "ORGA" && session.user.tournamentId === id;
     const isCreator = !!playerId && tournament.creatorId === playerId;
-    const isCoOrga = !!playerId && tournament.coOrganizers.some((co) => co.playerId === playerId);
+    const isCoOrga = !!playerId && tournament.coOrganizers.some((co) => co.playerId === playerId && co.role === "ORGA");
 
     if (!isAdmin && !isOrgaForThis && !isCreator && !isCoOrga) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

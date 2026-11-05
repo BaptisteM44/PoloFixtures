@@ -19,7 +19,7 @@ export async function POST(_request: Request, { params }: { params: { id: string
   const isOrga =
     role === "ADMIN" ||
     tournament.creatorId === playerId ||
-    tournament.coOrganizers.some((co) => co.playerId === playerId) ||
+    tournament.coOrganizers.some((co) => co.playerId === playerId && co.role === "ORGA") ||
     (role === "ORGA" && (session?.user as { tournamentId?: string }).tournamentId === params.id);
 
   if (!isOrga) return Response.json({ error: apiMsg("access_denied") }, { status: 403 });

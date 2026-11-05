@@ -20,7 +20,7 @@ export async function PATCH(req: Request, { params }: { params: { teamId: string
   const isOrga =
     (session.user.role != null && hasAtLeastRole(session.user.role, "ADMIN")) ||
     team.tournament.creatorId === session.user.playerId ||
-    team.tournament.coOrganizers.some((o) => o.playerId === session.user.playerId);
+    team.tournament.coOrganizers.some((o) => o.playerId === session.user.playerId && o.role === "ORGA");
   if (!isOrga) return new Response("Forbidden", { status: 403 });
 
   const body = await req.json();
@@ -50,7 +50,7 @@ export async function DELETE(_req: Request, { params }: { params: { teamId: stri
   const isOrga =
     (role != null && hasAtLeastRole(role, "ADMIN")) ||
     team.tournament.creatorId === playerId ||
-    team.tournament.coOrganizers.some((o) => o.playerId === playerId);
+    team.tournament.coOrganizers.some((o) => o.playerId === playerId && o.role === "ORGA");
   if (!isOrga) return new Response("Forbidden", { status: 403 });
 
   const wasSelected = team.selected;

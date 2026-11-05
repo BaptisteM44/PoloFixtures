@@ -11,14 +11,14 @@ export async function GET(_req: NextRequest, { params }: { params: { entryId: st
 
   const entry = await prisma.tournamentSoloEntry.findUnique({
     where: { id: params.entryId },
-    select: { tournament: { select: { creatorId: true, coOrganizers: { select: { playerId: true } } } } },
+    select: { tournament: { select: { creatorId: true, coOrganizers: { select: { playerId: true, role: true } } } } },
   });
   if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const isOrga =
     (role && hasAtLeastRole(role, "ADMIN")) ||
     entry.tournament.creatorId === playerId ||
-    entry.tournament.coOrganizers.some((co) => co.playerId === playerId);
+    entry.tournament.coOrganizers.some((co) => co.playerId === playerId && co.role === "ORGA");
 
   if (!isOrga) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
