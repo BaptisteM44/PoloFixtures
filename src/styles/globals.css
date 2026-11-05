@@ -12910,6 +12910,9 @@ a.bento-row:hover .bento-row__title { text-decoration: underline; }
 .abc-chip__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .abc-chip--flat { border-color: transparent; background: none; padding-left: 0; flex: 1; justify-content: flex-start; }
 .abc-chip--flat.is-picked { background: var(--teal); border-color: var(--border); padding-left: 5px; }
+.abc-chip[draggable="true"] { cursor: grab; }
+.abc-chip.is-dragging { opacity: .4; }
+.abc-pool.is-over, .abc-team.is-over { border-style: solid; border-color: var(--teal); background: color-mix(in srgb, var(--teal) 12%, var(--surface)); }
 
 .abc-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; align-items: start; }
 .abc-team { padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); min-width: 0; }

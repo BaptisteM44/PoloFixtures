@@ -7,6 +7,7 @@ import type { CalendarTournament } from "@/components/CalendarGrid";
 import { auth } from "@/lib/auth";
 import TournamentMapClient from "@/components/TournamentMapClient";
 import type { MapTournament } from "@/components/TournamentMap";
+import { abcTeamsHidden } from "@/lib/abc-reveal";
 import { HomeBento, type BentoMyTournament, type BentoOpenTournament } from "@/components/HomeBento";
 import { HomeInstallBanner } from "@/components/HomeInstallBanner";
 import type { TrainingTileData } from "@/components/NextTrainingCard";
@@ -43,7 +44,7 @@ export default async function HomePage() {
   // Ce qu'il faut de chaque tournoi où je suis inscrit pour les tuiles de la home.
   const myTournamentSelect = {
     id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, format: true,
-    maxTeams: true, bannerPath: true, selectionLocked: true,
+    maxTeams: true, bannerPath: true, selectionLocked: true, teamsRevealedAt: true, status: true,
     _count: { select: { teams: { where: { selected: true } } } },
   } as const;
 
@@ -198,7 +199,9 @@ export default async function HomePage() {
         id: tr.id, slug: tr.slug, name: tr.name, city: tr.city, country: tr.country,
         dateStart: tr.dateStart, dateEnd: tr.dateEnd, format: tr.format,
         maxTeams: tr.maxTeams, teamCount: tr._count.teams, bannerPath: tr.bannerPath,
-        awaitingDraw: !tr.selectionLocked, teamName,
+        // ABC Chapeau pas encore dévoilé : « Tirage à venir », sans nom d'équipe
+        awaitingDraw: !tr.selectionLocked || abcTeamsHidden(tr),
+        teamName: abcTeamsHidden(tr) ? null : teamName,
       });
     };
     for (const e of teamEntries) push(e.team.tournament, e.team.name);

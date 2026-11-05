@@ -1099,7 +1099,8 @@
     "legend_title": "Legende:",
     "legend_wb": "Winner Bracket (Gewinnerrunde)",
     "legend_lb": "Loser Bracket (Verliererrunde)",
-    "legend_round": "Runde {n}"
+    "legend_round": "Runde {n}",
+    "abc_teams_not_revealed": "Die Orga hat die Teams noch nicht aufgedeckt. Bis dahin hier die Angemeldeten."
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -1378,7 +1379,9 @@
     "session_messages_grouped": "💬 {count} neue Nachrichten zum Training — {club}",
     "card_granted": "🎁 Du hast die {card}-Karte erhalten — aktiviere sie!",
     "chat_mention": "💬 {name} hat dich erwähnt — {context}",
-    "gallery_reminder": "📸 Fotos von {tournament} auf dem Handy? Ab in die Galerie damit!"
+    "gallery_reminder": "📸 Fotos von {tournament} auf dem Handy? Ab in die Galerie damit!",
+    "teams_revealed": "🎲 Teams aufgedeckt: du spielst in {teamName}",
+    "teams_revealed_sub": "Mit {teammates} — {tournamentName}"
   },
   "contact": {
     "btn_open": "Kontakt",
@@ -2873,11 +2876,17 @@
     "cancel": "Abbrechen",
     "btn_compose": "Selbst zusammenstellen",
     "btn_compose_hint": "Legt leere Teams an (eins pro 3 Angemeldete), damit du die Spieler·innen selbst zuteilst.",
-    "pick_hint": "Klicke auf eine·n Spieler·in und dann auf das Team.",
     "pick_now_team": "{name} ausgewählt: wähle jetzt unten das Team.",
     "pick_to_move": "Auswählen, um das Team zu wechseln",
     "unplace": "Aus dem Team nehmen",
-    "place_here": "{name} hier einteilen"
+    "place_here": "{name} hier einteilen",
+    "pick_or_drag_hint": "Ziehe eine·n Spieler·in in ein Team oder klicke erst auf sie/ihn, dann auf das Team.",
+    "btn_reveal": "Teams aufdecken",
+    "btn_hide": "Teams verbergen",
+    "reveal_confirm": "Teams aufdecken?\n\nSie werden für alle sichtbar und jede·r Spieler·in bekommt eine Benachrichtigung mit dem eigenen Team.",
+    "hide_confirm": "Teams wieder verbergen? Die Öffentlichkeit sieht dann nur noch die Liste der Angemeldeten.",
+    "visibility_hidden": "Teams verborgen: die Öffentlichkeit sieht nur die Liste der Angemeldeten. Bestätige die Teams und decke sie auf, wann du willst.",
+    "visibility_revealed": "Teams aufgedeckt: für alle sichtbar."
   },
   "co_orga": {
     "title": "Co-Organisatoren",

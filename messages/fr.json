@@ -1099,7 +1099,8 @@
     "legend_title": "Lexique :",
     "legend_wb": "Winner Bracket (tableau des gagnants)",
     "legend_lb": "Loser Bracket (tableau de repêchage)",
-    "legend_round": "tour {n}"
+    "legend_round": "tour {n}",
+    "abc_teams_not_revealed": "Les équipes n'ont pas encore été dévoilées par l'orga. En attendant, voici les inscrit·e·s."
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -1373,7 +1374,9 @@
     "session_messages_grouped": "💬 {count} nouveaux messages sur l'entraînement — {club}",
     "card_granted": "🎁 Tu as reçu la carte {card} — va l'activer !",
     "chat_mention": "💬 {name} t'a mentionné·e — {context}",
-    "gallery_reminder": "📸 Des photos de {tournament} dans ton téléphone ? Ajoute-les à la galerie !"
+    "gallery_reminder": "📸 Des photos de {tournament} dans ton téléphone ? Ajoute-les à la galerie !",
+    "teams_revealed": "🎲 Équipes dévoilées : tu joues dans {teamName}",
+    "teams_revealed_sub": "Avec {teammates} — {tournamentName}"
   },
   "contact": {
     "btn_open": "Contact",
@@ -2868,11 +2871,17 @@
     "cancel": "Annuler",
     "btn_compose": "Composer à la main",
     "btn_compose_hint": "Crée des équipes vides (une pour 3 inscrit·e·s) et place toi-même les joueur·euse·s.",
-    "pick_hint": "Clique sur un·e joueur·euse, puis sur l'équipe où le/la placer.",
     "pick_now_team": "{name} sélectionné·e : choisis son équipe ci-dessous.",
     "pick_to_move": "Sélectionner pour changer d'équipe",
     "unplace": "Retirer de l'équipe",
-    "place_here": "Placer {name} ici"
+    "place_here": "Placer {name} ici",
+    "pick_or_drag_hint": "Glisse un·e joueur·euse dans une équipe, ou clique dessus puis sur l'équipe.",
+    "btn_reveal": "Dévoiler les équipes",
+    "btn_hide": "Masquer les équipes",
+    "reveal_confirm": "Dévoiler les équipes ?\n\nElles deviennent visibles de tout le monde et chaque joueur·euse reçoit une notification avec ses coéquipier·es.",
+    "hide_confirm": "Masquer à nouveau les équipes ? Le public ne verra plus que la liste des inscrit·e·s.",
+    "visibility_hidden": "Équipes cachées : le public ne voit que la liste des inscrit·e·s. Valide les équipes, puis dévoile-les quand tu veux.",
+    "visibility_revealed": "Équipes dévoilées : visibles de tout le monde."
   },
   "co_orga": {
     "title": "Co-organisateur.trices",

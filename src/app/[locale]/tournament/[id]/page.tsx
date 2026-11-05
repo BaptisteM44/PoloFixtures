@@ -44,6 +44,7 @@ import { LiveTabView } from "@/components/LiveTabView";
 import { getPodiumTeamIds } from "@/lib/podium";
 import { PipelinePlanning } from "@/components/PipelinePlanning";
 import { formatLabel } from "@/lib/format-label";
+import { abcTeamsHidden } from "@/lib/abc-reveal";
 import {
   launchPipelineStageAction, launchPipelineGroupAction, resetPipelineStagesAction, setPipelineSeedsAction, swapPipelineTeamsAction,
   simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction,
@@ -199,6 +200,9 @@ export default async function TournamentPage({
     // Co-orgas seulement : les arbitres (rôle REF, même table) ne gèrent pas le tournoi
     tournament.coOrganizers.some((co) => co.playerId === currentPlayerId && co.role === "ORGA");
   const isOrga = canEdit;
+  // ABC Chapeau : composition cachée au public tant que l'orga ne l'a pas dévoilée
+  const abcHidden = abcTeamsHidden(tournament);
+  const hideAbcTeams = abcHidden && !isOrga;
   // Désignations d'arbitrage cachées par l'orga : invisibles des joueurs.
   if (!isOrga && parseRefereeSettings((tournament as any).refereeSettings).hidden) {
     for (const m of (tournament.matches ?? []) as any[]) { m.refereeTeam = null; m.refereeTeamId = null; }
@@ -297,7 +301,7 @@ export default async function TournamentPage({
   ]);
 
   const isFollowing = followRecord !== null;
-  const myTeam = myTeamRecord
+  const myTeam = myTeamRecord && !hideAbcTeams
     ? (tournament.teams as any[]).find((team: any) => team.id === myTeamRecord.teamId) ?? null
     : null;
   const isCaptainOfMyTeam = myTeamRecord?.isCaptain ?? false;
@@ -352,7 +356,7 @@ export default async function TournamentPage({
     { label: t("tab_info"), value: "info", href: `/tournament/${params.id}?tab=info` },
     // ABC Chapeau : après la clôture, l'onglet reste le temps de voir la liste des
     // inscrit·es — jusqu'au tirage (ensuite c'est l'onglet Équipes qui fait foi).
-    ...((!registrationClosed || (tournament.format === "ABC Chapeau" && tournament.teams.length === 0)) ? [{ label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` }] : []),
+    ...((!registrationClosed || (tournament.format === "ABC Chapeau" && (tournament.teams.length === 0 || abcHidden))) ? [{ label: t("tab_registration"), value: "inscription", href: `/tournament/${params.id}?tab=inscription` }] : []),
     ...(isLaunched ? [{ label: t("tab_schedule"), value: "schedule", href: `/tournament/${params.id}?tab=schedule` }] : []),
     // Pipeline : pilotage des étapes directement depuis la page publique (orga/co-orga uniquement)
     ...(isPipeline && isOrga ? [{ label: t("orga_tab_stages"), value: "stages", href: `/tournament/${params.id}?tab=stages` }] : []),
@@ -383,7 +387,8 @@ export default async function TournamentPage({
     ...(isLaunched && isPipeline
       ? pipelineBracketTabs.map((b) => ({ label: b.label, value: b.value, href: `/tournament/${params.id}?tab=${b.value}` }))
       : (isLaunched && !isBerlinMixed && !isKiosque && tournament.sundayFormat !== "SWISS_SPLIT_SE" && tournament.sundayFormat !== "SPLIT_SE" ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : [])),
-    { label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` },
+    // ABC Chapeau pas encore dévoilé : pas d'onglet Équipes pour le public (liste des inscrit·es dans Inscription)
+    ...(hideAbcTeams ? [] : [{ label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` }]),
     // Onglet Live TOUJOURS visible : les scores/chronos en direct se suffisent,
     // pas besoin de stream ni de chat pour le justifier. Le contenu s'adapte au
     // statut du tournoi (à venir / en cours / terminé).
@@ -1685,6 +1690,18 @@ export default async function TournamentPage({
       )}
 
       {tab === "equipes" && (() => {
+        // Lien direct vers l'onglet avant le dévoilement : on montre les inscrit·es, pas les équipes
+        if (hideAbcTeams) {
+          const soloEntries = (t_ as { soloEntries?: AbcEntry[] }).soloEntries ?? [];
+          return (
+            <div style={{ marginTop: 16, display: "grid", gap: 16 }}>
+              <div className="panel" style={{ textAlign: "center", padding: 24 }}>
+                <p className="meta" style={{ margin: 0 }}>🎲 {t("abc_teams_not_revealed")}</p>
+              </div>
+              {soloEntries.some((e) => !e.waitlisted) && <AbcRegisteredList entries={soloEntries} />}
+            </div>
+          );
+        }
         const sortedTeams = [...tournament.teams].sort((a, b) => a.seed - b.seed);
         const selected = sortedTeams.filter((t) => t.selected);
         const waitlist = sortedTeams.filter((t) => !t.selected);

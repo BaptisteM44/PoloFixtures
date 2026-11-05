@@ -26,6 +26,12 @@ export function notifLabel(t: NotifTranslator, n: NotifLike): { title: string; s
       return { title: t("team_registered", { teamName: p.teamName }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=inscription` };
     case "TEAM_SELECTED":
       return { title: t("team_selected", { teamName: p.teamName }), sub: t("team_selected_sub", { tournamentName: p.tournamentName ?? "" }), href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=inscription` };
+    case "TEAMS_REVEALED":
+      return {
+        title: t("teams_revealed", { teamName: p.teamName ?? "" }),
+        sub: p.teammates ? t("teams_revealed_sub", { teammates: p.teammates, tournamentName: p.tournamentName ?? "" }) : (p.tournamentName ?? ""),
+        href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=equipes`,
+      };
     case "TEAM_WAITLISTED":
       return { title: t("team_waitlisted", { teamName: p.teamName, rank: p.rank }), sub: p.tournamentName ?? "", href: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=inscription` };
     case "BADGE_UNLOCKED":

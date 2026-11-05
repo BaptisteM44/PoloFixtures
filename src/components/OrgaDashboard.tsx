@@ -337,6 +337,8 @@ export function OrgaDashboard({
                 selectionLocked={(tournament as any).selectionLocked ?? false}
                 toggleLockAction={toggleSelectionLockAction}
                 maxSoloPlayers={(tournament as any).maxSoloPlayers ?? null}
+                teamsRevealed={!!(tournament as any).teamsRevealedAt || tournament.status !== "UPCOMING"}
+                tournamentStarted={tournament.status !== "UPCOMING"}
               />
             );
           })() : (teams.length > 0 && (

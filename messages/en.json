@@ -1099,7 +1099,8 @@
     "legend_title": "Key:",
     "legend_wb": "Winners' Bracket",
     "legend_lb": "Losers' Bracket (second chance)",
-    "legend_round": "round {n}"
+    "legend_round": "round {n}",
+    "abc_teams_not_revealed": "The organisers haven't revealed the teams yet. Meanwhile, here are the registered players."
   },
   "registration": {
     "section_title": "Register my team",
@@ -1373,7 +1374,9 @@
     "session_messages_grouped": "💬 {count} new messages on the training — {club}",
     "card_granted": "🎁 You received the {card} card — go activate it!",
     "chat_mention": "💬 {name} mentioned you — {context}",
-    "gallery_reminder": "📸 Got photos from {tournament} on your phone? Add them to the gallery!"
+    "gallery_reminder": "📸 Got photos from {tournament} on your phone? Add them to the gallery!",
+    "teams_revealed": "🎲 Teams revealed: you're in {teamName}",
+    "teams_revealed_sub": "With {teammates} — {tournamentName}"
   },
   "contact": {
     "btn_open": "Contact",
@@ -2867,11 +2870,17 @@
     "cancel": "Cancel",
     "btn_compose": "Compose by hand",
     "btn_compose_hint": "Creates empty teams (one per 3 players) so you can place the players yourself.",
-    "pick_hint": "Click a player, then the team to put them in.",
     "pick_now_team": "{name} selected: now pick their team below.",
     "pick_to_move": "Select to move to another team",
     "unplace": "Remove from team",
-    "place_here": "Place {name} here"
+    "place_here": "Place {name} here",
+    "pick_or_drag_hint": "Drag a player into a team, or click them and then the team.",
+    "btn_reveal": "Reveal the teams",
+    "btn_hide": "Hide the teams",
+    "reveal_confirm": "Reveal the teams?\n\nThey become visible to everyone and each player gets a notification with their teammates.",
+    "hide_confirm": "Hide the teams again? The public will only see the list of registered players.",
+    "visibility_hidden": "Teams hidden: the public only sees the list of registered players. Confirm the teams, then reveal them whenever you want.",
+    "visibility_revealed": "Teams revealed: visible to everyone."
   },
   "co_orga": {
     "title": "Co-organizers",

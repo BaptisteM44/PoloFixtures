@@ -13,6 +13,7 @@ import { apiMsg } from "@/lib/api-messages";
 import { normalizeCountry } from "@/lib/country-utils";
 import { isAbcLevel, nextTeamName } from "@/lib/abc-draw";
 import { moveSoloEntry, deleteAbcTeam } from "@/lib/abc-teams";
+import { createNotification } from "@/lib/notify";
 
 type Result<T = object> = ({ ok: true } & T) | { ok?: false; error: string };
 
@@ -160,6 +161,52 @@ export async function abcDeleteTeamAction(tournamentId: string, teamId: string):
   const team = await prisma.team.findUnique({ where: { id: teamId }, select: { tournamentId: true } });
   if (!team || team.tournamentId !== tournamentId) return { error: apiMsg("abc_team_not_found") };
   await prisma.$transaction((tx) => deleteAbcTeam(tx, teamId));
+  refresh();
+  return { ok: true };
+}
+
+/**
+ * Dévoile les équipes au public (ou les cache à nouveau). Dévoiler demande
+ * des équipes validées ; recacher n'est possible qu'avant le lancement.
+ * Au dévoilement, chaque joueur·euse (avec compte) reçoit ses coéquipier·es.
+ */
+export async function abcRevealTeamsAction(tournamentId: string, reveal: boolean): Promise<Result> {
+  if (!(await getOrgaPlayerId(tournamentId))) return { error: apiMsg("access_denied") };
+  const t = await prisma.tournament.findUnique({
+    where: { id: tournamentId },
+    select: { id: true, slug: true, name: true, format: true, status: true, selectionLocked: true, teamsRevealedAt: true },
+  });
+  if (!t) return { error: apiMsg("tournament_not_found") };
+  if (t.format !== "ABC Chapeau") return { error: apiMsg("abc_only") };
+
+  if (!reveal) {
+    if (t.status !== "UPCOMING") return { error: apiMsg("abc_reveal_started") };
+    await prisma.tournament.update({ where: { id: tournamentId }, data: { teamsRevealedAt: null } });
+    refresh();
+    return { ok: true };
+  }
+
+  if (!t.selectionLocked) return { error: apiMsg("abc_reveal_validate_first") };
+  if (t.teamsRevealedAt) return { ok: true };
+  await prisma.tournament.update({ where: { id: tournamentId }, data: { teamsRevealedAt: new Date() } });
+
+  const teams = await prisma.team.findMany({
+    where: { tournamentId, players: { some: {} } },
+    select: { name: true, players: { select: { player: { select: { id: true, name: true, account: { select: { id: true } } } } } } },
+  });
+  for (const team of teams) {
+    for (const { player } of team.players) {
+      if (!player.account) continue; // profil sans compte : personne pour lire la notif
+      const teammates = team.players.filter((x) => x.player.id !== player.id).map((x) => x.player.name).join(", ");
+      await createNotification(player.id, "TEAMS_REVEALED", {
+        tournamentId: t.id,
+        tournamentSlug: t.slug ?? t.id,
+        tournamentName: t.name,
+        teamName: team.name,
+        teammates,
+      });
+    }
+  }
   refresh();
   return { ok: true };
 }

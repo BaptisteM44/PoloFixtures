@@ -1099,7 +1099,8 @@
     "legend_title": "Leyenda:",
     "legend_wb": "Winner Bracket (cuadro de ganadores)",
     "legend_lb": "Loser Bracket (cuadro de repesca)",
-    "legend_round": "ronda {n}"
+    "legend_round": "ronda {n}",
+    "abc_teams_not_revealed": "La organización aún no ha desvelado los equipos. Mientras tanto, estos son los inscritos."
   },
   "registration": {
     "section_title": "Inscribir mi equipo",
@@ -1378,7 +1379,9 @@
     "session_messages_grouped": "💬 {count} mensajes nuevos en el entrenamiento — {club}",
     "card_granted": "🎁 Has recibido la carta {card} — ¡actívala!",
     "chat_mention": "💬 {name} te ha mencionado — {context}",
-    "gallery_reminder": "📸 ¿Tienes fotos de {tournament} en el móvil? ¡Súbelas a la galería!"
+    "gallery_reminder": "📸 ¿Tienes fotos de {tournament} en el móvil? ¡Súbelas a la galería!",
+    "teams_revealed": "🎲 Equipos desvelados: juegas en {teamName}",
+    "teams_revealed_sub": "Con {teammates} — {tournamentName}"
   },
   "contact": {
     "btn_open": "Contacto",
@@ -2873,11 +2876,17 @@
     "cancel": "Cancelar",
     "btn_compose": "Componer a mano",
     "btn_compose_hint": "Crea equipos vacíos (uno por cada 3 inscritos) para que coloques tú a los jugadores.",
-    "pick_hint": "Pulsa en un jugador y luego en el equipo donde colocarlo.",
     "pick_now_team": "{name} seleccionado/a: elige su equipo abajo.",
     "pick_to_move": "Seleccionar para cambiar de equipo",
     "unplace": "Quitar del equipo",
-    "place_here": "Colocar a {name} aquí"
+    "place_here": "Colocar a {name} aquí",
+    "pick_or_drag_hint": "Arrastra a un jugador a un equipo, o púlsalo y luego pulsa el equipo.",
+    "btn_reveal": "Desvelar los equipos",
+    "btn_hide": "Ocultar los equipos",
+    "reveal_confirm": "¿Desvelar los equipos?\n\nSerán visibles para todos y cada jugador recibirá una notificación con sus compañeros.",
+    "hide_confirm": "¿Ocultar de nuevo los equipos? El público solo verá la lista de inscritos.",
+    "visibility_hidden": "Equipos ocultos: el público solo ve la lista de inscritos. Valida los equipos y desvélalos cuando quieras.",
+    "visibility_revealed": "Equipos desvelados: visibles para todos."
   },
   "co_orga": {
     "title": "Co-organizadores",

@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { abcTeamsHidden } from "@/lib/abc-reveal";
+import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { auth } from "@/lib/auth";
 import { hasAtLeastRole } from "@/lib/rbac";
 import { apiMsg } from "@/lib/api-messages";
@@ -36,6 +38,10 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   });
 
   if (!tournament) return new Response("Not found", { status: 404 });
+  // ABC Chapeau pas encore dévoilé : composition cachée sauf pour l'orga
+  if (abcTeamsHidden(tournament) && !(await getOrgaPlayerId(tournament.id))) {
+    return Response.json({ ...tournament, teams: [] });
+  }
   const teams = tournament.teams.map(({ orgaNote: _o, registrationNote: _r, ...team }) => team);
   return Response.json({ ...tournament, teams });
 }

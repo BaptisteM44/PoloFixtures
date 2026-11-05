@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { teamsPublicWhere } from "@/lib/abc-reveal";
 import { auth } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
@@ -233,7 +234,8 @@ export default async function ClubPage({
   if (tab === "competitions" && isMember) {
     const memberIds = activeMembers.map((m) => m.playerId);
     const teamPlayers = await prisma.teamPlayer.findMany({
-      where: { playerId: { in: memberIds } },
+      // ABC Chapeau pas encore dévoilé : équipes cachées (membres listés en solo plus bas)
+      where: { playerId: { in: memberIds }, team: { tournament: teamsPublicWhere } },
       select: {
         playerId: true,
         team: {
@@ -269,7 +271,10 @@ export default async function ClubPage({
     // ABC Chapeau : inscrits en individuel pas encore tirés dans une équipe
     // (souvent tirées au dernier moment) — ils n'apparaissaient pas du tout.
     const soloEntries = await prisma.tournamentSoloEntry.findMany({
-      where: { playerId: { in: memberIds }, teamId: null, waitlisted: false },
+      where: {
+        playerId: { in: memberIds }, waitlisted: false,
+        OR: [{ teamId: null }, { tournament: { NOT: teamsPublicWhere } }],
+      },
       select: {
         playerId: true,
         tournament: { select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, status: true, format: true } },

@@ -1099,7 +1099,8 @@
     "legend_title": "Legenda:",
     "legend_wb": "Winner Bracket (quadro dos vencedores)",
     "legend_lb": "Loser Bracket (quadro de repescagem)",
-    "legend_round": "ronda {n}"
+    "legend_round": "ronda {n}",
+    "abc_teams_not_revealed": "A organização ainda não revelou as equipas. Entretanto, aqui estão os inscritos."
   },
   "registration": {
     "section_title": "Inscrever a minha equipa",
@@ -1373,7 +1374,9 @@
     "session_messages_grouped": "💬 {count} novas mensagens no treino — {club}",
     "card_granted": "🎁 Recebeste a carta {card} — vai ativá-la!",
     "chat_mention": "💬 {name} mencionou-te — {context}",
-    "gallery_reminder": "📸 Tens fotos de {tournament} no telemóvel? Junta-as à galeria!"
+    "gallery_reminder": "📸 Tens fotos de {tournament} no telemóvel? Junta-as à galeria!",
+    "teams_revealed": "🎲 Equipas reveladas: jogas na {teamName}",
+    "teams_revealed_sub": "Com {teammates} — {tournamentName}"
   },
   "contact": {
     "btn_open": "Contacto",
@@ -2867,11 +2870,17 @@
     "cancel": "Cancelar",
     "btn_compose": "Compor à mão",
     "btn_compose_hint": "Cria equipas vazias (uma por cada 3 inscritos) para colocares tu os jogadores.",
-    "pick_hint": "Clica num jogador e depois na equipa onde o colocar.",
     "pick_now_team": "{name} selecionado/a: escolhe a equipa abaixo.",
     "pick_to_move": "Selecionar para mudar de equipa",
     "unplace": "Tirar da equipa",
-    "place_here": "Colocar {name} aqui"
+    "place_here": "Colocar {name} aqui",
+    "pick_or_drag_hint": "Arrasta um jogador para uma equipa, ou clica nele e depois na equipa.",
+    "btn_reveal": "Revelar as equipas",
+    "btn_hide": "Ocultar as equipas",
+    "reveal_confirm": "Revelar as equipas?\n\nFicam visíveis para todos e cada jogador recebe uma notificação com os colegas de equipa.",
+    "hide_confirm": "Ocultar de novo as equipas? O público só verá a lista de inscritos.",
+    "visibility_hidden": "Equipas ocultas: o público só vê a lista de inscritos. Valida as equipas e revela-as quando quiseres.",
+    "visibility_revealed": "Equipas reveladas: visíveis para todos."
   },
   "co_orga": {
     "title": "Coorganizadores",

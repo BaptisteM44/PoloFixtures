@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
 import { syncLiveTournamentsCompletion } from "@/lib/tournament-status";
 import { apiMsg } from "@/lib/api-messages";
+import { abcTeamsHidden, teamsPublicWhere } from "@/lib/abc-reveal";
 
 export async function GET() {
   const session = await auth();
@@ -17,7 +18,8 @@ export async function GET() {
   const teamPlayers = await prisma.teamPlayer.findMany({
     // Toutes les inscriptions, y compris non retenues : le joueur veut voir à
     // quels tournois il a tenté sa chance (section « Non retenu » côté page).
-    where: { playerId },
+    // ABC Chapeau pas encore dévoilé : l'équipe reste cachée (listé plus bas en solo, « tirage à venir »).
+    where: { playerId, team: { tournament: teamsPublicWhere } },
     include: {
       team: {
         include: {
@@ -81,7 +83,7 @@ export async function GET() {
     where: { playerId },
     include: {
       tournament: {
-        select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, status: true, bannerPath: true },
+        select: { id: true, slug: true, name: true, city: true, country: true, dateStart: true, dateEnd: true, status: true, bannerPath: true, format: true, teamsRevealedAt: true },
       },
       player: { select: { id: true, name: true, slug: true, photoPath: true, country: true } },
     },
@@ -89,15 +91,17 @@ export async function GET() {
   const knownTeamIds = new Set(entries.map((e) => e.teamId));
   for (const se of soloEntries) {
     if (se.teamId && knownTeamIds.has(se.teamId)) continue; // déjà listée via son équipe tirée
+    const { format: _f, teamsRevealedAt: _r, ...tournament } = se.tournament;
+    const placed = !!se.teamId && !abcTeamsHidden(se.tournament);
     entries.push({
-      selectionStatus: se.waitlisted ? "waitlist" : se.teamId ? "in" : "pending",
+      selectionStatus: se.waitlisted ? "waitlist" : placed ? "in" : "pending",
       hasTeam: false,
       solo: true,
       teamId: `solo-${se.id}`,
       teamName: "",
       teamColor: null,
       isCaptain: false,
-      tournament: se.tournament,
+      tournament,
       waitlistPosition: null,
       teammates: [{ id: se.player.id, name: se.player.name, slug: se.player.slug, photoPath: se.player.photoPath, country: se.player.country, isCaptain: false }],
     });

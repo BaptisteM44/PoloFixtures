@@ -230,6 +230,7 @@ enum NotificationType {
   CARD_GRANTED // notif joueur : l'admin lui a offert une carte spéciale (Coach, WHBPC…)
   CHAT_MENTION // notif joueur : quelqu'un l'a @mentionné dans un chat
   TOURNAMENT_PHOTOS_REMINDER // notif participants le lendemain du tournoi : « ajoute tes photos »
+  TEAMS_REVEALED // notif joueur ABC Chapeau : l'orga a dévoilé les équipes (« tu joues avec X et Y »)
 }
 
 enum TaskPriority {
@@ -292,6 +293,7 @@ model Tournament {
   registrationStart       DateTime?
   registrationEnd         DateTime?
   selectionLocked         Boolean          @default(false) // true = l'orga a validé sa liste d'équipes finale (avec ou sans tirage). Fige WL + paiement.
+  teamsRevealedAt         DateTime? // ABC Chapeau : équipes dévoilées au public (null = composition cachée, seuls les orgas la voient ; lancer le tournoi dévoile aussi)
   maxSoloPlayers          Int? // null = pas de limite (ABC Chapeau)
   rushRegistration        Boolean          @default(false) // true = waitlist si complet, false = toutes inscriptions admises
   // Lieu principal (tout le tournoi)

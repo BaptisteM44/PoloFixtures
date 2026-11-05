@@ -263,6 +263,7 @@ export default async function TournamentEditPage({ params }: { params: { id: str
               // sélection toujours ouverte (bandeau « Valider la sélection »)
               // alors qu'elle était verrouillée en base → chaque action refusée.
               selectionLocked: (t_ as any).selectionLocked ?? false,
+              teamsRevealedAt: (t_ as any).teamsRevealedAt ? new Date((t_ as any).teamsRevealedAt).toISOString() : null,
               gameDurationMin: t_.gameDurationMin,
               maxTeams: t_.maxTeams,
               courtsCount: t_.courtsCount,

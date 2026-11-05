@@ -14,7 +14,7 @@ import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-methods
 import { ABC_LEVELS, getTier, tierMix } from "@/lib/abc-draw";
 import {
   abcAddPlayerAction, abcRemoveEntryAction, abcMoveEntryAction, abcSetLevelAction,
-  abcCreateTeamAction, abcDeleteTeamAction,
+  abcCreateTeamAction, abcDeleteTeamAction, abcRevealTeamsAction,
 } from "@/app/[locale]/tournament/[id]/edit/abc-actions";
 import { renameTeamAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 
@@ -68,6 +68,8 @@ export function DrawPanel({
   selectionLocked = false,
   toggleLockAction,
   maxSoloPlayers = null,
+  teamsRevealed = false,
+  tournamentStarted = false,
 }: {
   tournamentId: string;
   soloEntries: SoloEntry[];
@@ -79,10 +81,14 @@ export function DrawPanel({
   toggleLockAction?: (tId: string, locked: boolean) => Promise<{ ok?: boolean; error?: string }>;
   /** Limite de joueurs : l'orga peut la dépasser, le compteur passe alors en alerte. */
   maxSoloPlayers?: number | null;
+  /** Équipes visibles du public (dévoilées, ou tournoi lancé). Avant : seuls les orgas les voient. */
+  teamsRevealed?: boolean;
+  tournamentStarted?: boolean;
 }) {
   const t = useTranslations("draw");
   const router = useRouter();
   const [locked, setLocked] = useState(selectionLocked);
+  const [revealed, setRevealed] = useState(teamsRevealed);
   const [lockPending, startLock] = useTransition();
   const [entries, setEntries] = useState<SoloEntry[]>(initialEntries);
   const [teams, setTeams] = useState<DrawnTeam[]>(initialTeams);
@@ -92,6 +98,10 @@ export function DrawPanel({
   const [editingTeam, setEditingTeam] = useState<{ id: string; name: string } | null>(null);
   // Composition au clic : joueur·euse sélectionné·e, à placer dans une équipe
   const [pickedId, setPickedId] = useState<string | null>(null);
+  // Glisser-déposer (souris) : joueur·euse en cours de glisser, et zone survolée
+  // (id d'équipe, ou "pool" pour les non placé·e·s). Le clic reste pour le tactile.
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   // Réponses au questionnaire par inscription (chargées à la demande)
   const [openAnswers, setOpenAnswers] = useState<Record<string, SoloAnswer[] | "loading">>({});
@@ -121,6 +131,43 @@ export function DrawPanel({
   const hasTeams = teams.length > 0;
   const hasPlacedPlayers = activeEntries.some((e) => e.teamId && teams.some((tm) => tm.id === e.teamId));
   const picked = pickedId ? activeEntries.find((e) => e.id === pickedId) ?? null : null;
+  const dragProps = (entry: SoloEntry): React.HTMLAttributes<HTMLElement> & { draggable?: boolean } => locked ? {} : {
+    draggable: true,
+    onDragStart: (ev) => {
+      ev.dataTransfer.setData("text/plain", entry.id);
+      ev.dataTransfer.effectAllowed = "move";
+      setDragId(entry.id);
+      setPickedId(null);
+    },
+    onDragEnd: () => { setDragId(null); setOverId(null); },
+  };
+
+  /** Zone de dépôt : une équipe (teamId) ou les non placé·e·s (""). */
+  const dropProps = (teamId: string): React.HTMLAttributes<HTMLElement> => {
+    const zone = teamId || "pool";
+    return locked ? {} : {
+      onDragOver: (ev) => {
+        if (!dragId) return;
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = "move";
+        if (overId !== zone) setOverId(zone);
+      },
+      onDragLeave: (ev) => {
+        if (!ev.currentTarget.contains(ev.relatedTarget as Node | null)) setOverId((o) => (o === zone ? null : o));
+      },
+      onDrop: (ev) => {
+        ev.preventDefault();
+        const id = ev.dataTransfer.getData("text/plain") || dragId;
+        setDragId(null);
+        setOverId(null);
+        const entry = entries.find((x) => x.id === id && !x.waitlisted);
+        if (!entry) return;
+        const current = entry.teamId && teams.some((tm) => tm.id === entry.teamId) ? entry.teamId : "";
+        if (current !== teamId) moveEntry(entry, teamId);
+      },
+    };
+  };
+
   const overCapacity = maxSoloPlayers !== null && activeEntries.length > maxSoloPlayers;
 
   /** Lance une action serveur pour une ligne, affiche son erreur, rafraîchit la page serveur. */
@@ -132,6 +179,18 @@ export function DrawPanel({
     if (res?.error) { setError(res.error); return false; }
     router.refresh();
     return true;
+  };
+
+  // Dévoiler = rendre les équipes publiques (+ notif aux joueur·euses) ; recacher avant le lancement
+  const setReveal = (next: boolean) => {
+    if (!window.confirm(next ? t("reveal_confirm") : t("hide_confirm"))) return;
+    setError(null);
+    startLock(async () => {
+      const res = await abcRevealTeamsAction(tournamentId, next);
+      if ("error" in res && res.error) { setError(res.error); return; }
+      setRevealed(next);
+      router.refresh();
+    });
   };
 
   // Valider les équipes = figer le tirage (plus de relance ni de changement d'équipe)
@@ -306,11 +365,22 @@ export function DrawPanel({
           </h3>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {locked ? (
-              toggleLockAction && (
-                <button className="ghost" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setLock(false)} disabled={lockPending}>
-                  🔓 {t("btn_unlock")}
-                </button>
-              )
+              <>
+                {toggleLockAction && (
+                  <button className="ghost" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setLock(false)} disabled={lockPending}>
+                    🔓 {t("btn_unlock")}
+                  </button>
+                )}
+                {!revealed ? (
+                  <button className="primary" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setReveal(true)} disabled={lockPending}>
+                    🎲 {t("btn_reveal")}
+                  </button>
+                ) : !tournamentStarted && (
+                  <button className="ghost" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setReveal(false)} disabled={lockPending}>
+                    🙈 {t("btn_hide")}
+                  </button>
+                )}
+              </>
             ) : (
               <>
                 <button
@@ -345,6 +415,11 @@ export function DrawPanel({
             )}
           </div>
         </div>
+
+        {/* Visibilité publique de la composition */}
+        <p className="meta" style={{ margin: "0 0 12px", fontSize: 13 }}>
+          {revealed ? `👁 ${t("visibility_revealed")}` : `🙈 ${t("visibility_hidden")}`}
+        </p>
 
         {locked && (
           <p className="draw-locked-banner" style={{ margin: "0 0 12px", padding: "8px 12px", border: "2px solid var(--border)", borderRadius: 8, background: "var(--surface-2)", fontSize: 13 }}>
@@ -578,22 +653,23 @@ export function DrawPanel({
           {/* Placer : clic sur un·e joueur·euse (non placé·e ou déjà en équipe), puis sur l'équipe */}
           {hasTeams && !locked && (
             <p className="meta" style={{ fontSize: 12, margin: "0 0 10px" }}>
-              {picked ? t("pick_now_team", { name: picked.player.name }) : t("pick_hint")}
+              {picked ? t("pick_now_team", { name: picked.player.name }) : t("pick_or_drag_hint")}
               {picked && (
                 <button type="button" className="abc-link" onClick={() => setPickedId(null)}>{t("cancel")}</button>
               )}
             </p>
           )}
 
-          {hasTeams && unplaced.length > 0 && (
-            <div className="abc-pool">
+          {hasTeams && (unplaced.length > 0 || dragId) && (
+            <div className={`abc-pool${overId === "pool" ? " is-over" : ""}`} {...dropProps("")}>
               <p className="abc-pool__title">{t("unplaced_title", { count: unplaced.length })}</p>
               <div className="abc-pool__chips">
                 {unplaced.map((e) => (
                   <button
                     key={e.id}
                     type="button"
-                    className={`abc-chip${pickedId === e.id ? " is-picked" : ""}`}
+                    className={`abc-chip${pickedId === e.id ? " is-picked" : ""}${dragId === e.id ? " is-dragging" : ""}`}
+                    {...dragProps(e)}
                     onClick={() => !locked && setPickedId(pickedId === e.id ? null : e.id)}
                     disabled={locked || pending === e.id}
                     aria-pressed={pickedId === e.id}
@@ -614,8 +690,9 @@ export function DrawPanel({
               return (
                 <div
                   key={team.id}
-                  className={`abc-team${canDrop ? " is-target" : ""}`}
+                  className={`abc-team${canDrop ? " is-target" : ""}${overId === team.id ? " is-over" : ""}`}
                   style={{ opacity: pending === team.id ? 0.6 : 1 }}
+                  {...dropProps(team.id)}
                 >
                   <div className="abc-team__head">
                     {editingTeam?.id === team.id ? (
@@ -648,7 +725,8 @@ export function DrawPanel({
                       <div key={e.id} className="abc-team__player" style={{ opacity: pending === e.id ? 0.6 : 1 }}>
                         <button
                           type="button"
-                          className={`abc-chip abc-chip--flat${pickedId === e.id ? " is-picked" : ""}`}
+                          className={`abc-chip abc-chip--flat${pickedId === e.id ? " is-picked" : ""}${dragId === e.id ? " is-dragging" : ""}`}
+                          {...dragProps(e)}
                           onClick={() => !locked && setPickedId(pickedId === e.id ? null : e.id)}
                           disabled={locked || pending === e.id}
                           aria-pressed={pickedId === e.id}

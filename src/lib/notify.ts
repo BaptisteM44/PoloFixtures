@@ -25,6 +25,8 @@ function toPushPayload(
       return { title: "Team Registered", body: `${p.teamName} — ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=inscription`, tag: `reg-${p.tournamentId}` };
     case "TEAM_SELECTED":
       return { title: "You're In!", body: `${p.teamName} selected for ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}`, tag: `sel-${p.tournamentId}` };
+    case "TEAMS_REVEALED":
+      return { title: "Teams revealed!", body: `${p.teamName}${p.teammates ? ` — ${p.teammates}` : ""}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}?tab=equipes`, tag: `reveal-${p.tournamentId}` };
     case "TEAM_WAITLISTED":
       return { title: "Waitlisted", body: `${p.teamName} is #${p.rank} on waitlist — ${p.tournamentName}`, url: `/tournament/${p.tournamentSlug ?? p.tournamentId}`, tag: `wl-${p.tournamentId}` };
     case "BADGE_UNLOCKED":
@@ -127,7 +129,7 @@ export type NotifCategory = (typeof NOTIF_CATEGORIES)[number];
 const TYPE_CATEGORY: Partial<Record<NotificationType, NotifCategory>> = {
   MATCH_SOON: "matches", REFEREE_SOON: "matches", REFEREE_ASSIGNED: "matches",
   DIRECT_MESSAGE_REQUEST: "messages", DIRECT_MESSAGE_RECEIVED: "messages", TEAM_MESSAGE_RECEIVED: "messages",
-  TEAM_REGISTERED: "registrations", TEAM_SELECTED: "registrations", TEAM_WAITLISTED: "registrations",
+  TEAM_REGISTERED: "registrations", TEAM_SELECTED: "registrations", TEAM_WAITLISTED: "registrations", TEAMS_REVEALED: "registrations",
   TEAM_FEE_CONFIRMED: "registrations", ACCOMMODATION_ASSIGNED: "registrations", ACCOMMODATION_GUEST_ADDED: "registrations",
   SQUAD_INVITE: "squads", SQUAD_INVITE_ACCEPTED: "squads", SQUAD_INVITE_DECLINED: "squads", SQUAD_ROLE_CHANGED: "squads",
   CLUB_JOIN_REQUEST: "clubs", CLUB_SESSION: "clubs", CLUB_SESSION_JOIN: "clubs", CLUB_SESSION_CANCELLED: "clubs", CLUB_SESSION_MESSAGE: "clubs", CHAT_MENTION: "messages", CLUB_ANNOUNCEMENT: "clubs",
