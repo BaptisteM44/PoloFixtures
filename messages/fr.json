@@ -2867,7 +2867,12 @@
     "btn_add": "Ajouter",
     "cancel": "Annuler",
     "btn_compose": "Composer à la main",
-    "btn_compose_hint": "Crée des équipes vides (une pour 3 inscrit·e·s) et place toi-même les joueur·euse·s."
+    "btn_compose_hint": "Crée des équipes vides (une pour 3 inscrit·e·s) et place toi-même les joueur·euse·s.",
+    "pick_hint": "Clique sur un·e joueur·euse, puis sur l'équipe où le/la placer.",
+    "pick_now_team": "{name} sélectionné·e : choisis son équipe ci-dessous.",
+    "pick_to_move": "Sélectionner pour changer d'équipe",
+    "unplace": "Retirer de l'équipe",
+    "place_here": "Placer {name} ici"
   },
   "co_orga": {
     "title": "Co-organisateur.trices",

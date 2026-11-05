@@ -90,6 +90,8 @@ export function DrawPanel({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<string | null>(null); // id de la ligne / équipe en cours d'enregistrement
   const [editingTeam, setEditingTeam] = useState<{ id: string; name: string } | null>(null);
+  // Composition au clic : joueur·euse sélectionné·e, à placer dans une équipe
+  const [pickedId, setPickedId] = useState<string | null>(null);
 
   // Réponses au questionnaire par inscription (chargées à la demande)
   const [openAnswers, setOpenAnswers] = useState<Record<string, SoloAnswer[] | "loading">>({});
@@ -118,6 +120,7 @@ export function DrawPanel({
   const unplaced = activeEntries.filter((e) => !e.teamId || !teams.some((tm) => tm.id === e.teamId));
   const hasTeams = teams.length > 0;
   const hasPlacedPlayers = activeEntries.some((e) => e.teamId && teams.some((tm) => tm.id === e.teamId));
+  const picked = pickedId ? activeEntries.find((e) => e.id === pickedId) ?? null : null;
   const overCapacity = maxSoloPlayers !== null && activeEntries.length > maxSoloPlayers;
 
   /** Lance une action serveur pour une ligne, affiche son erreur, rafraîchit la page serveur. */
@@ -572,31 +575,49 @@ export function DrawPanel({
           </div>
           {!hasTeams && !locked && <p className="meta" style={{ fontSize: 13, margin: "0 0 10px" }}>{t("compose_hint")}</p>}
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 10 }}>
-            {/* Non placés */}
-            {hasTeams && unplaced.length > 0 && (
-              <div style={{ padding: "10px 14px", border: "2px dashed var(--border)", borderRadius: 8, background: "var(--surface-2)" }}>
-                <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>
-                  {t("unplaced_title", { count: unplaced.length })}
-                </p>
-                <div style={{ display: "grid", gap: 6 }}>
-                  {unplaced.map((e) => (
-                    <div key={e.id} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12, opacity: pending === e.id ? 0.6 : 1 }}>
-                      <span className="level-badge" data-level={getTier(e.level)} style={{ fontSize: 10 }}>{e.level}</span>
-                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.player.name}</span>
-                      {!locked && teamSelect(e)}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          {/* Placer : clic sur un·e joueur·euse (non placé·e ou déjà en équipe), puis sur l'équipe */}
+          {hasTeams && !locked && (
+            <p className="meta" style={{ fontSize: 12, margin: "0 0 10px" }}>
+              {picked ? t("pick_now_team", { name: picked.player.name }) : t("pick_hint")}
+              {picked && (
+                <button type="button" className="abc-link" onClick={() => setPickedId(null)}>{t("cancel")}</button>
+              )}
+            </p>
+          )}
 
+          {hasTeams && unplaced.length > 0 && (
+            <div className="abc-pool">
+              <p className="abc-pool__title">{t("unplaced_title", { count: unplaced.length })}</p>
+              <div className="abc-pool__chips">
+                {unplaced.map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    className={`abc-chip${pickedId === e.id ? " is-picked" : ""}`}
+                    onClick={() => !locked && setPickedId(pickedId === e.id ? null : e.id)}
+                    disabled={locked || pending === e.id}
+                    aria-pressed={pickedId === e.id}
+                  >
+                    <span className="level-badge" data-level={getTier(e.level)}>{e.level}</span>
+                    <span className="abc-chip__name">{e.player.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="abc-teams">
             {teams.map((team) => {
               const teamEntries = activeEntries.filter((e) => e.teamId === team.id);
               const mix = tierMix(teamEntries.map((e) => e.level));
+              const canDrop = !!picked && picked.teamId !== team.id;
               return (
-                <div key={team.id} style={{ padding: "10px 14px", border: "2px solid var(--border)", borderRadius: 8, background: "var(--surface)", opacity: pending === team.id ? 0.6 : 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <div
+                  key={team.id}
+                  className={`abc-team${canDrop ? " is-target" : ""}`}
+                  style={{ opacity: pending === team.id ? 0.6 : 1 }}
+                >
+                  <div className="abc-team__head">
                     {editingTeam?.id === team.id ? (
                       <form onSubmit={(ev) => { ev.preventDefault(); renameTeam(); }} style={{ display: "flex", gap: 6, flex: 1 }}>
                         <input
@@ -609,28 +630,44 @@ export function DrawPanel({
                       </form>
                     ) : (
                       <>
-                        <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13, margin: 0, flex: 1, minWidth: 0 }}>{team.name}</p>
-                        <span className="meta" style={{ fontSize: 11 }} title={t("mix_hint")}>
+                        <p className="abc-team__name">{team.name}</p>
+                        <span className="meta" style={{ fontSize: 11, whiteSpace: "nowrap" }} title={t("mix_hint")}>
                           {mix.A}A · {mix.B}B · {mix.C}C
                         </span>
                         {!locked && (
                           <>
-                            <button type="button" className="ghost" style={{ fontSize: 11, padding: "1px 6px" }} onClick={() => setEditingTeam({ id: team.id, name: team.name })} title={t("rename_team")} aria-label={t("rename_team")}>✎</button>
-                            <button type="button" className="ghost" style={{ fontSize: 11, padding: "1px 6px", color: "var(--danger)", borderColor: "var(--danger)" }} onClick={() => deleteTeam(team)} title={t("delete_team")} aria-label={t("delete_team")}>✕</button>
+                            <button type="button" className="ghost abc-icon" onClick={() => setEditingTeam({ id: team.id, name: team.name })} title={t("rename_team")} aria-label={t("rename_team")}>✎</button>
+                            <button type="button" className="ghost abc-icon abc-icon--danger" onClick={() => deleteTeam(team)} title={t("delete_team")} aria-label={t("delete_team")}>✕</button>
                           </>
                         )}
                       </>
                     )}
                   </div>
-                  <div style={{ display: "grid", gap: 6 }}>
+                  <div className="abc-team__players">
                     {teamEntries.map((e) => (
-                      <div key={e.id} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12, opacity: pending === e.id ? 0.6 : 1 }}>
-                        <span className="level-badge" data-level={getTier(e.level)} style={{ fontSize: 10 }}>{e.level}</span>
-                        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.player.name}</span>
-                        {!locked && teamSelect(e)}
+                      <div key={e.id} className="abc-team__player" style={{ opacity: pending === e.id ? 0.6 : 1 }}>
+                        <button
+                          type="button"
+                          className={`abc-chip abc-chip--flat${pickedId === e.id ? " is-picked" : ""}`}
+                          onClick={() => !locked && setPickedId(pickedId === e.id ? null : e.id)}
+                          disabled={locked || pending === e.id}
+                          aria-pressed={pickedId === e.id}
+                          title={locked ? undefined : t("pick_to_move")}
+                        >
+                          <span className="level-badge" data-level={getTier(e.level)}>{e.level}</span>
+                          <span className="abc-chip__name">{e.player.name}</span>
+                        </button>
+                        {!locked && (
+                          <button type="button" className="abc-unplace" onClick={() => moveEntry(e, "")} disabled={pending === e.id} title={t("unplace")} aria-label={t("unplace")}>↩</button>
+                        )}
                       </div>
                     ))}
-                    {teamEntries.length === 0 && <span className="meta" style={{ fontSize: 12 }}>{t("no_player")}</span>}
+                    {teamEntries.length === 0 && !canDrop && <span className="meta" style={{ fontSize: 12 }}>{t("no_player")}</span>}
+                    {canDrop && (
+                      <button type="button" className="abc-drop" onClick={() => { const e = picked!; setPickedId(null); moveEntry(e, team.id); }}>
+                        + {t("place_here", { name: picked!.player.name })}
+                      </button>
+                    )}
                   </div>
                 </div>
               );

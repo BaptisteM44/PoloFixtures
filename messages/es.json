@@ -2872,7 +2872,12 @@
     "btn_add": "Añadir",
     "cancel": "Cancelar",
     "btn_compose": "Componer a mano",
-    "btn_compose_hint": "Crea equipos vacíos (uno por cada 3 inscritos) para que coloques tú a los jugadores."
+    "btn_compose_hint": "Crea equipos vacíos (uno por cada 3 inscritos) para que coloques tú a los jugadores.",
+    "pick_hint": "Pulsa en un jugador y luego en el equipo donde colocarlo.",
+    "pick_now_team": "{name} seleccionado/a: elige su equipo abajo.",
+    "pick_to_move": "Seleccionar para cambiar de equipo",
+    "unplace": "Quitar del equipo",
+    "place_here": "Colocar a {name} aquí"
   },
   "co_orga": {
     "title": "Co-organizadores",

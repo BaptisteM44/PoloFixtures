@@ -2866,7 +2866,12 @@
     "btn_add": "Adicionar",
     "cancel": "Cancelar",
     "btn_compose": "Compor à mão",
-    "btn_compose_hint": "Cria equipas vazias (uma por cada 3 inscritos) para colocares tu os jogadores."
+    "btn_compose_hint": "Cria equipas vazias (uma por cada 3 inscritos) para colocares tu os jogadores.",
+    "pick_hint": "Clica num jogador e depois na equipa onde o colocar.",
+    "pick_now_team": "{name} selecionado/a: escolhe a equipa abaixo.",
+    "pick_to_move": "Selecionar para mudar de equipa",
+    "unplace": "Tirar da equipa",
+    "place_here": "Colocar {name} aqui"
   },
   "co_orga": {
     "title": "Coorganizadores",

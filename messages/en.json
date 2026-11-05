@@ -2866,7 +2866,12 @@
     "btn_add": "Add",
     "cancel": "Cancel",
     "btn_compose": "Compose by hand",
-    "btn_compose_hint": "Creates empty teams (one per 3 players) so you can place the players yourself."
+    "btn_compose_hint": "Creates empty teams (one per 3 players) so you can place the players yourself.",
+    "pick_hint": "Click a player, then the team to put them in.",
+    "pick_now_team": "{name} selected: now pick their team below.",
+    "pick_to_move": "Select to move to another team",
+    "unplace": "Remove from team",
+    "place_here": "Place {name} here"
   },
   "co_orga": {
     "title": "Co-organizers",

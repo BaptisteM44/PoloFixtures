@@ -2872,7 +2872,12 @@
     "btn_add": "Hinzufügen",
     "cancel": "Abbrechen",
     "btn_compose": "Selbst zusammenstellen",
-    "btn_compose_hint": "Legt leere Teams an (eins pro 3 Angemeldete), damit du die Spieler·innen selbst zuteilst."
+    "btn_compose_hint": "Legt leere Teams an (eins pro 3 Angemeldete), damit du die Spieler·innen selbst zuteilst.",
+    "pick_hint": "Klicke auf eine·n Spieler·in und dann auf das Team.",
+    "pick_now_team": "{name} ausgewählt: wähle jetzt unten das Team.",
+    "pick_to_move": "Auswählen, um das Team zu wechseln",
+    "unplace": "Aus dem Team nehmen",
+    "place_here": "{name} hier einteilen"
   },
   "co_orga": {
     "title": "Co-Organisatoren",

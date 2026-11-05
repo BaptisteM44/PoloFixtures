@@ -12891,3 +12891,46 @@ a.bento-row:hover .bento-row__title { text-decoration: underline; }
   .bento-next__facts { grid-template-columns: 1fr 1fr; }
   .bento-next__facts .bento-fact:last-child { grid-column: 1 / -1; }
 }
+
+/* ══ ABC Chapeau — composition des équipes (panneau de tirage orga) ══
+   Non placé·e·s en pastilles sur toute la largeur, puis les équipes (qui ne
+   s'étirent pas). On clique un·e joueur·euse puis l'équipe où le/la placer. */
+.abc-pool { margin-bottom: 12px; padding: 10px 12px; border: 2px dashed var(--border); border-radius: 8px; background: var(--surface-2); }
+.abc-pool__title { margin: 0 0 8px; font-family: var(--font-display); font-weight: 700; font-size: 13px; }
+.abc-pool__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.abc-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%;
+  padding: 4px 10px 4px 5px; border: 1.5px solid var(--border); border-radius: 999px;
+  background: var(--surface); color: var(--text); font-size: 12px; font-weight: 600;
+  box-shadow: none; cursor: pointer; text-transform: none; letter-spacing: 0; min-height: 0;
+}
+.abc-chip:hover:not(:disabled) { transform: none; box-shadow: none; border-color: var(--teal); }
+.abc-chip.is-picked { background: var(--teal); border-color: var(--border); color: #1a1a1a; }
+.abc-chip .level-badge { font-size: 10px; padding: 1px 5px; }
+.abc-chip__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.abc-chip--flat { border-color: transparent; background: none; padding-left: 0; flex: 1; justify-content: flex-start; }
+.abc-chip--flat.is-picked { background: var(--teal); border-color: var(--border); padding-left: 5px; }
+
+.abc-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; align-items: start; }
+.abc-team { padding: 10px 12px; border: 2px solid var(--border); border-radius: 8px; background: var(--surface); min-width: 0; }
+.abc-team.is-target { border-style: dashed; border-color: var(--teal); }
+.abc-team__head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.abc-team__name { margin: 0; flex: 1; min-width: 0; font-family: var(--font-display); font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.abc-team__players { display: grid; gap: 4px; }
+.abc-team__player { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.abc-icon { font-size: 11px; padding: 1px 6px; min-height: 0; }
+.abc-icon--danger { color: var(--danger); border-color: var(--danger); }
+.abc-unplace {
+  flex: none; background: none; border: 0; box-shadow: none; padding: 2px 4px; min-height: 0;
+  color: var(--text-muted); font-size: 13px; cursor: pointer;
+}
+.abc-unplace:hover:not(:disabled) { color: var(--text); transform: none; box-shadow: none; }
+.abc-drop {
+  width: 100%; margin-top: 2px; padding: 6px 8px; min-height: 0; border: 1.5px dashed var(--teal); border-radius: 6px;
+  background: color-mix(in srgb, var(--teal) 12%, var(--surface)); color: var(--text); box-shadow: none;
+  font-size: 12px; font-weight: 700; text-transform: none; letter-spacing: 0; cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.abc-drop:hover { transform: none; box-shadow: none; background: color-mix(in srgb, var(--teal) 25%, var(--surface)); }
+.abc-link { background: none; border: 0; box-shadow: none; padding: 0; margin-left: 8px; min-height: 0; font-size: 12px; text-decoration: underline; cursor: pointer; color: inherit; text-transform: none; letter-spacing: 0; }
+.abc-link:hover { transform: none; box-shadow: none; }
