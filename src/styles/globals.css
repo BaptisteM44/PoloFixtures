@@ -12898,6 +12898,10 @@ a.bento-row:hover .bento-row__title { text-decoration: underline; }
 .abc-pool { margin-bottom: 12px; padding: 10px 12px; border: 2px dashed var(--border); border-radius: 8px; background: var(--surface-2); }
 .abc-pool__title { margin: 0 0 8px; font-family: var(--font-display); font-weight: 700; font-size: 13px; }
 .abc-pool__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.abc-pool__tier { display: flex; align-items: flex-start; gap: 10px; }
+.abc-pool__tier + .abc-pool__tier { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-light); }
+.abc-pool__tier-label { flex: none; min-width: 44px; margin-top: 4px; }
+.abc-pool__tier .abc-pool__chips { flex: 1; min-width: 0; }
 .abc-chip {
   display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%;
   padding: 4px 10px 4px 5px; border: 1.5px solid var(--border); border-radius: 999px;
@@ -12937,3 +12941,25 @@ a.bento-row:hover .bento-row__title { text-decoration: underline; }
 .abc-drop:hover { transform: none; box-shadow: none; background: color-mix(in srgb, var(--teal) 25%, var(--surface)); }
 .abc-link { background: none; border: 0; box-shadow: none; padding: 0; margin-left: 8px; min-height: 0; font-size: 12px; text-decoration: underline; cursor: pointer; color: inherit; text-transform: none; letter-spacing: 0; }
 .abc-link:hover { transform: none; box-shadow: none; }
+
+/* Panneau de tirage sur téléphone : chaque inscrit·e devient une carte
+   (nom + actions, puis niveau / équipe / paiement) au lieu d'un tableau à
+   5 colonnes qui élargissait toute la page. */
+@media (max-width: 720px) {
+  .abc-entries thead { display: none; }
+  .abc-entries, .abc-entries tbody { display: block; }
+  .abc-entries tr.abc-entry { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; padding: 10px 0; }
+  .abc-entries tr.abc-entry > td { display: block; padding: 0 !important; }
+  .abc-entry__name { order: 1; flex: 1 1 0; min-width: 55%; }
+  .abc-entry__name > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; word-break: normal !important; }
+  .abc-entry__status { order: 2; flex: none; }
+  .abc-entry__level { order: 3; padding-left: 17px !important; }
+  .abc-entry__team { order: 4; flex: 1 1 140px; min-width: 0; }
+  .abc-entry__team select { width: 100%; max-width: none !important; }
+  .abc-entry__paid { order: 5; flex: 1 1 100%; padding-left: 17px !important; }
+  .abc-entries tr.abc-entry-answers { display: block; }
+  .abc-entries tr.abc-entry-answers > td { display: block; padding: 0 0 10px 17px !important; }
+  .abc-teams { grid-template-columns: minmax(0, 1fr); }
+  .abc-pool__tier { flex-direction: column; gap: 6px; }
+  .abc-pool__tier-label { margin-top: 0; }
+}

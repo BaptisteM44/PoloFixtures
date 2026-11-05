@@ -11,7 +11,7 @@ import { Fragment, useCallback, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-methods";
-import { ABC_LEVELS, getTier, tierMix } from "@/lib/abc-draw";
+import { ABC_LEVELS, LEVEL_SCORE, getTier, tierMix } from "@/lib/abc-draw";
 import {
   abcAddPlayerAction, abcRemoveEntryAction, abcMoveEntryAction, abcSetLevelAction,
   abcCreateTeamAction, abcDeleteTeamAction, abcRevealTeamsAction,
@@ -453,7 +453,7 @@ export function DrawPanel({
 
         {/* Liste des inscrits actifs */}
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <table className="abc-entries" style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "2px solid var(--border)" }}>
                 <th style={th}>{t("col_player")}</th>
@@ -466,8 +466,8 @@ export function DrawPanel({
             <tbody>
               {activeEntries.map((entry) => (
                 <Fragment key={entry.id}>
-                <tr style={{ borderBottom: openAnswers[entry.id] ? "none" : "1px solid var(--border-light)", opacity: pending === entry.id ? 0.6 : 1 }}>
-                  <td style={{ padding: "8px 10px", fontWeight: 600 }}>
+                <tr className="abc-entry" style={{ borderBottom: openAnswers[entry.id] ? "none" : "1px solid var(--border-light)", opacity: pending === entry.id ? 0.6 : 1 }}>
+                  <td className="abc-entry__name" style={{ padding: "8px 10px", fontWeight: 600 }}>
                     <button
                       type="button"
                       onClick={() => toggleAnswers(entry.id)}
@@ -499,18 +499,18 @@ export function DrawPanel({
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: "8px 10px" }}>
+                  <td className="abc-entry__level" style={{ padding: "8px 10px" }}>
                     {locked
                       ? <span className="level-badge" data-level={getTier(entry.level)}>{entry.level}</span>
                       : <LevelSelect value={entry.level} onChange={(v) => setLevel(entry, v)} disabled={pending === entry.id} />}
                   </td>
-                  <td style={{ padding: "8px 10px" }}>
+                  <td className="abc-entry__team" style={{ padding: "8px 10px" }}>
                     {hasTeams && !locked
                       ? teamSelect(entry)
                       : <span style={{ color: "var(--text-muted)" }}>{teams.find((tm) => tm.id === entry.teamId)?.name ?? "—"}</span>}
                   </td>
                   {feePerPlayer > 0 && (
-                    <td style={{ padding: "8px 10px" }}>
+                    <td className="abc-entry__paid" style={{ padding: "8px 10px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <button
                           type="button"
@@ -545,7 +545,7 @@ export function DrawPanel({
                       </div>
                     </td>
                   )}
-                  <td style={{ padding: "8px 10px", textAlign: "right", whiteSpace: "nowrap" }}>
+                  <td className="abc-entry__status" style={{ padding: "8px 10px", textAlign: "right", whiteSpace: "nowrap" }}>
                     <button
                       type="button"
                       className="ghost"
@@ -572,7 +572,7 @@ export function DrawPanel({
                   </td>
                 </tr>
                 {openAnswers[entry.id] && (
-                  <tr style={{ borderBottom: "1px solid var(--border-light)" }}>
+                  <tr className="abc-entry-answers" style={{ borderBottom: "1px solid var(--border-light)" }}>
                     <td colSpan={feePerPlayer > 0 ? 5 : 4} style={{ padding: "0 10px 10px 30px" }}>
                       {openAnswers[entry.id] === "loading" ? (
                         <span style={{ fontSize: 12, color: "var(--text-muted)" }}>…</span>
@@ -663,22 +663,34 @@ export function DrawPanel({
           {hasTeams && (unplaced.length > 0 || dragId) && (
             <div className={`abc-pool${overId === "pool" ? " is-over" : ""}`} {...dropProps("")}>
               <p className="abc-pool__title">{t("unplaced_title", { count: unplaced.length })}</p>
-              <div className="abc-pool__chips">
-                {unplaced.map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    className={`abc-chip${pickedId === e.id ? " is-picked" : ""}${dragId === e.id ? " is-dragging" : ""}`}
-                    {...dragProps(e)}
-                    onClick={() => !locked && setPickedId(pickedId === e.id ? null : e.id)}
-                    disabled={locked || pending === e.id}
-                    aria-pressed={pickedId === e.id}
-                  >
-                    <span className="level-badge" data-level={getTier(e.level)}>{e.level}</span>
-                    <span className="abc-chip__name">{e.player.name}</span>
-                  </button>
-                ))}
-              </div>
+              {/* Groupé par niveau (A, B, C), du meilleur au moins bon : plus simple pour équilibrer */}
+              {(["A", "B", "C"] as const).map((tier) => {
+                const group = unplaced
+                  .filter((e) => getTier(e.level) === tier)
+                  .sort((a, b) => (LEVEL_SCORE[b.level] ?? 4) - (LEVEL_SCORE[a.level] ?? 4) || a.player.name.localeCompare(b.player.name));
+                if (group.length === 0) return null;
+                return (
+                  <div key={tier} className="abc-pool__tier">
+                    <span className="abc-pool__tier-label level-badge" data-level={tier}>{tier} · {group.length}</span>
+                    <div className="abc-pool__chips">
+                      {group.map((e) => (
+                        <button
+                          key={e.id}
+                          type="button"
+                          className={`abc-chip${pickedId === e.id ? " is-picked" : ""}${dragId === e.id ? " is-dragging" : ""}`}
+                          {...dragProps(e)}
+                          onClick={() => !locked && setPickedId(pickedId === e.id ? null : e.id)}
+                          disabled={locked || pending === e.id}
+                          aria-pressed={pickedId === e.id}
+                        >
+                          <span className="level-badge" data-level={getTier(e.level)}>{e.level}</span>
+                          <span className="abc-chip__name">{e.player.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
