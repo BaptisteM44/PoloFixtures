@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
+import { formatLabel } from "@/lib/format-label";
 import { FollowButton } from "@/components/FollowButton";
 import { ShareTournamentButton } from "@/components/ShareTournamentButton";
 import { getTournamentStatusBadge } from "@/components/TournamentCard";
@@ -102,6 +103,7 @@ export function TournamentBrowser({
 }) {
   const t = useTranslations("tournaments");
   const r = useTranslations("registration");
+  const abcHat = useTranslations("common")("format_abc_hat");
   const locale = useLocale();
   const statusLabels = {
     live: t("status_live"),
@@ -246,7 +248,7 @@ export function TournamentBrowser({
                         <span className={`status ${statusCls}`}>{statusLabel}</span>
                       </div>
                       <p className="tournament-card__location">📍 {tour.city}, {tour.country}</p>
-                      <p className="meta">{tour.format} · {t("teams_slots", { count: tour.teamCount, max: tour.maxTeams })}</p>
+                      <p className="meta">{formatLabel(tour.format, abcHat)} · {t("teams_slots", { count: tour.teamCount, max: tour.maxTeams })}</p>
                     </div>
 
                     {/* Banner full height */}

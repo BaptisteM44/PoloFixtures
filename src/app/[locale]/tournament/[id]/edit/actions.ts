@@ -294,7 +294,8 @@ export async function deleteTeamAction(
     select: { selected: true, waitlistPosition: true },
   });
 
-  // Supprimer les relations avant l'équipe
+  // Supprimer les relations avant l'équipe (ABC : ses inscrits redeviennent non placés)
+  await prisma.tournamentSoloEntry.updateMany({ where: { teamId }, data: { teamId: null } });
   await prisma.teamPlayer.deleteMany({ where: { teamId } });
   await prisma.poolTeam.deleteMany({ where: { teamId } });
   await prisma.match.updateMany({ where: { teamAId: teamId }, data: { teamAId: null } });
@@ -320,7 +321,12 @@ export async function removePlayerFromTeamAction(
   const denied = await requireTournamentOrgaAccess(tournamentId);
   if (denied) return denied;
 
-  await prisma.teamPlayer.delete({ where: { id: teamPlayerId } });
+  const tp = await prisma.teamPlayer.delete({ where: { id: teamPlayerId } });
+  // ABC : l'inscription solo du joueur redevient « non placée »
+  await prisma.tournamentSoloEntry.updateMany({
+    where: { tournamentId, playerId: tp.playerId, teamId: tp.teamId },
+    data: { teamId: null },
+  });
   revalidatePath(`/tournament/${tournamentId}/edit`);
   revalidatePath(`/tournament/${tournamentId}`);
   return { ok: true };
@@ -618,6 +624,19 @@ export async function removeFromWaitlistAction(
   return { ok: true };
 }
 
+/** ABC Chapeau : un joueur ajouté directement dans une équipe doit aussi
+ *  apparaître dans le panneau de tirage, donc avoir son inscription solo
+ *  (niveau B par défaut, l'orga le corrige dans le panneau). */
+async function syncAbcEntry(tournamentId: string, playerId: string, teamId: string) {
+  const t = await prisma.tournament.findUnique({ where: { id: tournamentId }, select: { format: true } });
+  if (t?.format !== "ABC Chapeau") return;
+  await prisma.tournamentSoloEntry.upsert({
+    where: { tournamentId_playerId: { tournamentId, playerId } },
+    create: { tournamentId, playerId, level: "B", teamId, waitlisted: false },
+    update: { teamId, waitlisted: false },
+  });
+}
+
 export async function addPlayerToTeamAction(
   teamId: string,
   tournamentId: string,
@@ -634,6 +653,7 @@ export async function addPlayerToTeamAction(
     });
     if (alreadyIn) return { error: apiMsg("act_deja_equipe_tournoi", { p0: player.name }) };
     await prisma.teamPlayer.create({ data: { teamId, playerId: playerData.playerId, isCaptain: false } });
+    await syncAbcEntry(tournamentId, playerData.playerId, teamId);
   } else {
     const { toSlug } = await import("@/lib/utils");
     const base = toSlug(playerData.name);
@@ -644,6 +664,7 @@ export async function addPlayerToTeamAction(
       data: { name: playerData.name, city: playerData.city ?? null, country: normalizeCountry(playerData.country), slug, status: "PENDING", badges: [] }
     });
     await prisma.teamPlayer.create({ data: { teamId, playerId: created.id, isCaptain: false } });
+    await syncAbcEntry(tournamentId, created.id, teamId);
   }
   revalidatePath(`/tournament/${tournamentId}/edit`);
   revalidatePath(`/tournament/${tournamentId}`);

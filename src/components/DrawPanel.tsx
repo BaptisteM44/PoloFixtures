@@ -1,9 +1,22 @@
 "use client";
 
-import { Fragment, useState, useTransition } from "react";
+/**
+ * Panneau orga ABC Chapeau : inscrits (paiement, niveau, liste d'attente),
+ * ajout de joueurs par l'orga (avec ou sans compte), tirage automatique et
+ * composition des équipes à la main. Chaque changement est enregistré tout
+ * de suite (actions serveur de edit/abc-actions), plus de bouton « Sauvegarder ».
+ */
+
+import { Fragment, useCallback, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from "@/lib/payment-methods";
+import { ABC_LEVELS, getTier, tierMix } from "@/lib/abc-draw";
+import {
+  abcAddPlayerAction, abcRemoveEntryAction, abcMoveEntryAction, abcSetLevelAction,
+  abcCreateTeamAction, abcDeleteTeamAction,
+} from "@/app/[locale]/tournament/[id]/edit/abc-actions";
+import { renameTeamAction } from "@/app/[locale]/tournament/[id]/edit/actions";
 
 type SoloEntry = {
   id: string;
@@ -26,12 +39,24 @@ type DrawnTeam = {
   name: string;
 };
 
-function getLevelTier(level: string): "A" | "B" | "C" {
-  const score: Record<string, number> = { "C": 1, "C+": 2, "B-": 3, "B": 4, "B+": 5, "A-": 6, "A": 7, "A+": 8 };
-  const s = score[level] ?? 4;
-  if (s >= 6) return "A";
-  if (s >= 3) return "B";
-  return "C";
+type PlayerResult = { id: string; name: string; city: string | null; country: string };
+
+const th: React.CSSProperties = { textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" };
+const small: React.CSSProperties = { fontSize: 12, padding: "4px 12px" };
+
+function LevelSelect({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  return (
+    <select
+      className="level-badge"
+      data-level={getTier(value)}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      style={{ cursor: disabled ? "default" : "pointer", padding: "2px 4px" }}
+    >
+      {ABC_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+    </select>
+  );
 }
 
 export function DrawPanel({
@@ -42,6 +67,7 @@ export function DrawPanel({
   feeCurrency = "EUR",
   selectionLocked = false,
   toggleLockAction,
+  maxSoloPlayers = null,
 }: {
   tournamentId: string;
   soloEntries: SoloEntry[];
@@ -51,6 +77,8 @@ export function DrawPanel({
   /** Équipes validées (même verrou que la sélection des tournois classiques) */
   selectionLocked?: boolean;
   toggleLockAction?: (tId: string, locked: boolean) => Promise<{ ok?: boolean; error?: string }>;
+  /** Limite de joueurs : l'orga peut la dépasser, le compteur passe alors en alerte. */
+  maxSoloPlayers?: number | null;
 }) {
   const t = useTranslations("draw");
   const router = useRouter();
@@ -59,10 +87,9 @@ export function DrawPanel({
   const [entries, setEntries] = useState<SoloEntry[]>(initialEntries);
   const [teams, setTeams] = useState<DrawnTeam[]>(initialTeams);
   const [loading, setLoading] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [paymentPending, setPaymentPending] = useState<string | null>(null);
+  const [pending, setPending] = useState<string | null>(null); // id de la ligne / équipe en cours d'enregistrement
+  const [editingTeam, setEditingTeam] = useState<{ id: string; name: string } | null>(null);
 
   // Réponses au questionnaire par inscription (chargées à la demande)
   const [openAnswers, setOpenAnswers] = useState<Record<string, SoloAnswer[] | "loading">>({});
@@ -86,15 +113,22 @@ export function DrawPanel({
     }
   };
 
-  // Changements d'assignation (entryId → teamId)
-  const [pendingChanges, setPendingChanges] = useState<Record<string, string>>({});
-
   const activeEntries = entries.filter((e) => !e.waitlisted);
   const waitlistEntries = entries.filter((e) => e.waitlisted);
+  const unplaced = activeEntries.filter((e) => !e.teamId || !teams.some((tm) => tm.id === e.teamId));
+  const hasTeams = teams.length > 0;
+  const hasPlacedPlayers = activeEntries.some((e) => e.teamId && teams.some((tm) => tm.id === e.teamId));
+  const overCapacity = maxSoloPlayers !== null && activeEntries.length > maxSoloPlayers;
 
-  const getTeamName = (teamId: string | null) => {
-    if (!teamId) return "—";
-    return teams.find((t) => t.id === teamId)?.name ?? teamId;
+  /** Lance une action serveur pour une ligne, affiche son erreur, rafraîchit la page serveur. */
+  const run = async (key: string, fn: () => Promise<{ ok?: boolean; error?: string }>): Promise<boolean> => {
+    setPending(key);
+    setError(null);
+    const res = await fn();
+    setPending(null);
+    if (res?.error) { setError(res.error); return false; }
+    router.refresh();
+    return true;
   };
 
   // Valider les équipes = figer le tirage (plus de relance ni de changement d'équipe)
@@ -111,98 +145,116 @@ export function DrawPanel({
   };
 
   const handleDraw = async () => {
-    // Relancer efface les équipes actuelles (et les changements faits à la main)
-    if (hasDraw && !window.confirm(t("redraw_confirm", { count: teams.length }))) return;
+    // Relancer efface la composition actuelle (tirée ou faite à la main)
+    if (hasPlacedPlayers && !window.confirm(t("redraw_confirm", { count: teams.length }))) return;
     setLoading(true);
     setError(null);
     const res = await fetch(`/api/tournaments/${tournamentId}/draw`, { method: "POST" });
     setLoading(false);
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? t("error_draw"));
-      return;
-    }
-    const data = await res.json();
-    // Mettre à jour les teams et les entries
-    const newTeams: DrawnTeam[] = data.teams.map((t: { id: string; name: string }) => ({ id: t.id, name: t.name }));
-    setTeams((prev) => [...prev, ...newTeams]);
-    // Mettre à jour teamId sur les entries locales
-    const updatedMap: Record<string, string> = {};
-    for (const t of data.teams as { id: string; players: { playerId: string }[] }[]) {
-      for (const p of t.players) {
-        updatedMap[p.playerId] = t.id;
-      }
-    }
-    setEntries((prev) =>
-      prev.map((e) => (updatedMap[e.player.id] ? { ...e, teamId: updatedMap[e.player.id] } : e))
-    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { setError(data.error ?? t("error_draw")); return; }
+    // La route renvoie la liste complète : on remplace (les anciennes équipes n'existent plus)
+    setTeams(data.teams as DrawnTeam[]);
+    const byEntry = new Map((data.entries as { id: string; teamId: string | null }[]).map((e) => [e.id, e.teamId]));
+    setEntries((prev) => prev.map((e) => (byEntry.has(e.id) ? { ...e, teamId: byEntry.get(e.id) ?? null } : e)));
+    router.refresh();
   };
 
-  const handleTeamChange = (entryId: string, teamId: string) => {
-    setPendingChanges((prev) => ({ ...prev, [entryId]: teamId }));
-    setEntries((prev) =>
-      prev.map((e) => (e.id === entryId ? { ...e, teamId: teamId || null } : e))
-    );
+  const moveEntry = async (entry: SoloEntry, teamId: string) => {
+    const target = teamId || null;
+    const before = entry.teamId;
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, teamId: target } : e)));
+    const ok = await run(entry.id, () => abcMoveEntryAction(tournamentId, entry.id, target));
+    if (!ok) setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, teamId: before } : e)));
   };
 
-  const handleSaveAdjustments = async () => {
-    const changesToSend = Object.entries(pendingChanges).map(([entryId, teamId]) => ({ entryId, teamId }));
-    if (changesToSend.length === 0) return;
-    setSaveLoading(true);
+  const setLevel = async (entry: SoloEntry, level: string) => {
+    const before = entry.level;
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, level } : e)));
+    const ok = await run(entry.id, () => abcSetLevelAction(tournamentId, entry.id, level));
+    if (!ok) setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, level: before } : e)));
+  };
+
+  const removeEntry = async (entry: SoloEntry) => {
+    if (!window.confirm(t("remove_confirm", { name: entry.player.name }))) return;
+    if (await run(entry.id, () => abcRemoveEntryAction(tournamentId, entry.id))) {
+      setEntries((prev) => prev.filter((e) => e.id !== entry.id));
+    }
+  };
+
+  const createTeam = async () => {
+    setPending("new-team");
     setError(null);
-    const res = await fetch(`/api/tournaments/${tournamentId}/draw/adjust`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ entries: changesToSend }),
-    });
-    setSaveLoading(false);
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? t("error_save"));
-      return;
+    const res = await abcCreateTeamAction(tournamentId);
+    setPending(null);
+    if ("error" in res && res.error) { setError(res.error); return; }
+    if (res.ok) setTeams((prev) => [...prev, res.team]);
+    router.refresh();
+  };
+
+  const deleteTeam = async (team: DrawnTeam) => {
+    const count = activeEntries.filter((e) => e.teamId === team.id).length;
+    if (count > 0 && !window.confirm(t("delete_team_confirm", { name: team.name, count }))) return;
+    if (await run(team.id, () => abcDeleteTeamAction(tournamentId, team.id))) {
+      setTeams((prev) => prev.filter((tm) => tm.id !== team.id));
+      setEntries((prev) => prev.map((e) => (e.teamId === team.id ? { ...e, teamId: null } : e)));
     }
-    setPendingChanges({});
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  };
+
+  const renameTeam = async () => {
+    if (!editingTeam) return;
+    const { id, name } = editingTeam;
+    if (await run(id, () => renameTeamAction(id, name, tournamentId))) {
+      setTeams((prev) => prev.map((tm) => (tm.id === id ? { ...tm, name: name.trim() } : tm)));
+      setEditingTeam(null);
+    }
   };
 
   const togglePaid = async (entry: SoloEntry) => {
     if (!entry.feePaid) {
-      const ok = window.confirm(`Confirmer le paiement de ${entry.player.name} ?`);
+      const ok = window.confirm(t("confirm_paid", { name: entry.player.name }));
       if (!ok) return;
     }
-    setPaymentPending(entry.id);
+    setPending(entry.id);
     await fetch(`/api/tournaments/${tournamentId}/solo-entries/${entry.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ feePaid: !entry.feePaid }),
     });
     setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, feePaid: !entry.feePaid, paymentMethod: !entry.feePaid ? e.paymentMethod : null } : e)));
-    setPaymentPending(null);
+    setPending(null);
   };
 
   const setPaymentMethod = async (entry: SoloEntry, method: PaymentMethod) => {
-    setPaymentPending(entry.id);
+    setPending(entry.id);
     await fetch(`/api/tournaments/${tournamentId}/solo-entries/${entry.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ feePaid: true, paymentMethod: method }),
     });
     setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, feePaid: true, paymentMethod: method } : e)));
-    setPaymentPending(null);
+    setPending(null);
   };
 
   // Bascule manuelle IN ↔ liste d'attente, sans passer par le tirage.
+  // En liste d'attente, le joueur quitte aussi son équipe (côté serveur).
   const toggleWaitlisted = async (entry: SoloEntry) => {
     const next = !entry.waitlisted;
-    setPaymentPending(entry.id);
-    await fetch(`/api/tournaments/${tournamentId}/solo-entries/${entry.id}`, {
+    setPending(entry.id);
+    setError(null);
+    const res = await fetch(`/api/tournaments/${tournamentId}/solo-entries/${entry.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ waitlisted: next }),
     });
-    setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, waitlisted: next } : e)));
-    setPaymentPending(null);
+    setPending(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error ?? t("error_save"));
+      return;
+    }
+    setEntries((prev) => prev.map((e) => (e.id === entry.id ? { ...e, waitlisted: next, teamId: next ? null : e.teamId } : e)));
+    router.refresh();
   };
 
   const paidCount = activeEntries.filter((e) => e.feePaid).length;
@@ -210,8 +262,19 @@ export function DrawPanel({
     .map((m) => ({ method: m, count: activeEntries.filter((e) => e.feePaid && e.paymentMethod === m).length }))
     .filter((x) => x.count > 0);
   const unspecifiedPaid = activeEntries.filter((e) => e.feePaid && !e.paymentMethod).length;
-  const drawnTeamsCount = teams.length;
-  const hasDraw = drawnTeamsCount > 0 && activeEntries.some((e) => e.teamId);
+
+  const teamSelect = (entry: SoloEntry) => (
+    <select
+      value={entry.teamId && teams.some((tm) => tm.id === entry.teamId) ? entry.teamId : ""}
+      onChange={(e) => moveEntry(entry, e.target.value)}
+      disabled={locked || pending === entry.id}
+      aria-label={t("move_to", { name: entry.player.name })}
+      style={{ fontSize: 12, padding: "3px 6px", maxWidth: 160 }}
+    >
+      <option value="">{t("no_team")}</option>
+      {teams.map((tm) => <option key={tm.id} value={tm.id}>{tm.name}</option>)}
+    </select>
+  );
 
   return (
     <div style={{ display: "grid", gap: 20, marginTop: 16 }}>
@@ -220,27 +283,16 @@ export function DrawPanel({
           <h3 style={{ margin: 0 }}>
             {t("title")}
             <span className="meta" style={{ marginLeft: 10, fontWeight: 400, fontSize: 13 }}>
-              {t("registered_count", { count: activeEntries.length })}
+              <span style={overCapacity ? { color: "var(--danger)", fontWeight: 700 } : undefined} title={overCapacity ? t("over_capacity_hint") : undefined}>
+                {maxSoloPlayers !== null
+                  ? t("registered_count_max", { count: activeEntries.length, max: maxSoloPlayers })
+                  : t("registered_count", { count: activeEntries.length })}
+              </span>
               {waitlistEntries.length > 0 && ` · ${t("waitlist_count", { count: waitlistEntries.length })}`}
-              {feePerPlayer > 0 && ` · ${paidCount}/${activeEntries.length} payé${paidCount !== 1 ? "s" : ""}`}
+              {feePerPlayer > 0 && ` · ${t("paid_count", { paid: paidCount, total: activeEntries.length })}`}
             </span>
           </h3>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {saved && (
-              <span style={{ fontSize: 12, color: "var(--success)", fontFamily: "var(--font-display)", fontWeight: 700 }}>
-                {t("saved")}
-              </span>
-            )}
-            {!locked && Object.keys(pendingChanges).length > 0 && (
-              <button
-                className="primary"
-                style={{ fontSize: 12, padding: "6px 14px" }}
-                onClick={handleSaveAdjustments}
-                disabled={saveLoading}
-              >
-                {saveLoading ? "…" : t("btn_save_changes")}
-              </button>
-            )}
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {locked ? (
               toggleLockAction && (
                 <button className="ghost" style={{ fontSize: 13, padding: "6px 16px" }} onClick={() => setLock(false)} disabled={lockPending}>
@@ -250,20 +302,20 @@ export function DrawPanel({
             ) : (
               <>
                 <button
-                  className={hasDraw ? "ghost" : "primary"}
+                  className={hasPlacedPlayers ? "ghost" : "primary"}
                   style={{ fontSize: 13, padding: "6px 16px" }}
                   onClick={handleDraw}
                   disabled={loading || activeEntries.length < 3}
+                  title={t("btn_draw_hint")}
                 >
-                  {loading ? t("btn_drawing") : hasDraw ? t("btn_redraw") : t("btn_draw")}
+                  {loading ? t("btn_drawing") : hasPlacedPlayers ? t("btn_redraw") : t("btn_draw")}
                 </button>
-                {hasDraw && toggleLockAction && (
+                {hasPlacedPlayers && toggleLockAction && (
                   <button
                     className="primary"
                     style={{ fontSize: 13, padding: "6px 16px" }}
                     onClick={() => setLock(true)}
-                    disabled={lockPending || loading || Object.keys(pendingChanges).length > 0}
-                    title={Object.keys(pendingChanges).length > 0 ? t("validate_save_first") : undefined}
+                    disabled={lockPending || loading || pending !== null}
                   >
                     ✅ {t("btn_validate")}
                   </button>
@@ -280,6 +332,14 @@ export function DrawPanel({
         )}
         {error && <p className="error" style={{ marginBottom: 12 }}>{error}</p>}
 
+        {!locked && (
+          <AddPlayerForm
+            tournamentId={tournamentId}
+            onAdded={(entry) => { setEntries((prev) => [...prev, entry]); router.refresh(); }}
+            onError={setError}
+          />
+        )}
+
         {feePerPlayer > 0 && (byMethod.length > 0 || unspecifiedPaid > 0) && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
             {byMethod.map(({ method, count }) => (
@@ -289,7 +349,7 @@ export function DrawPanel({
             ))}
             {unspecifiedPaid > 0 && (
               <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, background: "var(--bg-panel)", border: "1px solid var(--border)", color: "var(--text-muted)" }}>
-                Mode non précisé : {unspecifiedPaid * feePerPlayer} {feeCurrency}
+                {t("method_unspecified")} : {unspecifiedPaid * feePerPlayer} {feeCurrency}
               </span>
             )}
           </div>
@@ -300,29 +360,43 @@ export function DrawPanel({
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: "2px solid var(--border)" }}>
-                <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>{t("col_player")}</th>
-                <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>{t("col_level")}</th>
-                <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>{t("col_team")}</th>
-                {feePerPlayer > 0 && (
-                  <th style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>Payé</th>
-                )}
-                <th style={{ textAlign: "right", padding: "6px 10px", fontFamily: "var(--font-display)", fontSize: 11, color: "var(--text-muted)" }}>{t("col_status")}</th>
+                <th style={th}>{t("col_player")}</th>
+                <th style={th}>{t("col_level")}</th>
+                <th style={th}>{t("col_team")}</th>
+                {feePerPlayer > 0 && <th style={th}>{t("col_paid")}</th>}
+                <th style={{ ...th, textAlign: "right" }}>{t("col_status")}</th>
               </tr>
             </thead>
             <tbody>
               {activeEntries.map((entry) => (
                 <Fragment key={entry.id}>
-                <tr style={{ borderBottom: openAnswers[entry.id] ? "none" : "1px solid var(--border-light)" }}>
+                <tr style={{ borderBottom: openAnswers[entry.id] ? "none" : "1px solid var(--border-light)", opacity: pending === entry.id ? 0.6 : 1 }}>
                   <td style={{ padding: "8px 10px", fontWeight: 600 }}>
                     <button
                       type="button"
                       onClick={() => toggleAnswers(entry.id)}
                       title={t("view_registration_answers")}
-                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginRight: 6, color: "var(--text-muted)", fontSize: 11 }}
+                      style={{ background: "none", border: "none", cursor: "pointer", padding: 0, marginRight: 6, color: "var(--text-muted)", fontSize: 11, boxShadow: "none" }}
                     >
                       {openAnswers[entry.id] ? "▾" : "▸"}
                     </button>
                     {entry.player.name}
+                    {!entry.player.account && (
+                      <span className="meta" style={{ marginLeft: 6, fontSize: 11, fontWeight: 400 }}>· {t("no_account")}</span>
+                    )}
+                    {!entry.player.account && !locked && (
+                      <MergeGuest
+                        player={entry.player}
+                        onMerged={(target) => {
+                          // Déjà inscrit·e sous son vrai profil : la fusion a supprimé le doublon
+                          setEntries((prev) =>
+                            prev.some((e) => e.player.id === target.id)
+                              ? prev.filter((e) => e.id !== entry.id)
+                              : prev.map((e) => (e.id === entry.id ? { ...e, player: { id: target.id, name: target.name, account: { email: null } } } : e)));
+                          router.refresh();
+                        }}
+                      />
+                    )}
                     {entry.player.account?.email && (
                       <div style={{ fontSize: 11, color: "var(--text-muted)", userSelect: "all", wordBreak: "break-all", paddingLeft: 17 }}>
                         {entry.player.account.email}
@@ -330,31 +404,22 @@ export function DrawPanel({
                     )}
                   </td>
                   <td style={{ padding: "8px 10px" }}>
-                    <span className="level-badge" data-level={getLevelTier(entry.level)}>{entry.level}</span>
+                    {locked
+                      ? <span className="level-badge" data-level={getTier(entry.level)}>{entry.level}</span>
+                      : <LevelSelect value={entry.level} onChange={(v) => setLevel(entry, v)} disabled={pending === entry.id} />}
                   </td>
                   <td style={{ padding: "8px 10px" }}>
-                    {hasDraw && teams.length > 0 && !locked ? (
-                      <select
-                        value={entry.teamId ?? ""}
-                        onChange={(e) => handleTeamChange(entry.id, e.target.value)}
-                        style={{ fontSize: 12, padding: "3px 6px" }}
-                      >
-                        <option value="">{t("no_team")}</option>
-                        {teams.map((t) => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span style={{ color: "var(--text-muted)" }}>{getTeamName(entry.teamId)}</span>
-                    )}
+                    {hasTeams && !locked
+                      ? teamSelect(entry)
+                      : <span style={{ color: "var(--text-muted)" }}>{teams.find((tm) => tm.id === entry.teamId)?.name ?? "—"}</span>}
                   </td>
                   {feePerPlayer > 0 && (
                     <td style={{ padding: "8px 10px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, opacity: paymentPending === entry.id ? 0.5 : 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                         <button
                           type="button"
                           onClick={() => togglePaid(entry)}
-                          disabled={paymentPending === entry.id}
+                          disabled={pending === entry.id}
                           style={{
                             width: 20, height: 20, borderRadius: 4, flexShrink: 0,
                             border: `2px solid ${entry.feePaid ? "var(--teal)" : "var(--border)"}`,
@@ -369,10 +434,10 @@ export function DrawPanel({
                           <select
                             value={entry.paymentMethod ?? ""}
                             onChange={(e) => setPaymentMethod(entry, e.target.value as PaymentMethod)}
-                            disabled={paymentPending === entry.id}
+                            disabled={pending === entry.id}
                             style={{ fontSize: 11, padding: "2px 6px", borderRadius: 4, border: "1px solid var(--border)", background: "var(--bg-panel)" }}
                           >
-                            <option value="" disabled>Mode ?</option>
+                            <option value="" disabled>{t("method_placeholder")}</option>
                             {(Object.entries(PAYMENT_METHOD_LABELS) as [PaymentMethod, string][]).map(([key, label]) => (
                               <option key={key} value={key}>{label}</option>
                             ))}
@@ -384,17 +449,30 @@ export function DrawPanel({
                       </div>
                     </td>
                   )}
-                  <td style={{ padding: "8px 10px", textAlign: "right" }}>
+                  <td style={{ padding: "8px 10px", textAlign: "right", whiteSpace: "nowrap" }}>
                     <button
                       type="button"
                       className="ghost"
                       onClick={() => toggleWaitlisted(entry)}
-                      disabled={locked || paymentPending === entry.id}
+                      disabled={locked || pending === entry.id}
                       title={t("mark_out_hint")}
-                      style={{ fontSize: 11, padding: "3px 10px", color: "var(--danger)", borderColor: "var(--danger)" }}
+                      style={{ fontSize: 11, padding: "3px 10px" }}
                     >
                       {t("mark_out")}
                     </button>
+                    {!locked && (
+                      <button
+                        type="button"
+                        className="ghost"
+                        onClick={() => removeEntry(entry)}
+                        disabled={pending === entry.id}
+                        title={t("remove_hint")}
+                        aria-label={t("remove_hint")}
+                        style={{ fontSize: 11, padding: "3px 8px", marginLeft: 6, color: "var(--danger)", borderColor: "var(--danger)" }}
+                      >
+                        ✕
+                      </button>
+                    )}
                   </td>
                 </tr>
                 {openAnswers[entry.id] && (
@@ -403,7 +481,7 @@ export function DrawPanel({
                       {openAnswers[entry.id] === "loading" ? (
                         <span style={{ fontSize: 12, color: "var(--text-muted)" }}>…</span>
                       ) : (openAnswers[entry.id] as SoloAnswer[]).length === 0 ? (
-                        <span style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>Aucune réponse au questionnaire.</span>
+                        <span style={{ fontSize: 12, color: "var(--text-muted)", fontStyle: "italic" }}>{t("no_answers")}</span>
                       ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           {(openAnswers[entry.id] as SoloAnswer[]).map((a) => (
@@ -433,47 +511,318 @@ export function DrawPanel({
               {waitlistEntries.map((entry) => (
                 <div key={entry.id} style={{ display: "flex", gap: 12, alignItems: "center", fontSize: 13, color: "var(--text-muted)" }}>
                   <span style={{ fontWeight: 600 }}>{entry.player.name}</span>
-                  <span className="level-badge" data-level={getLevelTier(entry.level)} style={{ opacity: 0.7 }}>{entry.level}</span>
+                  <span className="level-badge" data-level={getTier(entry.level)} style={{ opacity: 0.7 }}>{entry.level}</span>
                   <button
                     type="button"
                     className="ghost"
                     onClick={() => toggleWaitlisted(entry)}
-                    disabled={locked || paymentPending === entry.id}
+                    disabled={locked || pending === entry.id}
                     style={{ fontSize: 11, padding: "2px 10px", marginLeft: "auto", color: "var(--teal)", borderColor: "var(--teal)" }}
                   >
                     {t("mark_in")}
                   </button>
+                  {!locked && (
+                    <button
+                      type="button"
+                      className="ghost"
+                      onClick={() => removeEntry(entry)}
+                      disabled={pending === entry.id}
+                      title={t("remove_hint")}
+                      aria-label={t("remove_hint")}
+                      style={{ fontSize: 11, padding: "2px 8px", color: "var(--danger)", borderColor: "var(--danger)" }}
+                    >
+                      ✕
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Récap des équipes formées */}
-        {hasDraw && (
-          <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border-light)" }}>
-            <p style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", marginBottom: 10, textTransform: "uppercase" }}>
+        {/* Composition des équipes : tirage auto puis retouches, ou tout à la main */}
+        <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--border-light)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+            <p style={{ fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", margin: 0, textTransform: "uppercase" }}>
               {t("formed_teams_title", { count: teams.length })}
             </p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10 }}>
-              {teams.map((team) => {
-                const teamEntries = activeEntries.filter((e) => e.teamId === team.id);
-                return (
-                  <div key={team.id} style={{ padding: "10px 14px", border: "2px solid var(--border)", borderRadius: 8, background: "var(--surface)" }}>
-                    <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13, margin: "0 0 6px" }}>{team.name}</p>
+            {!locked && (
+              <button className="ghost" style={small} onClick={createTeam} disabled={pending === "new-team"}>
+                + {t("btn_new_team")}
+              </button>
+            )}
+          </div>
+          {!hasTeams && !locked && <p className="meta" style={{ fontSize: 13, margin: "0 0 10px" }}>{t("compose_hint")}</p>}
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))", gap: 10 }}>
+            {/* Non placés */}
+            {hasTeams && unplaced.length > 0 && (
+              <div style={{ padding: "10px 14px", border: "2px dashed var(--border)", borderRadius: 8, background: "var(--surface-2)" }}>
+                <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13, margin: "0 0 8px" }}>
+                  {t("unplaced_title", { count: unplaced.length })}
+                </p>
+                <div style={{ display: "grid", gap: 6 }}>
+                  {unplaced.map((e) => (
+                    <div key={e.id} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12, opacity: pending === e.id ? 0.6 : 1 }}>
+                      <span className="level-badge" data-level={getTier(e.level)} style={{ fontSize: 10 }}>{e.level}</span>
+                      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.player.name}</span>
+                      {!locked && teamSelect(e)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {teams.map((team) => {
+              const teamEntries = activeEntries.filter((e) => e.teamId === team.id);
+              const mix = tierMix(teamEntries.map((e) => e.level));
+              return (
+                <div key={team.id} style={{ padding: "10px 14px", border: "2px solid var(--border)", borderRadius: 8, background: "var(--surface)", opacity: pending === team.id ? 0.6 : 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                    {editingTeam?.id === team.id ? (
+                      <form onSubmit={(ev) => { ev.preventDefault(); renameTeam(); }} style={{ display: "flex", gap: 6, flex: 1 }}>
+                        <input
+                          value={editingTeam.name}
+                          onChange={(ev) => setEditingTeam({ id: team.id, name: ev.target.value })}
+                          autoFocus
+                          style={{ flex: 1, minWidth: 0, fontSize: 13, padding: "3px 8px" }}
+                        />
+                        <button className="primary" type="submit" style={{ fontSize: 11, padding: "3px 10px" }}>OK</button>
+                      </form>
+                    ) : (
+                      <>
+                        <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13, margin: 0, flex: 1, minWidth: 0 }}>{team.name}</p>
+                        <span className="meta" style={{ fontSize: 11 }} title={t("mix_hint")}>
+                          {mix.A}A · {mix.B}B · {mix.C}C
+                        </span>
+                        {!locked && (
+                          <>
+                            <button type="button" className="ghost" style={{ fontSize: 11, padding: "1px 6px" }} onClick={() => setEditingTeam({ id: team.id, name: team.name })} title={t("rename_team")} aria-label={t("rename_team")}>✎</button>
+                            <button type="button" className="ghost" style={{ fontSize: 11, padding: "1px 6px", color: "var(--danger)", borderColor: "var(--danger)" }} onClick={() => deleteTeam(team)} title={t("delete_team")} aria-label={t("delete_team")}>✕</button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div style={{ display: "grid", gap: 6 }}>
                     {teamEntries.map((e) => (
-                      <div key={e.id} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12, marginBottom: 3 }}>
-                        <span className="level-badge" data-level={getLevelTier(e.level)} style={{ fontSize: 10 }}>{e.level}</span>
-                        <span>{e.player.name}</span>
+                      <div key={e.id} style={{ display: "flex", gap: 6, alignItems: "center", fontSize: 12, opacity: pending === e.id ? 0.6 : 1 }}>
+                        <span className="level-badge" data-level={getTier(e.level)} style={{ fontSize: 10 }}>{e.level}</span>
+                        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.player.name}</span>
+                        {!locked && teamSelect(e)}
                       </div>
                     ))}
                     {teamEntries.length === 0 && <span className="meta" style={{ fontSize: 12 }}>{t("no_player")}</span>}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
           </div>
-        )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Fusion d'un profil sans compte dans le vrai profil de la personne (même
+ * route que la gestion des équipes) : inscription, équipe, buts… suivent.
+ */
+function MergeGuest({ player, onMerged }: { player: { id: string; name: string }; onMerged: (target: PlayerResult) => void }) {
+  const t = useTranslations("team_manager");
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<PlayerResult[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const search = (q: string) => {
+    if (debounce.current) clearTimeout(debounce.current);
+    if (q.trim().length < 2) { setResults([]); return; }
+    debounce.current = setTimeout(async () => {
+      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}&hasAccount=true`);
+      const data: PlayerResult[] = res.ok ? await res.json() : [];
+      setResults(data.filter((p) => p.id !== player.id));
+    }, 250);
+  };
+
+  const merge = async (target: PlayerResult) => {
+    if (!window.confirm(t("confirm_merge", { source: player.name, target: target.name }))) return;
+    setBusy(true);
+    setError(null);
+    const res = await fetch(`/api/players/${player.id}/merge`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ targetPlayerId: target.id }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) { setError(data.error ?? t("error_fallback")); return; }
+    setOpen(false);
+    onMerged(target);
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => { setOpen((o) => !o); setQuery(""); setResults([]); setError(null); }}
+        style={{ background: "none", border: "none", padding: 0, marginLeft: 6, fontSize: 11, fontWeight: 400, color: "var(--text-muted)", textDecoration: "underline", cursor: "pointer", boxShadow: "none" }}
+      >
+        {open ? t("merge_cancel") : t("merge")}
+      </button>
+      {open && (
+        <div style={{ display: "grid", gap: 4, marginTop: 6, paddingLeft: 17, fontWeight: 400 }}>
+          <input
+            placeholder={t("merge_search_placeholder")}
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); search(e.target.value); }}
+            autoFocus
+            style={{ fontSize: 12, padding: "4px 8px", maxWidth: 260 }}
+          />
+          {results.length > 0 && (
+            <div style={{ background: "var(--surface)", border: "1.5px solid var(--border)", borderRadius: 8, overflow: "hidden", maxWidth: 320 }}>
+              {results.slice(0, 10).map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => merge(p)}
+                  disabled={busy}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "7px 12px", background: "none", border: "none", borderBottom: "1px solid var(--border-light)", cursor: "pointer", fontSize: 12, boxShadow: "none", color: "var(--text)" }}
+                >
+                  <strong>{p.name}</strong>
+                  <span style={{ marginLeft: 8, color: "var(--text-muted)", fontSize: 11 }}>{p.city ? `${p.city}, ` : ""}{p.country}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {error && <span style={{ fontSize: 11, color: "var(--danger)" }}>{error}</span>}
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Ajout d'un joueur par l'orga : profil existant (recherche) ou sans compte. */
+function AddPlayerForm({
+  tournamentId,
+  onAdded,
+  onError,
+}: {
+  tournamentId: string;
+  onAdded: (entry: SoloEntry) => void;
+  onError: (msg: string | null) => void;
+}) {
+  const t = useTranslations("draw");
+  const [mode, setMode] = useState<"search" | "manual" | null>(null);
+  const [level, setLevel] = useState("B");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<PlayerResult[]>([]);
+  const [searched, setSearched] = useState(false);
+  const [name, setName] = useState("");
+  const [city, setCity] = useState("");
+  const [country, setCountry] = useState("");
+  const [busy, setBusy] = useState(false);
+  const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const reset = () => { setMode(null); setQuery(""); setResults([]); setSearched(false); setName(""); setCity(""); setCountry(""); };
+
+  const search = useCallback((q: string) => {
+    if (debounce.current) clearTimeout(debounce.current);
+    if (q.trim().length < 2) { setResults([]); setSearched(false); return; }
+    debounce.current = setTimeout(async () => {
+      const res = await fetch(`/api/players?search=${encodeURIComponent(q)}&hasAccount=true`);
+      setResults(res.ok ? await res.json() : []);
+      setSearched(true);
+    }, 250);
+  }, []);
+
+  const add = async (player: Parameters<typeof abcAddPlayerAction>[1]) => {
+    setBusy(true);
+    onError(null);
+    const res = await abcAddPlayerAction(tournamentId, player, level);
+    setBusy(false);
+    if ("error" in res && res.error) { onError(res.error); return; }
+    if (res.ok) { onAdded(res.entry); reset(); }
+  };
+
+  if (mode === null) {
+    return (
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+        <button className="ghost" style={small} onClick={() => setMode("search")}>+ {t("add_player_existing")}</button>
+        <button className="ghost" style={small} onClick={() => setMode("manual")}>+ {t("add_player_guest")}</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "grid", gap: 8, marginBottom: 14, padding: 12, border: "2px solid var(--border)", borderRadius: 8, background: "var(--surface-2)" }}>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <strong style={{ fontSize: 13 }}>{mode === "search" ? t("add_player_existing") : t("add_player_guest")}</strong>
+        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, marginLeft: "auto" }}>
+          {t("col_level")}
+          <LevelSelect value={level} onChange={setLevel} />
+        </label>
+      </div>
+
+      {mode === "search" ? (
+        <div style={{ position: "relative" }}>
+          <input
+            placeholder={t("search_placeholder")}
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); search(e.target.value); }}
+            autoFocus
+            style={{ width: "100%" }}
+          />
+          {results.length > 0 && (
+            <div style={{ marginTop: 4, background: "var(--surface)", border: "2px solid var(--border)", borderRadius: 8, maxHeight: 200, overflowY: "auto" }}>
+              {results.slice(0, 20).map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  disabled={busy}
+                  onClick={() => add({ type: "existing", playerId: p.id })}
+                  style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 12px", background: "none", border: "none", borderBottom: "1px solid var(--border-light)", cursor: "pointer", boxShadow: "none", color: "var(--text)" }}
+                >
+                  <strong style={{ fontSize: 13 }}>{p.name}</strong>
+                  <span className="meta" style={{ marginLeft: 8, fontSize: 12 }}>{p.city ? `${p.city}, ` : ""}{p.country}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {searched && results.length === 0 && (
+            <p className="meta" style={{ margin: "6px 0 0", fontSize: 12 }}>
+              {t("search_no_results")}{" "}
+              <button type="button" className="link-btn" onClick={() => { setName(query); setMode("manual"); }} style={{ background: "none", border: "none", padding: 0, textDecoration: "underline", cursor: "pointer", fontSize: 12, boxShadow: "none", color: "inherit" }}>
+                {t("search_add_as_guest")}
+              </button>
+            </p>
+          )}
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!name.trim() || !country.trim()) { onError(t("guest_required")); return; }
+            add({ type: "manual", name: name.trim(), city: city.trim() || null, country: country.trim() });
+          }}
+          style={{ display: "grid", gap: 8 }}
+        >
+          <div className="edit-grid-3" style={{ gap: 8 }}>
+            <input placeholder={t("guest_name")} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+            <input placeholder={t("guest_city")} value={city} onChange={(e) => setCity(e.target.value)} />
+            <input placeholder={t("guest_country")} value={country} onChange={(e) => setCountry(e.target.value)} />
+          </div>
+          <p className="meta" style={{ margin: 0, fontSize: 12 }}>{t("guest_hint")}</p>
+          <div>
+            <button className="primary" type="submit" style={small} disabled={busy}>{busy ? "…" : t("btn_add")}</button>
+          </div>
+        </form>
+      )}
+
+      <div>
+        <button className="ghost" type="button" style={small} onClick={reset}>{t("cancel")}</button>
       </div>
     </div>
   );

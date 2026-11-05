@@ -5,6 +5,7 @@ import Image from "next/image";
 import { fixImageOrientation } from "@/lib/fix-orientation";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+import { formatLabel } from "@/lib/format-label";
 import { ISO_COUNTRIES } from "@/lib/iso-countries";
 import { CURRENCIES } from "@/lib/currencies";
 import { RegistrationFieldsEditor } from "@/components/RegistrationFieldsEditor";
@@ -136,6 +137,7 @@ function timezoneOptions(current?: string | null): string[] {
 
 export function TournamentEditForm({ tournament, action }: Props) {
   const t = useTranslations("tournament_edit");
+  const abcHat = useTranslations("common")("format_abc_hat");
   const locale = useLocale();
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
@@ -440,7 +442,7 @@ export function TournamentEditForm({ tournament, action }: Props) {
                   coercé vers la 1re option (2v2). */}
               <select name="format" value={currentFormat} onChange={(e) => setCurrentFormat(e.target.value)}>
                 {!STANDARD_FORMATS.includes(currentFormat) && <option value={currentFormat}>{currentFormat}</option>}
-                {STANDARD_FORMATS.map((f) => <option key={f} value={f}>{f}</option>)}
+                {STANDARD_FORMATS.map((f) => <option key={f} value={f}>{formatLabel(f, abcHat)}</option>)}
               </select>
             </label>
             <label className="field-row">

@@ -3,6 +3,7 @@
 import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
+import { formatLabel } from "@/lib/format-label";
 import Link from "next/link";
 
 export type CalendarTournament = {
@@ -97,6 +98,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
   const locale = useLocale();
   const tFilter = useTranslations("tournaments");
   const tCal = useTranslations("calendar");
+  const abcHat = useTranslations("common")("format_abc_hat");
   const [month, setMonth] = useState(initialMonth ?? now.getMonth());
   const [year, setYear] = useState(initialYear ?? now.getFullYear());
   const [continent, setContinent] = useState(() => defaultContinent ?? "");
@@ -284,7 +286,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
       <p className="calendar-expand__meta">
         📅 {fmtDate(new Date(t.dateStart), locale)} — {fmtDate(new Date(t.dateEnd), locale)}
       </p>
-      {t.format && <p className="calendar-expand__meta">🏆 {tCal("label_format")} : {t.format}</p>}
+      {t.format && <p className="calendar-expand__meta">🏆 {tCal("label_format")} : {formatLabel(t.format, abcHat)}</p>}
       <p className="calendar-expand__meta">
         🔴 {tCal("label_status")} : {tCal(`status_${t.status.toLowerCase()}` as any)}
       </p>
@@ -329,7 +331,7 @@ export function CalendarGrid({ tournaments, initialMonth, initialYear, mini = fa
                 <p className="calendar-expand__meta">
                   📅 {fmtDate(new Date(t.dateStart), locale)} — {fmtDate(new Date(t.dateEnd), locale)}
                 </p>
-                {t.format && <p className="calendar-expand__meta">🏆 {tCal("label_format")} : {t.format}</p>}
+                {t.format && <p className="calendar-expand__meta">🏆 {tCal("label_format")} : {formatLabel(t.format, abcHat)}</p>}
                 <p className="calendar-expand__meta" style={{ textTransform: "capitalize" }}>
                   🔴 {tCal("label_status")} : {t.status.toLowerCase()}
                 </p>

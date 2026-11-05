@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { getOrgaPlayerId } from "@/lib/orga-auth";
 import { z } from "zod";
 import { apiMsg } from "@/lib/api-messages";
+import { moveSoloEntry } from "@/lib/abc-teams";
 
 const patchSchema = z.object({
   // Paiement (au moins l'un des deux blocs doit être présent).
@@ -46,9 +47,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string; en
     data.waitlisted = parsed.data.waitlisted;
   }
 
-  const updated = await prisma.tournamentSoloEntry.update({
-    where: { id: params.entryId },
-    data,
+  const updated = await prisma.$transaction(async (tx) => {
+    // Passé en liste d'attente : il quitte aussi son équipe (sinon il y restait).
+    if (data.waitlisted && entry.teamId) await moveSoloEntry(tx, params.id, entry.id, null);
+    return tx.tournamentSoloEntry.update({ where: { id: params.entryId }, data });
   });
 
   return Response.json({

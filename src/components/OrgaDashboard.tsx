@@ -336,6 +336,7 @@ export function OrgaDashboard({
                 feeCurrency={tournament.registrationFeeCurrency ?? "EUR"}
                 selectionLocked={(tournament as any).selectionLocked ?? false}
                 toggleLockAction={toggleSelectionLockAction}
+                maxSoloPlayers={(tournament as any).maxSoloPlayers ?? null}
               />
             );
           })() : (teams.length > 0 && (

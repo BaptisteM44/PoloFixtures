@@ -43,6 +43,7 @@ import { AccommodationPublicView } from "@/components/AccommodationPublicView";
 import { LiveTabView } from "@/components/LiveTabView";
 import { getPodiumTeamIds } from "@/lib/podium";
 import { PipelinePlanning } from "@/components/PipelinePlanning";
+import { formatLabel } from "@/lib/format-label";
 import {
   launchPipelineStageAction, launchPipelineGroupAction, resetPipelineStagesAction, setPipelineSeedsAction, swapPipelineTeamsAction,
   simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction,
@@ -180,6 +181,7 @@ export default async function TournamentPage({
   const r = await getTranslations("registration");
   const tm = await getTranslations("team");
   const fa = await getTranslations("free_agent");
+  const abcHat = (await getTranslations("common"))("format_abc_hat");
   const session = await auth();
   const role = (session?.user as any)?.role ?? null;
   const currentPlayerId = (session?.user as any)?.playerId ?? null;
@@ -530,7 +532,7 @@ export default async function TournamentPage({
             )}
           </div>
           <p style={{ color: "var(--text-muted)", margin: "4px 0 8px", fontSize: 14 }}>
-            {tournament.city}, {tournament.country} · {tournament.format} · {tournament.courtsCount === 1 ? t("courts_count_one", { count: tournament.courtsCount }) : t("courts_count_other", { count: tournament.courtsCount })}
+            {tournament.city}, {tournament.country} · {formatLabel(tournament.format, abcHat)} · {tournament.courtsCount === 1 ? t("courts_count_one", { count: tournament.courtsCount }) : t("courts_count_other", { count: tournament.courtsCount })}
           </p>
           <HeroCountdown
             dateStart={tournament.dateStart.toISOString()}

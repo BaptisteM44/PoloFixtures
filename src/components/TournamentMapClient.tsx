@@ -3,6 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useLocale, useTranslations } from "next-intl";
+import { formatLabel } from "@/lib/format-label";
 import type { MapTournament } from "./TournamentMap";
 
 const TournamentMap = dynamic(() => import("./TournamentMap"), { ssr: false });
@@ -99,6 +100,7 @@ function FilterBtn({ active, onClick, children }: { active: boolean; onClick: ()
 export default function TournamentMapClient({ tournaments, stats, userContinent, variant = "panel" }: Props) {
   const t = useTranslations("tournament");
   const th = useTranslations("home");
+  const abcHat = useTranslations("common")("format_abc_hat");
   const locale = useLocale();
   const [selectedTournament, setSelectedTournament] = useState<MapTournament | null>(null);
   const [continent, setContinent] = useState(userContinent ?? "");
@@ -154,7 +156,7 @@ export default function TournamentMapClient({ tournaments, stats, userContinent,
               onChange={setContinent}
               options={CONTINENTS.filter((c) => c.code).map((c) => ({ value: c.code, label: th(`continent_${c.code.toLowerCase()}` as never) }))}
             />
-            <FilterSelect label={t("map_filter_format")} value={format} onChange={setFormat} options={FORMATS.map((f) => ({ value: f, label: f }))} />
+            <FilterSelect label={t("map_filter_format")} value={format} onChange={setFormat} options={FORMATS.map((f) => ({ value: f, label: formatLabel(f, abcHat) }))} />
             <FilterSelect
               label={t("map_filter_status")}
               value={statusFilter}
@@ -212,7 +214,7 @@ export default function TournamentMapClient({ tournaments, stats, userContinent,
                 <FilterBtn active={format === ""} onClick={() => { setFormat(""); setSelectedTournament(null); }}>{t("filter_all")}</FilterBtn>
                 {FORMATS.map((f) => (
                   <FilterBtn key={f} active={format === f} onClick={() => { setFormat(f); setSelectedTournament(null); }}>
-                    {f}
+                    {formatLabel(f, abcHat)}
                   </FilterBtn>
                 ))}
               </div>
@@ -256,7 +258,7 @@ export default function TournamentMapClient({ tournaments, stats, userContinent,
                   );
                 })()}
                 <span style={{ padding: "3px 10px", borderRadius: 12, background: "var(--surface-2)", border: "1.5px solid var(--border)", fontSize: 11, fontWeight: 700, fontFamily: "var(--font-display)" }}>
-                  {selectedTournament.format}
+                  {formatLabel(selectedTournament.format, abcHat)}
                 </span>
               </div>
               <a href={`/tournament/${selectedTournament.slug ?? selectedTournament.id}`} className="primary" style={{ fontSize: 13 }}>

@@ -12,6 +12,7 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { formatLabel } from "@/lib/format-label";
 import type { WhbpcCardData } from "@/components/WhbpcCard";
 import { GoalShot } from "@/components/GoalShot";
 import { BentoPlayerCard } from "@/components/BentoPlayerCard";
@@ -209,7 +210,7 @@ export async function HomeBento({
               <div className="bento-next__facts">
                 <div className="bento-fact bento-fact--hl">
                   <p className="bento-fact__k">{t("bento_format")}</p>
-                  <p className="bento-fact__v">{next.format}</p>
+                  <p className="bento-fact__v">{formatLabel(next.format, tc("format_abc_hat"))}</p>
                 </div>
                 <div className="bento-fact">
                   <p className="bento-fact__k">{t("bento_teams")}</p>

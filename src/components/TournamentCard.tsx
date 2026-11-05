@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { getLocale } from "next-intl/server";
 import { Tournament } from "@prisma/client";
+import { formatLabel } from "@/lib/format-label";
 import { FollowButton } from "@/components/FollowButton";
 import { ShareTournamentButton } from "@/components/ShareTournamentButton";
 
@@ -36,6 +37,7 @@ export async function TournamentCard({
   isLoggedIn?: boolean;
 }) {
   const t = await getTranslations("tournaments");
+  const abcHat = (await getTranslations("common"))("format_abc_hat");
   const locale = await getLocale();
 
   const { label, cls } = getTournamentStatusBadge(
@@ -84,7 +86,7 @@ export async function TournamentCard({
             <span className={`status ${cls}`}>{label}</span>
           </div>
           <p className="tournament-card__location">📍 {tournament.city}, {tournament.country}</p>
-          <p className="meta">{tournament.format} · {t("teams_slots", { count: teamCount, max: tournament.maxTeams })}</p>
+          <p className="meta">{formatLabel(tournament.format, abcHat)} · {t("teams_slots", { count: teamCount, max: tournament.maxTeams })}</p>
         </div>
 
         {/* Banner full height (next/image : redimensionné à 90px, lazy, webp/avif) */}

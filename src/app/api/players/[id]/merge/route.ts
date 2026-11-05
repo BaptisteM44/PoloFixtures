@@ -15,20 +15,19 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const currentPlayerId = (session.user as { playerId?: string }).playerId;
 
   if (!isAdmin) {
-    const playerInOrgaTournament = await prisma.teamPlayer.findFirst({
-      where: {
-        playerId: params.id,
-        team: {
-          tournament: {
-            OR: [
-              { creatorId: currentPlayerId ?? "" },
-              { coOrganizers: { some: { playerId: currentPlayerId ?? "" } } },
-            ],
-          },
-        },
-      },
-    });
-    if (!playerInOrgaTournament) return new Response("Forbidden", { status: 403 });
+    const orgaTournament = {
+      OR: [
+        { creatorId: currentPlayerId ?? "" },
+        { coOrganizers: { some: { playerId: currentPlayerId ?? "" } } },
+      ],
+    };
+    // Dans une équipe d'un de ses tournois, ou inscrit en solo (ABC Chapeau,
+    // avant le tirage le joueur n'est encore dans aucune équipe).
+    const [inTeam, inSolo] = await Promise.all([
+      prisma.teamPlayer.findFirst({ where: { playerId: params.id, team: { tournament: orgaTournament } } }),
+      prisma.tournamentSoloEntry.findFirst({ where: { playerId: params.id, tournament: orgaTournament } }),
+    ]);
+    if (!inTeam && !inSolo) return new Response("Forbidden", { status: 403 });
   }
 
   const { targetPlayerId } = await request.json();

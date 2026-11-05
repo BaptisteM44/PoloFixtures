@@ -1,18 +1,8 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@/lib/auth";
-import { hasAtLeastRole } from "@/lib/rbac";
 import { apiMsg } from "@/lib/api-messages";
-
-const LEVEL_SCORE: Record<string, number> = {
-  "C": 1, "C+": 2, "B-": 3, "B": 4, "B+": 5, "A-": 6, "A": 7, "A+": 8,
-};
-
-function getTier(level: string): "A" | "B" | "C" {
-  const score = LEVEL_SCORE[level] ?? 4;
-  if (score >= 6) return "A";
-  if (score >= 3) return "B";
-  return "C";
-}
+import { buildTriplets, nextTeamName } from "@/lib/abc-draw";
+import { deleteAbcTeam } from "@/lib/abc-teams";
 
 export async function POST(_request: Request, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -53,105 +43,51 @@ export async function POST(_request: Request, { params }: { params: { id: string
     return Response.json({ error: "Il faut au moins 3 joueurs pour lancer un tirage." }, { status: 400 });
   }
 
-  // Trier par score décroissant
-  const sorted = [...entries].sort((a, b) => (LEVEL_SCORE[b.level] ?? 4) - (LEVEL_SCORE[a.level] ?? 4));
+  const triplets = buildTriplets(entries);
 
-  // Séparer en tiers
-  const tierA = sorted.filter((e) => getTier(e.level) === "A");
-  const tierB = sorted.filter((e) => getTier(e.level) === "B");
-  const tierC = sorted.filter((e) => getTier(e.level) === "C");
-
-  // Former des triplets (snake draft équilibré)
-  // Nombre d'équipes = floor(total / 3)
-  const teamCount = Math.floor(entries.length / 3);
-  const triplets: Array<typeof entries> = [];
-
-  // On essaie de former teamCount équipes avec 1A + 1B + 1C
-  // Si un tier est insuffisant, on comble avec le tier suivant
-  const poolA = [...tierA];
-  const poolB = [...tierB];
-  const poolC = [...tierC];
-  // Pool de surplus pour remplir
-  const surplus: typeof entries = [];
-
-  for (let i = 0; i < teamCount; i++) {
-    const team: typeof entries = [];
-    // Prendre 1 de chaque tier si disponible, sinon depuis surplus
-    if (poolA.length > 0) team.push(poolA.shift()!);
-    else if (surplus.length > 0) team.push(surplus.shift()!);
-
-    if (poolB.length > 0) team.push(poolB.shift()!);
-    else if (surplus.length > 0) team.push(surplus.shift()!);
-
-    if (poolC.length > 0) team.push(poolC.shift()!);
-    else if (surplus.length > 0) team.push(surplus.shift()!);
-
-    // Compléter depuis les pools restants si équipe incomplète
-    while (team.length < 3) {
-      const fill = poolA.shift() ?? poolB.shift() ?? poolC.shift() ?? surplus.shift();
-      if (!fill) break;
-      team.push(fill);
-    }
-
-    if (team.length > 0) triplets.push(team);
-  }
-
-  // Supprimer les anciennes équipes issues d'un tirage précédent (celles dont des soloEntries ont un teamId)
-  const prevDrawnTeamIds = await prisma.tournamentSoloEntry.findMany({
-    where: { tournamentId: params.id, teamId: { not: null } },
-    select: { teamId: true },
-    distinct: ["teamId"],
-  }).then((r) => r.map((e) => e.teamId).filter(Boolean) as string[]);
-
-  if (prevDrawnTeamIds.length > 0) {
-    await prisma.teamPlayer.deleteMany({ where: { teamId: { in: prevDrawnTeamIds } } });
-    await prisma.team.deleteMany({ where: { id: { in: prevDrawnTeamIds } } });
-    await prisma.tournamentSoloEntry.updateMany({
-      where: { tournamentId: params.id },
-      data: { teamId: null },
+  // Relancer remplace toute la composition : on supprime les équipes déjà
+  // tirées ou composées à la main (celles qui ont un inscrit solo), et les
+  // équipes vides créées à la main (sinon elles restent en trop).
+  await prisma.$transaction(async (tx) => {
+    const previous = await tx.team.findMany({
+      where: { tournamentId: params.id, OR: [{ soloEntries: { some: {} } }, { players: { none: {} } }] },
+      select: { id: true },
     });
-  }
+    for (const t of previous) await deleteAbcTeam(tx, t.id);
 
-  const existingCount = await prisma.team.count({ where: { tournamentId: params.id } });
+    const names = (await tx.team.findMany({ where: { tournamentId: params.id }, select: { name: true } })).map((t) => t.name);
+    const maxSeed = (await tx.team.aggregate({ where: { tournamentId: params.id }, _max: { seed: true } }))._max.seed ?? 0;
 
-  const createdTeams: Array<{ id: string; name: string; players: Array<{ playerId: string; name: string; level: string }> }> = [];
-
-  for (let i = 0; i < triplets.length; i++) {
-    const triplet = triplets[i];
-    const teamName = `Équipe ${existingCount + i + 1}`;
-    const team = await prisma.team.create({
-      data: {
-        tournamentId: params.id,
-        name: teamName,
-        seed: existingCount + i + 1,
-        players: {
-          create: triplet.map((e) => ({
-            playerId: e.playerId,
-            isCaptain: false,
-          })),
+    for (let i = 0; i < triplets.length; i++) {
+      const triplet = triplets[i];
+      const name = nextTeamName(names);
+      names.push(name);
+      const team = await tx.team.create({
+        data: {
+          tournamentId: params.id,
+          name,
+          seed: maxSeed + i + 1,
+          players: { create: triplet.map((e) => ({ playerId: e.playerId, isCaptain: false })) },
         },
-      },
-    });
+      });
+      await tx.tournamentSoloEntry.updateMany({
+        where: { id: { in: triplet.map((e) => e.id) } },
+        data: { teamId: team.id },
+      });
+    }
+  }, { timeout: 30_000 }); // une requête par équipe : la base distante dépasse vite les 5 s par défaut
 
-    // Mettre à jour teamId sur les soloEntries
-    await prisma.tournamentSoloEntry.updateMany({
-      where: {
-        tournamentId: params.id,
-        playerId: { in: triplet.map((e) => e.playerId) },
-      },
-      data: { teamId: team.id },
-    });
+  // Liste complète renvoyée : le panneau remplace ses équipes (avant, il
+  // ajoutait les nouvelles aux anciennes déjà supprimées).
+  const teams = await prisma.team.findMany({
+    where: { tournamentId: params.id },
+    select: { id: true, name: true },
+    orderBy: { seed: "asc" },
+  });
+  const assigned = await prisma.tournamentSoloEntry.findMany({
+    where: { tournamentId: params.id },
+    select: { id: true, teamId: true },
+  });
 
-    createdTeams.push({
-      id: team.id,
-      name: teamName,
-      players: triplet.map((e) => ({
-        playerId: e.playerId,
-        name: e.player.name,
-        level: e.level,
-      })),
-    });
-  }
-
-  return Response.json({ teams: createdTeams });
+  return Response.json({ teams, entries: assigned });
 }

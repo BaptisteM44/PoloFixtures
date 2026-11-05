@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { formatLabel } from "@/lib/format-label";
 import cityCoords from "@/data/polo-city-coords.json";
 import { CURRENCIES, COUNTRY_TO_CURRENCY } from "@/lib/currencies";
 import { ISO_COUNTRIES } from "@/lib/iso-countries";
@@ -17,6 +18,7 @@ type PlayerResult = { id: string; name: string; city: string | null; country: st
 export default function NewTournamentPage() {
   const t = useTranslations("tournament");
   const tj = useTranslations("orga_journey");
+  const abcHat = useTranslations("common")("format_abc_hat");
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
 
@@ -309,7 +311,7 @@ export default function NewTournamentPage() {
                 <option value="4v4">4v4</option>
                 <option value="5v5">5v5</option>
                 <option value="ABC">ABC</option>
-                <option value="ABC Chapeau">ABC Chapeau</option>
+                <option value="ABC Chapeau">{formatLabel("ABC Chapeau", abcHat)}</option>
               </select>
             </label>
             <label className="field-row">
