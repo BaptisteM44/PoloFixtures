@@ -11,6 +11,12 @@ type MatchWithTeams = Match & { teamA?: Team | null; teamB?: Team | null };
 
 type TeamWithPlayers = Team & { players: { player: { id: string; name: string } }[] };
 
+// Abréviations des tableaux de classement (internationales) → leur explication
+const cols = [
+  ["W", "legend_w"], ["D", "legend_d"], ["L", "legend_l"], ["GF", "legend_gf"],
+  ["GA", "legend_ga"], ["Diff", "legend_diff"], ["Pts", "legend_pts"],
+] as const;
+
 export function PoolTables({
   pools,
   matches: initialMatches,
@@ -182,14 +188,14 @@ export function PoolTables({
               <tr>
                 <th>#</th>
                 <th>Team</th>
-                <th>W</th>
-                <th>D</th>
-                <th>L</th>
-                <th>GF</th>
-                <th>GA</th>
-                <th>Diff</th>
-                <th>Pts</th>
-                <th title="Buchholz (force adversaires)">Buch.</th>
+                <th title={t("legend_w")}>W</th>
+                <th title={t("legend_d")}>D</th>
+                <th title={t("legend_l")}>L</th>
+                <th title={t("legend_gf")}>GF</th>
+                <th title={t("legend_ga")}>GA</th>
+                <th title={t("legend_diff")}>Diff</th>
+                <th title={t("legend_pts")}>Pts</th>
+                <th title={t("legend_buch")}>Buch.</th>
               </tr>
             </thead>
             <tbody>
@@ -221,14 +227,14 @@ export function PoolTables({
               <tr>
                 <th>#</th>
                 <th>Team</th>
-                <th>W</th>
-                <th>D</th>
-                <th>L</th>
-                <th>GF</th>
-                <th>GA</th>
-                <th>Diff</th>
-                <th>Pts</th>
-                <th title="Buchholz (force adversaires)">Buch.</th>
+                <th title={t("legend_w")}>W</th>
+                <th title={t("legend_d")}>D</th>
+                <th title={t("legend_l")}>L</th>
+                <th title={t("legend_gf")}>GF</th>
+                <th title={t("legend_ga")}>GA</th>
+                <th title={t("legend_diff")}>Diff</th>
+                <th title={t("legend_pts")}>Pts</th>
+                <th title={t("legend_buch")}>Buch.</th>
               </tr>
             </thead>
             <tbody>
@@ -295,13 +301,13 @@ export function PoolTables({
               <thead>
                 <tr>
                   <th>Team</th>
-                  <th>W</th>
-                  <th>D</th>
-                  <th>L</th>
-                  <th>GF</th>
-                  <th>GA</th>
-                  <th>Pts</th>
-                  <th title="Buchholz (force adversaires)">Buch.</th>
+                  <th title={t("legend_w")}>W</th>
+                  <th title={t("legend_d")}>D</th>
+                  <th title={t("legend_l")}>L</th>
+                  <th title={t("legend_gf")}>GF</th>
+                  <th title={t("legend_ga")}>GA</th>
+                  <th title={t("legend_pts")}>Pts</th>
+                  <th title={t("legend_buch")}>Buch.</th>
                 </tr>
               </thead>
               <tbody>
@@ -357,6 +363,13 @@ export function PoolTables({
           </div>
         );
       })}
+      {/* Lexique des colonnes (demandé dans Labs : W, D, L, GF… pas évidents) */}
+      <p className="pool-legend">
+        <strong>{t("legend_title")}</strong>{" "}
+        {[...cols, ["Buch.", "legend_buch"] as const].map(([abbr, key], i) => (
+          <span key={abbr}>{i > 0 && " · "}<b>{abbr}</b> {t(key)}</span>
+        ))}
+      </p>
     </div>
   );
 }

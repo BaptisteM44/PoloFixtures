@@ -1095,7 +1095,11 @@
     "map_view_tournament": "Voir le tournoi",
     "map_filter_continent": "Continent",
     "map_filter_format": "Format",
-    "map_filter_status": "Statut"
+    "map_filter_status": "Statut",
+    "legend_title": "Lexique :",
+    "legend_wb": "Winner Bracket (tableau des gagnants)",
+    "legend_lb": "Loser Bracket (tableau de repêchage)",
+    "legend_round": "tour {n}"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -2303,7 +2307,7 @@
     "golden_double": "Gagner 3+ matchs en golden goal",
     "unbeaten": "Aucune défaite dans un tournoi",
     "sniper": "15+ buts en carrière",
-    "eruption": "5 buts dans un seul match",
+    "eruption": "5 buts dans un seul match (hors 1v1 et 2v2)",
     "on_fire": "Gagner 5 matches consécutifs dans un tournoi",
     "dragon_slayer": "Battre le tenant du titre",
     "goal_machine": "75+ buts en carrière",
@@ -3005,7 +3009,16 @@
     "rounds_1_5": "Rounds 1–5",
     "rounds_6_7": "Rounds 6–7",
     "recycled_score": "Score recyclé (Phase 1)",
-    "new_matches": "Nouveaux matchs"
+    "new_matches": "Nouveaux matchs",
+    "legend_title": "Lexique :",
+    "legend_w": "victoires",
+    "legend_d": "nuls",
+    "legend_l": "défaites",
+    "legend_gf": "buts marqués",
+    "legend_ga": "buts encaissés",
+    "legend_diff": "différence de buts",
+    "legend_pts": "points",
+    "legend_buch": "Buchholz : total des points des adversaires rencontrés (départage)"
   },
   "overlay": {
     "title": "Overlay Stream",

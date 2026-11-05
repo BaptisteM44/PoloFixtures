@@ -613,13 +613,15 @@ export async function computeCareerBadges(playerId: string): Promise<string[]> {
     return !tp?.team.tournament.testMode;
   }).some((m) => m.startAt.getHours() >= 22)) badges.add("night_ride");
 
-  // eruption: 5+ goals by the player in a single match (3v3 or 4v4 only)
+  // eruption: 5+ goals by the player in a single match — sauf en 1v1/2v2 (trop facile).
+  // Avant : seuls les formats nommés « 3v3 »/« 4v4 » comptaient, donc les formats
+  // en étapes (« pipeline »), ABC et ABC Chapeau étaient ignorés à tort.
   if (playerTeamIds.length > 0) {
     const goalEventsByMatch = new Map<string, number>();
     for (const e of filteredEvents) {
       if (e.type === "GOAL" || e.type === "GOLDEN_GOAL") {
         const fmt = e.match?.tournament?.format ?? "";
-        if (fmt !== "3v3" && fmt !== "4v4") continue;
+        if (fmt === "1v1" || fmt === "2v2") continue;
         const mid = e.matchId;
         goalEventsByMatch.set(mid, (goalEventsByMatch.get(mid) ?? 0) + goalDelta(e));
       }

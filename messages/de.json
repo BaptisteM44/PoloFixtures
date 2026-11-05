@@ -1095,7 +1095,11 @@
     "map_view_tournament": "Turnier ansehen",
     "map_filter_continent": "Kontinent",
     "map_filter_format": "Format",
-    "map_filter_status": "Status"
+    "map_filter_status": "Status",
+    "legend_title": "Legende:",
+    "legend_wb": "Winner Bracket (Gewinnerrunde)",
+    "legend_lb": "Loser Bracket (Verliererrunde)",
+    "legend_round": "Runde {n}"
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -2308,7 +2312,7 @@
     "golden_double": "3+ Spiele im Golden Goal gewinnen",
     "unbeaten": "Keine Niederlage in einem Turnier",
     "sniper": "15+ Tore in der Karriere",
-    "eruption": "5 Tore in einem einzigen Spiel",
+    "eruption": "5 Tore in einem einzigen Spiel (nicht in 1v1 oder 2v2)",
     "on_fire": "5 aufeinanderfolgende Spiele in einem Turnier gewinnen",
     "dragon_slayer": "Den Titelverteidiger besiegen",
     "goal_machine": "75+ Tore in der Karriere",
@@ -3010,7 +3014,16 @@
     "rounds_1_5": "Runden 1–5",
     "rounds_6_7": "Runden 6–7",
     "recycled_score": "Übernommene Ergebnisse (Phase 1)",
-    "new_matches": "Neue Spiele"
+    "new_matches": "Neue Spiele",
+    "legend_title": "Legende:",
+    "legend_w": "Siege",
+    "legend_d": "Unentschieden",
+    "legend_l": "Niederlagen",
+    "legend_gf": "erzielte Tore",
+    "legend_ga": "Gegentore",
+    "legend_diff": "Tordifferenz",
+    "legend_pts": "Punkte",
+    "legend_buch": "Buchholz: Summe der Punkte der bisherigen Gegner (Tiebreaker)"
   },
   "overlay": {
     "title": "Stream-Overlay",

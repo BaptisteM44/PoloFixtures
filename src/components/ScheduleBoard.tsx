@@ -455,6 +455,14 @@ export function ScheduleBoard({
     return `R${m.roundIndex}`;
   };
 
+  // « WB R2 » → « Winner Bracket (tableau des gagnants) · tour 2 » au survol
+  const pillHint = (label: string | null): string | undefined => {
+    const m = label?.match(/^(WB|LB)? ?R(\d+)$/);
+    if (!m) return undefined;
+    const round = t("legend_round", { n: Number(m[2]) });
+    return m[1] === "WB" ? `${t("legend_wb")} · ${round}` : m[1] === "LB" ? `${t("legend_lb")} · ${round}` : round;
+  };
+
   // File d'attente réelle par terrain (matchs planifiés, tous blocs confondus)
   const courtQueuePos = useMemo(() => {
     const rank = new Map<string, number>();
@@ -542,7 +550,7 @@ export function ScheduleBoard({
         </div>
 
         <div className="match-card__corner match-card__corner--bl">
-          <span className="pill">{stagePill(match) ?? `${PHASE_LABEL[match.phase] ?? match.phase} R${match.roundIndex}`}</span>
+          <span className="pill" title={pillHint(stagePill(match))}>{stagePill(match) ?? `${PHASE_LABEL[match.phase] ?? match.phase} R${match.roundIndex}`}</span>
         </div>
         <div className={`match-card__corner match-card__corner--br match-card__status--${match.status.toLowerCase()}`}>
           <span>{STATUS_LABEL[match.status] ?? match.status}</span>
@@ -801,6 +809,12 @@ export function ScheduleBoard({
           />
         );
       })()}
+      {/* Lexique des étiquettes de tour (double élimination) */}
+      {deStageIds.size > 0 && (
+        <p className="pool-legend">
+          <strong>{t("legend_title")}</strong> <b>WB</b> {t("legend_wb")} · <b>LB</b> {t("legend_lb")} · <b>R1, R2…</b> {t("legend_round", { n: 1 })}, {t("legend_round", { n: 2 })}…
+        </p>
+      )}
     </div>
   );
 }

@@ -122,8 +122,8 @@ function BracketCard({
         </div>
         {(match.referee || match.coReferee) && (
           <div className="bracket-match-referees">
-            {match.referee && <span>🏁 {match.referee.name}</span>}
-            {match.coReferee && <span>📱 {match.coReferee.name}</span>}
+            {match.referee && <span title={match.referee.name}>🏁 {match.referee.name}</span>}
+            {match.coReferee && <span title={match.coReferee.name}>📱 {match.coReferee.name}</span>}
           </div>
         )}
       </div>

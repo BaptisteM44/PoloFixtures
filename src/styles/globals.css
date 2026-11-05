@@ -4333,6 +4333,12 @@ details.agenda-month--past > summary::-webkit-details-marker {
 
 /* Les classements ont beaucoup de colonnes (W/D/L/GF/GA/DIFF/PTS/BUCH…) :
    sur mobile la table scrolle horizontalement au lieu de déborder l'écran. */
+/* Lexique des abréviations (poules, planning) */
+.pool-legend {
+  margin: 12px 0 0; font-size: 12px; line-height: 1.6; color: var(--text-muted);
+}
+.pool-legend b { color: var(--text); font-family: var(--font-display); }
+
 .pool-card {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -7286,11 +7292,20 @@ textarea {
   color: var(--text-muted);
   display: flex;
   justify-content: space-between;
+  gap: 6px;
   padding: 2px 4px 0;
   white-space: nowrap;
+}
+/* Chaque nom se coupe dans SA moitié : un nom d'arbitre long ne pousse plus
+   celui de l'assistant hors du cadre (signalé dans Labs). Nom complet au survol. */
+.bracket-match-referees > span {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 50%;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.bracket-match-referees > span:only-child { max-width: 100%; }
 
 .bracket-match-card--selected {
   opacity: 0.5;

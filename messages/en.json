@@ -1095,7 +1095,11 @@
     "map_view_tournament": "View tournament",
     "map_filter_continent": "Continent",
     "map_filter_format": "Format",
-    "map_filter_status": "Status"
+    "map_filter_status": "Status",
+    "legend_title": "Key:",
+    "legend_wb": "Winners' Bracket",
+    "legend_lb": "Losers' Bracket (second chance)",
+    "legend_round": "round {n}"
   },
   "registration": {
     "section_title": "Register my team",
@@ -2302,7 +2306,7 @@
     "golden_double": "Win 3+ matches in golden goal",
     "unbeaten": "No defeats in a tournament",
     "sniper": "15+ career goals",
-    "eruption": "5 goals in a single match",
+    "eruption": "5 goals in a single match (not in 1v1 or 2v2)",
     "on_fire": "Win 5 consecutive matches in a tournament",
     "dragon_slayer": "Defeat the defending champion",
     "goal_machine": "75+ career goals",
@@ -3004,7 +3008,16 @@
     "rounds_1_5": "Rounds 1–5",
     "rounds_6_7": "Rounds 6–7",
     "recycled_score": "Recycled score (Phase 1)",
-    "new_matches": "New matches"
+    "new_matches": "New matches",
+    "legend_title": "Key:",
+    "legend_w": "wins",
+    "legend_d": "draws",
+    "legend_l": "losses",
+    "legend_gf": "goals for",
+    "legend_ga": "goals against",
+    "legend_diff": "goal difference",
+    "legend_pts": "points",
+    "legend_buch": "Buchholz: total points of the opponents played (tie-breaker)"
   },
   "overlay": {
     "title": "Stream Overlay",
