@@ -105,6 +105,8 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
   let promotedPlayerId: string | null = null;
 
   await prisma.$transaction(async (tx) => {
+    // Après le tirage, il quitte aussi son équipe (sinon il y restait)
+    await tx.teamPlayer.deleteMany({ where: { playerId, team: { tournamentId: params.id } } });
     await tx.tournamentSoloEntry.delete({
       where: { tournamentId_playerId: { tournamentId: params.id, playerId } },
     });

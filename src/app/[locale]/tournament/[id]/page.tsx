@@ -45,6 +45,7 @@ import { getPodiumTeamIds } from "@/lib/podium";
 import { PipelinePlanning } from "@/components/PipelinePlanning";
 import { formatLabel } from "@/lib/format-label";
 import { abcTeamsHidden } from "@/lib/abc-reveal";
+import { healAbcTeams } from "@/lib/abc-teams";
 import {
   launchPipelineStageAction, launchPipelineGroupAction, resetPipelineStagesAction, setPipelineSeedsAction, swapPipelineTeamsAction,
   simulatePipelineStageAction, previewPipelineEntriesAction, setPipelineManualGroupsAction,
@@ -119,6 +120,8 @@ export default async function TournamentPage({
   // On récupère d'abord le tab depuis searchParams AVANT la query pour
   // ne charger les données lourdes (players, events) que si nécessaire.
   const activeTab = searchParams.tab;
+  // ABC Chapeau : recale la vraie composition sur le panneau de tirage si elle a divergé (anciennes données)
+  await healAbcTeams(params.id);
 
   // Les onglets "equipes" et "recap" ont besoin des joueurs complets.
   // "hebergement" aussi : myTeam est calculé via team.players, nécessaire pour afficher le tab.

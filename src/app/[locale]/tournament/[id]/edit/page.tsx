@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { healAbcTeams } from "@/lib/abc-teams";
 import { tournamentTimezone } from "@/lib/timezone";
 import { formatTournamentDates } from "@/lib/podium-share";
 import { canonicalCountryName } from "@/lib/country-utils";
@@ -15,6 +16,8 @@ import { CreatedToast } from "@/components/CreatedToast";
 
 export default async function TournamentEditPage({ params }: { params: { id: string; locale: string } }) {
   const session = await auth();
+  // ABC Chapeau : recale la vraie composition sur le panneau si elle a divergé (anciennes données)
+  await healAbcTeams(params.id);
   const tournament = await prisma.tournament.findFirst({
     where: { OR: [{ id: params.id }, { slug: params.id }] },
     include: {
