@@ -3136,7 +3136,12 @@
     "reply_as_me": "Em meu nome",
     "delete": "Apagar",
     "delete_item_confirm": "Apagar definitivamente este item?",
-    "delete_reply_confirm": "Apagar esta resposta?"
+    "delete_reply_confirm": "Apagar esta resposta?",
+    "stat_done": "Feito",
+    "stat_in_progress": "Em curso",
+    "stat_pending": "Em espera",
+    "meh_add_comment": "Adicionar um comentário",
+    "archived_drawer": "Não retidas há mais de 3 meses ({count})"
   },
   "reg_fields": {
     "title": "Campos de inscrição personalizados",

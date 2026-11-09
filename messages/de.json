@@ -3142,7 +3142,12 @@
     "reply_as_me": "Mit Pseudonym",
     "delete": "Löschen",
     "delete_item_confirm": "Diesen Beitrag endgültig löschen?",
-    "delete_reply_confirm": "Antwort löschen?"
+    "delete_reply_confirm": "Antwort löschen?",
+    "stat_done": "Erledigt",
+    "stat_in_progress": "In Arbeit",
+    "stat_pending": "Offen",
+    "meh_add_comment": "Kommentar hinzufügen",
+    "archived_drawer": "Seit über 3 Monaten nicht übernommen ({count})"
   },
   "reg_fields": {
     "title": "Benutzerdefinierte Anmeldefelder",

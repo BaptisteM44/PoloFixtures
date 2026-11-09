@@ -127,6 +127,7 @@ export function LabsClient({ playerId, isAdmin, charterAccepted }: Props) {
       body: JSON.stringify({ status }),
     });
     await fetchItems();
+    fetchStats();
     if (selectedItem?.id === itemId) {
       const res = await fetch(`/api/community/items/${itemId}`);
       if (res.ok) setSelectedItem(await res.json());
@@ -134,150 +135,127 @@ export function LabsClient({ playerId, isAdmin, charterAccepted }: Props) {
   };
 
   const handleDeleteItem = async (itemId: string) => {
-    if (!confirm(t("delete_item_confirm" as any))) return;
+    if (!confirm(t("delete_item_confirm"))) return;
     await fetch(`/api/community/items/${itemId}`, { method: "DELETE" });
     if (selectedItem?.id === itemId) setSelectedItem(null);
     await fetchItems();
+    fetchStats();
   };
+
+  // Chiffres du haut : fait / en cours / en attente (toutes catégories)
+  const [stats, setStats] = useState<{ done: number; inProgress: number; pending: number } | null>(null);
+  const fetchStats = useCallback(async () => {
+    const res = await fetch("/api/community/stats");
+    if (res.ok) setStats(await res.json());
+  }, []);
+  useEffect(() => { fetchStats(); }, [fetchStats]);
+
+  // « Pas retenu » depuis plus de 3 mois : rangé dans un tiroir grisé en bas,
+  // pas perdu mais plus dans le fil. Date du refus ≈ dernière modification.
+  const ARCHIVE_AFTER_MS = 90 * 86_400_000;
+  const isArchived = (item: CommunityItem) =>
+    item.status === "rejected" && Date.now() - new Date(item.updatedAt).getTime() > ARCHIVE_AFTER_MS;
+  // « Pas retenu » récents : en bas du fil (l'API les trie déjà ainsi ; ordre conservé sinon)
+  const visibleItems = [
+    ...items.filter((item) => item.status !== "rejected"),
+    ...items.filter((item) => item.status === "rejected" && !isArchived(item)),
+  ];
+  const archivedItems = items.filter(isArchived);
+
+  const renderCard = (item: CommunityItem) => (
+    <ItemCard
+      key={item.id}
+      item={item}
+      playerId={playerId}
+      isAdmin={isAdmin}
+      voting={votingId === item.id}
+      onVote={handleVote}
+      onUnvote={handleUnvote}
+      onOpen={() => openItem(item.id)}
+      onAdminStatus={handleAdminStatus}
+      onDelete={handleDeleteItem}
+    />
+  );
+
+  const selectTab = (id: Tab) => { setActiveTab(id); if (id === "done") setSort("hot"); };
 
   return (
     <>
-      {/* ── Header page ─────────────────────────────────────────────────── */}
-      <div style={{ background: "var(--bg)", minHeight: "100vh" }}>
-        <div style={{ maxWidth: 860, margin: "0 auto", padding: "24px 16px 60px" }}>
-
-          {/* Title */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 28 }}>
-            <div>
-              <h1 style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(28px, 5vw, 48px)",
-                fontWeight: 900,
-                letterSpacing: "-0.02em",
-                lineHeight: 1,
-                marginBottom: 6,
-              }}>
-                🧪 Community Lab
-              </h1>
-              <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
-                {t("page_subtitle")}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowNewModal(true)}
-              style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: 700,
-                fontSize: 15,
-                padding: "10px 20px",
-                background: "var(--teal)",
-                border: "2px solid var(--border)",
-                borderRadius: 6,
-                cursor: "pointer",
-                boxShadow: "3px 3px 0 var(--border)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {t("new_idea_btn")}
-            </button>
+      <div className="labs">
+        <header className="labs__head">
+          <div>
+            <h1 className="labs__title">🧪 Community Lab</h1>
+            <p className="labs__subtitle">{t("page_subtitle")}</p>
           </div>
+          <button type="button" className="primary" onClick={() => setShowNewModal(true)}>
+            {t("new_idea_btn")}
+          </button>
+        </header>
 
-          {/* ── Tabs ───────────────────────────────────────────────────── */}
-          <div style={{
-            display: "flex",
-            gap: 4,
-            marginBottom: 20,
-            flexWrap: "wrap",
-          }}>
-            {TABS.map((tab) => {
-              const active = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => { setActiveTab(tab.id); if (tab.id === "done") setSort("hot"); }}
-                  style={{
-                    fontFamily: "var(--font-display)",
-                    fontWeight: 700,
-                    fontSize: 13,
-                    padding: "8px 14px",
-                    border: "2px solid var(--border)",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                    background: active ? "var(--text)" : "var(--surface)",
-                    color: active ? "var(--bg)" : "var(--text)",
-                    boxShadow: active ? "none" : "2px 2px 0 var(--border)",
-                    transform: active ? "translate(2px, 2px)" : "none",
-                    transition: "all 0.1s",
-                  }}
-                >
-                  {tab.emoji} {t(tab.label as any)}
-                </button>
-              );
-            })}
+        {/* ── Avancement : fait / en cours / en attente ── */}
+        <div className="labs-stats">
+          <button type="button" className="labs-stat labs-stat--done" onClick={() => selectTab("done")} title={t("tab_done")}>
+            <span className="labs-stat__num">{stats?.done ?? "–"}</span>
+            <span className="labs-stat__label">✅ {t("stat_done")}</span>
+          </button>
+          <div className="labs-stat labs-stat--progress">
+            <span className="labs-stat__num">{stats?.inProgress ?? "–"}</span>
+            <span className="labs-stat__label">🛠️ {t("stat_in_progress")}</span>
           </div>
+          <div className="labs-stat labs-stat--pending">
+            <span className="labs-stat__num">{stats?.pending ?? "–"}</span>
+            <span className="labs-stat__label">⏳ {t("stat_pending")}</span>
+          </div>
+        </div>
 
-          {/* ── Sort bar ────────────────────────────────────────────────── */}
+        {/* ── Onglets + tri ── */}
+        <div className="labs-bar">
+          <div className="labs-tabs" role="tablist">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={`labs-tab${activeTab === tab.id ? " is-active" : ""}`}
+                onClick={() => selectTab(tab.id)}
+              >
+                {tab.emoji} {t(tab.label as never)}
+              </button>
+            ))}
+          </div>
           {currentTab.showSort && (
-            <div style={{ display: "flex", gap: 8, marginBottom: 20, alignItems: "center" }}>
-              <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase" }}>{t("sort_label")}</span>
+            <div className="labs-sort">
+              <span className="labs-sort__label">{t("sort_label")}</span>
               {(["hot", "new", "top"] as Sort[]).map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSort(s)}
-                  style={{
-                    fontSize: 12,
-                    padding: "4px 10px",
-                    border: "1.5px solid var(--border)",
-                    borderRadius: 20,
-                    cursor: "pointer",
-                    background: sort === s ? "var(--text)" : "transparent",
-                    color: sort === s ? "var(--bg)" : "var(--text-muted)",
-                    fontWeight: 600,
-                    transition: "all 0.1s",
-                  }}
-                >
+                <button key={s} type="button" className={`labs-chip${sort === s ? " is-active" : ""}`} onClick={() => setSort(s)}>
                   {s === "hot" ? t("sort_hot") : s === "new" ? t("sort_new") : t("sort_top")}
                 </button>
               ))}
             </div>
           )}
-
-          {/* ── Items list ──────────────────────────────────────────────── */}
-          {loading ? (
-            <div style={{ textAlign: "center", padding: "60px 0", color: "var(--text-muted)" }}>
-              {t("loading")}
-            </div>
-          ) : items.length === 0 ? (
-            <div style={{
-              textAlign: "center", padding: "60px 24px",
-              border: "2px dashed var(--border-light)", borderRadius: 8,
-            }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-              <p style={{ color: "var(--text-muted)", fontWeight: 600 }}>{t("empty_title")}</p>
-              <p style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>{t("empty_cta")}</p>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {items.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  playerId={playerId}
-                  isAdmin={isAdmin}
-                  voting={votingId === item.id}
-                  onVote={handleVote}
-                  onUnvote={handleUnvote}
-                  onOpen={() => openItem(item.id)}
-                  onAdminStatus={handleAdminStatus}
-                  onDelete={handleDeleteItem}
-                />
-              ))}
-            </div>
-          )}
         </div>
+
+        {/* ── Propositions : 2 par ligne ── */}
+        {loading ? (
+          <p className="labs-empty">{t("loading")}</p>
+        ) : items.length === 0 ? (
+          <div className="labs-empty labs-empty--box">
+            <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+            <p style={{ fontWeight: 600, margin: 0 }}>{t("empty_title")}</p>
+            <p style={{ fontSize: 13, margin: "4px 0 0" }}>{t("empty_cta")}</p>
+          </div>
+        ) : (
+          <>
+            {visibleItems.length > 0 && <div className="labs-grid">{visibleItems.map(renderCard)}</div>}
+            {archivedItems.length > 0 && (
+              <details className="labs-drawer">
+                <summary>🗄️ {t("archived_drawer", { count: archivedItems.length })}</summary>
+                <div className="labs-grid">{archivedItems.map(renderCard)}</div>
+              </details>
+            )}
+          </>
+        )}
       </div>
 
       {/* ── Modals ──────────────────────────────────────────────────────────── */}
@@ -304,7 +282,7 @@ export function LabsClient({ playerId, isAdmin, charterAccepted }: Props) {
           playerId={playerId}
           charterAccepted={charterAccepted}
           onClose={() => setShowNewModal(false)}
-          onCreated={() => { setShowNewModal(false); fetchItems(); }}
+          onCreated={() => { setShowNewModal(false); fetchItems(); fetchStats(); }}
         />
       )}
     </>
@@ -366,58 +344,31 @@ function ItemCard({ item, playerId, isAdmin, voting, onVote, onUnvote, onOpen, o
     }
   };
 
-  return (
-    <div
-      style={{
-        background: "var(--surface)",
-        border: "2px solid var(--border)",
-        borderRadius: 8,
-        padding: "16px 18px",
-        boxShadow: "3px 3px 0 var(--border)",
-        position: "relative",
-        opacity: voting ? 0.7 : 1,
-        transition: "opacity 0.15s",
-      }}
-    >
-      {item.pinned && (
-        <div style={{ position: "absolute", top: 10, right: 10, fontSize: 16 }} title={t("pinned")}>📌</div>
-      )}
+  const canDelete = isAdmin || (!!playerId && item.authorId === playerId);
 
-      {/* Header: type + status */}
-      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}>
-        <span style={{
-          fontSize: 11, fontWeight: 700, padding: "2px 7px",
-          border: "1.5px solid var(--border)", borderRadius: 4,
-          background: "var(--surface-2)", letterSpacing: "0.04em",
-        }}>
-          {t((TYPE_LABEL[item.type] ?? item.type) as any)}
-        </span>
+  return (
+    <article className={`labs-card${voting ? " is-busy" : ""}${item.status === "rejected" ? " is-rejected" : ""}`}>
+      {/* Type, statut, auteur·rice, partage */}
+      <div className="labs-card__head">
+        <span className="labs-tag">{t((TYPE_LABEL[item.type] ?? item.type) as never)}</span>
         {isAdmin ? (
           <select
+            className="labs-tag labs-tag--status"
             value={item.status}
             onChange={(e) => onAdminStatus(item.id, e.target.value)}
-            style={{
-              fontSize: 11, fontWeight: 700, padding: "2px 6px",
-              border: "1.5px solid var(--border)", borderRadius: 4,
-              background: status.bg, color: status.color, cursor: "pointer",
-            }}
+            style={{ background: status.bg, color: status.color }}
           >
             {Object.entries(STATUS_META).map(([k, v]) => (
-              <option key={k} value={k}>{t(v.label as any)}</option>
+              <option key={k} value={k}>{t(v.label as never)}</option>
             ))}
           </select>
         ) : (
-          <span style={{
-            fontSize: 11, fontWeight: 700, padding: "2px 7px",
-            border: "1.5px solid var(--border)", borderRadius: 4,
-            background: status.bg, color: status.color,
-          }}>
-            {t(status.label as any)}
+          <span className="labs-tag labs-tag--status" style={{ background: status.bg, color: status.color }}>
+            {t(status.label as never)}
           </span>
         )}
-        <span style={{ fontSize: 11, color: "var(--text-muted)", marginLeft: "auto" }}>
-          {item.authorName} · {timeAgo(item.createdAt)}
-        </span>
+        {item.pinned && <span title={t("pinned")}>📌</span>}
+        <span className="labs-card__meta">{item.authorName} · {timeAgo(item.createdAt)}</span>
         <button
           type="button"
           onClick={handleShare}
@@ -430,147 +381,55 @@ function ItemCard({ item, playerId, isAdmin, voting, onVote, onUnvote, onOpen, o
         </button>
       </div>
 
-      {/* Title */}
-      <button
-        type="button"
-        onClick={onOpen}
-        style={{
-          display: "block", textAlign: "left", background: "none", border: "none",
-          cursor: "pointer", padding: 0, width: "100%",
-        }}
-      >
-        <h3 style={{
-          fontFamily: "var(--font-display)",
-          fontWeight: 700,
-          fontSize: "clamp(14px, 2.5vw, 17px)",
-          lineHeight: 1.3,
-          marginBottom: 6,
-          color: "var(--text)",
-        }}>
-          {item.title}
-        </h3>
-        <p style={{
-          fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5,
-          display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-          overflow: "hidden", marginBottom: 12,
-        }}>
-          {item.body}
-        </p>
+      {/* Titre + début du texte : ouvre la proposition */}
+      <button type="button" className="labs-card__open" onClick={onOpen}>
+        <h3 className="labs-card__title">{item.title}</h3>
+        <p className="labs-card__body">{item.body}</p>
       </button>
 
-      {/* Meh comment input */}
+      {/* Avis « à revoir » : commentaire obligatoire */}
       {showMehInput && (
-        <div style={{ marginBottom: 10, display: "flex", gap: 8 }}>
+        <div className="labs-card__meh-form">
           <input
             autoFocus
             value={mehComment}
             onChange={(e) => setMehComment(e.target.value)}
             placeholder={t("meh_card_placeholder")}
-            style={{
-              flex: 1, padding: "6px 10px", fontSize: 13,
-              border: "2px solid var(--yellow)", borderRadius: 6,
-              background: "var(--surface)", color: "var(--text)",
-            }}
             onKeyDown={(e) => { if (e.key === "Enter") submitMeh(); if (e.key === "Escape") setShowMehInput(false); }}
           />
-          <button
-            type="button"
-            onClick={submitMeh}
-            disabled={!mehComment.trim()}
-            className="primary"
-            style={{ padding: "6px 12px", fontSize: 12, whiteSpace: "nowrap" }}
-          >
+          <button type="button" onClick={submitMeh} disabled={!mehComment.trim()} className="primary" style={{ padding: "6px 12px", fontSize: 12 }}>
             {t("send")}
           </button>
-          <button
-            type="button"
-            onClick={() => setShowMehInput(false)}
-            className="ghost"
-            style={{ padding: "6px 10px", fontSize: 12 }}
-          >
+          <button type="button" onClick={() => setShowMehInput(false)} className="ghost" style={{ padding: "6px 10px", fontSize: 12 }}>
             ✕
           </button>
         </div>
       )}
-
-      {/* Footer: votes + reply count + open */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <VoteButton
-          vote="up"
-          count={item.up}
-          active={item.myVote === "up"}
-          disabled={!playerId || voting}
-          onClick={() => handleVoteClick("up")}
-        />
-        <VoteButton
-          vote="meh"
-          count={item.meh}
-          active={item.myVote === "meh"}
-          disabled={!playerId || voting}
-          onClick={() => handleVoteClick("meh")}
-        />
-        <VoteButton
-          vote="down"
-          count={item.down}
-          active={item.myVote === "down"}
-          disabled={!playerId || voting}
-          onClick={() => handleVoteClick("down")}
-        />
-        <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: 4 }}>
-          🗣️ {item.replyCount}
-        </span>
-      </div>
-
-      {/* Meh comment display */}
       {item.myVote === "meh" && item.myVoteComment && !showMehInput && (
-        <p style={{ marginTop: 8, fontSize: 12, color: "var(--text)", fontStyle: "italic",
-          background: "var(--surface-2)", borderLeft: "3px solid var(--yellow)",
-          padding: "5px 8px", borderRadius: "0 5px 5px 0" }}>
-          💬 {item.myVoteComment}
-        </p>
+        <p className="labs-card__meh">💬 {item.myVoteComment}</p>
       )}
       {item.myVote === "meh" && !item.myVoteComment && !showMehInput && (
-        <p style={{ marginTop: 6, fontSize: 12, color: "var(--yellow)", cursor: "pointer", fontStyle: "italic" }}
-          onClick={() => setShowMehInput(true)}>
-          ✏️ {t("meh_add_comment" as any) ?? "Ajouter un commentaire"}
-        </p>
+        <button type="button" className="labs-card__meh-add" onClick={() => setShowMehInput(true)}>
+          ✏️ {t("meh_add_comment")}
+        </button>
       )}
 
-      {/* Actions row */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
-        {(isAdmin || (playerId && item.authorId === playerId)) && (
-          <button
-            type="button"
-            onClick={() => onDelete(item.id)}
-            title={t("delete" as any)}
-            style={{
-              fontSize: 11, fontWeight: 700,
-              padding: "3px 8px",
-              border: "1.5px solid #e74c3c", borderRadius: 4,
-              background: "transparent", cursor: "pointer", color: "#e74c3c",
-            }}
-          >
-            {t("delete" as any)}
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={onOpen}
-          style={{
-            marginLeft: (isAdmin || (playerId && item.authorId === playerId)) ? 0 : "auto",
-            fontSize: 12, fontWeight: 700,
-            padding: "4px 12px",
-            border: "1.5px solid var(--border)",
-            borderRadius: 4,
-            background: "transparent",
-            cursor: "pointer",
-            color: "var(--text-muted)",
-          }}
-        >
-          {t("view")}
-        </button>
+      {/* Votes, réponses, actions — toujours en bas de la carte */}
+      <div className="labs-card__foot">
+        <VoteButton vote="up" count={item.up} active={item.myVote === "up"} disabled={!playerId || voting} onClick={() => handleVoteClick("up")} />
+        <VoteButton vote="meh" count={item.meh} active={item.myVote === "meh"} disabled={!playerId || voting} onClick={() => handleVoteClick("meh")} />
+        <VoteButton vote="down" count={item.down} active={item.myVote === "down"} disabled={!playerId || voting} onClick={() => handleVoteClick("down")} />
+        <span className="labs-card__replies">🗣️ {item.replyCount}</span>
+        <span className="labs-card__actions">
+          {canDelete && (
+            <button type="button" className="labs-chip labs-chip--danger" onClick={() => onDelete(item.id)}>
+              {t("delete")}
+            </button>
+          )}
+          <button type="button" className="labs-chip" onClick={onOpen}>{t("view")}</button>
+        </span>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -593,19 +452,9 @@ function VoteButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      title={disabled ? t("vote_login_tooltip") : t(meta.label as any)}
-      style={{
-        display: "flex", alignItems: "center", gap: 4,
-        fontSize: 12, fontWeight: 700,
-        padding: "4px 10px",
-        border: "1.5px solid var(--border)",
-        borderRadius: 20,
-        cursor: disabled ? "default" : "pointer",
-        background: active ? meta.activeBg : "transparent",
-        color: active ? meta.activeColor : "var(--text-muted)",
-        opacity: disabled && !active ? 0.6 : 1,
-        transition: "all 0.1s",
-      }}
+      title={disabled ? t("vote_login_tooltip") : t(meta.label as never)}
+      className={`labs-chip labs-vote${active ? " is-active" : ""}`}
+      style={active ? { background: meta.activeBg, color: meta.activeColor } : undefined}
     >
       {meta.emoji} {count}
     </button>

@@ -99,6 +99,9 @@ export async function GET(request: NextRequest) {
       };
     })
     .sort((a, b) => {
+      // « Pas retenu » toujours en bas, quel que soit le tri
+      const ra = a.status === "rejected", rb = b.status === "rejected";
+      if (ra !== rb) return ra ? 1 : -1;
       if (a.pinned && !b.pinned) return -1;
       if (!a.pinned && b.pinned) return 1;
       if (sort === "new") return b.createdAt.localeCompare(a.createdAt);

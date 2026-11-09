@@ -3136,7 +3136,12 @@
     "reply_as_me": "As myself",
     "delete": "Delete",
     "delete_item_confirm": "Permanently delete this item?",
-    "delete_reply_confirm": "Delete this reply?"
+    "delete_reply_confirm": "Delete this reply?",
+    "stat_done": "Done",
+    "stat_in_progress": "In progress",
+    "stat_pending": "Waiting",
+    "meh_add_comment": "Add a comment",
+    "archived_drawer": "Not kept for over 3 months ({count})"
   },
   "reg_fields": {
     "title": "Custom registration fields",

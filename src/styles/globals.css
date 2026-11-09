@@ -12963,3 +12963,94 @@ a.bento-row:hover .bento-row__title { text-decoration: underline; }
   .abc-pool__tier { flex-direction: column; gap: 6px; }
   .abc-pool__tier-label { margin-top: 0; }
 }
+
+/* ══ Community Lab (/labs) ══
+   Tuiles d'avancement (fait / en cours / en attente), onglets + tri, puis
+   les propositions sur 2 colonnes (1 sur téléphone), cartes de même hauteur
+   avec votes et actions toujours en bas. */
+.labs { max-width: 1120px; margin: 0 auto; padding: 24px 16px 60px; }
+.labs__head { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+.labs__title { margin: 0 0 6px; font-family: var(--font-display); font-size: clamp(28px, 5vw, 44px); font-weight: 900; letter-spacing: -.02em; line-height: 1; }
+.labs__subtitle { margin: 0; color: var(--text-muted); font-size: 14px; }
+
+.labs-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; }
+.labs-stat {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0;
+  padding: 16px 18px; border: 2px solid var(--border); border-radius: 14px; box-shadow: var(--shadow);
+  color: #1a1a1a; text-align: left; text-transform: none; letter-spacing: 0; font-weight: 600;
+}
+.labs-stat--done { background: #a8e6a3; cursor: pointer; }
+.labs-stat--progress { background: color-mix(in srgb, #e67e22 55%, var(--surface)); }
+.labs-stat--pending { background: var(--yellow); }
+button.labs-stat:hover { transform: translate(-1px, -1px); }
+.labs-stat__num { font-family: var(--font-display); font-size: clamp(36px, 6vw, 56px); font-weight: 800; line-height: .95; }
+.labs-stat__label { font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+
+.labs-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.labs-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.labs-tab {
+  min-height: 0; padding: 8px 14px; border: 2px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--text); box-shadow: 2px 2px 0 var(--border);
+  font-family: var(--font-display); font-size: 13px; font-weight: 700; text-transform: none; letter-spacing: 0;
+}
+.labs-tab.is-active { background: var(--text); color: var(--bg); box-shadow: none; transform: translate(2px, 2px); }
+.labs-sort { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.labs-sort__label { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-muted); }
+
+.labs-chip {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 0; padding: 4px 11px;
+  border: 1.5px solid var(--border); border-radius: 999px; background: transparent; color: var(--text-muted);
+  box-shadow: none; font-size: 12px; font-weight: 700; text-transform: none; letter-spacing: 0; cursor: pointer;
+}
+.labs-chip:hover:not(:disabled) { transform: none; box-shadow: none; color: var(--text); }
+.labs-chip.is-active { background: var(--text); color: var(--bg); }
+.labs-chip--danger { border-color: var(--danger); color: var(--danger); }
+.labs-chip:disabled { cursor: default; opacity: .6; }
+.labs-vote.is-active { opacity: 1; }
+
+.labs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.labs-card {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 16px 18px;
+  background: var(--surface); border: 2px solid var(--border); border-radius: 12px; box-shadow: 3px 3px 0 var(--border);
+  transition: opacity .15s;
+}
+.labs-card.is-busy { opacity: .7; }
+.labs-card.is-rejected { background: var(--surface-2); box-shadow: none; }
+.labs-card.is-rejected .labs-card__title { color: var(--text-muted); }
+/* Tiroir des « pas retenu » de plus de 3 mois : replié et grisé, sous le fil */
+.labs-drawer { margin-top: 24px; border: 2px dashed var(--border-light); border-radius: 12px; padding: 12px 14px; }
+.labs-drawer > summary { cursor: pointer; font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+.labs-drawer[open] > summary { margin-bottom: 12px; }
+.labs-drawer .labs-card { opacity: .6; filter: grayscale(1); }
+.labs-drawer .labs-card:hover { opacity: .9; }
+.labs-card__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.labs-tag { font-size: 11px; font-weight: 700; padding: 2px 7px; border: 1.5px solid var(--border); border-radius: 4px; background: var(--surface-2); letter-spacing: .04em; }
+select.labs-tag { cursor: pointer; min-height: 0; }
+.labs-card__meta { margin-left: auto; font-size: 11px; color: var(--text-muted); }
+.labs-card__open { display: block; width: 100%; padding: 0; background: none; border: 0; box-shadow: none; text-align: left; text-transform: none; letter-spacing: 0; font-weight: 400; cursor: pointer; color: inherit; }
+.labs-card__open:hover { transform: none; box-shadow: none; }
+.labs-card__open:hover .labs-card__title { text-decoration: underline; }
+.labs-card__title { margin: 0 0 6px; font-family: var(--font-display); font-size: 17px; font-weight: 700; line-height: 1.3; color: var(--text); }
+.labs-card__body { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.labs-card__meh-form { display: flex; gap: 8px; }
+.labs-card__meh-form input { flex: 1; min-width: 0; padding: 6px 10px; font-size: 13px; border: 2px solid var(--yellow); border-radius: 6px; }
+.labs-card__meh { margin: 0; padding: 5px 8px; font-size: 12px; font-style: italic; background: var(--surface-2); border-left: 3px solid var(--yellow); border-radius: 0 5px 5px 0; }
+.labs-card__meh-add { align-self: flex-start; min-height: 0; padding: 0; background: none; border: 0; box-shadow: none; font-size: 12px; font-style: italic; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); cursor: pointer; }
+.labs-card__foot { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; border-top: 1.5px solid var(--border-light); }
+.labs-card__replies { font-size: 12px; color: var(--text-muted); margin-left: 2px; }
+.labs-card__actions { display: flex; gap: 6px; margin-left: auto; }
+
+.labs-empty { text-align: center; padding: 60px 0; color: var(--text-muted); }
+.labs-empty--box { padding: 60px 24px; border: 2px dashed var(--border-light); border-radius: 12px; }
+
+[data-theme="dark"] .labs-stat { color: var(--text); }
+[data-theme="dark"] .labs-stat--done { background: color-mix(in srgb, #a8e6a3 22%, var(--surface)); }
+[data-theme="dark"] .labs-stat--progress { background: color-mix(in srgb, #e67e22 25%, var(--surface)); }
+[data-theme="dark"] .labs-stat--pending { background: color-mix(in srgb, var(--yellow) 18%, var(--surface)); }
+
+@media (max-width: 720px) {
+  .labs-grid { grid-template-columns: minmax(0, 1fr); }
+  .labs-stats { gap: 8px; }
+  .labs-stat { padding: 12px; }
+  .labs-stat__label { font-size: 11px; letter-spacing: .03em; }
+}

@@ -3137,7 +3137,12 @@
     "reply_as_me": "Avec mon pseudo",
     "delete": "Supprimer",
     "delete_item_confirm": "Supprimer définitivement cet item ?",
-    "delete_reply_confirm": "Supprimer cette réponse ?"
+    "delete_reply_confirm": "Supprimer cette réponse ?",
+    "stat_done": "Fait",
+    "stat_in_progress": "En cours",
+    "stat_pending": "En attente",
+    "meh_add_comment": "Ajouter un commentaire",
+    "archived_drawer": "Pas retenu·es depuis plus de 3 mois ({count})"
   },
   "reg_fields": {
     "title": "Champs d'inscription personnalisés",

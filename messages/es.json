@@ -3142,7 +3142,12 @@
     "reply_as_me": "Con mi pseudónimo",
     "delete": "Eliminar",
     "delete_item_confirm": "¿Eliminar este item definitivamente?",
-    "delete_reply_confirm": "¿Eliminar esta respuesta?"
+    "delete_reply_confirm": "¿Eliminar esta respuesta?",
+    "stat_done": "Hecho",
+    "stat_in_progress": "En curso",
+    "stat_pending": "En espera",
+    "meh_add_comment": "Añadir un comentario",
+    "archived_drawer": "No retenidas hace más de 3 meses ({count})"
   },
   "reg_fields": {
     "title": "Campos de inscripción personalizados",
