@@ -248,7 +248,9 @@ const MESSAGES = {
 
 export type ApiMessageKey = keyof typeof MESSAGES;
 
-function requestLang(): Lang {
+/** Langue de la requête en cours (page d'origine, cookie, navigateur) — aussi
+ *  utilisée pour les emails que la personne déclenche elle-même. */
+export function requestLang(): Lang {
   try {
     const h = headers();
     const ref = h.get("referer") ?? "";

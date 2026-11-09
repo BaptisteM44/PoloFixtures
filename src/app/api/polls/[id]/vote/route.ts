@@ -9,7 +9,8 @@ import { checkVoteMilestone } from "@/lib/poll-notify";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { sendMail } from "@/lib/mailer";
 import { SITE_URL } from "@/lib/site-url";
-import { apiMsg } from "@/lib/api-messages";
+import { apiMsg, requestLang } from "@/lib/api-messages";
+import { pollVoteConfirmEmail } from "@/lib/email-templates";
 
 const voteSchema = z.object({
   choices: z.array(z.string()).min(1).max(20),
@@ -23,11 +24,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const poll = (await prisma.poll.findUnique({
     where: { id: params.id },
     select: {
-      id: true, status: true, options: true, multipleChoice: true, minChoices: true, maxChoices: true,
+      id: true, question: true, status: true, options: true, multipleChoice: true, minChoices: true, maxChoices: true,
       openAt: true, closeAt: true, allowGuests: true, allowComment: true,
       blockedAt: true, eligibleClubIds: true, eligibleCountries: true, eligibleContinents: true,
     },
-  })) as (PollLite & PollEligibility & { allowGuests: boolean; allowComment: boolean; blockedAt: Date | null }) | null;
+  })) as (PollLite & PollEligibility & { question: string; allowGuests: boolean; allowComment: boolean; blockedAt: Date | null }) | null;
 
   if (!poll) return new Response(apiMsg("poll_not_found"), { status: 404 });
   if (poll.blockedAt) return Response.json({ error: "blocked" }, { status: 409 });
@@ -108,16 +109,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
   // Envoi du mail de confirmation (fire-and-forget : un échec SMTP ne doit pas
   // faire échouer la requête — l'émargement en attente reste, réessayable).
   const confirmUrl = `${SITE_URL}/api/polls/${poll.id}/verify?token=${token}`;
-  sendMail({
-    to: email,
-    subject: "Confirme ton vote — Poloperator",
-    html: `
-      <p>Merci de participer au sondage de la communauté bike polo.</p>
-      <p>Pour valider ton vote, clique sur ce lien (valable 48h) :</p>
-      <p><a href="${confirmUrl}" style="color:#60c9cf;font-weight:bold;">Confirmer mon vote</a></p>
-      <p style="color:#888;font-size:12px;">Si tu n'as pas voté, ignore ce message.</p>
-    `,
-  }).catch((e) => console.error("[poll] confirmation mail failed:", e));
+  // Dans la langue de la page où la personne vient de voter
+  const mail = pollVoteConfirmEmail(requestLang(), { confirmUrl, pollQuestion: poll.question });
+  sendMail({ to: email, subject: mail.subject, html: mail.html })
+    .catch((e) => console.error("[poll] confirmation mail failed:", e));
 
   return Response.json({ ok: true, mode: "guest_pending" });
 }

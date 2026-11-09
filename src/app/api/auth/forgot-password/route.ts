@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/db";
 import { sendMail, isMailerConfigured } from "@/lib/mailer";
-import { getLangFromCountry, resetPasswordEmail } from "@/lib/email-templates";
+import { resetPasswordEmail } from "@/lib/email-templates";
 import { isRateLimited, getIp } from "@/lib/rate-limit";
 import { randomBytes } from "crypto";
 import { z } from "zod";
-import { apiMsg } from "@/lib/api-messages";
+import { apiMsg, requestLang } from "@/lib/api-messages";
 
 const schema = z.object({ email: z.string().email() });
 
@@ -45,7 +45,8 @@ export async function POST(req: Request) {
   const resetUrl = `${baseUrl}/reset-password/${token}`;
 
   if (isMailerConfigured()) {
-    const lang = getLangFromCountry(account.player?.country);
+    // La personne est sur le site : on lui écrit dans la langue de la page.
+    const lang = requestLang();
     const { subject, html } = resetPasswordEmail(lang, { resetUrl });
     try {
       await sendMail({ to: account.email, subject, html });

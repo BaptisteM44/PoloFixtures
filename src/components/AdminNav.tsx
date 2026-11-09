@@ -19,6 +19,7 @@ export function AdminNav() {
     { href: "/admin/photos", label: `📸 ${t("nav_photos")}` },
     { href: "/admin/whbpc", label: "WHBPC" },
     { href: "/admin/coach-cards", label: "🎓 Coach" },
+    { href: "/admin/emails", label: "✉️ Emails" },
   ];
 
   return (
