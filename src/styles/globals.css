@@ -3001,7 +3001,9 @@ details.agenda-month--past > summary::-webkit-details-marker {
 
 @media (max-width: 900px) {
   .recap-top-row,
-  .recap-top-row--share,
+  .recap-top-row--share {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .recap-banner-panel {
     max-width: 260px;
     margin: 0 auto;
@@ -3021,6 +3023,14 @@ details.agenda-month--past > summary::-webkit-details-marker {
   .recap-mini-card-wrap {
     --mini-scale: 0.28;
   }
+  /* Podium du récap : 3 marches côte à côte dans ~330 px → cartes en
+     vignettes (2×2 par marche) pour que rien ne déborde de l'écran */
+  .recap-podium-panel { padding: 14px; min-width: 0; }
+  .recap-podium-panel .recap-podium-stage { gap: 8px; }
+  .recap-podium-panel .recap-podium-cards { gap: 4px; padding: 0 0 6px; }
+  .recap-podium-panel .recap-mini-card-wrap { --mini-scale: 0.14; }
+  .podium-head__name, .recap-stage-slot--first .podium-head__name { font-size: 12px; }
+  .podium-head__rank { width: 26px; height: 26px; font-size: 14px; }
 
   /* Podium stage : noms d'équipe plus petits */
   .recap-stage-team {
