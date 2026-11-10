@@ -75,6 +75,7 @@ function BadgeRow({
           title={pinned ? t("unpin_from_card") : canPin ? t("pin_on_card") : t("max_pinned")}
           style={{
             fontSize: 12, padding: "4px 8px", borderRadius: 6,
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
             fontWeight: 700, fontFamily: "var(--font-display)",
             background: pinned ? "var(--teal)" : "transparent",
             border: `2px solid ${pinned ? "var(--teal)" : "var(--border)"}`,

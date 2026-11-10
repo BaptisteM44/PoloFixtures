@@ -354,10 +354,10 @@ export default function AccountPage() {
               gearRatio: player.whbpcCard.gearRatio,
             } : null}
           />
-          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+          <div className="account-card-actions" style={{ marginTop: 16, display: "flex", flexWrap: "wrap", justifyContent: "center", alignItems: "center", gap: 10 }}>
             <ShareCardButton cardRef={cardRef} playerName={player.name} />
             <label style={{ cursor: "pointer" }}>
-              <span className="ghost" style={{ fontSize: 12, display: "inline-block", cursor: "pointer" }}>
+              <span className="ghost" style={{ fontSize: 12, display: "inline-flex", alignItems: "center", cursor: "pointer" }}>
                 {uploading ? "…" : " " + t("photo_change")}
               </span>
               <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} style={{ display: "none" }} />

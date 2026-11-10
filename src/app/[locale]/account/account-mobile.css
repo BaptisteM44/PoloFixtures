@@ -36,6 +36,13 @@
   .account-page label:has(> input[type="checkbox"]),
   .account-page label:has(> input[type="radio"]) { min-height: 44px; display: flex; align-items: center; }
 
+  /* Partager la carte / changer la photo : côte à côte, puis de l'air avant le nom */
+  .account-page .account-card-actions { flex-wrap: nowrap !important; width: 100%; max-width: 380px; }
+  .account-page .account-card-actions > * { flex: 1 1 0; min-width: 0; margin: 0; display: flex !important; }
+  .account-page .account-card-actions button,
+  .account-page .account-card-actions .ghost { width: 100%; padding: 0 8px; font-size: 12px; letter-spacing: 0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .account-page .account-page-header { margin-top: 24px; }
+
   /* Petits boutons carrés (épingler un badge…) : 44 px de large aussi */
   .account-page button { min-width: 44px; }
 }
