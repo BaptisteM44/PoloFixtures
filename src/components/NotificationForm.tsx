@@ -214,7 +214,7 @@ export function NotificationForm({
             <span>{t("push_notifications")}</span>
           </label>
           {pushPermission === "denied" && (
-            <p style={{ fontSize: 11, color: "var(--text-muted)", margin: "4px 0 0", lineHeight: 1.4 }}>
+            <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "4px 0 0", lineHeight: 1.4 }}>
               {t("push_denied_hint")}
             </p>
           )}
@@ -284,7 +284,8 @@ export function NotificationForm({
                         checked={selectedCountries.has(code)}
                         onChange={() => toggleCountry(code, continent, countries)}
                       />
-                      <span>{countryLabel}</span>
+                      {/* Coupure possible après « / » (« Roumanie/Romania ») : sinon le nom déborde sur la colonne voisine */}
+                      <span>{countryLabel.replace(/\//g, "/\u200b")}</span>
                     </label>
                   ))}
                 </div>

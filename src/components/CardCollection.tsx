@@ -173,7 +173,7 @@ function CardSlot({
             <span style={{ fontWeight: 700, fontSize: 15, fontFamily: "var(--font-display)" }}>{card.name}</span>
             <span
               style={{
-                fontSize: 9,
+                fontSize: 11,
                 fontWeight: 700,
                 letterSpacing: "0.07em",
                 textTransform: "uppercase",

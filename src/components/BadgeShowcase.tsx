@@ -57,7 +57,7 @@ function BadgeRow({
           <span style={{ fontWeight: 700, fontSize: 13, fontFamily: "var(--font-display)", color: earned ? "inherit" : "var(--text-muted)" }}>
             {info.name}
           </span>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", padding: "2px 6px", borderRadius: 4, border: "1.5px solid var(--border)", color: RARITY_COLOR[info.rarity] }}>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", padding: "2px 6px", borderRadius: 4, border: "1.5px solid var(--border)", color: RARITY_COLOR[info.rarity] }}>
             {info.rarity}
           </span>
         </div>
@@ -74,7 +74,7 @@ function BadgeRow({
           disabled={!pinned && !canPin}
           title={pinned ? t("unpin_from_card") : canPin ? t("pin_on_card") : t("max_pinned")}
           style={{
-            fontSize: 10, padding: "4px 8px", borderRadius: 6,
+            fontSize: 12, padding: "4px 8px", borderRadius: 6,
             fontWeight: 700, fontFamily: "var(--font-display)",
             background: pinned ? "var(--teal)" : "transparent",
             border: `2px solid ${pinned ? "var(--teal)" : "var(--border)"}`,

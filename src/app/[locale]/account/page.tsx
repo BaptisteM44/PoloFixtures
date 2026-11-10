@@ -21,6 +21,7 @@ import { MessagesClient } from "@/app/[locale]/messages/MessagesClient";
 import { Tabs } from "@/components/Tabs";
 import type { BadgeInfo } from "@/lib/badge-catalog";
 import { postUpload } from "@/lib/upload-image";
+import "./account-mobile.css";
 
 type Squad = {
   id: string;
@@ -316,7 +317,7 @@ export default function AccountPage() {
   ];
 
   return (
-    <div>
+    <div className="account-page">
       {cropFile && (
         <ImageCropModal
           file={cropFile}
@@ -550,7 +551,6 @@ export default function AccountPage() {
                   value={form.petAllergies}
                   onChange={(e) => setForm((f) => ({ ...f, petAllergies: e.target.value }))}
                   placeholder={t("field_pet_allergies_placeholder")}
-                  style={{ fontSize: 13 }}
                 />
               </div>
               <div className="field-row">
@@ -560,7 +560,6 @@ export default function AccountPage() {
                   value={form.foodAllergies}
                   onChange={(e) => setForm((f) => ({ ...f, foodAllergies: e.target.value }))}
                   placeholder={t("field_food_allergies_placeholder")}
-                  style={{ fontSize: 13 }}
                 />
               </div>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -581,14 +580,15 @@ export default function AccountPage() {
                     ? <img src={m.club.logoPath} alt={m.club.name} style={{ width: 36, height: 36, borderRadius: "50%", objectFit: "cover", border: "2px solid var(--border)", flexShrink: 0 }} />
                     : <div style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--bg-muted,#eee)", border: "2px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🏒</div>
                   }
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  {/* Au moins 160 px pour le nom du club : sur téléphone, les boutons passent à la ligne au lieu de l'écraser */}
+                  <div style={{ flex: "1 1 160px", minWidth: 0 }}>
                     <p style={{ margin: 0, fontWeight: 700, fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.club.name}</p>
-                    <p style={{ margin: 0, fontSize: 11, color: "var(--text-muted)" }}>{m.club.city}, {m.club.country}{!m.club.approved && ` · ${t("club_pending_approval")}`}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: "var(--text-muted)" }}>{m.club.city}, {m.club.country}{!m.club.approved && ` · ${t("club_pending_approval")}`}</p>
                   </div>
                   {m.club.logoPath && (
                     <button
                       className={player.clubLogoPath === m.club.logoPath ? "primary" : "ghost"}
-                      style={{ fontSize: 11, padding: "4px 10px" }}
+                      style={{ fontSize: 12, padding: "4px 10px" }}
                       onClick={async () => {
                         const newPath = player.clubLogoPath === m.club.logoPath ? null : m.club.logoPath;
                         await fetch("/api/account/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clubLogoPath: newPath }) });
@@ -598,12 +598,12 @@ export default function AccountPage() {
                       {player.clubLogoPath === m.club.logoPath ? `✓ ${t("club_logo_used")}` : t("club_use_logo")}
                     </button>
                   )}
-                  <Link href={`/club/${m.clubId}/edit`} className="ghost" style={{ fontSize: 11, padding: "4px 10px" }}>
+                  <Link href={`/club/${m.clubId}/edit`} className="ghost" style={{ fontSize: 12, padding: "4px 10px" }}>
                     ✏️ {t("club_edit_btn")}
                   </Link>
                   <button
                     className="ghost"
-                    style={{ fontSize: 11, color: "var(--danger)" }}
+                    style={{ fontSize: 12, color: "var(--danger)" }}
                     onClick={async () => {
                       await fetch(`/api/clubs/${m.clubId}/members`, { method: "DELETE" });
                       if (player.clubLogoPath === m.club.logoPath) {
@@ -620,7 +620,7 @@ export default function AccountPage() {
                 <div key={m.clubId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", color: "var(--text-muted)", fontSize: 13 }}>
                   <span>⏳</span>
                   <span style={{ flex: 1 }}>{t("club_pending_request")} · <strong style={{ color: "var(--text)" }}>{m.club.name}</strong></span>
-                  <button className="ghost" style={{ fontSize: 11 }} onClick={async () => { await fetch(`/api/clubs/${m.clubId}/members`, { method: "DELETE" }); await fetchClubMemberships(); }}>{t("club_cancel_request")}</button>
+                  <button className="ghost" style={{ fontSize: 12 }} onClick={async () => { await fetch(`/api/clubs/${m.clubId}/members`, { method: "DELETE" }); await fetchClubMemberships(); }}>{t("club_cancel_request")}</button>
                 </div>
               ))}
 
@@ -628,8 +628,8 @@ export default function AccountPage() {
                 <div key={m.clubId} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", fontSize: 13, flexWrap: "wrap" }}>
                   <span>📩</span>
                   <span style={{ flex: 1 }}>{t("club_invitation_received")} · <strong>{m.club.name}</strong></span>
-                  <button className="primary" style={{ fontSize: 11, padding: "4px 10px" }} onClick={async () => { await fetch(`/api/clubs/${m.clubId}/members`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ playerId: player.id, action: "accept" }) }); await fetchClubMemberships(); }}>{t("club_accept")}</button>
-                  <button className="ghost" style={{ fontSize: 11, padding: "4px 10px" }} onClick={async () => { await fetch(`/api/clubs/${m.clubId}/members`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ playerId: player.id, action: "reject" }) }); await fetchClubMemberships(); }}>{t("club_decline")}</button>
+                  <button className="primary" style={{ fontSize: 12, padding: "4px 10px" }} onClick={async () => { await fetch(`/api/clubs/${m.clubId}/members`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ playerId: player.id, action: "accept" }) }); await fetchClubMemberships(); }}>{t("club_accept")}</button>
+                  <button className="ghost" style={{ fontSize: 12, padding: "4px 10px" }} onClick={async () => { await fetch(`/api/clubs/${m.clubId}/members`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ playerId: player.id, action: "reject" }) }); await fetchClubMemberships(); }}>{t("club_decline")}</button>
                 </div>
               ))}
 
@@ -681,7 +681,7 @@ export default function AccountPage() {
                           }}
                         >
                           <img src={squad.logoPath!} alt={squad.name} style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
-                          <span style={{ fontSize: 11, fontWeight: isSelected ? 700 : 400, color: isSelected ? "var(--accent)" : "var(--text-muted)", maxWidth: 72, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 400, color: isSelected ? "var(--accent)" : "var(--text-muted)", maxWidth: 72, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {isSelected ? "✓ " : ""}{squad.name}
                           </span>
                         </button>

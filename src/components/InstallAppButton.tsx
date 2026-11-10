@@ -86,7 +86,7 @@ export function InstallAppButton({ variant = "footer" }: Props) {
     const hint = ios ? t("install_app_safari_ios") : t("install_app_safari_mac");
     if (variant === "footer") {
       return (
-        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>
           {hint}
         </span>
       );
