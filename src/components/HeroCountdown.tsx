@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
 type Props = {
+  /** Statut réel du tournoi : il fait foi (lancé = en cours, clôturé = terminé) */
+  status?: "UPCOMING" | "LIVE" | "COMPLETED" | string;
+  /** Début et fin à l'heure locale du tournoi */
   dateStart: string;
   dateEnd: string;
   registrationEnd: string | null;
@@ -22,7 +25,7 @@ function getCountdownLabel(target: Date): string | null {
   return `${mins}min`;
 }
 
-export function HeroCountdown({ dateStart, dateEnd, registrationEnd, teamCount, maxTeams }: Props) {
+export function HeroCountdown({ status, dateStart, dateEnd, registrationEnd, teamCount, maxTeams }: Props) {
   const t = useTranslations("tournament");
   const [, setTick] = useState(0);
 
@@ -36,8 +39,10 @@ export function HeroCountdown({ dateStart, dateEnd, registrationEnd, teamCount, 
   const end = new Date(dateEnd).getTime();
   const regEnd = registrationEnd ? new Date(registrationEnd).getTime() : null;
 
-  const isFinished = now > end;
-  const isOngoing = !isFinished && now >= start;
+  // Le statut fait foi. Les dates ne servent qu'aux tournois jamais lancés sur
+  // Poloperator (résultats gérés ailleurs) : terminé après 21h le dernier jour.
+  const isFinished = status === "COMPLETED" || (status !== "LIVE" && now > end);
+  const isOngoing = !isFinished && (status === "LIVE" || now >= start);
 
   // Countdown target: registration end first (if in future), otherwise tournament start
   let countdownLabel: string | null = null;

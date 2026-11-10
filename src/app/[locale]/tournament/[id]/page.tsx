@@ -6,7 +6,7 @@ import { pipelineTieWarnings, getPipeline, finalRanking } from "@/engine/pipelin
 import { FinalRankingTable } from "@/components/FinalRankingTable";
 import { FormatFlow } from "@/components/FormatFlow";
 import { parseRefereeSettings } from "@/lib/referees";
-import { galleryPhase } from "@/lib/tournament-photos";
+import { galleryPhase, galleryOpensAt, tournamentEndsAt } from "@/lib/tournament-photos";
 import { tournamentTimezone } from "@/lib/timezone";
 import { getTranslations } from "next-intl/server";
 import { localeAlternates, absoluteAsset, jsonLd, DEFAULT_OG_IMAGE } from "@/lib/seo";
@@ -555,8 +555,12 @@ export default async function TournamentPage({
             <div className="tournament-hero__text">
               {/* Statut (terminé / en cours / J-x) + remplissage, en tête */}
               <HeroCountdown
-                dateStart={tournament.dateStart.toISOString()}
-                dateEnd={tournament.dateEnd.toISOString()}
+                status={tournament.status}
+                // Début / fin à l'heure locale du tournoi (0h le 1er jour, 21h le dernier) :
+                // les dates stockées sont des jours à minuit UTC, « Terminé » tombait dès
+                // le matin du dernier jour.
+                dateStart={galleryOpensAt(tournament).toISOString()}
+                dateEnd={tournamentEndsAt(tournament).toISOString()}
                 registrationEnd={tournament.registrationEnd?.toISOString() ?? null}
                 teamCount={displayTeamCount}
                 maxTeams={tournament.maxTeams}
