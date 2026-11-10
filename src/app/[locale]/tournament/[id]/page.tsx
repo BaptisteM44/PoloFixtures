@@ -35,6 +35,7 @@ import { LiveMatchTile } from "@/components/LiveMatchTile";
 import { HeroCountdown } from "@/components/HeroCountdown";
 import { TournamentRecap } from "@/components/TournamentRecap";
 import { FollowButton } from "@/components/FollowButton";
+import { ShareTournamentButton } from "@/components/ShareTournamentButton";
 import { PosterZoom } from "@/components/PosterZoom";
 import { SoloRegisterForm } from "@/components/SoloRegisterForm";
 import { WithdrawTeamPanel } from "@/components/WithdrawTeamPanel";
@@ -576,6 +577,7 @@ export default async function TournamentPage({
                   initialFollowing={isFollowing}
                   isLoggedIn={!!currentPlayerId}
                 />
+                <ShareTournamentButton path={`/tournament/${tournament.slug ?? tournament.id}`} title={tournament.name} />
               </div>
             </div>
           </div>
