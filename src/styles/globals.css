@@ -3319,6 +3319,9 @@ details.agenda-month--past > summary::-webkit-details-marker {
   display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px;
   font-size: 10px; font-weight: 800; letter-spacing: 0; border-radius: 999px;
   background: var(--surface-2); color: var(--text); border: 1.5px solid var(--border);
+  /* La pastille déborde un peu en haut et en bas sans agrandir l'onglet :
+     Équipes / Free agents gardent la même hauteur que les autres onglets */
+  margin-block: -4px;
 }
 .tab-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #e84040; box-shadow: 0 0 0 0 rgba(232, 64, 64, 0.6); animation: tabLivePulse 1.6s ease-out infinite; }
 .tab--live { color: #e84040; }
