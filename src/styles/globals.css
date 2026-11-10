@@ -2523,13 +2523,22 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 /* Colonne de droite = image à partager : le podium (qui s'étirait dans le
    vide) cède un tiers de la largeur à l'image */
-.recap-top-row--share { grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); }
+.recap-top-row--share { grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); align-items: stretch; }
+/* Podium et « Partager » à la même hauteur : le podium descend en bas de son bloc */
+.recap-top-row--share > .recap-podium-panel { display: flex; flex-direction: column; }
+.recap-top-row--share .recap-podium-stage { margin-top: auto; }
+/* Titre en haut (aligné sur « Podium »), image + bouton centrés dans la hauteur restante */
+.recap-side--share > .recap-share-panel { flex: 1; justify-content: flex-start; }
+.recap-side--share .recap-share-thumb { margin-top: auto; }
+.recap-side--share .recap-share-panel > .primary { margin-bottom: auto; }
 
 /* Affiche : ratio portrait 792×1120, largeur fixe, hauteur auto */
 .recap-banner-panel {
   padding: 0;
   overflow: hidden;
   border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
 }
 
 .recap-banner-img {
@@ -2541,7 +2550,7 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 
 .recap-banner-credit {
-  margin-top: 6px;
+  padding: 8px 10px;
   font-size: 11px;
   color: var(--text-muted);
   text-align: right;
@@ -2549,12 +2558,30 @@ details.agenda-month--past > summary::-webkit-details-marker {
 
 /* ── Ligne 2 : MVP (2 cartes) + Photo finish ── */
 /* --mvp-card-w = largeur d'une mini carte MVP (scale 0.5 → 170px) */
-.recap-middle-row {
+/* Grille unique MVP / Photo finish / Petit mot (+ affiche à droite) :
+   les blocs s'étirent à la même hauteur, jamais de trou, vide ou rempli */
+.recap-lower { display: block; }
+/* Sans classement final : MVP | photo finish, puis le petit mot en dessous */
+.recap-lower__stack {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: stretch;
+}
+.recap-lower__stack > .panel { margin: 0; min-width: 0; }
+.recap-lower__stack > .recap-notes { grid-column: 1 / 3; }
+.recap-lower__stack > .recap-notes .recap-text { max-width: 72ch; }
+.recap-lower__stack > .recap-notes .recap-note__add { flex: none; width: auto; align-self: flex-start; min-height: 0; }
+/* Avec classement final : classement à gauche, le reste empilé à droite */
+.recap-lower--ranked {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
+.recap-lower--ranked > .recap-lower__stack { display: flex; flex-direction: column; }
+.recap-lower--ranked > .final-ranking { margin: 0; min-width: 0; }
+
 
 .recap-mvp-panel {
   min-width: 0;
@@ -2572,16 +2599,28 @@ details.agenda-month--past > summary::-webkit-details-marker {
   max-height: 480px;
 }
 
-/* ── Ligne 3 : Anecdote + Résumé full width ── */
-/* Anecdote + Résumé côte à côte ; un seul bloc → pleine largeur */
-.recap-bottom-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  align-items: start;
+/* Petit mot : un seul bloc compact, pas pleine largeur */
+.recap-notes {
+  padding: 16px 20px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
-
-.recap-bottom-row--banner { grid-template-columns: 200px repeat(auto-fit, minmax(280px, 1fr)); }
+.recap-note__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--border);
+}
+.recap-note__title {
+  margin: 0; font-family: var(--font-display); font-size: 13px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.recap-note__add {
+  flex: 1; min-height: 56px; width: 100%; padding: 10px 14px; font-size: 12px; line-height: 1.4; text-align: left;
+  color: var(--text-muted);
+}
+.recap-note__actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.recap-notes .recap-text { font-size: 13.5px; line-height: 1.65; overflow-wrap: anywhere; }
+.recap-notes .recap-text > :last-child { margin-bottom: 0; }
 
 /* Colonne de droite du Récap : l'image à partager (ou l'affiche) */
 .recap-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
@@ -2628,7 +2667,7 @@ details.agenda-month--past > summary::-webkit-details-marker {
   display: flex;
   flex-direction: row;
   align-items: flex-end;   /* tout s'aligne par le bas */
-  gap: 0;
+  gap: 12px;
   margin-bottom: 16px;
   overflow: visible;
 }
@@ -2643,9 +2682,34 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 
 /* Les marches ont des hauteurs différentes pour l'effet escalier */
-.recap-stage-slot--first  .recap-stage-step { height: 60px; }
-.recap-stage-slot--second .recap-stage-step { height: 46px; }
-.recap-stage-slot--third  .recap-stage-step { height: 34px; }
+.recap-stage-slot--first  .recap-stage-step { height: 76px; }
+.recap-stage-slot--second .recap-stage-step { height: 54px; }
+.recap-stage-slot--third  .recap-stage-step { height: 38px; }
+
+/* En-tête de chaque marche : rang (couleurs de l'image partagée) + nom d'équipe */
+.podium-head { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 10px; max-width: 100%; padding: 0 4px; }
+.podium-head__rank {
+  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-weight: 900; font-size: 16px; color: #1a1a1a;
+  border: 2px solid var(--border); border-radius: 8px; box-shadow: 2px 2px 0 var(--border);
+}
+.recap-stage-slot--first  .podium-head__rank { background: var(--yellow); }
+.recap-stage-slot--second .podium-head__rank { background: var(--teal); }
+.recap-stage-slot--third  .podium-head__rank { background: var(--pink); }
+.podium-head__name {
+  font-family: var(--font-display); font-size: 14px; font-weight: 800; line-height: 1.2; text-align: center;
+  text-transform: uppercase; letter-spacing: 0.02em; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.recap-stage-slot--first .podium-head__name { font-size: 16px; }
+/* Cartes du podium : grille 2×2 (4 joueur·euses), légèrement réduites pour
+   tenir à deux par ligne dans chaque marche */
+.recap-podium-panel .recap-podium-cards {
+  display: grid; grid-template-columns: repeat(2, auto); justify-content: center;
+  gap: 6px; padding: 0 2px 8px;
+}
+.recap-podium-panel .recap-podium-cards > :only-child { grid-column: 1 / -1; }
+.recap-podium-panel .recap-mini-card-wrap { --mini-scale: 0.33; }
 
 /* Ordre visuel : 2nd | 1er | 3ème */
 .recap-stage-slot--first  { order: 2; }
@@ -2663,11 +2727,11 @@ details.agenda-month--past > summary::-webkit-details-marker {
   border: 2px solid var(--border);
   border-bottom: none;
   border-radius: var(--radius) var(--radius) 0 0;
-  padding: 5px 6px 0;
+  padding: 8px 6px 0;
   overflow: visible; /* laisse le contenu déborder vers le haut si marche trop petite */
 }
 
-.recap-stage-medal { font-size: 16px; line-height: 1; }
+.recap-stage-medal { font-size: 24px; line-height: 1; }
 
 .recap-stage-team {
   font-family: var(--font-display);
@@ -2693,21 +2757,9 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 
 /* Couleurs des marches */
-.recap-stage-slot--first .recap-stage-step {
-  border-color: var(--yellow);
-  background: color-mix(in srgb, var(--yellow) 25%, var(--surface));
-  box-shadow: 3px 0 0 var(--yellow), -3px 0 0 var(--yellow);
-}
-.recap-stage-slot--second .recap-stage-step {
-  border-color: #9e9e9e;
-  background: color-mix(in srgb, #9e9e9e 15%, var(--surface));
-  box-shadow: 3px 0 0 #9e9e9e, -3px 0 0 #9e9e9e;
-}
-.recap-stage-slot--third .recap-stage-step {
-  border-color: #cd7f32;
-  background: color-mix(in srgb, #cd7f32 15%, var(--surface));
-  box-shadow: 3px 0 0 #cd7f32, -3px 0 0 #cd7f32;
-}
+.recap-stage-slot--first .recap-stage-step  { background: var(--yellow); }
+.recap-stage-slot--second .recap-stage-step { background: var(--teal); }
+.recap-stage-slot--third .recap-stage-step  { background: var(--pink); }
 
 /* Ligne de sol commune sous toutes les marches */
 .recap-podium-stage::after {
@@ -2759,16 +2811,33 @@ details.agenda-month--past > summary::-webkit-details-marker {
   border-color: var(--border);
 }
 
+/* ── MVP : explication orga ── */
+.recap-mvp-orga { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 12px; }
+.recap-mvp-hint { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-muted); }
+
 /* ── MVP selector ── */
 .recap-mvp-selector {
   display: flex;
   flex-direction: column;
   gap: 8px;
   background: var(--surface-2);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: var(--radius);
   padding: 10px 12px;
+  margin-bottom: 12px;
 }
+.recap-mvp-selector__top { display: flex; gap: 8px; }
+.recap-mvp-selector__top .form-input { flex: 1; min-width: 0; }
+.recap-mvp-selector__top .primary { font-size: 12px; padding: 6px 14px; flex-shrink: 0; }
+.recap-mvp-selector__status { margin: 0; font-size: 11.5px; color: var(--text-muted); }
+.recap-mvp-selector__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.recap-mvp-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; font-size: 12px; font-weight: 700;
+  text-transform: none; letter-spacing: normal; border-radius: 999px; box-shadow: none;
+  background: var(--yellow); color: #1a1a1a; border: 1.5px solid var(--border); cursor: pointer;
+}
+.recap-mvp-chip span { opacity: 0.6; }
+.recap-mvp-selector__list { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
 
 .recap-mvp-selector__team {
   display: flex;
@@ -2791,6 +2860,10 @@ details.agenda-month--past > summary::-webkit-details-marker {
 }
 
 .recap-mvp-selector__pill {
+  text-transform: none;
+  letter-spacing: normal;
+  box-shadow: none;
+  color: var(--text);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -2929,16 +3002,14 @@ details.agenda-month--past > summary::-webkit-details-marker {
 @media (max-width: 900px) {
   .recap-top-row,
   .recap-top-row--share,
-  .recap-bottom-row--banner {
-    grid-template-columns: 1fr;
-  }
   .recap-banner-panel {
     max-width: 260px;
     margin: 0 auto;
   }
-  .recap-middle-row {
-    grid-template-columns: 1fr;
-  }
+  .recap-notes { padding: 14px 16px; }
+  .recap-lower__stack,
+  .recap-lower--ranked { grid-template-columns: minmax(0, 1fr); }
+  .recap-lower__stack > .recap-notes { grid-column: auto; }
 }
 
 @media (max-width: 600px) {
@@ -3223,6 +3294,32 @@ details.agenda-month--past > summary::-webkit-details-marker {
   z-index: 2;
 }
 
+/* ── Barre d'onglets « groupée » (page tournoi) ──────────────────────────
+   Onglet actif plein (jaune, bord noir), séparateurs entre groupes d'usage,
+   compteurs en pastille, point rouge pulsé pour le Live. */
+.tabs-bar--grouped .tabs { align-items: flex-end; gap: 2px; }
+.tabs-bar--grouped .tab { display: inline-flex; align-items: center; gap: 6px; }
+.tabs-bar--grouped .tab.active {
+  background: var(--yellow); color: #1a1a1a;
+  border-color: var(--border); border-bottom-color: var(--yellow);
+}
+.tabs-bar--grouped .tab.active .tab-count { background: #1a1a1a; color: var(--yellow); }
+.tab-sep { flex-shrink: 0; align-self: center; width: 2px; height: 18px; margin: 0 8px 4px; background: var(--border-light); border-radius: 1px; }
+.tab-count {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px;
+  font-size: 10px; font-weight: 800; letter-spacing: 0; border-radius: 999px;
+  background: var(--surface-2); color: var(--text); border: 1.5px solid var(--border);
+}
+.tab-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #e84040; box-shadow: 0 0 0 0 rgba(232, 64, 64, 0.6); animation: tabLivePulse 1.6s ease-out infinite; }
+.tab--live { color: #e84040; }
+@keyframes tabLivePulse { 0% { box-shadow: 0 0 0 0 rgba(232, 64, 64, 0.55); } 70% { box-shadow: 0 0 0 7px rgba(232, 64, 64, 0); } 100% { box-shadow: 0 0 0 0 rgba(232, 64, 64, 0); } }
+@media (prefers-reduced-motion: reduce) { .tab-live-dot { animation: none; } }
+/* Outils à droite (écrans, arbitres, dashboard orga, arbitrer) */
+.tabs-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tabs-tools > a { font-size: 12px; padding: 5px 14px; margin-bottom: 2px; white-space: nowrap; }
+.tabs-tools > a.tabs-tool { padding: 5px 12px; }
+.tabs-tools > a.tabs-tool.is-active { background: var(--yellow); color: #1a1a1a; }
+
 /* ========================
    TOURNAMENT DETAIL
    ======================== */
@@ -3232,7 +3329,7 @@ details.agenda-month--past > summary::-webkit-details-marker {
   grid-template-columns: 1fr auto;
   grid-template-areas: "main sponsors" "banner banner";
   gap: 16px 32px;
-  align-items: start;
+  align-items: center;
   margin-bottom: 24px;
 }
 
@@ -3249,6 +3346,73 @@ details.agenda-month--past > summary::-webkit-details-marker {
   align-items: flex-end;
   gap: 10px;
   padding-top: 6px;
+}
+
+/* Affiche du tournoi en haut à droite de l'en-tête (clic = taille réelle) */
+.tournament-hero__poster {
+  grid-area: sponsors;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+}
+.poster-zoom__thumb {
+  display: block; line-height: 0; padding: 0; margin: 0; background: none; border: none; box-shadow: none;
+  cursor: zoom-in; text-transform: none; letter-spacing: normal;
+}
+.tournament-hero__poster .poster-zoom__thumb img {
+  height: 250px; width: auto; max-width: 200px; object-fit: cover; display: block;
+  border: 2px solid var(--border); border-radius: 10px; box-shadow: var(--shadow);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.poster-zoom__thumb:hover img { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--border); }
+
+/* Aperçu en grand de l'affiche */
+.poster-zoom__overlay {
+  position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center;
+  padding: max(24px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); cursor: zoom-out;
+}
+.poster-zoom__backdrop { position: absolute; inset: 0; background: rgba(20, 20, 24, 0.82); backdrop-filter: blur(3px); }
+.poster-zoom__big {
+  position: relative; max-width: min(92vw, 720px); max-height: 88vh; width: auto; height: auto; display: block;
+  border: 3px solid #1a1a1a; border-radius: 14px; box-shadow: 8px 8px 0 #1a1a1a; transform-origin: center center;
+  will-change: transform;
+}
+.poster-zoom__close {
+  position: absolute; top: max(14px, env(safe-area-inset-top)); right: 16px; z-index: 1;
+  width: 40px; height: 40px; padding: 0; border-radius: 50%; font-size: 0; line-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface); color: var(--text); border: 2px solid var(--border); box-shadow: 2px 2px 0 var(--border);
+}
+.tournament-hero__poster-credit { font-size: 11px; color: var(--text-muted); max-width: 200px; text-align: right; overflow-wrap: anywhere; }
+
+/* Partie gauche de l'en-tête : statut → titre → infos clés → suivre */
+.tournament-hero__head { display: flex; align-items: center; gap: 22px; }
+/* Logo du club organisateur à gauche : carré net, à la hauteur du bloc texte */
+.tournament-hero__club {
+  flex-shrink: 0; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 2px solid var(--border); border-radius: 14px; box-shadow: var(--shadow);
+  padding: 8px; text-decoration: none; color: var(--text-muted); transition: transform var(--transition);
+}
+.tournament-hero__club:hover { transform: translate(-2px, -2px); }
+.tournament-hero__club img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+.tournament-hero__club span { font-size: 12px; text-align: center; line-height: 1.3; }
+.tournament-hero__text { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+.tournament-hero__text h1 { margin: 0; line-height: 1.1; text-wrap: balance; }
+.tournament-hero__text .hero-extra-row { margin: 0; gap: 12px; }
+.tournament-hero__text .hero-extra-row .hero-countdown { order: -1; }
+.hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.hero-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+  font-size: 13px; font-weight: 600; line-height: 1.2; white-space: nowrap;
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 999px;
+}
+.hero-chip--date {
+  font-family: var(--font-display); font-weight: 800;
+  background: var(--yellow); color: #1a1a1a; border-width: 2px; box-shadow: 2px 2px 0 var(--border);
+}
+
+/* Sponsors en bas de page (quand l'affiche occupe l'en-tête) */
+.tournament-sponsors-footer {
+  margin-top: 32px; padding-top: 16px; border-top: 2px dashed var(--border-light);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
 }
 
 .tournament-hero__sponsors-title {
@@ -3270,6 +3434,11 @@ details.agenda-month--past > summary::-webkit-details-marker {
     align-items: flex-start;
     max-width: 100%;
   }
+  .tournament-hero__poster { align-items: flex-start; }
+  .tournament-hero__poster .poster-zoom__thumb img { height: 170px; }
+  .tournament-hero__head { align-items: flex-start; gap: 14px; }
+  .tournament-hero__club { width: 72px; height: 72px; padding: 5px; border-radius: 10px; }
+  .hero-chip { white-space: normal; }
 }
 
 .tournament-hero__dates {
@@ -11242,19 +11411,22 @@ a.header-icon-btn { text-decoration: none; }
 }
 
 /* Récap : classement final complet */
-.final-ranking h2 { margin: 0 0 12px; }
+.final-ranking { margin-top: 20px; padding: 16px 18px; }
+.final-ranking .recap-section__title { margin-bottom: 12px; }
 .final-ranking__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .final-ranking__row {
-  display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 10px;
-  padding: 8px 12px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--surface);
+  display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+  padding: 6px 10px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--surface);
 }
 .final-ranking__row.is-top1 { border: 2px solid var(--border); background: color-mix(in srgb, var(--yellow) 55%, var(--surface)); }
 .final-ranking__row.is-top2, .final-ranking__row.is-top3 { border-color: var(--border); }
 .final-ranking__row.is-mine { outline: 2px solid var(--pink); }
-.final-ranking__rank { display: grid; font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.final-ranking__rank { display: grid; font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .final-ranking__rank small { font-size: 10px; font-weight: 600; color: var(--text-muted); }
-.final-ranking__team { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.final-ranking__stage { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.final-ranking__team { display: flex; flex-direction: column; min-width: 0; font-size: 13.5px; }
+.final-ranking__team strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.final-ranking__players { font-size: 11.5px; line-height: 1.35; color: var(--text-muted); overflow-wrap: anywhere; }
+.final-ranking__stage { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 @media (max-width: 500px) { .final-ranking__stage { display: none; } }
 
 /* Onglet Étapes : égalité parfaite sur une ligne de qualification */

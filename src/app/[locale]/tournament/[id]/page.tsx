@@ -35,6 +35,7 @@ import { LiveMatchTile } from "@/components/LiveMatchTile";
 import { HeroCountdown } from "@/components/HeroCountdown";
 import { TournamentRecap } from "@/components/TournamentRecap";
 import { FollowButton } from "@/components/FollowButton";
+import { PosterZoom } from "@/components/PosterZoom";
 import { SoloRegisterForm } from "@/components/SoloRegisterForm";
 import { WithdrawTeamPanel } from "@/components/WithdrawTeamPanel";
 import { syncTournamentCompletionById } from "@/lib/tournament-status";
@@ -391,20 +392,29 @@ export default async function TournamentPage({
       ? pipelineBracketTabs.map((b) => ({ label: b.label, value: b.value, href: `/tournament/${params.id}?tab=${b.value}` }))
       : (isLaunched && !isBerlinMixed && !isKiosque && tournament.sundayFormat !== "SWISS_SPLIT_SE" && tournament.sundayFormat !== "SPLIT_SE" ? [{ label: t("tab_bracket"), value: "bracket", href: `/tournament/${params.id}?tab=bracket` }] : [])),
     // ABC Chapeau pas encore dévoilé : pas d'onglet Équipes pour le public (liste des inscrit·es dans Inscription)
-    ...(hideAbcTeams ? [] : [{ label: t("tab_teams", { count: displayTeamCount }), value: "equipes", href: `/tournament/${params.id}?tab=equipes` }]),
-    // Onglet Live TOUJOURS visible : les scores/chronos en direct se suffisent,
-    // pas besoin de stream ni de chat pour le justifier. Le contenu s'adapte au
-    // statut du tournoi (à venir / en cours / terminé).
-    { label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live` },
-    // Écrans de salle (scoreboard géant, diaporama) : publics, dès le lancement (l'orga les voit avant).
-    ...(isLaunched || isOrga ? [{ label: `📺 ${t("tab_screens")}`, value: "screens", href: `/tournament/${params.id}?tab=screens` }] : []),
-    // Arbitres (bêta) : l'orga le voit toujours (pour l'activer) ; les joueurs
-    // seulement quand des désignations sont publiées.
-    ...(isOrga || showRefereeTab ? [{ label: `🟨 ${t("tab_referees")}`, value: "referees", href: `/tournament/${params.id}?tab=referees` }] : []),
-    ...(hasCommunity ? [{ label: `${t("tab_free_agent")} (${tournament.freeAgents.length})`, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
+    ...(hideAbcTeams ? [] : [{ label: t("tab_teams", { count: displayTeamCount }).replace(/\s*\(\d+\)\s*$/, ""), count: displayTeamCount, value: "equipes", href: `/tournament/${params.id}?tab=equipes` }]),
+    // Live : seulement pendant le tournoi (point rouge pulsé). L'onglet reste
+    // joignable par lien (?tab=live) avant / après.
+    ...(tournament.status === "LIVE" || tab === "live" ? [{ label: t("tab_live"), value: "live", href: `/tournament/${params.id}?tab=live`, live: tournament.status === "LIVE" }] : []),
+    // Écrans et Arbitres sont des outils : boutons à droite de la barre (voir toolLinks) ;
+    // l'onglet n'apparaît que quand on est dessus.
+    ...(tab === "screens" ? [{ label: t("tab_screens"), value: "screens", href: `/tournament/${params.id}?tab=screens` }] : []),
+    ...(tab === "referees" ? [{ label: t("tab_referees"), value: "referees", href: `/tournament/${params.id}?tab=referees` }] : []),
+    ...(hasCommunity ? [{ label: t("tab_free_agent"), count: tournament.freeAgents.length, value: "communaute", href: `/tournament/${params.id}?tab=communaute` }] : []),
     ...(t_.chatMode !== "DISABLED" ? [{ label: t("tab_chat"), value: "chat", href: `/tournament/${params.id}?tab=chat` }] : []),
     ...(!isCompleted && galleryVisible ? [galleryTab] : []),
     ...(tournament.accommodationAvailable && (!!myTeam || isAccommodationHost) ? [{ label: t("tab_accommodation"), value: "hebergement", href: `/tournament/${params.id}?tab=hebergement` }] : []),
+  ];
+  // Onglets regroupés par usage : le tournoi · les matchs · la communauté
+  // (séparateur entre groupes). Ordre d'origine conservé dans chaque groupe.
+  const TAB_GROUP: Record<string, number> = { recap: 0, info: 0, inscription: 0, equipes: 0, hebergement: 0, photos: isCompleted ? 0 : 2, chat: 2, communaute: 2 };
+  const groupedTabs = (tabs as Array<{ label: string; value: string; href: string; count?: number; live?: boolean }>)
+    .map((tb, i) => ({ ...tb, group: String(TAB_GROUP[tb.value] ?? 1), i }))
+    .sort((a, b) => Number(a.group) - Number(b.group) || a.i - b.i);
+  // Outils (écrans de salle, arbitres) : à droite de la barre, pas dans les onglets
+  const toolLinks = [
+    ...(isLaunched || isOrga ? [{ label: `📺 ${t("tab_screens")}`, value: "screens" }] : []),
+    ...(isOrga || showRefereeTab ? [{ label: `🟨 ${t("tab_referees")}`, value: "referees" }] : []),
   ];
 
 
@@ -490,6 +500,31 @@ export default async function TournamentPage({
     },
   } : null;
 
+  // Sponsors : dans l'en-tête s'il n'y a pas d'affiche, sinon en bas de page
+  const sponsorsContent = tournament.sponsors.length > 0 ? (
+      <>
+        <span className="tournament-hero__sponsors-title">{t("sponsors_title")}</span>
+        <div className="sponsors-strip">
+          {tournament.sponsors.map((sponsor) =>
+            sponsor.logoPath ? (
+              <a key={sponsor.id} href={sponsor.url ?? "#"} target="_blank" rel="noopener noreferrer" className="sponsor-logo-link">
+                <img src={sponsor.logoPath} alt={sponsor.name} className="sponsor-logo" />
+              </a>
+            ) : (
+              <span key={sponsor.id} className="sponsor-name-badge">{sponsor.name}</span>
+            )
+          )}
+        </div>
+      </>
+    ) : canEdit ? (
+      <div className="sponsors-empty">
+        <span>🤝</span>
+        <Link href={`/tournament/${params.id}/edit?tab=config&goto=edit-sponsors`} style={{ color: "var(--teal)" }}>
+          {t("sponsors_add")}
+        </Link>
+      </div>
+    ) : null;
+
   return (
     <div className="tournament-page">
       {sportsEventLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(sportsEventLd) }} />}
@@ -506,13 +541,32 @@ export default async function TournamentPage({
       {/* ── HERO ── */}
       <section className="tournament-hero">
         <div className="tournament-hero__main">
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-            <div style={{ minWidth: 0 }}>
+          <div className="tournament-hero__head">
+            {/* Logo du club organisateur, à gauche du titre */}
+            {tournament.hostClub && (
+              <Link href={`/club/${(tournament.hostClub as any).id}`} title={(tournament.hostClub as any).name} className="tournament-hero__club">
+                {(tournament.hostClub as any).logoPath ? (
+                  <img src={(tournament.hostClub as any).logoPath} alt={(tournament.hostClub as any).name} />
+                ) : (
+                  <span>{(tournament.hostClub as any).name}</span>
+                )}
+              </Link>
+            )}
+            <div className="tournament-hero__text">
+              {/* Statut (terminé / en cours / J-x) + remplissage, en tête */}
+              <HeroCountdown
+                dateStart={tournament.dateStart.toISOString()}
+                dateEnd={tournament.dateEnd.toISOString()}
+                registrationEnd={tournament.registrationEnd?.toISOString() ?? null}
+                teamCount={displayTeamCount}
+                maxTeams={tournament.maxTeams}
+              />
               <h1>{tournament.name}</h1>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div className="tournament-hero__dates">
-                  <span>📅 {dateStart} — {dateEnd}</span>
-                </div>
+              {/* Infos clés sur une ligne */}
+              <div className="hero-meta">
+                <span className="hero-chip hero-chip--date">📅 {dateStart} — {dateEnd}</span>
+                <span className="hero-chip">📍 {tournament.city}, {tournament.country}</span>
+                <span className="hero-chip">{formatLabel(tournament.format, abcHat)} · {tournament.courtsCount === 1 ? t("courts_count_one", { count: tournament.courtsCount }) : t("courts_count_other", { count: tournament.courtsCount })}</span>
                 <FollowButton
                   tournamentId={tournament.id}
                   initialFollowing={isFollowing}
@@ -520,77 +574,52 @@ export default async function TournamentPage({
                 />
               </div>
             </div>
-            {tournament.hostClub && (
-              <Link
-                href={`/club/${(tournament.hostClub as any).id}`}
-                title={(tournament.hostClub as any).name}
-                style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
-              >
-                {(tournament.hostClub as any).logoPath ? (
-                  <img
-                    src={(tournament.hostClub as any).logoPath}
-                    alt={(tournament.hostClub as any).name}
-                    style={{ height: "100%", maxHeight: 110, minHeight: 64, width: "auto", maxWidth: 110, borderRadius: 10, objectFit: "contain", background: "var(--surface)", border: "1px solid var(--border)", padding: 4 }}
-                  />
-                ) : (
-                  <div style={{ height: "100%", maxHeight: 110, minHeight: 64, width: 100, borderRadius: 10, background: "var(--surface)", border: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--text-muted)", textAlign: "center", padding: 8 }}>
-                    {(tournament.hostClub as any).name}
-                  </div>
-                )}
-              </Link>
-            )}
           </div>
-          <p style={{ color: "var(--text-muted)", margin: "4px 0 8px", fontSize: 14 }}>
-            {tournament.city}, {tournament.country} · {formatLabel(tournament.format, abcHat)} · {tournament.courtsCount === 1 ? t("courts_count_one", { count: tournament.courtsCount }) : t("courts_count_other", { count: tournament.courtsCount })}
-          </p>
-          <HeroCountdown
-            dateStart={tournament.dateStart.toISOString()}
-            dateEnd={tournament.dateEnd.toISOString()}
-            registrationEnd={tournament.registrationEnd?.toISOString() ?? null}
-            teamCount={displayTeamCount}
-            maxTeams={tournament.maxTeams}
-          />
         </div>
 
-        <div className="tournament-hero__sponsors">
-          {tournament.sponsors.length > 0 ? (
-            <>
-              <span className="tournament-hero__sponsors-title">{t("sponsors_title")}</span>
-              <div className="sponsors-strip">
-                {tournament.sponsors.map((sponsor) =>
-                  sponsor.logoPath ? (
-                    <a key={sponsor.id} href={sponsor.url ?? "#"} target="_blank" rel="noopener noreferrer" className="sponsor-logo-link">
-                      <img src={sponsor.logoPath} alt={sponsor.name} className="sponsor-logo" />
-                    </a>
-                  ) : (
-                    <span key={sponsor.id} className="sponsor-name-badge">{sponsor.name}</span>
-                  )
-                )}
-              </div>
-            </>
-          ) : canEdit ? (
-            <div className="sponsors-empty">
-              <span>🤝</span>
-              <Link href={`/tournament/${params.id}/edit?tab=config&goto=edit-sponsors`} style={{ color: "var(--teal)" }}>
-                {t("sponsors_add")}
-              </Link>
-            </div>
-          ) : null}
-        </div>
+        {/* Affiche en haut à droite (clic = aperçu en grand, animé) ; les sponsors passent alors en bas de page */}
+        {tournament.bannerPath ? (
+          <div className="tournament-hero__poster">
+            <PosterZoom
+              src={tournament.bannerPath}
+              alt={`${t("poster_alt")} ${tournament.name}`}
+              openLabel={t("poster_open")}
+              closeLabel={t("poster_close")}
+            />
+            {(tournament as any).bannerCredit && (
+              <span className="tournament-hero__poster-credit">📷 {(tournament as any).bannerCredit}</span>
+            )}
+          </div>
+        ) : (
+          <div className="tournament-hero__sponsors">{sponsorsContent}</div>
+        )}
       </section>
 
       <Tabs
-        items={tabs}
+        items={groupedTabs}
         active={tab}
-        rightSlot={(canEdit || canRef) ? (
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        variant="grouped"
+        rightSlot={(canEdit || canRef || toolLinks.length > 0) ? (
+          <div className="tabs-tools">
+            {toolLinks.map((l) => (
+              <Link key={l.value} className={`ghost tabs-tool${tab === l.value ? " is-active" : ""}`} href={`/tournament/${params.id}?tab=${l.value}`} scroll={false}>
+                {l.label}
+              </Link>
+            ))}
             {canEdit && (
               <Link className="ghost" href={`/tournament/${params.id}/edit`} style={{ fontSize: 12, padding: "5px 14px", marginBottom: 2 }}>
                 {t("btn_edit")}
               </Link>
             )}
             {canRef && (
-              <Link className="primary" href={`/tournament/${params.id}/referee`} style={{ fontSize: 12, padding: "5px 14px", marginBottom: 2 }}>
+              <Link className="primary" href={`/tournament/${params.id}/referee`} style={{ fontSize: 12, padding: "5px 14px", marginBottom: 2, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                {/* Sifflet d'arbitre (il n'existe pas d'émoji sifflet) */}
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M2.5 7.5h9.5a6.5 6.5 0 1 1-6.3 8.1L5 11.5H2.5z" />
+                  <path d="M8 7.5v3" />
+                  <circle cx="12.5" cy="14" r="1.6" fill="currentColor" stroke="none" />
+                  <path d="M17 4.5a2.5 2.5 0 0 1 2.5 2.5" />
+                </svg>
                 {t("btn_referee")}
               </Link>
             )}
@@ -661,6 +690,15 @@ export default async function TournamentPage({
             podium={podium}
             players={allPlayers}
             isOrga={isOrga}
+            // Classement final complet (étapes) : éliminés au même stade = ex æquo
+            finalRanking={finalRows && (
+              <FinalRankingTable
+                rows={finalRows}
+                teamNames={Object.fromEntries((tournament.teams as any[]).map((tm: any) => [tm.id, tm.name]))}
+                teamPlayers={Object.fromEntries((tournament.teams as any[]).map((tm: any) => [tm.id, (tm.players ?? []).map((tp: any) => tp.player?.name).filter(Boolean)]))}
+                myTeamId={myTeam?.id ?? null}
+              />
+            )}
             share={shareData && {
               ...shareData,
               tournamentName: tournament.name,
@@ -671,14 +709,6 @@ export default async function TournamentPage({
           />
         );
       })()}
-      {/* Classement final complet (étapes) : éliminés au même stade = ex æquo */}
-      {finalRows && (
-        <FinalRankingTable
-          rows={finalRows}
-          teamNames={Object.fromEntries((tournament.teams as any[]).map((tm: any) => [tm.id, tm.name]))}
-          myTeamId={myTeam?.id ?? null}
-        />
-      )}
 
       {/* ── INFO TAB — 12-column flexible grid ── */}
       {tab === "info" && (
@@ -2012,6 +2042,10 @@ export default async function TournamentPage({
         </div>
       )}
 
+      {/* Sponsors en bas de page quand l'affiche occupe l'en-tête */}
+      {tournament.bannerPath && (tournament.sponsors.length > 0 || canEdit) && (
+        <section className="tournament-sponsors-footer">{sponsorsContent}</section>
+      )}
     </div>
   );
 }

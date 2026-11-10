@@ -371,7 +371,7 @@
     "not_found": "Tournoi introuvable.",
     "not_approved": "Ce tournoi n'est pas encore approuvé.",
     "btn_edit": "⚙️ Dashboard orga",
-    "btn_referee": "⚖️ Arbitrer",
+    "btn_referee": "Arbitrer",
     "btn_contact_organizers": "Contacter les organisateur.trices",
     "btn_register_cta": "S'inscrire →",
     "back_dashboard": "← Dashboard organisateur.trice",
@@ -1100,7 +1100,10 @@
     "legend_wb": "Winner Bracket (tableau des gagnants)",
     "legend_lb": "Loser Bracket (tableau de repêchage)",
     "legend_round": "tour {n}",
-    "abc_teams_not_revealed": "Les équipes n'ont pas encore été dévoilées par l'orga. En attendant, voici les inscrit·e·s."
+    "abc_teams_not_revealed": "Les équipes n'ont pas encore été dévoilées par l'orga. En attendant, voici les inscrit·e·s.",
+    "poster_open": "Agrandir l'affiche",
+    "poster_alt": "Affiche",
+    "poster_close": "Fermer"
   },
   "registration": {
     "section_title": "Inscrire mon équipe",
@@ -2798,9 +2801,9 @@
     "uploading": "Upload en cours…",
     "add_photo_finish": "+ Ajouter une photo finish",
     "upload_error": "Erreur d'upload : {error}",
-    "anecdote_title": "Anecdote / Remerciement",
-    "anecdote_placeholder": "Ajouter une anecdote, un remerciement…",
-    "add_anecdote": "+ Ajouter une anecdote ou un remerciement",
+    "anecdote_title": "Petit mot",
+    "anecdote_placeholder": "Écrire un petit mot, une anecdote, un remerciement…",
+    "add_anecdote": "+ Écrire un petit mot",
     "summary_title": "Résumé du tournoi",
     "summary_placeholder": "Rédigez un résumé du tournoi (markdown supporté)…",
     "add_summary": "+ Rédiger un résumé du tournoi",
@@ -2809,7 +2812,17 @@
     "credit_placeholder": "@pseudo ou URL",
     "upload_failed": "Upload échoué ({status})",
     "upload_invalid_response": "Réponse d'upload invalide",
-    "upload_generic_error": "Erreur lors de l'upload"
+    "upload_generic_error": "Erreur lors de l'upload",
+    "mvp_hint": "Mets à l'honneur un·e ou plusieurs joueur·euses : MVP, meilleur·e gardien·ne, révélation… Le titre se change avec ✎.",
+    "mvp_choose_btn": "Choisir les MVP",
+    "mvp_edit_btn": "Modifier la sélection",
+    "mvp_search": "Chercher un·e joueur·euse ou une équipe…",
+    "mvp_selected_count": "{count, plural, =0 {Aucun·e sélectionné·e} one {# sélectionné·e} other {# sélectionné·e·s}}",
+    "mvp_autosave": "enregistré automatiquement",
+    "mvp_done": "Terminé",
+    "mvp_remove": "Retirer",
+    "mvp_no_match": "Aucun·e joueur·euse ne correspond.",
+    "poster_credit_label": "Crédit de l'affiche"
   },
   "draw": {
     "title": "Tirage ABC Chapeau",

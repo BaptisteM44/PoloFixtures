@@ -371,7 +371,7 @@
     "not_found": "Torneo no encontrado.",
     "not_approved": "Este torneo aún no ha sido aprobado.",
     "btn_edit": "⚙️ Panel orga",
-    "btn_referee": "⚖️ Arbitrar",
+    "btn_referee": "Arbitrar",
     "btn_contact_organizers": "Contactar a los organizadores",
     "btn_register_cta": "Inscribirse →",
     "back_dashboard": "← Panel del organizador",
@@ -1100,7 +1100,10 @@
     "legend_wb": "Winner Bracket (cuadro de ganadores)",
     "legend_lb": "Loser Bracket (cuadro de repesca)",
     "legend_round": "ronda {n}",
-    "abc_teams_not_revealed": "La organización aún no ha desvelado los equipos. Mientras tanto, estos son los inscritos."
+    "abc_teams_not_revealed": "La organización aún no ha desvelado los equipos. Mientras tanto, estos son los inscritos.",
+    "poster_open": "Ampliar el cartel",
+    "poster_alt": "Cartel",
+    "poster_close": "Cerrar"
   },
   "registration": {
     "section_title": "Inscribir mi equipo",
@@ -2803,9 +2806,9 @@
     "uploading": "Subiendo…",
     "add_photo_finish": "+ Añadir foto finish",
     "upload_error": "Error al subir: {error}",
-    "anecdote_title": "Anécdota / Agradecimiento",
-    "anecdote_placeholder": "Añadir una anécdota, un agradecimiento…",
-    "add_anecdote": "+ Añadir anécdota o agradecimiento",
+    "anecdote_title": "Unas palabras",
+    "anecdote_placeholder": "Escribe unas palabras, una anécdota, un agradecimiento…",
+    "add_anecdote": "+ Escribir unas palabras",
     "summary_title": "Resumen del torneo",
     "summary_placeholder": "Escribe un resumen del torneo (markdown soportado)…",
     "add_summary": "+ Escribir resumen del torneo",
@@ -2814,7 +2817,17 @@
     "credit_placeholder": "@usuario o URL",
     "upload_failed": "Subida fallida ({status})",
     "upload_invalid_response": "Respuesta de subida no válida",
-    "upload_generic_error": "Error al subir"
+    "upload_generic_error": "Error al subir",
+    "mvp_hint": "Destaca a uno o varios jugadores: MVP, mejor portero, revelación… El título se cambia con ✎.",
+    "mvp_choose_btn": "Elegir los MVP",
+    "mvp_edit_btn": "Modificar la selección",
+    "mvp_search": "Buscar un jugador o un equipo…",
+    "mvp_selected_count": "{count, plural, =0 {Ninguno seleccionado} one {# seleccionado} other {# seleccionados}}",
+    "mvp_autosave": "guardado automáticamente",
+    "mvp_done": "Listo",
+    "mvp_remove": "Quitar",
+    "mvp_no_match": "Ningún jugador coincide.",
+    "poster_credit_label": "Crédito del cartel"
   },
   "draw": {
     "title": "Sorteo ABC Sombrero",

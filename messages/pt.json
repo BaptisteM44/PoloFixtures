@@ -371,7 +371,7 @@
     "not_found": "Torneio não encontrado.",
     "not_approved": "Este torneio ainda não foi aprovado.",
     "btn_edit": "⚙️ Painel da organização",
-    "btn_referee": "⚖️ Árbitro",
+    "btn_referee": "Árbitro",
     "btn_contact_organizers": "Contactar a organização",
     "btn_register_cta": "Inscrever →",
     "back_dashboard": "← Painel da organização",
@@ -1100,7 +1100,10 @@
     "legend_wb": "Winner Bracket (quadro dos vencedores)",
     "legend_lb": "Loser Bracket (quadro de repescagem)",
     "legend_round": "ronda {n}",
-    "abc_teams_not_revealed": "A organização ainda não revelou as equipas. Entretanto, aqui estão os inscritos."
+    "abc_teams_not_revealed": "A organização ainda não revelou as equipas. Entretanto, aqui estão os inscritos.",
+    "poster_open": "Ampliar o cartaz",
+    "poster_alt": "Cartaz",
+    "poster_close": "Fechar"
   },
   "registration": {
     "section_title": "Inscrever a minha equipa",
@@ -2797,9 +2800,9 @@
     "uploading": "A carregar…",
     "add_photo_finish": "+ Adicionar uma foto final",
     "upload_error": "Erro no envio: {error}",
-    "anecdote_title": "História / Agradecimentos",
-    "anecdote_placeholder": "Adiciona uma história, um agradecimento…",
-    "add_anecdote": "+ Adicionar uma história ou um agradecimento",
+    "anecdote_title": "Algumas palavras",
+    "anecdote_placeholder": "Escreva algumas palavras, uma anedota, um agradecimento…",
+    "add_anecdote": "+ Escrever algumas palavras",
     "summary_title": "Resumo do torneio",
     "summary_placeholder": "Escreve um resumo do torneio (markdown suportado)…",
     "add_summary": "+ Escrever um resumo do torneio",
@@ -2808,7 +2811,17 @@
     "credit_placeholder": "@utilizador ou URL",
     "upload_failed": "Falha no envio ({status})",
     "upload_invalid_response": "Resposta de envio inválida",
-    "upload_generic_error": "Erro no envio"
+    "upload_generic_error": "Erro no envio",
+    "mvp_hint": "Destaca um ou vários jogadores: MVP, melhor guarda-redes, revelação… O título muda-se com ✎.",
+    "mvp_choose_btn": "Escolher os MVP",
+    "mvp_edit_btn": "Alterar a seleção",
+    "mvp_search": "Procurar um jogador ou uma equipa…",
+    "mvp_selected_count": "{count, plural, =0 {Nenhum selecionado} one {# selecionado} other {# selecionados}}",
+    "mvp_autosave": "guardado automaticamente",
+    "mvp_done": "Concluído",
+    "mvp_remove": "Retirar",
+    "mvp_no_match": "Nenhum jogador corresponde.",
+    "poster_credit_label": "Crédito do cartaz"
   },
   "draw": {
     "title": "Sorteio ABC Chapéu",

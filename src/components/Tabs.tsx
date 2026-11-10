@@ -1,23 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { Fragment, useRef, useState, useEffect, useCallback } from "react";
 
 export type TabItem = {
   label: string;
   value: string;
   href: string;
+  /** Variante « groupée » : groupe d'usage (un séparateur est tracé entre deux groupes) */
+  group?: string;
+  /** Compteur affiché en petite pastille (équipes, agents libres…) */
+  count?: number;
+  /** Point rouge pulsé (Live pendant le tournoi) */
+  live?: boolean;
 };
+
+// « 🔴 Live » → « Live » : la variante groupée n'utilise pas d'émojis
+const stripEmoji = (s: string) => s.replace(/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u, "");
 
 export function Tabs({
   items,
   active,
   rightSlot,
+  variant = "default",
 }: {
   items: TabItem[];
   active: string;
   rightSlot?: React.ReactNode;
+  /** « grouped » : groupes séparés, compteurs, onglet actif plein (page tournoi) */
+  variant?: "default" | "grouped";
 }) {
+  const grouped = variant === "grouped";
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
@@ -54,13 +67,18 @@ export function Tabs({
   }, [active]);
 
   return (
-    <div className="tabs-bar">
+    <div className={`tabs-bar${grouped ? " tabs-bar--grouped" : ""}`}>
       <div className={`tabs-scroll${canLeft ? " can-scroll-left" : ""}${canRight ? " can-scroll-right" : ""}`}>
         <div className="tabs" ref={scrollRef}>
-          {items.map((tab) => (
-            <Link key={tab.value} href={tab.href} scroll={false} className={`tab ${active === tab.value ? "active" : ""}`}>
-              {tab.label}
-            </Link>
+          {items.map((tab, i) => (
+            <Fragment key={tab.value}>
+              {grouped && i > 0 && tab.group !== items[i - 1].group && <span className="tab-sep" aria-hidden />}
+              <Link href={tab.href} scroll={false} className={`tab ${active === tab.value ? "active" : ""}${tab.live ? " tab--live" : ""}`}>
+                {tab.live && <span className="tab-live-dot" aria-hidden />}
+                {grouped ? stripEmoji(tab.label) : tab.label}
+                {tab.count != null && <span className="tab-count">{tab.count}</span>}
+              </Link>
+            </Fragment>
           ))}
         </div>
         <span className="tabs-scroll-hint" aria-hidden>›</span>

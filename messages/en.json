@@ -371,7 +371,7 @@
     "not_found": "Tournament not found.",
     "not_approved": "This tournament is not yet approved.",
     "btn_edit": "⚙️ Orga dashboard",
-    "btn_referee": "⚖️ Referee",
+    "btn_referee": "Referee",
     "btn_contact_organizers": "Contact the organizers",
     "btn_register_cta": "Register →",
     "back_dashboard": "← Organizer dashboard",
@@ -1100,7 +1100,10 @@
     "legend_wb": "Winners' Bracket",
     "legend_lb": "Losers' Bracket (second chance)",
     "legend_round": "round {n}",
-    "abc_teams_not_revealed": "The organisers haven't revealed the teams yet. Meanwhile, here are the registered players."
+    "abc_teams_not_revealed": "The organisers haven't revealed the teams yet. Meanwhile, here are the registered players.",
+    "poster_open": "Enlarge the poster",
+    "poster_alt": "Poster",
+    "poster_close": "Close"
   },
   "registration": {
     "section_title": "Register my team",
@@ -2797,9 +2800,9 @@
     "uploading": "Uploading…",
     "add_photo_finish": "+ Add a finish photo",
     "upload_error": "Upload error: {error}",
-    "anecdote_title": "Anecdote / Thanks",
-    "anecdote_placeholder": "Add an anecdote, a thank you…",
-    "add_anecdote": "+ Add an anecdote or thank you",
+    "anecdote_title": "A few words",
+    "anecdote_placeholder": "Write a few words, an anecdote, a thank-you…",
+    "add_anecdote": "+ Write a few words",
     "summary_title": "Tournament summary",
     "summary_placeholder": "Write a tournament summary (markdown supported)…",
     "add_summary": "+ Write a tournament summary",
@@ -2808,7 +2811,17 @@
     "credit_placeholder": "@username or URL",
     "upload_failed": "Upload failed ({status})",
     "upload_invalid_response": "Invalid upload response",
-    "upload_generic_error": "Upload error"
+    "upload_generic_error": "Upload error",
+    "mvp_hint": "Put one or more players in the spotlight: MVP, best goalie, rookie of the tournament… Change the title with ✎.",
+    "mvp_choose_btn": "Choose the MVPs",
+    "mvp_edit_btn": "Edit selection",
+    "mvp_search": "Search a player or a team…",
+    "mvp_selected_count": "{count, plural, =0 {None selected} one {# selected} other {# selected}}",
+    "mvp_autosave": "saved automatically",
+    "mvp_done": "Done",
+    "mvp_remove": "Remove",
+    "mvp_no_match": "No player matches.",
+    "poster_credit_label": "Poster credit"
   },
   "draw": {
     "title": "ABC Hat Draw",

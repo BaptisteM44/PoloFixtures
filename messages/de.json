@@ -371,7 +371,7 @@
     "not_found": "Turnier nicht gefunden.",
     "not_approved": "Dieses Turnier wurde noch nicht genehmigt.",
     "btn_edit": "⚙️ Orga-Dashboard",
-    "btn_referee": "⚖️ Schiedsrichten",
+    "btn_referee": "Schiedsrichten",
     "btn_contact_organizers": "Organisatoren kontaktieren",
     "btn_register_cta": "Anmelden →",
     "back_dashboard": "← Organisator-Dashboard",
@@ -1100,7 +1100,10 @@
     "legend_wb": "Winner Bracket (Gewinnerrunde)",
     "legend_lb": "Loser Bracket (Verliererrunde)",
     "legend_round": "Runde {n}",
-    "abc_teams_not_revealed": "Die Orga hat die Teams noch nicht aufgedeckt. Bis dahin hier die Angemeldeten."
+    "abc_teams_not_revealed": "Die Orga hat die Teams noch nicht aufgedeckt. Bis dahin hier die Angemeldeten.",
+    "poster_open": "Plakat vergrößern",
+    "poster_alt": "Plakat",
+    "poster_close": "Schließen"
   },
   "registration": {
     "section_title": "Mein Team anmelden",
@@ -2803,9 +2806,9 @@
     "uploading": "Hochladen…",
     "add_photo_finish": "+ Zielfoto hinzufügen",
     "upload_error": "Upload-Fehler: {error}",
-    "anecdote_title": "Anekdote / Dankeschön",
-    "anecdote_placeholder": "Eine Anekdote, einen Dank hinzufügen…",
-    "add_anecdote": "+ Anekdote oder Dankeschön hinzufügen",
+    "anecdote_title": "Ein paar Worte",
+    "anecdote_placeholder": "Schreibe ein paar Worte, eine Anekdote, ein Dankeschön …",
+    "add_anecdote": "+ Ein paar Worte schreiben",
     "summary_title": "Turnierbericht",
     "summary_placeholder": "Zusammenfassung des Turniers schreiben (Markdown unterstützt)…",
     "add_summary": "+ Turnierbericht schreiben",
@@ -2814,7 +2817,17 @@
     "credit_placeholder": "@Nutzername oder URL",
     "upload_failed": "Upload fehlgeschlagen ({status})",
     "upload_invalid_response": "Ungültige Upload-Antwort",
-    "upload_generic_error": "Fehler beim Hochladen"
+    "upload_generic_error": "Fehler beim Hochladen",
+    "mvp_hint": "Hebe eine oder mehrere Spieler·innen hervor: MVP, beste·r Torhüter·in, Entdeckung… Den Titel änderst du mit ✎.",
+    "mvp_choose_btn": "MVPs auswählen",
+    "mvp_edit_btn": "Auswahl ändern",
+    "mvp_search": "Spieler·in oder Team suchen…",
+    "mvp_selected_count": "{count, plural, =0 {Niemand ausgewählt} one {# ausgewählt} other {# ausgewählt}}",
+    "mvp_autosave": "automatisch gespeichert",
+    "mvp_done": "Fertig",
+    "mvp_remove": "Entfernen",
+    "mvp_no_match": "Niemand passt zur Suche.",
+    "poster_credit_label": "Plakat-Credit"
   },
   "draw": {
     "title": "ABC-Hut-Auslosung",
