@@ -1,0 +1,28 @@
+# DECISIONS — journal (ajout seul, une ligne par décision)
+
+- 2026-11-12 — Vue isométrique obtenue en 3D (three.js, caméra orthographique), pas en sprites 2D. Raison : un modèle au lieu de 8 directions dessinées, hauteur de balle réelle.
+- 2026-11-12 — Style low-poly construit en code, pas d'assets achetés. Raison : coût nul, poids faible, recolorable par club.
+- 2026-11-12 — Simulation maison déterministe séparée du rendu. Raison : tests sans navigateur, équilibrage par bots, jeu en ligne possible plus tard.
+- 2026-11-12 — Le jeu vit dans le dépôt Poloperator, sous `src/polo-game/`. Raison : comptes, clubs et scores partagés.
+- 2026-11-13 — REMPLACE « low-poly construit en code » : personnages et terrain modélisés (glTF, squelette), qualité avant légèreté, chargement accepté (≤ 25 Mo). Demande de Morvan.
+- 2026-11-13 — Contrôle direct du joueur (déplacement libre + maillet dirigé à part), pas de modèle de véhicule à rayon de braquage. Raison : « avoir la main à 100 % », éviter l'effet vélos qui tournent en rond.
+- 2026-11-13 — Rythme posé (vitesses proches du réel) et ralentis : concentration pendant la charge, temps forts, rediffusion.
+- 2026-11-13 — Caméra iso qui suit l'action de près au lieu de montrer tout le terrain.
+- 2026-11-13 — Règles : EHBA Official Ruleset 2023 (rév. 230712) fourni par Morvan ; résumé de travail dans `RULES.md`, avec ce qui est en V1 et ce qui vient plus tard.
+- 2026-11-13 — REMPLACE « maillet dirigé à part, pas d'aimantation » : tir et passe simples vers le point cliqué, 3 niveaux de force, aimantation légère de la balle. Demande de Morvan.
+- 2026-11-13 — Chute / pied à terre en V1 : virage trop fort à pleine vitesse. Retour par tap-in au milieu d'un grand côté. Collisions entre joueurs : ralentissent seulement, pas de faute ni de chute en V1.
+- 2026-11-13 — REMPLACE la ligne suivante : la page `/polo` est entièrement occupée par le jeu (il recouvre header et footer). Le menu du jeu propose « Quitter le jeu », qui ramène à l'accueil. Demande de Morvan.
+- 2026-11-13 — Écran : le jeu prend toute la largeur et toute la hauteur sous le header du site (page `/polo`). Bouton plein écran (touche F) ; sur iPhone, où le navigateur ne le permet pas, le jeu recouvre la page. Boutons du haut en icônes ; tableau de score à gauche sur écran étroit. Demande de Morvan.
+- 2026-11-13 — M1 : match premier à 5 buts ou 6 minutes, but en or en cas d'égalité ; chrono arrêté à chaque but (EHBA 5.3.4). Réglages par défaut, à confirmer par Morvan.
+- 2026-11-13 — Après un but, l'équipe qui a encaissé repart avec la balle dans son camp, l'autre attend dans le sien (EHBA 5.4). Une balle poussée dans la cage sans tir : arrêt, balle à la défense.
+- 2026-11-13 — Ajouts de jeu nécessaires au 1 contre 1 : vol de balle (un maillet adverse qui passe sur la balle tenue la fait sauter) et vélo solide pour la balle (on défend sa cage en se mettant en travers).
+- 2026-11-13 — Joute : départ depuis la balustrade derrière sa cage, décalé de 2,4 m sur le côté pour ne pas buter dans la cage ; aucun faux départ possible.
+- 2026-11-13 — Téléphone : joystick en bas à gauche ; à droite FRAPPER (maintenir = charger, glisser = viser, sans glisser = droit devant) et FREIN. En portrait, commandes sous le jeu façon console portable ; en paysage, posées sur le jeu. Demande de Morvan.
+- 2026-11-13 — Sons synthétisés avec Web Audio (aucun fichier), démarrent au premier clic ou touche, coupables (bouton, touche M).
+- 2026-11-13 — Manette : stick gauche rouler, stick droit viser (sinon droit devant), gâchette droite ou A frapper, B ou gâchette gauche freiner.
+- 2026-11-13 — Après le premier essai de Morvan : vitesse de pointe 22 km/h ; chute en virage trop sec désactivée (trop dur à éviter au clavier, `JOUEUR.chuteVirage`) ; tir avec une jauge continue de 0 à 100 % au lieu de 3 crans (pleine en 1,1 s).
+- 2026-11-13 — Lancement de M0 sur accord de Morvan. Dépendances ajoutées : `three@0.160` et `@types/three`.
+- 2026-11-13 — Réglages par défaut pris sans réponse de Morvan, à confirmer : force du tir = durée du clic (3 crans) ; tap-in automatique en arrivant dans la zone ; percuter la balustrade ne fait pas tomber ; ralenti de concentration repoussé (seul le ralenti de but existe).
+- 2026-11-13 — Chute en V1 = demander un changement de direction de plus de 100° au-dessus de 70 % de la vitesse de pointe, sans freiner, pendant 0,3 s.
+- 2026-11-13 — Le vélo avance toujours dans le sens de son cap (pas de déplacement latéral) ; il pivote vite à basse vitesse et tourne large à haute vitesse.
+- 2026-11-12 — Jeu en ligne repoussé au jalon M5 (Vercel ne garde pas de connexion temps réel ; serveur payant à part).
