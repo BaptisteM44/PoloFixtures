@@ -357,14 +357,22 @@ export default async function HomePage() {
           <div className="hero-feature-card">
             <h3>{t("features_title")}</h3>
             <ul>
-              <li>{t("feature_pools")}</li>
-              <li>{t("feature_referee")}</li>
-              <li>{t("feature_live")}</li>
-              <li>{t("feature_players")}</li>
-              <li>{t("feature_clubs")}</li>
-              <li>{t("feature_map")}</li>
-              <li>{t("feature_calendar")}</li>
-              <li>{t("feature_notifications")}</li>
+              {([
+                ["🏆", "/about"],
+                ["📺", "/tournaments"],
+                ["🃏", "/about"],
+                ["🌍", "/clubs"],
+              ] as const).map(([icon, href], i) => (
+                <li key={i}>
+                  <Link href={href}>
+                    <span className="hero-feature-card__icon" aria-hidden>{icon}</span>
+                    <span>
+                      <strong>{t(`feature_${i + 1}_title`)}</strong>
+                      <small>{t(`feature_${i + 1}_desc`)}</small>
+                    </span>
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
         </section>

@@ -890,21 +890,41 @@ button:disabled,
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   opacity: 0.8;
 }
 
 .hero-feature-card ul {
   margin: 0;
-  padding-left: 20px;
+  padding: 0;
+  list-style: none;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4px 16px;
+  gap: 10px;
 }
 
-.hero-feature-card li {
-  font-size: 13px;
-  font-weight: 600;
+.hero-feature-card li { min-width: 0; }
+
+.hero-feature-card li a {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  height: 100%;
+  padding: 10px 12px;
+  color: inherit;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.55);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: transform var(--transition);
+}
+.hero-feature-card li a:hover { transform: translateY(-2px); }
+.hero-feature-card__icon { font-size: 20px; line-height: 1.2; }
+.hero-feature-card li strong { display: block; font-size: 14px; font-weight: 800; }
+.hero-feature-card li small { display: block; margin-top: 2px; font-size: 12px; line-height: 1.35; font-weight: 500; opacity: 0.8; }
+
+@media (max-width: 420px) {
+  .hero-feature-card ul { grid-template-columns: 1fr; }
 }
 
 .hero-actions {
