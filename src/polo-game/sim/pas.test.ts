@@ -37,6 +37,21 @@ describe("déplacement", () => {
     rouler(e, cmd({ dx: 1, dy: 0.01 }), 4); rouler(e, cmd({ dy: 1 }), 6);
     const j = e.joueurs[0];
     expect(j.y).toBeLessThanOrEqual(TERRAIN.demiW - JOUEUR.rayon + 1e-9);
+    expect(j.etat).not.toBe("auSol"); // pas de chute (bloqué contre la balustrade, il finit par poser le pied : c'est normal)
+  });
+});
+
+describe("pied à terre", () => {
+  it("presque à l'arrêt trop longtemps : pied à terre, hors jeu", () => {
+    const e = creerEtat(); e.balle.x = 10; const j = e.joueurs[0];
+    rouler(e, cmd({}), JOUEUR.piedDelai - 0.3);
+    expect(j.etat).toBe("actif"); expect(j.risque).toBeGreaterThan(0.7);
+    let pied = false; for (let i = 0; i < 60; i++) { pas(e, [cmd({})]); pied ||= e.evenements.some((v) => v.type === "piedAterre"); }
+    expect(pied).toBe(true); expect(j.etat).toBe("horsJeu");
+  });
+  it("en roulant, même lentement, on garde l'équilibre", () => {
+    const e = creerEtat(); e.balle.x = 10; const j = e.joueurs[0];
+    for (let k = 0; k < 8; k++) { rouler(e, cmd({ dx: Math.cos(k), dy: Math.sin(k) * 0.5 }), 0.4); rouler(e, cmd({ frein: true }), 0.25); }
     expect(j.etat).toBe("actif");
   });
 });

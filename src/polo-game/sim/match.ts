@@ -164,6 +164,7 @@ export function pasMatch(m: Match, commandes: Commande[]): Match {
     }
     case "but": {
       // La balle finit sa course dans le filet ; les joueurs roulent sur leur élan. Chrono arrêté.
+      for (const j of e.joueurs) j.risque = 0; // pas de pied à terre pendant la célébration
       pas(e, COMMANDES_VIDES);
       e.remise = 0;
       if (m.tPhase >= DUREES.but) {

@@ -63,6 +63,10 @@ export const JOUEUR = {
   chuteAngle: 1.75,
   /** …pendant cette durée, en secondes. */
   chuteDelai: 0.3,
+  /** Pied à terre : en dessous de cette vitesse (m/s), on perd l'équilibre… */
+  piedVitesse: 0.8,
+  /** …et au bout de ce temps, on pose le pied : hors jeu jusqu'au tap-in (EHBA). */
+  piedDelai: 2.2,
   /** Temps passé au sol avant de pouvoir repartir (hors jeu). */
   dureeAuSol: 1.3,
   /** Ralentissement quand on force un virage sans freiner, m/s² au maximum. */

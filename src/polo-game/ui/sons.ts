@@ -74,6 +74,7 @@ export function creerSons(): Sons {
         case "plot": { const k = Math.min(1, ev.force / 12); ton(t, "triangle", 640, 380, 0.07, 0.12 + k * 0.25); break; }
         case "collision": ton(t, "sine", 85, 48, 0.16, 0.45); souffle(t, 0.12, 0.25, "lowpass", 600); break;
         case "chute": souffle(t, 0.4, 0.5, "lowpass", 1400); ton(t, "triangle", 620, 180, 0.3, 0.18); break;
+        case "piedAterre": souffle(t, 0.15, 0.3, "lowpass", 900); ton(t, "triangle", 300, 160, 0.18, 0.15); break;
         case "tapIn": ton(t, "square", 1250, 1150, 0.025, 0.12); ton(t + 0.09, "square", 1250, 1150, 0.025, 0.1); souffle(t, 0.05, 0.12, "highpass", 2500); break;
         case "but": { // corne + public
           souffle(t, 2.2, 0.35, "bandpass", 950, 0.6, 0.35);

@@ -7,7 +7,7 @@ import { creerBot, type Bot, type Niveau } from "./ai/bot";
 import { creerEntrees } from "./input/clavier-souris";
 import { adressesDans, chargerRessources, type AdressesRessources } from "./render/ressources";
 import { creerRendu, type Instantane } from "./render/scene";
-import { DT, PLOTS_ENTRAINEMENT } from "./sim/constantes";
+import { DT, JOUEUR, PLOTS_ENTRAINEMENT } from "./sim/constantes";
 import { CONFIG_MATCH, creerMatch, DUREES, pasMatch, type Match } from "./sim/match";
 import { bonusCombo, creerEtat, pas } from "./sim/pas";
 import type { Balle, Commande, Etat, Joueur } from "./sim/types";
@@ -220,7 +220,7 @@ export function monterJeu(conteneur: HTMLElement, options: OptionsJeu = {}): () 
     match = creerMatch(graine, fmt, CONFIG_MATCH); etat = match.etat;
     // Joueur 0 : toi. Les autres sont des bots (en 3 contre 3 : tes 2 coéquipiers et les 3 adversaires).
     bots = etat.joueurs.slice(1).map((_, k) => creerBot(k + 1, n, (graine ^ 0x5bd1e995) + k * 7919));
-    el("nomBot").textContent = fmt === 3 ? `ADVERSAIRES · ${NOM_NIVEAU[n]}` : `BOT · ${NOM_NIVEAU[n]}`;
+    el("nomBot").textContent = fmt === 3 ? `ADV · ${NOM_NIVEAU[n]}` : `BOT · ${NOM_NIVEAU[n]}`;
     prec = instantane(etat); couper = true; finAffichee = false; menu.style.display = "none"; rendu.canvas.focus();
   }
 
@@ -283,6 +283,7 @@ export function monterJeu(conteneur: HTMLElement, options: OptionsJeu = {}): () 
     for (const ev of etat.evenements) {
       sons.evenement(ev);
       if (ev.type === "chute") message("Chute !", 2.2, "#ffa2af");
+      else if (ev.type === "piedAterre" && ev.joueur === etat.joueurs[0].id) message("Pied à terre ! Hors jeu : va taper la balustrade au milieu (zone jaune)", 3, "#ffa2af");
       else if (ev.type === "tapIn" && ev.joueur === etat.joueurs[0].id) message("De retour en jeu", 1.2, "#60c9cf");
       else if (ev.type === "poteau" && ev.force > 6) { ralentiJusqua = maintenant + 500; message("Poteau !", 1.2, "#fcfbf5"); }
       else if (mode === "entrainement" && ev.type === "but") { message("BUT !", 2); ralentiJusqua = maintenant + 1100; }
@@ -358,6 +359,8 @@ export function monterJeu(conteneur: HTMLElement, options: OptionsJeu = {}): () 
       if (fixe) { elMsg.textContent = fixe; elMsg.style.background = "#fff25a"; elMsg.style.display = "block"; } else elMsg.style.display = "none";
     }
     if (maintenant > grandJusqua) elGrand.style.display = "none";
+    // Alerte d'équilibre : tu es presque arrêté, bientôt pied à terre
+    if (maintenant > msgJusqua && moi.etat === "actif" && moi.risque > 0.45 && !JOUEUR.chuteVirage) { elMsg.textContent = "Garde de la vitesse, sinon pied à terre !"; elMsg.style.background = "#ffa2af"; elMsg.style.display = "block"; }
     // Combo prêt : tu as la balle après une série de passes, ton prochain tir vers la cage est bonifié
     if (maintenant > msgJusqua && mode === "match" && moi.aLaBalle) {
       const { bonus, triangle } = bonusCombo(etat, moi);

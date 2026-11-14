@@ -90,7 +90,7 @@ function pasJoueur(j: Joueur, c: Commande, ev: Evenement[], plots: { x: number; 
       // Chute : à pleine vitesse, demander un changement de direction brutal sans freiner.
       const tropVite = j.v > JOUEUR.chuteVitesse * JOUEUR.vMax;
       if (JOUEUR.chuteVirage && tropVite && !c.frein && absEcart > JOUEUR.chuteAngle) j.risque += dt / JOUEUR.chuteDelai;
-      else j.risque = Math.max(0, j.risque - dt * 3);
+      else if (JOUEUR.chuteVirage) j.risque = Math.max(0, j.risque - dt * 3);
       // Le vélo tourne vers la direction voulue : vite à basse vitesse, large à haute vitesse.
       const rotMax = Math.min(JOUEUR.rotLente, JOUEUR.aLatMax / Math.max(j.v, 0.5));
       j.rot = clamp(ecart * 8, -rotMax, rotMax);
@@ -100,8 +100,14 @@ function pasJoueur(j: Joueur, c: Commande, ev: Evenement[], plots: { x: number; 
       if (j.v < cible) j.v = Math.min(cible, j.v + JOUEUR.acc * dt);
       else j.v = Math.max(cible, j.v - (c.frein ? JOUEUR.frein : JOUEUR.roueLibre + (1 - aligne) * JOUEUR.freinVirage) * dt);
     } else {
-      j.risque = Math.max(0, j.risque - dt * 3);
+      if (JOUEUR.chuteVirage) j.risque = Math.max(0, j.risque - dt * 3);
       j.v = Math.max(0, j.v - (c.frein ? JOUEUR.frein : JOUEUR.roueLibre) * dt);
+    }
+    // Équilibre : presque à l'arrêt trop longtemps, on pose le pied (le risque sert aussi d'alerte à l'écran)
+    if (!JOUEUR.chuteVirage && j.etat === "actif") {
+      if (j.v < JOUEUR.piedVitesse) j.risque = Math.min(1, j.risque + dt / JOUEUR.piedDelai);
+      else j.risque = Math.max(0, j.risque - dt * 1.5);
+      if (j.risque >= 1) { j.etat = "horsJeu"; j.tEtat = 0; j.risque = 0; j.aLaBalle = false; j.pauseAimant = BALLE.aimantPause; ev.push({ type: "piedAterre", joueur: j.id }); }
     }
     if (j.etat === "actif" && j.risque >= 1) tomber(j, ev);
   }

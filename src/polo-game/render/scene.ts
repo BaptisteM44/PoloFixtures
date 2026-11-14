@@ -118,7 +118,7 @@ function construireTerrain(scene: THREE.Scene) {
 interface Joueur3D {
   racine: THREE.Group; penche: THREE.Group; roues: THREE.Object3D[]; maillet: THREE.Group; mats: THREE.Material[]; anneau: THREE.Mesh; fantome: boolean;
   /** Version détaillée : vélo et cycliste animés (absente tant que les ressources ne sont pas chargées). */
-  detail?: { velo: Velo; cycliste: Cycliste; roue: number; pedalier: number; maillet: number; braquage: number };
+  detail?: { velo: Velo; cycliste: Cycliste; roue: number; pedalier: number; maillet: number; braquage: number; pied: number; tTap: number };
 }
 
 /** Tenues des deux équipes : maillot, short, gants, chaussures, casque ; vélo : cadre, flasques, motif, sigle. */
@@ -142,7 +142,7 @@ function construireJoueurDetaille(res: Ressources, equipe: 0 | 1, genre: Genre, 
   penche.traverse((o) => { const m = (o as THREE.Mesh).material; if (m) for (const x of Array.isArray(m) ? m : [m]) if (!mats.includes(x)) mats.push(x); });
   const anneau = new THREE.Mesh(new THREE.RingGeometry(JOUEUR.rayon * 0.92, JOUEUR.rayon * 1.08, 40), new THREE.MeshBasicMaterial({ color: C.creme, transparent: true, opacity: 0.55, depthWrite: false }));
   anneau.rotation.x = -Math.PI / 2; anneau.position.y = 0.016; racine.add(anneau);
-  return { racine, penche, roues: [], maillet: cycliste.maillet, mats, anneau, fantome: false, detail: { velo, cycliste, roue: 0, pedalier: 0, maillet: 0.25, braquage: 0 } };
+  return { racine, penche, roues: [], maillet: cycliste.maillet, mats, anneau, fantome: false, detail: { velo, cycliste, roue: 0, pedalier: 0, maillet: 0.25, braquage: 0, pied: 0, tTap: 9 } };
 }
 
 function construireJoueur(couleurMaillot: string, couleurCadre: string, flasqueAv: string, flasqueAr: string): Joueur3D {
@@ -245,7 +245,7 @@ export function creerRendu(conteneur: HTMLElement, ressources?: Promise<Ressourc
   function majJoueur(o: Joueur3D, j: Joueur, x: number, y: number, cap: number, dt: number, t: number, charge: number) {
     o.racine.position.set(x, 0, y); o.racine.rotation.y = -cap;
     // Inclinaison dans les virages, bascule au sol quand on tombe
-    const cibleRoulis = j.etat === "auSol" ? 1.35 : THREE.MathUtils.clamp(j.rot * j.v * 0.035, -0.45, 0.45) + (j.risque > 0.25 ? Math.sin(t * 40) * 0.05 * j.risque : 0);
+    const cibleRoulis = j.etat === "auSol" ? 1.35 : o.detail && o.detail.pied > 0.05 ? -0.16 * o.detail.pied : THREE.MathUtils.clamp(j.rot * j.v * 0.035, -0.45, 0.45) + (j.risque > 0.25 ? Math.sin(t * 40) * 0.05 * j.risque : 0);
     o.penche.rotation.x += (cibleRoulis - o.penche.rotation.x) * Math.min(1, dt * (j.etat === "auSol" ? 9 : 12));
     if (o.detail) {
       const d = o.detail;
@@ -261,9 +261,15 @@ export function creerRendu(conteneur: HTMLElement, ressources?: Promise<Ressourc
       if (charge > 0) cible = -0.35 - 1.0 * charge;
       else if (f < 0.12) cible = THREE.MathUtils.lerp(-amp, 0.95, f / 0.12);
       else if (f < 0.5) cible = THREE.MathUtils.lerp(0.95, 0.25, (f - 0.12) / 0.38);
-      const vitesse = charge > 0 ? 8 : f < 0.12 ? 60 : 9;
+      // Tap-in : le maillet se lève puis tape la balustrade
+      d.tTap += dt;
+      if (d.tTap < 0.5) cible = d.tTap < 0.22 ? -0.9 : 0.75;
+      const vitesse = charge > 0 ? 8 : f < 0.12 || d.tTap < 0.5 ? 40 : 9;
       d.maillet += (cible - d.maillet) * Math.min(1, dt * vitesse);
-      d.cycliste.poser({ pedalier: d.pedalier, maillet: d.maillet, buste: 1.0 + (charge > 0 ? 0.12 : 0) });
+      // Pied à terre : hors jeu et presque arrêté
+      const piedCible = j.etat === "horsJeu" && j.v < 1.6 ? 1 : 0;
+      d.pied += (piedCible - d.pied) * Math.min(1, dt * 7);
+      d.cycliste.poser({ pedalier: d.pedalier, maillet: d.maillet, buste: 1.0 + (charge > 0 ? 0.12 : 0) - d.pied * 0.35, pied: d.pied });
     } else {
       for (const r of o.roues) r.rotation.z -= (j.v * dt) / 0.345;
       // Geste de frappe : armé vers l'arrière puis fouetté vers l'avant
@@ -295,6 +301,7 @@ export function creerRendu(conteneur: HTMLElement, ressources?: Promise<Ressourc
         const o = res ? construireJoueurDetaille(res, eq, tirage(i).genre, tirage(i).peau) : construireJoueur(p[0], p[1], p[2], p[3]);
         joueurs3D.push(o); scene.add(o.racine);
       }
+      for (const ev of e.evenements) if (ev.type === "tapIn") { const o = joueurs3D[e.joueurs.findIndex((j) => j.id === ev.joueur)]; if (o?.detail) o.detail.tTap = 0; }
       e.joueurs.forEach((j, i) => {
         const p = prec.joueurs[i] ?? j;
         majJoueur(joueurs3D[i], j, p.x + (j.x - p.x) * alpha, p.y + (j.y - p.y) * alpha, lerpAngle(p.cap, j.cap, alpha), dt, t, i === 0 && !infos.masquerVisee ? infos.force : 0);
@@ -317,7 +324,10 @@ export function creerRendu(conteneur: HTMLElement, ressources?: Promise<Ressourc
       const jx = infos.suivreBalle ? bx : joueurs3D[0].racine.position.x, jz = infos.suivreBalle ? by : joueurs3D[0].racine.position.z;
       let ex = bx - jx, ez = by - jz; const d = Math.hypot(ex, ez), dmax = 7; if (d > dmax) { ex *= dmax / d; ez *= dmax / d; }
       const k = infos.couper ? 1 : 1 - Math.exp(-dt * (infos.suivreBalle ? 6 : 4));
-      cible.x += (jx + ex * 0.35 - cible.x) * k; cible.z += (jz + ez * 0.35 - cible.z) * k;
+      // Près des bords, la caméra ne suit plus jusqu'au bout : on garde le terrain à l'écran plutôt que le vide autour
+      const portrait = largeur < hauteur, mx = TERRAIN.demiL - Math.min(TERRAIN.demiL, zoomCourant * (portrait ? 1.1 : 0.75)), mz = TERRAIN.demiW - Math.min(TERRAIN.demiW, zoomCourant * (portrait ? 0.7 : 0.55));
+      const vx = THREE.MathUtils.clamp(jx + ex * 0.35, -mx, mx), vz = THREE.MathUtils.clamp(jz + ez * 0.35, -mz, mz);
+      cible.x += (vx - cible.x) * k; cible.z += (vz - cible.z) * k;
       if (infos.couper) { zoomCourant = infos.zoom * ZOOM; cadrer(); }
       if (Math.abs(infos.zoom * ZOOM - zoomCourant) > 0.001) { zoomCourant += (infos.zoom * ZOOM - zoomCourant) * (1 - Math.exp(-dt * 6)); cadrer(); }
       camera.position.copy(cible).add(DECALAGE); camera.lookAt(cible);

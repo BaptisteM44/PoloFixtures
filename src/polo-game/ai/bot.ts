@@ -7,6 +7,7 @@
  */
 import { BALLE, JOUEUR, MAILLET, PASSE, TERRAIN } from "../sim/constantes";
 import { dansZoneTapIn, pointMaillet } from "../sim/pas";
+import { couloirOuvert, placeRole, tableauEquipe } from "./tactique";
 import type { Commande, Etat, Joueur } from "../sim/types";
 
 export type Niveau = "facile" | "moyen" | "difficile";
@@ -141,53 +142,54 @@ export function creerBot(index: number, niveau: Niveau, graine = 1): Bot {
         }
       }
 
-      // En équipe : un seul bot va à la balle, les autres prennent un rôle (soutien, couverture, marquage)
-      if (equipiers.length > 0 && j.etat === "actif" && !j.aLaBalle && mode !== "tapIn") {
+      // En équipe : rôles partagés (tactique.ts). Un seul joueur va à la balle, un joueur de sécurité, un soutien large.
+      const enEquipe = equipiers.length > 0;
+      const tab = enEquipe ? tableauEquipe(e, j.equipe) : null;
+      const role = tab?.roles.get(j.id) ?? null;
+      if (tab && role && j.etat === "actif" && !j.aLaBalle) {
         if (pointReception) { mode = "reception"; cible = pointReception; }
-        else {
-          const actifs = [j, ...equipiers.filter((o) => o.etat === "actif")];
-          const dBalle = (o: Joueur) => Math.hypot(b.x - o.x, b.y - o.y) - (o === j && (mode === "balle" || mode === "defense") ? 1.2 : 0);
-          const rang = actifs.slice().sort((p, q) => dBalle(p) - dBalle(q)).indexOf(j);
-          const plusEnArriere = actifs.filter((o) => o !== j && !o.aLaBalle).every((o) => (o.x - j.x) * s >= 0);
-          if (porteurAmi) {
-            // Un coéquipier a la balle : le plus en arrière couvre, l'autre se démarque devant, côté opposé
-            if (plusEnArriere && actifs.length > 2) { mode = "defense"; gardien = false; cible = { x: monBut.x + (b.x - monBut.x) * 0.35 + s * 1.5, y: (b.y - monBut.y) * 0.3 }; }
-            else { mode = "soutien"; cible = pointSoutien(b.x, b.y, s, porteurAmi.y); }
-          } else if (rang > 0) {
-            if (porteurAdverse) {
-              mode = "defense";
-              if (rang === 1) { // couverture : devant notre cage, sur l'axe de la balle
-                const dx = b.x - monBut.x, dy = b.y - monBut.y, d = Math.hypot(dx, dy) || 1, r = Math.min(2.2, d * 0.4);
-                cible = { x: monBut.x + (dx / d) * r, y: monBut.y + (dy / d) * r }; gardien = true;
-              } else { // marquage : entre l'adversaire démarqué le plus dangereux et notre cage
-                const libres = adversaires.filter((o) => !o.aLaBalle && o.etat === "actif");
-                const cibleAdv = libres.sort((p, q) => Math.hypot(p.x - monBut.x, p.y - monBut.y) - Math.hypot(q.x - monBut.x, q.y - monBut.y))[0];
-                cible = cibleAdv ? { x: cibleAdv.x + (monBut.x - cibleAdv.x) * 0.3, y: cibleAdv.y + (monBut.y - cibleAdv.y) * 0.3 } : { x: monBut.x + s * 4, y: 0 };
-                gardien = false;
-              }
-            } else if (rang === 1 && b.x * s > -4) { mode = "soutien"; cible = pointSoutien(b.x, b.y, s, b.y); }
-            else { mode = "defense"; gardien = false; cible = { x: monBut.x + (b.x - monBut.x) * 0.35 + s * 1.5, y: (b.y - monBut.y) * 0.3 }; }
-          } else if (mode === "soutien" || mode === "reception") { mode = "balle"; }
+        else if (role === "premier") {
+          if (tab.phase === "libre") { if (mode !== "balle") { mode = "balle"; gardien = false; } }
+          else if (porteurAdverse) {
+            // Pression sur le porteur, en venant du côté de notre cage pour lui fermer le chemin
+            mode = "defense"; gardien = false;
+            const gx = porteurAdverse.x + (monBut.x - porteurAdverse.x) * 0.18, gy = porteurAdverse.y + (monBut.y - porteurAdverse.y) * 0.18;
+            const coteBut = Math.hypot(j.x - monBut.x, j.y - monBut.y) < Math.hypot(porteurAdverse.x - monBut.x, porteurAdverse.y - monBut.y) - 0.5;
+            cible = coteBut ? attaquerBalle(j, b.x, b.y) : { x: gx, y: gy };
+          }
+        } else if (role === "arriere" || role === "soutien") {
+          const p = placeRole(e, j, role, tab.phase);
+          mode = tab.phase === "attaque" || (role === "soutien" && tab.phase === "libre") ? "soutien" : "defense";
+          cible = { x: p.x, y: p.y }; gardien = p.gardien;
         }
       }
-      // Porteur en équipe : passe si on est pressé, ou si un coéquipier démarqué est mieux placé (et pour enchaîner un combo)
-      if (equipiers.length > 0 && j.aLaBalle && mode === "conduite" && !tirPrevu && e.t - tientDepuis > 0.35) {
-        const presse = adversaires.some((o) => o.etat === "actif" && Math.hypot(o.x - j.x, o.y - j.y) < 3.2 && ((o.x - j.x) * Math.cos(j.cap) + (o.y - j.y) * Math.sin(j.cap)) > -0.5);
-        let meilleur: { o: Joueur; x: number; y: number; val: number } | null = null;
-        for (const o of equipiers) {
-          if (o.etat !== "actif") continue;
-          const d0 = Math.hypot(o.x - b.x, o.y - b.y); if (d0 < 3 || d0 > 18) continue;
-          const tv = d0 / Math.min(PASSE.vitesseMax, PASSE.vitesseBase + d0 * PASSE.vitesseParMetre);
-          const lx = o.x + Math.cos(o.cap) * o.v * tv, ly = o.y + Math.sin(o.cap) * o.v * tv;
-          if (Math.abs(lx) > TERRAIN.demiL - 1 || Math.abs(ly) > TERRAIN.demiW - 1) continue;
-          const ouvert = adversaires.every((a) => a.etat !== "actif" || distSegment(a.x, a.y, b.x, b.y, lx, ly) > 1.7);
-          if (!ouvert) continue;
-          const c = e.combo;
-          let val = (lx - b.x) * s * 0.12 - Math.hypot(lx - butAdverse.x, ly) * 0.05;
-          if (c.equipe === j.equipe && c.passes >= 1) val += c.joueurs.includes(o.id) ? 0.6 : 1.4; // vers le triangle
-          if (!meilleur || val > meilleur.val) meilleur = { o, x: lx, y: ly, val };
+      // Porteur en équipe : tir seulement s'il est de qualité ; sinon passe (écarter, ou repli vers l'arrière) ; sinon on garde et on écarte
+      if (enEquipe && j.aLaBalle && mode === "conduite") {
+        const dBut = Math.hypot(butAdverse.x - b.x, butAdverse.y - b.y);
+        if (tirPrevu && !tirPrevu.passe && dBut > 4 && !couloirOuvert(e, j.equipe, b.x, b.y, butAdverse.x, tirPrevu.y, 0.9)) tirPrevu = null;
+        if (!tirPrevu && e.t - tientDepuis > 0.3) {
+          const devant = (o: Joueur) => (o.x - j.x) * Math.cos(j.cap) + (o.y - j.y) * Math.sin(j.cap);
+          const presse = adversaires.some((o) => o.etat === "actif" && Math.hypot(o.x - j.x, o.y - j.y) < 3.2 && devant(o) > -0.5);
+          const barre = adversaires.some((o) => o.etat === "actif" && devant(o) > 0 && devant(o) < 6 && Math.abs((o.y - j.y) * Math.cos(j.cap) - (o.x - j.x) * Math.sin(j.cap)) < 1.8);
+          let meilleur: { o: Joueur; x: number; y: number; val: number } | null = null;
+          for (const o of equipiers) {
+            if (o.etat !== "actif") continue;
+            const d0 = Math.hypot(o.x - b.x, o.y - b.y); if (d0 < 3 || d0 > 20) continue;
+            const tv = d0 / Math.min(PASSE.vitesseMax, PASSE.vitesseBase + d0 * PASSE.vitesseParMetre);
+            const lx = o.x + Math.cos(o.cap) * o.v * tv, ly = o.y + Math.sin(o.cap) * o.v * tv;
+            if (Math.abs(lx) > TERRAIN.demiL - 1 || Math.abs(ly) > TERRAIN.demiW - 1) continue;
+            if (!couloirOuvert(e, j.equipe, b.x, b.y, lx, ly, 1.6)) continue;
+            // Valeur : avancer vers la cage, angle de tir ouvert pour le receveur, compléter un triangle
+            const dButO = Math.hypot(lx - butAdverse.x, ly), angle = Math.abs(ly) / Math.max(0.5, Math.abs(butAdverse.x - lx));
+            let val = (dBut - dButO) * 0.12 + (angle < 1.2 && dButO < P.portee ? 0.8 : 0);
+            const c = e.combo; if (c.equipe === j.equipe && c.passes >= 1 && !c.joueurs.includes(o.id)) val += 1.2;
+            if (tab?.roles.get(o.id) === "arriere") val += barre || presse ? 0.6 : -0.6; // repli quand c'est bouché
+            if (!meilleur || val > meilleur.val) meilleur = { o, x: lx, y: ly, val };
+          }
+          const tenue = e.t - tientDepuis;
+          if (meilleur && (presse || (barre && tenue > 0.6 && meilleur.val > -0.3) || (tenue > 1 && meilleur.val > 0.3 && alea() < P.passe * 0.8)))
+            tirPrevu = { x: meilleur.x, y: meilleur.y, force: 0.4, passe: meilleur.o.id };
         }
-        if (meilleur && (presse || (meilleur.val > 0.2 && alea() < P.passe * 0.35))) tirPrevu = { x: meilleur.x, y: meilleur.y, force: 0.4, passe: meilleur.o.id };
       }
 
       let dirX = 0, dirY = 0, frein = false, tir = 0, viseX = butAdverse.x, viseY = butAdverse.y + viseeErreur;
@@ -202,6 +204,7 @@ export function creerBot(index: number, niveau: Niveau, graine = 1): Bot {
         if (tirPrevu && j.aLaBalle) { tir = tirPrevu.force; viseX = tirPrevu.x; viseY = tirPrevu.y; passe = tirPrevu.passe ?? null; tirPrevu = null; }
         // Conduire vers la cage adverse, en évitant l'adversaire qui barre la route ; tourner doucement pour garder la balle.
         let cx = butAdverse.x - s * 2, cy = 0;
+        if (equipiers.length > 0 && b.x * s < TERRAIN.ligneBut - 7) { cx = b.x + s * 6; cy = (j.y >= 0 ? 1 : -1) * Math.max(3, Math.min(6, Math.abs(j.y))); }
         for (const o of adversaires) {
           const rel = (o.x - j.x) * s;
           if (rel > 0 && rel < 4 && Math.abs(o.y - j.y) < 1.6) cy = j.y + (j.y >= o.y ? 2.5 : -2.5);
@@ -239,7 +242,12 @@ export function creerBot(index: number, niveau: Niveau, graine = 1): Bot {
             const hd = Math.atan2(b.y - j.y, b.x - j.x), cd = Math.cos(hd), sd = Math.sin(hd);
             corps.x = b.x - (cd * MAILLET.avant - sd * MAILLET.cote); corps.y = b.y - (sd * MAILLET.avant + cd * MAILLET.cote); aligne = true;
           }
-          if (aligne && balleBloquee) { tx = corps.x; ty = corps.y; }
+          // En équipe : on prend la balle directement, d'où qu'on vienne (on s'oriente ensuite pour passer ou conduire)
+          if (equipiers.length > 0 && Math.hypot(b.vx, b.vy) < 4 && !balleBloquee) {
+            const hd = Math.atan2(b.y - j.y, b.x - j.x), cd = Math.cos(hd), sd = Math.sin(hd);
+            corps.x = b.x - (cd * MAILLET.avant - sd * MAILLET.cote); corps.y = b.y - (sd * MAILLET.avant + cd * MAILLET.cote);
+            tx = corps.x + cd * 1.5 + b.vx * lead; ty = corps.y + sd * 1.5 + b.vy * lead; aligne = true;
+          } else if (aligne && balleBloquee) { tx = corps.x; ty = corps.y; }
           else if (aligne) { tx = corps.x + c * 2.5 + b.vx * lead; ty = corps.y + sn * 2.5 + b.vy * lead; }
           else { tx = corps.x - c * 2.2 + b.vx * lead; ty = corps.y - sn * 2.2 + b.vy * lead; }
         } else if (mode === "reception") {
@@ -271,7 +279,8 @@ export function creerBot(index: number, niveau: Niveau, graine = 1): Bot {
  if (!tir && mode !== "conduite" && mode !== "tapIn" && mode !== "reception" && mode !== "soutien" && j.etat === "actif" && !j.aLaBalle && b.dansBut === 0 && b.z < 0.4 && j.pauseAimant <= 0) {
         const mp = pointMaillet(j);
         const loin = Math.hypot(butAdverse.x - b.x, butAdverse.y - b.y) > P.portee;
-        const presse = !!porteurAdverse || adversaires.some((o) => o.etat === "actif" && Math.hypot(b.x - o.x, b.y - o.y) < 2.5);
+        // En équipe, on contrôle la balle plutôt que de la frapper au hasard : on ne dégage que si un adversaire est vraiment dessus
+        const presse = !!porteurAdverse || adversaires.some((o) => o.etat === "actif" && Math.hypot(b.x - o.x, b.y - o.y) < (equipiers.length > 0 ? 1.3 : 2.5));
         // Balle coincée contre la balustrade (coin, derrière une cage) : on la sort vers le milieu.
         const coincee = balleBloquee || (TERRAIN.demiL - Math.abs(b.x) < 1 && TERRAIN.demiW - Math.abs(b.y) < 1.2) || (Math.abs(b.x) > TERRAIN.ligneBut + TERRAIN.butProfondeur - 0.1 && Math.abs(b.y) < TERRAIN.butDemiLargeur + 1.5);
         const tirDirect = !loin && TERRAIN.ligneBut - b.x * s > 0.8 && Math.abs(b.y - butAdverse.y) / Math.max(0.1, Math.abs(butAdverse.x - b.x)) < 1.3;
@@ -289,6 +298,11 @@ export function creerBot(index: number, niveau: Niveau, graine = 1): Bot {
       if (bloque > 1.2) { degagement = e.t + 0.9; bloque = 0; const a = j.cap + Math.PI * (0.6 + alea() * 0.8); degagementDir = { x: Math.cos(a), y: Math.sin(a) }; }
       if (e.t < degagement) { dirX = degagementDir.x; dirY = degagementDir.y; frein = false; }
       const k = P.vitesse;
+      // Équilibre : presque à l'arrêt depuis trop longtemps, on repart en petit cercle plutôt que de poser le pied
+      if (j.etat === "actif" && j.risque > 0.5 && !tir && Math.hypot(dirX, dirY) * k < 0.5) {
+        const a = j.cap + 0.8 * (j.id % 2 ? 1 : -1); dirX = Math.cos(a) * 0.55; dirY = Math.sin(a) * 0.55; frein = false;
+        return { dx: dirX, dy: dirY, frein, viseX, viseY, tir, passe };
+      }
       return { dx: dirX * k, dy: dirY * k, frein, viseX, viseY, tir, passe };
     },
   };

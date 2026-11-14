@@ -65,6 +65,7 @@ export type Evenement =
   | { type: "butRefuse"; camp: 1 | -1 }
   | { type: "chute"; joueur: number }
   | { type: "tapIn"; joueur: number }
+  | { type: "piedAterre"; joueur: number }
   | { type: "collision"; a: number; b: number }
   | { type: "vol"; joueur: number; victime: number }
   | { type: "passe"; joueur: number; recepteur: number; passes: number; triangle: boolean }

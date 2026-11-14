@@ -57,3 +57,9 @@ Aucune.
 - Porteur : tir seulement si le couloir est ouvert ; passe sous pression, vers le soutien écarté, ou en repli vers l'arrière quand c'est bouché ; sinon conduit le long du côté avant de rentrer.
 - Simulation : le porteur garde la balle dans un simple contact (le duel au maillet peut la lui prendre) ; une balle captée de loin ne s'échappe plus aussitôt.
 - Mesures bots contre bots (4 min) : ~0,65 joueur par équipe à moins de 4 m de la balle, écart en largeur ~8 m, balle tenue ~35 % du temps, 35 à 55 passes réussies par match.
+
+## Pied à terre et tap-in animés (13/11/2026)
+- Règle : en dessous de 0,8 m/s pendant 2,2 s, le joueur pose le pied → hors jeu jusqu'au tap-in (événement `piedAterre`). L'anneau rougit et un message prévient avant.
+- Pas de pied à terre pendant la pause après un but. Les bots repartent en petit cercle avant de perdre l'équilibre.
+- Rendu : pied gauche posé au sol, vélo penché ; geste de maillet au tap-in. Son dédié.
+- Correctif : les versions de `bot.ts` (tactique d'équipe), `index.ts` et `scene.ts` (caméra) poussées en ligne au commit 2821307 étaient d'une version antérieure ; remises à jour.

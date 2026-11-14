@@ -15,7 +15,7 @@ export interface Cycliste {
   groupe: THREE.Group;
   maillet: THREE.Group;
   /** Pose complète pour une image : angle du pédalier, angle du maillet (0 = tête au sol sous l'épaule, + = vers l'avant), inclinaison du buste. */
-  poser(p: { pedalier: number; maillet: number; buste?: number }): void;
+  poser(p: { pedalier: number; maillet: number; buste?: number; pied?: number }): void;
 }
 
 /** Longueur de jambe de référence (hanche → cheville) : les personnages sont mis à cette échelle pour atteindre les pédales. */
@@ -179,7 +179,7 @@ export function creerCycliste(gltf: GLTF, peau: THREE.Texture, velo: Velo, tenue
 
   return {
     groupe, maillet,
-    poser({ pedalier, maillet: th, buste = 1.0 }) {
+    poser({ pedalier, maillet: th, buste = 1.0, pied = 0 }) {
       for (const [b, q] of repos) b.quaternion.copy(q);
       groupe.updateMatrixWorld(true);
       const W = (v: THREE.Vector3) => groupe.localToWorld(v.clone());
@@ -197,8 +197,16 @@ export function creerCycliste(gltf: GLTF, peau: THREE.Texture, velo: Velo, tenue
       for (const [cote, ped] of [["l", p.g], ["r", p.d]] as [string, THREE.Vector3][]) {
         const cheville = W(ped.clone().add(new THREE.Vector3(-0.06, 0.085, 0)));
         const genou = W(ped.clone().add(new THREE.Vector3(0.6, 0.6, 0)));
+        let pointe = W(ped.clone().add(new THREE.Vector3(0.06, 0.02, 0)));
+        if (cote === "l" && pied > 0) {
+          // Pied à terre : le pied gauche quitte la pédale et se pose au sol, à côté du pédalier
+          const sol = W(new THREE.Vector3(0.02, 0, -0.4)); sol.y = 0.085;
+          cheville.lerp(sol, pied);
+          genou.lerp(W(new THREE.Vector3(0.45, 0.55, -0.45)), pied);
+          const bout = W(new THREE.Vector3(0.16, 0, -0.42)); bout.y = 0.02; pointe = pointe.lerp(bout, pied);
+        }
         ik2(os["thigh_" + cote], os["calf_" + cote], os["foot_" + cote], cheville, genou);
-        viser(os["foot_" + cote], os["ball_" + cote], W(ped.clone().add(new THREE.Vector3(0.06, 0.02, 0))));
+        viser(os["foot_" + cote], os["ball_" + cote], pointe);
       }
       // Main gauche serrée sur la poignée gauche : barre selon z, dos de la main vers le haut et l'avant
       const g = velo.points.guidonG;
